@@ -40,7 +40,6 @@ namespace AncientChineseMythology.Items
             recipe.Register();
         }
 
-        // 使用内置红宝石锤作为占位贴图
         public override string Texture => "Terraria/Images/Item_4258";
 
     }

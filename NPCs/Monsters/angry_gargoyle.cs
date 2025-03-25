@@ -5,7 +5,7 @@ using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 using AncientChineseMythology.Systems;
-using Terraria.DataStructures; // 用于引用自定义加载的贴图系统（如果有）
+using Terraria.DataStructures; 
 
 namespace AncientChineseMythology.NPCs
 {
@@ -189,7 +189,7 @@ namespace AncientChineseMythology.NPCs
             animationCounter += 1f;
         }
 
-        // 不使用默认 FindFrame，直接依赖我们的 animationCounter
+        // 不使用默认 FindFrame，直接依赖 animationCounter
 
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
         {

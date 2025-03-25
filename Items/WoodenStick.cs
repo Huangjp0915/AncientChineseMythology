@@ -8,10 +8,6 @@ namespace AncientChineseMythology.Items
     {
         public override void SetStaticDefaults()
         {
-            // 如果使用 .hjson 进行本地化，则不需要在代码里设置 DisplayName/Tooltip
-            // 如不使用，则可以尝试：
-            // DisplayName.SetDefault("木棍");
-            // Tooltip.SetDefault("唐僧赠送的武器\n据说可以升级成如意金箍棒");
         }
 
         public override void SetDefaults()

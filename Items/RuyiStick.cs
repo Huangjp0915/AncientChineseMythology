@@ -35,7 +35,7 @@ namespace AncientChineseMythology.Items
             recipe.Register();
         }
 
-        // 使用内置武士刀（Muramasa）作为占位贴图
+        // 使用内置武士刀作为占位贴图
         public override string Texture => "Terraria/Images/Item_" + ItemID.Muramasa;
     }
 }

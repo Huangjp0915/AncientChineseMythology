@@ -35,7 +35,7 @@ namespace AncientChineseMythology.Items
             recipe.Register();
         }
 
-        // 使用内置铁短剑贴图作为占位符（假设 IronShortsword 存在）
+        // 使用内置铁短剑贴图作为占位符
         public override string Texture => "Terraria/Images/Item_" + ItemID.IronShortsword;
     }
 }

@@ -24,7 +24,6 @@ namespace AncientChineseMythology.Items
             Item.rare = ItemRarityID.Yellow;
         }
 
-        // 关键代码：指定贴图路径
         public override string Texture => "Terraria/Images/Item_" + ItemID.GoldenKey;
 
         public override bool? UseItem(Player player)

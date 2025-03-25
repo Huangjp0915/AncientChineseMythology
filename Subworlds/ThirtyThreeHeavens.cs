@@ -46,11 +46,11 @@ namespace AncientChineseMythology.Subworlds
             {
                 Main.NewText("进入子世界：ThirtyThreeHeavens", Color.LightGreen);
 
-                // 获取你的音乐槽位
+                // 获取音乐槽位
                 int slot = MusicLoader.GetMusicSlot(Mod, "Music/HeavenTheme");
                 // 先停止当前音乐（防止有淡出或切换效果）
                 //SoundEngine.StopMusic(true);
-                // 强制播放你指定的音乐
+                // 强制播放指定的音乐
                 //SoundEngine.PlayMusic(slot, 0f);
             }
         }
