@@ -1,0 +1,51 @@
+{
+  "Mods": {
+    "AncientChineseMythology": {
+      "Items": {
+        "WoodenStick": {
+          "DisplayName": "木棍",
+          "Tooltip": "唐僧赠送的武器\n据说是由某个猴子让他交给有缘人的"
+        },
+        "RuyiJinguBang": {
+          "DisplayName": "如意金箍棒",
+          "Tooltip": "传说中的如意金箍棒\n有了它，你似乎会吸引某些人的注意"
+        },
+        "IronStick": {
+          "DisplayName": "铁棍",
+          "Tooltip": "这根铁棍很重，\n你得学会控制它"
+        },
+        "GoldenStick": {
+          "DisplayName": "金棍",
+          "Tooltip": "这根棍子现在看起来更贵重了？"
+        },
+        "GemStick": {
+          "DisplayName": "宝石棍",
+          "Tooltip": "被它敲到的人身价得暴涨了"
+        },
+        "RuyiStick": {
+          "DisplayName": "如意棍",
+          "Tooltip": "这根棍子……\n仿佛看到了某位故人"
+        },
+        "TrueRuyiStick": {
+          "DisplayName": "真·如意棍",
+          "Tooltip": "这根棍子……\n好大的猴骚味"
+        }
+      },
+      "NPCs": {
+        "TangSengNPC": {
+          "DisplayName": "唐僧"
+        },
+        "angry_gargoyle": {
+          "DisplayName": "愤怒的石像鬼"
+        },
+        "BlackBear": {
+          "DisplayName": "黑熊精"
+        },
+        "SkyKey": {
+          "DisplayName": "天界之钥"
+          "Tooltip": "据说这个可以通往33重天"
+        }
+      }
+    }
+  }
+}

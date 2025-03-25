@@ -1,0 +1,26 @@
+将中国古代神话，西游记、封神演义、巫妖大战、山海经等融入这个mod，刚开始制作，还请各位多多期待
+
+【封神再启：大唐降妖录】
+乱世之中，截教余孽暗流涌动，山海界裂痕不断，妖气四处滋生——人、仙、妖三界危机再临！在这款融合了中国神话元素的模组中，你将邂逅全新NPC“唐僧”，获取可成长的武器“木棍—如意金箍棒”对抗凶险妖魔。
+
+该版本新增：
+	唐僧NPC：城镇中独特的修行者，赠与你初始武器并引导你探寻封神大战的秘密。
+	愤怒的石像鬼：会随机刷新在任意非城镇的地方，超强击退力，小心别被打到山崖下面去了！
+	黑熊精：会随机在丛林地表刷新，现在你得注意别被他撞到了！
+	新地图：33重天，打败黑熊精就可以进入新地图，33重天！（需要依赖subworldLibrary）
+	可成长武器：每当你首次击败新的怪物或Boss，武器伤害就会永久提升1%，亲手打造你的最强神兵！
+	全新神话剧情：感受阐教与截教的恩怨纠葛，深入山海界裂缝，体验洪荒余波下的危机与机遇。
+	个性化拓展：从木棍升级至如意金箍棒，解锁更强挥棒速度与高击退效果，真正成为除妖卫道的救世之人！
+
+快来加入《封神再启：大唐降妖录》，与唐僧并肩踏上封神旅途，迎战暗潮中的诸多妖魔，一同守护三界的安宁吧！
+
+-------------------------------------------------------------------
+
+Divine Reawakening: The Chronicles of Tang Monk
+In a world where remnants of the Cult of Ji and celestial secrets stir amidst rampant demonic energy, the realms of mortals, immortals, and monsters face unprecedented chaos! In this mod steeped in rich Chinese mythology, you’ll encounter the enigmatic NPC “Tang Monk,” who not only guides you on your epic journey but also bestows upon you a unique, evolving weapon—from a humble Wooden Stick to the legendary Ruyi Jingu Bang.
+
+Tang Monk NPC: A wise and mysterious monk residing in town who provides you with your initial weapon and unravels the secrets behind an ancient divine war.
+Evolving Weaponry: Every time you defeat a new monster or boss for the first time, your weapon permanently gains a 1% damage boost. Forge your ultimate divine weapon over time!
+Immersive Mythic Storyline: Delve into the conflict between the celestial sects, explore rifts in the Mountain and Sea realm, and experience a narrative full of peril and ancient power.
+Enhanced Gameplay: Upgrade your Wooden Stick into the Ruyi Jingu Bang, boasting blistering swing speed and formidable knockback, and become the hero who safeguards the three realms!
+Join Divine Reawakening: The Chronicles of Tang Monk and embark on a journey steeped in mysticism and martial valor. Uncover the secrets of the divine war, battle formidable demons, and shape your destiny as you defend the balance between heaven, earth, and the underworld!

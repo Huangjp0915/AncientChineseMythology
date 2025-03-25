@@ -1,0 +1,5 @@
+displayName = Ancient Chinese Mythology
+author = 子酥
+version = 2.30
+
+modReferences = SubworldLibrary

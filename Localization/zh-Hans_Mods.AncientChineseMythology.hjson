@@ -1,0 +1,97 @@
+Items: {
+	RuyiJinguBang: {
+		DisplayName: 如意金箍棒
+		Tooltip:
+			'''
+			传说中的如意金箍棒
+			有了它，你似乎会吸引某些人的注意
+			'''
+	}
+
+	WoodenStick: {
+		DisplayName: 木棍
+		Tooltip:
+			'''
+			唐僧赠送的武器
+			据说是由某个猴子让他交给有缘人的
+			'''
+	}
+
+	GemStick: {
+		DisplayName: 宝石棍
+		Tooltip: 被它敲到的人身价得暴涨了
+	}
+
+	GoldenStick: {
+		DisplayName: 金棍
+		Tooltip: 这根棍子现在看起来更贵重了？
+	}
+
+	IronStick: {
+		DisplayName: 铁棍
+		Tooltip:
+			'''
+			这根铁棍很重，
+			你得学会控制它
+			'''
+	}
+
+	RuyiStick: {
+		DisplayName: 如意棍
+		Tooltip:
+			'''
+			这根棍子……
+			仿佛看到了某位故人
+			'''
+	}
+
+	TrueRuyiStick: {
+		Tooltip:
+			'''
+			这根棍子……
+			好大的猴骚味
+			'''
+		DisplayName: 真·如意棍
+	}
+
+	SkyKey: {
+		DisplayName: 天界之钥
+		Tooltip: 据说这个可以通往33重天
+	}
+}
+
+NPCs: {
+	TangSengNPC: {
+		DisplayName: 唐僧
+
+		TownNPCMood: {
+			// Content: 我很满足。
+			// NoHome: 我讨厌没有家。
+			// FarFromHome: 我离家太远了。
+			// LoveSpace: 我非常喜欢有这么大的空间。
+			// DislikeCrowded: 我不喜欢这么拥挤。
+			// HateCrowded: 我讨厌这么拥挤。
+			// LikeNPC_Princess: 我喜欢 {NPCName}。
+			// Princess_LovesNPC: 我喜欢 {NPCName}。
+		}
+	}
+
+	// Angry_gargoyle.DisplayName: Angry_gargoyle
+	angry_gargoyle.DisplayName: 愤怒的石像鬼
+	BlackBear.DisplayName: 黑熊精
+}
+
+// Projectiles.StabbingProjectile.DisplayName: Stabbing Projectile
+// HeavenBiome.DisplayName: Heaven
+
+Biomes: {
+	HeavenBiome: {
+		// TownNPCDialogueName: the Heaven Biome
+		// DisplayName: Heaven Biome
+	}
+
+	TestBiome: {
+		// DisplayName: Test Biome
+		// TownNPCDialogueName: the Test Biome
+	}
+}
