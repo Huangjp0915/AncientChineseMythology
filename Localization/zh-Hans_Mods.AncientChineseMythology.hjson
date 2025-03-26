@@ -90,7 +90,11 @@ NPCs: {
 	BlackBear.DisplayName: 黑熊精
 }
 
-// Projectiles.StabbingProjectile.DisplayName: Stabbing Projectile
+Projectiles: {
+	// StabbingProjectile.DisplayName: Stabbing Projectile
+	// WoodenStickSpearProjectile.DisplayName: Wooden Stick Spear Projectile
+}
+
 // HeavenBiome.DisplayName: Heaven
 
 Biomes: {
