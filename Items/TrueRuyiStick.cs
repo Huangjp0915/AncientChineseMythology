@@ -38,6 +38,7 @@ namespace AncientChineseMythology.Items
             recipe.AddIngredient(ItemID.SoulofFlight , 30); // 飞翔之魂
             recipe.AddIngredient(ItemID.SoulofLight, 30); // 光明之魂
             recipe.AddIngredient(ItemID.SoulofNight, 30); // 黑暗之魂
+            recipe.AddIngredient(ModContent.ItemType<YaoQiFragment>(), 80);
             recipe.AddTile(TileID.Anvils);
             recipe.Register();
         }

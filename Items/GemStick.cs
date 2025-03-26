@@ -36,6 +36,7 @@ namespace AncientChineseMythology.Items
             recipe.AddIngredient(ItemID.Topaz, 20);
             recipe.AddIngredient(ItemID.Amethyst, 20);
             recipe.AddIngredient(ItemID.Diamond, 20);
+            recipe.AddIngredient(ModContent.ItemType<YaoQiFragment>(), 20);
             recipe.AddTile(TileID.HeavyWorkBench);
             recipe.Register();
         }

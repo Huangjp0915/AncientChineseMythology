@@ -31,6 +31,7 @@ namespace AncientChineseMythology.Items
             Recipe recipe = CreateRecipe();
             recipe.AddIngredient(ModContent.ItemType<GemStick>(), 1);
             recipe.AddIngredient(ItemID.HellstoneBar, 81);
+            recipe.AddIngredient(ModContent.ItemType<YaoQiFragment>(), 40);
             recipe.AddTile(TileID.Hellforge);
             recipe.Register();
         }
