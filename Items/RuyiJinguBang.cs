@@ -38,6 +38,7 @@ namespace AncientChineseMythology.Items
             recipe.AddIngredient(ItemID.FragmentSolar, 20);
             recipe.AddIngredient(ItemID.FragmentStardust, 20);
             recipe.AddIngredient(ItemID.FragmentVortex, 20);
+            recipe.AddIngredient(ModContent.ItemType<YaoQiFragment>(), 160);
             recipe.AddTile(TileID.MythrilAnvil);
             recipe.Register();
         }

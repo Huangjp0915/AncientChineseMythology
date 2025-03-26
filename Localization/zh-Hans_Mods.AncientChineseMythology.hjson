@@ -58,6 +58,15 @@ Items: {
 		DisplayName: 天界之钥
 		Tooltip: 据说这个可以通往33重天
 	}
+
+	YaoQiFragment: {
+		DisplayName: 妖气碎片
+		Tooltip:
+			'''
+			一块散发着神秘妖气的碎片
+			材料
+			'''
+	}
 }
 
 NPCs: {

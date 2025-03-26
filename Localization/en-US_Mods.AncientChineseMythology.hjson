@@ -38,6 +38,11 @@ Items: {
 		DisplayName: Sky Key
 		Tooltip: ""
 	}
+
+	YaoQiFragment: {
+		DisplayName: Yao Qi Fragment
+		Tooltip: ""
+	}
 }
 
 NPCs: {

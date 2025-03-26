@@ -31,6 +31,7 @@ namespace AncientChineseMythology.Items
             Recipe recipe = CreateRecipe();
             recipe.AddIngredient(ModContent.ItemType<WoodenStick>(), 1);
             recipe.AddRecipeGroup(RecipeGroupID.IronBar, 100);
+            recipe.AddIngredient(ModContent.ItemType<YaoQiFragment>(), 5);
             recipe.AddTile(TileID.Anvils);
             recipe.Register();
         }

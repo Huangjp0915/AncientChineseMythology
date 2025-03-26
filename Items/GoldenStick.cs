@@ -32,6 +32,7 @@ namespace AncientChineseMythology.Items
             recipe.AddIngredient(ModContent.ItemType<IronStick>(), 1);
             // 使用现有的配方组或自定义一个
             recipe.AddIngredient(ItemID.GoldBar, 100);
+            recipe.AddIngredient(ModContent.ItemType<YaoQiFragment>(), 10);
             recipe.AddTile(TileID.Anvils);
             recipe.Register();
         }
