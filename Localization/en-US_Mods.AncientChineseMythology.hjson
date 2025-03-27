@@ -43,6 +43,16 @@ Items: {
 		DisplayName: Yao Qi Fragment
 		Tooltip: ""
 	}
+
+	ElixirFurnaceItem: {
+		DisplayName: Elixir Furnace Item
+		Tooltip: ""
+	}
+
+	ScrapElixir: {
+		DisplayName: Scrap Elixir
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -84,3 +94,5 @@ Biomes: {
 		TownNPCDialogueName: the Test Biome
 	}
 }
+
+Tiles.ElixirFurnaceTile.MapEntry: Elixir Furnace Tile

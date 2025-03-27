@@ -29,6 +29,22 @@
         "TrueRuyiStick": {
           "DisplayName": "真·如意棍",
           "Tooltip": "这根棍子……\n好大的猴骚味"
+        },
+        "ElixirFurnaceItem": {
+          "DisplayName": "炼丹炉",
+          "Tooltip": "汇聚天地灵气炼制仙丹"
+        },
+        "YaoQiFragment": {
+          "DisplayName": "妖气碎片"
+          "Tooltip": "一块散发着神秘妖气的碎片\n材料"
+        },
+        "ScrapElixir": {
+          "DisplayName": "废丹"
+          "Tooltip": "丹药\n炼制失败的丹药\n略微恢复生命但会中毒"
+        },
+        "SkyKey": {
+          "DisplayName": "天界之钥"
+          "Tooltip": "据说这个可以通往33重天"
         }
       },
       "NPCs": {
@@ -40,14 +56,6 @@
         },
         "BlackBear": {
           "DisplayName": "黑熊精"
-        },
-        "SkyKey": {
-          "DisplayName": "天界之钥"
-          "Tooltip": "据说这个可以通往33重天"
-        },
-        "YaoQiFragment": {
-          "DisplayName": "妖气碎片"
-          "Tooltip": "一块散发着神秘妖气的碎片\n材料"
         }
       }
     }
