@@ -14,12 +14,10 @@ namespace AncientChineseMythology.Items
             // Tooltip.SetDefault("左键：刺击(伤害低，击退高)\n右键：挥砍(伤害高，击退低)");
         }
 
-        public override string Texture => "AncientChineseMythology/Items/WoodenStick";
-
         public override void SetDefaults()
         {
             // 物品基础属性（这里的值只是“默认”）
-            Item.damage = 15;                 // 默认伤害
+            Item.damage = 9;                 // 默认伤害
             Item.DamageType = DamageClass.Melee;
             Item.width = 40; 
             Item.height = 40;
@@ -58,7 +56,7 @@ namespace AncientChineseMythology.Items
                 Item.shoot = ProjectileID.None; // 不发射投射物
 
                 // 设置右键的伤害和击退
-                Item.damage = 25;
+                Item.damage = 15;
                 Item.knockBack = 2f;
             }
             else
@@ -73,8 +71,8 @@ namespace AncientChineseMythology.Items
                 Item.shootSpeed = 3.5f;
 
                 // 设置左键的伤害和击退
-                Item.damage = 15;
-                Item.knockBack = 8f;
+                Item.damage = 9;
+                Item.knockBack = 6f;
             }
             return base.CanUseItem(player);
         }
