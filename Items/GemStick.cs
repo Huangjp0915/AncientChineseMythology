@@ -12,7 +12,7 @@ namespace AncientChineseMythology.Items
 
         public override void SetDefaults()
         {
-            Item.damage = 28;
+            Item.damage = 18;
             Item.DamageType = DamageClass.Melee;
             Item.width = 46;
             Item.height = 46;
@@ -30,12 +30,12 @@ namespace AncientChineseMythology.Items
         {
             Recipe recipe = CreateRecipe();
             recipe.AddIngredient(ModContent.ItemType<GoldenStick>(), 1);
-            recipe.AddIngredient(ItemID.Ruby, 20);
-            recipe.AddIngredient(ItemID.Sapphire, 20);
-            recipe.AddIngredient(ItemID.Emerald, 20);
-            recipe.AddIngredient(ItemID.Topaz, 20);
-            recipe.AddIngredient(ItemID.Amethyst, 20);
-            recipe.AddIngredient(ItemID.Diamond, 20);
+            recipe.AddIngredient(ItemID.Ruby, 10);
+            recipe.AddIngredient(ItemID.Sapphire, 10);
+            recipe.AddIngredient(ItemID.Emerald, 10);
+            recipe.AddIngredient(ItemID.Topaz, 10);
+            recipe.AddIngredient(ItemID.Amethyst, 10);
+            recipe.AddIngredient(ItemID.Diamond, 10);
             recipe.AddIngredient(ModContent.ItemType<YaoQiFragment>(), 20);
             recipe.AddTile(TileID.HeavyWorkBench);
             recipe.Register();

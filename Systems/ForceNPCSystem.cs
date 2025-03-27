@@ -11,15 +11,15 @@ namespace AncientChineseMythology.Commands
     public class SpawnBlackBearCommand : ModCommand
     {
         public override CommandType Type => CommandType.Chat;
-        public override string Command => "spawntangseng";
-        public override string Usage => "/spawntangseng";
-        public override string Description => "强制生成tangseng ，用于测试";
+        public override string Command => "spawnblackbear";
+        public override string Usage => "/spawnblackbear";
+        public override string Description => "强制生成blackbear ，用于测试";
 
         public override void Action(CommandCaller caller, string input, string[] args)
         {
             Player player = caller.Player;
             IEntitySource source = player.GetSource_Misc("SpawnBlackBearCommand");
-            int bossType = ModContent.NPCType<TangSengNPC>();
+            int bossType = ModContent.NPCType<BlackBear>();
 
             // 仅在服务器端生成NPC并同步，SinglePlayer也走Server逻辑
             if (Main.netMode != NetmodeID.SinglePlayer && Main.netMode != NetmodeID.Server)

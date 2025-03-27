@@ -6,7 +6,7 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Projectiles
 {
-    public class WoodenStickSpearProjectile : ModProjectile
+    public class IronStickSpearProjectile : ModProjectile
     {
 
 
