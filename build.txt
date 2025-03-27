@@ -1,5 +1,5 @@
 displayName = Ancient Chinese Mythology
 author = 子酥
-version = 2.40
+version = 2.45
 
 modReferences = SubworldLibrary

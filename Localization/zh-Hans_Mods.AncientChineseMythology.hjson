@@ -67,6 +67,21 @@ Items: {
 			材料
 			'''
 	}
+
+	ElixirFurnaceItem: {
+		DisplayName: 炼丹炉
+		Tooltip: 汇聚天地灵气炼制仙丹
+	}
+
+	ScrapElixir: {
+		DisplayName: 废丹
+		Tooltip:
+			'''
+			丹药
+			炼制失败的丹药
+			略微恢复生命但会中毒
+			'''
+	}
 }
 
 NPCs: {
@@ -90,7 +105,11 @@ NPCs: {
 	BlackBear.DisplayName: 黑熊精
 }
 
-// Projectiles.StabbingProjectile.DisplayName: Stabbing Projectile
+Projectiles: {
+	// StabbingProjectile.DisplayName: Stabbing Projectile
+	// WoodenStickSpearProjectile.DisplayName: Wooden Stick Spear Projectile
+}
+
 // HeavenBiome.DisplayName: Heaven
 
 Biomes: {
@@ -104,3 +123,5 @@ Biomes: {
 		// TownNPCDialogueName: the Test Biome
 	}
 }
+
+// Tiles.ElixirFurnaceTile.MapEntry: Elixir Furnace Tile
