@@ -171,7 +171,7 @@ namespace AncientChineseMythology.NPCs.Boss
                 int totalDie = 6; // 死亡动画有6帧
                 if (dieTimer > (totalDie * 13)*2)
                 {
-                    DownedBossSystem.downedBlackBear = true;// 在boos列表中标记 Boss 已死亡
+                    //DownedBossSystem.downedBlackBear = true;// 在boos列表中标记 Boss 已死亡
                     SoundEngine.PlaySound(new SoundStyle("AncientChineseMythology/Sounds/BlackBear/BlackBear_Roar"), player.Center);
                     NPC.NPCLoot();
                     NPC.active = false;
