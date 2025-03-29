@@ -53,6 +53,26 @@ Items: {
 		Tooltip: ""
 		DisplayName: Elixir Furnace Item
 	}
+
+	XuePoDan: {
+		DisplayName: Xue Po Dan
+		Tooltip: ""
+	}
+
+	NingShenDan: {
+		DisplayName: Ning Shen Dan
+		Tooltip: ""
+	}
+
+	XuanGangDan: {
+		DisplayName: Xuan Gang Dan
+		Tooltip: ""
+	}
+
+	PoJunDan: {
+		DisplayName: Po Jun Dan
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -74,6 +94,7 @@ NPCs: {
 	Angry_gargoyle.DisplayName: Angry_gargoyle
 	angry_gargoyle.DisplayName: angry_gargoyle
 	BlackBear.DisplayName: Black Bear
+	TaiShangLaoJunNPC.DisplayName: Tai Shang Lao Jun N P C
 }
 
 Projectiles: {
@@ -102,3 +123,45 @@ Biomes: {
 }
 
 Tiles.ElixirFurnaceTile.MapEntry: Elixir Furnace Tile
+
+Buffs: {
+	XuePoDanBuff: {
+		DisplayName: Xue Po Dan Buff
+		Description: Mods.AncientChineseMythology.Buffs.XuePoDanBuff.Description
+	}
+
+	XuePoDanDebuff: {
+		DisplayName: Xue Po Dan Debuff
+		Description: Mods.AncientChineseMythology.Buffs.XuePoDanDebuff.Description
+	}
+
+	NingShenDanBuff: {
+		DisplayName: Ning Shen Dan Buff
+		Description: Mods.AncientChineseMythology.Buffs.NingShenDanBuff.Description
+	}
+
+	NingShenDanDebuff: {
+		DisplayName: Ning Shen Dan Debuff
+		Description: Mods.AncientChineseMythology.Buffs.NingShenDanDebuff.Description
+	}
+
+	XuanGangDanBuff: {
+		DisplayName: Xuan Gang Dan Buff
+		Description: Mods.AncientChineseMythology.Buffs.XuanGangDanBuff.Description
+	}
+
+	XuanGangDanDebuff: {
+		DisplayName: Xuan Gang Dan Debuff
+		Description: Mods.AncientChineseMythology.Buffs.XuanGangDanDebuff.Description
+	}
+
+	PoJunDanBuff: {
+		DisplayName: Po Jun Dan Buff
+		Description: Mods.AncientChineseMythology.Buffs.PoJunDanBuff.Description
+	}
+
+	PoJunDanDebuff: {
+		DisplayName: Po Jun Dan Debuff
+		Description: Mods.AncientChineseMythology.Buffs.PoJunDanDebuff.Description
+	}
+}
