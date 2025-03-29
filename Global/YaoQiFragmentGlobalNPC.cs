@@ -1,10 +1,10 @@
-using Terraria;
+﻿using Terraria;
 using Terraria.ModLoader;
 using Terraria.GameContent.ItemDropRules;
-using AncientChineseMythology.NPCs;
 using AncientChineseMythology.NPCs.Boss;
+using AncientChineseMythology.NPCs.Monsters;
 
-namespace AncientChineseMythology
+namespace AncientChineseMythology.Global
 {
     public class YaoQiFragmentGlobalNPC : GlobalNPC
     {
