@@ -1,5 +1,6 @@
 displayName = Ancient Chinese Mythology
 author = 子酥, Yui, 原力, 君倾
-version = 2.53
+version = 2.60
 
-modReferences = SubworldLibrary
+modReferences = SubworldLibrary, StructureHelper
+references = SubworldLibrary, StructureHelper

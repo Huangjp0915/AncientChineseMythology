@@ -80,6 +80,7 @@ Projectiles: {
 	StabbingProjectile.DisplayName: Stabbing Projectile
 	WoodenStickSpearProjectile.DisplayName: Wooden Stick Spear Projectile
 	IronStickSpearProjectile.DisplayName: Iron Stick Spear Projectile
+	GoldenStickSpearProjectile.DisplayName: Golden Stick Spear Projectile
 }
 
 HeavenBiome.DisplayName: Heaven
