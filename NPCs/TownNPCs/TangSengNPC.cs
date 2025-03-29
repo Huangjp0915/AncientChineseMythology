@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using System.Linq;
 using Terraria;
@@ -7,7 +7,7 @@ using Terraria.ModLoader;
 using Microsoft.Xna.Framework.Graphics;
 using AncientChineseMythology.Items; 
 
-namespace AncientChineseMythology.NPCs
+namespace AncientChineseMythology.NPCs.TownNPCs
 {
     [AutoloadHead]
     public class TangSengNPC : ModNPC
@@ -66,7 +66,7 @@ namespace AncientChineseMythology.NPCs
             {
                 "我感应到人间妖气日盛，恐有截教之乱。",
                 "封神大战的余波尚未平息，万望小心。",
-                "多加留意那些“妖气碎片”，我感觉到有更大的阴谋……",
+                "多加留意那些“妖气碎片”，它们暗示着更大的阴谋……",
                 "若想守护三界，先从一根小小的木棍开始吧……"
             };
             return dialogues[Main.rand.Next(dialogues.Length)];
@@ -120,7 +120,7 @@ namespace AncientChineseMythology.NPCs
                     (
                         ModContent.ItemType<RuyiJinguBang>(),
                         "如意金箍棒",
-                        "你可以去海边钓鱼试试，说不定有大货" // 最高级，没有下一级
+                        "你已经有这根棍子了还不满足吗？那你可以去海边钓鱼试试，说不定有大货" // 最高级，没有下一级
                     )
                 };
 
@@ -143,7 +143,7 @@ namespace AncientChineseMythology.NPCs
                     var (curID, curName, curHint) = stickProgression[highestIndex];
                     if (highestIndex == stickProgression.Length - 1)
                     {
-                        Main.npcChatText = $"你已经拥有“{curName}”了，再往上可就得找那些神仙了！{stickProgression[highestIndex].craftHint}";
+                        Main.npcChatText = $"你已经拥有最高级的“{curName}”，再往上可就得找那些神仙了！\n{stickProgression[highestIndex].craftHint}";
                     }
                     else
                     {
