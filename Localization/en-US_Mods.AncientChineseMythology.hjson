@@ -43,6 +43,16 @@ Items: {
 		DisplayName: Yao Qi Fragment
 		Tooltip: ""
 	}
+
+	ScrapElixir: {
+		DisplayName: Scrap Elixir
+		Tooltip: ""
+	}
+
+	ElixirFurnaceItem: {
+		Tooltip: ""
+		DisplayName: Elixir Furnace Item
+	}
 }
 
 NPCs: {
@@ -72,6 +82,9 @@ Projectiles: {
 	BlackBear_Proj2.DisplayName: Black Bear_ Proj2
 	BlackBear_Proj3.DisplayName: Black Bear_ Proj3
 	BlackBear_Proj4.DisplayName: Black Bear_ Proj4
+	GoldenStickSpearProjectile.DisplayName: Golden Stick Spear Projectile
+	IronStickSpearProjectile.DisplayName: Iron Stick Spear Projectile
+	WoodenStickSpearProjectile.DisplayName: Wooden Stick Spear Projectile
 }
 
 HeavenBiome.DisplayName: Heaven
@@ -87,3 +100,5 @@ Biomes: {
 		TownNPCDialogueName: the Test Biome
 	}
 }
+
+Tiles.ElixirFurnaceTile.MapEntry: Elixir Furnace Tile
