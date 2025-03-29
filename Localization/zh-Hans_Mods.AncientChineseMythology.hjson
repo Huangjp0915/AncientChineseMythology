@@ -58,6 +58,15 @@ Items: {
 		DisplayName: 天界之钥
 		Tooltip: 据说这个可以通往33重天
 	}
+
+	YaoQiFragment: {
+		DisplayName: 妖气碎片
+		Tooltip:
+			'''
+			一块散发着神秘妖气的碎片
+			材料
+			'''
+	}
 }
 
 NPCs: {
@@ -81,7 +90,14 @@ NPCs: {
 	BlackBear.DisplayName: 黑熊精
 }
 
-// Projectiles.StabbingProjectile.DisplayName: Stabbing Projectile
+Projectiles: {
+	// StabbingProjectile.DisplayName: Stabbing Projectile
+	// BlackBear_Proj1.DisplayName: Black Bear_ Proj1
+	// BlackBear_Proj2.DisplayName: Black Bear_ Proj2
+	// BlackBear_Proj3.DisplayName: Black Bear_ Proj3
+	// BlackBear_Proj4.DisplayName: Black Bear_ Proj4
+}
+
 // HeavenBiome.DisplayName: Heaven
 
 Biomes: {

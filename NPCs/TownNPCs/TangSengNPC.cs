@@ -1,13 +1,13 @@
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using System.Linq;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Microsoft.Xna.Framework.Graphics;
-using AncientChineseMythology.Items; // 包含你棍子物品的命名空间
+using AncientChineseMythology.Items; 
 
-namespace AncientChineseMythology.NPCs
+namespace AncientChineseMythology.NPCs.TownNPCs
 {
     [AutoloadHead]
     public class TangSengNPC : ModNPC
@@ -156,7 +156,7 @@ namespace AncientChineseMythology.NPCs
             {
                 // 请求木棍按钮的逻辑
                 int woodenStickType = ModContent.ItemType<WoodenStick>();
-                // 可选：判断玩家背包是否已有木棍
+                // 判断玩家背包是否已有木棍
                 bool hasStick = player.inventory.Any(item => item != null && item.type == woodenStickType);
                 if (!hasStick)
                 {
