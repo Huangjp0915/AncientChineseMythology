@@ -120,7 +120,7 @@ namespace AncientChineseMythology.NPCs.TownNPCs
                     (
                         ModContent.ItemType<RuyiJinguBang>(),
                         "如意金箍棒",
-                        "你已经有这根棍子了还不满足吗？那你可以去海边钓鱼试试，说不定有大货" // 最高级，没有下一级
+                        "或者你可以去海边钓鱼试试，说不定有大货" // 最高级，没有下一级
                     )
                 };
 
@@ -143,7 +143,7 @@ namespace AncientChineseMythology.NPCs.TownNPCs
                     var (curID, curName, curHint) = stickProgression[highestIndex];
                     if (highestIndex == stickProgression.Length - 1)
                     {
-                        Main.npcChatText = $"你已经拥有最高级的“{curName}”，再往上可就得找那些神仙了！\n{stickProgression[highestIndex].craftHint}";
+                        Main.npcChatText = $"你已经有这根棍子了还不满足吗？再往上可就得找那些神仙了！{stickProgression[highestIndex].craftHint}";
                     }
                     else
                     {

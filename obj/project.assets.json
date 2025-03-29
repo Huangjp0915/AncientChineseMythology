@@ -31,23 +31,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\29591\\.nuget\\packages\\": {},
-    "E:\\visual studio333\\NuGetPackages": {}
+    "C:\\Users\\Huang\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\29591\\Documents\\My Games\\Terraria\\tModLoader\\ModSources\\AncientChineseMythology\\AncientChineseMythology.csproj",
+      "projectUniqueName": "C:\\Users\\Huang\\Documents\\My Games\\Terraria\\tModLoader\\ModSources\\AncientChineseMythology\\AncientChineseMythology.csproj",
       "projectName": "AncientChineseMythology",
-      "projectPath": "C:\\Users\\29591\\Documents\\My Games\\Terraria\\tModLoader\\ModSources\\AncientChineseMythology\\AncientChineseMythology.csproj",
-      "packagesPath": "C:\\Users\\29591\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\29591\\Documents\\My Games\\Terraria\\tModLoader\\ModSources\\AncientChineseMythology\\obj\\",
+      "projectPath": "C:\\Users\\Huang\\Documents\\My Games\\Terraria\\tModLoader\\ModSources\\AncientChineseMythology\\AncientChineseMythology.csproj",
+      "packagesPath": "C:\\Users\\Huang\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\Huang\\Documents\\My Games\\Terraria\\tModLoader\\ModSources\\AncientChineseMythology\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
-        "E:\\visual studio333\\NuGetPackages"
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\29591\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\Huang\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -56,6 +56,7 @@
       ],
       "sources": {
         "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+        "C:\\Program Files\\dotnet\\library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {

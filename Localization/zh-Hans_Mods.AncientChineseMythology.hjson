@@ -67,6 +67,20 @@ Items: {
 			材料
 			'''
 	}
+
+	ScrapElixir: {
+		DisplayName: 废丹
+		Tooltip:
+			'''
+			短暂恢复一定血量
+
+			'''
+	}
+
+	ElixirFurnaceItem: {
+		Tooltip: 太上老君随手制作的一个炉子
+		DisplayName: 炼丹炉
+	}
 }
 
 NPCs: {
@@ -96,6 +110,9 @@ Projectiles: {
 	// BlackBear_Proj2.DisplayName: Black Bear_ Proj2
 	// BlackBear_Proj3.DisplayName: Black Bear_ Proj3
 	// BlackBear_Proj4.DisplayName: Black Bear_ Proj4
+	// GoldenStickSpearProjectile.DisplayName: Golden Stick Spear Projectile
+	// IronStickSpearProjectile.DisplayName: Iron Stick Spear Projectile
+	// WoodenStickSpearProjectile.DisplayName: Wooden Stick Spear Projectile
 }
 
 // HeavenBiome.DisplayName: Heaven
@@ -111,3 +128,5 @@ Biomes: {
 		// TownNPCDialogueName: the Test Biome
 	}
 }
+
+// Tiles.ElixirFurnaceTile.MapEntry: Elixir Furnace Tile
