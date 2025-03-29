@@ -83,9 +83,29 @@ namespace AncientChineseMythology.NPCs.Boss
 
         public override float SpawnChance(NPCSpawnInfo spawnInfo)
         {
-            if (spawnInfo.Player.ZoneJungle && spawnInfo.Player.ZoneOverworldHeight && !Main.dayTime)
+            // 确保只在服务器端判断（避免客户端误判）
+            if (Main.netMode != NetmodeID.MultiplayerClient)
             {
-                return 0.005f;
+                // 检查是否已有黑熊精存在
+                bool alreadyExists = false;
+                for (int i = 0; i < Main.maxNPCs; i++)
+                {
+                    NPC npc = Main.npc[i];
+                    if (npc.active && npc.type == ModContent.NPCType<BlackBear>())
+                    {
+                        alreadyExists = true;
+                        break;
+                    }
+                }
+
+                // 生成条件：夜晚 + 丛林 + 地表层 + 没有已存在的黑熊精
+                if (spawnInfo.Player.ZoneJungle && 
+                    spawnInfo.Player.ZoneOverworldHeight && 
+                    !Main.dayTime && 
+                    !alreadyExists)
+                {
+                    return 0.05f; // 5% 生成几率
+                }
             }
             return 0f;
         }

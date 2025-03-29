@@ -8,7 +8,7 @@ namespace AncientChineseMythology.Items
     {
         public override void SetStaticDefaults()
         {
-            Item.ResearchUnlockCount = 20; // 允许批量研究
+            Item.ResearchUnlockCount = 30; // 允许批量研究
         }
 
         public override void SetDefaults()

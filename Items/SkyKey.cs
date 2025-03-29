@@ -10,6 +10,7 @@ namespace AncientChineseMythology.Items
     {
         public override void SetStaticDefaults()
         {
+            Item.ResearchUnlockCount = 1; // 允许在旅程模式研究
         }
 
         public override void SetDefaults()

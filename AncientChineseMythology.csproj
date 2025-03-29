@@ -13,6 +13,14 @@
 		<Reference Include="SubworldLibrary">
 			<HintPath>lib/SubworldLibrary.dll</HintPath>
 		</Reference>
+		<Reference Include="Newtonsoft.Json">
+			<HintPath>lib\Newtonsoft.Json.dll</HintPath>
+			<Private>True</Private>
+		</Reference>
+		<Reference Include="StructureHelper">
+			<HintPath>lib\StructureHelper.dll</HintPath>
+			<Private>True</Private>
+		</Reference>
 	</ItemGroup>
 
 </Project>

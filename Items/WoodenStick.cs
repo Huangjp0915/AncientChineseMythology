@@ -12,6 +12,7 @@ namespace AncientChineseMythology.Items
         {
             // DisplayName.SetDefault("木棍");
             // Tooltip.SetDefault("左键：刺击(伤害低，击退高)\n右键：挥砍(伤害高，击退低)");
+            Item.ResearchUnlockCount = 1; // 允许在旅程模式研究
         }
 
         public override void SetDefaults()
