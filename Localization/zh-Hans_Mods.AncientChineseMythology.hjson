@@ -56,7 +56,7 @@ Items: {
 
 	SkyKey: {
 		DisplayName: 天界之钥
-		Tooltip: 据说这个可以通往33重天
+		Tooltip: 据说这个可以通往三十三重天
 	}
 
 	YaoQiFragment: {
@@ -101,6 +101,11 @@ Items: {
 		DisplayName: 破军丹
 		Tooltip: 短时间内提升你的攻击力，但是有危险的后遗症
 	}
+
+	TeleportationItem: {
+		DisplayName: 漩涡之门
+		Tooltip: 据说这个可以通往地府
+	}
 }
 
 NPCs: {
@@ -134,6 +139,7 @@ Projectiles: {
 	// GoldenStickSpearProjectile.DisplayName: Golden Stick Spear Projectile
 	// IronStickSpearProjectile.DisplayName: Iron Stick Spear Projectile
 	// WoodenStickSpearProjectile.DisplayName: Wooden Stick Spear Projectile
+	// GemStickSpearProjectile.DisplayName: Gem Stick Spear Projectile
 }
 
 // HeavenBiome.DisplayName: Heaven
@@ -150,7 +156,10 @@ Biomes: {
 	}
 }
 
-// Tiles.ElixirFurnaceTile.MapEntry: Elixir Furnace Tile
+Tiles: {
+	// ElixirFurnaceTile.MapEntry: Elixir Furnace Tile
+	TeleportationTile.DisplayName: 漩涡之门
+}
 
 Buffs: {
 	XuePoDanBuff: {

@@ -110,9 +110,8 @@ namespace AncientChineseMythology.NPCs.TownNPCs
                 }
                 else {
                     var (curID, curName, curHint) = stickProgression[highestIndex];
-                    if (highestIndex == stickProgression.Length - 1)
-                    {
-                        Main.npcChatText = $"你已经有这根棍子了还不满足吗？再往上可就得找那些神仙了！{stickProgression[highestIndex].craftHint}";
+                    if (highestIndex == stickProgression.Length - 1) {
+                        Main.npcChatText = $"你已经有这根棍子了还不满足吗？再往上可就得找那些神仙了！{curHint}";
                     }
                     else {
                         var (nextID, nextName, nextHint) = stickProgression[highestIndex + 1];
