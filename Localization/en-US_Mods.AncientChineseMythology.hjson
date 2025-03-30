@@ -43,6 +43,41 @@ Items: {
 		DisplayName: Yao Qi Fragment
 		Tooltip: ""
 	}
+
+	ScrapElixir: {
+		DisplayName: Scrap Elixir
+		Tooltip: ""
+	}
+
+	ElixirFurnaceItem: {
+		Tooltip: ""
+		DisplayName: Elixir Furnace Item
+	}
+
+	XuePoDan: {
+		DisplayName: Xue Po Dan
+		Tooltip: ""
+	}
+
+	NingShenDan: {
+		DisplayName: Ning Shen Dan
+		Tooltip: ""
+	}
+
+	XuanGangDan: {
+		DisplayName: Xuan Gang Dan
+		Tooltip: ""
+	}
+
+	PoJunDan: {
+		DisplayName: Po Jun Dan
+		Tooltip: ""
+	}
+
+	TeleportationItem: {
+		DisplayName: Teleportation Item
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -64,6 +99,7 @@ NPCs: {
 	Angry_gargoyle.DisplayName: Angry_gargoyle
 	angry_gargoyle.DisplayName: angry_gargoyle
 	BlackBear.DisplayName: Black Bear
+	TaiShangLaoJunNPC.DisplayName: Tai Shang Lao Jun N P C
 }
 
 Projectiles: {
@@ -72,6 +108,10 @@ Projectiles: {
 	BlackBear_Proj2.DisplayName: Black Bear_ Proj2
 	BlackBear_Proj3.DisplayName: Black Bear_ Proj3
 	BlackBear_Proj4.DisplayName: Black Bear_ Proj4
+	GoldenStickSpearProjectile.DisplayName: Golden Stick Spear Projectile
+	IronStickSpearProjectile.DisplayName: Iron Stick Spear Projectile
+	WoodenStickSpearProjectile.DisplayName: Wooden Stick Spear Projectile
+	GemStickSpearProjectile.DisplayName: Gem Stick Spear Projectile
 }
 
 HeavenBiome.DisplayName: Heaven
@@ -85,5 +125,52 @@ Biomes: {
 	TestBiome: {
 		DisplayName: Test Biome
 		TownNPCDialogueName: the Test Biome
+	}
+}
+
+Tiles: {
+	ElixirFurnaceTile.MapEntry: Elixir Furnace Tile
+	TeleportationTile.DisplayName: Teleportation
+}
+
+Buffs: {
+	XuePoDanBuff: {
+		DisplayName: Xue Po Dan Buff
+		Description: Mods.AncientChineseMythology.Buffs.XuePoDanBuff.Description
+	}
+
+	XuePoDanDebuff: {
+		DisplayName: Xue Po Dan Debuff
+		Description: Mods.AncientChineseMythology.Buffs.XuePoDanDebuff.Description
+	}
+
+	NingShenDanBuff: {
+		DisplayName: Ning Shen Dan Buff
+		Description: Mods.AncientChineseMythology.Buffs.NingShenDanBuff.Description
+	}
+
+	NingShenDanDebuff: {
+		DisplayName: Ning Shen Dan Debuff
+		Description: Mods.AncientChineseMythology.Buffs.NingShenDanDebuff.Description
+	}
+
+	XuanGangDanBuff: {
+		DisplayName: Xuan Gang Dan Buff
+		Description: Mods.AncientChineseMythology.Buffs.XuanGangDanBuff.Description
+	}
+
+	XuanGangDanDebuff: {
+		DisplayName: Xuan Gang Dan Debuff
+		Description: Mods.AncientChineseMythology.Buffs.XuanGangDanDebuff.Description
+	}
+
+	PoJunDanBuff: {
+		DisplayName: Po Jun Dan Buff
+		Description: Mods.AncientChineseMythology.Buffs.PoJunDanBuff.Description
+	}
+
+	PoJunDanDebuff: {
+		DisplayName: Po Jun Dan Debuff
+		Description: Mods.AncientChineseMythology.Buffs.PoJunDanDebuff.Description
 	}
 }

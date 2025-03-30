@@ -1,8 +1,8 @@
 using Terraria;
 using Terraria.ModLoader;
 using Terraria.GameContent.ItemDropRules;
-using AncientChineseMythology.NPCs;
 using AncientChineseMythology.NPCs.Boss;
+using AncientChineseMythology.NPCs.Monsters;
 
 namespace AncientChineseMythology
 {

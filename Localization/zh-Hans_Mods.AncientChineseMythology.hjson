@@ -56,7 +56,7 @@ Items: {
 
 	SkyKey: {
 		DisplayName: 天界之钥
-		Tooltip: 据说这个可以通往33重天
+		Tooltip: 据说这个可以通往三十三重天
 	}
 
 	YaoQiFragment: {
@@ -66,6 +66,45 @@ Items: {
 			一块散发着神秘妖气的碎片
 			材料
 			'''
+	}
+
+	ScrapElixir: {
+		DisplayName: 废丹
+		Tooltip:
+			'''
+			短暂恢复一定血量
+
+			'''
+	}
+
+	ElixirFurnaceItem: {
+		Tooltip: 太上老君随手制作的一个炉子
+		DisplayName: 炼丹炉
+	}
+
+	XuePoDan: {
+		DisplayName: 血魄丹
+		Tooltip: 短时间内提升你的最大生命值，但是有危险的后遗症
+	}
+
+	NingShenDan: {
+		DisplayName: 凝神丹
+		Tooltip: 短时间内提升你的最大法力值，但是有危险的后遗症
+	}
+
+	XuanGangDan: {
+		DisplayName: 玄罡丹
+		Tooltip: 短时间内提升你的防御力，但是有危险的后遗症
+	}
+
+	PoJunDan: {
+		DisplayName: 破军丹
+		Tooltip: 短时间内提升你的攻击力，但是有危险的后遗症
+	}
+
+	TeleportationItem: {
+		DisplayName: 漩涡之门
+		Tooltip: 据说这个可以通往地府
 	}
 }
 
@@ -87,7 +126,8 @@ NPCs: {
 
 	// Angry_gargoyle.DisplayName: Angry_gargoyle
 	angry_gargoyle.DisplayName: 愤怒的石像鬼
-	BlackBear.DisplayName: 黑熊精
+	BlackBear.DisplayName: 黑熊金
+	TaiShangLaoJunNPC.DisplayName: 太上老君
 }
 
 Projectiles: {
@@ -96,6 +136,10 @@ Projectiles: {
 	// BlackBear_Proj2.DisplayName: Black Bear_ Proj2
 	// BlackBear_Proj3.DisplayName: Black Bear_ Proj3
 	// BlackBear_Proj4.DisplayName: Black Bear_ Proj4
+	// GoldenStickSpearProjectile.DisplayName: Golden Stick Spear Projectile
+	// IronStickSpearProjectile.DisplayName: Iron Stick Spear Projectile
+	// WoodenStickSpearProjectile.DisplayName: Wooden Stick Spear Projectile
+	// GemStickSpearProjectile.DisplayName: Gem Stick Spear Projectile
 }
 
 // HeavenBiome.DisplayName: Heaven
@@ -109,5 +153,52 @@ Biomes: {
 	TestBiome: {
 		// DisplayName: Test Biome
 		// TownNPCDialogueName: the Test Biome
+	}
+}
+
+Tiles: {
+	// ElixirFurnaceTile.MapEntry: Elixir Furnace Tile
+	TeleportationTile.DisplayName: 漩涡之门
+}
+
+Buffs: {
+	XuePoDanBuff: {
+		DisplayName: 血魄丹效果
+		Description: 最大生命值提升100
+	}
+
+	XuePoDanDebuff: {
+		DisplayName: 血魄丹后遗症
+		Description: 每秒失去5点法力
+	}
+
+	NingShenDanBuff: {
+		DisplayName: 凝神丹效果
+		Description: 最大法力值提升100
+	}
+
+	NingShenDanDebuff: {
+		DisplayName: 凝神丹后遗症
+		Description: 每秒失去5点法力
+	}
+
+	XuanGangDanBuff: {
+		DisplayName: 玄罡丹效果
+		Description: 防御力提升15
+	}
+
+	XuanGangDanDebuff: {
+		DisplayName: 玄罡丹后遗症
+		Description: 短时间内减少大量移速
+	}
+
+	PoJunDanBuff: {
+		DisplayName: 破军丹效果
+		Description: 伤害增加30%
+	}
+
+	PoJunDanDebuff: {
+		DisplayName: 破军丹后遗症
+		Description: 伤害降低50%
 	}
 }
