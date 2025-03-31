@@ -1,171 +1,251 @@
+using System;
 using System.Collections.Generic;
+using Microsoft.Xna.Framework;  // for Color
 using Terraria;
 using Terraria.ID;
-using Terraria.ModLoader;
 using Terraria.WorldBuilding;
-using Terraria.GameContent.Generation;
 using Terraria.IO;
-using Microsoft.Xna.Framework;
 using SubworldLibrary;
-using System;
 
 namespace AncientChineseMythology.Subworlds
 {
     public class UnderworldSubworld : Subworld
     {
-        public override int Width => 2100;
-        public override int Height => 1000; // 更大的高度容纳岩浆海
+        // 子世界尺寸，可自由调整
+        public override int Width => 800;
+        public override int Height => 400;
 
-        public override bool ShouldSave => true;
+        //!!! shouldsave 为true且NoPlayerSaving 为false的时候保存数据，但是重构会直接闪退
+        //!!! shouldsave 为false且NoPlayerSaving 为true的时候不保存数据，但是重构会不会闪退
+        public override bool ShouldSave => true ;
         public override bool NoPlayerSaving => false;
 
-        // 三步生成流程：
-        // 1. 生成基础岩浆地形
-        // 2. 在岩浆层上生成狱炎砖结构
-        // 3. 加固并完善地形
+        // 记录玩家出生点
+        internal static int SpawnX = 0;
+        internal static int SpawnY = 0;
+
+        // 记录最高山峰的最小 peakY，用于计算岩浆上限
+        internal static int HighestMountainPeakY = 999999; // 或 int.MaxValue
+
         public override List<GenPass> Tasks => new List<GenPass>()
         {
-            new LavaGroundGenPass(),
-            new HellstoneStructurePass(),
-            new HellstoneReinforcementPass()
+            new ClearPass(),              // Pass1: 清空
+            new GenerateMountainsPass(),  // Pass2: 生成圆润山脉 & 记录 HighestMountainPeakY
+            new FillMagmaUpToOneThirdPass(), // Pass3: 只填充到最高山峰 1/3 处
+            new FinalFramePass(),         // Pass4: 刷新方块帧
         };
 
         public override void OnLoad()
         {
-            Main.dayTime = false;
-            Main.time = 0;
-            Main.raining = false;
-            Main.worldSurface = 800; // 调整地表高度
-            Main.rockLayer = 900;   // 调整岩石层高度
-            Main.spawnTileX = Width / 2;
-            Main.spawnTileY = 150;  // 生成在安全区域
+            Main.dayTime = true;
+            Main.time = 13500; // 中午
+
+            // 仅影响地图UI显示
+            Main.worldSurface = Height * 0.3;
+            Main.rockLayer = Height * 0.5;
+
+            
         }
 
         public override void OnEnter()
         {
+            base.OnEnter();
             if (Main.netMode != NetmodeID.Server)
             {
-                Main.NewText("进入幽冥地府...", new Color(200, 50, 50));
+                Main.NewText("进入子世界：地府", Color.OrangeRed);
             }
         }
     }
 
     /// <summary>
-    /// Pass 1: 生成基础岩浆地形
+    /// Pass1：清空子世界地形/墙/液体
     /// </summary>
-    public class LavaGroundGenPass : GenPass
+    public class ClearPass : GenPass
     {
-        public LavaGroundGenPass() : base("LavaGroundGenPass", 1f) { }
+        public ClearPass() : base("ClearUnderworld", 1f) { }
 
         protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
         {
-            progress.Message = "塑造岩浆地形...";
-            int width = Main.maxTilesX;
-            int height = Main.maxTilesY;
+            progress.Message = "清空地形...";
+            int width = ((Subworld)SubworldSystem.Current).Width;
+            int height = ((Subworld)SubworldSystem.Current).Height;
 
-            // 清空世界
+            Tile empty = new Tile();
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
                 {
-                    Main.tile[x, y].ClearTile();
-                    Main.tile[x, y].WallType = 0;
-                }
-            }
-
-            // 生成岩浆海（底部150格）
-            int lavaHeight = 150;
-            for (int x = 0; x < width; x++)
-            {
-                for (int y = height - lavaHeight; y < height; y++)
-                {
-                    WorldGen.PlaceLiquid(x, y, (byte)LiquidID.Lava, 255);
-                    WorldGen.PlaceTile(x, y, TileID.Obsidian); // 底部黑曜石
-                }
-            }
-
-            // 生成起伏的地狱岩地表
-            int surfaceBase = height - lavaHeight - 50;
-            int[] surfaceHeight = new int[width];
-            surfaceHeight[0] = surfaceBase;
-            for (int x = 1; x < width; x++)
-            {
-                int change = Main.rand.Next(-3, 4);
-                surfaceHeight[x] = surfaceHeight[x - 1] + change;
-                surfaceHeight[x] = Utils.Clamp(surfaceHeight[x], surfaceBase - 30, surfaceBase + 30);
-            }
-
-            // 放置地狱岩
-            for (int x = 0; x < width; x++)
-            {
-                int groundY = surfaceHeight[x];
-                for (int y = groundY; y < height - lavaHeight; y++)
-                {
-                    WorldGen.PlaceTile(x, y, TileID.HellstoneBrick, forced: true);
-                    WorldGen.PlaceWall(x, y, WallID.HellstoneBrickUnsafe);
+                    Main.tile[x, y].CopyFrom(empty);
                 }
             }
         }
     }
 
     /// <summary>
-    /// Pass 2: 生成主要狱炎结构
+    /// Pass2：生成多座圆润肥胖的山，并记录最高山峰(peakY最小)
+    ///       -> 用来计算岩浆高度1/3限制
     /// </summary>
-    public class HellstoneStructurePass : GenPass
+    public class GenerateMountainsPass : GenPass
     {
-        public HellstoneStructurePass() : base("HellstoneStructurePass", 1f) { }
+        public GenerateMountainsPass() : base("GenRoundMountains", 1f) { }
+
+        private List<Point> peaks = new List<Point>();
 
         protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
         {
-            progress.Message = "构筑炼狱核心...";
-            int width = Main.maxTilesX;
-            int height = Main.maxTilesY;
+            progress.Message = "生成圆润山脉...";
 
-            // 生成中央巨型黑曜石柱
-            int centerX = width / 2;
-            for (int x = centerX - 20; x <= centerX + 20; x++)
-            {
-                for (int y = 100; y < height - 150; y++)
-                {
-                    if (Math.Abs(x - centerX) <= 15 || y % 10 < 5)
-                    {
-                        WorldGen.PlaceTile(x, y, TileID.ObsidianBrick, forced: true);
-                    }
-                }
-            }
+            int width = ((Subworld)SubworldSystem.Current).Width;
+            int height = ((Subworld)SubworldSystem.Current).Height;
 
-            // 生成悬浮的狱炎平台
-            for (int i = 0; i < 5; i++)
+            // 随机 4~7 座山
+            int mountainCount = Main.rand.Next(4, 8);
+
+            // 出生点峰
+            int chosenPeakX = width / 2;
+            int chosenPeakY = height / 2;
+
+            int attempts = 0;
+            for (int i = 0; i < mountainCount; i++)
             {
-                int platformY = 200 + i * 150;
-                int platformWidth = 80 + i * 20;
-                for (int x = centerX - platformWidth/2; x < centerX + platformWidth/2; x++)
+                bool placed = false;
+                for (int tries = 0; tries < 20; tries++)
                 {
-                    WorldGen.PlaceTile(x, platformY, TileID.HellstoneBrick, forced: true);
-                    // 添加链条
-                    if (x % 10 == 0)
+                    attempts++;
+                    if (attempts > 200) break;
+
+                    // 随机峰顶
+                    int peakX = Main.rand.Next(40, width - 40);
+                    int peakY = height - Main.rand.Next(90, 141);
+                    if (peakY < 0) peakY = 0;
+
+                    // 与已有山峰距离判定
+                    float minDist = 80f;
+                    bool tooClose = false;
+                    foreach (Point p in peaks)
                     {
-                        for (int y = platformY - 1; y > platformY - 50; y--)
+                        float dx = p.X - peakX;
+                        float dy = p.Y - peakY;
+                        float dist = (float)Math.Sqrt(dx*dx + dy*dy);
+                        if (dist < minDist)
                         {
-                            WorldGen.PlaceTile(x, y, TileID.Chain, forced: true);
+                            tooClose = true;
+                            break;
                         }
                     }
+                    if (tooClose) continue;
+
+                    // 放置此山
+                    GenerateOneRoundMountain(peakX, peakY);
+                    peaks.Add(new Point(peakX, peakY));
+
+                    // 记录最小 peakY
+                    if (peakY < UnderworldSubworld.HighestMountainPeakY)
+                        UnderworldSubworld.HighestMountainPeakY = peakY;
+
+                    chosenPeakX = peakX;
+                    chosenPeakY = peakY;
+                    placed = true;
+                    break;
                 }
+                if (!placed) break;
             }
 
-            // 随机生成岩浆池
-            for (int i = 0; i < 10; i++)
-            {
-                int poolX = Main.rand.Next(100, width - 100);
-                int poolY = Main.rand.Next(300, height - 200);
-                int poolWidth = Main.rand.Next(20, 40);
-                int poolHeight = Main.rand.Next(10, 20);
+            // 用最后成功的山峰当出生点
+            UnderworldSubworld.SpawnX = chosenPeakX;
+            UnderworldSubworld.SpawnY = chosenPeakY;
+        }
 
-                for (int x = poolX; x < poolX + poolWidth; x++)
+        /// <summary>
+        /// 单座圆润山: ratio^(exponent<1) => 圆顶
+        /// </summary>
+        private void GenerateOneRoundMountain(int peakX, int peakY)
+        {
+            int width = ((Subworld)SubworldSystem.Current).Width;
+            int height = ((Subworld)SubworldSystem.Current).Height;
+
+            int bottomY = height - 1;
+            int mountainHeight = bottomY - peakY;
+            if (mountainHeight < 1) return;
+
+            // slope => 越大越胖
+            float slope = Main.rand.NextFloat(0.4f, 0.6f);
+            // exponent < 1 => 更圆
+            float exponent = Main.rand.NextFloat(0.3f, 0.5f);
+
+            for (int y = bottomY; y >= peakY; y--)
+            {
+                int dist = y - peakY; 
+                float ratio = (float)dist / mountainHeight; // 0 ~ 1
+                // 小于1 => 上部展开更快
+                float curve = (float)Math.Pow(ratio, exponent);
+
+                float baseRadius = slope * mountainHeight * curve;
+
+                int halfWidth = (int)baseRadius;
+                if (halfWidth < 0) halfWidth = 0;
+
+                int leftX = peakX - halfWidth;
+                int rightX = peakX + halfWidth;
+
+                if (leftX < 0) leftX = 0;
+                if (rightX >= width) rightX = width - 1;
+
+                // 用Ash堆山
+                for (int x = leftX; x <= rightX; x++)
                 {
-                    for (int y = poolY; y < poolY + poolHeight; y++)
+                    WorldGen.PlaceTile(x, y, TileID.Ash, forced: true);
+                }
+            }
+        }
+    }
+
+    
+
+    /// <summary>
+    /// Pass4：只将岩浆填充到最高山峰的 1/3 处以下 (非山体)
+    /// </summary>
+    public class FillMagmaUpToOneThirdPass : GenPass
+    {
+        public FillMagmaUpToOneThirdPass() : base("FillMagmaOneThird", 1f) { }
+
+        protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
+        {
+            progress.Message = "填充岩浆至最高山脉的 1/3 处...";
+
+            int width = ((Subworld)SubworldSystem.Current).Width;
+            int height = ((Subworld)SubworldSystem.Current).Height;
+            int bottomY = height - 1;
+
+            // 找到最高山脉的 peakY
+            int highestPeakY = UnderworldSubworld.HighestMountainPeakY;
+            if (highestPeakY > bottomY) highestPeakY = bottomY; // 安全
+
+            // 山高
+            int mountainHeight = bottomY - highestPeakY;
+            if (mountainHeight < 1) return;
+
+            // lavaTop = highestPeakY + (mountainHeight / 3)
+            // 只填充 [lavaTop..bottomY]
+            int lavaTop = highestPeakY + mountainHeight / 3;
+
+            // 做一个"满岩浆"的 Tile
+            Tile lavaTile = new Tile
+            {
+                HasTile = false,
+                LiquidType = LiquidID.Lava,
+                LiquidAmount = 255,
+            };
+
+            // 开始填充
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = lavaTop; y <= bottomY; y++)
+                {
+                    // 若此处没有方块 => 填岩浆
+                    if (!Main.tile[x, y].HasTile)
                     {
-                        WorldGen.PlaceLiquid(x, y, (byte)LiquidID.Lava, 255);
+                        Main.tile[x, y].CopyFrom(lavaTile);
                     }
                 }
             }
@@ -173,65 +253,24 @@ namespace AncientChineseMythology.Subworlds
     }
 
     /// <summary>
-    /// Pass 3: 加固结构并添加细节
+    /// Pass5：刷新方块帧
     /// </summary>
-    public class HellstoneReinforcementPass : GenPass
+    public class FinalFramePass : GenPass
     {
-        public HellstoneReinforcementPass() : base("HellstoneReinforcementPass", 1f) { }
+        public FinalFramePass() : base("FinalFrameUnderworld", 1f) { }
 
         protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
         {
-            progress.Message = "完善炼狱细节...";
-            int width = Main.maxTilesX;
-            int height = Main.maxTilesY;
+            progress.Message = "刷新方块帧...";
+            int width = ((Subworld)SubworldSystem.Current).Width;
+            int height = ((Subworld)SubworldSystem.Current).Height;
 
-            // 添加地狱火把
-            for (int x = 50; x < width - 50; x += 30)
+            for (int x = 0; x < width; x++)
             {
-                for (int y = 150; y < height - 200; y += 80)
+                for (int y = 0; y < height; y++)
                 {
-                    if (Main.tile[x, y].HasTile && Main.tile[x, y].TileType == TileID.HellstoneBrick)
-                    {
-                        WorldGen.PlaceTile(x, y - 1, TileID.Torches, style: 24); // 地狱火把
-                    }
+                    WorldGen.SquareTileFrame(x, y, true);
                 }
-            }
-
-            // 添加随机黑曜石尖刺
-            for (int i = 0; i < 20; i++)
-            {
-                int spikeX = Main.rand.Next(100, width - 100);
-                int spikeBaseY = Main.rand.Next(300, height - 100);
-                
-                int spikeHeight = Main.rand.Next(10, 30);
-                int spikeWidth = Main.rand.Next(3, 7);
-
-                for (int x = spikeX - spikeWidth/2; x <= spikeX + spikeWidth/2; x++)
-                {
-                    for (int y = spikeBaseY; y > spikeBaseY - spikeHeight; y--)
-                    {
-                        WorldGen.PlaceTile(x, y, TileID.Obsidian, forced: true);
-                    }
-                }
-            }
-
-            // 生成Boss竞技场
-            int arenaCenterX = width / 2;
-            int arenaY = 150;
-            int arenaWidth = 120;
-            int arenaHeight = 40;
-
-            // 平台
-            for (int x = arenaCenterX - arenaWidth/2; x <= arenaCenterX + arenaWidth/2; x++)
-            {
-                WorldGen.PlaceTile(x, arenaY, TileID.HellstoneBrick, forced: true);
-            }
-
-            // 防护墙
-            for (int y = arenaY - 20; y <= arenaY; y++)
-            {
-                WorldGen.PlaceTile(arenaCenterX - arenaWidth/2 - 2, y, TileID.ObsidianBrick);
-                WorldGen.PlaceTile(arenaCenterX + arenaWidth/2 + 2, y, TileID.ObsidianBrick);
             }
         }
     }

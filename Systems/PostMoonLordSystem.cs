@@ -40,7 +40,7 @@ namespace AncientChineseMythology.Systems
                 int placeX = tileX;
                 int placeY = tileY - 3;
 
-                // 如果此处有 Tile，需要先清理（可选）
+                // 如果此处有 Tile，需要先清理
                 WorldGen.KillTile(placeX, placeY, noItem: true);
 
                 // 放置多格 Tile（4×4）

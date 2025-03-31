@@ -5,11 +5,10 @@ namespace AncientChineseMythology.Buffs
 {
     public class PoJunDanBuff : ModBuff
     {
-        public override string Texture => "Terraria/Images/Buff_5";
+        public override string Texture => "AncientChineseMythology/Textures/Buffs/PoJunDanBuff";
+
         public override void SetStaticDefaults()
         {
-            // 如无自定义图标，可使用原版图标（例如选择 BuffID.Ironskin 对应的图标："Terraria/Images/Buff_5"）
-            // public override string Texture => "Terraria/Images/Buff_5";
             Main.buffNoTimeDisplay[Type] = false;
             Main.debuff[Type] = false;
         }

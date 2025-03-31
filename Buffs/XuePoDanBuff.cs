@@ -5,7 +5,8 @@ namespace AncientChineseMythology.Buffs
 {
     public class XuePoDanBuff : ModBuff
     {
-        public override string Texture => "Terraria/Images/Buffs/Buff_2";
+        public override string Texture => "AncientChineseMythology/Textures/Buffs/XuePoDanBuff";
+
         public override void SetStaticDefaults()
         {
             Main.buffNoTimeDisplay[Type] = false;

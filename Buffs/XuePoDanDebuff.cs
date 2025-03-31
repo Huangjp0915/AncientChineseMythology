@@ -5,7 +5,7 @@ namespace AncientChineseMythology.Buffs
 {
     public class XuePoDanDebuff : ModBuff
     {
-        public override string Texture => "Terraria/Images/Buffs/Buff_20";
+        public override string Texture => "Terraria/Images/Buff_20";
 
         public override void SetStaticDefaults()
         {

@@ -7,6 +7,8 @@ namespace AncientChineseMythology.Items
 {
     public class TeleportationItem : ModItem
     {
+        public override string Texture => "AncientChineseMythology/Textures/Items/TeleportationItem";
+
         public override void SetStaticDefaults()
         {
         }

@@ -1,17 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using Microsoft.Xna.Framework;
-using Newtonsoft.Json;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.WorldBuilding;
-using Terraria.GameContent.Generation;
 using Terraria.IO;
 using SubworldLibrary;
-using Terraria.Audio;
-using Terraria.Utilities;
 using StructureHelper.API;
 using static StructureHelper.API.Generator; 
 using Terraria.DataStructures;
@@ -59,8 +54,6 @@ namespace AncientChineseMythology.Subworlds
             {
                 Main.NewText("进入子世界：三十三重天", Color.LightGreen);
                 int slot = MusicLoader.GetMusicSlot(Mod, "Music/HeavenTheme");
-                //SoundEngine.StopMusic(true);
-                //SoundEngine.PlayMusic(slot, 0f);
             }
         }
     }

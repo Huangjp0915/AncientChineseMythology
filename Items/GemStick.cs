@@ -7,6 +7,8 @@ namespace AncientChineseMythology.Items
 {
     public class GemStick : GrowthWeapon
     {
+        public override string Texture => "AncientChineseMythology/Textures/Items/GemStick";
+
         public override void SetStaticDefaults()
         {
             Item.ResearchUnlockCount = 1; // 允许在旅程模式研究

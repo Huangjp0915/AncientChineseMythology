@@ -8,16 +8,14 @@ namespace AncientChineseMythology.Projectiles
 {
     public class GoldenStickSpearProjectile : ModProjectile
     {
-
+        public override string Texture => "AncientChineseMythology/Textures/Projectiles/GoldenStickSpearProjectile";
 
         public override void SetStaticDefaults()
         {
-            // DisplayName.SetDefault("棍类刺击");
         }
 
         public override void SetDefaults()
         {
-            // 以下尺寸为示例（默认木棍贴图为100×10像素），各武器可自行调整
             Projectile.width = 62;   
             Projectile.height = 62;
             Projectile.friendly = true;

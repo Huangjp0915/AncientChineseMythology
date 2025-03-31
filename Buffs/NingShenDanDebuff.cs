@@ -5,11 +5,10 @@ namespace AncientChineseMythology.Buffs
 {
     public class NingShenDanDebuff : ModBuff
     {
-        public override string Texture => "Terraria/Images/Buff_20";
+        public override string Texture => "AncientChineseMythology/Textures/Buffs/NingShenDanDebuff";
+
         public override void SetStaticDefaults()
         {
-            // 例如使用原版中毒图标
-            // public override string Texture => "Terraria/Images/Buff_20";
             Main.debuff[Type] = true;
             Main.buffNoTimeDisplay[Type] = false;
         }

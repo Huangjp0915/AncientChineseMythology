@@ -9,7 +9,6 @@ namespace AncientChineseMythology.Systems
     {
         public override void AddRecipes()
         {
-            // 废丹配方
             Recipe.Create(ModContent.ItemType<Items.ScrapElixir>())
                 .AddIngredient(ItemID.FallenStar, 1)
                 .AddIngredient(ModContent.ItemType<Items.YaoQiFragment>(), 1)

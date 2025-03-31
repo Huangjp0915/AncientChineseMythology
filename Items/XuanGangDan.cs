@@ -7,6 +7,8 @@ namespace AncientChineseMythology.Items
 {
     public class XuanGangDan : ModItem
     {
+        public override string Texture => "AncientChineseMythology/Textures/Items/XuanGangDan";
+
         public override void SetStaticDefaults()
         {
             Item.ResearchUnlockCount = 30;

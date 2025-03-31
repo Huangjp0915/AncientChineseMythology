@@ -6,13 +6,13 @@ namespace AncientChineseMythology.Buffs
 {
     public class XuanGangDanDebuff : ModBuff
     {
-        public override string Texture => "Terraria/Images/Buff_20";
+        public override string Texture => "AncientChineseMythology/Textures/Buffs/XuanGangDanDebuff";
+
         public override void SetStaticDefaults()
         {
             Main.debuff[Type] = true;
             Main.buffNoTimeDisplay[Type] = false;
-            // 如无自定义图标，可以使用原版例如 Poisoned（BuffID.Poisoned=20）的图标：
-            // public override string Texture => "Terraria/Images/Buff_20";
+
         }
         
         public override void Update(Player player, ref int buffIndex)

@@ -13,6 +13,8 @@ namespace AncientChineseMythology.Tiles
 {
     public class TeleportationTile : ModTile
     {
+        public override string Texture => "AncientChineseMythology/Textures/Tiles/TeleportationTile";
+
         public override void SetStaticDefaults()
         {
             // 标记为重要 Tile，便于交互

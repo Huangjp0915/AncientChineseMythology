@@ -1,4 +1,3 @@
-// Tiles/ElixirFurnaceTile.cs
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.DataStructures;
@@ -10,6 +9,8 @@ namespace AncientChineseMythology.Tiles
 {
     public class ElixirFurnaceTile : ModTile
     {
+        public override string Texture => "AncientChineseMythology/Textures/Tiles/ElixirFurnaceTile";
+
         public override void SetStaticDefaults()
         {
             // 基础设置

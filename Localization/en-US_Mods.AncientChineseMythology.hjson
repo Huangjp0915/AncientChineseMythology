@@ -78,6 +78,61 @@ Items: {
 		DisplayName: Teleportation Item
 		Tooltip: ""
 	}
+
+	DogCharm: {
+		DisplayName: Dog Charm
+		Tooltip: ""
+	}
+
+	ChickenCharm: {
+		DisplayName: Chicken Charm
+		Tooltip: ""
+	}
+
+	HorseCharm: {
+		DisplayName: Horse Charm
+		Tooltip: ""
+	}
+
+	CowCharm: {
+		DisplayName: Cow Charm
+		Tooltip: ""
+	}
+
+	SnakeCharm: {
+		DisplayName: Snake Charm
+		Tooltip: ""
+	}
+
+	RabbitCharm: {
+		DisplayName: Rabbit Charm
+		Tooltip: ""
+	}
+
+	DragonCharm: {
+		DisplayName: Dragon Charm
+		Tooltip: ""
+	}
+
+	PigCharm: {
+		DisplayName: Pig Charm
+		Tooltip: ""
+	}
+
+	StrangeStone: {
+		DisplayName: Strange Stone
+		Tooltip: ""
+	}
+
+	BronzeIngot: {
+		DisplayName: Bronze Ingot
+		Tooltip: ""
+	}
+
+	Cuprite: {
+		DisplayName: Cuprite
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -112,6 +167,9 @@ Projectiles: {
 	IronStickSpearProjectile.DisplayName: Iron Stick Spear Projectile
 	WoodenStickSpearProjectile.DisplayName: Wooden Stick Spear Projectile
 	GemStickSpearProjectile.DisplayName: Gem Stick Spear Projectile
+	DragonCharmExplosion.DisplayName: Dragon Charm Explosion
+	DragonCharmLaser.DisplayName: Dragon Charm Laser
+	PigCharmLaser.DisplayName: Pig Charm Laser
 }
 
 HeavenBiome.DisplayName: Heaven
@@ -172,5 +230,35 @@ Buffs: {
 	PoJunDanDebuff: {
 		DisplayName: Po Jun Dan Debuff
 		Description: Mods.AncientChineseMythology.Buffs.PoJunDanDebuff.Description
+	}
+
+	SnakeInvisibilityBuff: {
+		DisplayName: Snake Invisibility Buff
+		Description: Mods.AncientChineseMythology.Buffs.SnakeInvisibilityBuff.Description
+	}
+
+	DogCharmBuff: {
+		DisplayName: Dog Charm Buff
+		Description: Mods.AncientChineseMythology.Buffs.DogCharmBuff.Description
+	}
+
+	ChickenCharmBuff: {
+		DisplayName: Chicken Charm Buff
+		Description: Mods.AncientChineseMythology.Buffs.ChickenCharmBuff.Description
+	}
+
+	CowCharmBuff: {
+		DisplayName: Cow Charm Buff
+		Description: Mods.AncientChineseMythology.Buffs.CowCharmBuff.Description
+	}
+
+	HorseCharmBuff: {
+		DisplayName: Horse Charm Buff
+		Description: Mods.AncientChineseMythology.Buffs.HorseCharmBuff.Description
+	}
+
+	RabbitCharmBuff: {
+		DisplayName: Rabbit Charm Buff
+		Description: Mods.AncientChineseMythology.Buffs.RabbitCharmBuff.Description
 	}
 }
