@@ -6,6 +6,8 @@ namespace AncientChineseMythology.Items
 {
     public class ElixirFurnaceItem : ModItem
     {
+        public override string Texture => "AncientChineseMythology/Textures/Items/ElixirFurnaceItem";
+
         public override void SetStaticDefaults()
         {
             Item.ResearchUnlockCount = 1; // 允许在旅程模式研究

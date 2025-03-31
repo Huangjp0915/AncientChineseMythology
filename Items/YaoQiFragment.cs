@@ -8,7 +8,7 @@ namespace AncientChineseMythology.Items
     public class YaoQiFragment : ModItem
     {
 
-        public override string Texture => "AncientChineseMythology/Items/YaoQiFragment";
+        public override string Texture => "AncientChineseMythology/Textures/Items/YaoQiFragment";
 
         public override void SetStaticDefaults()
         {

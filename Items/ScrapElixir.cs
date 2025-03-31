@@ -6,6 +6,8 @@ namespace AncientChineseMythology.Items
 {
     public class ScrapElixir : ModItem
     {
+        public override string Texture => "AncientChineseMythology/Textures/Items/ScrapElixir";
+
         public override void SetStaticDefaults()
         {
             Item.ResearchUnlockCount = 30; // 允许批量研究

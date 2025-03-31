@@ -9,8 +9,31 @@ namespace AncientChineseMythology.Systems
     {
         public override void AddRecipes()
         {
-            // 废丹配方
             Recipe.Create(ModContent.ItemType<Items.ScrapElixir>())
+                .AddIngredient(ItemID.FallenStar, 1)
+                .AddIngredient(ModContent.ItemType<Items.YaoQiFragment>(), 1)
+                .AddTile<Tiles.ElixirFurnaceTile>()
+                .Register();
+            
+            Recipe.Create(ModContent.ItemType<Items.XuePoDan>())
+                .AddIngredient(ItemID.FallenStar, 1)
+                .AddIngredient(ModContent.ItemType<Items.YaoQiFragment>(), 1)
+                .AddTile<Tiles.ElixirFurnaceTile>()
+                .Register();
+
+            Recipe.Create(ModContent.ItemType<Items.NingShenDan>())
+                .AddIngredient(ItemID.FallenStar, 1)
+                .AddIngredient(ModContent.ItemType<Items.YaoQiFragment>(), 1)
+                .AddTile<Tiles.ElixirFurnaceTile>()
+                .Register();
+
+            Recipe.Create(ModContent.ItemType<Items.XuanGangDan>())
+                .AddIngredient(ItemID.FallenStar, 1)
+                .AddIngredient(ModContent.ItemType<Items.YaoQiFragment>(), 1)
+                .AddTile<Tiles.ElixirFurnaceTile>()
+                .Register();
+
+            Recipe.Create(ModContent.ItemType<Items.PoJunDan>())
                 .AddIngredient(ItemID.FallenStar, 1)
                 .AddIngredient(ModContent.ItemType<Items.YaoQiFragment>(), 1)
                 .AddTile<Tiles.ElixirFurnaceTile>()

@@ -49,6 +49,9 @@
           "DisplayName": "妖气碎片"
           "Tooltip": "一块散发着神秘妖气的碎片\n材料"
         }
+      },
+      "Tiles": {
+        "TeleportationTile": "漩涡之门"
       }
     }
   }

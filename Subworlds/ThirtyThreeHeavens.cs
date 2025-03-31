@@ -1,17 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using Microsoft.Xna.Framework;
-using Newtonsoft.Json;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.WorldBuilding;
-using Terraria.GameContent.Generation;
 using Terraria.IO;
 using SubworldLibrary;
-using Terraria.Audio;
-using Terraria.Utilities;
 using StructureHelper.API;
 using static StructureHelper.API.Generator; 
 using Terraria.DataStructures;
@@ -57,12 +52,8 @@ namespace AncientChineseMythology.Subworlds
             base.OnEnter();
             if (Main.netMode != NetmodeID.Server)
             {
-                Main.NewText("进入子世界：ThirtyThreeHeavens", Color.LightGreen);
-                //Main.NewText($"DungeonX={Main.dungeonX}, DungeonY={Main.dungeonY}", Color.Orange);
-                Main.NewText($"maxTilesX={this.Width}, maxTilesY={this.Height}", Color.Orange);
+                Main.NewText("进入子世界：三十三重天", Color.LightGreen);
                 int slot = MusicLoader.GetMusicSlot(Mod, "Music/HeavenTheme");
-                //SoundEngine.StopMusic(true);
-                //SoundEngine.PlayMusic(slot, 0f);
             }
         }
     }
@@ -211,7 +202,7 @@ namespace AncientChineseMythology.Subworlds
     #endregion
 
     #region 天界地牢结构导入
-public class CelestialDungeonStructurePass : GenPass
+    public class CelestialDungeonStructurePass : GenPass
     {
         public CelestialDungeonStructurePass(string name, float loadWeight) : base(name, loadWeight) { }
 
@@ -223,58 +214,65 @@ public class CelestialDungeonStructurePass : GenPass
             int worldWidth = ((Subworld)SubworldSystem.Current).Width; 
             int worldHeight = ((Subworld)SubworldSystem.Current).Height;
 
-            // 2. 加载单结构...
-            string path = "structures/celestialdungeon";
-            Point16 dims = GetStructureDimensions(
-                path,
-                ModContent.GetInstance<AncientChineseMythology>(),
-                false
-            );
-            int structureW = dims.X;
-            int structureH = dims.Y;
+            //加载单结构...
+            string[] landPaths = {
+                "structures/celestialdungeon",
+                "structures/palace"
+            };
+            foreach (string path in landPaths){
+                Point16 dims = GetStructureDimensions(
+                    path,
+                    ModContent.GetInstance<AncientChineseMythology>(),
+                    false
+                );
+                int structureW = dims.X;
+                int structureH = dims.Y;
 
-            // 3. 计算 & Clamp 放置坐标
-            int placeX = 100;
-            if (placeX + structureW >= worldWidth) {
-                placeX = worldWidth - structureW;
-                if (placeX < 0) placeX = 0;
-            }
+                //计算 & Clamp 放置坐标
+                int placeX = WorldGen.genRand.Next(worldWidth - structureW);
 
-            // 扫描地表
-            int minSurfaceY = worldHeight - 1;
-            for (int x = placeX; x < placeX + structureW; x++) {
-                for (int y = 0; y < worldHeight; y++) {
-                    if (Main.tile[x, y].HasTile && Main.tileSolid[Main.tile[x, y].TileType]) {
-                        if (y < minSurfaceY)
-                            minSurfaceY = y;
-                        break;
+                if (placeX + structureW >= worldWidth) {
+                    placeX = worldWidth - structureW;
+                    if (placeX < 0) placeX = 0;
+                }
+
+                // 扫描地表
+                int minSurfaceY = worldHeight - 1;
+                for (int x = placeX; x < placeX + structureW; x++) {
+                    for (int y = 0; y < worldHeight; y++) {
+                        if (Main.tile[x, y].HasTile && Main.tileSolid[Main.tile[x, y].TileType]) {
+                            if (y < minSurfaceY)
+                                minSurfaceY = y;
+                            break;
+                        }
                     }
                 }
-            }
-            int placeY = minSurfaceY - structureH;
-            if (placeY < 0) placeY = 0;
-            if (placeY + structureH >= worldHeight) {
-                placeY = worldHeight - structureH;
+                int placeY = minSurfaceY - structureH;
                 if (placeY < 0) placeY = 0;
+                if (placeY + structureH >= worldHeight) {
+                    placeY = worldHeight - structureH;
+                    if (placeY < 0) placeY = 0;
+                }
+
+                if (placeX < 0 || placeX + structureW > worldWidth ||
+                    placeY < 0 || placeY + structureH > worldHeight) {
+                    progress.Message = "地牢结构放置位置仍越界, 生成停止！";
+                    return;
+                }
+
+                //生成结构
+                GenerateStructure(
+                    path,
+                    new Point16((short)placeX, (short)placeY),
+                    ModContent.GetInstance<AncientChineseMythology>(),
+                    false, 
+                    false,
+                    StructureHelper.GenFlags.None
+                );
+
+                progress.Message = $"天界地牢放置完毕: place=({placeX},{placeY}), dims=({structureW},{structureH}) in Subworld {worldWidth}x{worldHeight}";
             }
-
-            if (placeX < 0 || placeX + structureW > worldWidth ||
-                placeY < 0 || placeY + structureH > worldHeight) {
-                progress.Message = "地牢结构放置位置仍越界, 生成停止！";
-                return;
-            }
-
-            // 4. 生成结构
-            GenerateStructure(
-                path,
-                new Point16((short)placeX, (short)placeY),
-                ModContent.GetInstance<AncientChineseMythology>(),
-                false, 
-                false,
-                StructureHelper.GenFlags.None
-            );
-
-            progress.Message = $"天界地牢放置完毕: place=({placeX},{placeY}), dims=({structureW},{structureH}) in Subworld {worldWidth}x{worldHeight}";
+            
         }
     }
     #endregion
@@ -286,64 +284,64 @@ public class CelestialDungeonStructurePass : GenPass
         protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
         {
             progress.Message = "生成浮空岛...";
-
-            // 1. 获取子世界大小 (避免使用 Main.maxTilesX / Main.maxTilesY)
             int worldWidth = ((Subworld)SubworldLibrary.SubworldSystem.Current).Width; 
             int worldHeight = ((Subworld)SubworldLibrary.SubworldSystem.Current).Height;
 
-            // 2. 准备加载浮空岛结构文件: structures/floatingisland.shstruct (示例文件名)
-            string path = "structures/floatingisland";
+            // 定义所有浮空岛结构文件路径
+            string[] islandPaths = {
+                "structures/floatingisland",
+                "structures/skyisland",
+                "structures/skypalace1",
+                "structures/skypalace2"
+            };
 
-            // 3. 获取结构宽高
-            Point16 dims = Generator.GetStructureDimensions(
-                path,
-                ModContent.GetInstance<AncientChineseMythology>(),
-                false
-            );
-            int islandW = dims.X;
-            int islandH = dims.Y;
-
-            // 4. 随机/固定 X 坐标，并 clamp
-            int placeX = WorldGen.genRand.Next(worldWidth - islandW);
-            // 若需要固定, 直接: int placeX = 100; 并再 clamp 即可
-
-            // 5. 计算/限制 Y 坐标：要求整座浮空岛 [顶部>=0], [底部<300]
-            int maxY = 300 - islandH; // 岛底不能超过 y=299 (若 islandH=1)
-            if (maxY < 0)
+            foreach (string path in islandPaths)
             {
-                // 说明岛本身太高 or 300 太小，没有足够空间放置
-                progress.Message = "无法放置浮空岛：高度不足300!";
-                return;
+                // 获取结构宽高
+                Point16 dims = Generator.GetStructureDimensions(
+                    path,
+                    ModContent.GetInstance<AncientChineseMythology>(),
+                    false
+                );
+                int islandW = dims.X;
+                int islandH = dims.Y;
+
+                // 随机/固定 X 坐标
+                int placeX = WorldGen.genRand.Next(worldWidth - islandW);
+
+                // 对于锚点在下方的岛屿来说，
+                // 传入的坐标表示岛屿底部位置。
+                // 为了让空岛生成得更高，将 allowedBottom 改为较小值（例如 150）
+                int allowedBottom = Math.Min(150, worldHeight);
+                if (islandH > allowedBottom)
+                {
+                    progress.Message = $"无法放置岛屿（{path}）：岛屿高度超过允许区域!";
+                    continue;
+                }
+
+                // 随机选择岛屿底部的位置，范围为 [islandH, allowedBottom]
+                int placeY = WorldGen.genRand.Next(islandH, allowedBottom + 1);
+
+                // 最终检查：确保整个岛屿在世界范围内
+                if (placeX < 0 || placeX + islandW > worldWidth ||
+                    (placeY - islandH) < 0 || placeY > worldHeight)
+                {
+                    progress.Message = $"岛屿 {path} 生成越界，跳过。";
+                    continue;
+                }
+
+                // 生成当前岛屿（传入的 Y 坐标为岛屿底部）
+                Generator.GenerateStructure(
+                    path,
+                    new Point16((short)placeX, (short)placeY),
+                    ModContent.GetInstance<AncientChineseMythology>(),
+                    false,  // fullPath
+                    false,  // ignoreNull
+                    StructureHelper.GenFlags.None
+                );
+
+                progress.Message = $"岛屿 {path} 生成完成: 底部坐标=({placeX},{placeY}), dims=({islandW},{islandH})";
             }
-            int placeY = WorldGen.genRand.Next(0, maxY + 1);
-
-            // 再二次 clamp (确保不超世界实际高度, 虽然本例中我们只到300)
-            if (placeY + islandH >= worldHeight)
-            {
-                // 若真的超过世界边界(小概率)，就顶到 worldHeight - islandH
-                placeY = worldHeight - islandH;
-                if (placeY < 0) placeY = 0;
-            }
-
-            // 6. 最终检查
-            if (placeX < 0 || placeX + islandW > worldWidth ||
-                placeY < 0 || placeY + islandH > worldHeight)
-            {
-                progress.Message = "浮空岛生成越界，停止。";
-                return;
-            }
-
-            // 7. 使用 Generator.GenerateStructure 放置单结构
-            Generator.GenerateStructure(
-                path,
-                new Point16((short)placeX, (short)placeY),
-                ModContent.GetInstance<AncientChineseMythology>(),
-                false,  // fullPath
-                false,  // ignoreNull
-                StructureHelper.GenFlags.None
-            );
-
-            progress.Message = $"浮空岛生成完成: place=({placeX},{placeY}), dims=({islandW},{islandH})";
         }
     }
 }

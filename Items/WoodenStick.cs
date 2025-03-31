@@ -8,6 +8,8 @@ namespace AncientChineseMythology.Items
 {
     public class WoodenStick : GrowthWeapon
     {
+        public override string Texture => "AncientChineseMythology/Textures/Items/WoodenStick";
+
         public override void SetStaticDefaults()
         {
             // DisplayName.SetDefault("木棍");
