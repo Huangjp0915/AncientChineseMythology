@@ -44,7 +44,7 @@ namespace AncientChineseMythology.Projectiles
             Projectile.friendly = true;
             Projectile.hostile = false;
             Projectile.penetrate = 1; // 命中一个敌人后结束
-            // 设为 false，因为我们手动检测地形阻挡
+            // 设为 false，因为手动检测地形阻挡
             Projectile.tileCollide = false;
             Projectile.ignoreWater = true;
             Projectile.timeLeft = 3600;
@@ -176,7 +176,7 @@ namespace AncientChineseMythology.Projectiles
                 }
             }
 
-            // 更新碰撞区域：高度 = effectiveDistance, 宽度固定（10像素）
+            // 高度 = effectiveDistance, 宽度固定（10像素）
             Projectile.width = 10;
             Projectile.height = (int)effectiveDistance;
 

@@ -14,9 +14,6 @@ namespace AncientChineseMythology.Subworlds
         // 子世界尺寸，可自由调整
         public override int Width => 800;
         public override int Height => 400;
-
-        //!!! shouldsave 为true且NoPlayerSaving 为false的时候保存数据，但是重构会直接闪退
-        //!!! shouldsave 为false且NoPlayerSaving 为true的时候不保存数据，但是重构会不会闪退
         public override bool ShouldSave => true ;
         public override bool NoPlayerSaving => false;
 
