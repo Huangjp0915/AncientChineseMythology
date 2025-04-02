@@ -580,6 +580,8 @@ namespace AncientChineseMythology.NPCs.Boss
             npcLoot.Add(ItemDropRule.Common(ItemID.GoldCoin, 1, 5, 10));
 
             npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<SkyKey>(), 1));
+
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<JiaSha>(), 1));
         }
     }
 }

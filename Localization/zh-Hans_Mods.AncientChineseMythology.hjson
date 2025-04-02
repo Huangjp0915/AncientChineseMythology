@@ -78,7 +78,11 @@ Items: {
 	}
 
 	ElixirFurnaceItem: {
-		Tooltip: 太上老君随手制作的一个炉子
+		Tooltip:
+			'''
+			一个破破烂烂的炉子
+			勉强能炼制一些丹药
+			'''
 		DisplayName: 炼丹炉
 	}
 
@@ -161,6 +165,25 @@ Items: {
 		DisplayName: 赤铜锭
 		Tooltip: 烫烫烫
 	}
+
+	DiHuo: {
+		DisplayName: 地火
+		Tooltip: 蕴含大地之力的神秘火焰
+	}
+
+	JiaSha: {
+		DisplayName: 袈裟
+		Tooltip:
+			'''
+			在丛林地表使用召唤黑熊金Boss
+			(仅在丛林地表有效)
+			'''
+	}
+
+	CupriteOre: {
+		DisplayName: 赤铜矿
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -183,6 +206,9 @@ NPCs: {
 	angry_gargoyle.DisplayName: 愤怒的石像鬼
 	BlackBear.DisplayName: 黑熊金
 	TaiShangLaoJunNPC.DisplayName: 太上老君
+	MingCrow.DisplayName: 冥鸦
+	JiaoSha.DisplayName: 蛟鲨
+	Demon.DisplayName: 噩梦梦魇
 }
 
 Projectiles: {
@@ -198,6 +224,7 @@ Projectiles: {
 	// DragonCharmExplosion.DisplayName: Dragon Charm Explosion
 	// DragonCharmLaser.DisplayName: Dragon Charm Laser
 	// PigCharmLaser.DisplayName: Pig Charm Laser
+	// Demon_Proj.DisplayName: Demon_ Proj
 }
 
 // HeavenBiome.DisplayName: Heaven
@@ -215,8 +242,10 @@ Biomes: {
 }
 
 Tiles: {
-	// ElixirFurnaceTile.MapEntry: Elixir Furnace Tile
+	ElixirFurnaceTile.MapEntry: 炼丹炉
 	TeleportationTile.DisplayName: 漩涡之门
+	CupriteOreTile.MapEntry: 赤铜矿
+	PlacedCupriteOreTile.MapEntry: 被放置的赤铜矿
 }
 
 Buffs: {

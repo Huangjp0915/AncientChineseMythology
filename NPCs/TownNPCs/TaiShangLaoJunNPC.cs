@@ -38,13 +38,31 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             TownNPCStayingHomeless = true;
         }
 
-        public override bool CanTownNPCSpawn(int numTownNPCs) => true;
-        public override bool CanChat() => true;
-
-        public override List<string> SetNPCNameList()
+        public override bool CanTownNPCSpawn(int numTownNPCs)
         {
-            return new List<string> { "太上老君" };
+            // 遍历所有玩家
+            for (int i = 0; i < Main.maxPlayers; i++)
+            {
+                Player player = Main.player[i];
+                if (player.active && !player.dead)
+                {
+                    int count = 0;
+                    // 遍历玩家背包中的所有物品
+                    for (int j = 0; j < player.inventory.Length; j++)
+                    {
+                        if (player.inventory[j].type == ModContent.ItemType<ScrapElixir>())
+                        {
+                            count += player.inventory[j].stack;
+                        }
+                    }
+                    // 如果该玩家的【废丹】数量大于10，则允许此 NPC 生成
+                    if (count > 10)
+                        return true;
+                }
+            }
+            return false;
         }
+        public override bool CanChat() => true;
 
         public override string GetChat()
         {
@@ -72,15 +90,15 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             }
         }
 
-        // 定义专属商店，出售炼丹炉（物品类名为 LianDanLu）
+        // 定义专属商店
         public override void AddShops()
         {
             new NPCShop(Type, "TaiShangLaoJunShop")
-                .Add<ElixirFurnaceItem>()
                 .Add<PoJunDan>()
                 .Add<XuePoDan>()
                 .Add<NingShenDan>()
                 .Add<XuanGangDan>()
+                .Add<DiHuo>()
                 .Register();
         }
     }
