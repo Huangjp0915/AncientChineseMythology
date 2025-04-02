@@ -119,6 +119,7 @@ namespace AncientChineseMythology.NPCs.Monsters
             // 如果正在死亡，则执行死亡动画逻辑
             if (dying)
             {
+                NPC.damage = 0;
                 if (!isDead)
                 {
                     animationCounter = 0f;
@@ -147,17 +148,25 @@ namespace AncientChineseMythology.NPCs.Monsters
             Player targetPlayer = Main.player[NPC.target];
             if (targetPlayer != null && targetPlayer.active && !targetPlayer.dead)
             {
-                Vector2 toPlayer = targetPlayer.Center - NPC.Center;
-                float dist = toPlayer.Length();
-                if (dist > 20f)
-                    toPlayer.Normalize();
+                // 如果玩家在水中，则不追击，保持缓慢减速状态
+                if (targetPlayer.wet)
+                {
+                    NPC.velocity *= 0.95f;
+                }
+                else
+                {
+                    Vector2 toPlayer = targetPlayer.Center - NPC.Center;
+                    float dist = toPlayer.Length();
+                    if (dist > 20f)
+                        toPlayer.Normalize();
 
-                // 使用 Lerp 平滑追击
-                float speed = 8f;
-                NPC.velocity = Vector2.Lerp(NPC.velocity, toPlayer * speed, 0.03f);
+                    // 使用 Lerp 平滑追击
+                    float speed = 8f;
+                    NPC.velocity = Vector2.Lerp(NPC.velocity, toPlayer * speed, 0.03f);
 
-                // 始终保持贴图与追击方向一致
-                NPC.spriteDirection = (targetPlayer.Center.X >= NPC.Center.X) ? -1 : 1;
+                    // 始终保持贴图与追击方向一致
+                    NPC.spriteDirection = (targetPlayer.Center.X >= NPC.Center.X) ? -1 : 1;
+                }
             }
             else
             {
@@ -223,6 +232,7 @@ namespace AncientChineseMythology.NPCs.Monsters
                 dying = true;
                 NPC.life = 1;
                 NPC.dontTakeDamage = true;
+                NPC.damage = 0;
                 NPC.netUpdate = true;
             }
         }

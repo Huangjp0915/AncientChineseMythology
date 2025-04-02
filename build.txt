@@ -1,6 +1,6 @@
-displayName = Ancient Chinese Mythology
+displayName = 洪荒【Primordial】
 author = 子酥, Yui, 原力, 君倾
-version = 2.71
+version = 2.75
 
 modReferences = SubworldLibrary, StructureHelper
 references = SubworldLibrary, StructureHelper
