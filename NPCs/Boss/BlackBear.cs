@@ -12,6 +12,7 @@ using System;
 using Microsoft.Xna.Framework.Graphics.PackedVector;
 using Terraria.Audio;
 using Terraria.Graphics.CameraModifiers;
+using AncientChineseMythology.Systems;
 
 namespace AncientChineseMythology.NPCs.Boss
 {
@@ -108,7 +109,13 @@ namespace AncientChineseMythology.NPCs.Boss
 
         public override float SpawnChance(NPCSpawnInfo spawnInfo)
         {
-            if (spawnInfo.Player.ZoneJungle && spawnInfo.Player.ZoneOverworldHeight && Main.dayTime)
+            // 如果本晚已经生成了黑熊精，返回 0（不生成）
+            if (AncientChineseMythologySystem.blackBearSpawnedThisNight)
+            {
+                return 0f;
+            }
+            // 按原来的逻辑，丛林、地表、白天的生成几率
+            if (spawnInfo.Player.ZoneJungle && spawnInfo.Player.ZoneOverworldHeight && !Main.dayTime)
             {
                 return 0.005f;
             }
@@ -164,6 +171,7 @@ namespace AncientChineseMythology.NPCs.Boss
 
             if (isDying)// 死亡阶段
             {
+                NPC.damage = 0;
                 if(dieTimer == 0)
                     currentFrame = 0;
                 NPC.velocity.X = 0f;
@@ -462,6 +470,10 @@ namespace AncientChineseMythology.NPCs.Boss
        
         private void CheckContactDamage()
         {
+            // 如果正在死亡状态，则不检测接触伤害
+            if (NPC.damage == 0)
+                return;
+                        
             if (contactDamageCooldown > 0)
                 return;
 
@@ -495,6 +507,7 @@ namespace AncientChineseMythology.NPCs.Boss
                 isDying = true;
                 NPC.life = 1; // 确保 NPC 不会被重复击杀
                 NPC.dontTakeDamage = true; // 防止在播放死亡动画时受到伤害
+                NPC.damage = 0;
                 NPC.netUpdate = true;
                 currentState = BearState.Die;
             }

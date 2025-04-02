@@ -165,6 +165,7 @@ namespace AncientChineseMythology.NPCs.Monsters
             //  死亡与受伤处理
             if (isDying)
             {
+                NPC.damage = 0;
                 NPC.velocity = Vector2.Zero;
                 dieTimer++;
                 // 使用 dieTimer 来计算死亡动画帧（PreDraw中直接使用 dieTimer/frameDuration）
@@ -360,6 +361,7 @@ namespace AncientChineseMythology.NPCs.Monsters
                 isDying = true;
                 NPC.life = 1; // 确保 NPC 不会被重复击杀
                 NPC.dontTakeDamage = true;
+                NPC.damage = 0;
                 NPC.netUpdate = true;
             }
             else

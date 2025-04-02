@@ -169,7 +169,22 @@ NPCs: {
 	Angry_gargoyle.DisplayName: Angry_gargoyle
 	angry_gargoyle.DisplayName: angry_gargoyle
 	BlackBear.DisplayName: Black Bear
-	TaiShangLaoJunNPC.DisplayName: Tai Shang Lao Jun N P C
+
+	TaiShangLaoJunNPC: {
+		DisplayName: Tai Shang Lao Jun N P C
+
+		TownNPCMood: {
+			Content: 我很满足。
+			NoHome: 我讨厌没有家。
+			FarFromHome: 我离家太远了。
+			LoveSpace: 我非常喜欢有这么大的空间。
+			DislikeCrowded: 我不喜欢这么拥挤。
+			HateCrowded: 我讨厌这么拥挤。
+			LikeNPC_Princess: 我喜欢 {NPCName}。
+			Princess_LovesNPC: 我喜欢 {NPCName}。
+		}
+	}
+
 	MingCrow.DisplayName: Ming Crow
 	JiaoSha.DisplayName: Jiao Sha
 	Demon.DisplayName: Demon

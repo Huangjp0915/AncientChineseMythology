@@ -191,6 +191,7 @@ namespace AncientChineseMythology.NPCs.Monsters
             // 死亡处理
             if (dying)
             {
+                NPC.damage = 0;
                 DoDieLogic();
                 return;
             }
@@ -423,6 +424,7 @@ namespace AncientChineseMythology.NPCs.Monsters
                 dying = true;
                 NPC.life = 1; // 防止重复死亡
                 NPC.dontTakeDamage = true;
+                NPC.damage = 0;
                 NPC.netUpdate = true;
                 state = JiaoShaState.Die;
             }
