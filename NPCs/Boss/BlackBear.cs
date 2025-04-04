@@ -1,17 +1,15 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using System.Collections.Generic;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.DataStructures;
-//using AncientChineseMythology.Systems;
 using Terraria.GameContent.ItemDropRules;
 using AncientChineseMythology.Items;
 using System;
-using Microsoft.Xna.Framework.Graphics.PackedVector;
 using Terraria.Audio;
 using Terraria.Graphics.CameraModifiers;
+using static AncientChineseMythology.AncientChineseMythology;
 
 namespace AncientChineseMythology.NPCs.Boss
 {
@@ -103,6 +101,7 @@ namespace AncientChineseMythology.NPCs.Boss
             NPC.noGravity = false;
             NPC.noTileCollide = false;
             NPC.boss = true;
+            NPC.HitSound = SoundID.NPCHit1;
             Music = MusicLoader.GetMusicSlot("AncientChineseMythology/Sounds/Music/BlackBear_Music");
         }
 
@@ -184,12 +183,12 @@ namespace AncientChineseMythology.NPCs.Boss
                     // 移动
                     case BearState.Run:
                         float dist = Vector2.Distance(NPC.Center, player.Center);
-                        if ((player.Center.Y + NPC.height < NPC.Center.Y && (dist > distanceThreshold * 1.5 && runTime >= 180)
-                            || (runTime >= 240)) && onGround)
+                        if ((player.Center.Y + NPC.height < NPC.Center.Y && (dist > distanceThreshold * 1.5 && runTime >= 180)) && onGround || (runTime >= 240))
                         {
                             currentState = BearState.Attack_2;
                             runTime = 0;
                             didDamageThisAttack = true;
+                            NPC.velocity.X = NPC.direction * runSpeed;
                         }
                         else
                         {

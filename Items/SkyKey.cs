@@ -10,6 +10,7 @@ namespace AncientChineseMythology.Items
     {
         public override void SetStaticDefaults()
         {
+            Item.ResearchUnlockCount = 1; // 允许在旅程模式研究
         }
 
         public override void SetDefaults()
@@ -24,7 +25,6 @@ namespace AncientChineseMythology.Items
             Item.rare = ItemRarityID.Yellow;
         }
 
-        // 关键代码：指定贴图路径
         public override string Texture => "Terraria/Images/Item_" + ItemID.GoldenKey;
 
         public override bool? UseItem(Player player)

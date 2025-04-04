@@ -1,4 +1,4 @@
-using Terraria;
+﻿using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -8,6 +8,7 @@ namespace AncientChineseMythology.Items
     {
         public override void SetStaticDefaults()
         {
+            Item.ResearchUnlockCount = 1; // 允许在旅程模式研究
         }
 
         public override void SetDefaults()
@@ -31,11 +32,12 @@ namespace AncientChineseMythology.Items
             Recipe recipe = CreateRecipe();
             recipe.AddIngredient(ModContent.ItemType<GemStick>(), 1);
             recipe.AddIngredient(ItemID.HellstoneBar, 81);
+            recipe.AddIngredient(ModContent.ItemType<YaoQiFragment>(), 40);
             recipe.AddTile(TileID.Hellforge);
             recipe.Register();
         }
 
-        // 使用内置武士刀（Muramasa）作为占位贴图
+        // 使用内置武士刀作为占位贴图
         public override string Texture => "Terraria/Images/Item_" + ItemID.Muramasa;
     }
 }

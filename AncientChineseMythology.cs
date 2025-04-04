@@ -43,96 +43,116 @@ namespace AncientChineseMythology
                     break;
             }
         }
-
-    }
-
-    public enum AncientChineseMythologyMessageType : byte
-    {
-        SyncGrowthPlayer
-    }
-
-    public class BossChecklistIntegration : ModSystem
-    {
-        private static readonly Version BossChecklistAPIVersion = new Version(1, 6); // 版本设置
-
-        public override void PostSetupContent()
+        public struct Vertex : IVertexType
         {
-            DoBossChecklistIntegration();
-        }
-
-        private void DoBossChecklistIntegration()
-        {
-            if (!ModLoader.TryGetMod("BossChecklist", out Mod bossChecklist) || bossChecklist.Version < BossChecklistAPIVersion)
+            private static VertexDeclaration _vertexDeclaration = new VertexDeclaration(new VertexElement[3]
             {
-                return; // 如果未找到模组或版本不匹配
+            new VertexElement(0,VertexElementFormat.Vector2,VertexElementUsage.Position,0),
+            new VertexElement(8,VertexElementFormat.Color,VertexElementUsage.Color,0),
+            new VertexElement(12,VertexElementFormat.Vector3,VertexElementUsage.TextureCoordinate,0)
+            });
+            public Vector2 Position;
+            public Color Color;
+            public Vector3 TexCoord;
+            public Vertex(Vector2 position, Vector3 texCoord, Color color)
+            {
+                Position = position;
+                TexCoord = texCoord;
+                Color = color;
             }
-            //第1个Boss第1个Boss第1个Boss第1个Boss第1个Boss
-            //***********************************************************************************************************************************
-            string internalName = "BlackBear"; // 唯一标识符
-            float weight = 0.1f; // 权重
-            Func<bool> downed = () => DownedBossSystem.downedBlackBear; // Boss 击败状态
-
-            int bossType = ModContent.NPCType<BlackBear>(); // Boss 的 NPC 类型
-            //int spawnItem = ModContent.ItemType<Items.MyBoss1Summoner>(); // 召唤 Boss 的物品类型
-
-            //List<int> collectibles = new List<int>()
-            //{
-               
-            //};
-            // 自定义图标显示法
-            var customPortrait = (SpriteBatch sb, Rectangle rect, Color color) =>
+            public VertexDeclaration VertexDeclaration
             {
-                Texture2D texture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/BlackBear/BlackBear").Value;
-                Vector2 centered = new Vector2(rect.X + (rect.Width / 2) - (texture.Width / 2), rect.Y + (rect.Height / 2) - (texture.Height / 2));
-                sb.Draw(texture, centered, color);
-            };
+                get => _vertexDeclaration;
+            }
+        }
+        public enum AncientChineseMythologyMessageType : byte
+        {
+            SyncGrowthPlayer
+        }
 
-            // 注册 Boss 信息
-            bossChecklist.Call(
-                "LogBoss",
-                Mod,
-                internalName,
-                weight,
-                downed,
-                bossType,
-                new Dictionary<string, object>()
+        public class BossChecklistIntegration : ModSystem
+        {
+            private static readonly Version BossChecklistAPIVersion = new Version(1, 6); // 版本设置
+
+            public override void PostSetupContent()
+            {
+                DoBossChecklistIntegration();
+            }
+
+            private void DoBossChecklistIntegration()
+            {
+                if (!ModLoader.TryGetMod("BossChecklist", out Mod bossChecklist) || bossChecklist.Version < BossChecklistAPIVersion)
                 {
-                    //["spawnItems"] = spawnItem,// 召唤物品
-                    ["displayName"] = Language.GetText("金熊王"),// 显示名称
-                    //["spawnInfo"] = Language.GetText(""),// 召唤信息
-                    //["collectibles"] = collectibles,// 收集物品
-                    ["customPortrait"] = customPortrait// 自定义图标显示法
-
+                    return; // 如果未找到模组或版本不匹配
                 }
-            );
-            //自定义图标显示法
-            var customPortrait1 = (SpriteBatch sb, Rectangle rect, Color color) =>
+                //第1个Boss第1个Boss第1个Boss第1个Boss第1个Boss
+                //***********************************************************************************************************************************
+                string internalName = "BlackBear"; // 唯一标识符
+                float weight = 0.1f; // 权重
+                Func<bool> downed = () => DownedBossSystem.downedBlackBear; // Boss 击败状态
+
+                int bossType = ModContent.NPCType<BlackBear>(); // Boss 的 NPC 类型
+                                                                //int spawnItem = ModContent.ItemType<Items.MyBoss1Summoner>(); // 召唤 Boss 的物品类型
+
+                //List<int> collectibles = new List<int>()
+                //{
+
+                //};
+                // 自定义图标显示法
+                var customPortrait = (SpriteBatch sb, Rectangle rect, Color color) =>
+                {
+                    Texture2D texture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/BlackBear/BlackBear").Value;
+                    Vector2 centered = new Vector2(rect.X + (rect.Width / 2) - (texture.Width / 2), rect.Y + (rect.Height / 2) - (texture.Height / 2));
+                    sb.Draw(texture, centered, color);
+                };
+
+                // 注册 Boss 信息
+                bossChecklist.Call(
+                    "LogBoss",
+                    Mod,
+                    internalName,
+                    weight,
+                    downed,
+                    bossType,
+                    new Dictionary<string, object>()
+                    {
+                        //["spawnItems"] = spawnItem,// 召唤物品
+                        ["displayName"] = Language.GetText("黑熊金"),// 显示名称
+                        //["spawnInfo"] = Language.GetText(""),// 召唤信息
+                        //["collectibles"] = collectibles,// 收集物品
+                        ["customPortrait"] = customPortrait// 自定义图标显示法
+
+                    }
+                );
+                //自定义图标显示法
+                var customPortrait1 = (SpriteBatch sb, Rectangle rect, Color color) =>
+                {
+                    Texture2D texture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/BlackBear/BlackBear").Value;
+                    Vector2 centered = new Vector2(rect.X + (rect.Width / 2) - (texture.Width / 2), rect.Y + (rect.Height / 2) - (texture.Height / 2));
+                    sb.Draw(texture, centered, color);
+                };
+            }
+        }
+
+        public class DownedBossSystem : ModSystem
+        {
+            public static bool downedBlackBear = false; // 跟踪 BlackBear 是否已被击败
+
+            public override void SaveWorldData(TagCompound tag)
             {
-                Texture2D texture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/BlackBear/BlackBear").Value;
-                Vector2 centered = new Vector2(rect.X + (rect.Width / 2) - (texture.Width / 2), rect.Y + (rect.Height / 2) - (texture.Height / 2));
-                sb.Draw(texture, centered, color);
-            };
-        }
-    }
+                tag["downedBlackBear"] = downedBlackBear; // 保存状态
+            }
 
-    public class DownedBossSystem : ModSystem
-    {
-        public static bool downedBlackBear = false; // 跟踪 BlackBear 是否已被击败
+            public override void LoadWorldData(TagCompound tag)
+            {
+                downedBlackBear = tag.GetBool("downedBlackBear"); // 加载状态
+            }
 
-        public override void SaveWorldData(TagCompound tag)
-        {
-            tag["downedBlackBear"] = downedBlackBear; // 保存状态
-        }
-
-        public override void LoadWorldData(TagCompound tag)
-        {
-            downedBlackBear = tag.GetBool("downedBlackBear"); // 加载状态
-        }
-
-        public override void OnWorldLoad()
-        {
-            // 重置所有 Boss 的击败状态
-            downedBlackBear = false;
+            public override void OnWorldLoad()
+            {
+                // 重置所有 Boss 的击败状态
+                downedBlackBear = false;
+            }
         }
     }
 }
