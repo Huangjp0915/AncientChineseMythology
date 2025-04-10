@@ -1,25 +1,31 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Huang\\Documents\\My Games\\Terraria\\tModLoader\\ModSources\\AncientChineseMythology\\AncientChineseMythology.csproj": {}
+    "C:\\Users\\29591\\Documents\\My Games\\Terraria\\tModLoader\\ModSources\\AncientChineseMythology\\AncientChineseMythology.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Huang\\Documents\\My Games\\Terraria\\tModLoader\\ModSources\\AncientChineseMythology\\AncientChineseMythology.csproj": {
+    "C:\\Users\\29591\\Documents\\My Games\\Terraria\\tModLoader\\ModSources\\AncientChineseMythology\\AncientChineseMythology.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Huang\\Documents\\My Games\\Terraria\\tModLoader\\ModSources\\AncientChineseMythology\\AncientChineseMythology.csproj",
+        "projectUniqueName": "C:\\Users\\29591\\Documents\\My Games\\Terraria\\tModLoader\\ModSources\\AncientChineseMythology\\AncientChineseMythology.csproj",
         "projectName": "AncientChineseMythology",
-        "projectPath": "C:\\Users\\Huang\\Documents\\My Games\\Terraria\\tModLoader\\ModSources\\AncientChineseMythology\\AncientChineseMythology.csproj",
-        "packagesPath": "C:\\Users\\Huang\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Huang\\Documents\\My Games\\Terraria\\tModLoader\\ModSources\\AncientChineseMythology\\obj\\",
+        "projectPath": "C:\\Users\\29591\\Documents\\My Games\\Terraria\\tModLoader\\ModSources\\AncientChineseMythology\\AncientChineseMythology.csproj",
+        "packagesPath": "C:\\Users\\29591\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\29591\\Documents\\My Games\\Terraria\\tModLoader\\ModSources\\AncientChineseMythology\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "E:\\visual studio333\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "C:\\Users\\Huang\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\29591\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {

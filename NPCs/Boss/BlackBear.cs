@@ -163,6 +163,7 @@ namespace AncientChineseMythology.NPCs.Boss
 
             if (isDying)// 死亡阶段
             {
+                NPC.damage = 0;
                 if(dieTimer == 0)
                     currentFrame = 0;
                 NPC.velocity.X = 0f;
@@ -577,8 +578,10 @@ namespace AncientChineseMythology.NPCs.Boss
         public override void ModifyNPCLoot(NPCLoot npcLoot)
         {
             npcLoot.Add(ItemDropRule.Common(ItemID.GoldCoin, 1, 5, 10));
-
             npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<SkyKey>(), 1));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<BlackBearStaff>(), 10, 1));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<BlackBearSword>(), 10, 1));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<BlackBearBow>(), 10, 1));
         }
     }
 }

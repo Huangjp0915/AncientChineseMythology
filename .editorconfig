@@ -1,0 +1,4 @@
+﻿[*.{cs,vb}]
+
+# IDE0048: 为清楚起见，请添加括号
+dotnet_style_parentheses_in_arithmetic_binary_operators = always_for_clarity

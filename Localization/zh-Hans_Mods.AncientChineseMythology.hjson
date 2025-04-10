@@ -56,7 +56,7 @@ Items: {
 
 	SkyKey: {
 		DisplayName: 天界之钥
-		Tooltip: 据说这个可以通往33重天
+		Tooltip: 据说这个可以通往三十三重天
 	}
 
 	YaoQiFragment: {
@@ -65,6 +65,138 @@ Items: {
 			'''
 			一块散发着神秘妖气的碎片
 			材料
+			'''
+	}
+
+	ScrapElixir: {
+		DisplayName: 废丹
+		Tooltip:
+			'''
+			短暂恢复一定血量
+
+			'''
+	}
+
+	ElixirFurnaceItem: {
+		Tooltip: 太上老君随手制作的一个炉子
+		DisplayName: 炼丹炉
+	}
+
+	XuePoDan: {
+		DisplayName: 血魄丹
+		Tooltip: 短时间内提升你的最大生命值，但是有危险的后遗症
+	}
+
+	NingShenDan: {
+		DisplayName: 凝神丹
+		Tooltip: 短时间内提升你的最大法力值，但是有危险的后遗症
+	}
+
+	XuanGangDan: {
+		DisplayName: 玄罡丹
+		Tooltip: 短时间内提升你的防御力，但是有危险的后遗症
+	}
+
+	PoJunDan: {
+		DisplayName: 破军丹
+		Tooltip: 短时间内提升你的攻击力，但是有危险的后遗症
+	}
+
+	TeleportationItem: {
+		DisplayName: 漩涡之门
+		Tooltip: 据说这个可以通往地府
+	}
+
+	DogCharm: {
+		DisplayName: 狗符咒
+		Tooltip: 传说中的物品
+	}
+
+	ChickenCharm: {
+		DisplayName: 鸡符咒
+		Tooltip: 传说中的物品
+	}
+
+	HorseCharm: {
+		DisplayName: 马符咒
+		Tooltip: 传说中的物品
+	}
+
+	CowCharm: {
+		DisplayName: 牛符咒
+		Tooltip: 传说中的物品
+	}
+
+	SnakeCharm: {
+		DisplayName: 蛇符咒
+		Tooltip: 传说中的物品
+	}
+
+	RabbitCharm: {
+		DisplayName: 兔符咒
+		Tooltip: 传说中的物品
+	}
+
+	DragonCharm: {
+		DisplayName: 龙符咒
+		Tooltip: 传说中的物品
+	}
+
+	PigCharm: {
+		DisplayName: 猪符咒
+		Tooltip: 传说中的物品
+	}
+
+	StrangeStone: {
+		DisplayName: 奇怪的石头
+		Tooltip: 里面有一股神奇的能量
+	}
+
+	BronzeIngot: {
+		DisplayName: 青铜锭
+		Tooltip: 小心有毒
+	}
+
+	Cuprite: {
+		DisplayName: 赤铜锭
+		Tooltip: 烫烫烫
+	}
+
+	BlackBearStaff: {
+		DisplayName: 金皇冠
+		Tooltip:
+			'''
+			“看起来很合适，戴上试试？”
+			召唤金皇冠来为你战斗
+			'''
+	}
+
+	BlackBearSword: {
+		DisplayName: 勇士金剑
+		Tooltip: “仅献给能够拔起它的人……”
+	}
+
+	BlackBearBow: {
+		DisplayName: 金金弓
+		Tooltip: “金光闪闪？”
+	}
+
+	BronzeSword: {
+		DisplayName: 青铜剑
+		Tooltip:
+			'''
+			“剑身闪烁着瘆人的绿芒……”
+			击中敌人使敌人中毒，有极小概率秒杀敌人。
+			'''
+	}
+
+	CrimsonbronzeSword: {
+		DisplayName: 赤铜剑
+		Tooltip:
+			'''
+			“火焰包裹着剑身……”
+			左键攻击点燃敌人
+			右键蓄力发射火焰剑气
 			'''
 	}
 }
@@ -87,7 +219,8 @@ NPCs: {
 
 	// Angry_gargoyle.DisplayName: Angry_gargoyle
 	angry_gargoyle.DisplayName: 愤怒的石像鬼
-	BlackBear.DisplayName: 黑熊精
+	BlackBear.DisplayName: 黑熊金
+	TaiShangLaoJunNPC.DisplayName: 太上老君
 }
 
 Projectiles: {
@@ -96,6 +229,25 @@ Projectiles: {
 	// BlackBear_Proj2.DisplayName: Black Bear_ Proj2
 	// BlackBear_Proj3.DisplayName: Black Bear_ Proj3
 	// BlackBear_Proj4.DisplayName: Black Bear_ Proj4
+	// GoldenStickSpearProjectile.DisplayName: Golden Stick Spear Projectile
+	// IronStickSpearProjectile.DisplayName: Iron Stick Spear Projectile
+	// WoodenStickSpearProjectile.DisplayName: Wooden Stick Spear Projectile
+	// GemStickSpearProjectile.DisplayName: Gem Stick Spear Projectile
+	// DragonCharmExplosion.DisplayName: Dragon Charm Explosion
+	// DragonCharmLaser.DisplayName: Dragon Charm Laser
+	// PigCharmLaser.DisplayName: Pig Charm Laser
+	// WoodenStickSpearProjectile_2.DisplayName: Wooden Stick Spear Projectile_2
+	// IronStickSpearProjectile_2.DisplayName: Iron Stick Spear Projectile_2
+	// IronStickSpearProjectile_3.DisplayName: Iron Stick Spear Projectile_3
+	// GoldenStickSpearProjectile_2.DisplayName: Golden Stick Spear Projectile_2
+	// GemStickSpearProjectile_2.DisplayName: Gem Stick Spear Projectile_2
+	// BlackBearStaffProj1.DisplayName: Black Bear Staff Proj1
+	// BlackBearStaffProj2.DisplayName: Black Bear Staff Proj2
+	// BlackBearSwordProj1.DisplayName: Black Bear Sword Proj1
+	// BlackBearBowProj1.DisplayName: Black Bear Bow Proj1
+	// BlankProjectile.DisplayName: Blank Projectile
+	// CrimsonbronzeSwordProj1.DisplayName: Crimsonbronze Sword Proj1
+	// CrimsonbronzeSwordProj2.DisplayName: Crimsonbronze Sword Proj2
 }
 
 // HeavenBiome.DisplayName: Heaven
@@ -109,5 +261,87 @@ Biomes: {
 	TestBiome: {
 		// DisplayName: Test Biome
 		// TownNPCDialogueName: the Test Biome
+	}
+}
+
+Tiles: {
+	// ElixirFurnaceTile.MapEntry: Elixir Furnace Tile
+	TeleportationTile.DisplayName: 漩涡之门
+}
+
+Buffs: {
+	XuePoDanBuff: {
+		DisplayName: 血魄丹效果
+		Description: 最大生命值提升100
+	}
+
+	XuePoDanDebuff: {
+		DisplayName: 血魄丹后遗症
+		Description: 每秒失去5点生命
+	}
+
+	NingShenDanBuff: {
+		DisplayName: 凝神丹效果
+		Description: 最大法力值提升100
+	}
+
+	NingShenDanDebuff: {
+		DisplayName: 凝神丹后遗症
+		Description: 每秒失去5点法力
+	}
+
+	XuanGangDanBuff: {
+		DisplayName: 玄罡丹效果
+		Description: 防御力提升15
+	}
+
+	XuanGangDanDebuff: {
+		DisplayName: 玄罡丹后遗症
+		Description: 短时间内减少大量移速
+	}
+
+	PoJunDanBuff: {
+		DisplayName: 破军丹效果
+		Description: 伤害增加30%
+	}
+
+	PoJunDanDebuff: {
+		DisplayName: 破军丹后遗症
+		Description: 伤害降低50%
+	}
+
+	SnakeInvisibilityBuff: {
+		DisplayName: 蛇符咒
+		Description: 你处于隐身状态
+	}
+
+	DogCharmBuff: {
+		DisplayName: 狗符咒
+		Description: 每秒回复50点生命和魔力
+	}
+
+	ChickenCharmBuff: {
+		DisplayName: 鸡符咒
+		Description: 无限飞行
+	}
+
+	CowCharmBuff: {
+		DisplayName: 牛符咒
+		Description: 增加80%伤害
+	}
+
+	HorseCharmBuff: {
+		DisplayName: 马符咒
+		Description: 免疫一切Debuff
+	}
+
+	RabbitCharmBuff: {
+		DisplayName: 兔符咒
+		Description: 跑的飞快
+	}
+
+	BuffsBlackBearStaff: {
+		DisplayName: 金皇冠
+		Description: 金皇冠将为你而战！
 	}
 }

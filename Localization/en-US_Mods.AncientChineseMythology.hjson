@@ -43,6 +43,121 @@ Items: {
 		DisplayName: Yao Qi Fragment
 		Tooltip: ""
 	}
+
+	ScrapElixir: {
+		DisplayName: Scrap Elixir
+		Tooltip: ""
+	}
+
+	ElixirFurnaceItem: {
+		Tooltip: ""
+		DisplayName: Elixir Furnace Item
+	}
+
+	XuePoDan: {
+		DisplayName: Xue Po Dan
+		Tooltip: ""
+	}
+
+	NingShenDan: {
+		DisplayName: Ning Shen Dan
+		Tooltip: ""
+	}
+
+	XuanGangDan: {
+		DisplayName: Xuan Gang Dan
+		Tooltip: ""
+	}
+
+	PoJunDan: {
+		DisplayName: Po Jun Dan
+		Tooltip: ""
+	}
+
+	TeleportationItem: {
+		DisplayName: Teleportation Item
+		Tooltip: ""
+	}
+
+	DogCharm: {
+		DisplayName: Dog Charm
+		Tooltip: ""
+	}
+
+	ChickenCharm: {
+		DisplayName: Chicken Charm
+		Tooltip: ""
+	}
+
+	HorseCharm: {
+		DisplayName: Horse Charm
+		Tooltip: ""
+	}
+
+	CowCharm: {
+		DisplayName: Cow Charm
+		Tooltip: ""
+	}
+
+	SnakeCharm: {
+		DisplayName: Snake Charm
+		Tooltip: ""
+	}
+
+	RabbitCharm: {
+		DisplayName: Rabbit Charm
+		Tooltip: ""
+	}
+
+	DragonCharm: {
+		DisplayName: Dragon Charm
+		Tooltip: ""
+	}
+
+	PigCharm: {
+		DisplayName: Pig Charm
+		Tooltip: ""
+	}
+
+	StrangeStone: {
+		DisplayName: Strange Stone
+		Tooltip: ""
+	}
+
+	BronzeIngot: {
+		DisplayName: Bronze Ingot
+		Tooltip: ""
+	}
+
+	Cuprite: {
+		DisplayName: Cuprite
+		Tooltip: ""
+	}
+
+	BlackBearStaff: {
+		DisplayName: Black Bear Staff
+		Tooltip: ""
+	}
+
+	BlackBearSword: {
+		DisplayName: Black Bear Sword
+		Tooltip: ""
+	}
+
+	BlackBearBow: {
+		DisplayName: Black Bear Bow
+		Tooltip: ""
+	}
+
+	BronzeSword: {
+		DisplayName: Bronze Sword
+		Tooltip: ""
+	}
+
+	CrimsonbronzeSword: {
+		DisplayName: Crimsonbronze Sword
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -64,6 +179,7 @@ NPCs: {
 	Angry_gargoyle.DisplayName: Angry_gargoyle
 	angry_gargoyle.DisplayName: angry_gargoyle
 	BlackBear.DisplayName: Black Bear
+	TaiShangLaoJunNPC.DisplayName: Tai Shang Lao Jun N P C
 }
 
 Projectiles: {
@@ -72,6 +188,25 @@ Projectiles: {
 	BlackBear_Proj2.DisplayName: Black Bear_ Proj2
 	BlackBear_Proj3.DisplayName: Black Bear_ Proj3
 	BlackBear_Proj4.DisplayName: Black Bear_ Proj4
+	GoldenStickSpearProjectile.DisplayName: Golden Stick Spear Projectile
+	IronStickSpearProjectile.DisplayName: Iron Stick Spear Projectile
+	WoodenStickSpearProjectile.DisplayName: Wooden Stick Spear Projectile
+	GemStickSpearProjectile.DisplayName: Gem Stick Spear Projectile
+	DragonCharmExplosion.DisplayName: Dragon Charm Explosion
+	DragonCharmLaser.DisplayName: Dragon Charm Laser
+	PigCharmLaser.DisplayName: Pig Charm Laser
+	WoodenStickSpearProjectile_2.DisplayName: Wooden Stick Spear Projectile_2
+	IronStickSpearProjectile_2.DisplayName: Iron Stick Spear Projectile_2
+	IronStickSpearProjectile_3.DisplayName: Iron Stick Spear Projectile_3
+	GoldenStickSpearProjectile_2.DisplayName: Golden Stick Spear Projectile_2
+	GemStickSpearProjectile_2.DisplayName: Gem Stick Spear Projectile_2
+	BlackBearStaffProj1.DisplayName: Black Bear Staff Proj1
+	BlackBearStaffProj2.DisplayName: Black Bear Staff Proj2
+	BlackBearSwordProj1.DisplayName: Black Bear Sword Proj1
+	BlackBearBowProj1.DisplayName: Black Bear Bow Proj1
+	BlankProjectile.DisplayName: Blank Projectile
+	CrimsonbronzeSwordProj1.DisplayName: Crimsonbronze Sword Proj1
+	CrimsonbronzeSwordProj2.DisplayName: Crimsonbronze Sword Proj2
 }
 
 HeavenBiome.DisplayName: Heaven
@@ -85,5 +220,87 @@ Biomes: {
 	TestBiome: {
 		DisplayName: Test Biome
 		TownNPCDialogueName: the Test Biome
+	}
+}
+
+Tiles: {
+	ElixirFurnaceTile.MapEntry: Elixir Furnace Tile
+	TeleportationTile.DisplayName: Teleportation
+}
+
+Buffs: {
+	XuePoDanBuff: {
+		DisplayName: Xue Po Dan Buff
+		Description: Mods.AncientChineseMythology.Buffs.XuePoDanBuff.Description
+	}
+
+	XuePoDanDebuff: {
+		DisplayName: Xue Po Dan Debuff
+		Description: Mods.AncientChineseMythology.Buffs.XuePoDanDebuff.Description
+	}
+
+	NingShenDanBuff: {
+		DisplayName: Ning Shen Dan Buff
+		Description: Mods.AncientChineseMythology.Buffs.NingShenDanBuff.Description
+	}
+
+	NingShenDanDebuff: {
+		DisplayName: Ning Shen Dan Debuff
+		Description: Mods.AncientChineseMythology.Buffs.NingShenDanDebuff.Description
+	}
+
+	XuanGangDanBuff: {
+		DisplayName: Xuan Gang Dan Buff
+		Description: Mods.AncientChineseMythology.Buffs.XuanGangDanBuff.Description
+	}
+
+	XuanGangDanDebuff: {
+		DisplayName: Xuan Gang Dan Debuff
+		Description: Mods.AncientChineseMythology.Buffs.XuanGangDanDebuff.Description
+	}
+
+	PoJunDanBuff: {
+		DisplayName: Po Jun Dan Buff
+		Description: Mods.AncientChineseMythology.Buffs.PoJunDanBuff.Description
+	}
+
+	PoJunDanDebuff: {
+		DisplayName: Po Jun Dan Debuff
+		Description: Mods.AncientChineseMythology.Buffs.PoJunDanDebuff.Description
+	}
+
+	SnakeInvisibilityBuff: {
+		DisplayName: Snake Invisibility Buff
+		Description: Mods.AncientChineseMythology.Buffs.SnakeInvisibilityBuff.Description
+	}
+
+	DogCharmBuff: {
+		DisplayName: Dog Charm Buff
+		Description: Mods.AncientChineseMythology.Buffs.DogCharmBuff.Description
+	}
+
+	ChickenCharmBuff: {
+		DisplayName: Chicken Charm Buff
+		Description: Mods.AncientChineseMythology.Buffs.ChickenCharmBuff.Description
+	}
+
+	CowCharmBuff: {
+		DisplayName: Cow Charm Buff
+		Description: Mods.AncientChineseMythology.Buffs.CowCharmBuff.Description
+	}
+
+	HorseCharmBuff: {
+		DisplayName: Horse Charm Buff
+		Description: Mods.AncientChineseMythology.Buffs.HorseCharmBuff.Description
+	}
+
+	RabbitCharmBuff: {
+		DisplayName: Rabbit Charm Buff
+		Description: Mods.AncientChineseMythology.Buffs.RabbitCharmBuff.Description
+	}
+
+	BuffsBlackBearStaff: {
+		DisplayName: Buffs Black Bear Staff
+		Description: Mods.AncientChineseMythology.Buffs.BuffsBlackBearStaff.Description
 	}
 }

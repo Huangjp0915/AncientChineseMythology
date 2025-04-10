@@ -1,10 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "ucFsLk77+Nc=",
+  "dgSpecHash": "N8ojRyIMxfo=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Huang\\Documents\\My Games\\Terraria\\tModLoader\\ModSources\\AncientChineseMythology\\AncientChineseMythology.csproj",
+  "projectFilePath": "C:\\Users\\29591\\Documents\\My Games\\Terraria\\tModLoader\\ModSources\\AncientChineseMythology\\AncientChineseMythology.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\Huang\\.nuget\\packages\\tmodloader.codeassist\\0.1.5\\tmodloader.codeassist.0.1.5.nupkg.sha512"
+    "C:\\Users\\29591\\.nuget\\packages\\tmodloader.codeassist\\0.1.5\\tmodloader.codeassist.0.1.5.nupkg.sha512"
   ],
   "logs": []
 }

@@ -61,7 +61,7 @@ namespace AncientChineseMythology.NPCs.Boss
             Texture2D texture = TextureAssets.Projectile[Type].Value;
             Rectangle sourceRectangle = new Rectangle(0, 0, texture.Width, texture.Height);
             Vector2 origin = new Vector2(texture.Width / 2, texture.Height / 2);
-            Vector2 position = Projectile.position;
+            Vector2 position = Projectile.Center;
             SpriteEffects effects = Projectile.spriteDirection == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
             Color drawColor = Projectile.GetAlpha(lightColor);
             Main.spriteBatch.Draw(texture, position - Main.screenPosition, sourceRectangle, drawColor, Projectile.rotation, origin, Projectile.scale, effects, 0);
