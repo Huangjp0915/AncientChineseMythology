@@ -1,18 +1,15 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using System.Collections.Generic;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.DataStructures;
-//using AncientChineseMythology.Systems;
 using Terraria.GameContent.ItemDropRules;
 using AncientChineseMythology.Items;
 using System;
-using Microsoft.Xna.Framework.Graphics.PackedVector;
 using Terraria.Audio;
 using Terraria.Graphics.CameraModifiers;
-using AncientChineseMythology.Systems;
+using static AncientChineseMythology.AncientChineseMythology;
 
 namespace AncientChineseMythology.NPCs.Boss
 {
@@ -104,18 +101,13 @@ namespace AncientChineseMythology.NPCs.Boss
             NPC.noGravity = false;
             NPC.noTileCollide = false;
             NPC.boss = true;
+            NPC.HitSound = SoundID.NPCHit1;
             Music = MusicLoader.GetMusicSlot("AncientChineseMythology/Sounds/Music/BlackBear_Music");
         }
 
         public override float SpawnChance(NPCSpawnInfo spawnInfo)
         {
-            // 如果本晚已经生成了黑熊精，返回 0（不生成）
-            if (AncientChineseMythologySystem.blackBearSpawnedThisNight)
-            {
-                return 0f;
-            }
-            // 按原来的逻辑，丛林、地表、白天的生成几率
-            if (spawnInfo.Player.ZoneJungle && spawnInfo.Player.ZoneOverworldHeight && !Main.dayTime)
+            if (spawnInfo.Player.ZoneJungle && spawnInfo.Player.ZoneOverworldHeight && Main.dayTime)
             {
                 return 0.005f;
             }
@@ -179,7 +171,7 @@ namespace AncientChineseMythology.NPCs.Boss
                 int totalDie = 6; // 死亡动画有6帧
                 if (dieTimer > (totalDie * 13)*2)
                 {
-                    //DownedBossSystem.downedBlackBear = true;// 在boos列表中标记 Boss 已死亡
+                    DownedBossSystem.downedBlackBear = true;// 在boos列表中标记 Boss 已死亡
                     SoundEngine.PlaySound(new SoundStyle("AncientChineseMythology/Sounds/BlackBear/BlackBear_Roar"), player.Center);
                     NPC.NPCLoot();
                     NPC.active = false;
@@ -192,12 +184,12 @@ namespace AncientChineseMythology.NPCs.Boss
                     // 移动
                     case BearState.Run:
                         float dist = Vector2.Distance(NPC.Center, player.Center);
-                        if ((player.Center.Y + NPC.height < NPC.Center.Y && (dist > distanceThreshold * 1.5 && runTime >= 180)
-                            || (runTime >= 240)) && onGround)
+                        if ((player.Center.Y + NPC.height < NPC.Center.Y && (dist > distanceThreshold * 1.5 && runTime >= 180)) && onGround || (runTime >= 240))
                         {
                             currentState = BearState.Attack_2;
                             runTime = 0;
                             didDamageThisAttack = true;
+                            NPC.velocity.X = NPC.direction * runSpeed;
                         }
                         else
                         {
@@ -507,7 +499,6 @@ namespace AncientChineseMythology.NPCs.Boss
                 isDying = true;
                 NPC.life = 1; // 确保 NPC 不会被重复击杀
                 NPC.dontTakeDamage = true; // 防止在播放死亡动画时受到伤害
-                NPC.damage = 0;
                 NPC.netUpdate = true;
                 currentState = BearState.Die;
             }
@@ -591,10 +582,10 @@ namespace AncientChineseMythology.NPCs.Boss
         public override void ModifyNPCLoot(NPCLoot npcLoot)
         {
             npcLoot.Add(ItemDropRule.Common(ItemID.GoldCoin, 1, 5, 10));
-
             npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<SkyKey>(), 1));
-
-            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<JiaSha>(), 1));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<BlackBearStaff>(), 10, 1));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<BlackBearSword>(), 10, 1));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<BlackBearBow>(), 10, 1));
         }
     }
 }

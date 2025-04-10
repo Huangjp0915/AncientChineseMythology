@@ -87,7 +87,7 @@ namespace AncientChineseMythology.NPCs.TownNPCs
         public override void SetChatButtons(ref string button, ref string button2)
         {
             button = "帮助";
-            button2 = "请求木棍";
+            button2 = "商店";
         }
 
         public override void OnChatButtonClicked(bool firstButton, ref string shopName)

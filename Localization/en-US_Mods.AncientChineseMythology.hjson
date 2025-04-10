@@ -134,18 +134,28 @@ Items: {
 		Tooltip: ""
 	}
 
-	DiHuo: {
-		DisplayName: Di Huo
+	BlackBearStaff: {
+		DisplayName: Black Bear Staff
 		Tooltip: ""
 	}
 
-	JiaSha: {
-		DisplayName: Jia Sha
+	BlackBearSword: {
+		DisplayName: Black Bear Sword
 		Tooltip: ""
 	}
 
-	CupriteOre: {
-		DisplayName: Cuprite Ore
+	BlackBearBow: {
+		DisplayName: Black Bear Bow
+		Tooltip: ""
+	}
+
+	BronzeSword: {
+		DisplayName: Bronze Sword
+		Tooltip: ""
+	}
+
+	CrimsonbronzeSword: {
+		DisplayName: Crimsonbronze Sword
 		Tooltip: ""
 	}
 }
@@ -169,25 +179,7 @@ NPCs: {
 	Angry_gargoyle.DisplayName: Angry_gargoyle
 	angry_gargoyle.DisplayName: angry_gargoyle
 	BlackBear.DisplayName: Black Bear
-
-	TaiShangLaoJunNPC: {
-		DisplayName: Tai Shang Lao Jun N P C
-
-		TownNPCMood: {
-			Content: 我很满足。
-			NoHome: 我讨厌没有家。
-			FarFromHome: 我离家太远了。
-			LoveSpace: 我非常喜欢有这么大的空间。
-			DislikeCrowded: 我不喜欢这么拥挤。
-			HateCrowded: 我讨厌这么拥挤。
-			LikeNPC_Princess: 我喜欢 {NPCName}。
-			Princess_LovesNPC: 我喜欢 {NPCName}。
-		}
-	}
-
-	MingCrow.DisplayName: Ming Crow
-	JiaoSha.DisplayName: Jiao Sha
-	Demon.DisplayName: Demon
+	TaiShangLaoJunNPC.DisplayName: Tai Shang Lao Jun N P C
 }
 
 Projectiles: {
@@ -203,7 +195,18 @@ Projectiles: {
 	DragonCharmExplosion.DisplayName: Dragon Charm Explosion
 	DragonCharmLaser.DisplayName: Dragon Charm Laser
 	PigCharmLaser.DisplayName: Pig Charm Laser
-	Demon_Proj.DisplayName: Demon_ Proj
+	WoodenStickSpearProjectile_2.DisplayName: Wooden Stick Spear Projectile_2
+	IronStickSpearProjectile_2.DisplayName: Iron Stick Spear Projectile_2
+	IronStickSpearProjectile_3.DisplayName: Iron Stick Spear Projectile_3
+	GoldenStickSpearProjectile_2.DisplayName: Golden Stick Spear Projectile_2
+	GemStickSpearProjectile_2.DisplayName: Gem Stick Spear Projectile_2
+	BlackBearStaffProj1.DisplayName: Black Bear Staff Proj1
+	BlackBearStaffProj2.DisplayName: Black Bear Staff Proj2
+	BlackBearSwordProj1.DisplayName: Black Bear Sword Proj1
+	BlackBearBowProj1.DisplayName: Black Bear Bow Proj1
+	BlankProjectile.DisplayName: Blank Projectile
+	CrimsonbronzeSwordProj1.DisplayName: Crimsonbronze Sword Proj1
+	CrimsonbronzeSwordProj2.DisplayName: Crimsonbronze Sword Proj2
 }
 
 HeavenBiome.DisplayName: Heaven
@@ -223,8 +226,6 @@ Biomes: {
 Tiles: {
 	ElixirFurnaceTile.MapEntry: Elixir Furnace Tile
 	TeleportationTile.DisplayName: Teleportation
-	CupriteOreTile.MapEntry: Cuprite Ore Tile
-	PlacedCupriteOreTile.MapEntry: Placed Cuprite Ore Tile
 }
 
 Buffs: {
@@ -296,5 +297,10 @@ Buffs: {
 	RabbitCharmBuff: {
 		DisplayName: Rabbit Charm Buff
 		Description: Mods.AncientChineseMythology.Buffs.RabbitCharmBuff.Description
+	}
+
+	BuffsBlackBearStaff: {
+		DisplayName: Buffs Black Bear Staff
+		Description: Mods.AncientChineseMythology.Buffs.BuffsBlackBearStaff.Description
 	}
 }

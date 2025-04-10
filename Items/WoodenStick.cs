@@ -3,12 +3,16 @@ using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 using AncientChineseMythology.Projectiles;
+using Terraria.DataStructures;
 
 namespace AncientChineseMythology.Items
 {
     public class WoodenStick : GrowthWeapon
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/WoodenStick";
+        public int attackType = 0; // 记录当前攻击类型
+        public int comboExpireTimer = 0; // 当武器在一定时间内未使用时重置攻击模式
+        public override Color? GetAlpha(Color lightColor) { return Color.White; }
 
         public override void SetStaticDefaults()
         {
@@ -43,39 +47,34 @@ namespace AncientChineseMythology.Items
             return true;
         }
 
-        // 根据左键/右键 切换不同的攻击参数
-        public override bool CanUseItem(Player player)
+        public override void UpdateInventory(Player player)
         {
-            if (player.altFunctionUse == 2)
-            {
-                // 右键：挥砍（伤害高、击退低）
-                Item.useStyle = ItemUseStyleID.Swing;   // 普通近战挥砍
-                Item.useTime = 25;
-                Item.useAnimation = 25;
-                Item.noUseGraphic = false; // 显示物品贴图
-                Item.noMelee = false;      // 直接近战判定
-                Item.shoot = ProjectileID.None; // 不发射投射物
-
-                // 设置右键的伤害和击退
-                Item.damage = 15;
-                Item.knockBack = 2f;
-            }
-            else
-            {
-                // 左键：长矛刺击（伤害低、击退高）
-                Item.useStyle = ItemUseStyleID.Shoot;
-                Item.useTime = 25;
-                Item.useAnimation = 25;
-                Item.noUseGraphic = true;
-                Item.noMelee = true;
-                Item.shoot = ModContent.ProjectileType<WoodenStickSpearProjectile>();
-                Item.shootSpeed = 3.5f;
-
-                // 设置左键的伤害和击退
-                Item.damage = 9;
-                Item.knockBack = 6f;
-            }
-            return base.CanUseItem(player);
+            if (comboExpireTimer++ >= 120) // 在库存中存放 120 个 ticks（== 2 秒）后，重置攻击模式
+                attackType = 0;
         }
-    }
+        public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback)
+        {
+            if (player.altFunctionUse == 2) // 右键射击
+            {
+                if(comboExpireTimer < 120)
+                    Projectile.NewProjectile(source, position, velocity, ModContent.ProjectileType<WoodenStickSpearProjectile_2>(), damage, knockback, Main.myPlayer, attackType);
+                else
+                {
+                    Projectile.NewProjectile(source, position, velocity, ModContent.ProjectileType<WoodenStickSpearProjectile>(), damage, knockback, Main.myPlayer, attackType);
+                    attackType = (attackType + 1) % 2; // 增加攻击类型以确保下一个挥动不同
+                    comboExpireTimer = 0; // 每次使用武器时重置计时器，以便组合不会过期
+                }
+                    
+                return false;
+            }
+            else if (!Main.mouseRight)
+            {
+                Projectile.NewProjectile(source, position, velocity, ModContent.ProjectileType<WoodenStickSpearProjectile>(), damage, knockback, Main.myPlayer, attackType);
+                attackType = (attackType + 1) % 2; // 增加攻击类型以确保下一个挥动不同
+                comboExpireTimer = 0; // 每次使用武器时重置计时器，以便组合不会过期
+                return false;
+            }
+            return false; // 返回 false 以防止原始投射物被发射
+        }
+    } 
 }

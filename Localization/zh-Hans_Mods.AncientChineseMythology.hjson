@@ -78,11 +78,7 @@ Items: {
 	}
 
 	ElixirFurnaceItem: {
-		Tooltip:
-			'''
-			一个破破烂烂的炉子
-			勉强能炼制一些丹药
-			'''
+		Tooltip: 太上老君随手制作的一个炉子
 		DisplayName: 炼丹炉
 	}
 
@@ -166,23 +162,42 @@ Items: {
 		Tooltip: 烫烫烫
 	}
 
-	DiHuo: {
-		DisplayName: 地火
-		Tooltip: 蕴含大地之力的神秘火焰
-	}
-
-	JiaSha: {
-		DisplayName: 袈裟
+	BlackBearStaff: {
+		DisplayName: 金皇冠
 		Tooltip:
 			'''
-			在丛林地表使用召唤黑熊金Boss
-			(仅在丛林地表有效)
+			“看起来很合适，戴上试试？”
+			召唤金皇冠来为你战斗
 			'''
 	}
 
-	CupriteOre: {
-		DisplayName: 赤铜矿
-		Tooltip: ""
+	BlackBearSword: {
+		DisplayName: 勇士金剑
+		Tooltip: “仅献给能够拔起它的人……”
+	}
+
+	BlackBearBow: {
+		DisplayName: 金金弓
+		Tooltip: “金光闪闪？”
+	}
+
+	BronzeSword: {
+		DisplayName: 青铜剑
+		Tooltip:
+			'''
+			“剑身闪烁着瘆人的绿芒……”
+			击中敌人使敌人中毒，有极小概率秒杀敌人。
+			'''
+	}
+
+	CrimsonbronzeSword: {
+		DisplayName: 赤铜剑
+		Tooltip:
+			'''
+			“火焰包裹着剑身……”
+			左键攻击点燃敌人
+			右键蓄力发射火焰剑气
+			'''
 	}
 }
 
@@ -205,25 +220,7 @@ NPCs: {
 	// Angry_gargoyle.DisplayName: Angry_gargoyle
 	angry_gargoyle.DisplayName: 愤怒的石像鬼
 	BlackBear.DisplayName: 黑熊金
-
-	TaiShangLaoJunNPC: {
-		DisplayName: 太上老君
-
-		TownNPCMood: {
-			// Content: 我很满足。
-			// NoHome: 我讨厌没有家。
-			// FarFromHome: 我离家太远了。
-			// LoveSpace: 我非常喜欢有这么大的空间。
-			// DislikeCrowded: 我不喜欢这么拥挤。
-			// HateCrowded: 我讨厌这么拥挤。
-			// LikeNPC_Princess: 我喜欢 {NPCName}。
-			// Princess_LovesNPC: 我喜欢 {NPCName}。
-		}
-	}
-
-	MingCrow.DisplayName: 冥鸦
-	JiaoSha.DisplayName: 蛟鲨
-	Demon.DisplayName: 噩梦梦魇
+	TaiShangLaoJunNPC.DisplayName: 太上老君
 }
 
 Projectiles: {
@@ -239,7 +236,18 @@ Projectiles: {
 	// DragonCharmExplosion.DisplayName: Dragon Charm Explosion
 	// DragonCharmLaser.DisplayName: Dragon Charm Laser
 	// PigCharmLaser.DisplayName: Pig Charm Laser
-	// Demon_Proj.DisplayName: Demon_ Proj
+	// WoodenStickSpearProjectile_2.DisplayName: Wooden Stick Spear Projectile_2
+	// IronStickSpearProjectile_2.DisplayName: Iron Stick Spear Projectile_2
+	// IronStickSpearProjectile_3.DisplayName: Iron Stick Spear Projectile_3
+	// GoldenStickSpearProjectile_2.DisplayName: Golden Stick Spear Projectile_2
+	// GemStickSpearProjectile_2.DisplayName: Gem Stick Spear Projectile_2
+	// BlackBearStaffProj1.DisplayName: Black Bear Staff Proj1
+	// BlackBearStaffProj2.DisplayName: Black Bear Staff Proj2
+	// BlackBearSwordProj1.DisplayName: Black Bear Sword Proj1
+	// BlackBearBowProj1.DisplayName: Black Bear Bow Proj1
+	// BlankProjectile.DisplayName: Blank Projectile
+	// CrimsonbronzeSwordProj1.DisplayName: Crimsonbronze Sword Proj1
+	// CrimsonbronzeSwordProj2.DisplayName: Crimsonbronze Sword Proj2
 }
 
 // HeavenBiome.DisplayName: Heaven
@@ -257,10 +265,8 @@ Biomes: {
 }
 
 Tiles: {
-	ElixirFurnaceTile.MapEntry: 炼丹炉
+	// ElixirFurnaceTile.MapEntry: Elixir Furnace Tile
 	TeleportationTile.DisplayName: 漩涡之门
-	CupriteOreTile.MapEntry: 赤铜矿
-	PlacedCupriteOreTile.MapEntry: 被放置的赤铜矿
 }
 
 Buffs: {
@@ -332,5 +338,10 @@ Buffs: {
 	RabbitCharmBuff: {
 		DisplayName: 兔符咒
 		Description: 跑的飞快
+	}
+
+	BuffsBlackBearStaff: {
+		DisplayName: 金皇冠
+		Description: 金皇冠将为你而战！
 	}
 }

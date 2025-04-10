@@ -11,7 +11,7 @@ namespace AncientChineseMythology.NPCs.TownNPCs
     public class TaiShangLaoJunNPC : ModNPC
     {
         // 使用武器商的贴图和头像
-        public override string Texture => "AncientChineseMythology/Textures/TaiShangLaoJun/TaiShangLaoJunNPC";
+        public override string Texture => "Terraria/Images/NPC_19";
         public override string HeadTexture => "AncientChineseMythology/Textures/TaiShangLaoJun/TaiShangLaoJunNPC_Head";
 
         public override void SetStaticDefaults()

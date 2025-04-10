@@ -24,7 +24,8 @@ namespace AncientChineseMythology.Items
         public override void AddRecipes()
         {
             Recipe recipe = CreateRecipe();
-            recipe.AddIngredient(ModContent.ItemType<CupriteOre>(), 3);
+            recipe.AddIngredient(ItemID.CopperOre, 3); // 需要3个铜矿
+            recipe.AddIngredient(ItemID.IronOre, 2);   // 需要2个铁矿
             recipe.AddTile(TileID.Furnaces);           // 必须在熔炉旁合成
             recipe.Register();
         }

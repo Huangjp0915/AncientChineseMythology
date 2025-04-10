@@ -10,6 +10,8 @@ namespace AncientChineseMythology.Buffs
         {
             Main.buffNoTimeDisplay[Type] = false;
             Main.debuff[Type] = false;
+            // 如无自定义图标，可使用原版图标，例如使用 IronSkin（BuffID.Ironskin=5）的图标：
+            // public override string Texture => "Terraria/Images/Buff_5";
         }
         
         public override void Update(Player player, ref int buffIndex)

@@ -1,5 +1,7 @@
 using AncientChineseMythology.Projectiles;
+using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -8,6 +10,9 @@ namespace AncientChineseMythology.Items
     public class IronStick : GrowthWeapon
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/IronStick";
+        public int attackType = 0; // 记录当前攻击类型
+        public int comboExpireTimer = 0; // 当武器在一定时间内未使用时重置攻击模式
+        public override Color? GetAlpha(Color lightColor) { return Color.White; }
 
         public override void SetStaticDefaults()
         {
@@ -19,9 +24,9 @@ namespace AncientChineseMythology.Items
             // 物品基础属性（这里的值只是“默认”）
             Item.damage = 13;                 // 默认伤害
             Item.DamageType = DamageClass.Melee;
-            Item.width = 40; 
+            Item.width = 40;
             Item.height = 40;
-            Item.useTime = 25; 
+            Item.useTime = 25;
             Item.useAnimation = 25;
             Item.knockBack = 8f;             // 默认击退
             Item.value = Item.buyPrice(silver: 10);
@@ -29,8 +34,8 @@ namespace AncientChineseMythology.Items
             Item.autoReuse = true;
 
             // 默认设定为长矛刺击（左键）
-            Item.useStyle = ItemUseStyleID.Shoot; 
-            Item.noUseGraphic = true;        
+            Item.useStyle = ItemUseStyleID.Shoot;
+            Item.noUseGraphic = true;
             Item.noMelee = true;
             Item.shoot = ModContent.ProjectileType<IronStickSpearProjectile>();
             Item.shootSpeed = 3.5f;
@@ -42,39 +47,35 @@ namespace AncientChineseMythology.Items
             return true;
         }
 
-        // 根据左键/右键 切换不同的攻击参数
-        public override bool CanUseItem(Player player)
+        public override void UpdateInventory(Player player)
         {
-            if (player.altFunctionUse == 2)
-            {
-                // 右键：挥砍（伤害高、击退低）
-                Item.useStyle = ItemUseStyleID.Swing;   // 普通近战挥砍
-                Item.useTime = 25;
-                Item.useAnimation = 25;
-                Item.noUseGraphic = false; // 显示物品贴图
-                Item.noMelee = false;      // 直接近战判定
-                Item.shoot = ProjectileID.None; // 不发射投射物
+            if (comboExpireTimer++ >= 120) // 在库存中存放 120 个 ticks（== 2 秒）后，重置攻击模式
+                attackType = 0;
+        }
 
-                // 设置右键的伤害和击退
-                Item.damage = 19;
-                Item.knockBack = 2f;
-            }
-            else
+        public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback)
+        {
+            if (player.altFunctionUse == 2) // 右键射击
             {
-                // 左键：长矛刺击（伤害低、击退高）
-                Item.useStyle = ItemUseStyleID.Shoot;
-                Item.useTime = 25;
-                Item.useAnimation = 25;
-                Item.noUseGraphic = true;
-                Item.noMelee = true;
-                Item.shoot = ModContent.ProjectileType<IronStickSpearProjectile>();
-                Item.shootSpeed = 3.5f;
+                if (comboExpireTimer < 120)
+                    Projectile.NewProjectile(source, position, velocity, ModContent.ProjectileType<IronStickSpearProjectile_2>(), damage, knockback, Main.myPlayer, attackType);
+                else
+                {
+                    Projectile.NewProjectile(source, position, velocity, ModContent.ProjectileType<IronStickSpearProjectile>(), damage, knockback, Main.myPlayer, attackType);
+                    attackType = (attackType + 1) % 2; // 增加攻击类型以确保下一个挥动不同
+                    comboExpireTimer = 0; // 每次使用武器时重置计时器，以便组合不会过期
+                }
 
-                // 设置左键的伤害和击退
-                Item.damage = 13;
-                Item.knockBack = 8f;
+                return false;
             }
-            return base.CanUseItem(player);
+            else if (!Main.mouseRight)
+            {
+                Projectile.NewProjectile(source, position, velocity, ModContent.ProjectileType<IronStickSpearProjectile>(), damage, knockback, Main.myPlayer, attackType);
+                attackType = (attackType + 1) % 2; // 增加攻击类型以确保下一个挥动不同
+                comboExpireTimer = 0; // 每次使用武器时重置计时器，以便组合不会过期
+                return false;
+            }
+            return false; // 返回 false 以防止原始投射物被发射
         }
 
         public override void AddRecipes()
@@ -86,6 +87,5 @@ namespace AncientChineseMythology.Items
             recipe.AddTile(TileID.Anvils);
             recipe.Register();
         }
-
     }
 }

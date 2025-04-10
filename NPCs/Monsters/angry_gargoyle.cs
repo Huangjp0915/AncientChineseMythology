@@ -1,12 +1,9 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using System.Collections.Generic;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
-//using AncientChineseMythology.Systems;
 using Terraria.DataStructures;
-using System;
 
 namespace AncientChineseMythology.NPCs.Monsters
 {
@@ -45,7 +42,7 @@ namespace AncientChineseMythology.NPCs.Monsters
         private Texture2D dieTexture;
 
         // 覆盖 Texture 属性，返回一个假路径，防止 tModLoader 自动加载单一贴图
-        public override string Texture => "AncientChineseMythology/Textures/angry_gargoyle/run_01";
+        public override string Texture => "AncientChineseMythology/Textures/angry_gargoyle/angry_gargoyle";
 
         //public override void Load()
         //{
@@ -272,13 +269,6 @@ namespace AncientChineseMythology.NPCs.Monsters
                     totalFrames = runFrameCount;
                     break;
             }
-
-            //if (texture == null)
-            //{
-            //    Main.NewText("1");
-            //    return true;
-            //}
-               
 
             int currentFrame = (int)(animationCounter / frameDuration) % totalFrames;
             Rectangle sourceRectangle = new Rectangle(0, currentFrame * frameHeight, texture.Width, frameHeight);

@@ -63,12 +63,15 @@ namespace AncientChineseMythology.Items
             // 让物品在地上时，绘制更小
             float customScale = 0.5f;
 
+            // 如果你想手动绘制，可以这样做：
             Texture2D texture = TextureAssets.Item[Item.type].Value;
 
             // 以物品中心为基准进行绘制
             Vector2 drawPosition = Item.Center - Main.screenPosition;
 
             // 如果需要让它贴得更紧一点，可以手动往下移动
+            // 例如：drawPosition.Y += 2f;
+
             Vector2 origin = texture.Size() * 0.5f;
 
             // 手动绘制
@@ -83,7 +86,8 @@ namespace AncientChineseMythology.Items
                 SpriteEffects.None,
                 0f
             );
-            
+
+            // 返回 false 表示“我已经手动完成了绘制，不再用默认逻辑绘制”
             return false;
         }
     }

@@ -32,7 +32,7 @@ namespace AncientChineseMythology.Items
             // 因此这里增加 100，即每秒回复 50 点生命
             player.lifeRegen += 100;
             
-            // 增加魔力回复效果
+            // 增加魔力回复效果（具体数值可根据测试进行调整）
             player.manaRegenBonus += 50;
 
             // 刷新 DogCharmBuff（持续2帧刷新，使其不会消失）
@@ -47,6 +47,7 @@ namespace AncientChineseMythology.Items
                 .Register();
         }
 
+        // 重写该方法以调整物品在世界中的绘制大小
         public override bool PreDrawInWorld(
             SpriteBatch spriteBatch,
             Color lightColor,
@@ -58,12 +59,15 @@ namespace AncientChineseMythology.Items
             // 让物品在地上时，绘制更小
             float customScale = 0.5f;
 
+            // 如果你想手动绘制，可以这样做：
             Texture2D texture = TextureAssets.Item[Item.type].Value;
 
             // 以物品中心为基准进行绘制
             Vector2 drawPosition = Item.Center - Main.screenPosition;
 
             // 如果需要让它贴得更紧一点，可以手动往下移动
+            // 例如：drawPosition.Y += 2f;
+
             Vector2 origin = texture.Size() * 0.5f;
 
             // 手动绘制
