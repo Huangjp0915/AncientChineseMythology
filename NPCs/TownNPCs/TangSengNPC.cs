@@ -40,6 +40,8 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             NPCID.Sets.AttackType[Type] = NPCID.Sets.AttackType[NPCID.Guide]; 
             NPCID.Sets.AttackTime[Type] = NPCID.Sets.AttackTime[NPCID.Guide];
             NPCID.Sets.AttackAverageChance[Type] = NPCID.Sets.AttackAverageChance[NPCID.Guide];
+
+            NPCID.Sets.NoTownNPCHappiness[Type] = true;
         }
 
         public override void SetDefaults()
@@ -69,11 +71,6 @@ namespace AncientChineseMythology.NPCs.TownNPCs
 
         public override bool CanTownNPCSpawn(int numTownNPCs) => true;
         public override bool CanChat() => true;
-
-        public override List<string> SetNPCNameList()
-        {
-            return new List<string> { "唐僧" };
-        }
 
         public override string GetChat()
         {
@@ -144,20 +141,24 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             }
             else
             {
-                // “商店”
-                shopName = "TangSengShop";
+                bool hasStick = player.inventory.Any(item => item != null && item.type == ModContent.ItemType<WoodenStick>() && item.stack > 0);
+                if (hasStick)
+                {
+                    Main.npcChatText = "阿弥陀佛，施主不要贪心";
+                }
+                else
+                {
+                    player.QuickSpawnItem(player.GetSource_FromThis(), ModContent.ItemType<WoodenStick>());
+                    Main.npcChatText = "这根木棍送给你，但切记不可贪心";
+                }
+                
             }
             Main.player[Main.myPlayer].SetTalkNPC(NPC.whoAmI);
         }
 
-        // 专属商店
-        public override void AddShops()
+        public override void ModifyNPCLoot(NPCLoot npcLoot)
         {
-            new NPCShop(Type, "TangSengShop")
-                .Add<WoodenStick>()
-                .Add<IronStick>()
-                // 也可加更多物品
-                .Register();
+            npcLoot.Add(Terraria.GameContent.ItemDropRules.ItemDropRule.Common(ModContent.ItemType<JiaSha>(), 1));
         }
     }
 }

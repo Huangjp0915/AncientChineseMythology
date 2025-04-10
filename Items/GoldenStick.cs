@@ -1,4 +1,4 @@
-﻿using AncientChineseMythology.Projectiles;
+using AncientChineseMythology.Projectiles;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.DataStructures;

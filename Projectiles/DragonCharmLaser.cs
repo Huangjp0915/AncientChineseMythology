@@ -49,7 +49,6 @@ namespace AncientChineseMythology.Projectiles
             return true;
         }
 
-        // 使用新版 NPC.HitInfo 重写 OnHitNPC
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damage)
         {
             Explode();

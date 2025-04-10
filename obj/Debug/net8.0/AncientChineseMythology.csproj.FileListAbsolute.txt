@@ -326,6 +326,7 @@ C:\Users\29591\Documents\My Games\Terraria\tModLoader\ModSources\AncientChineseM
 C:\Users\29591\Documents\My Games\Terraria\tModLoader\ModSources\AncientChineseMythology\bin\Debug\net8.0\Microsoft.CodeAnalysis.Workspaces.pdb
 C:\Users\29591\Documents\My Games\Terraria\tModLoader\ModSources\AncientChineseMythology\bin\Debug\net8.0\Microsoft.CodeAnalysis.Workspaces.xml
 C:\Users\29591\Documents\My Games\Terraria\tModLoader\ModSources\AncientChineseMythology\bin\Debug\net8.0\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.dll.config
+C:\Users\29591\Documents\My Games\Terraria\tModLoader\ModSources\AncientChineseMythology\bin\Debug\net8.0\Newtonsoft.Json.xml
 C:\Users\29591\Documents\My Games\Terraria\tModLoader\ModSources\AncientChineseMythology\bin\Debug\net8.0\Microsoft.CodeAnalysis.Workspaces.MSBuild.pdb
 C:\Users\29591\Documents\My Games\Terraria\tModLoader\ModSources\AncientChineseMythology\bin\Debug\net8.0\Microsoft.CodeAnalysis.Workspaces.MSBuild.xml
 C:\Users\29591\Documents\My Games\Terraria\tModLoader\ModSources\AncientChineseMythology\bin\Debug\net8.0\Microsoft.Extensions.DependencyInjection.Abstractions.xml
@@ -463,4 +464,3 @@ C:\Users\29591\Documents\My Games\Terraria\tModLoader\ModSources\AncientChineseM
 C:\Users\29591\Documents\My Games\Terraria\tModLoader\ModSources\AncientChineseMythology\obj\Debug\net8.0\refint\AncientChineseMythology.dll
 C:\Users\29591\Documents\My Games\Terraria\tModLoader\ModSources\AncientChineseMythology\obj\Debug\net8.0\AncientChineseMythology.pdb
 C:\Users\29591\Documents\My Games\Terraria\tModLoader\ModSources\AncientChineseMythology\obj\Debug\net8.0\ref\AncientChineseMythology.dll
-C:\Users\29591\Documents\My Games\Terraria\tModLoader\ModSources\AncientChineseMythology\bin\Debug\net8.0\StructureHelper.dll

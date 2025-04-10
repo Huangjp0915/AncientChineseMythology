@@ -462,6 +462,10 @@ namespace AncientChineseMythology.NPCs.Boss
        
         private void CheckContactDamage()
         {
+            // 如果正在死亡状态，则不检测接触伤害
+            if (NPC.damage == 0)
+                return;
+                        
             if (contactDamageCooldown > 0)
                 return;
 
