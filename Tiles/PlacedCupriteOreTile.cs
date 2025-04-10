@@ -11,7 +11,7 @@ namespace AncientChineseMythology.Tiles
 {
     public class PlacedCupriteOreTile : ModTile
     {
-        public override string Texture => "AncientChineseMythology/Textures/Tiles/PlacedCupriteOreTile";
+        public override string Texture => "AncientChineseMythology/Textures/Tiles/CupriteOreTile";
 
         public override void SetStaticDefaults()
         {
@@ -22,9 +22,6 @@ namespace AncientChineseMythology.Tiles
             Main.tileShine[Type] = 975;
             Main.tileShine2[Type] = true;
             Main.tileBlockLight[Type] = true;
-
-            // 如果你只需要单帧显示，可以设为 true
-            Main.tileFrameImportant[Type] = true;
 
             HitSound = SoundID.Tink;
             DustType = DustID.Iron;

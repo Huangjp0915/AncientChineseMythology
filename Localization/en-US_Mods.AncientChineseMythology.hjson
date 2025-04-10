@@ -158,6 +158,21 @@ Items: {
 		DisplayName: Crimsonbronze Sword
 		Tooltip: ""
 	}
+
+	CupriteOre: {
+		DisplayName: Cuprite Ore
+		Tooltip: ""
+	}
+
+	DiHuo: {
+		DisplayName: Di Huo
+		Tooltip: ""
+	}
+
+	JiaSha: {
+		DisplayName: Jia Sha
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -180,6 +195,10 @@ NPCs: {
 	angry_gargoyle.DisplayName: angry_gargoyle
 	BlackBear.DisplayName: Black Bear
 	TaiShangLaoJunNPC.DisplayName: Tai Shang Lao Jun N P C
+	BloodCrow.DisplayName: Blood Crow
+	Demon.DisplayName: Demon
+	JiaoSha.DisplayName: Jiao Sha
+	MingCrow.DisplayName: Ming Crow
 }
 
 Projectiles: {
@@ -207,6 +226,7 @@ Projectiles: {
 	BlankProjectile.DisplayName: Blank Projectile
 	CrimsonbronzeSwordProj1.DisplayName: Crimsonbronze Sword Proj1
 	CrimsonbronzeSwordProj2.DisplayName: Crimsonbronze Sword Proj2
+	Demon_Proj.DisplayName: Demon_ Proj
 }
 
 HeavenBiome.DisplayName: Heaven
@@ -226,6 +246,8 @@ Biomes: {
 Tiles: {
 	ElixirFurnaceTile.MapEntry: Elixir Furnace Tile
 	TeleportationTile.DisplayName: Teleportation
+	CupriteOreTile.MapEntry: Cuprite Ore Tile
+	PlacedCupriteOreTile.MapEntry: Placed Cuprite Ore Tile
 }
 
 Buffs: {
