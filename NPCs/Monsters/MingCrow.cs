@@ -1,8 +1,10 @@
 using System;
+using AncientChineseMythology.Items;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.DataStructures;
+using Terraria.GameContent.ItemDropRules;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -66,9 +68,9 @@ namespace AncientChineseMythology.NPCs.Monsters
             // NPC 基本属性
             NPC.width = 34;
             NPC.height = 28;
-            NPC.damage = 20;
+            NPC.damage = 13;
             NPC.defense = 5;
-            NPC.lifeMax = 60;
+            NPC.lifeMax = 35;
             NPC.knockBackResist = 0.3f;
             NPC.HitSound = SoundID.NPCHit46;
             NPC.DeathSound = SoundID.NPCDeath48;
@@ -86,7 +88,7 @@ namespace AncientChineseMythology.NPCs.Monsters
         public override float SpawnChance(NPCSpawnInfo spawnInfo)
         {
             if (!Main.dayTime && spawnInfo.Player.ZoneOverworldHeight && spawnInfo.Player.townNPCs < 1)
-                return 0.4f;
+                return 0.2f;
             return 0f;
         }
 
@@ -212,7 +214,7 @@ namespace AncientChineseMythology.NPCs.Monsters
                 if (invincibleTimer > 120)
                 {
                     NPC.velocity = initialVelocity;
-                    NPC.spriteDirection = initialVelocity.X > 0 ? 1 : -1;
+                    NPC.spriteDirection = initialVelocity.X > 0 ? -1 : 1;
                 }
             }
             else
@@ -283,6 +285,11 @@ namespace AncientChineseMythology.NPCs.Monsters
 
             spriteBatch.Draw(texture, drawPos, sourceRect, drawColor * NPC.Opacity, NPC.rotation, origin, 1f, effects, 0f);
             return false;
+        }
+
+        public override void ModifyNPCLoot(NPCLoot npcLoot)
+        {
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<MingCrowStaff>(), 100));
         }
     }
 }

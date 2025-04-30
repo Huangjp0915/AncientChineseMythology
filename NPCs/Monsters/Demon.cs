@@ -93,7 +93,7 @@ namespace AncientChineseMythology.NPCs.Monsters
             NPC.height = 30;
             NPC.damage = 20;
             NPC.defense = 8;
-            NPC.lifeMax = 100;
+            NPC.lifeMax = 80;
             NPC.knockBackResist = 0.5f;
             NPC.value = 100f;
             NPC.HitSound = SoundID.NPCHit1;

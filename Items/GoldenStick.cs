@@ -7,7 +7,7 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Items
 {
-    public class GoldenStick : GrowthWeapon
+    public class GoldenStick : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/GoldenStick";
         public int attackType = 0; // 记录当前攻击类型
@@ -22,14 +22,14 @@ namespace AncientChineseMythology.Items
         public override void SetDefaults()
         {
             // 物品基础属性（这里的值只是“默认”）
-            Item.damage = 18;                 // 默认伤害
+            Item.damage = 48;                 // 默认伤害
             Item.DamageType = DamageClass.Melee;
             Item.width = 40; 
             Item.height = 40;
-            Item.useTime = 25; 
-            Item.useAnimation = 25;
-            Item.knockBack = 8f;             // 默认击退
-            Item.value = Item.buyPrice(silver: 10);
+            Item.useTime = 40; 
+            Item.useAnimation = 40;
+            Item.knockBack = 12f;             // 默认击退
+            Item.value = Item.buyPrice(gold: 48);
             Item.rare = ItemRarityID.Blue;
             Item.autoReuse = true;
 

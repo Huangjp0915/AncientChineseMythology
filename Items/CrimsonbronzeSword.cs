@@ -16,8 +16,8 @@ namespace AncientChineseMythology.Items
 
         public override void SetDefaults()
         {
-            Item.damage = 24; // 基础伤害
-            Item.crit = 6; // 爆击率
+            Item.damage = 59; // 基础伤害
+            Item.crit = 2; // 爆击率
             Item.DamageType = DamageClass.Melee; // 伤害类型
             Item.width = 74; // 物品宽度
             Item.height = 82; // 物品高度
@@ -25,7 +25,7 @@ namespace AncientChineseMythology.Items
             Item.useAnimation = 25; // 使用动画时间
             Item.useStyle = ItemUseStyleID.Swing; // 使用风格
             Item.knockBack = 6; // 击退
-            Item.value = Item.buyPrice(0, 0, 0, 16); // 物品价值
+            Item.value = Item.buyPrice(0, 10, 0, 0); // 物品价值
             Item.rare = ItemRarityID.Green; // 稀有度
             //Item.UseSound = SoundID.Item1; // 使用音效
             Item.autoReuse = true; // 自动使用

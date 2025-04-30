@@ -4,7 +4,7 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Items
 {
-    public class TrueRuyiStick : GrowthWeapon
+    public class TrueRuyiStick : ModItem
     {
         public override void SetStaticDefaults()
         {
@@ -29,7 +29,7 @@ namespace AncientChineseMythology.Items
 
         public override string Texture => "Terraria/Images/Item_676";
 
-        public override void AddRecipes()
+        /*public override void AddRecipes()
         {
             Recipe recipe = CreateRecipe();
             recipe.AddIngredient(ModContent.ItemType<RuyiStick>(), 1);
@@ -42,6 +42,6 @@ namespace AncientChineseMythology.Items
             recipe.AddIngredient(ModContent.ItemType<YaoQiFragment>(), 80);
             recipe.AddTile(TileID.Anvils);
             recipe.Register();
-        }
+        }*/
     }
 }

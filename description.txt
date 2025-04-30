@@ -1,45 +1,47 @@
 将西游记、封神演义、巫妖大战、洪荒等融入这个mod，刚开始制作，还请各位多多期待
 
 【洪荒】
-乱世之中，截教余孽暗流涌动，山海界裂痕不断，妖气四处滋生——人、仙、妖三界危机再临！在这款融合了中国神话元素的模组中，你将邂逅全新NPC“唐僧”，获取可成长的武器“木棍—如意金箍棒”对抗凶险妖魔。
+乱世之中，截教余孽暗流涌动，山海界裂痕不断，妖气四处滋生——人、仙、妖三界危机再临！在这款融合了中国神话元素的模组中，你将邂逅全新NPC，获取中国特色武器和药水，了解中国相关神话故事。
 
 该版本新增：
-2个NPC
+4个NPC
 1个Boss
-4个小怪
-10种buff
-7种武器
+5个小怪
+11种buff
+16种武器
 5种配饰
 5种药剂
-5种物品
+18种物品
 2种锭
 1种矿石
 1种合成台
 2个小世界
-1个新环境
+1个环境
+4种草药
 
-快来加入《封神再启：大唐降妖录》，与唐僧并肩踏上封神旅途，迎战暗潮中的诸多妖魔，一同守护三界的安宁吧！
+快来加入《洪荒》，迎战暗潮中的诸多妖魔，一同守护三界的安宁吧！
 
 -------------------------------------------------------------------
 
 This mod integrates Journey to the West, Investiture of the Gods, War of Liches, and Primordial Chaos. It has just started, so please look forward to it.
 
-[Primordial]
-In the troubled times, the remnants of Jiejiao are surging, the mountain and sea worlds are constantly cracked, and demonic energy is growing everywhere - the crisis of the three worlds of humans, immortals, and demons is coming again! In this mod that incorporates elements of Chinese mythology, you will encounter a new NPC "Tang Monk" and obtain a growing weapon "wooden stick-Ruyi Jingu Bang" to fight against dangerous demons.
+[Primordial Chaos]
+In the troubled times, the remnants of Jiejiao are surging, the mountain and sea worlds are constantly cracked, and demonic spirits are growing everywhere - the crisis of the three worlds of humans, immortals, and demons is coming again! In this mod that incorporates Chinese mythological elements, you will encounter new NPCs, obtain Chinese-style weapons and potions, and learn about Chinese mythological stories.
 
 This version adds:
-2 NPCs
+4 NPCs
 1 Boss
-4 monsters
-10 buffs
-7 weapons
+5 monsters
+11 buffs
+16 weapons
 5 accessories
 5 potions
-5 items
+18 items
 2 ingots
 1 ore
 1 synthesis table
 2 small worlds
-1 new environment
+1 environment
+4 herbs
 
-Come and join "Investiture of the Gods: The Tang Dynasty Demon Slayer Record", embark on the journey of investing gods with Tang Monk, fight against many demons in the dark tide, and protect the peace of the three realms together!
+Come and join "Primordial Chaos" to fight against the many demons in the dark tide and protect the peace of the three realms together!

@@ -18,7 +18,7 @@ namespace AncientChineseMythology.Items
             Item.height = 20;
             Item.maxStack = 99;
             Item.scale = 0.1f;
-            Item.value = Item.buyPrice(silver: 50);
+            Item.value = Item.buyPrice(gold: 5);
             Item.rare = ItemRarityID.Green;
         }
     }

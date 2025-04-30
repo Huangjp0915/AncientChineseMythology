@@ -1,6 +1,6 @@
 displayName = 洪荒【Primordial】
-author = 子酥, Yui, 原力, 君倾
-version = 2.75
+author = 子酥, Yui, 原力, 君倾，晴雨
+version = 2.93
 
 modReferences = SubworldLibrary, StructureHelper
 references = SubworldLibrary, StructureHelper

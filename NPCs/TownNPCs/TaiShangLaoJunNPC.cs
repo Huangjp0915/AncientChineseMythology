@@ -59,6 +59,8 @@ namespace AncientChineseMythology.NPCs.TownNPCs
 
         public override bool CanTownNPCSpawn(int numTownNPCs)
         {
+            if (NPC.AnyNPCs(Type)) return false;
+            
             // 遍历所有玩家
             for (int i = 0; i < Main.maxPlayers; i++)
             {

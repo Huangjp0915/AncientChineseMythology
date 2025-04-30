@@ -96,7 +96,7 @@ namespace AncientChineseMythology.NPCs.Monsters
             // NPC 基本属性
             NPC.width = 40;
             NPC.height = 30;
-            NPC.damage = 25;
+            NPC.damage = 40;
             NPC.defense = 8;
             NPC.lifeMax = 100;
             NPC.knockBackResist = 0.5f;

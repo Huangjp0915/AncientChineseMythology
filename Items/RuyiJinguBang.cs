@@ -4,7 +4,7 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Items
 {
-    public class RuyiJinguBang : GrowthWeapon
+    public class RuyiJinguBang : ModItem
     {
         public override void SetStaticDefaults()
         {
@@ -27,9 +27,10 @@ namespace AncientChineseMythology.Items
             Item.rare = ItemRarityID.Orange;
             Item.UseSound = SoundID.Item1;
             Item.autoReuse = true;
+            Item.value = Item.buyPrice(10, 0, 0, 0);
         }
 
-        public override void AddRecipes()
+        /*public override void AddRecipes()
         {
             Recipe recipe = CreateRecipe();
             recipe.AddIngredient(ModContent.ItemType<TrueRuyiStick>(), 1);
@@ -42,7 +43,7 @@ namespace AncientChineseMythology.Items
             recipe.AddIngredient(ModContent.ItemType<YaoQiFragment>(), 160);
             recipe.AddTile(TileID.MythrilAnvil);
             recipe.Register();
-        }
+        }*/
 
         public override string Texture => "Terraria/Images/Item_" + ItemID.SilverBroadsword;
     }

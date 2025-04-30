@@ -14,8 +14,8 @@ namespace AncientChineseMythology.Items
 
         public override void SetDefaults()
         {
-            Item.damage = 21; // 基础伤害
-            Item.crit = 8; // 暴击率
+            Item.damage = 25; // 基础伤害
+            Item.crit = 3; // 暴击率
             Item.DamageType = DamageClass.Summon; // 伤害类型
             Item.width = 40; // 宽度
             Item.height = 28; // 高度
@@ -23,7 +23,7 @@ namespace AncientChineseMythology.Items
             Item.useAnimation = 20; // 使用动画
             Item.useStyle = ItemUseStyleID.Swing; // 使用方式
             Item.knockBack = 6; // 击退距离
-            Item.value = Item.buyPrice(0, 0, 0, 16); // 物品价值
+            Item.value = Item.buyPrice(0, 30, 0, 0); // 物品价值
             Item.rare = ItemRarityID.Green; // 稀有度
             Item.UseSound = SoundID.Item100; // 使用音效
             Item.autoReuse = true; // 自动重用

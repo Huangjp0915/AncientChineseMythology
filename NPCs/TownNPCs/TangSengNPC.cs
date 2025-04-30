@@ -18,11 +18,6 @@ namespace AncientChineseMythology.NPCs.TownNPCs
         // 头像
         public override string HeadTexture => "AncientChineseMythology/Textures/Tangseng/TangSengNPC_Head";
 
-        // 自定义攻击贴图(2帧)
-        private Texture2D attackTexture;
-        // 用于播放2帧攻击动画的计数器
-        private float attackFrameCounter = 0f;
-
         public override void SetStaticDefaults()
         {
             // ---- 让NPC使用向导AI、向导动画 ----
@@ -69,7 +64,12 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             // TownNPCStayingHomeless = true;
         }
 
-        public override bool CanTownNPCSpawn(int numTownNPCs) => true;
+        public override bool CanTownNPCSpawn(int numTownNPCs) 
+        {
+            if (NPC.AnyNPCs(Type)) return false;
+
+            return true;
+        }
         public override bool CanChat() => true;
 
         public override string GetChat()
@@ -87,7 +87,7 @@ namespace AncientChineseMythology.NPCs.TownNPCs
         public override void SetChatButtons(ref string button, ref string button2)
         {
             button = "帮助";
-            button2 = "商店";
+            button2 = "请求木棍";
         }
 
         public override void OnChatButtonClicked(bool firstButton, ref string shopName)

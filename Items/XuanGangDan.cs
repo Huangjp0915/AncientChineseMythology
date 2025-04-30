@@ -19,7 +19,7 @@ namespace AncientChineseMythology.Items
             Item.width = 24;
             Item.height = 30;
             Item.maxStack = 999;
-            Item.value = Item.sellPrice(0, 1, 0, 0);
+            Item.value = Item.sellPrice(0, 2, 0, 0);
             Item.rare = ItemRarityID.Green;
             
             // 药水基本设置
@@ -41,15 +41,6 @@ namespace AncientChineseMythology.Items
             player.AddBuff(BuffID.PotionSickness, 36000, false);
             return base.UseItem(player);
         }
-        
-        public override void AddRecipes()
-        {
-            CreateRecipe()
-                .AddIngredient(ItemID.BottledWater, 1)
-                .AddIngredient(ItemID.LifeCrystal, 1)
-                .AddIngredient(ItemID.Vertebrae, 1)
-                .AddTile(TileID.Bottles)
-                .Register();
-        }
+    
     }
 }

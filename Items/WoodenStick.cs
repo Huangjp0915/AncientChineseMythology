@@ -7,7 +7,7 @@ using Terraria.DataStructures;
 
 namespace AncientChineseMythology.Items
 {
-    public class WoodenStick : GrowthWeapon
+    public class WoodenStick : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/WoodenStick";
         public int attackType = 0; // 记录当前攻击类型
@@ -22,14 +22,14 @@ namespace AncientChineseMythology.Items
         public override void SetDefaults()
         {
             // 物品基础属性（这里的值只是“默认”）
-            Item.damage = 9;                 // 默认伤害
+            Item.damage = 8;                 // 默认伤害
             Item.DamageType = DamageClass.Melee;
             Item.width = 40; 
             Item.height = 40;
-            Item.useTime = 25; 
-            Item.useAnimation = 25;
-            Item.knockBack = 6f;             // 默认击退
-            Item.value = Item.buyPrice(silver: 10);
+            Item.useTime = 20; 
+            Item.useAnimation = 20;
+            Item.knockBack = 5f;             // 默认击退
+            Item.value = Item.buyPrice(silver: 0);
             Item.rare = ItemRarityID.Blue;
             Item.autoReuse = true;
 

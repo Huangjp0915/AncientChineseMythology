@@ -4,7 +4,7 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Items
 {
-    public class RuyiStick : GrowthWeapon
+    public class RuyiStick : ModItem
     {
         public override void SetStaticDefaults()
         {
@@ -13,7 +13,7 @@ namespace AncientChineseMythology.Items
 
         public override void SetDefaults()
         {
-            Item.damage = 49;
+            Item.damage = 108;
             Item.DamageType = DamageClass.Melee;
             Item.width = 48;
             Item.height = 48;
@@ -27,15 +27,16 @@ namespace AncientChineseMythology.Items
             Item.autoReuse = true;
         }
 
-        public override void AddRecipes()
+        /*public override void AddRecipes()
         {
             Recipe recipe = CreateRecipe();
             recipe.AddIngredient(ModContent.ItemType<GemStick>(), 1);
             recipe.AddIngredient(ItemID.HellstoneBar, 81);
+            recipe.AddIngredient(ModContent.ItemType<Cuprite>(), 49);
             recipe.AddIngredient(ModContent.ItemType<YaoQiFragment>(), 40);
             recipe.AddTile(TileID.Hellforge);
             recipe.Register();
-        }
+        }*/
 
         // 使用内置武士刀作为占位贴图
         public override string Texture => "Terraria/Images/Item_" + ItemID.Muramasa;

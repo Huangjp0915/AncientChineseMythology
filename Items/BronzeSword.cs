@@ -14,16 +14,16 @@ namespace AncientChineseMythology.Items
 
         public override void SetDefaults()
         {
-            Item.damage = 12; // 基础伤害
-            Item.crit = 4; // 爆击率
+            Item.damage = 8; // 基础伤害
+            Item.crit = 15; // 爆击率
             Item.DamageType = DamageClass.Melee; // 伤害类型
             Item.width = 52; // 物品宽度
             Item.height = 52; // 物品高度
-            Item.useTime = 25; // 使用时间
-            Item.useAnimation = 25; // 使用动画时间
+            Item.useTime = 10; // 使用时间
+            Item.useAnimation = 10; // 使用动画时间
             Item.useStyle = ItemUseStyleID.Swing; // 使用风格
-            Item.knockBack = 6; // 击退
-            Item.value = Item.buyPrice(0, 0, 0, 16); // 物品价值
+            Item.knockBack = 0; // 击退
+            Item.value = Item.buyPrice(0, 0, 0, 0); // 物品价值
             Item.rare = ItemRarityID.Green; // 稀有度
             //Item.UseSound = SoundID.Item1; // 使用声音
             //Item.useTurn = true; // 自动转向

@@ -32,7 +32,8 @@ namespace AncientChineseMythology.Items
         public override void AddRecipes()
         {
             CreateRecipe()
-                .AddIngredient(ItemID.StoneBlock, 10)
+                .AddIngredient(ModContent.ItemType<BronzeIngot>(), 18)
+                .AddIngredient(ModContent.ItemType<DiHuo>(), 1)
                 .AddTile(TileID.WorkBenches)
                 .Register();
         }

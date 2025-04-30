@@ -15,23 +15,23 @@ namespace AncientChineseMythology.Items
 
         public override void SetDefaults()
         {
-            Item.damage = 24;
+            Item.damage = 20;
             Item.crit = 6;
             Item.DamageType = DamageClass.Ranged; // 远程
             Item.width = 22;
             Item.height = 64;
-            Item.useTime = 25;
+            Item.useTime = 15;
             Item.useAnimation = 25;
             Item.useStyle = ItemUseStyleID.Shoot;
             Item.knockBack = 3;
-            Item.value = Item.buyPrice(0, 0, 0, 16); // 物品价值
+            Item.value = Item.buyPrice(0, 30, 0, 0); // 物品价值
             Item.rare = ItemRarityID.Green; // 稀有度
             Item.noMelee = true; // 无法近战
             Item.UseSound = SoundID.Item5;
             Item.autoReuse = true; // 自动使用
             Item.noUseGraphic = false; // 显示使用动画
             Item.shoot = ModContent.ProjectileType<Projectiles.BlackBearBowProj1>(); // 射击类型，发射自定义的弹幕
-            Item.shootSpeed = 16f; // 发射速度
+            Item.shootSpeed = 10f; // 发射速度
             Item.useAmmo = AmmoID.Arrow; // 指定使用的弹药类型（箭）
         }
         public override void HoldItem(Player player)

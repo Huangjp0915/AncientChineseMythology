@@ -7,7 +7,7 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Items
 {
-    public class GemStick : GrowthWeapon
+    public class GemStick : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/GemStick";
         public int attackType = 0; // 记录当前攻击类型
@@ -22,14 +22,14 @@ namespace AncientChineseMythology.Items
         public override void SetDefaults()
         {
             // 物品基础属性（这里的值只是“默认”）
-            Item.damage = 25;                 // 默认伤害
+            Item.damage = 68;                 // 默认伤害
             Item.DamageType = DamageClass.Melee;
             Item.width = 40; 
             Item.height = 40;
-            Item.useTime = 25; 
-            Item.useAnimation = 25;
-            Item.knockBack = 8f;             // 默认击退
-            Item.value = Item.buyPrice(silver: 10);
+            Item.useTime = 50; 
+            Item.useAnimation = 50;
+            Item.knockBack = 14f;             // 默认击退
+            Item.value = Item.buyPrice(gold: 88);
             Item.rare = ItemRarityID.Blue;
             Item.autoReuse = true;
 
@@ -38,7 +38,7 @@ namespace AncientChineseMythology.Items
             Item.noUseGraphic = true;        
             Item.noMelee = true;
             Item.shoot = ModContent.ProjectileType<GemStickSpearProjectile>();
-            Item.shootSpeed = 3.5f;
+            Item.shootSpeed = 1f;
         }
 
         // 启用右键备用功能

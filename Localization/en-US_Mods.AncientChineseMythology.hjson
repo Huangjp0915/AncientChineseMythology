@@ -173,6 +173,136 @@ Items: {
 		DisplayName: Jia Sha
 		Tooltip: ""
 	}
+
+	ZodiacChicken: {
+		DisplayName: Zodiac Chicken
+		Tooltip: ""
+	}
+
+	ZodiacCow: {
+		DisplayName: Zodiac Cow
+		Tooltip: ""
+	}
+
+	ZodiacDog: {
+		DisplayName: Zodiac Dog
+		Tooltip: ""
+	}
+
+	ZodiacDragon: {
+		DisplayName: Zodiac Dragon
+		Tooltip: ""
+	}
+
+	ZodiacGoat: {
+		DisplayName: Zodiac Goat
+		Tooltip: ""
+	}
+
+	ZodiacHorse: {
+		DisplayName: Zodiac Horse
+		Tooltip: ""
+	}
+
+	ZodiacMonkey: {
+		DisplayName: Zodiac Monkey
+		Tooltip: ""
+	}
+
+	ZodiacPig: {
+		DisplayName: Zodiac Pig
+		Tooltip: ""
+	}
+
+	ZodiacRabbit: {
+		DisplayName: Zodiac Rabbit
+		Tooltip: ""
+	}
+
+	ZodiacRat: {
+		DisplayName: Zodiac Rat
+		Tooltip: ""
+	}
+
+	ZodiacSnake: {
+		DisplayName: Zodiac Snake
+		Tooltip: ""
+	}
+
+	ZodiacTiger: {
+		DisplayName: Zodiac Tiger
+		Tooltip: ""
+	}
+
+	BronzeAxe: {
+		DisplayName: Bronze Axe
+		Tooltip: ""
+	}
+
+	BronzePickaxe: {
+		DisplayName: Bronze Pickaxe
+		Tooltip: ""
+	}
+
+	Pufferfish: {
+		DisplayName: Pufferfish
+		Tooltip: ""
+	}
+
+	Starflower: {
+		DisplayName: Starflower
+		Tooltip: ""
+	}
+
+	StarflowerSeeds: {
+		DisplayName: Starflower Seeds
+		Tooltip: ""
+	}
+
+	ShengZhuStatue: {
+		DisplayName: Sheng Zhu Statue
+		Tooltip: ""
+	}
+
+	RatCharm: {
+		DisplayName: Rat Charm
+		Tooltip: ""
+	}
+
+	IronArmorFlower: {
+		DisplayName: Iron Armor Flower
+		Tooltip: ""
+	}
+
+	IronArmorFlowerSeeds: {
+		DisplayName: Iron Armor Flower Seeds
+		Tooltip: ""
+	}
+
+	BlazingFlower: {
+		DisplayName: Blazing Flower
+		Tooltip: ""
+	}
+
+	BlazingFlowerSeeds: {
+		DisplayName: Blazing Flower Seeds
+		Tooltip: ""
+	}
+
+	BloodLingzhi: {
+		DisplayName: Blood Lingzhi
+		Tooltip: ""
+	}
+
+	BloodLingzhiSeeds: {
+		DisplayName: Blood Lingzhi Seeds
+		Tooltip: ""
+	}
+
+	MingCrowStaff: {
+		DisplayName: Ming Crow Staff
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -199,6 +329,8 @@ NPCs: {
 	Demon.DisplayName: Demon
 	JiaoSha.DisplayName: Jiao Sha
 	MingCrow.DisplayName: Ming Crow
+	LaoDieNPC.DisplayName: Lao Die N P C
+	YangJianNPC.DisplayName: Yang Jian N P C
 }
 
 Projectiles: {
@@ -227,6 +359,8 @@ Projectiles: {
 	CrimsonbronzeSwordProj1.DisplayName: Crimsonbronze Sword Proj1
 	CrimsonbronzeSwordProj2.DisplayName: Crimsonbronze Sword Proj2
 	Demon_Proj.DisplayName: Demon_ Proj
+	PufferfishProj1.DisplayName: Pufferfish Proj1
+	MingCrowMinion.DisplayName: Ming Crow Minion
 }
 
 HeavenBiome.DisplayName: Heaven
@@ -248,6 +382,8 @@ Tiles: {
 	TeleportationTile.DisplayName: Teleportation
 	CupriteOreTile.MapEntry: Cuprite Ore Tile
 	PlacedCupriteOreTile.MapEntry: Placed Cuprite Ore Tile
+	StarflowerHerbTile.MapEntry: Starflower Herb Tile
+	IronArmorFlowerHerbTile.MapEntry: Iron Armor Flower Herb Tile
 }
 
 Buffs: {
@@ -325,4 +461,16 @@ Buffs: {
 		DisplayName: Buffs Black Bear Staff
 		Description: Mods.AncientChineseMythology.Buffs.BuffsBlackBearStaff.Description
 	}
+
+	MingCrowMinionBuff: {
+		DisplayName: Ming Crow Minion Buff
+		Description: Mods.AncientChineseMythology.Buffs.MingCrowMinionBuff.Description
+	}
+}
+
+WorldGen: {
+	StarflowerPass: Mods.AncientChineseMythology.WorldGen.StarflowerPass
+	IronArmorFlowerPass: Mods.AncientChineseMythology.WorldGen.IronArmorFlowerPass
+	BlazingFlowerPass: Mods.AncientChineseMythology.WorldGen.BlazingFlowerPass
+	BloodLingzhiPass: Mods.AncientChineseMythology.WorldGen.BloodLingzhiPass
 }

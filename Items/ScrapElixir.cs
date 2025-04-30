@@ -18,7 +18,7 @@ namespace AncientChineseMythology.Items
             Item.width = 24;
             Item.height = 30;
             Item.maxStack = 999;
-            Item.value = Item.sellPrice(0, 0, 1, 0);
+            Item.value = Item.sellPrice(0, 0, 10, 0);
             Item.rare = ItemRarityID.White;
             
             // 药水类基础设置

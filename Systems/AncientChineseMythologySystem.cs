@@ -2,6 +2,8 @@ using Terraria;
 using Terraria.ModLoader;
 using Microsoft.Xna.Framework;
 using AncientChineseMythology.NPCs.Boss;
+using Terraria.ModLoader.IO;
+using System.Collections.Generic;
 
 namespace AncientChineseMythology.Systems
 {
@@ -11,6 +13,9 @@ namespace AncientChineseMythology.Systems
         public static bool blackBearSpawnedThisNight = false;
         // 标记本晚是否已经显示过提示
         public static bool blackBearTipShown = false;
+
+        public static bool downedBlackBear;         // 击败 Boss
+        public static bool triggeredShengZhuStatue;     // 激活圣主雕像
 
         public override void PostUpdateEverything()
         {
@@ -48,6 +53,29 @@ namespace AncientChineseMythology.Systems
                 blackBearSpawnedThisNight = false;
                 blackBearTipShown = false;
             }
+        }
+
+        public override void OnWorldLoad() {
+            downedBlackBear      = false;
+            triggeredShengZhuStatue  = false;
+        }
+
+        public override void OnWorldUnload() {
+            downedBlackBear      = false;
+            triggeredShengZhuStatue  = false;
+        }
+
+        public override void SaveWorldData(TagCompound tag) {
+            var flags = new List<string>();
+            if (downedBlackBear)     flags.Add(nameof(downedBlackBear));
+            if (triggeredShengZhuStatue) flags.Add(nameof(triggeredShengZhuStatue));
+            tag["acmFlags"] = flags;
+        }
+
+        public override void LoadWorldData(TagCompound tag) {
+            var flags = tag.GetList<string>("acmFlags");
+            downedBlackBear      = flags.Contains(nameof(downedBlackBear));
+            triggeredShengZhuStatue  = flags.Contains(nameof(triggeredShengZhuStatue));
         }
     }
 }

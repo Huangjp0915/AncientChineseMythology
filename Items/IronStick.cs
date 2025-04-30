@@ -7,7 +7,7 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Items
 {
-    public class IronStick : GrowthWeapon
+    public class IronStick : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/IronStick";
         public int attackType = 0; // 记录当前攻击类型
@@ -22,14 +22,14 @@ namespace AncientChineseMythology.Items
         public override void SetDefaults()
         {
             // 物品基础属性（这里的值只是“默认”）
-            Item.damage = 13;                 // 默认伤害
+            Item.damage = 28;                 // 默认伤害
             Item.DamageType = DamageClass.Melee;
             Item.width = 40;
             Item.height = 40;
-            Item.useTime = 25;
-            Item.useAnimation = 25;
-            Item.knockBack = 8f;             // 默认击退
-            Item.value = Item.buyPrice(silver: 10);
+            Item.useTime = 30;
+            Item.useAnimation = 30;
+            Item.knockBack = 10f;             // 默认击退
+            Item.value = Item.buyPrice(gold: 48);
             Item.rare = ItemRarityID.Blue;
             Item.autoReuse = true;
 

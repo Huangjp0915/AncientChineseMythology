@@ -10,6 +10,7 @@ using System;
 using Terraria.Audio;
 using Terraria.Graphics.CameraModifiers;
 using static AncientChineseMythology.AncientChineseMythology;
+using AncientChineseMythology.Systems;
 
 namespace AncientChineseMythology.NPCs.Boss
 {
@@ -92,9 +93,9 @@ namespace AncientChineseMythology.NPCs.Boss
 
             NPC.width = 220; // 假设待命动画有4帧
             NPC.height = 280; // 待命动画每帧高度为344
-            NPC.damage = 25;
+            NPC.damage = 55;
             NPC.defense = 20;
-            NPC.lifeMax = 3200;
+            NPC.lifeMax = 8888;
             NPC.knockBackResist = 0f;
             NPC.value = Item.buyPrice(0, 10, 0, 0);
             NPC.aiStyle = -1;
@@ -501,6 +502,7 @@ namespace AncientChineseMythology.NPCs.Boss
                 NPC.dontTakeDamage = true; // 防止在播放死亡动画时受到伤害
                 NPC.netUpdate = true;
                 currentState = BearState.Die;
+                AncientChineseMythologySystem.downedBlackBear = true;
             }
         }
         

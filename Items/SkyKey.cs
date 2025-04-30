@@ -25,7 +25,7 @@ namespace AncientChineseMythology.Items
             Item.rare = ItemRarityID.Yellow;
         }
 
-        public override string Texture => "Terraria/Images/Item_" + ItemID.GoldenKey;
+        public override string Texture => "AncientChineseMythology/Textures/Items/SkyKey";
 
         public override bool? UseItem(Player player)
         {

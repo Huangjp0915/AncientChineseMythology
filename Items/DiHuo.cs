@@ -17,7 +17,7 @@ namespace AncientChineseMythology.Items
             Item.width = 20;
             Item.height = 20;
             // 物品价值10金
-            Item.value = Item.buyPrice(gold: 10);
+            Item.value = Item.buyPrice(gold: 49);
             // 稀有度可根据需求调整
             Item.rare = ItemRarityID.Blue;
             Item.consumable = true;

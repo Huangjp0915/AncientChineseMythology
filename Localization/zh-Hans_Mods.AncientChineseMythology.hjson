@@ -212,6 +212,136 @@ Items: {
 
 	JiaSha: {
 		DisplayName: 袈裟
+		Tooltip: 总有人喜欢的
+	}
+
+	ZodiacChicken: {
+		DisplayName: 鸡精魄
+		Tooltip: 和一些奇怪的石头能有奇怪的反应
+	}
+
+	ZodiacCow: {
+		DisplayName: 牛精魄
+		Tooltip: 和一些奇怪的石头能有奇怪的反应
+	}
+
+	ZodiacDog: {
+		DisplayName: 狗精魄
+		Tooltip: 和一些奇怪的石头能有奇怪的反应
+	}
+
+	ZodiacDragon: {
+		DisplayName: 龙精魄
+		Tooltip: 和一些奇怪的石头能有奇怪的反应
+	}
+
+	ZodiacGoat: {
+		DisplayName: 羊精魄
+		Tooltip: 和一些奇怪的石头能有奇怪的反应
+	}
+
+	ZodiacHorse: {
+		DisplayName: 马精魄
+		Tooltip: 和一些奇怪的石头能有奇怪的反应
+	}
+
+	ZodiacMonkey: {
+		DisplayName: 猴精魄
+		Tooltip: 和一些奇怪的石头能有奇怪的反应
+	}
+
+	ZodiacPig: {
+		DisplayName: 猪精魄
+		Tooltip: 和一些奇怪的石头能有奇怪的反应
+	}
+
+	ZodiacRabbit: {
+		DisplayName: 兔精魄
+		Tooltip: 和一些奇怪的石头能有奇怪的反应
+	}
+
+	ZodiacRat: {
+		DisplayName: 鼠精魄
+		Tooltip: 和一些奇怪的石头能有奇怪的反应
+	}
+
+	ZodiacSnake: {
+		DisplayName: 蛇精魄
+		Tooltip: 和一些奇怪的石头能有奇怪的反应
+	}
+
+	ZodiacTiger: {
+		DisplayName: 虎精魄
+		Tooltip: 和一些奇怪的石头能有奇怪的反应
+	}
+
+	BronzeAxe: {
+		DisplayName: 青铜斧
+		// Tooltip: ""
+	}
+
+	BronzePickaxe: {
+		DisplayName: 青铜镐
+		// Tooltip: ""
+	}
+
+	Pufferfish: {
+		DisplayName: 河豚鱼
+		// Tooltip: ""
+	}
+
+	Starflower: {
+		DisplayName: 星辰花
+		// Tooltip: ""
+	}
+
+	StarflowerSeeds: {
+		DisplayName: 星辰花种子
+		// Tooltip: ""
+	}
+
+	ShengZhuStatue: {
+		DisplayName: 圣主雕像
+		Tooltip: 小心别拿鼠符咒靠近他
+	}
+
+	RatCharm: {
+		DisplayName: 鼠符咒
+		Tooltip: 可以让一些东西动起来
+	}
+
+	IronArmorFlower: {
+		DisplayName: 铁甲花
+		// Tooltip: ""
+	}
+
+	IronArmorFlowerSeeds: {
+		DisplayName: 铁甲花种子
+		// Tooltip: ""
+	}
+
+	BlazingFlower: {
+		DisplayName: 怒焰花
+		// Tooltip: ""
+	}
+
+	BlazingFlowerSeeds: {
+		DisplayName: 怒焰花种子
+		// Tooltip: ""
+	}
+
+	BloodLingzhi: {
+		DisplayName: 血灵芝
+		// Tooltip: ""
+	}
+
+	BloodLingzhiSeeds: {
+		DisplayName: 血灵芝种子
+		// Tooltip: ""
+	}
+
+	MingCrowStaff: {
+		DisplayName: 冥鸦法杖
 		// Tooltip: ""
 	}
 }
@@ -240,34 +370,38 @@ NPCs: {
 	Demon.DisplayName: 噩梦梦魇
 	JiaoSha.DisplayName: 蛟鲨
 	MingCrow.DisplayName: 冥鸦
+	LaoDieNPC.DisplayName: 老爹
+	YangJianNPC.DisplayName: 杨戬
 }
 
 Projectiles: {
-	// StabbingProjectile.DisplayName: Stabbing Projectile
-	// BlackBear_Proj1.DisplayName: Black Bear_ Proj1
-	// BlackBear_Proj2.DisplayName: Black Bear_ Proj2
-	// BlackBear_Proj3.DisplayName: Black Bear_ Proj3
-	// BlackBear_Proj4.DisplayName: Black Bear_ Proj4
+	StabbingProjectile.DisplayName: 黑熊金
+	BlackBear_Proj1.DisplayName: 黑熊金
+	BlackBear_Proj2.DisplayName: 黑熊金
+	BlackBear_Proj3.DisplayName: 黑熊金
+	BlackBear_Proj4.DisplayName: 黑熊金
 	// GoldenStickSpearProjectile.DisplayName: Golden Stick Spear Projectile
 	// IronStickSpearProjectile.DisplayName: Iron Stick Spear Projectile
 	// WoodenStickSpearProjectile.DisplayName: Wooden Stick Spear Projectile
 	// GemStickSpearProjectile.DisplayName: Gem Stick Spear Projectile
-	// DragonCharmExplosion.DisplayName: Dragon Charm Explosion
-	// DragonCharmLaser.DisplayName: Dragon Charm Laser
+	DragonCharmExplosion.DisplayName: 龙符咒
+	DragonCharmLaser.DisplayName: 龙符咒
 	// PigCharmLaser.DisplayName: Pig Charm Laser
 	// WoodenStickSpearProjectile_2.DisplayName: Wooden Stick Spear Projectile_2
 	// IronStickSpearProjectile_2.DisplayName: Iron Stick Spear Projectile_2
 	// IronStickSpearProjectile_3.DisplayName: Iron Stick Spear Projectile_3
 	// GoldenStickSpearProjectile_2.DisplayName: Golden Stick Spear Projectile_2
 	// GemStickSpearProjectile_2.DisplayName: Gem Stick Spear Projectile_2
-	// BlackBearStaffProj1.DisplayName: Black Bear Staff Proj1
-	// BlackBearStaffProj2.DisplayName: Black Bear Staff Proj2
+	BlackBearStaffProj1.DisplayName: 黑熊金
+	BlackBearStaffProj2.DisplayName: 黑熊金
 	// BlackBearSwordProj1.DisplayName: Black Bear Sword Proj1
-	// BlackBearBowProj1.DisplayName: Black Bear Bow Proj1
-	// BlankProjectile.DisplayName: Blank Projectile
+	BlackBearBowProj1.DisplayName: 黑熊金
+	BlankProjectile.DisplayName: 黑熊金
 	// CrimsonbronzeSwordProj1.DisplayName: Crimsonbronze Sword Proj1
 	// CrimsonbronzeSwordProj2.DisplayName: Crimsonbronze Sword Proj2
-	// Demon_Proj.DisplayName: Demon_ Proj
+	Demon_Proj.DisplayName: 噩梦梦魇
+	// PufferfishProj1.DisplayName: Pufferfish Proj1
+	// MingCrowMinion.DisplayName: Ming Crow Minion
 }
 
 // HeavenBiome.DisplayName: Heaven
@@ -285,10 +419,12 @@ Biomes: {
 }
 
 Tiles: {
-	// ElixirFurnaceTile.MapEntry: Elixir Furnace Tile
+	ElixirFurnaceTile.MapEntry: 炼丹炉
 	TeleportationTile.DisplayName: 漩涡之门
-	// CupriteOreTile.MapEntry: Cuprite Ore Tile
-	// PlacedCupriteOreTile.MapEntry: Placed Cuprite Ore Tile
+	CupriteOreTile.MapEntry: 赤铜矿
+	PlacedCupriteOreTile.MapEntry: 赤铜矿
+	// StarflowerHerbTile.MapEntry: Starflower Herb Tile
+	// IronArmorFlowerHerbTile.MapEntry: Iron Armor Flower Herb Tile
 }
 
 Buffs: {
@@ -366,4 +502,16 @@ Buffs: {
 		DisplayName: 金皇冠
 		Description: 金皇冠将为你而战！
 	}
+
+	MingCrowMinionBuff: {
+		DisplayName: 召唤冥鸦
+		Description: 有一只无畜无害的冥鸦为你战斗
+	}
+}
+
+WorldGen: {
+	StarflowerPass: 正在生成星辰花……
+	IronArmorFlowerPass: 正在生成铁甲花……
+	BlazingFlowerPass: 正在生成怒焰花……
+	BloodLingzhiPass: 正在生成血灵芝……
 }

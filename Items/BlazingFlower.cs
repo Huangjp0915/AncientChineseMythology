@@ -1,0 +1,21 @@
+using Terraria;
+using Terraria.ID;
+using Terraria.ModLoader;
+
+namespace AncientChineseMythology.Items
+{
+    public class BlazingFlower : ModItem
+    {
+        public override string Texture => "AncientChineseMythology/Textures/Items/BlazingFlower";
+        public override void SetStaticDefaults() => Item.ResearchUnlockCount = 25;
+
+        public override void SetDefaults()
+        {
+            Item.width  = 20;
+            Item.height = 20;
+            Item.maxStack = 999;
+            Item.value = Item.buyPrice(gold: 3);
+            Item.rare  = ItemRarityID.Orange;
+        }
+    }
+}

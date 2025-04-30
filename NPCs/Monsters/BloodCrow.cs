@@ -66,7 +66,7 @@ namespace AncientChineseMythology.NPCs.Monsters
             // NPC 基本属性
             NPC.width = 34;
             NPC.height = 28;
-            NPC.damage = 20;
+            NPC.damage = 25;
             NPC.defense = 5;
             NPC.lifeMax = 60;
             NPC.knockBackResist = 0.3f;
@@ -88,7 +88,7 @@ namespace AncientChineseMythology.NPCs.Monsters
             if (Main.bloodMoon 
                 && spawnInfo.Player.ZoneOverworldHeight)
             {
-                return 0.6f;
+                return 0.4f;
             }
             return 0f;
         }
@@ -223,7 +223,7 @@ namespace AncientChineseMythology.NPCs.Monsters
                 {
                     NPC.velocity = initialVelocity;
                     // 根据反向速度设置贴图方向（与追击方向相反）
-                    NPC.spriteDirection = initialVelocity.X > 0 ? 1 : -1;
+                    NPC.spriteDirection = initialVelocity.X > 0 ? -1 : 1;
                 }
             }
             else

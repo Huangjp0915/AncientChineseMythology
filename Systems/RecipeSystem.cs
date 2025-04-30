@@ -11,31 +11,35 @@ namespace AncientChineseMythology.Systems
         {
             Recipe.Create(ModContent.ItemType<Items.ScrapElixir>())
                 .AddIngredient(ItemID.FallenStar, 1)
-                .AddIngredient(ModContent.ItemType<Items.YaoQiFragment>(), 1)
+                .AddIngredient(ModContent.ItemType<Items.YaoQiFragment>(), 5)
                 .AddTile<Tiles.ElixirFurnaceTile>()
                 .Register();
             
             Recipe.Create(ModContent.ItemType<Items.XuePoDan>())
-                .AddIngredient(ItemID.FallenStar, 1)
-                .AddIngredient(ModContent.ItemType<Items.YaoQiFragment>(), 1)
+                .AddIngredient(ItemID.Daybloom, 9)
+                .AddIngredient(ModContent.ItemType<Items.BloodLingzhi>(), 9)
+                .AddIngredient(ModContent.ItemType<Items.YaoQiFragment>(), 5)
                 .AddTile<Tiles.ElixirFurnaceTile>()
                 .Register();
 
             Recipe.Create(ModContent.ItemType<Items.NingShenDan>())
-                .AddIngredient(ItemID.FallenStar, 1)
-                .AddIngredient(ModContent.ItemType<Items.YaoQiFragment>(), 1)
+                .AddIngredient(ItemID.Moonglow, 9)
+                .AddIngredient(ModContent.ItemType<Items.Starflower>(), 9)
+                .AddIngredient(ModContent.ItemType<Items.YaoQiFragment>(), 5)
                 .AddTile<Tiles.ElixirFurnaceTile>()
                 .Register();
 
             Recipe.Create(ModContent.ItemType<Items.XuanGangDan>())
-                .AddIngredient(ItemID.FallenStar, 1)
-                .AddIngredient(ModContent.ItemType<Items.YaoQiFragment>(), 1)
+                .AddIngredient(ItemID.Shiverthorn, 9)
+                .AddIngredient(ModContent.ItemType<Items.IronArmorFlower>(), 9)
+                .AddIngredient(ModContent.ItemType<Items.YaoQiFragment>(), 5)
                 .AddTile<Tiles.ElixirFurnaceTile>()
                 .Register();
 
             Recipe.Create(ModContent.ItemType<Items.PoJunDan>())
-                .AddIngredient(ItemID.FallenStar, 1)
-                .AddIngredient(ModContent.ItemType<Items.YaoQiFragment>(), 1)
+                .AddIngredient(ItemID.Deathweed, 9)
+                .AddIngredient(ModContent.ItemType<Items.BlazingFlower>(), 9)
+                .AddIngredient(ModContent.ItemType<Items.YaoQiFragment>(), 5)
                 .AddTile<Tiles.ElixirFurnaceTile>()
                 .Register();
         }
