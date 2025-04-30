@@ -16,7 +16,6 @@ namespace AncientChineseMythology.Content.Systems
 	public class ShengZhuStatueSystem : ModSystem
 	{
 
-		// ---------- 世界只放 1 座 ----------
 		public override void ModifyWorldGenTasks(List<GenPass> tasks, ref double totalWeight) {
 			int idx = tasks.FindIndex(p => p.Name == "Sky Lakes");
 			if (idx != -1) tasks.Insert(idx + 1, new PassLegacy("ShengZhu Statue", Generate));
@@ -36,7 +35,6 @@ namespace AncientChineseMythology.Content.Systems
 			}
 		}
 
-		/* ------------------- 核心触发 ------------------- */
         internal void TriggerStatue(Point16 pos, int playerID) {
             Player pl = Main.player[playerID];
 

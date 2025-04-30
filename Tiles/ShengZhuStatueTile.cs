@@ -27,7 +27,7 @@ namespace AncientChineseMythology.Content.Tiles
 				Language.GetText("Mods.AncientChineseMythology.MapObject.ShengZhuStatue"));
 		}
 
-		// —— 单机右键交互 ——  
+		// 单机右键交互 
 		public override bool RightClick(int i, int j) {
             Player pl = Main.LocalPlayer;
 

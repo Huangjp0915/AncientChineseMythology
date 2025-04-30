@@ -47,7 +47,6 @@ namespace AncientChineseMythology.Worldgen
         }
     }
 
-    /* ---------- 小工具：判断某格是否属于猩红 ---------- */
     static class WorldgenHelpers
     {
         public static bool IsCrimson(int i,int j)

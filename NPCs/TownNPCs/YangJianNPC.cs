@@ -22,11 +22,9 @@ namespace AncientChineseMythology.NPCs.TownNPCs
         public override string Texture => "AncientChineseMythology/Textures/YangJian/YangJianNPC";
         public override string HeadTexture => "AncientChineseMythology/Textures/YangJian/YangJianNPC_Head";
 
-        // ------------------------ Load 卸载资源 ------------------------
         public override void Load() {
         }
 
-        // ------------------------ SetStaticDefaults ------------------------
         public override void SetStaticDefaults() {
             // ★ 帧数与官方示例一致
             Main.npcFrameCount[Type]              = 25;
@@ -54,7 +52,6 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             NPCID.Sets.NPCBestiaryDrawOffset.Add(Type, draw);
         }
 
-        // ------------------------ SetDefaults ------------------------
         public override void SetDefaults() {
             NPC.friendly = true;
             NPC.townNPC = true;
@@ -71,7 +68,6 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             AnimationType = NPCID.Guide; // 复用向导帧切换方式
         }
 
-        // ------------------------ Bestiary ------------------------
         public override void SetBestiary(BestiaryDatabase db, BestiaryEntry be) {
             be.Info.AddRange([
                 BestiaryDatabaseNPCsPopulator.CommonTags.SpawnConditions.Biomes.Surface,
@@ -79,7 +75,6 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             ]);
         }
 
-        // ------------------------ 自然生成概率 ------------------------
         public override bool CanTownNPCSpawn(int numTownNPCs) {
             if (NPC.AnyNPCs(Type)) return false;
 
@@ -93,7 +88,6 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             return 0f;
         }
 
-        // ------------------------ 聊天 ------------------------
         public override bool CanChat() => true;
 
         public override string GetChat() {
@@ -103,7 +97,6 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             return chat;
         }
 
-        // ------------------------ 攻击 AI ------------------------
         public override void TownNPCAttackStrength(ref int damage, ref float knockback) {
             damage = 18;
             knockback = 3f;
@@ -124,7 +117,6 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             randOff = 0.4f;
         }
 
-        // ---------- Gore / 受击 ----------
         public override void HitEffect(NPC.HitInfo hit) {
             for (int i = 0; i < (NPC.life > 0 ? 1 : 5); i++)
                 Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Copper);
@@ -134,7 +126,6 @@ namespace AncientChineseMythology.NPCs.TownNPCs
         }
 
 
-        // ------------------------ 取消幸福度按钮 ------------------------
         public override ITownNPCProfile TownNPCProfile() => npcProfile;
     }
 }

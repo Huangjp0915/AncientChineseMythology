@@ -36,7 +36,6 @@ namespace AncientChineseMythology.Tiles
             DustType = DustID.Blood;
         }
 
-        /* ───── 只有在猩红区域才能种植 ───── */
         public override bool CanPlace(int i, int j)
         {
             // 检查玩家所在位置是否猩红
@@ -48,7 +47,6 @@ namespace AncientChineseMythology.Tiles
             return ground.HasTile && Main.tileSolid[ground.TileType];
         }
 
-        /* ───── 成熟掉落 ───── */
         public override bool CanDrop(int i,int j) =>
             GetStage(i,j) == BloodLingzhiStage.Mature;
 
@@ -65,7 +63,6 @@ namespace AncientChineseMythology.Tiles
             yield return new Item(ModContent.ItemType<BloodLingzhiSeeds>(), seed);
         }
 
-        /* ───── 生长：Seed→Growing→Mature，一旦成熟保持不变 ───── */
         public override void RandomUpdate(int i,int j)
         {
             Tile t = Framing.GetTileSafely(i,j);

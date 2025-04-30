@@ -35,7 +35,6 @@ namespace AncientChineseMythology.Tiles
             DustType = DustID.Torch;
         }
 
-        /* ───── 掉落 ───── */
         public override bool CanDrop(int i,int j) =>
             GetStage(i,j) == BlazingStage.Bloom &&
             IsEvening();                       // 仅傍晚盛开时可掉落
@@ -55,7 +54,6 @@ namespace AncientChineseMythology.Tiles
             yield return new Item(ModContent.ItemType<BlazingFlowerSeeds>(), seed);
         }
 
-        /* ───── 生长逻辑 ───── */
         public override void RandomUpdate(int i,int j)
         {
             Tile t = Framing.GetTileSafely(i,j);
@@ -82,7 +80,6 @@ namespace AncientChineseMythology.Tiles
         public override void SetSpriteEffects(int i,int j,ref SpriteEffects e) =>
             e = (i & 1)==0 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
 
-        /* ───── 私有工具 ───── */
         private static bool IsEvening() =>
             Main.dayTime && Main.time >= 27000.0;   // 18:00~19:30
 

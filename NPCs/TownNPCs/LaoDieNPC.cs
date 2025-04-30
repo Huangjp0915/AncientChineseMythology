@@ -19,11 +19,9 @@ namespace AncientChineseMythology.NPCs.TownNPCs
     [AutoloadHead]
     public class LaoDieNPC : ModNPC
     {
-        // ---------- 贴图 ----------
         public override string Texture     => "AncientChineseMythology/Textures/LaoDie/LaoDieNPC";
         public override string HeadTexture => "AncientChineseMythology/Textures/LaoDie/LaoDieNPC_Head";
 
-        // ---------- 静态资料 ----------
         private static Profiles.StackedNPCProfile npcProfile;
         private static Asset<Texture2D> shimmerWeapon;
 
@@ -55,7 +53,6 @@ namespace AncientChineseMythology.NPCs.TownNPCs
 
         }
 
-        // ---------- 实例默认值 ----------
         public override void SetDefaults() {
             NPC.friendly = true;
             NPC.townNPC = true;
@@ -71,7 +68,6 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             NPC.DeathSound = SoundID.NPCDeath1;
         }
 
-        // ---------- Bestiary ----------
         public override void SetBestiary(BestiaryDatabase db, BestiaryEntry be) {
             be.Info.AddRange(new IBestiaryInfoElement[] {
                 BestiaryDatabaseNPCsPopulator.CommonTags.SpawnConditions.Biomes.Surface,
@@ -79,19 +75,17 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             });
         }
 
-        // ---------- 自然生成 ----------
         public override bool CanTownNPCSpawn(int numTownNPCs)
         {
             if (NPC.AnyNPCs(Type)) return false;
             // 只有玩家触发圣主雕像事件后才允许搬入
-            return AncientChineseMythologySystem.triggeredShengZhuStatue;   // ★changed
+            return AncientChineseMythologySystem.triggeredShengZhuStatue;
         }
         
         public override float SpawnChance(NPCSpawnInfo spawnInfo) {
             return 0f;
         }
 
-        // ---------- 对话 ----------
         public override bool CanChat() => true;
 
         public override string GetChat() {
@@ -111,14 +105,12 @@ namespace AncientChineseMythology.NPCs.TownNPCs
                 shop = "Shop";
         }
 
-        // ---------- 商店 ----------
         public override void AddShops() {
             new NPCShop(Type)
                 .Add<Pufferfish>()                    // 你之前示例里的物品
                 .Register();
         }
 
-        // ---------- 战斗 ----------
         public override void TownNPCAttackStrength(ref int damage, ref float knockback) {
             damage = 18;
             knockback = 3f;
@@ -151,7 +143,6 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             }
         }
 
-        // ---------- Gore / 受击 ----------
         public override void HitEffect(NPC.HitInfo hit) {
             for (int i = 0; i < (NPC.life > 0 ? 1 : 5); i++)
                 Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Copper);
@@ -160,7 +151,6 @@ namespace AncientChineseMythology.NPCs.TownNPCs
                 return;
         }
 
-        // ---------- Happiness 关闭 ----------
         public override ITownNPCProfile TownNPCProfile() => npcProfile;
     }
 }

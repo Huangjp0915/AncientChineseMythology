@@ -42,7 +42,6 @@ namespace AncientChineseMythology.Tiles {
             HitSound = SoundID.Grass;
         }
 
-        /* ───── 种植判定：地面为石/泥 且其四邻含矿石 ───── */
         public override bool CanPlace(int i, int j)
         {
             int gi = i;       // ground x
@@ -57,7 +56,6 @@ namespace AncientChineseMythology.Tiles {
             return false;
         }
 
-        /* -----------  成熟时掉落  ----------- */
         public override bool CanDrop(int i, int j) =>
             GetStage(i, j) == IronArmorStage.Mature;
 
@@ -73,7 +71,6 @@ namespace AncientChineseMythology.Tiles {
             yield return new Item(ModContent.ItemType<IronArmorFlowerSeeds>(), seedAmt);
         }
 
-        /* -----------  生长逻辑：持续向右移动帧  ----------- */
         public override void RandomUpdate(int i, int j) {
             Tile t = Framing.GetTileSafely(i, j);
             if (GetStage(t) != IronArmorStage.Mature) {
@@ -90,7 +87,6 @@ namespace AncientChineseMythology.Tiles {
             if (i % 2 == 0) effects = SpriteEffects.FlipHorizontally;
         }
 
-        /* -----------  辅助  ----------- */
         private static IronArmorStage GetStage(int i, int j) => GetStage(Framing.GetTileSafely(i, j));
         private static IronArmorStage GetStage(Tile t) => (IronArmorStage)(t.TileFrameX / FrameW);
     }

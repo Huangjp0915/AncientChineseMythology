@@ -756,8 +756,6 @@ namespace AncientChineseMythology.Items
             // 以物品中心为基准进行绘制
             Vector2 drawPosition = Item.Center - Main.screenPosition;
 
-            // 如果需要让它贴得更紧一点，可以手动往下移动
-            // 例如：drawPosition.Y += 2f;
 
             Vector2 origin = texture.Size() * 0.5f;
 

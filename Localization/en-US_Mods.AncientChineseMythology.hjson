@@ -474,3 +474,5 @@ WorldGen: {
 	BlazingFlowerPass: Mods.AncientChineseMythology.WorldGen.BlazingFlowerPass
 	BloodLingzhiPass: Mods.AncientChineseMythology.WorldGen.BloodLingzhiPass
 }
+
+"Keybinds.Toggle Cultivation Panel.DisplayName": Toggle  Cultivation  Panel
