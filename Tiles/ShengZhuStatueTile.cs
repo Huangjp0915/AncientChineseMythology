@@ -1,3 +1,4 @@
+using AncientChineseMythology.Content.Systems;
 using AncientChineseMythology.Items;
 using AncientChineseMythology.Systems;
 using Microsoft.Xna.Framework;
@@ -10,49 +11,58 @@ using Terraria.ObjectData;
 
 namespace AncientChineseMythology.Content.Tiles
 {
-	public class ShengZhuStatueTile : ModTile
-	{
+    public class ShengZhuStatueTile : ModTile
+    {
         public override string Texture => "AncientChineseMythology/Textures/Tiles/ShengZhuStatueTile";
 
-		public override void SetStaticDefaults() {
-			Main.tileFrameImportant[Type] = true;
-			Main.tileObsidianKill[Type]   = true;
-			TileID.Sets.DisableSmartCursor[Type] = true;
+        public override void SetStaticDefaults()
+        {
+            Main.tileFrameImportant[Type] = true;
+            Main.tileObsidianKill[Type] = true;
+            TileID.Sets.DisableSmartCursor[Type] = true;
 
-			TileObjectData.newTile.CopyFrom(TileObjectData.Style2xX); // 2×3
-			TileObjectData.addTile(Type);
+            // 改用 Style2x2 并自定义成 2×3
+            TileObjectData.newTile.CopyFrom(TileObjectData.Style2x2);
+            TileObjectData.newTile.Width = 2;
+            TileObjectData.newTile.Height = 3;
+            TileObjectData.newTile.CoordinateHeights = new[] { 16, 16, 16 };
+            TileObjectData.addTile(Type);
 
-			DustType = DustID.Gold;
+            DustType = DustID.Gold;
+
 			AddMapEntry(new Color(0xEF,0xD9,0xA6),
 				Language.GetText("Mods.AncientChineseMythology.MapObject.ShengZhuStatue"));
-		}
+        }
 
-		// 单机右键交互 
-		public override bool RightClick(int i, int j) {
+        public override bool RightClick(int i, int j)
+        {
             Player pl = Main.LocalPlayer;
+            int ratCharmType = ModContent.ItemType<RatCharm>();
 
-            // 必须手持任意 *Charm 物品
-            if (pl.HeldItem?.ModItem == null ||
-                !pl.HeldItem.ModItem.GetType().Name.Contains("RatCharm"))
+            // 条件 A：真正手持鼠符咒  
+            if (pl.HeldItem.type != ratCharmType)
                 return false;
 
-            // 无网络，直接调用
-            ModContent.GetInstance<Content.Systems.ShengZhuStatueSystem>()
-                    .TriggerStatue(new Point16(i, j), pl.whoAmI);
+            // 条件 B：鼠标上不拿着鼠符咒  
+            if (Main.mouseItem.type == ratCharmType)
+                return false;
+
+            // 满足上述条件，才进行召唤逻辑
+            ModContent
+                .GetInstance<ShengZhuStatueSystem>()
+                .TriggerStatue(new Point16(i, j), pl.whoAmI);
 
             AncientChineseMythologySystem.triggeredShengZhuStatue = true;
-            
             return true;
         }
 
         public override void MouseOver(int i, int j)
         {
             Player player = Main.LocalPlayer;
-            player.noThrow = 2; // 防止物品被扔出
+            player.noThrow = 2;
             player.cursorItemIconEnabled = true;
-            // 设置鼠标旁边显示的小图标，使用与此 Tile 关联的物品（这里假设 TeleportationItem 具有传送门贴图）
             player.cursorItemIconID = ModContent.ItemType<RatCharm>();
             player.cursorItemIconText = Language.GetTextValue("圣主雕像");
         }
-	}
+    }
 }

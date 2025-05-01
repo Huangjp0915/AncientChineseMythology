@@ -726,19 +726,51 @@ namespace AncientChineseMythology.Items
     }
 
     public class RatCharm : ModItem
-	{
+    {
         public override string Texture => "AncientChineseMythology/Textures/Items/Charms/RatCharm";
 
-		public override void SetStaticDefaults() => Item.ResearchUnlockCount = 1;
+        public override void SetStaticDefaults()
+        {
+            Item.ResearchUnlockCount = 1;
+        }
 
-		public override void SetDefaults() {
-			Item.width  = 20;
-			Item.height = 20;
-			Item.maxStack = 1;
-			Item.rare  = ItemRarityID.Blue;
-			Item.value = Item.buyPrice(gold: 100);
-		}
+        public override void SetDefaults()
+        {
+            Item.width = 20;
+            Item.height = 20;
+            Item.maxStack = 1;
+            Item.rare = ItemRarityID.Blue;
+            Item.value = Item.buyPrice(gold: 100);
+        }
 
+        public override bool AltFunctionUse(Player player)
+            => player.inventory[player.selectedItem].type == Item.type;
+
+        public override bool CanUseItem(Player player)
+        {
+            if (player.altFunctionUse == 2)
+            {
+                if (player.inventory[player.selectedItem].type != Item.type)
+                    return false;
+            }
+            return base.CanUseItem(player);
+        }
+
+        public override bool ConsumeItem(Player player)
+            => player.inventory[player.selectedItem].type == Item.type;
+
+        public override bool? UseItem(Player player)
+        {
+            if (player.altFunctionUse == 2)
+            {
+                // 这里写你的召唤逻辑，比如在 UseItem 中调用系统接口
+                // 示例：ModContent.GetInstance<你的系统>().DoSomething();
+                return true;
+            }
+            return base.UseItem(player);
+        }
+
+        // 保留你原来的世界绘制代码
         public override bool PreDrawInWorld(
             SpriteBatch spriteBatch,
             Color lightColor,
@@ -747,19 +779,10 @@ namespace AncientChineseMythology.Items
             ref float scale,
             int whoAmI)
         {
-            // 让物品在地上时，绘制更小
             float customScale = 0.5f;
-
-            // 如果你想手动绘制，可以这样做：
-            Texture2D texture = TextureAssets.Item[Item.type].Value;
-
-            // 以物品中心为基准进行绘制
+            var texture = TextureAssets.Item[Item.type].Value;
             Vector2 drawPosition = Item.Center - Main.screenPosition;
-
-
             Vector2 origin = texture.Size() * 0.5f;
-
-            // 手动绘制
             spriteBatch.Draw(
                 texture,
                 drawPosition,
@@ -771,8 +794,6 @@ namespace AncientChineseMythology.Items
                 SpriteEffects.None,
                 0f
             );
-
-            // 返回 false 表示“我已经手动完成了绘制，不再用默认逻辑绘制”
             return false;
         }
 	}

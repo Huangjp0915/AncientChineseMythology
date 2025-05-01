@@ -342,17 +342,17 @@ Items: {
 
 	MingCrowStaff: {
 		DisplayName: 冥鸦法杖
-		// Tooltip: ""
+		Tooltip: 召唤一只冥鸦
 	}
 
 	PoJingDan: {
-		// DisplayName: Po Jing Dan
-		// Tooltip: ""
+		DisplayName: 破镜丹
+		Tooltip: 突破当前大境界
 	}
 
 	XuanYuanDan: {
-		// DisplayName: Xuan Yuan Dan
-		// Tooltip: ""
+		DisplayName: 玄元丹
+		Tooltip: 增加200点经验值
 	}
 }
 
