@@ -14,7 +14,7 @@ namespace AncientChineseMythology.Projectiles
 {
     public class BlackBearStaffProj1 : ModProjectile
     {
-        public override string Texture => "AncientChineseMythology/Textures/Items/BlackBearStaff"; // 使用物品的纹理作为投射物的纹理
+        public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/BlackBearStaff"; // 使用物品的纹理作为投射物的纹理
 
         Player player => Main.player[Projectile.owner];
 

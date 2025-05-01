@@ -7,7 +7,7 @@ namespace AncientChineseMythology.Items
 {
     public class XuePoDan : ModItem
     {
-        public override string Texture => "AncientChineseMythology/Textures/Items/XuePoDan";
+        public override string Texture => "AncientChineseMythology/Textures/Items/Potions/XuePoDan";
 
         public override void SetStaticDefaults()
         {

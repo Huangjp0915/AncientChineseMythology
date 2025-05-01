@@ -5,9 +5,9 @@ using AncientChineseMythology.Buffs;
 
 namespace AncientChineseMythology.Items
 {
-    public class PoJunDan : ModItem
+    public class XuanGangDan : ModItem
     {
-        public override string Texture => "AncientChineseMythology/Textures/Items/PoJunDan";
+        public override string Texture => "AncientChineseMythology/Textures/Items/Potions/XuanGangDan";
 
         public override void SetStaticDefaults()
         {
@@ -19,28 +19,28 @@ namespace AncientChineseMythology.Items
             Item.width = 24;
             Item.height = 30;
             Item.maxStack = 999;
-            Item.value = Item.buyPrice(0, 2, 0, 0);
+            Item.value = Item.sellPrice(0, 2, 0, 0);
             Item.rare = ItemRarityID.Green;
             
-            // 药水设置
+            // 药水基本设置
             Item.useStyle = ItemUseStyleID.DrinkLiquid;
             Item.useAnimation = 15;
             Item.useTime = 15;
             Item.useTurn = true;
             Item.consumable = true;
             
-            // 使用后给予60秒正面Buff（破军丹效果）
-            Item.buffType = ModContent.BuffType<PoJunDanBuff>();
+            // 使用后给予 60 秒正面 Buff（玄罡丹效果）
+            Item.buffType = ModContent.BuffType<XuanGangDanBuff>();
             Item.buffTime = 3600; // 60秒
             Item.UseSound = SoundID.Item3;
         }
         
         public override bool? UseItem(Player player)
         {
-            // 同时施加10分钟药水病
+            // 同时施加药水病：10分钟 (600秒 * 60 = 36000 ticks)
             player.AddBuff(BuffID.PotionSickness, 36000, false);
             return base.UseItem(player);
         }
-
+    
     }
 }

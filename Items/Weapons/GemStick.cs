@@ -1,4 +1,4 @@
-using AncientChineseMythology.Projectiles;
+﻿using AncientChineseMythology.Projectiles;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.DataStructures;
@@ -7,9 +7,9 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Items
 {
-    public class IronStick : ModItem
+    public class GemStick : ModItem
     {
-        public override string Texture => "AncientChineseMythology/Textures/Items/IronStick";
+        public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/GemStick";
         public int attackType = 0; // 记录当前攻击类型
         public int comboExpireTimer = 0; // 当武器在一定时间内未使用时重置攻击模式
         public override Color? GetAlpha(Color lightColor) { return Color.White; }
@@ -22,23 +22,23 @@ namespace AncientChineseMythology.Items
         public override void SetDefaults()
         {
             // 物品基础属性（这里的值只是“默认”）
-            Item.damage = 28;                 // 默认伤害
+            Item.damage = 68;                 // 默认伤害
             Item.DamageType = DamageClass.Melee;
-            Item.width = 40;
+            Item.width = 40; 
             Item.height = 40;
-            Item.useTime = 30;
-            Item.useAnimation = 30;
-            Item.knockBack = 10f;             // 默认击退
-            Item.value = Item.buyPrice(gold: 48);
+            Item.useTime = 50; 
+            Item.useAnimation = 50;
+            Item.knockBack = 14f;             // 默认击退
+            Item.value = Item.buyPrice(gold: 88);
             Item.rare = ItemRarityID.Blue;
             Item.autoReuse = true;
 
             // 默认设定为长矛刺击（左键）
-            Item.useStyle = ItemUseStyleID.Shoot;
-            Item.noUseGraphic = true;
+            Item.useStyle = ItemUseStyleID.Shoot; 
+            Item.noUseGraphic = true;        
             Item.noMelee = true;
-            Item.shoot = ModContent.ProjectileType<IronStickSpearProjectile>();
-            Item.shootSpeed = 3.5f;
+            Item.shoot = ModContent.ProjectileType<GemStickSpearProjectile>();
+            Item.shootSpeed = 1f;
         }
 
         // 启用右键备用功能
@@ -58,10 +58,10 @@ namespace AncientChineseMythology.Items
             if (player.altFunctionUse == 2) // 右键射击
             {
                 if (comboExpireTimer < 120)
-                    Projectile.NewProjectile(source, position, velocity, ModContent.ProjectileType<IronStickSpearProjectile_2>(), damage, knockback, Main.myPlayer, attackType);
+                    Projectile.NewProjectile(source, position, velocity, ModContent.ProjectileType<GemStickSpearProjectile_2>(), damage, knockback, Main.myPlayer, attackType);
                 else
                 {
-                    Projectile.NewProjectile(source, position, velocity, ModContent.ProjectileType<IronStickSpearProjectile>(), damage, knockback, Main.myPlayer, attackType);
+                    Projectile.NewProjectile(source, position, velocity, ModContent.ProjectileType<GemStickSpearProjectile>(), damage, knockback, Main.myPlayer, attackType);
                     attackType = (attackType + 1) % 2; // 增加攻击类型以确保下一个挥动不同
                     comboExpireTimer = 0; // 每次使用武器时重置计时器，以便组合不会过期
                 }
@@ -70,8 +70,8 @@ namespace AncientChineseMythology.Items
             }
             else if (!Main.mouseRight)
             {
-                Projectile.NewProjectile(source, position, velocity, ModContent.ProjectileType<IronStickSpearProjectile>(), damage, knockback, Main.myPlayer, attackType);
-                attackType = (attackType + 1) % 2; // 增加攻击类型以确保下一个挥动不同
+                Projectile.NewProjectile(source, position, velocity, ModContent.ProjectileType<GemStickSpearProjectile>(), damage, knockback, Main.myPlayer, attackType);
+                attackType = (attackType + 1) % 4; // 增加攻击类型以确保下一个挥动不同
                 comboExpireTimer = 0; // 每次使用武器时重置计时器，以便组合不会过期
                 return false;
             }
@@ -81,10 +81,15 @@ namespace AncientChineseMythology.Items
         public override void AddRecipes()
         {
             Recipe recipe = CreateRecipe();
-            recipe.AddIngredient(ModContent.ItemType<WoodenStick>(), 1);
-            recipe.AddRecipeGroup(RecipeGroupID.IronBar, 81);
-            recipe.AddIngredient(ModContent.ItemType<YaoQiFragment>(), 5);
-            recipe.AddTile(TileID.Anvils);
+            recipe.AddIngredient(ModContent.ItemType<GoldenStick>(), 1);
+            recipe.AddIngredient(ItemID.Ruby, 10);
+            recipe.AddIngredient(ItemID.Sapphire, 10);
+            recipe.AddIngredient(ItemID.Emerald, 10);
+            recipe.AddIngredient(ItemID.Topaz, 10);
+            recipe.AddIngredient(ItemID.Amethyst, 10);
+            recipe.AddIngredient(ItemID.Diamond, 10);
+            recipe.AddIngredient(ModContent.ItemType<YaoQiFragment>(), 20);
+            recipe.AddTile(TileID.HeavyWorkBench);
             recipe.Register();
         }
     }

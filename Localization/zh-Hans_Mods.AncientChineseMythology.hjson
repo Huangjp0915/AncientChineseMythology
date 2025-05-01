@@ -344,6 +344,16 @@ Items: {
 		DisplayName: 冥鸦法杖
 		// Tooltip: ""
 	}
+
+	PoJingDan: {
+		// DisplayName: Po Jing Dan
+		// Tooltip: ""
+	}
+
+	XuanYuanDan: {
+		// DisplayName: Xuan Yuan Dan
+		// Tooltip: ""
+	}
 }
 
 NPCs: {

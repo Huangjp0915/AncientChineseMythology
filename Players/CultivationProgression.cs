@@ -5,9 +5,8 @@ public static class CultivationProgression
     public static readonly string[] MajorNames = {
         "炼精化气","炼气化神","炼神返虚","炼虚合道",
         "人仙","地仙","天仙","金仙",
-        "太乙金仙","大罗金仙","混元金仙（准圣）","混元大罗金仙（圣人）",
-        "混元太极金仙（至圣）","混沌无极金仙（合道）",
-        "混沌天尊（天道）","混沌至尊（大道）"
+        "太乙金仙","大罗金仙","准圣","圣人",
+        "至圣","合道","天道","大道"
     };
 
     public const int MinorPerMajor = 4;

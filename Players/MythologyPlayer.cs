@@ -54,20 +54,58 @@ public class MythologyPlayer : ModPlayer
 
     private void TryMajorAdvance()
     {
-        // 必须先达到大圆满
+        // 先检查：已达最高大境界就直接返回
+        int maxMajor = CultivationProgression.MajorNames.Length - 1;
+        if (Major >= maxMajor) return;
+
+        // 必须先达到小境界大圆满
         if (Minor != CultivationProgression.MinorPerMajor - 1) return;
 
+        // 阶段经验要满
         int needExp = CultivationProgression.ExpFor(Major, Minor);
-        if (StageExp < needExp) return;                             // 阶段经验要满
-        if (KillsThisMajor < CultivationProgression.KillsForMajorUp[Major]) return; // 击杀要够
+        if (StageExp < needExp) return;
+
+        // 击杀要够
+        if (KillsThisMajor < CultivationProgression.KillsForMajorUp[Major]) return;
 
         // 晋升
         Major++;
         Minor           = 0;
-        StageExp        = 0;  // <- 小境界经验归零
+        StageExp        = 0;
         KillsThisMajor  = 0;
-
         ApplyMajorBonus();
+    }
+
+    public void AddStageExp(int amount)
+    {
+        int need = CultivationProgression.ExpFor(Major, Minor);
+        StageExp = Math.Min(StageExp + amount, need);
+        TryMinorAdvance();
+        TryMajorAdvance();
+    }
+
+    public bool ForceMajorAdvance()
+    {
+        int maxMajor = CultivationProgression.MajorNames.Length - 1;
+        if (Major >= maxMajor)
+        {
+            Main.NewText("已经达到最高大境界，无法再破境。", 200, 50, 50);
+            return false;
+        }
+
+        int maxMinor = CultivationProgression.MinorPerMajor - 1;
+        int needExp  = CultivationProgression.ExpFor(Major, Minor);
+
+        if (Minor == maxMinor && StageExp >= needExp)
+        {
+            Major++;
+            Minor           = 0;
+            StageExp        = 0;
+            KillsThisMajor  = 0;
+            ApplyMajorBonus();
+            return true;
+        }
+        return false;
     }
 
     private void ApplyMinorBonus()

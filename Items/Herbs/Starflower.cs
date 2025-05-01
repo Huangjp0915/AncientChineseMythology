@@ -4,7 +4,7 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Items {
 	public class Starflower : ModItem {
-        public override string Texture => "AncientChineseMythology/Textures/Items/Starflower";
+        public override string Texture => "AncientChineseMythology/Textures/Items/Herbs/Starflower";
 		public override void SetStaticDefaults() {
 			Item.ResearchUnlockCount = 25;
 		}

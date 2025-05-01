@@ -38,7 +38,7 @@ namespace AncientChineseMythology.Projectiles
         private Vector2 swordCenter; // 用于存储剑的中心位置
         private bool isattacking = false; // 标记是否正在攻击
 
-        public override string Texture => "AncientChineseMythology/Textures/Items/CrimsonbronzeSword"; // 使用物品的纹理作为投射物的纹理
+        public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/CrimsonbronzeSword"; // 使用物品的纹理作为投射物的纹理
 
         private Player Owner => Main.player[Projectile.owner];
 

@@ -11,7 +11,7 @@ namespace AncientChineseMythology.Items
 {
     public class Pufferfish : ModItem
     {
-        public override string Texture => "AncientChineseMythology/Textures/Items/Pufferfish";
+        public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Pufferfish";
         public override void SetDefaults()
         {
             Item.damage = 1111;

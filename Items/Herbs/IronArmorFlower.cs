@@ -4,18 +4,18 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Items
 {
-    public class BloodLingzhi : ModItem
+    public class IronArmorFlower : ModItem
     {
-        public override string Texture => "AncientChineseMythology/Textures/Items/BloodLingzhi";
+        public override string Texture => "AncientChineseMythology/Textures/Items/Herbs/IronArmorFlower";
         public override void SetStaticDefaults() => Item.ResearchUnlockCount = 25;
 
         public override void SetDefaults()
         {
-            Item.width = 20;
+            Item.width  = 20;
             Item.height = 20;
             Item.maxStack = 999;
-            Item.value = Item.buyPrice(gold: 2);
-            Item.rare  = ItemRarityID.Orange;
+            Item.value = Item.buyPrice(gold: 10);
+            Item.rare  = ItemRarityID.Green;
         }
     }
 }

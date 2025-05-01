@@ -6,7 +6,7 @@ namespace AncientChineseMythology.Items
 {
     public class BlazingFlower : ModItem
     {
-        public override string Texture => "AncientChineseMythology/Textures/Items/BlazingFlower";
+        public override string Texture => "AncientChineseMythology/Textures/Items/Herbs/BlazingFlower";
         public override void SetStaticDefaults() => Item.ResearchUnlockCount = 25;
 
         public override void SetDefaults()

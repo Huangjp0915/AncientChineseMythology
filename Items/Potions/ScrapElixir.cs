@@ -6,7 +6,7 @@ namespace AncientChineseMythology.Items
 {
     public class ScrapElixir : ModItem
     {
-        public override string Texture => "AncientChineseMythology/Textures/Items/ScrapElixir";
+        public override string Texture => "AncientChineseMythology/Textures/Items/Potions/ScrapElixir";
 
         public override void SetStaticDefaults()
         {

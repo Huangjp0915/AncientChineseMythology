@@ -4,26 +4,25 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Items
 {
-    public class IronArmorFlowerSeeds : ModItem
+    public class BlazingFlowerSeeds : ModItem
     {
-        public override string Texture => "AncientChineseMythology/Textures/Items/IronArmorFlowerSeeds";
+        public override string Texture => "AncientChineseMythology/Textures/Items/Herbs/BlazingFlowerSeeds";
         public override void SetStaticDefaults() => Item.ResearchUnlockCount = 25;
 
         public override void SetDefaults()
         {
             Item.width  = 14;
             Item.height = 14;
-            Item.maxStack   = 999;
+            Item.maxStack = 999;
             Item.consumable = true;
 
             Item.useStyle = ItemUseStyleID.Swing;
-            Item.useTime  = 15;
-            Item.useAnimation = 15;
+            Item.useTime = Item.useAnimation = 15;
             Item.autoReuse = true;
             Item.UseSound  = SoundID.Grass;
 
             Item.rare = ItemRarityID.Blue;
-            Item.createTile = ModContent.TileType<Tiles.IronArmorFlowerHerbTile>();
+            Item.createTile = ModContent.TileType<Tiles.BlazingFlowerHerbTile>();
         }
     }
 }
