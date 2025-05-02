@@ -52,7 +52,7 @@ namespace AncientChineseMythology.Projectiles
         }
 
         [Obsolete]
-        public override void Kill(int timeLeft)
+        public override void OnKill(int timeLeft)
         {
             //粒子效果
             for (int i = 0; i < 3; i++)

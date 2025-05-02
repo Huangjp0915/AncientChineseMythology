@@ -180,7 +180,7 @@ namespace AncientChineseMythology.Projectiles
             }
         }
         [Obsolete]
-        public override void Kill(int timeLeft)
+        public override void OnKill(int timeLeft)
         {
             Player player = Main.player[Projectile.owner];
             player.velocity *= 0.8f;

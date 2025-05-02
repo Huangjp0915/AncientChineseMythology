@@ -135,18 +135,33 @@ public class MythologyPlayer : ModPlayer
     {
         // 持续生效：小境界总加成 = Minor * 基准
         var mb = CultivationProgression.GetMinorBonusBase(Major);
-        Player.statLifeMax2       += Minor * mb.hp;
-        Player.statManaMax2       += Minor * mb.mana;
         Player.statDefense        += Minor * mb.def;
         Player.GetDamage(DamageClass.Generic) += Minor * mb.dmg;
 
         // 持续生效：大境界本级加成（但不叠加 previous major）
         if (Major >= 0 && Major < CultivationProgression.MajorHealthBonusTable.Length)
         {
-            Player.statLifeMax2       += CultivationProgression.MajorHealthBonusTable[Major];
-            Player.statManaMax2       += CultivationProgression.MajorManaBonusTable[Major];
             Player.statDefense        += CultivationProgression.MajorDefenseBonusTable[Major];
             Player.GetDamage(DamageClass.Generic) += CultivationProgression.MajorDamageBonusTable[Major];
+        }
+    }
+
+    public override void ModifyMaxStats(out StatModifier health, out StatModifier mana)
+    {
+        // 从默认无加成开始
+        health = StatModifier.Default;                                   
+        mana   = StatModifier.Default;
+
+        // —— 小境界加成（可根据 Major 调整基准） ——  
+        var minorBase = CultivationProgression.GetMinorBonusBase(Major);
+        health += minorBase.hp   * Minor;                               
+        mana   += minorBase.mana * Minor;
+
+        // —— 大境界加成（由表格精确指定） ——  
+        if (Major >= 0 && Major < CultivationProgression.MajorHealthBonusTable.Length)
+        {
+            health += CultivationProgression.MajorHealthBonusTable[Major];  
+            mana   += CultivationProgression.MajorManaBonusTable[Major];    
         }
     }
 

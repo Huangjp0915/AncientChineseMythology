@@ -354,6 +354,16 @@ Items: {
 		DisplayName: 玄元丹
 		Tooltip: 增加200点经验值
 	}
+
+	BloodSeaSand: {
+		DisplayName: 血海砂
+		// Tooltip: ""
+	}
+
+	BloodSeaSandstone: {
+		// DisplayName: Blood Sea Sandstone
+		// Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -425,6 +435,11 @@ Biomes: {
 	TestBiome: {
 		// DisplayName: Test Biome
 		// TownNPCDialogueName: the Test Biome
+	}
+
+	BloodSeaBiome: {
+		// DisplayName: Blood Sea Biome
+		// TownNPCDialogueName: the Blood Sea Biome
 	}
 }
 
@@ -526,4 +541,4 @@ WorldGen: {
 	BloodLingzhiPass: 正在生成血灵芝……
 }
 
-// "Keybinds.Toggle Cultivation Panel.DisplayName": Toggle  Cultivation  Panel
+"Keybinds.Toggle Cultivation Panel.DisplayName": 修炼面板

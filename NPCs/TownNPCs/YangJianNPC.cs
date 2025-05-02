@@ -80,13 +80,6 @@ namespace AncientChineseMythology.NPCs.TownNPCs
 
             return AncientChineseMythologySystem.downedBlackBear;
         }
-        
-        public override float SpawnChance(NPCSpawnInfo spawnInfo) {
-            // 地表夜晚，有天空/神圣背景时 5% 概率生成
-            if (!Main.dayTime && spawnInfo.Player.ZoneOverworldHeight)
-                return 0.05f;
-            return 0f;
-        }
 
         public override bool CanChat() => true;
 

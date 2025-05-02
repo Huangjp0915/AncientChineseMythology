@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -26,7 +26,7 @@ namespace AncientChineseMythology.Projectiles
             Projectile.tileCollide = false;
         }
 
-        public override void Kill(int timeLeft)
+        public override void OnKill(int timeLeft)
         {
             // 播放爆炸音效
             SoundEngine.PlaySound(SoundID.Item14, Projectile.position);

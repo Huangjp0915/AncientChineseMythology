@@ -313,6 +313,16 @@ Items: {
 		DisplayName: Xuan Yuan Dan
 		Tooltip: ""
 	}
+
+	BloodSeaSand: {
+		DisplayName: Blood Sea Sand
+		Tooltip: ""
+	}
+
+	BloodSeaSandstone: {
+		DisplayName: Blood Sea Sandstone
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -384,6 +394,11 @@ Biomes: {
 	TestBiome: {
 		DisplayName: Test Biome
 		TownNPCDialogueName: the Test Biome
+	}
+
+	BloodSeaBiome: {
+		DisplayName: Blood Sea Biome
+		TownNPCDialogueName: the Blood Sea Biome
 	}
 }
 
