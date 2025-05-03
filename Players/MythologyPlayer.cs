@@ -113,8 +113,6 @@ public class MythologyPlayer : ModPlayer
         var baseBonus = CultivationProgression.GetMinorBonusBase(Major);
 
         // 小境界每升一级，就叠加一次基准值
-        Player.statLifeMax2       += baseBonus.hp;
-        Player.statManaMax2       += baseBonus.mana;
         Player.statDefense        += baseBonus.def;
         Player.GetDamage(DamageClass.Generic) += baseBonus.dmg;
     }
@@ -125,8 +123,7 @@ public class MythologyPlayer : ModPlayer
         if (Major < 0 || Major >= CultivationProgression.MajorHealthBonusTable.Length)
             return;
 
-        Player.statLifeMax2       += CultivationProgression.MajorHealthBonusTable[Major];
-        Player.statManaMax2       += CultivationProgression.MajorManaBonusTable[Major];
+
         Player.statDefense        += CultivationProgression.MajorDefenseBonusTable[Major];
         Player.GetDamage(DamageClass.Generic) += CultivationProgression.MajorDamageBonusTable[Major];
     }
@@ -148,20 +145,20 @@ public class MythologyPlayer : ModPlayer
 
     public override void ModifyMaxStats(out StatModifier health, out StatModifier mana)
     {
-        // 从默认无加成开始
-        health = StatModifier.Default;                                   
+        // 从默认无加成开始（乘算=1，Flat=0）
+        health = StatModifier.Default;
         mana   = StatModifier.Default;
 
-        // —— 小境界加成（可根据 Major 调整基准） ——  
+        // —— 小境界加成 ——
         var minorBase = CultivationProgression.GetMinorBonusBase(Major);
-        health += minorBase.hp   * Minor;                               
-        mana   += minorBase.mana * Minor;
+        health.Flat += minorBase.hp   * Minor;
+        mana.Flat   += minorBase.mana * Minor;
 
-        // —— 大境界加成（由表格精确指定） ——  
+        // —— 大境界加成 ——
         if (Major >= 0 && Major < CultivationProgression.MajorHealthBonusTable.Length)
         {
-            health += CultivationProgression.MajorHealthBonusTable[Major];  
-            mana   += CultivationProgression.MajorManaBonusTable[Major];    
+            health.Flat += CultivationProgression.MajorHealthBonusTable[Major];
+            mana.Flat   += CultivationProgression.MajorManaBonusTable[Major];
         }
     }
 

@@ -9,7 +9,11 @@ using Terraria.WorldBuilding;
 using Terraria.GameContent.Generation;
 using Terraria.DataStructures;   // PassLegacy & GenerationProgress
 using static StructureHelper.API.Generator;
-using StructureHelper;   // 省掉类名前缀
+using StructureHelper;
+using Terraria.GameContent;
+using System.Reflection;
+using System.Collections;
+using System;   // 省掉类名前缀
 
 namespace AncientChineseMythology.Systems
 {
@@ -133,6 +137,9 @@ namespace AncientChineseMythology.Systems
 
                 // 并入屏障并立即登记保护
                 Rectangle preRect = new Rectangle(placeX, placeY, w, h);
+
+                RemoveRoomsInside(preRect);
+
                 IslandRect = Rectangle.Union(IslandRect, preRect);
                 GenVars.structures.AddProtectedStructure(preRect);
             }
@@ -289,6 +296,45 @@ namespace AncientChineseMythology.Systems
                 if (Main.tile[fx, fy].TileType == TileID.Grass && !Main.tile[fx, fy - 1].HasTile)
                     WorldGen.PlaceTile(fx, fy - 1, TileID.Plants, mute: true, forced: true);
             }
+        }
+
+        public static void RemoveRoomsInside(Rectangle rect)
+        {
+            // -------- 1. 取到 townRoomManager 单例 --------
+            var mgrField = typeof(Main).GetField("townRoomManager",
+                            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+
+            if (mgrField == null)  // 极旧版（1.3-legacy）根本没有房屋管理器
+                return;
+
+            object manager = mgrField.GetValue(null);
+            if (manager == null)
+                return;
+
+            Type mgrType = manager.GetType();
+
+            // -------- 2. 新版优先：直接调 DeleteRoomsInArea --------
+            var direct = mgrType.GetMethod("DeleteRoomsInArea", new[] { typeof(Rectangle) });
+            if (direct != null) {               // 1.4.4+ 有这个方法
+                direct.Invoke(manager, new object[] { rect });
+                return;
+            }
+
+            // -------- 3. 旧版回退：自己删字典 --------
+            var roomsField = mgrType.GetField("_rooms", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (roomsField == null) return;
+
+            var rooms = roomsField.GetValue(manager) as IDictionary;   //  key: Point16  value: int
+            if (rooms == null) return;
+
+            List<object> toRemove = new();
+            foreach (DictionaryEntry entry in rooms) {
+                Point16 p = (Point16)entry.Key;
+                if (rect.Contains(p.X, p.Y))
+                    toRemove.Add(entry.Key);
+            }
+            foreach (var key in toRemove)
+                rooms.Remove(key);
         }
 
         public static void OpenSkyIsland(int who)

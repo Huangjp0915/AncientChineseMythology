@@ -333,6 +333,22 @@ Items: {
 		DisplayName: Qing Long Spirit
 		Tooltip: ""
 	}
+
+	CupriteHelmet: {
+		SetBonus: Mods.AncientChineseMythology.Items.CupriteHelmet.SetBonus
+		DisplayName: Cuprite Helmet
+		Tooltip: ""
+	}
+
+	CupriteBreastplate: {
+		DisplayName: Cuprite Breastplate
+		Tooltip: ""
+	}
+
+	CupriteLeggings: {
+		DisplayName: Cuprite Leggings
+		Tooltip: ""
+	}
 }
 
 NPCs: {

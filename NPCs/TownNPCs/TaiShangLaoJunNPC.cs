@@ -31,6 +31,7 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             NPCID.Sets.AttackType[Type] = NPCID.Sets.AttackType[NPCID.Guide]; 
             NPCID.Sets.AttackTime[Type] = NPCID.Sets.AttackTime[NPCID.Guide];
             NPCID.Sets.AttackAverageChance[Type] = NPCID.Sets.AttackAverageChance[NPCID.Guide];
+            NPCID.Sets.ShimmerTownTransform[Type] = true;
 
             NPCID.Sets.NoTownNPCHappiness[Type] = true;
         }

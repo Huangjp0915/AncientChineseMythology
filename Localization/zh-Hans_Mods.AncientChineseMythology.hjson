@@ -374,6 +374,22 @@ Items: {
 		DisplayName: 青龙之灵
 		Tooltip: 此乃东方乙木圣兽陨落时逸散的一缕先天道韵，青荧如玉
 	}
+
+	CupriteHelmet: {
+		SetBonus: 受到近战伤害时有30%让对方被灼烧
+		DisplayName: 赤铜头盔
+		// Tooltip: ""
+	}
+
+	CupriteBreastplate: {
+		DisplayName: 赤铜甲
+		// Tooltip: ""
+	}
+
+	CupriteLeggings: {
+		DisplayName: 赤铜护胫
+		// Tooltip: ""
+	}
 }
 
 NPCs: {
