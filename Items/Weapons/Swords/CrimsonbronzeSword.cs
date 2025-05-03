@@ -12,7 +12,7 @@ namespace AncientChineseMythology.Items
 {
     public class CrimsonbronzeSword : ModItem
     {
-        public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/CrimsonbronzeSword"; // 使用物品的纹理作为投射物的纹理
+        public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Swords/CrimsonbronzeSword"; // 使用物品的纹理作为投射物的纹理
 
         public override void SetDefaults()
         {

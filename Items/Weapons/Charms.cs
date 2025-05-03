@@ -12,7 +12,7 @@ namespace AncientChineseMythology.Items
 {
     public class ChickenCharm : ModItem
     {
-        public override string Texture => "AncientChineseMythology/Textures/Items/Charms/ChickenCharm";
+        public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Charms/ChickenCharm";
 
         public override void SetStaticDefaults()
         {
@@ -112,7 +112,7 @@ namespace AncientChineseMythology.Items
 
     public class CowCharm : ModItem
     {
-        public override string Texture => "AncientChineseMythology/Textures/Items/Charms/CowCharm";
+        public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Charms/CowCharm";
 
         public override void SetStaticDefaults()
         {
@@ -188,7 +188,7 @@ namespace AncientChineseMythology.Items
 
     public class DogCharm : ModItem
     {
-        public override string Texture => "AncientChineseMythology/Textures/Items/Charms/DogCharm";
+        public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Charms/DogCharm";
 
         public override void SetStaticDefaults()
         {
@@ -268,7 +268,7 @@ namespace AncientChineseMythology.Items
 
     public class DragonCharm : ModItem
     {
-        public override string Texture => "AncientChineseMythology/Textures/Items/Charms/DragonCharm";
+        public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Charms/DragonCharm";
 
         public override void SetStaticDefaults()
         {
@@ -360,7 +360,7 @@ namespace AncientChineseMythology.Items
 
     public class HorseCharm : ModItem
     {
-        public override string Texture => "AncientChineseMythology/Textures/Items/Charms/HorseCharm";
+        public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Charms/HorseCharm";
 
         public override void SetStaticDefaults()
         {
@@ -451,7 +451,7 @@ namespace AncientChineseMythology.Items
 
     public class PigCharm : ModItem
     {
-        public override string Texture => "AncientChineseMythology/Textures/Items/Charms/PigCharm";
+        public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Charms/PigCharm";
 
         public override void SetStaticDefaults()
         {
@@ -548,7 +548,7 @@ namespace AncientChineseMythology.Items
 
     public class RabbitCharm : ModItem
     {
-        public override string Texture => "AncientChineseMythology/Textures/Items/Charms/RabbitCharm";
+        public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Charms/RabbitCharm";
 
         public override void SetStaticDefaults()
         {
@@ -632,7 +632,7 @@ namespace AncientChineseMythology.Items
 
     public class SnakeCharm : ModItem
     {
-        public override string Texture => "AncientChineseMythology/Textures/Items/Charms/SnakeCharm";
+        public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Charms/SnakeCharm";
 
         public override void SetStaticDefaults()
         {
@@ -727,7 +727,7 @@ namespace AncientChineseMythology.Items
 
     public class RatCharm : ModItem
     {
-        public override string Texture => "AncientChineseMythology/Textures/Items/Charms/RatCharm";
+        public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Charms/RatCharm";
 
         public override void SetStaticDefaults()
         {

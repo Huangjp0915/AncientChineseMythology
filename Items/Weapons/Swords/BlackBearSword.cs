@@ -10,7 +10,7 @@ namespace AncientChineseMythology.Items
 {
     public class BlackBearSword : ModItem
     {
-        public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/BlackBearSword"; // 使用物品的纹理作为投射物的纹理
+        public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Swords/BlackBearSword"; // 使用物品的纹理作为投射物的纹理
 
         public override void SetDefaults()
         {

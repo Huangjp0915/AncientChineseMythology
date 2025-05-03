@@ -9,7 +9,7 @@ namespace AncientChineseMythology.Items
 {
     public class MingCrowStaff : ModItem
     {
-        public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/MingCrowStaff";
+        public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Summoning Staffs/MingCrowStaff";
         public override void SetStaticDefaults()
         {
             ItemID.Sets.GamepadWholeScreenUseRange[Type] = true;
