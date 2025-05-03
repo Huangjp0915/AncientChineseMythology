@@ -26,15 +26,5 @@ namespace AncientChineseMythology.Items
         }
 
         public override string Texture => "AncientChineseMythology/Textures/Items/SkyKey";
-
-        public override bool? UseItem(Player player)
-        {
-            if (Main.netMode != NetmodeID.Server)
-            {
-                // 进入 ThirtyThreeHeavens 子世界
-                SubworldSystem.Enter<ThirtyThreeHeavens>();
-            }
-            return true;
-        }
     }
 }

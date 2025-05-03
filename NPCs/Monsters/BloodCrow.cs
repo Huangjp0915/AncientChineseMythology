@@ -48,7 +48,7 @@ namespace AncientChineseMythology.NPCs.Monsters
         private Vector2 initialVelocity = Vector2.Zero;
 
         // 强制使用假的 Texture 路径
-        public override string Texture => "AncientChineseMythology/Textures/BloodCrow/MingCrow";
+        public override string Texture => "AncientChineseMythology/Textures/NPCs/Monsters/BloodCrow/MingCrow";
 
         public override void SetStaticDefaults()
         {
@@ -57,11 +57,11 @@ namespace AncientChineseMythology.NPCs.Monsters
         public override void SetDefaults()
         {
             // 手动加载 5 帧竖排贴图
-            attackTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/BloodCrow/Attack").Value;
-            dieTexture    = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/BloodCrow/Die").Value;
-            flyTexture    = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/BloodCrow/Fly").Value;
-            hurtTexture   = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/BloodCrow/Hurt").Value;
-            idleTexture   = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/BloodCrow/Idle").Value;
+            attackTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/BloodCrow/Attack").Value;
+            dieTexture    = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/BloodCrow/Die").Value;
+            flyTexture    = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/BloodCrow/Fly").Value;
+            hurtTexture   = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/BloodCrow/Hurt").Value;
+            idleTexture   = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/BloodCrow/Idle").Value;
 
             // NPC 基本属性
             NPC.width = 34;

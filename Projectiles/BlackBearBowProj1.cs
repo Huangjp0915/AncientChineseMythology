@@ -10,7 +10,7 @@ namespace AncientChineseMythology.Projectiles
 {
     public class BlackBearBowProj1 : ModProjectile
     {
-        public override string Texture => "AncientChineseMythology/Textures/BlackBear/BlackBear_Head_Boss"; // 使用物品的纹理作为投射物的纹理
+        public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear_Head_Boss"; // 使用物品的纹理作为投射物的纹理
         public override void SetDefaults()
         {
             Projectile.width = 20; // 弹幕宽度

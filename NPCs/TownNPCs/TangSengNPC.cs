@@ -14,9 +14,9 @@ namespace AncientChineseMythology.NPCs.TownNPCs
     {
         // 如果这张贴图跟向导帧数一致，就可直接在这里声明
         // 默认贴图(走路/Idle/等)：
-        public override string Texture => "AncientChineseMythology/Textures/Tangseng/TangSengNPC";
+        public override string Texture => "AncientChineseMythology/Textures/NPCs/TownNPCs/Tangseng/TangSengNPC";
         // 头像
-        public override string HeadTexture => "AncientChineseMythology/Textures/Tangseng/TangSengNPC_Head";
+        public override string HeadTexture => "AncientChineseMythology/Textures/NPCs/TownNPCs/Tangseng/TangSengNPC_Head";
 
         public override void SetStaticDefaults()
         {

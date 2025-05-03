@@ -77,7 +77,7 @@ namespace AncientChineseMythology.NPCs.Monsters
         private Vector2 initialVelocity = Vector2.Zero;
 
         // 强制使用假的 Texture 路径（防止自动加载单张贴图）
-        public override string Texture => "AncientChineseMythology/Textures/JiaoSha/idle_1";
+        public override string Texture => "AncientChineseMythology/Textures/NPCs/Monsters/JiaoSha/idle_1";
 
         public override void SetStaticDefaults()
         {
@@ -86,12 +86,12 @@ namespace AncientChineseMythology.NPCs.Monsters
         public override void SetDefaults()
         {
             // 加载各动画贴图
-            attackTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/JiaoSha/attack").Value;
-            dieTexture    = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/JiaoSha/die").Value;
-            hurtTexture   = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/JiaoSha/hurt").Value;
-            idleTexture   = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/JiaoSha/idle").Value;
-            jumpTexture   = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/JiaoSha/jump").Value;
-            runTexture    = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/JiaoSha/run").Value;
+            attackTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/JiaoSha/attack").Value;
+            dieTexture    = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/JiaoSha/die").Value;
+            hurtTexture   = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/JiaoSha/hurt").Value;
+            idleTexture   = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/JiaoSha/idle").Value;
+            jumpTexture   = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/JiaoSha/jump").Value;
+            runTexture    = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/JiaoSha/run").Value;
 
             // NPC 基本属性
             NPC.width = 40;

@@ -11,7 +11,7 @@ namespace AncientChineseMythology.Projectiles
 {
     public class BlackBearSwordProj1 : ModProjectile
     {
-        public override string Texture => "AncientChineseMythology/Textures/BlackBear/BlackBear_Head_Boss"; // 使用物品的纹理作为投射物的纹理
+        public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear_Head_Boss"; // 使用物品的纹理作为投射物的纹理
         private Vector2 mouseposition; // 鼠标目标位置
         public override void SetDefaults()
         {

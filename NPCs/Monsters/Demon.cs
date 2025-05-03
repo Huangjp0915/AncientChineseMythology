@@ -74,7 +74,7 @@ namespace AncientChineseMythology.NPCs.Monsters
         private Texture2D idleTexture;
 
         // 伪路径，防止 tModLoader 自动加载单张贴图
-        public override string Texture => "AncientChineseMythology/Textures/Demon/idle_01";
+        public override string Texture => "AncientChineseMythology/Textures/NPCs/Monsters/Demon/idle_01";
 
         public override void SetStaticDefaults()
         {
@@ -83,11 +83,11 @@ namespace AncientChineseMythology.NPCs.Monsters
         public override void SetDefaults()
         {
             // 加载各状态动画贴图
-            attackTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/Demon/Attack").Value;
-            dieTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/Demon/Die").Value;
-            runTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/Demon/Run").Value;
-            hurtTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/Demon/Hurt").Value;
-            idleTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/Demon/Idle").Value;
+            attackTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/Demon/Attack").Value;
+            dieTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/Demon/Die").Value;
+            runTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/Demon/Run").Value;
+            hurtTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/Demon/Hurt").Value;
+            idleTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/Demon/Idle").Value;
 
             NPC.width = 30;
             NPC.height = 30;

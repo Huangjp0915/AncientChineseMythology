@@ -364,6 +364,16 @@ Items: {
 		// DisplayName: Blood Sea Sandstone
 		// Tooltip: ""
 	}
+
+	SkyAltarItem: {
+		DisplayName: 天庭祭坛
+		Tooltip: 可以传送到破碎的小天庭
+	}
+
+	QingLongSpirit: {
+		DisplayName: 青龙之灵
+		Tooltip: 此乃东方乙木圣兽陨落时逸散的一缕先天道韵，青荧如玉
+	}
 }
 
 NPCs: {
@@ -448,8 +458,9 @@ Tiles: {
 	TeleportationTile.DisplayName: 漩涡之门
 	CupriteOreTile.MapEntry: 赤铜矿
 	PlacedCupriteOreTile.MapEntry: 赤铜矿
-	// StarflowerHerbTile.MapEntry: Starflower Herb Tile
-	// IronArmorFlowerHerbTile.MapEntry: Iron Armor Flower Herb Tile
+	StarflowerHerbTile.MapEntry: 星辰花
+	IronArmorFlowerHerbTile.MapEntry: 铁甲花
+	SkyAltarTile.MapEntry: 天庭祭坛
 }
 
 Buffs: {

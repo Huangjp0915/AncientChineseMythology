@@ -21,7 +21,7 @@ namespace AncientChineseMythology.NPCs.Boss
         private bool isAttacking = false;
         private int opacityTimer = 0; // 透明度计时器
 
-        public override string Texture => "AncientChineseMythology/Textures/BlackBear/BlackBear_Proj3"; // 使用物品的纹理作为投射物的纹理
+        public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear_Proj3"; // 使用物品的纹理作为投射物的纹理
 
         public override void SetDefaults()
         {

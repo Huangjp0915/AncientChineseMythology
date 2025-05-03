@@ -18,7 +18,7 @@ namespace AncientChineseMythology.NPCs.Boss
         private int totalFrames = 6; // 总帧数
         private bool initialized = false; // 是否已初始化
 
-        public override string Texture => "AncientChineseMythology/Textures/BlackBear/attack_328_Proj1"; // 使用物品的纹理作为投射物的纹理
+        public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/attack_328_Proj1"; // 使用物品的纹理作为投射物的纹理
 
         public override void SetDefaults()
         {

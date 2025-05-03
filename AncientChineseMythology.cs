@@ -12,6 +12,7 @@ using Terraria.Localization;
 using Terraria.ModLoader.IO;
 using Microsoft.Xna.Framework;
 using AncientChineseMythology.NPCs.Boss;
+using AncientChineseMythology.Systems;
 
 
 namespace AncientChineseMythology
@@ -19,32 +20,27 @@ namespace AncientChineseMythology
     // Please read https://github.com/tModLoader/tModLoader/wiki/Basic-tModLoader-Modding-Guide#mod-skeleton-contents for more information about the various files in a mod.
     public class AncientChineseMythology : Mod
     {
+        private enum Msg : byte { SkyKeyUnlock }
+
         public override void HandlePacket(BinaryReader reader, int whoAmI)
         {
-            AncientChineseMythologyMessageType msgType = (AncientChineseMythologyMessageType)reader.ReadByte();
-            switch (msgType)
+            switch ((Msg)reader.ReadByte())
             {
-                case AncientChineseMythologyMessageType.SyncGrowthPlayer:
-                    {
-                        int playerID = reader.ReadInt32();
-                        float bonus = reader.ReadSingle();
-                        int count = reader.ReadInt32();
-                        var enemyList = new System.Collections.Generic.List<int>();
-                        for (int i = 0; i < count; i++)
-                        {
-                            enemyList.Add(reader.ReadInt32());
-                        }
-                        // 获取对应的 GrowthPlayer 并更新数据
-                        if (playerID >= 0 && playerID < Main.maxPlayers)
-                        {
-                            var modPlayer = Main.player[playerID].GetModPlayer<Players.GrowthPlayer>();
-                            modPlayer.growthBonus = bonus;
-                            modPlayer.growthEnemies = enemyList;
-                        }
-                    }
+                case Msg.SkyKeyUnlock:
+                    BrokenHeavenIslandSystem.OpenSkyIsland(reader.ReadByte());
                     break;
             }
         }
+
+        public static void SendSkyKeyUnlock(int who)
+        {
+            if (Main.netMode != NetmodeID.MultiplayerClient) return;
+            ModPacket p = ModContent.GetInstance<AncientChineseMythology>().GetPacket();
+            p.Write((byte)Msg.SkyKeyUnlock);
+            p.Write((byte)who);
+            p.Send();
+        }
+
         public struct Vertex : IVertexType
         {
             private static VertexDeclaration _vertexDeclaration = new VertexDeclaration(new VertexElement[3]
@@ -103,7 +99,7 @@ namespace AncientChineseMythology
                 // 自定义图标显示法
                 var customPortrait = (SpriteBatch sb, Rectangle rect, Color color) =>
                 {
-                    Texture2D texture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/BlackBear/BlackBear").Value;
+                    Texture2D texture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear").Value;
                     Vector2 centered = new Vector2(rect.X + (rect.Width / 2) - (texture.Width / 2), rect.Y + (rect.Height / 2) - (texture.Height / 2));
                     sb.Draw(texture, centered, color);
                 };
@@ -129,7 +125,7 @@ namespace AncientChineseMythology
                 //自定义图标显示法
                 var customPortrait1 = (SpriteBatch sb, Rectangle rect, Color color) =>
                 {
-                    Texture2D texture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/BlackBear/BlackBear").Value;
+                    Texture2D texture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear").Value;
                     Vector2 centered = new Vector2(rect.X + (rect.Width / 2) - (texture.Width / 2), rect.Y + (rect.Height / 2) - (texture.Height / 2));
                     sb.Draw(texture, centered, color);
                 };

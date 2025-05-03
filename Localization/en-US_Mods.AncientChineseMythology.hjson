@@ -323,6 +323,16 @@ Items: {
 		DisplayName: Blood Sea Sandstone
 		Tooltip: ""
 	}
+
+	SkyAltarItem: {
+		DisplayName: Sky Altar Item
+		Tooltip: ""
+	}
+
+	QingLongSpirit: {
+		DisplayName: Qing Long Spirit
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -409,6 +419,7 @@ Tiles: {
 	PlacedCupriteOreTile.MapEntry: Placed Cuprite Ore Tile
 	StarflowerHerbTile.MapEntry: Starflower Herb Tile
 	IronArmorFlowerHerbTile.MapEntry: Iron Armor Flower Herb Tile
+	SkyAltarTile.MapEntry: Sky Altar Tile
 }
 
 Buffs: {

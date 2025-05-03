@@ -74,22 +74,22 @@ namespace AncientChineseMythology.NPCs.Boss
         private int runTime = 0;
 
         // 使用静态占位图
-        public override string Texture => "AncientChineseMythology/Textures/BlackBear/BlackBear";
+        public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear";
         // Boss头像
-        public override string BossHeadTexture => "AncientChineseMythology/Textures/BlackBear/BlackBear_Head_Boss";
+        public override string BossHeadTexture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear_Head_Boss";
 
         public override void SetDefaults()
         {
-            dieTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/BlackBear/die_328").Value;
-            attackTexture_1 = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/BlackBear/attack_328_1").Value;
-            attackTexture_2 = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/BlackBear/attack_328_2").Value;
-            attackTexture_1_1 = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/BlackBear/attack_328_1_1").Value;
-            attackTexture_2_2 = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/BlackBear/attack_328_2_2").Value;
+            dieTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Boss/BlackBear/die_328").Value;
+            attackTexture_1 = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Boss/BlackBear/attack_328_1").Value;
+            attackTexture_2 = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Boss/BlackBear/attack_328_2").Value;
+            attackTexture_1_1 = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Boss/BlackBear/attack_328_1_1").Value;
+            attackTexture_2_2 = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Boss/BlackBear/attack_328_2_2").Value;
 
-            runTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/BlackBear/run_332").Value;
-            runTexture_1 = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/BlackBear/run_332_1").Value;
-            idleTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/BlackBear/idle_344").Value;
-            idleTexture_1 = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/BlackBear/idle_344_1").Value;
+            runTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Boss/BlackBear/run_332").Value;
+            runTexture_1 = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Boss/BlackBear/run_332_1").Value;
+            idleTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Boss/BlackBear/idle_344").Value;
+            idleTexture_1 = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Boss/BlackBear/idle_344_1").Value;
 
             NPC.width = 220; // 假设待命动画有4帧
             NPC.height = 280; // 待命动画每帧高度为344

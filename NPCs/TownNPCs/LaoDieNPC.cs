@@ -19,8 +19,8 @@ namespace AncientChineseMythology.NPCs.TownNPCs
     [AutoloadHead]
     public class LaoDieNPC : ModNPC
     {
-        public override string Texture     => "AncientChineseMythology/Textures/LaoDie/LaoDieNPC";
-        public override string HeadTexture => "AncientChineseMythology/Textures/LaoDie/LaoDieNPC_Head";
+        public override string Texture     => "AncientChineseMythology/Textures/NPCs/TownNPCs/LaoDie/LaoDieNPC";
+        public override string HeadTexture => "AncientChineseMythology/Textures/NPCs/TownNPCs/LaoDie/LaoDieNPC_Head";
 
         private static Profiles.StackedNPCProfile npcProfile;
         private static Asset<Texture2D> shimmerWeapon;

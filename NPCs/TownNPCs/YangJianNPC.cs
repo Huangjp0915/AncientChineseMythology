@@ -19,8 +19,8 @@ namespace AncientChineseMythology.NPCs.TownNPCs
         // ------------------------ 静态字段 ------------------------
         private static Profiles.StackedNPCProfile npcProfile;
 
-        public override string Texture => "AncientChineseMythology/Textures/YangJian/YangJianNPC";
-        public override string HeadTexture => "AncientChineseMythology/Textures/YangJian/YangJianNPC_Head";
+        public override string Texture => "AncientChineseMythology/Textures/NPCs/TownNPCs/YangJian/YangJianNPC";
+        public override string HeadTexture => "AncientChineseMythology/Textures/NPCs/TownNPCs/YangJian/YangJianNPC_Head";
 
         public override void Load() {
         }
