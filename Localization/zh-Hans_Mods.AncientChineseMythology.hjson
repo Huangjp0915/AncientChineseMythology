@@ -390,6 +390,26 @@ Items: {
 		DisplayName: 赤铜护胫
 		// Tooltip: ""
 	}
+
+	CelestialJadeBrick: {
+		DisplayName: 天阶玉砖
+		// Tooltip: ""
+	}
+
+	CloudyGoldSand: {
+		DisplayName: 云霞金沙
+		// Tooltip: ""
+	}
+
+	FloatingBasalt: {
+		DisplayName: 浮空玄石
+		// Tooltip: ""
+	}
+
+	ChengYingReins: {
+		DisplayName: 承影剑
+		// Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -418,6 +438,10 @@ NPCs: {
 	MingCrow.DisplayName: 冥鸦
 	LaoDieNPC.DisplayName: 老爹
 	YangJianNPC.DisplayName: 杨戬
+	TribulationCloud.DisplayName: 劫云
+	TribulationCloudBlack.DisplayName: 劫云
+	TribulationCloudPurple.DisplayName: 劫云
+	TribulationCloudRed.DisplayName: 劫云
 }
 
 Projectiles: {
@@ -448,6 +472,12 @@ Projectiles: {
 	Demon_Proj.DisplayName: 噩梦梦魇
 	// PufferfishProj1.DisplayName: Pufferfish Proj1
 	// MingCrowMinion.DisplayName: Ming Crow Minion
+	TribulationLightning.DisplayName: 劫雷
+	// EvilIntentionProj2.DisplayName: Evil Intention Proj2
+	TribulationLightningBlack.DisplayName: 玄雷
+	TribulationLightningPurple.DisplayName: 紫霄雷
+	TribulationLightningRed.DisplayName: 赤雷
+	// ChengYingHitbox.DisplayName: Cheng Ying Hitbox
 }
 
 // HeavenBiome.DisplayName: Heaven
@@ -477,6 +507,10 @@ Tiles: {
 	StarflowerHerbTile.MapEntry: 星辰花
 	IronArmorFlowerHerbTile.MapEntry: 铁甲花
 	SkyAltarTile.MapEntry: 天庭祭坛
+	// CloudyGoldGrass.MapEntry: Cloudy Gold Grass
+	CelestialJadeBrick.MapEntry: 天阶玉砖
+	// CloudyGoldSand.MapEntry: Cloudy Gold Sand
+	// FloatingBasalt.MapEntry: Floating Basalt
 }
 
 Buffs: {
@@ -558,6 +592,11 @@ Buffs: {
 	MingCrowMinionBuff: {
 		DisplayName: 召唤冥鸦
 		Description: 有一只无畜无害的冥鸦为你战斗
+	}
+
+	ChengYingBuff: {
+		DisplayName: 承影剑
+		Description: 持证上剑
 	}
 }
 

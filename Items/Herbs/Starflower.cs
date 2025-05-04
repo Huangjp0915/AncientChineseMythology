@@ -2,7 +2,8 @@ using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Items {
+namespace AncientChineseMythology.Items.Herbs
+{
 	public class Starflower : ModItem {
         public override string Texture => "AncientChineseMythology/Textures/Items/Herbs/Starflower";
 		public override void SetStaticDefaults() {

@@ -5,19 +5,21 @@
 
 该版本新增：
 4个NPC
-1个Boss
+2个Boss
 5个小怪
 11种buff
 16种武器
 5种配饰
 5种药剂
-18种物品
+22种物品
 2种锭
 1种矿石
 1种合成台
 2个小世界
-1个环境
+2个环境
 4种草药
+
+全新的核心玩法
 
 快来加入《洪荒》，迎战暗潮中的诸多妖魔，一同守护三界的安宁吧！
 
@@ -30,18 +32,20 @@ In the troubled times, the remnants of Jiejiao are surging, the mountain and sea
 
 This version adds:
 4 NPCs
-1 Boss
+2 Bosses
 5 monsters
 11 buffs
 16 weapons
 5 accessories
 5 potions
-18 items
+19 items
 2 ingots
 1 ore
 1 synthesis table
 2 small worlds
-1 environment
+2 environments
 4 herbs
+
+New core gameplay
 
 Come and join "Primordial Chaos" to fight against the many demons in the dark tide and protect the peace of the three realms together!

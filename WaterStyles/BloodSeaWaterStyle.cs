@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using ReLogic.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
+using AncientChineseMythology.WaterfallStyles;
 
 namespace AncientChineseMythology.WaterStyles
 {
@@ -21,7 +22,7 @@ namespace AncientChineseMythology.WaterStyles
         public override string SlopeTexture => $"{Mod.Name}/{Base}_Slope";
 
         public override int ChooseWaterfallStyle() {
-			return ModContent.GetInstance<BloodSeaWaterStyle>().Slot;
+			return ModContent.GetInstance<BloodSeaWaterfallStyle>().Slot;
 		}
 
         public override int GetSplashDust()  => DustID.Blood;

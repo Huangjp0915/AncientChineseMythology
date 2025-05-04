@@ -1,12 +1,10 @@
-using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.WorldBuilding;
-using Terraria.GameContent.Generation;
 using Terraria.IO;
-using AncientChineseMythology.Tiles;
+using AncientChineseMythology.Tiles.Placable;
 
 namespace AncientChineseMythology.Systems
 {

@@ -1,4 +1,5 @@
 using AncientChineseMythology.Buffs;
+using AncientChineseMythology.Items.Materials;
 using AncientChineseMythology.Projectiles;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -8,7 +9,7 @@ using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Items
+namespace AncientChineseMythology.Items.Waapons
 {
     public class ChickenCharm : ModItem
     {

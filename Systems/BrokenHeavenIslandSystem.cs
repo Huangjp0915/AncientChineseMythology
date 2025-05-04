@@ -13,7 +13,8 @@ using StructureHelper;
 using Terraria.GameContent;
 using System.Reflection;
 using System.Collections;
-using System;   // 省掉类名前缀
+using System;
+using Terraria.Utilities;   // 省掉类名前缀
 
 namespace AncientChineseMythology.Systems
 {
@@ -24,6 +25,9 @@ namespace AncientChineseMythology.Systems
         public static Point SkySpawnTile;
         public override void OnWorldLoad()  => unlockedSkyIsland = false;
         public override void OnWorldUnload()=> unlockedSkyIsland = false;
+        private const float OreChanceMain = 0.2f; // 主岛：8 %
+        private const float OreChanceSat  = 0.1f; // 卫星：6 %
+        private const ushort OreType = TileID.Gold; // 以后可改成 ModContent.TileType<MythOre>()
 
         // 预览版：传入 totalWeight 的类型为 double:contentReference[oaicite:0]{index=0}  
         public override void ModifyWorldGenTasks(List<GenPass> tasks, ref double totalWeight)
@@ -44,6 +48,7 @@ namespace AncientChineseMythology.Systems
             int cy = (int)(Main.worldSurface * 0.42f);          // 略高于浮岛
             const int mainW = 110;        // 主岛宽
             const int mainH = 28;         // 主岛高
+            UnifiedRandom rand = WorldGen.genRand;
 
             /* ── 2. 主岛：上平下鼓的“原版浮岛”形状 ── */
             for (int dx = -mainW / 2; dx <= mainW / 2; dx++)
@@ -51,35 +56,73 @@ namespace AncientChineseMythology.Systems
             {
                 float nx = dx / (mainW * 0.55f);
                 float ny = dy / (mainH * 1.0f);
-                if (nx * nx + ny * ny <= 1f + WorldGen.genRand.NextFloat(-0.15f, 0.15f))
-                    WorldGen.PlaceTile(cx + dx, cy + dy, TileID.Stone, mute: true, forced: true);
-            }
 
-            /* ★ 初始化屏障 —— 主岛矩形（瓦片坐标）*/
-            IslandRect = new Rectangle(cx - mainW / 2 - 10, cy - mainH - 20, mainW + 20, mainH + 40);
-            GenVars.structures.AddProtectedStructure(IslandRect);
-
-            /* ── 3. 迷你浮空卫星岛 (3~4 个) ── */
-            int satellites = WorldGen.genRand.Next(3, 5);
-            for (int n = 0; n < satellites; n++)
-            {
-                // 半圆扇区（-60° ~ +60°）、水平 36-64、垂直高 24-38
-                double ang = MathHelper.ToRadians(-60 + n * 120 / satellites + WorldGen.genRand.NextFloat(-12, 12));
-                int    hx  = cx + (int)(WorldGen.genRand.Next(36, 65) * System.Math.Cos(ang));
-                int    hy  = cy - WorldGen.genRand.Next(24, 39);
-
-                int w = WorldGen.genRand.Next(32, 49);   // 宽
-                int h = WorldGen.genRand.Next(10, 17);   // 高
-
-                for (int dx = -w / 2; dx <= w / 2; dx++)
-                for (int dy = 0; dy <= h;  dy++)         // 只画下半椭圆：上平下鼓
+                if (nx * nx + ny * ny <= 1f + rand.NextFloat(-0.15f, 0.15f))
                 {
-                    float nx = dx / (w * 0.55f);
-                    float ny = dy / (h * 1.00f);
-                    if (nx * nx + ny * ny <= 1f + WorldGen.genRand.NextFloat(-0.15f, 0.15f))
-                        WorldGen.PlaceTile(hx + dx, hy + dy, TileID.Stone, mute:true, forced:true);
+                    ushort tileType;
+
+                    // 只在下 75 % 区域按概率生成矿石
+                    if (dy > mainH * 0.25f &&
+                        rand.NextFloat() < OreChanceMain * MathHelper.Lerp(0.3f, 1f, ny))
+                    {
+                        tileType = OreType;
+                    }
+                    else
+                    {
+                        tileType = rand.NextFloat() < 0.3f
+                                   ? (ushort)ModContent.TileType<Tiles.Placable.CloudyGoldSand>()
+                                   : (ushort)ModContent.TileType<Tiles.Placable.FloatingBasalt>();
+                    }
+
+                    WorldGen.PlaceTile(cx + dx, cy + dy, tileType, mute: true, forced: true);
                 }
             }
+
+            /* ────────── 2. 卫星浮岛 (3-4 个) ────────── */
+            int satellites = rand.Next(3, 5);
+            for (int n = 0; n < satellites; n++)
+            {
+                double ang = MathHelper.ToRadians(-60 + n * 120 / satellites + rand.NextFloat(-12, 12));
+                int hx = cx + (int)(rand.Next(36, 65) * System.Math.Cos(ang));
+                int hy = cy - rand.Next(24, 39);
+
+                int w = rand.Next(32, 49);
+                int h = rand.Next(10, 17);
+
+                for (int dx = -w / 2; dx <= w / 2; dx++)
+                for (int dy = 0; dy <= h; dy++)
+                {
+                    float nx = dx / (w * 0.55f);
+                    float ny = dy / (h * 1.0f);
+
+                    if (nx * nx + ny * ny <= 1f + rand.NextFloat(-0.15f, 0.15f))
+                    {
+                        ushort tileType;
+
+                        if (dy > h * 0.25f &&
+                            rand.NextFloat() < OreChanceSat * MathHelper.Lerp(0.3f, 1f, ny))
+                        {
+                            tileType = OreType;
+                        }
+                        else
+                        {
+                            tileType = rand.NextFloat() < 0.6f
+                                       ? (ushort)ModContent.TileType<Tiles.Placable.CloudyGoldSand>()
+                                       : (ushort)ModContent.TileType<Tiles.Placable.FloatingBasalt>();
+                        }
+
+                        WorldGen.PlaceTile(hx + dx, hy + dy, tileType, mute: true, forced: true);
+                    }
+                }
+            }
+
+            /* ────────── 3. 结构保护矩形 ────────── */
+            Rectangle islandRect = new Rectangle(
+                cx - mainW / 2 - 10,
+                cy - mainH - 20,
+                mainW + 20,
+                mainH + 40);
+            GenVars.structures.AddProtectedStructure(islandRect);
 
 
             /* ── 4. 给所有石顶铺草 ── */
@@ -205,7 +248,7 @@ namespace AncientChineseMythology.Systems
                 for (int dx = -r; dx <= r; dx++)
                 for (int dy = -r; dy <= r; dy++)
                     if (dx * dx + dy * dy <= r * r && WorldGen.InWorld(icx + dx, icy + dy))
-                        WorldGen.PlaceTile(icx + dx, icy + dy, TileID.Stone, mute:true, forced:true);
+                        WorldGen.PlaceTile(icx + dx, icy + dy, ModContent.TileType<Tiles.Placable.FloatingBasalt>(), mute:true, forced:true);
             }
         }
 
@@ -221,7 +264,7 @@ namespace AncientChineseMythology.Systems
                 {
                     int len = WorldGen.genRand.Next(4, 9);
                     for (int l = 0; l < len && WorldGen.InWorld(x, y + l); l++)
-                        WorldGen.PlaceTile(x, y + l, TileID.Stone, mute: true, forced: true);
+                        WorldGen.PlaceTile(x, y + l, ModContent.TileType<Tiles.Placable.FloatingBasalt>(), mute: true, forced: true);
                 }
             }
         }
@@ -232,10 +275,10 @@ namespace AncientChineseMythology.Systems
             for (int y = cy - b - 4; y <= cy + b + 4; y++)
             {
                 if (!WorldGen.InWorld(x, y, 10) || !IslandRect.Contains(x, y)) continue;
-                if (Main.tile[x, y].TileType == TileID.Stone && !Main.tile[x, y - 1].HasTile)
+                if (Main.tile[x, y].TileType == ModContent.TileType<Tiles.Placable.FloatingBasalt>() && !Main.tile[x, y - 1].HasTile)
                 {
-                    WorldGen.PlaceTile(x, y, TileID.Dirt, mute: true, forced: true);
-                    WorldGen.SpreadGrass(x, y, TileID.Dirt, TileID.Grass, repeat: false); // SpreadGrass:contentReference[oaicite:4]{index=4}
+                    WorldGen.PlaceTile(x, y, ModContent.TileType<Tiles.Placable.CloudyGoldSand>(), mute: true, forced: true);
+                    WorldGen.SpreadGrass(x, y, ModContent.TileType<Tiles.Placable.CloudyGoldSand>(), TileID.Grass, repeat: false); // SpreadGrass:contentReference[oaicite:4]{index=4}
                 }
             }
         }
@@ -248,7 +291,7 @@ namespace AncientChineseMythology.Systems
             for (int dx = -pr; dx <= pr; dx++)
             for (int dy = -pr; dy <= pr; dy++)
                 if (dx * dx + dy * dy <= pr * pr)
-                    WorldGen.PlaceTile(cx + dx, cy + dy, TileID.RainbowBrick, mute: true, forced: true);
+                    WorldGen.PlaceTile(cx + dx, cy + dy, ModContent.TileType<Tiles.Placable.CelestialJadeBrick>(), mute: true, forced: true);
 
             /* 缺口锯齿 */
             for (int i = 0; i < 28; i++)
@@ -258,12 +301,12 @@ namespace AncientChineseMythology.Systems
             /* —— 残破房顶 + 左右断墙 —— */
             int left = cx - 8, right = cx + 8, roofY = cy - 5;
             for (int x = left; x <= right; x++)
-                WorldGen.PlaceTile(x, roofY, TileID.RainbowBrick, mute: true, forced: true);
+                WorldGen.PlaceTile(x, roofY, ModContent.TileType<Tiles.Placable.CelestialJadeBrick>(), mute: true, forced: true);
             for (int y = roofY - 1; y >= roofY - 4; y--)
             {
-                WorldGen.PlaceTile(left,  y, TileID.RainbowBrick, mute: true, forced: true);
+                WorldGen.PlaceTile(left,  y, ModContent.TileType<Tiles.Placable.CelestialJadeBrick>(), mute: true, forced: true);
                 if (y != roofY - 2) // 右墙缺口
-                    WorldGen.PlaceTile(right, y, TileID.RainbowBrick, mute: true, forced: true);
+                    WorldGen.PlaceTile(right, y, ModContent.TileType<Tiles.Placable.CelestialJadeBrick>(), mute: true, forced: true);
             }
 
             /* —— 断柱 —— */
@@ -271,15 +314,10 @@ namespace AncientChineseMythology.Systems
             {
                 int h = WorldGen.genRand.Next(5, 8);
                 for (int y = 0; y < h; y++)
-                    WorldGen.PlaceTile(cx + off, cy - 1 - y, TileID.RainbowBrick, mute: true, forced: true);
+                    WorldGen.PlaceTile(cx + off, cy - 1 - y, ModContent.TileType<Tiles.Placable.CelestialJadeBrick>(), mute: true, forced: true);
                 if (WorldGen.genRand.NextBool())
                     Main.tile[cx + off, cy - h].ClearEverything();
             }
-
-            /* —— 中央篝火 & 星瓶灯 —— */
-            WorldGen.PlaceObject(cx, cy - 1, TileID.Campfire);                       // 篝火
-            foreach (int dx in new[] { -3, 3 })
-                WorldGen.PlaceObject(cx + dx, cy - 5, TileID.Bottles, style: 26);    // 26 = Star-in-a-Bottle
 
             /* —— 植被：树 & 高草 —— */
             for (int t = 0; t < 8; t++)                                              // 树

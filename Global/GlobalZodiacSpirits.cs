@@ -1,7 +1,6 @@
 using Terraria;
-using Terraria.ID;
 using Terraria.ModLoader;
-using System.Collections.Generic;
+using AncientChineseMythology.Items.Materials;
 
 namespace AncientChineseMythology
 {
@@ -20,18 +19,18 @@ namespace AncientChineseMythology
                 // 定义 12 个生肖精魄物品的 ID 数组
                 int[] zodiacSpiritIDs = new int[]
                 {
-                    ModContent.ItemType<Items.ZodiacRat>(),
-                    ModContent.ItemType<Items.ZodiacCow>(),
-                    ModContent.ItemType<Items.ZodiacTiger>(),
-                    ModContent.ItemType<Items.ZodiacRabbit>(),
-                    ModContent.ItemType<Items.ZodiacDragon>(),
-                    ModContent.ItemType<Items.ZodiacSnake>(),
-                    ModContent.ItemType<Items.ZodiacHorse>(),
-                    ModContent.ItemType<Items.ZodiacGoat>(),
-                    ModContent.ItemType<Items.ZodiacMonkey>(),
-                    ModContent.ItemType<Items.ZodiacChicken>(),
-                    ModContent.ItemType<Items.ZodiacDog>(),
-                    ModContent.ItemType<Items.ZodiacPig>()
+                    ModContent.ItemType<ZodiacRat>(),
+                    ModContent.ItemType<ZodiacCow>(),
+                    ModContent.ItemType<ZodiacTiger>(),
+                    ModContent.ItemType<ZodiacRabbit>(),
+                    ModContent.ItemType<ZodiacDragon>(),
+                    ModContent.ItemType<ZodiacSnake>(),
+                    ModContent.ItemType<ZodiacHorse>(),
+                    ModContent.ItemType<ZodiacGoat>(),
+                    ModContent.ItemType<ZodiacMonkey>(),
+                    ModContent.ItemType<ZodiacChicken>(),
+                    ModContent.ItemType<ZodiacDog>(),
+                    ModContent.ItemType<ZodiacPig>()
                 };
 
                 // 随机选择一个生肖精魄

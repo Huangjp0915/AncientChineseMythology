@@ -1,11 +1,13 @@
 // Content/Items/Armor/CupriteHelmet.cs
+using AncientChineseMythology.Items.Bronze;
 using AncientChineseMythology.Players;
 using Terraria;
 using Terraria.ID;
 using Terraria.Localization;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Items{
+namespace AncientChineseMythology.Items.Cuprite
+{
 
     [AutoloadEquip(EquipType.Head)]
     public class CupriteHelmet : ModItem {

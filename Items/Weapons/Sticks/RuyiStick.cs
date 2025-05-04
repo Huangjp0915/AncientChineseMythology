@@ -2,7 +2,7 @@
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Items
+namespace AncientChineseMythology.Items.Waapons.Sticks
 {
     public class RuyiStick : ModItem
     {

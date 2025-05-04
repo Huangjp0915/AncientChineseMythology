@@ -1,4 +1,3 @@
-using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using Terraria;
 using Terraria.ID;
@@ -7,6 +6,8 @@ using Terraria.WorldBuilding;
 using Terraria.Localization;
 using Terraria.GameContent.Generation;
 using Terraria.IO;
+using AncientChineseMythology.Tiles.Herbs;
+using Microsoft.Xna.Framework;
 
 namespace AncientChineseMythology.Worldgen
 {
@@ -34,8 +35,14 @@ namespace AncientChineseMythology.Worldgen
                 if (Main.tile[i,j].TileType != TileID.Ash) continue;
 
                 WorldGen.PlaceTile(i, j - 1,
-                    ModContent.TileType<Tiles.BlazingFlowerHerbTile>(), mute:true);
+                    ModContent.TileType<BlazingFlowerHerbTile>(), mute:true);
             }
         }
+
+        private void SpawnStarflower(CommandCaller caller, string input, string[] args) {
+			Player p = caller.Player;
+			Point tilePos = p.Center.ToTileCoordinates();
+			WorldGen.PlaceTile(tilePos.X, tilePos.Y, ModContent.TileType<BlazingFlowerHerbTile>());
+		}
     }
 }

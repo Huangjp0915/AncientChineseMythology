@@ -7,6 +7,7 @@ using Terraria.WorldBuilding;
 using Terraria.Localization;
 using Terraria.GameContent.Generation;
 using Terraria.IO;
+using AncientChineseMythology.Tiles.Herbs;
 
 namespace AncientChineseMythology.Worldgen {
 	public class StarflowerGenSystem : ModSystem {
@@ -35,7 +36,7 @@ namespace AncientChineseMythology.Worldgen {
 					Tile tile = Framing.GetTileSafely(i, j);
 					if (tile.HasTile && (tile.TileType == TileID.Cloud || tile.TileType == TileID.RainCloud)) {
 						WorldGen.PlaceTile(i, j - 1,
-							ModContent.TileType<Tiles.StarflowerHerbTile>(), mute: true, style: 0);
+							ModContent.TileType<StarflowerHerbTile>(), mute: true, style: 0);
 						break;
 					}
 				}
@@ -45,7 +46,7 @@ namespace AncientChineseMythology.Worldgen {
 		private void SpawnStarflower(CommandCaller caller, string input, string[] args) {
 			Player p = caller.Player;
 			Point tilePos = p.Center.ToTileCoordinates();
-			WorldGen.PlaceTile(tilePos.X, tilePos.Y, ModContent.TileType<Tiles.StarflowerHerbTile>());
+			WorldGen.PlaceTile(tilePos.X, tilePos.Y, ModContent.TileType<StarflowerHerbTile>());
 		}
 	}
 }

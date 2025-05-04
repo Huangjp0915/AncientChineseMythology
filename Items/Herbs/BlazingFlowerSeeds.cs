@@ -1,8 +1,9 @@
+using AncientChineseMythology.Tiles.Herbs;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Items
+namespace AncientChineseMythology.Items.Herbs
 {
     public class BlazingFlowerSeeds : ModItem
     {
@@ -22,7 +23,7 @@ namespace AncientChineseMythology.Items
             Item.UseSound  = SoundID.Grass;
 
             Item.rare = ItemRarityID.Blue;
-            Item.createTile = ModContent.TileType<Tiles.BlazingFlowerHerbTile>();
+            Item.createTile = ModContent.TileType<BlazingFlowerHerbTile>();
         }
     }
 }

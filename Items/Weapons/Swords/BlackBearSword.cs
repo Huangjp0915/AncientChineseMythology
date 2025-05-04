@@ -6,7 +6,7 @@ using Microsoft.Xna.Framework;
 using System.Linq;
 using AncientChineseMythology.Projectiles;
 
-namespace AncientChineseMythology.Items
+namespace AncientChineseMythology.Items.Waapons.Swords
 {
     public class BlackBearSword : ModItem
     {

@@ -1,9 +1,8 @@
 using Terraria;
 using Terraria.ModLoader;
-using Microsoft.Xna.Framework;
-using AncientChineseMythology.NPCs.Boss;
 using Terraria.ModLoader.IO;
 using System.Collections.Generic;
+using AncientChineseMythology.NPCs.Boss.BlackBear;
 
 namespace AncientChineseMythology.Systems
 {

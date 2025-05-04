@@ -4,10 +4,14 @@ using Terraria;
 using Terraria.GameContent.UI.Elements;
 using Terraria.ModLoader;
 using Terraria.UI;
-using AncientChineseMythology.Content;
 using AncientChineseMythology.Players;
 using AncientChineseMythology.UI.Elements;
 using ReLogic.Content;
+using Terraria.DataStructures;
+using Terraria.ID;
+using Terraria.Audio;
+using AncientChineseMythology.NPCs.Boss.TribulationCloud;
+using AncientChineseMythology.Systems;
 
 namespace AncientChineseMythology.UI;
 
@@ -15,7 +19,7 @@ public class MythologySidebar : UIState
 {
     /* ── 参数 ───────────────────────────── */
     private const int W = 220;          // 面板宽
-    private const int H = 220;          // 面板高
+    private const int H = 230;          // 面板高
     private const int TAB = 32;         // 标签宽高
 
     private bool _collapsed = true;
@@ -24,6 +28,12 @@ public class MythologySidebar : UIState
     private UIPanel _panel;
     private UIText _header, _hp, _mana, _def, _luck, _realm, _exp;
     private UIExpBar _bar;
+
+    private UIImageButton _ascendBtn;
+    private static readonly Asset<Texture2D> _btnOff =
+        ModContent.Request<Texture2D>("AncientChineseMythology/Textures/UI/AscendButton_Off");
+    private static readonly Asset<Texture2D> _btnOn  =
+        ModContent.Request<Texture2D>("AncientChineseMythology/Textures/UI/AscendButton_On");
 
     private MythologyPlayer MP => Main.LocalPlayer.GetModPlayer<MythologyPlayer>();
 
@@ -49,6 +59,14 @@ public class MythologySidebar : UIState
         _tab.Width.Set(TAB, 0); _tab.Height.Set(TAB, 0);
         _tab.OnLeftClick += (_, _) => Toggle();
         Append(_tab);
+
+        _ascendBtn = new UIImageButton(_btnOff);
+        _ascendBtn.Left.Set(80, 0f);
+        _ascendBtn.Top.Set(195, 0f);     
+        _ascendBtn.Width.Set(180, 0f);
+        _ascendBtn.Height.Set(28, 0f);
+        _ascendBtn.OnLeftClick += PromoteButtonClicked;
+        _panel.Append(_ascendBtn);
 
         /* 文字控件 */
         float y = 0;
@@ -114,10 +132,42 @@ public class MythologySidebar : UIState
             $"EXP  {MP.StageExp}/{need}\n" +
             $"Kills {MP.KillsThisMajor}/{CultivationProgression.KillsForMajorUp[MP.Major]}"
         );
+
+        MythologyPlayer mp = Main.LocalPlayer.GetModPlayer<MythologyPlayer>();
+        bool ready = mp.CanMajorAdvance();
+        _ascendBtn.SetImage(ready ? _btnOn : _btnOff);
+        _ascendBtn.SetVisibility(ready ? 1f : 0.35f, ready ? 1f : 0.35f);
     }
 
     private static int StartExp(int maj,int min)=> min==0?0:CultivationProgression.ExpFor(maj,min-1);
     private static int NeedExp (int maj,int min)=> min>=3?0:CultivationProgression.ExpFor(maj,min);
+
+    private void PromoteButtonClicked(UIMouseEvent evt, UIElement listeningElement)
+    {
+        Player p  = Main.player[Main.myPlayer];
+        MythologyPlayer mp = p.GetModPlayer<MythologyPlayer>();
+        if (!mp.CanMajorAdvance()) return;
+
+        // 场上已存在任意云体则退出
+        if (NPC.AnyNPCs(ModContent.NPCType<TribulationCloudPurple>()) ||
+            NPC.AnyNPCs(ModContent.NPCType<TribulationCloudRed>())    ||
+            NPC.AnyNPCs(ModContent.NPCType<TribulationCloudBlack>())) return;
+
+        // —— 权重随机决定类型 ——
+        float roll = Main.rand.NextFloat();
+        int type = roll < 0.70f ? ModContent.NPCType<TribulationCloudPurple>()
+                : roll < 0.85f ? ModContent.NPCType<TribulationCloudRed>()
+                                : ModContent.NPCType<TribulationCloudBlack>();
+
+        // 把请求扔给系统计时器
+        ModContent.GetInstance<TribulationSpawnSystem>()
+                .RequestSpawn(Main.myPlayer, type);
+
+        // 立即触发天气 & 文本
+        TribulationWeather.Start();
+        SoundEngine.PlaySound(SoundID.Roar, p.Center);
+        Main.NewText("劫云正在酝酿……", Color.LightSkyBlue);
+    }
 }
 
 class SidebarTabButton : UIImageButton

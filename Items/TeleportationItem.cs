@@ -1,4 +1,4 @@
-using AncientChineseMythology.Tiles;
+using AncientChineseMythology.Tiles.Placable;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;

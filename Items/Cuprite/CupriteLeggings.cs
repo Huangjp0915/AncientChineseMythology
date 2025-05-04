@@ -1,8 +1,10 @@
 using Terraria.ID;
 using Terraria;
 using Terraria.ModLoader;
+using AncientChineseMythology.Items.Bronze;
 
-namespace AncientChineseMythology.Items{
+namespace AncientChineseMythology.Items.Cuprite
+{
 
     [AutoloadEquip(EquipType.Legs)]
 

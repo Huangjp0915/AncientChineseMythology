@@ -27,16 +27,19 @@ namespace AncientChineseMythology.Biomes
         public override bool IsBiomeActive(Player player)
             => player.ZoneBeach && BloodSeaSystem.NearbyBloodTiles >= 50;
 
-        public override void SpecialVisuals(Player player, bool isActive)
+        /*public override void SpecialVisuals(Player player, bool isActive)
         {
-            // ① 云朵淡出 / 淡入
-            float target = isActive ? 0f : 1f;
+            if (player.whoAmI != Main.myPlayer) return;          // 只改本机视野
+
+            const float minCloud = 0.4f;                         // 不要彻底清零
+            float target = isActive ? minCloud : 1f;
+
             Main.cloudAlpha = MathHelper.Lerp(Main.cloudAlpha, target, 0.05f);
 
-            // ② 太阳 & 月亮移出／归位
-            int offScreen = isActive ? 10_000 : 0;
-            Main.sunModY  = (short)offScreen;
-            Main.moonModY = (short)offScreen;
-        }
+            // 太阳 / 月亮仍按原逻辑移入移出
+            short off = (short)(isActive ? 10_000 : 0);
+            Main.sunModY  = off;
+            Main.moonModY = off;
+        }*/
     }
 }

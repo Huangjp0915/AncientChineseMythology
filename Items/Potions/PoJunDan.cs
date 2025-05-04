@@ -3,7 +3,7 @@ using Terraria.ID;
 using Terraria.ModLoader;
 using AncientChineseMythology.Buffs;
 
-namespace AncientChineseMythology.Items
+namespace AncientChineseMythology.Items.Potions
 {
     public class PoJunDan : ModItem
     {

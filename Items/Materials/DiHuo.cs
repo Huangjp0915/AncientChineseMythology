@@ -2,7 +2,7 @@ using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Items
+namespace AncientChineseMythology.Items.Materials
 {
     public class DiHuo : ModItem
     {

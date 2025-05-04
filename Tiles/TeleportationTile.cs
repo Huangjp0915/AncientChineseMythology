@@ -9,7 +9,7 @@ using Terraria.Localization;
 using Terraria.ModLoader;
 using Terraria.ObjectData;
 
-namespace AncientChineseMythology.Tiles
+namespace AncientChineseMythology.Tiles.Placable
 {
     public class TeleportationTile : ModTile
     {

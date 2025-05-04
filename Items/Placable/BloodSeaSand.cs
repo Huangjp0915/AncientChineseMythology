@@ -1,8 +1,9 @@
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
+using AncientChineseMythology.Tiles.Placable;
 
-namespace AncientChineseMythology.Items
+namespace AncientChineseMythology.Items.Placable
 {
     public class BloodSeaSand : ModItem
     {
@@ -22,7 +23,7 @@ namespace AncientChineseMythology.Items
             Item.useTime = 10;
             Item.useStyle = ItemUseStyleID.Swing;
             Item.consumable = true;
-            Item.createTile = ModContent.TileType<Tiles.BloodSeaSand>();
+            Item.createTile = ModContent.TileType<Tiles.Placable.BloodSeaSand>();
         }
     }
 }

@@ -1,8 +1,10 @@
+using AncientChineseMythology.Tiles.Herbs;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Items {
+namespace AncientChineseMythology.Items.Herbs
+{
 	public class StarflowerSeeds : ModItem {
         public override string Texture => "AncientChineseMythology/Textures/Items/Herbs/StarflowerSeeds";
 		public override void SetStaticDefaults() {
@@ -19,7 +21,7 @@ namespace AncientChineseMythology.Items {
 			Item.autoReuse = true;
 			Item.UseSound  = SoundID.Grass;
 			Item.rare      = ItemRarityID.Blue;
-			Item.createTile = ModContent.TileType<Tiles.StarflowerHerbTile>();
+			Item.createTile = ModContent.TileType<StarflowerHerbTile>();
 		}
 	}
 }

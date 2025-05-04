@@ -1,7 +1,7 @@
 using Terraria;
 using Terraria.ModLoader;
 using Terraria.GameContent.ItemDropRules;
-using AncientChineseMythology.Items;
+using AncientChineseMythology.Items.Materials;
 
 namespace AncientChineseMythology.Global
 {

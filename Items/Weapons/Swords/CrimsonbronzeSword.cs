@@ -8,7 +8,7 @@ using AncientChineseMythology.Projectiles;
 using Terraria.DataStructures;
 using Terraria.Audio;
 
-namespace AncientChineseMythology.Items
+namespace AncientChineseMythology.Items.Waapons.Swords
 {
     public class CrimsonbronzeSword : ModItem
     {

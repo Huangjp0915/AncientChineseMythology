@@ -5,7 +5,7 @@ using Terraria.ModLoader;
 using System.Collections.Generic;
 using Terraria.GameContent.Generation;
 using Terraria.ID;
-using AncientChineseMythology.Tiles;
+using AncientChineseMythology.Tiles.Placable;
 
 namespace AncientChineseMythology.Systems
 {

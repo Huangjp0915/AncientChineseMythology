@@ -1,3 +1,4 @@
+using AncientChineseMythology.Tiles.Placable;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -44,7 +45,7 @@ namespace AncientChineseMythology.Systems
                 WorldGen.KillTile(placeX, placeY, noItem: true);
 
                 // 放置多格 Tile（4×4）
-                WorldGen.PlaceObject(placeX, placeY, ModContent.TileType<Tiles.TeleportationTile>());
+                WorldGen.PlaceObject(placeX, placeY, ModContent.TileType<TeleportationTile>());
                 WorldGen.SquareTileFrame(placeX, placeY, true);
 
                 // 显示提示信息

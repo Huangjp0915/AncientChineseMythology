@@ -1,4 +1,8 @@
 // Systems/RecipeSystem.cs
+using AncientChineseMythology.Items.Herbs;
+using AncientChineseMythology.Items.Materials;
+using AncientChineseMythology.Items.Potions;
+using AncientChineseMythology.Tiles.Placable;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -9,38 +13,38 @@ namespace AncientChineseMythology.Systems
     {
         public override void AddRecipes()
         {
-            Recipe.Create(ModContent.ItemType<Items.ScrapElixir>())
-                .AddIngredient(ItemID.FallenStar, 1)
-                .AddIngredient(ModContent.ItemType<Items.YaoQiFragment>(), 5)
-                .AddTile<Tiles.ElixirFurnaceTile>()
+            Recipe.Create(ModContent.ItemType<ScrapElixir>())
+                .AddIngredient(ItemID.FallenStar, 5)
+                .AddIngredient(ModContent.ItemType<YaoQiFragment>(), 5)
+                .AddTile<ElixirFurnaceTile>()
                 .Register();
             
-            Recipe.Create(ModContent.ItemType<Items.XuePoDan>())
+            Recipe.Create(ModContent.ItemType<XuePoDan>())
                 .AddIngredient(ItemID.Daybloom, 9)
-                .AddIngredient(ModContent.ItemType<Items.BloodLingzhi>(), 9)
-                .AddIngredient(ModContent.ItemType<Items.YaoQiFragment>(), 5)
-                .AddTile<Tiles.ElixirFurnaceTile>()
+                .AddIngredient(ModContent.ItemType<BloodLingzhi>(), 9)
+                .AddIngredient(ModContent.ItemType<YaoQiFragment>(), 5)
+                .AddTile<ElixirFurnaceTile>()
                 .Register();
 
-            Recipe.Create(ModContent.ItemType<Items.NingShenDan>())
+            Recipe.Create(ModContent.ItemType<NingShenDan>())
                 .AddIngredient(ItemID.Moonglow, 9)
-                .AddIngredient(ModContent.ItemType<Items.Starflower>(), 9)
-                .AddIngredient(ModContent.ItemType<Items.YaoQiFragment>(), 5)
-                .AddTile<Tiles.ElixirFurnaceTile>()
+                .AddIngredient(ModContent.ItemType<Starflower>(), 9)
+                .AddIngredient(ModContent.ItemType<YaoQiFragment>(), 5)
+                .AddTile<ElixirFurnaceTile>()
                 .Register();
 
-            Recipe.Create(ModContent.ItemType<Items.XuanGangDan>())
+            Recipe.Create(ModContent.ItemType<XuanGangDan>())
                 .AddIngredient(ItemID.Shiverthorn, 9)
-                .AddIngredient(ModContent.ItemType<Items.IronArmorFlower>(), 9)
-                .AddIngredient(ModContent.ItemType<Items.YaoQiFragment>(), 5)
-                .AddTile<Tiles.ElixirFurnaceTile>()
+                .AddIngredient(ModContent.ItemType<IronArmorFlower>(), 9)
+                .AddIngredient(ModContent.ItemType<YaoQiFragment>(), 5)
+                .AddTile<ElixirFurnaceTile>()
                 .Register();
 
-            Recipe.Create(ModContent.ItemType<Items.PoJunDan>())
+            Recipe.Create(ModContent.ItemType<PoJunDan>())
                 .AddIngredient(ItemID.Deathweed, 9)
-                .AddIngredient(ModContent.ItemType<Items.BlazingFlower>(), 9)
-                .AddIngredient(ModContent.ItemType<Items.YaoQiFragment>(), 5)
-                .AddTile<Tiles.ElixirFurnaceTile>()
+                .AddIngredient(ModContent.ItemType<BlazingFlower>(), 9)
+                .AddIngredient(ModContent.ItemType<YaoQiFragment>(), 5)
+                .AddTile<ElixirFurnaceTile>()
                 .Register();
         }
     }

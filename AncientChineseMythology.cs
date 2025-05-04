@@ -1,8 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
 using Terraria;
 using Terraria.ID;
@@ -11,8 +8,8 @@ using Microsoft.Xna.Framework.Graphics;
 using Terraria.Localization;
 using Terraria.ModLoader.IO;
 using Microsoft.Xna.Framework;
-using AncientChineseMythology.NPCs.Boss;
 using AncientChineseMythology.Systems;
+using AncientChineseMythology.NPCs.Boss.BlackBear;
 
 
 namespace AncientChineseMythology

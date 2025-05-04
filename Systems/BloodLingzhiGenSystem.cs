@@ -7,6 +7,7 @@ using Terraria.WorldBuilding;
 using Terraria.Localization;
 using Terraria.GameContent.Generation;
 using Terraria.IO;
+using AncientChineseMythology.Tiles.Herbs;
 
 namespace AncientChineseMythology.Worldgen
 {
@@ -42,9 +43,14 @@ namespace AncientChineseMythology.Worldgen
                 if (!WorldgenHelpers.IsCrimson(i, j)) continue;
 
                 WorldGen.PlaceTile(i, j - 1,
-                    ModContent.TileType<Tiles.BloodLingzhiHerbTile>(), mute: true);
+                    ModContent.TileType<BloodLingzhiHerbTile>(), mute: true);
             }
         }
+        private void SpawnStarflower(CommandCaller caller, string input, string[] args) {
+			Player p = caller.Player;
+			Point tilePos = p.Center.ToTileCoordinates();
+			WorldGen.PlaceTile(tilePos.X, tilePos.Y, ModContent.TileType<BloodLingzhiHerbTile>());
+		}
     }
 
     static class WorldgenHelpers

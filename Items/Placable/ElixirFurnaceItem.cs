@@ -1,8 +1,11 @@
+using AncientChineseMythology.Items.Bronze;
+using AncientChineseMythology.Items.Materials;
+using AncientChineseMythology.Tiles.Placable;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Items
+namespace AncientChineseMythology.Items.Placable
 {
     public class ElixirFurnaceItem : ModItem
     {
@@ -25,7 +28,7 @@ namespace AncientChineseMythology.Items
             Item.useStyle = ItemUseStyleID.Swing;
             Item.consumable = true;
             Item.value = Item.sellPrice(0, 0, 50, 0);
-            Item.createTile = ModContent.TileType<Tiles.ElixirFurnaceTile>(); // 关联Tile
+            Item.createTile = ModContent.TileType<ElixirFurnaceTile>(); // 关联Tile
             
         }
 

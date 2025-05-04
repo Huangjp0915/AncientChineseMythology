@@ -1,15 +1,11 @@
-using Microsoft.Xna.Framework;
 using Terraria;
-using Terraria.ID;
 using Terraria.ModLoader;
-using Terraria.ModLoader.IO;
 using Terraria.WorldBuilding;
 using System.Collections.Generic;
 using Terraria.GameContent.Generation;
 using Terraria.IO;
 using Terraria.DataStructures;
-using Microsoft.Xna.Framework.Graphics;
-using System.IO;
+using AncientChineseMythology.Tiles.Placable;
 
 namespace AncientChineseMythology.Content.Systems
 {
@@ -27,7 +23,7 @@ namespace AncientChineseMythology.Content.Systems
 				int j = (int)Main.worldSurface - 10;
 				for (; j < Main.worldSurface + 50; j++) {
 					if (Main.tileSolid[Main.tile[i, j].TileType]) {
-						WorldGen.PlaceObject(i, j, ModContent.TileType<Tiles.ShengZhuStatueTile>());
+						WorldGen.PlaceObject(i, j, ModContent.TileType<ShengZhuStatueTile>());
 						if (Main.tile[i, j].HasTile) return;
 						break;
 					}

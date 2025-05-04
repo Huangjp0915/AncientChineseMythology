@@ -6,6 +6,8 @@ using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 using AncientChineseMythology.Items;
+using AncientChineseMythology.Items.Waapons.Sticks;
+using AncientChineseMythology.Items.Summons;
 
 namespace AncientChineseMythology.NPCs.TownNPCs
 {

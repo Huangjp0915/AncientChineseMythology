@@ -349,6 +349,26 @@ Items: {
 		DisplayName: Cuprite Leggings
 		Tooltip: ""
 	}
+
+	CelestialJadeBrick: {
+		DisplayName: Celestial Jade Brick
+		Tooltip: ""
+	}
+
+	CloudyGoldSand: {
+		DisplayName: Cloudy Gold Sand
+		Tooltip: ""
+	}
+
+	FloatingBasalt: {
+		DisplayName: Floating Basalt
+		Tooltip: ""
+	}
+
+	ChengYingReins: {
+		DisplayName: Cheng Ying Reins
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -377,6 +397,10 @@ NPCs: {
 	MingCrow.DisplayName: Ming Crow
 	LaoDieNPC.DisplayName: Lao Die N P C
 	YangJianNPC.DisplayName: Yang Jian N P C
+	TribulationCloud.DisplayName: Tribulation Cloud
+	TribulationCloudBlack.DisplayName: Tribulation Cloud Black
+	TribulationCloudPurple.DisplayName: Tribulation Cloud Purple
+	TribulationCloudRed.DisplayName: Tribulation Cloud Red
 }
 
 Projectiles: {
@@ -407,6 +431,12 @@ Projectiles: {
 	Demon_Proj.DisplayName: Demon_ Proj
 	PufferfishProj1.DisplayName: Pufferfish Proj1
 	MingCrowMinion.DisplayName: Ming Crow Minion
+	TribulationLightning.DisplayName: Tribulation Lightning
+	EvilIntentionProj2.DisplayName: Evil Intention Proj2
+	TribulationLightningBlack.DisplayName: Tribulation Lightning Black
+	TribulationLightningPurple.DisplayName: Tribulation Lightning Purple
+	TribulationLightningRed.DisplayName: Tribulation Lightning Red
+	ChengYingHitbox.DisplayName: Cheng Ying Hitbox
 }
 
 HeavenBiome.DisplayName: Heaven
@@ -436,6 +466,10 @@ Tiles: {
 	StarflowerHerbTile.MapEntry: Starflower Herb Tile
 	IronArmorFlowerHerbTile.MapEntry: Iron Armor Flower Herb Tile
 	SkyAltarTile.MapEntry: Sky Altar Tile
+	CloudyGoldGrass.MapEntry: Cloudy Gold Grass
+	CelestialJadeBrick.MapEntry: Celestial Jade Brick
+	CloudyGoldSand.MapEntry: Cloudy Gold Sand
+	FloatingBasalt.MapEntry: Floating Basalt
 }
 
 Buffs: {
@@ -517,6 +551,11 @@ Buffs: {
 	MingCrowMinionBuff: {
 		DisplayName: Ming Crow Minion Buff
 		Description: Mods.AncientChineseMythology.Buffs.MingCrowMinionBuff.Description
+	}
+
+	ChengYingBuff: {
+		DisplayName: Cheng Ying Buff
+		Description: Mods.AncientChineseMythology.Buffs.ChengYingBuff.Description
 	}
 }
 

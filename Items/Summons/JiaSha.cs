@@ -1,10 +1,10 @@
-using AncientChineseMythology.NPCs.Boss;
+using AncientChineseMythology.NPCs.Boss.BlackBear;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Items
+namespace AncientChineseMythology.Items.Summons
 {
     public class JiaSha : ModItem
     {

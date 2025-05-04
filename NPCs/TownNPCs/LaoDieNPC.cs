@@ -13,6 +13,7 @@ using Terraria.Utilities;
 using AncientChineseMythology.Items;
 using AncientChineseMythology.Projectiles;
 using AncientChineseMythology.Systems;
+using AncientChineseMythology.Items.Waapons.Staffs;
 
 namespace AncientChineseMythology.NPCs.TownNPCs
 {

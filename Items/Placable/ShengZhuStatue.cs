@@ -1,8 +1,9 @@
+using AncientChineseMythology.Tiles.Placable;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Content.Items.Placeable
+namespace AncientChineseMythology.Items.Placeable
 {
 	public class ShengZhuStatue : ModItem
 	{
@@ -10,7 +11,7 @@ namespace AncientChineseMythology.Content.Items.Placeable
 
 		public override void SetDefaults() {
 			Item.CloneDefaults(ItemID.ArmorStatue);      // 基础属性
-			Item.createTile = ModContent.TileType<Tiles.ShengZhuStatueTile>();
+			Item.createTile = ModContent.TileType<ShengZhuStatueTile>();
             Item.maxStack = 1;
 			Item.rare  = ItemRarityID.Orange;
 			Item.value = Item.buyPrice(gold: 0);

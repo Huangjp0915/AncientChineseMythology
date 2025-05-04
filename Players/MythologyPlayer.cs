@@ -3,6 +3,7 @@ using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
 using AncientChineseMythology.Content;
 using System;
+using Microsoft.Xna.Framework;
 
 namespace AncientChineseMythology.Players;
 
@@ -12,6 +13,16 @@ public class MythologyPlayer : ModPlayer
     public int Minor;
     public int StageExp;
     public int KillsThisMajor;
+
+    public int GetResourceTier() {
+        int lifeMax = Player.statLifeMax2;  // 或你的自定义血量字段
+        return lifeMax switch {
+            <= 1000      => 0,
+            <= 10000     => 1,
+            <= 100000    => 2,
+            _            => 3
+        };
+    }
 
     public void RecordKill(NPC npc)
     {
@@ -32,8 +43,36 @@ public class MythologyPlayer : ModPlayer
         if (KillsThisMajor < killNeed)
         {
             KillsThisMajor++;
-            TryMajorAdvance();
+            //TryMajorAdvance();
         }
+    }
+
+    // 判定是否符合大境界突破条件
+    public bool CanMajorAdvance() {
+        // 大境界已封顶？
+        int maxMajor = CultivationProgression.MajorNames.Length - 1;
+        if (Major >= maxMajor) return false;
+
+        // 必须小境界大圆满
+        if (Minor != CultivationProgression.MinorPerMajor - 1) return false;
+
+        // 经验与击杀必须达标
+        if (StageExp < CultivationProgression.ExpFor(Major, Minor))                return false;
+        if (KillsThisMajor < CultivationProgression.KillsForMajorUp[Major])        return false;
+
+        return true;
+    }
+
+    public void AdvanceMajor(Player player) {
+        if (!CanMajorAdvance()) return;
+
+        Major++;
+        Minor = 0;
+        StageExp = 0;
+        KillsThisMajor = 0;
+        ApplyMajorBonus();                           // 原有奖励逻辑
+        player.statLife = player.statLifeMax2;      
+        CombatText.NewText(player.getRect(), Color.Gold, "突破成功!");
     }
 
     private void TryMinorAdvance()
@@ -45,35 +84,11 @@ public class MythologyPlayer : ModPlayer
             if (StageExp < needExp)
                 break;
 
-            // 完全清空本级经验（不保留溢出）
+            // 完全清空本级经验
             StageExp = 0;
             Minor++;
             ApplyMinorBonus();
         }
-    }
-
-    private void TryMajorAdvance()
-    {
-        // 先检查：已达最高大境界就直接返回
-        int maxMajor = CultivationProgression.MajorNames.Length - 1;
-        if (Major >= maxMajor) return;
-
-        // 必须先达到小境界大圆满
-        if (Minor != CultivationProgression.MinorPerMajor - 1) return;
-
-        // 阶段经验要满
-        int needExp = CultivationProgression.ExpFor(Major, Minor);
-        if (StageExp < needExp) return;
-
-        // 击杀要够
-        if (KillsThisMajor < CultivationProgression.KillsForMajorUp[Major]) return;
-
-        // 晋升
-        Major++;
-        Minor           = 0;
-        StageExp        = 0;
-        KillsThisMajor  = 0;
-        ApplyMajorBonus();
     }
 
     public void AddStageExp(int amount)
@@ -81,11 +96,11 @@ public class MythologyPlayer : ModPlayer
         int need = CultivationProgression.ExpFor(Major, Minor);
         StageExp = Math.Min(StageExp + amount, need);
         TryMinorAdvance();
-        TryMajorAdvance();
     }
 
     public bool ForceMajorAdvance()
     {
+        // 1. 若已到最高大境界，提示并返回
         int maxMajor = CultivationProgression.MajorNames.Length - 1;
         if (Major >= maxMajor)
         {
@@ -93,19 +108,10 @@ public class MythologyPlayer : ModPlayer
             return false;
         }
 
-        int maxMinor = CultivationProgression.MinorPerMajor - 1;
-        int needExp  = CultivationProgression.ExpFor(Major, Minor);
-
-        if (Minor == maxMinor && StageExp >= needExp)
-        {
-            Major++;
-            Minor           = 0;
-            StageExp        = 0;
-            KillsThisMajor  = 0;
-            ApplyMajorBonus();
-            return true;
-        }
-        return false;
+        // 2. 直接把击杀数补满（突破丹效果）
+        int killsRequired = CultivationProgression.KillsForMajorUp[Major];
+        KillsThisMajor = killsRequired;
+        return true;
     }
 
     private void ApplyMinorBonus()
@@ -117,7 +123,7 @@ public class MythologyPlayer : ModPlayer
         Player.GetDamage(DamageClass.Generic) += baseBonus.dmg;
     }
 
-    private void ApplyMajorBonus()
+    public void ApplyMajorBonus()
     {
         // 确保 Major 在合法区间 0～15
         if (Major < 0 || Major >= CultivationProgression.MajorHealthBonusTable.Length)

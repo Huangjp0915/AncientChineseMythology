@@ -1,11 +1,12 @@
-﻿using AncientChineseMythology.Projectiles;
+﻿using AncientChineseMythology.Items.Materials;
+using AncientChineseMythology.Projectiles;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Items
+namespace AncientChineseMythology.Items.Waapons.Sticks
 {
     public class GemStick : ModItem
     {

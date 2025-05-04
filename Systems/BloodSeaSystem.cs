@@ -18,7 +18,7 @@ namespace AncientChineseMythology.Systems
         /* ---------- Biome 判定：只看 X 区域 ---------- */
         public override void TileCountsAvailable(ReadOnlySpan<int> tileCounts) // ← 该钩子仍在 ModSystem
         {
-            NearbyBloodTiles = tileCounts[ModContent.TileType<Tiles.BloodSeaSand>()];
+            NearbyBloodTiles = tileCounts[ModContent.TileType<Tiles.Placable.BloodSeaSand>()];
         }
 
         public override void ModifyWorldGenTasks(List<GenPass> tasks, ref double totalWeight)
@@ -37,7 +37,7 @@ namespace AncientChineseMythology.Systems
             int endX     = Main.maxTilesX - 1;
             int topY     = (int)Main.worldSurface - 120;    // 覆盖沙坡顶部
             int bottomY  = (int)Main.worldSurface + 60;     // 至浅层海床
-            ushort bloodSand = (ushort)ModContent.TileType<Tiles.BloodSeaSand>();
+            ushort bloodSand = (ushort)ModContent.TileType<Tiles.Placable.BloodSeaSand>();
 
             // 1) 把原版沙/泥/石替换为血海砂
             for (int x = startX; x <= endX; x++)

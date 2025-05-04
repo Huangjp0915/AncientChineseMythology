@@ -1,9 +1,9 @@
-using Microsoft.Xna.Framework;
+using AncientChineseMythology.Tiles.Placable;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Items
+namespace AncientChineseMythology.Items.Placable
 {
     public class SkyAltarItem : ModItem
     {
@@ -25,7 +25,7 @@ namespace AncientChineseMythology.Items
             Item.useStyle = ItemUseStyleID.Swing;  // 挥砍放置
             Item.consumable = true;                // 放置后会消耗
             Item.value = Item.buyPrice(gold: 1);    // 商店价格
-            Item.createTile = ModContent.TileType<Tiles.SkyAltarTile>(); // 放置生成的Tile
+            Item.createTile = ModContent.TileType<SkyAltarTile>(); // 放置生成的Tile
         }
 
         public override void AddRecipes()

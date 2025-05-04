@@ -4,6 +4,8 @@ using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 using AncientChineseMythology.Items;
+using AncientChineseMythology.Items.Potions;
+using AncientChineseMythology.Items.Materials;
 
 namespace AncientChineseMythology.NPCs.TownNPCs
 {
