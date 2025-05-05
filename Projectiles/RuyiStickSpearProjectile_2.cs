@@ -93,27 +93,10 @@ namespace AncientChineseMythology.Projectiles
             {
                 Projectile.timeLeft = 60;
 
-                // 本帧想要移动的目标点
-                Vector2 upAttempt = Owner.position + new Vector2(0, -15f);
-
-                
-
                 // 限制玩家向上移动 120 像素
                 if (Owner.Center.Y >= initialPlayerPosition.Y - 120f && !isFull)
                 {
-                    //Owner.velocity.Y = -15; // 向上移动
-                    // 如果目标区域被实心方块占据，就立刻停止上升
-                    if (Collision.SolidCollision(upAttempt, Owner.width, Owner.height))
-                    {
-                        isFull = true;                      // 直接判定“撑满”
-                        Owner.velocity   = Vector2.Zero;
-                        // 把 position 改回上一帧
-                        Owner.position   = Owner.oldPosition;
-                    }
-                    else
-                    {
-                        Owner.velocity.Y = -15f;            // 原有上升逻辑
-                    }
+                    Owner.velocity.Y = -15; // 向上移动
                     fallCount++;
                     if(fallCount > 30 && Owner.Center.Y != initialPlayerPosition.Y - 120f)
                     {
@@ -156,22 +139,8 @@ namespace AncientChineseMythology.Projectiles
                 {
                     // 计算本帧移动的实际距离
                     float moveDistance = Math.Min(dashStep, dashDistanceRemaining);
-                    Vector2 move = dashDirection * moveDistance;
-                    Vector2 targetPos = Owner.position + move;
-
-                    // 预判目标矩形是否会撞墙
-                    if (Collision.SolidCollision(targetPos, Owner.width, Owner.height))
-                    {
-                        // 撞到了 → 立即结束冲刺
-                        dashDistanceRemaining = 0f;
-                        Owner.velocity = Vector2.Zero;
-                    }
-                    else
-                    {
-                        Owner.position = targetPos;         // 安全 → 正常位移
-                        dashDistanceRemaining -= moveDistance;
-                    }
-
+                    Owner.position += dashDirection * moveDistance; // 更新玩家位置
+                    dashDistanceRemaining -= moveDistance; // 减少剩余冲刺距离
                     if (Owner.direction == 1)
                         Owner.fullRotation += 0.5f; // 玩家旋转
                     else
