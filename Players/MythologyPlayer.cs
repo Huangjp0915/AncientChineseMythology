@@ -4,6 +4,9 @@ using Terraria.ModLoader.IO;
 using AncientChineseMythology.Content;
 using System;
 using Microsoft.Xna.Framework;
+using AncientChineseMythology.Buffs;
+using AncientChineseMythology.Items.Summons;
+using AncientChineseMythology.Items;
 
 namespace AncientChineseMythology.Players;
 
@@ -13,6 +16,7 @@ public class MythologyPlayer : ModPlayer
     public int Minor;
     public int StageExp;
     public int KillsThisMajor;
+    public bool GotRenXianRewards;
 
     public int GetResourceTier() {
         int lifeMax = Player.statLifeMax2;  // 或你的自定义血量字段
@@ -22,6 +26,11 @@ public class MythologyPlayer : ModPlayer
             <= 100000    => 2,
             _            => 3
         };
+    }
+
+    public override void PostUpdate()
+    {
+        TryGiveRenXianRewards();
     }
 
     public void RecordKill(NPC npc)
@@ -71,6 +80,7 @@ public class MythologyPlayer : ModPlayer
         StageExp = 0;
         KillsThisMajor = 0;
         ApplyMajorBonus();                           // 原有奖励逻辑
+        TryGiveRenXianRewards();
         player.statLife = player.statLifeMax2;      
         CombatText.NewText(player.getRect(), Color.Gold, "突破成功!");
     }
@@ -112,6 +122,23 @@ public class MythologyPlayer : ModPlayer
         int killsRequired = CultivationProgression.KillsForMajorUp[Major];
         KillsThisMajor = killsRequired;
         return true;
+    }
+
+    private void TryGiveRenXianRewards()
+    {
+        // Major==4 就是“人仙”
+        if (Major == 4 && !GotRenXianRewards)
+        {
+            Player.QuickSpawnItem(
+                Player.GetSource_GiftOrReward(),
+                ModContent.ItemType<ShenxianGuanglunItem>());
+
+            Player.QuickSpawnItem(
+                Player.GetSource_GiftOrReward(),
+                ModContent.ItemType<CloudMountItem>());
+
+            GotRenXianRewards = true;
+        }
     }
 
     private void ApplyMinorBonus()
@@ -174,6 +201,7 @@ public class MythologyPlayer : ModPlayer
         tag["Minor"]         = Minor;
         tag["StageExp"]      = StageExp;
         tag["KillsThisMajor"]= KillsThisMajor;
+        tag["GotRenXianRewards"] = GotRenXianRewards;
     }
 
     public override void LoadData(TagCompound tag)
@@ -182,5 +210,6 @@ public class MythologyPlayer : ModPlayer
         Minor          = tag.GetInt("Minor");
         StageExp       = tag.GetInt("StageExp");
         KillsThisMajor = tag.GetInt("KillsThisMajor");
+        GotRenXianRewards = tag.GetBool("GotRenXianRewards"); 
     }
 }

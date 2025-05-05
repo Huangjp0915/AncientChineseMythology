@@ -408,6 +408,30 @@ Items: {
 
 	ChengYingReins: {
 		DisplayName: 承影剑
+		Tooltip: 能承载万物
+	}
+
+	YuChangSword: {
+		DisplayName: 鱼肠剑
+		Tooltip:
+			'''
+			三寸寒锋，薄如蝉翼
+			出鞘无声，生死已判
+			'''
+	}
+
+	ShenxianGuanglunItem: {
+		DisplayName: 神仙光轮
+		// Tooltip: ""
+	}
+
+	CloudMountItem: {
+		DisplayName: 祥云
+		// Tooltip: ""
+	}
+
+	GanJiangSword: {
+		DisplayName: 干将剑
 		// Tooltip: ""
 	}
 }
@@ -478,13 +502,22 @@ Projectiles: {
 	TribulationLightningPurple.DisplayName: 紫霄雷
 	TribulationLightningRed.DisplayName: 赤雷
 	// ChengYingHitbox.DisplayName: Cheng Ying Hitbox
+	// YuChangSkillProjectile.DisplayName: Yu Chang Skill Projectile
+	// YuChangSwordBeanProjectile.DisplayName: Yu Chang Sword Bean Projectile
+	// YuChangSwordProjectile.DisplayName: Yu Chang Sword Projectile
+	// ShenxianGuanglunPet.DisplayName: Shenxian Guanglun Pet
+	// GanJiangSwordProj.DisplayName: Gan Jiang Sword Proj
+	// GanJiangSwordProj_2.DisplayName: Gan Jiang Sword Proj_2
+	// RuyiStickSpearProjectile.DisplayName: Ruyi Stick Spear Projectile
+	// RuyiStickSpearProjectile_2.DisplayName: Ruyi Stick Spear Projectile_2
+	// RuyiStickSpearProjectile_3.DisplayName: Ruyi Stick Spear Projectile_3
 }
 
 // HeavenBiome.DisplayName: Heaven
 
 Biomes: {
 	HeavenBiome: {
-		// TownNPCDialogueName: the Heaven Biome
+		TownNPCDialogueName: 天庭
 		// DisplayName: Heaven Biome
 	}
 
@@ -494,7 +527,7 @@ Biomes: {
 	}
 
 	BloodSeaBiome: {
-		// DisplayName: Blood Sea Biome
+		DisplayName: 血海
 		// TownNPCDialogueName: the Blood Sea Biome
 	}
 }
@@ -597,6 +630,16 @@ Buffs: {
 	ChengYingBuff: {
 		DisplayName: 承影剑
 		Description: 持证上剑
+	}
+
+	ShenxianGuanglunBuff: {
+		DisplayName: 神仙光轮
+		Description: 有了这个你就跟神仙一样了
+	}
+
+	CloudMountBuff: {
+		DisplayName: 祥云
+		Description: 脚踏祥云
 	}
 }
 

@@ -7,7 +7,6 @@ using Terraria.UI;
 using AncientChineseMythology.Players;
 using AncientChineseMythology.UI.Elements;
 using ReLogic.Content;
-using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.Audio;
 using AncientChineseMythology.NPCs.Boss.TribulationCloud;
@@ -88,7 +87,7 @@ public class MythologySidebar : UIState
 
         _exp = Add(ref y);
 
-        Toggle();   // 第一次调用让面板展开，玩家进入时就能看到
+        //Toggle();   // 第一次调用让面板展开，玩家进入时就能看到
     }
 
     private UIText Add(ref float y)

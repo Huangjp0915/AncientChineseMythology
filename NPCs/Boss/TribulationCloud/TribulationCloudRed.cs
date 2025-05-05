@@ -14,7 +14,7 @@ namespace AncientChineseMythology.NPCs.Boss.TribulationCloud
     {
         public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/TribulationCloud/TribulationCloud_red";
 
-        private const int TotalStrikes   = 1;   // 总攻击次数
+        private  int TotalStrikes;   // 总攻击次数
         private const int StrikeInterval = 120; // 2 秒（60 帧 = 1 s）
         private int attackTimer;
         private int strikesDone;
@@ -43,6 +43,7 @@ namespace AncientChineseMythology.NPCs.Boss.TribulationCloud
             NPC.value = Item.buyPrice(0, 25, 0, 0);
             NPC.HitSound = SoundID.NPCHit4;
             NPC.DeathSound = SoundID.NPCDeath14;
+            TotalStrikes = Main.rand.Next(2, 5);   // 2-9 之间的整数
         }
 
         public override void AI()

@@ -14,7 +14,7 @@ namespace AncientChineseMythology.NPCs.Boss.TribulationCloud
     {
         public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/TribulationCloud/TribulationCloud_black";
 
-        private const int TotalStrikes   = 10;   // 总攻击次数
+        private const int TotalStrikes   = 18;   // 总攻击次数
         private const int StrikeInterval = 120; // 2 秒（60 帧 = 1 s）
         private int attackTimer;
         private int strikesDone;

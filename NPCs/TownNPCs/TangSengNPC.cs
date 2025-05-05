@@ -1,13 +1,10 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
-using AncientChineseMythology.Items;
 using AncientChineseMythology.Items.Waapons.Sticks;
 using AncientChineseMythology.Items.Summons;
+using AncientChineseMythology.Items.Weapons.Sticks;
 
 namespace AncientChineseMythology.NPCs.TownNPCs
 {

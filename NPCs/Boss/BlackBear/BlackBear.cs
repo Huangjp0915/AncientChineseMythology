@@ -75,6 +75,8 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
 
         // 追踪玩家的时间
         private int runTime = 0;
+        private const int LostSightThreshold = 600; // 600 帧 ≈ 10 秒
+        private int lostSightTimer = 0;
 
         // 使用静态占位图
         public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear";
@@ -451,6 +453,39 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
 
             // 每帧检查接触伤害
             CheckContactDamage();
+
+            Player target = Main.player[NPC.target];
+
+            // 判断距离<2000 像素且没有地形阻挡
+            bool canSeePlayer = !target.dead &&
+                                target.active &&
+                                Vector2.Distance(NPC.Center, target.Center) < 2000f &&
+                                Collision.CanHitLine(NPC.Center, 1, 1, target.Center, 1, 1);
+
+            if (canSeePlayer)
+            {
+                lostSightTimer = 0;                 // 重置计数
+            }
+            else
+            {
+                lostSightTimer++;
+                if (lostSightTimer >= LostSightThreshold)
+                {
+                    // 单机 / 服务端：直接让 timeLeft 归零即可
+                    if (Main.netMode != NetmodeID.MultiplayerClient)
+                    {
+                        NPC.life = 0;               // 触发 HitEffect / OnKill 动画
+                        NPC.HitEffect();
+                        NPC.checkDead();            // 立刻调用死亡处理
+                        NPC.active = false;         // 从世界里移除
+                    }
+                    else
+                    {
+                        // 客户端只负责把 timeLeft 设 0，让服务器同步
+                        NPC.timeLeft = 0;
+                    }
+                }
+            }
 
             // 更新动画计时
             frameTimer++;

@@ -114,6 +114,7 @@ namespace AncientChineseMythology.NPCs.Monsters
         {
             if (dying)
             {
+                NPC.damage = 0;
                 if (!isDead)
                 {
                     animationCounter = 0f;
@@ -239,6 +240,7 @@ namespace AncientChineseMythology.NPCs.Monsters
                 dying = true;
                 NPC.life = 1; // 确保 NPC 不会被重复击杀
                 NPC.dontTakeDamage = true; // 防止在播放死亡动画时受到伤害
+                NPC.damage = 0;
                 NPC.netUpdate = true;
             }
         }

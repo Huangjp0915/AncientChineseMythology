@@ -8,7 +8,7 @@
 2个Boss
 5个小怪
 11种buff
-16种武器
+17种武器
 5种配饰
 5种药剂
 22种物品
@@ -18,6 +18,8 @@
 2个小世界
 2个环境
 4种草药
+1种坐骑
+1种发光宠物
 
 全新的核心玩法
 
@@ -35,16 +37,18 @@ This version adds:
 2 Bosses
 5 monsters
 11 buffs
-16 weapons
+17 weapons
 5 accessories
 5 potions
-19 items
+22 items
 2 ingots
 1 ore
 1 synthesis table
 2 small worlds
 2 environments
 4 herbs
+1 mount
+1 luminous pet
 
 New core gameplay
 

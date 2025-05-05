@@ -1,10 +1,9 @@
-using AncientChineseMythology.Tiles.Placable;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Tiles
+namespace AncientChineseMythology.Tiles.Placable
 {
     public class CloudyGoldGrass : ModTile
     {

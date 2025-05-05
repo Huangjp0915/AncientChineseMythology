@@ -369,6 +369,26 @@ Items: {
 		DisplayName: Cheng Ying Reins
 		Tooltip: ""
 	}
+
+	YuChangSword: {
+		DisplayName: Yu Chang Sword
+		Tooltip: ""
+	}
+
+	ShenxianGuanglunItem: {
+		DisplayName: Shenxian Guanglun Item
+		Tooltip: ""
+	}
+
+	CloudMountItem: {
+		DisplayName: Cloud Mount Item
+		Tooltip: ""
+	}
+
+	GanJiangSword: {
+		DisplayName: Gan Jiang Sword
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -437,6 +457,15 @@ Projectiles: {
 	TribulationLightningPurple.DisplayName: Tribulation Lightning Purple
 	TribulationLightningRed.DisplayName: Tribulation Lightning Red
 	ChengYingHitbox.DisplayName: Cheng Ying Hitbox
+	YuChangSkillProjectile.DisplayName: Yu Chang Skill Projectile
+	YuChangSwordBeanProjectile.DisplayName: Yu Chang Sword Bean Projectile
+	YuChangSwordProjectile.DisplayName: Yu Chang Sword Projectile
+	ShenxianGuanglunPet.DisplayName: Shenxian Guanglun Pet
+	GanJiangSwordProj.DisplayName: Gan Jiang Sword Proj
+	GanJiangSwordProj_2.DisplayName: Gan Jiang Sword Proj_2
+	RuyiStickSpearProjectile.DisplayName: Ruyi Stick Spear Projectile
+	RuyiStickSpearProjectile_2.DisplayName: Ruyi Stick Spear Projectile_2
+	RuyiStickSpearProjectile_3.DisplayName: Ruyi Stick Spear Projectile_3
 }
 
 HeavenBiome.DisplayName: Heaven
@@ -556,6 +585,16 @@ Buffs: {
 	ChengYingBuff: {
 		DisplayName: Cheng Ying Buff
 		Description: Mods.AncientChineseMythology.Buffs.ChengYingBuff.Description
+	}
+
+	ShenxianGuanglunBuff: {
+		DisplayName: Shenxian Guanglun Buff
+		Description: Mods.AncientChineseMythology.Buffs.ShenxianGuanglunBuff.Description
+	}
+
+	CloudMountBuff: {
+		DisplayName: Cloud Mount Buff
+		Description: Mods.AncientChineseMythology.Buffs.CloudMountBuff.Description
 	}
 }
 

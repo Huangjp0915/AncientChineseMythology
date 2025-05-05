@@ -20,7 +20,7 @@ namespace AncientChineseMythology.Systems
                                     pixelRect.Width * 16, pixelRect.Height * 16);
                                   
             if (Player.inventory.Any(it => it.type == ModContent.ItemType<Items.SkyKey>()))
-    return;   // 手持钥匙时允许靠近
+                return;   // 手持钥匙时允许靠近
 
             if (pixelRect.Contains(Player.Center.ToPoint()))
             {

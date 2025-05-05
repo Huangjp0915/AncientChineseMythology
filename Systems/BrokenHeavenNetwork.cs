@@ -1,19 +1,26 @@
-using System.IO;
 using AncientChineseMythology.Systems;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
-using Terraria.ModLoader.IO;
-using Terraria.ModLoader.Utilities;
 
 namespace AncientChineseMythology
 {
     public class BrokenHeavenNetwork : ModSystem
     {
-        public static void SendSkyKeyUnlock()
-        {
-            Player pl = Main.LocalPlayer;
-            AncientChineseMythology.SendSkyKeyUnlock(pl.whoAmI);  // 直接转发
+        internal enum MessageType : byte {
+            SkyKeyUnlock
+        }
+        
+        public static void SendSkyKeyUnlock(Player player) {
+            if (Main.netMode == NetmodeID.SinglePlayer) {
+                BrokenHeavenIslandSystem.OpenSkyIsland(player.whoAmI);
+                return;
+            }
+            var mod = ModContent.GetInstance<AncientChineseMythology>();
+            ModPacket p = mod.GetPacket();
+            p.Write((byte)MessageType.SkyKeyUnlock);
+            p.Write((byte)player.whoAmI);
+            p.Send();
         }
     }
 }

@@ -43,7 +43,7 @@ namespace AncientChineseMythology.NPCs.Boss.TribulationCloud
             NPC.value = Item.buyPrice(0, 25, 0, 0);
             NPC.HitSound = SoundID.NPCHit4;
             NPC.DeathSound = SoundID.NPCDeath14;
-            TotalStrikes = Main.rand.Next(2, 10);   // 2-9 之间的整数
+            TotalStrikes = Main.rand.Next(5, 18);   // 2-9 之间的整数
         }
 
         public override void AI()
