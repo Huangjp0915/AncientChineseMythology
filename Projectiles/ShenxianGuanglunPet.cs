@@ -24,6 +24,20 @@ namespace AncientChineseMythology.Projectiles
 
         public override void AI() {
             Player player = Main.player[Projectile.owner];
+            int buffType  = ModContent.BuffType<Buffs.ShenxianGuanglunBuff>();
+
+            if (!player.HasBuff(buffType))
+            {
+                if (player.dead)
+                {
+                    player.AddBuff(buffType, 18000); // 死亡保留
+                }
+                else
+                {
+                    Projectile.Kill();               // 主动取消 → 消失
+                    return;
+                }
+            }
 
             // 没有主人 → 消失
             if (!player.active) {
