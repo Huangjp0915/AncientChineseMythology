@@ -1,8 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
-using System.Collections.Generic;
-using Terraria.DataStructures;
 using Terraria;
 using Terraria.GameContent;
 using Terraria.GameContent.Bestiary;
@@ -10,10 +8,8 @@ using Terraria.ID;
 using Terraria.Localization;
 using Terraria.ModLoader;
 using Terraria.Utilities;
-using AncientChineseMythology.Items;
-using AncientChineseMythology.Projectiles;
 using AncientChineseMythology.Systems;
-using AncientChineseMythology.Items.Waapons.Staffs;
+using AncientChineseMythology.Items.Weapons.Staffs;
 
 namespace AncientChineseMythology.NPCs.TownNPCs
 {

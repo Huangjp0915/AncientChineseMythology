@@ -2,7 +2,6 @@
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
-using AncientChineseMythology.Items.Waapons.Sticks;
 using AncientChineseMythology.Items.Summons;
 using AncientChineseMythology.Items.Weapons.Sticks;
 

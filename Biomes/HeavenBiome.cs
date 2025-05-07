@@ -1,10 +1,7 @@
 using System;
 using System.Linq;
 using AncientChineseMythology.Tiles.Placable;
-using AncientChineseMythology.WaterStyles;
-using Microsoft.Xna.Framework;
 using Terraria;
-using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Biomes

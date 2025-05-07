@@ -1,12 +1,9 @@
 using Terraria;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
-using AncientChineseMythology.Content;
 using System;
 using Microsoft.Xna.Framework;
-using AncientChineseMythology.Buffs;
 using AncientChineseMythology.Items.Summons;
-using AncientChineseMythology.Items;
 
 namespace AncientChineseMythology.Players;
 

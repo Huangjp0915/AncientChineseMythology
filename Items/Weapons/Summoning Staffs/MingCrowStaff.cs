@@ -5,7 +5,7 @@ using Terraria.ID;
 using Terraria.ModLoader;
 using AncientChineseMythology.Buffs;
 
-namespace AncientChineseMythology.Items.Waapons.SummoningStaffs
+namespace AncientChineseMythology.Items.Weapons.SummoningStaffs
 {
     public class MingCrowStaff : ModItem
     {

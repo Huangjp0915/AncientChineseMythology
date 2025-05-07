@@ -3,9 +3,6 @@ using Terraria.ID;
 using Terraria.ModLoader;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using System;
-using Terraria.DataStructures;
-using Terraria.GameContent.UI.BigProgressBar;
 using Terraria.GameContent;
 
 namespace AncientChineseMythology.Projectiles

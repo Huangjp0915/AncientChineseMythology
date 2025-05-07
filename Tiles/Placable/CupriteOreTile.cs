@@ -4,7 +4,6 @@ using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.Localization;
 using Terraria.DataStructures;
-using AncientChineseMythology.Items;
 using AncientChineseMythology.Items.Cuprite;
 
 namespace AncientChineseMythology.Tiles.Placable

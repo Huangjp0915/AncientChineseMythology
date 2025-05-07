@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AncientChineseMythology")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+cfe6a8d82946849f4bccef8c84cd0af15c1899b8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b3a11c200f5abd6a49364bb8104d5da7fb66b95a")]
 [assembly: System.Reflection.AssemblyProductAttribute("AncientChineseMythology")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AncientChineseMythology")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

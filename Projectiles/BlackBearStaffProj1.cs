@@ -4,11 +4,7 @@ using Terraria.ModLoader;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
-using Terraria.DataStructures;
-using Terraria.GameContent.UI.BigProgressBar;
-using Terraria.Audio;
 using Terraria.GameContent;
-using AncientChineseMythology.NPCs.Boss;
 
 namespace AncientChineseMythology.Projectiles
 {

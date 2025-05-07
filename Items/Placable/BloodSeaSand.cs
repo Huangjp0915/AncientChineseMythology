@@ -1,7 +1,6 @@
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
-using AncientChineseMythology.Tiles.Placable;
 
 namespace AncientChineseMythology.Items.Placable
 {

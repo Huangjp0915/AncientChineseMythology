@@ -5,7 +5,7 @@ using Terraria.ModLoader;
 using AncientChineseMythology.Projectiles;
 using Terraria.DataStructures;
 
-namespace AncientChineseMythology.Items.Waapons.Sticks
+namespace AncientChineseMythology.Items.Weapons.Sticks
 {
     public class WoodenStick : ModItem
     {

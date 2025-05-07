@@ -4,7 +4,6 @@ using ReLogic.Content;                // Asset<T>
 using Terraria;
 using Terraria.GameContent;           // TextureAssets
 using Terraria.ModLoader;
-using Terraria.UI;
 
 namespace AncientChineseMythology.Content.UI;
 

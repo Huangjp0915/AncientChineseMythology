@@ -6,7 +6,7 @@ using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Items.Waapons.Sticks
+namespace AncientChineseMythology.Items.Weapons.Sticks
 {
     public class IronStick : ModItem
     {

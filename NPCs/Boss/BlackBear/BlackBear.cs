@@ -11,9 +11,9 @@ using Terraria.Audio;
 using Terraria.Graphics.CameraModifiers;
 using static AncientChineseMythology.AncientChineseMythology;
 using AncientChineseMythology.Systems;
-using AncientChineseMythology.Items.Waapons.SummoningStaffs;
 using AncientChineseMythology.Items.Waapons.Swords;
-using AncientChineseMythology.Items.Waapons.Bows;
+using AncientChineseMythology.Items.Weapons.SummoningStaffs;
+using AncientChineseMythology.Items.Weapons.Bows;
 
 namespace AncientChineseMythology.NPCs.Boss.BlackBear
 {

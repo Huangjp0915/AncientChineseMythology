@@ -1,4 +1,3 @@
-using AncientChineseMythology.Items;
 using AncientChineseMythology.Items.Herbs;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;

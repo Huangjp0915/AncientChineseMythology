@@ -1,11 +1,9 @@
-using Microsoft.Xna.Framework;
-using System.Collections.Generic;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
-using AncientChineseMythology.Items;
 using AncientChineseMythology.Items.Potions;
 using AncientChineseMythology.Items.Materials;
+using AncientChineseMythology.Items.Weapons.SummoningStaffs;
 
 namespace AncientChineseMythology.NPCs.TownNPCs
 {
@@ -123,6 +121,7 @@ namespace AncientChineseMythology.NPCs.TownNPCs
                 .Add<NingShenDan>()
                 .Add<XuanGangDan>()
                 .Add<DiHuo>()
+                .Add<BaGuaZhenpan>()
                 .Register();
         }
     }

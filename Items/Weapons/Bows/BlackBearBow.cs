@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Terraria.Audio;
 
-namespace AncientChineseMythology.Items.Waapons.Bows
+namespace AncientChineseMythology.Items.Weapons.Bows
 {
     public class BlackBearBow : ModItem
     {

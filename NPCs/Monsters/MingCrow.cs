@@ -1,10 +1,8 @@
 using System;
-using AncientChineseMythology.Items;
-using AncientChineseMythology.Items.Waapons.SummoningStaffs;
+using AncientChineseMythology.Items.Weapons.SummoningStaffs;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
-using Terraria.DataStructures;
 using Terraria.GameContent.ItemDropRules;
 using Terraria.ID;
 using Terraria.ModLoader;

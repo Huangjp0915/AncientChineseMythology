@@ -1,5 +1,4 @@
 ﻿using AncientChineseMythology.Items.Materials;
-using AncientChineseMythology.Items.Waapons.Sticks;
 using AncientChineseMythology.Projectiles;
 using Microsoft.Xna.Framework;
 using Terraria;

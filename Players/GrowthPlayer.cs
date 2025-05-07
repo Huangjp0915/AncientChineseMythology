@@ -2,7 +2,6 @@
 using Terraria;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
-using System.IO;
 using static AncientChineseMythology.AncientChineseMythology;
 
 namespace AncientChineseMythology.Players

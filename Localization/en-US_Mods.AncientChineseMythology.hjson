@@ -389,6 +389,31 @@ Items: {
 		DisplayName: Gan Jiang Sword
 		Tooltip: ""
 	}
+
+	XuanTieBar: {
+		DisplayName: Xuan Tie Bar
+		Tooltip: ""
+	}
+
+	XuanTieOre: {
+		DisplayName: Xuan Tie Ore
+		Tooltip: ""
+	}
+
+	XuanTieSword: {
+		DisplayName: Xuan Tie Sword
+		Tooltip: ""
+	}
+
+	BaGuaZhenpan: {
+		DisplayName: Ba Gua Zhenpan
+		Tooltip: ""
+	}
+
+	BoneSword: {
+		DisplayName: Bone Sword
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -466,6 +491,7 @@ Projectiles: {
 	RuyiStickSpearProjectile.DisplayName: Ruyi Stick Spear Projectile
 	RuyiStickSpearProjectile_2.DisplayName: Ruyi Stick Spear Projectile_2
 	RuyiStickSpearProjectile_3.DisplayName: Ruyi Stick Spear Projectile_3
+	BaGuaSigilProj.DisplayName: Ba Gua Sigil Proj
 }
 
 HeavenBiome.DisplayName: Heaven
@@ -499,6 +525,7 @@ Tiles: {
 	CelestialJadeBrick.MapEntry: Celestial Jade Brick
 	CloudyGoldSand.MapEntry: Cloudy Gold Sand
 	FloatingBasalt.MapEntry: Floating Basalt
+	XuanTieOreTile.MapEntry: Xuan Tie Ore Tile
 }
 
 Buffs: {
@@ -595,6 +622,16 @@ Buffs: {
 	CloudMountBuff: {
 		DisplayName: Cloud Mount Buff
 		Description: Mods.AncientChineseMythology.Buffs.CloudMountBuff.Description
+	}
+
+	XuanTieBleed: {
+		DisplayName: Xuan Tie Bleed
+		Description: Mods.AncientChineseMythology.Buffs.XuanTieBleed.Description
+	}
+
+	BaGuaBuff: {
+		DisplayName: Ba Gua Buff
+		Description: Mods.AncientChineseMythology.Buffs.BaGuaBuff.Description
 	}
 }
 

@@ -1,9 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
-using Terraria.ID;
 using Terraria.ModLoader;
-using Terraria.GameContent; // 用于 TextureAssets
 
 namespace AncientChineseMythology.Projectiles
 {

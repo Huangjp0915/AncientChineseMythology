@@ -1,8 +1,5 @@
 using Terraria;
-using Terraria.ID;
 using Terraria.ModLoader;
-using Microsoft.Xna.Framework;
-using AncientChineseMythology.Players;
 using AncientChineseMythology.Systems;
 using AncientChineseMythology.WaterStyles;
 using Terraria.Graphics.Capture;

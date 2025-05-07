@@ -1,9 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
-using System.Drawing;
 using System.IO;
-using System.Numerics;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;

@@ -3,13 +3,11 @@ using Terraria.ID;
 using Terraria.ModLoader;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using System.Drawing;
 using Color = Microsoft.Xna.Framework.Color;
 using Rectangle = Microsoft.Xna.Framework.Rectangle;
 using Terraria.GameContent;
 using System;
 using Terraria.DataStructures;
-using Terraria.Audio;
 
 namespace AncientChineseMythology.Projectiles
 {

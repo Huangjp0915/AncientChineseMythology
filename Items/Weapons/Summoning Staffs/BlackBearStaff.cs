@@ -6,7 +6,7 @@ using Terraria.DataStructures;
 using AncientChineseMythology.Projectiles;
 using AncientChineseMythology.Buffs;
 
-namespace AncientChineseMythology.Items.Waapons.SummoningStaffs
+namespace AncientChineseMythology.Items.Weapons.SummoningStaffs
 {
     public class BlackBearStaff : ModItem
     {

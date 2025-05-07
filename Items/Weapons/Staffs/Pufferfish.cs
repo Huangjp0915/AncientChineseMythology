@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Terraria.GameContent;
 
-namespace AncientChineseMythology.Items.Waapons.Staffs
+namespace AncientChineseMythology.Items.Weapons.Staffs
 {
     public class Pufferfish : ModItem
     {

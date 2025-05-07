@@ -2,7 +2,6 @@
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
-using Terraria.DataStructures;
 using AncientChineseMythology.Items;   // 含 Player.HurtInfo
 
 namespace AncientChineseMythology.Players

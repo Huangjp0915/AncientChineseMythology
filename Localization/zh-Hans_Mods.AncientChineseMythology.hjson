@@ -434,6 +434,35 @@ Items: {
 		DisplayName: 干将剑
 		// Tooltip: ""
 	}
+
+	XuanTieBar: {
+		DisplayName: 玄铁锭
+		Tooltip: 坚硬无比
+	}
+
+	XuanTieOre: {
+		DisplayName: 玄铁矿
+		// Tooltip: ""
+	}
+
+	XuanTieSword: {
+		DisplayName: 玄铁剑
+		Tooltip: 被这把剑击中的敌人会持续流血
+	}
+
+	BaGuaZhenpan: {
+		DisplayName: 八卦阵图
+		Tooltip:
+			'''
+			一面似透明非透明的黑白太极八卦盘
+			一乾 二兑 三离 四震 五巽 六坎 七艮 八坤
+			'''
+	}
+
+	BoneSword: {
+		DisplayName: 骨刃
+		// Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -511,6 +540,7 @@ Projectiles: {
 	// RuyiStickSpearProjectile.DisplayName: Ruyi Stick Spear Projectile
 	// RuyiStickSpearProjectile_2.DisplayName: Ruyi Stick Spear Projectile_2
 	// RuyiStickSpearProjectile_3.DisplayName: Ruyi Stick Spear Projectile_3
+	// BaGuaSigilProj.DisplayName: Ba Gua Sigil Proj
 }
 
 // HeavenBiome.DisplayName: Heaven
@@ -544,6 +574,7 @@ Tiles: {
 	CelestialJadeBrick.MapEntry: 天阶玉砖
 	// CloudyGoldSand.MapEntry: Cloudy Gold Sand
 	// FloatingBasalt.MapEntry: Floating Basalt
+	XuanTieOreTile.MapEntry: 玄铁
 }
 
 Buffs: {
@@ -640,6 +671,16 @@ Buffs: {
 	CloudMountBuff: {
 		DisplayName: 祥云
 		Description: 脚踏祥云
+	}
+
+	XuanTieBleed: {
+		// DisplayName: Xuan Tie Bleed
+		// Description: Mods.AncientChineseMythology.Buffs.XuanTieBleed.Description
+	}
+
+	BaGuaBuff: {
+		DisplayName: 八卦阵
+		// Description: Mods.AncientChineseMythology.Buffs.BaGuaBuff.Description
 	}
 }
 
