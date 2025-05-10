@@ -25,14 +25,14 @@ namespace AncientChineseMythology.Items.Potions
             Item.UseSound = SoundID.Item3;
             Item.consumable = true;
             Item.rare = ItemRarityID.Green;
-            Item.value = Item.buyPrice(silver: 50);
+            Item.value = Item.buyPrice(gold: 50);
         }
 
         public override bool? UseItem(Player player)
         {
             var mp = player.GetModPlayer<MythologyPlayer>();
             // 给固定经验值，也可根据当前 Major/Minor 调整
-            const int ExpAmount = 20000;
+            const int ExpAmount = 500;
             mp.AddStageExp(ExpAmount);
             Main.NewText($"获得了 {ExpAmount} 点修炼经验", 50, 255, 50);
             return true;

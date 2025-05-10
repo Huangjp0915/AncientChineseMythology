@@ -2,7 +2,6 @@ using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 using SubworldLibrary;
-using AncientChineseMythology.Subworlds; // 引入子世界所在命名空间
 
 namespace AncientChineseMythology.Items
 {

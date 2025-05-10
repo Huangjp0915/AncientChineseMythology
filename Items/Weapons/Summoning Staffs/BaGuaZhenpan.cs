@@ -23,7 +23,7 @@ namespace AncientChineseMythology.Items.Weapons.SummoningStaffs
             Item.useAnimation = 20;
             Item.useStyle = ItemUseStyleID.HoldUp;
             Item.rare = ItemRarityID.LightPurple;
-            Item.value = Item.buyPrice(0, 5);
+            Item.value = Item.buyPrice(5, 0, 0, 0);
         }
 
         // 启用右键逻辑

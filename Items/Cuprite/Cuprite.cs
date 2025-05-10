@@ -20,5 +20,13 @@ namespace AncientChineseMythology.Items.Cuprite
             Item.value = 1000;
             Item.rare = ItemRarityID.White;
         }
+
+        public override void AddRecipes()
+        {
+            Recipe recipe = CreateRecipe();
+            recipe.AddIngredient(ModContent.ItemType<CupriteOre>(), 4);
+            recipe.AddTile(TileID.Hellforge);
+            recipe.Register();
+        }
     }
 }

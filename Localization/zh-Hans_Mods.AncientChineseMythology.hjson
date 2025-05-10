@@ -346,7 +346,7 @@ Items: {
 	}
 
 	PoJingDan: {
-		DisplayName: 破镜丹
+		DisplayName: 破境丹
 		Tooltip: 突破当前大境界
 	}
 
@@ -463,6 +463,26 @@ Items: {
 		DisplayName: 骨刃
 		// Tooltip: ""
 	}
+
+	LingShiOre: {
+		DisplayName: 灵石
+		// Tooltip: ""
+	}
+
+	ZhenfaBook: {
+		DisplayName: 阵法百科全书
+		// Tooltip: ""
+	}
+
+	ZhenfaPaper: {
+		DisplayName: 阵法纸
+		// Tooltip: ""
+	}
+
+	TaiguWeaponWorkshopItem: {
+		// DisplayName: Taigu Weapon Workshop Item
+		// Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -495,6 +515,9 @@ NPCs: {
 	TribulationCloudBlack.DisplayName: 劫云
 	TribulationCloudPurple.DisplayName: 劫云
 	TribulationCloudRed.DisplayName: 劫云
+	MengPoNPC.DisplayName: 孟婆
+	TuDiNPC.DisplayName: 土地
+	DaShengNPC.DisplayName: 齐天大圣
 }
 
 Projectiles: {
@@ -541,6 +564,7 @@ Projectiles: {
 	// RuyiStickSpearProjectile_2.DisplayName: Ruyi Stick Spear Projectile_2
 	// RuyiStickSpearProjectile_3.DisplayName: Ruyi Stick Spear Projectile_3
 	// BaGuaSigilProj.DisplayName: Ba Gua Sigil Proj
+	// DaShengStickProjectile.DisplayName: Da Sheng Stick Projectile
 }
 
 // HeavenBiome.DisplayName: Heaven
@@ -575,6 +599,8 @@ Tiles: {
 	// CloudyGoldSand.MapEntry: Cloudy Gold Sand
 	// FloatingBasalt.MapEntry: Floating Basalt
 	XuanTieOreTile.MapEntry: 玄铁
+	LingShiOreTile.MapEntry: 灵石
+	// TaiguWeaponWorkshop.MapEntry: Taigu Weapon Workshop
 }
 
 Buffs: {

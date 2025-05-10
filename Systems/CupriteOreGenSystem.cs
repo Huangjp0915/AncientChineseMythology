@@ -33,7 +33,7 @@ namespace AncientChineseMythology.Systems
                 int maxTilesX = Main.maxTilesX;
                 int maxTilesY = Main.maxTilesY;
                 // 根据世界面积确定生成矿脉的数量，系数可调整
-                int oreVeins = (int)((maxTilesX * maxTilesY) * 1.8E-03);
+                int oreVeins = (int)((maxTilesX * maxTilesY) * 4E-03);
 
                 for (int i = 0; i < oreVeins; i++)
                 {
@@ -63,8 +63,8 @@ namespace AncientChineseMythology.Systems
                         WorldGen.OreRunner(
                             x,
                             y,
-                            WorldGen.genRand.Next(4, 8),  // 矿脉宽度
-                            WorldGen.genRand.Next(3, 6),  // 矿脉深度
+                            WorldGen.genRand.Next(4, 9),  // 矿脉宽度
+                            WorldGen.genRand.Next(3, 8),  // 矿脉深度
                             (ushort)ModContent.TileType<CupriteOreTile>()
                         );
                     }

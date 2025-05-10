@@ -1,23 +1,12 @@
-using System;
-using System.Linq;
-using AncientChineseMythology.Tiles.Placable;
 using Terraria;
+using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Biomes
 {
     public class HeavenBiome : ModBiome
     {
-        private const int NeedTiles = 60; // 触发所需方块数
-        private const int RangeTiles = 80; // 扫描半径(方块)
-
-        private static readonly int[] HeavenTileIDs = new int[] {
-            ModContent.TileType<CloudyGoldSand>(),
-            ModContent.TileType<CloudyGoldGrass>(),
-            ModContent.TileType<FloatingBasalt>()
-        };
-
-        public override SceneEffectPriority Priority => SceneEffectPriority.Environment;
+        public override SceneEffectPriority Priority => SceneEffectPriority.Event;
         
         public override void SetStaticDefaults()
         {
@@ -34,26 +23,42 @@ namespace AncientChineseMythology.Biomes
         
         public override bool IsBiomeActive(Player player)
         {
-            // 玩家瓦片坐标
-            int px = (int)(player.Center.X / 16);
-            int py = (int)(player.Center.Y / 16);
+            if (!NPC.downedMoonlord)
+                return false;
 
-            // 扫描矩形
-            int sx = px - RangeTiles, ex = px + RangeTiles;
-            int sy = py - RangeTiles, ey = py + RangeTiles;
+            /* scan parameters */
+            const int scanRadius   = 180;   // tiles
+            const int needCloud    = 2000;  // clouds required
 
-            int count = 0;
-            for (int x = sx; x <= ex && count < NeedTiles; x++)
-                if (x > 10 && x < Main.maxTilesX - 10)            // 越界保护
-                    for (int y = sy; y <= ey && count < NeedTiles; y++)
-                        if (y > 10 && y < Main.maxTilesY - 10)    // 越界保护
-                        {
-                            Tile t = Main.tile[x, y];
-                            if (t.HasTile && HeavenTileIDs.Contains(t.TileType))
-                                count++;
-                        }
+            int cloudCnt   = 0;
 
-            return count >= NeedTiles;
+            int cx = (int)(player.Center.X / 16);
+            int cy = (int)(player.Center.Y / 16);
+
+            for (int x = cx - scanRadius; x <= cx + scanRadius &&
+                    (cloudCnt < needCloud); x++)
+            {
+                if (x <= 10 || x >= Main.maxTilesX - 10) continue;
+
+                for (int y = cy - scanRadius; y <= cy + scanRadius &&
+                        (cloudCnt < needCloud); y++)
+                {
+                    if (y <= 10 || y >= Main.maxTilesY - 10) continue;
+
+                    Tile t = Main.tile[x, y];
+                    if (!t.HasTile) continue;
+
+                    ushort type = t.TileType;
+
+                    /* cloud types – 150: Cloud, 153: Rain Cloud */
+                    if (type == TileID.Cloud)
+                    {
+                        cloudCnt++;
+                    }
+                }
+            }
+
+            return cloudCnt >= needCloud;
         }
 
         /*public override void SpecialVisuals(Player player, bool isActive)

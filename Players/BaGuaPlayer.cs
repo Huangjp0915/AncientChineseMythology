@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AncientChineseMythology.Items.Materials;
 using AncientChineseMythology.Projectiles;
 using Microsoft.Xna.Framework;
 using Terraria;
@@ -9,6 +10,7 @@ using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
+using static AncientChineseMythology.AncientChineseMythologyNetwork;
 
 namespace AncientChineseMythology.Players
 {
@@ -20,6 +22,8 @@ namespace AncientChineseMythology.Players
         public Item[] BaGuaItems = new Item[SlotCount];
         public string CurrentName  = "";
         public string CurrentDesc  = "";
+        private const int WearInterval = 60 * 60 * 30;      // 30
+        private int[] wearCounter = new int[SlotCount];
 
         /*  ----------------- 阵法内定义 ----------------- */
         private bool  phoenixActive;
@@ -58,6 +62,42 @@ namespace AncientChineseMythology.Players
             {
                 BaGuaItems[i] = new Item();
                 BaGuaItems[i].TurnToAir();
+                wearCounter[i] = 0;
+            }
+        }
+
+        public void ResetWear(int idx) => wearCounter[idx] = 0;
+
+        public override void PostUpdate()
+        {
+            // 只在玩家带着 BaGuaBuff 时消耗材料；去掉这行就永久计时
+            if (!Player.HasBuff(ModContent.BuffType<Buffs.BaGuaBuff>()))
+                return;
+
+            for (int i = 0; i < SlotCount; i++)
+            {
+                if (BaGuaItems[i].IsAir) { wearCounter[i] = 0; continue; }
+
+                if (++wearCounter[i] >= WearInterval)
+                {
+                    wearCounter[i] = 0;
+
+                    if (BaGuaItems[i].stack > 1)
+                        BaGuaItems[i].stack--;       // 掉 1 个
+                    else
+                        BaGuaItems[i].TurnToAir();   // 没了就清空
+
+                    // 多人联机同步
+                    if (Main.netMode == NetmodeID.Server)
+                    {
+                        ModPacket p = Mod.GetPacket();
+                        p.Write((byte)MessageType.SyncBaGuaSlot);
+                        p.Write((byte)Player.whoAmI);
+                        p.Write((byte)i);
+                        ItemIO.Send(BaGuaItems[i], p, true);
+                        p.Send();
+                    }
+                }
             }
         }
 
@@ -70,13 +110,13 @@ namespace AncientChineseMythology.Players
                 ApplyEffect = p => p.DoZhenHai()
             },
             new Formation {
-                RequiredTypes = [ ItemID.FireFeather, ItemID.LivingFireBlock, ItemID.LivingFireBlock, ItemID.LivingFireBlock, ItemID.LivingFireBlock, ItemID.LivingFireBlock, ItemID.FallenStar, ItemID.FallenStar ],
+                RequiredTypes = [ ItemID.FireFeather, ItemID.LivingFireBlock, ItemID.LivingFireBlock, ItemID.LivingFireBlock, ItemID.LivingFireBlock, ItemID.LivingFireBlock, ModContent.ItemType<LingShiOre>(), ModContent.ItemType<LingShiOre>() ],
                 Name          = "涅槃阵",
                 Desc          = "受到致命伤，立即凤凰涅槃",
                 ApplyEffect = p => p.DoPhoenix()
             },
             new Formation {
-                RequiredTypes = [ ItemID.Flamarang, ItemID.EnchantedBoomerang, ItemID.WoodenBoomerang, ItemID.IceBoomerang, ItemID.Shroomerang, ItemID.FallenStar ],
+                RequiredTypes = [ ItemID.Flamarang, ItemID.EnchantedBoomerang, ItemID.WoodenBoomerang, ItemID.IceBoomerang, ItemID.Shroomerang, ModContent.ItemType<LingShiOre>()],
                 Name          = "回旋镖阵",
                 Desc          = "一直飞出回旋镖",
                 ApplyEffect = p => p.DoBoomerang()
@@ -127,6 +167,7 @@ namespace AncientChineseMythology.Players
             foreach (Item it in BaGuaItems)
                 list.Add(ItemIO.Save(it));
             tag["BaGuaItems"] = list;
+            tag["Wear"] = wearCounter;
         }
 
         public override void LoadData(TagCompound tag)
@@ -137,6 +178,8 @@ namespace AncientChineseMythology.Players
                 for (int i = 0; i < SlotCount && i < list.Count; i++)
                     BaGuaItems[i] = ItemIO.Load(list[i]);
             }
+            if (tag.ContainsKey("Wear"))
+                 wearCounter = tag.GetIntArray("Wear");
         }
 
         /* ───────── 镇海阵：防+15、荆棘、减速 ───────── */
@@ -149,8 +192,8 @@ namespace AncientChineseMythology.Players
             Player.thorns += 1f;
 
             // 3) 移动速度 -15%
-            Player.moveSpeed -= 0.15f;          // 整体加速系数
-            Player.maxRunSpeed *= 0.85f;        // 封顶跑速也同步降低，手感更一致
+            Player.moveSpeed -= 0.4f;          // 整体加速系数
+            Player.maxRunSpeed *= 0.6f;        // 封顶跑速也同步降低，手感更一致
         }
 
         /* ───────── 朱雀涅槃：一次性复活 ───────── */

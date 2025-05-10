@@ -45,12 +45,12 @@ namespace AncientChineseMythology.Systems
                 WorldGen.KillTile(placeX, placeY, noItem: true);
 
                 // 放置多格 Tile（4×4）
-                WorldGen.PlaceObject(placeX, placeY, ModContent.TileType<TeleportationTile>());
+                //WorldGen.PlaceObject(placeX, placeY, ModContent.TileType<TeleportationTile>());
                 WorldGen.SquareTileFrame(placeX, placeY, true);
 
                 // 显示提示信息
                 Main.NewText("欢迎来到洪荒...", 255, 50, 50);
-                Main.NewText("漩涡之门正在显现...", 255, 50, 50);
+                //Main.NewText("漩涡之门正在显现...", 255, 50, 50);
             }
         }
 

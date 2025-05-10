@@ -26,7 +26,7 @@ namespace AncientChineseMythology.Items.Potions
             Item.UseSound = SoundID.Item3;
             Item.consumable = true;
             Item.rare = ItemRarityID.Orange;
-            Item.value = Item.buyPrice(gold: 1);
+            Item.value = Item.buyPrice(10, 0, 0, 0);
         }
 
         public override bool? UseItem(Player player)

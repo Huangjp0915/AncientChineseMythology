@@ -17,27 +17,6 @@ namespace AncientChineseMythology
     // Please read https://github.com/tModLoader/tModLoader/wiki/Basic-tModLoader-Modding-Guide#mod-skeleton-contents for more information about the various files in a mod.
     public class AncientChineseMythology : Mod
     {
-        private enum Msg : byte { SkyKeyUnlock }
-
-        public override void HandlePacket(BinaryReader reader, int whoAmI)
-        {
-            switch ((Msg)reader.ReadByte())
-            {
-                case Msg.SkyKeyUnlock:
-                    BrokenHeavenIslandSystem.OpenSkyIsland(reader.ReadByte());
-                    break;
-            }
-        }
-
-        public static void SendSkyKeyUnlock(int who)
-        {
-            if (Main.netMode != NetmodeID.MultiplayerClient) return;
-            ModPacket p = ModContent.GetInstance<AncientChineseMythology>().GetPacket();
-            p.Write((byte)Msg.SkyKeyUnlock);
-            p.Write((byte)who);
-            p.Send();
-        }
-
         public struct Vertex : IVertexType
         {
             private static VertexDeclaration _vertexDeclaration = new VertexDeclaration(new VertexElement[3]

@@ -414,6 +414,26 @@ Items: {
 		DisplayName: Bone Sword
 		Tooltip: ""
 	}
+
+	LingShiOre: {
+		DisplayName: Ling Shi Ore
+		Tooltip: ""
+	}
+
+	ZhenfaBook: {
+		DisplayName: Zhenfa Book
+		Tooltip: ""
+	}
+
+	ZhenfaPaper: {
+		DisplayName: Zhenfa Paper
+		Tooltip: ""
+	}
+
+	TaiguWeaponWorkshopItem: {
+		DisplayName: Taigu Weapon Workshop Item
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -446,6 +466,9 @@ NPCs: {
 	TribulationCloudBlack.DisplayName: Tribulation Cloud Black
 	TribulationCloudPurple.DisplayName: Tribulation Cloud Purple
 	TribulationCloudRed.DisplayName: Tribulation Cloud Red
+	MengPoNPC.DisplayName: Meng Po N P C
+	TuDiNPC.DisplayName: Tu Di N P C
+	DaShengNPC.DisplayName: Da Sheng N P C
 }
 
 Projectiles: {
@@ -492,6 +515,7 @@ Projectiles: {
 	RuyiStickSpearProjectile_2.DisplayName: Ruyi Stick Spear Projectile_2
 	RuyiStickSpearProjectile_3.DisplayName: Ruyi Stick Spear Projectile_3
 	BaGuaSigilProj.DisplayName: Ba Gua Sigil Proj
+	DaShengStickProjectile.DisplayName: Da Sheng Stick Projectile
 }
 
 HeavenBiome.DisplayName: Heaven
@@ -526,6 +550,8 @@ Tiles: {
 	CloudyGoldSand.MapEntry: Cloudy Gold Sand
 	FloatingBasalt.MapEntry: Floating Basalt
 	XuanTieOreTile.MapEntry: Xuan Tie Ore Tile
+	LingShiOreTile.MapEntry: Ling Shi Ore Tile
+	TaiguWeaponWorkshop.MapEntry: Taigu Weapon Workshop
 }
 
 Buffs: {

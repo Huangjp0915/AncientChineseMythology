@@ -4,6 +4,7 @@ using Terraria.ModLoader;
 using AncientChineseMythology.Items.Potions;
 using AncientChineseMythology.Items.Materials;
 using AncientChineseMythology.Items.Weapons.SummoningStaffs;
+using AncientChineseMythology.Items;
 
 namespace AncientChineseMythology.NPCs.TownNPCs
 {
@@ -121,7 +122,11 @@ namespace AncientChineseMythology.NPCs.TownNPCs
                 .Add<NingShenDan>()
                 .Add<XuanGangDan>()
                 .Add<DiHuo>()
-                .Add<BaGuaZhenpan>()
+                //.Add<BaGuaZhenpan>()
+                //.Add<ZhenfaBook>()  
+                //.Add<ZhenfaPaper>()  
+                //.Add<XuanYuanDan>()
+                //.Add<PoJingDan>()  
                 .Register();
         }
     }

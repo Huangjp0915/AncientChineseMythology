@@ -15,5 +15,13 @@ namespace AncientChineseMythology.Items.XuanTie
             Item.value = Item.buyPrice(silver: 80);
             Item.rare  = ItemRarityID.White;
         }
+
+        public override void AddRecipes()
+        {
+            Recipe recipe = CreateRecipe();
+            recipe.AddIngredient(ModContent.ItemType<XuanTieOre>(), 3);
+            recipe.AddTile(TileID.Furnaces);
+            recipe.Register();
+        }
     }
 }

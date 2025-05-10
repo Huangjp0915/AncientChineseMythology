@@ -115,7 +115,10 @@ namespace AncientChineseMythology.UI
         {
             var modPlr = player.GetModPlayer<Players.BaGuaPlayer>();
             for (int i = 0; i < Players.BaGuaPlayer.SlotCount; i++)
+            {
                 modPlr.BaGuaItems[i] = Slots[i].item.Clone();
+                modPlr.ResetWear(i); 
+            }
         }
     }
 }
