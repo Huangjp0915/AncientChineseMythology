@@ -469,6 +469,12 @@ NPCs: {
 	MengPoNPC.DisplayName: Meng Po N P C
 	TuDiNPC.DisplayName: Tu Di N P C
 	DaShengNPC.DisplayName: Da Sheng N P C
+	ArchosaurBody1.DisplayName: Archosaur Body1
+	ArchosaurBody2.DisplayName: Archosaur Body2
+	ArchosaurBody3.DisplayName: Archosaur Body3
+	ArchosaurBody4.DisplayName: Archosaur Body4
+	ArchosaurHead.DisplayName: Archosaur Head
+	ArchosaurTail.DisplayName: Archosaur Tail
 }
 
 Projectiles: {

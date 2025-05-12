@@ -518,6 +518,12 @@ NPCs: {
 	MengPoNPC.DisplayName: 孟婆
 	TuDiNPC.DisplayName: 土地
 	DaShengNPC.DisplayName: 齐天大圣
+	// ArchosaurBody1.DisplayName: Archosaur Body1
+	// ArchosaurBody2.DisplayName: Archosaur Body2
+	// ArchosaurBody3.DisplayName: Archosaur Body3
+	// ArchosaurBody4.DisplayName: Archosaur Body4
+	// ArchosaurHead.DisplayName: Archosaur Head
+	// ArchosaurTail.DisplayName: Archosaur Tail
 }
 
 Projectiles: {
