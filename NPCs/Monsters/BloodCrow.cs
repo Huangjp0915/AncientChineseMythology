@@ -1,7 +1,10 @@
 using System;
+using AncientChineseMythology.Items.Materials;
+using AncientChineseMythology.Items.Weapons.SummoningStaffs;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
+using Terraria.GameContent.ItemDropRules;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -297,6 +300,12 @@ namespace AncientChineseMythology.NPCs.Monsters
             SpriteEffects effects = (NPC.spriteDirection == -1) ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
             spriteBatch.Draw(texture, drawPos, sourceRect, drawColor, NPC.rotation, origin, 1f, effects, 0f);
             return false;
+        }
+
+        public override void ModifyNPCLoot(NPCLoot npcLoot)
+        {
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<MingCrowStaff>(), 50));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<Bone>(), 8));
         }
     }
 }

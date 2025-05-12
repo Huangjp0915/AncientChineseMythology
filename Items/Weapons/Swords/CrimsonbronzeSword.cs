@@ -1,12 +1,10 @@
-﻿using System.Collections.Generic;
-using Terraria;
+﻿using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Microsoft.Xna.Framework;
-using System.Linq;
 using AncientChineseMythology.Projectiles;
 using Terraria.DataStructures;
-using Terraria.Audio;
+
 
 namespace AncientChineseMythology.Items.Waapons.Swords
 {
@@ -39,7 +37,7 @@ namespace AncientChineseMythology.Items.Waapons.Swords
         {
             if(!target.HasBuff(BuffID.OnFire))
             {
-                target.AddBuff(BuffID.OnFire, 180); // 给目标添加中毒状态
+                target.AddBuff(BuffID.OnFire, 180); 
             }
         }
         // 启用右键备用功能
@@ -80,6 +78,14 @@ namespace AncientChineseMythology.Items.Waapons.Swords
                 return false;
             }
             return false; // 返回 false 以防止原始投射物被发射
+        }
+
+        public override void AddRecipes()
+        {
+            CreateRecipe()
+                .AddIngredient(ModContent.ItemType<Cuprite.Cuprite>(), 10)
+                .AddTile(TileID.Anvils)
+                .Register();
         }
     }
 }

@@ -5,6 +5,8 @@ using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 using System;
+using Terraria.GameContent.ItemDropRules;
+using AncientChineseMythology.Items.Materials;
 
 namespace AncientChineseMythology.NPCs.Monsters
 {
@@ -501,6 +503,11 @@ namespace AncientChineseMythology.NPCs.Monsters
 
             spriteBatch.Draw(texture, drawPos, sourceRect, drawColor * NPC.Opacity, NPC.rotation, origin, 1.0f, effects, 0f);
             return false;
+        }
+
+        public override void ModifyNPCLoot(NPCLoot npcLoot)
+        {
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<Bone>(), 15));
         }
     }
 }

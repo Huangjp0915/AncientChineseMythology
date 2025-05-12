@@ -65,7 +65,8 @@ namespace AncientChineseMythology.Items.Waapons
         public override void AddRecipes()
         {
             CreateRecipe()
-                .AddIngredient(ModContent.ItemType<StrangeStone>(), 5)
+                .AddIngredient(ModContent.ItemType<StrangeStone>(), 1)
+                .AddIngredient(ModContent.ItemType<ZodiacChicken>(), 1)
                 .AddTile(TileID.WorkBenches)
                 .Register();
         }
@@ -141,7 +142,8 @@ namespace AncientChineseMythology.Items.Waapons
         public override void AddRecipes()
         {
             CreateRecipe()
-                .AddIngredient(ModContent.ItemType<StrangeStone>(), 5)
+                .AddIngredient(ModContent.ItemType<StrangeStone>(), 1)
+                .AddIngredient(ModContent.ItemType<ZodiacCow>(), 1)
                 .AddTile(TileID.WorkBenches)
                 .Register();
         }
@@ -221,7 +223,8 @@ namespace AncientChineseMythology.Items.Waapons
         public override void AddRecipes()
         {
             CreateRecipe()
-                .AddIngredient(ModContent.ItemType<StrangeStone>(), 5)
+                .AddIngredient(ModContent.ItemType<StrangeStone>(), 1)
+                .AddIngredient(ModContent.ItemType<ZodiacDog>(), 1)
                 .AddTile(TileID.WorkBenches)
                 .Register();
         }
@@ -313,7 +316,8 @@ namespace AncientChineseMythology.Items.Waapons
         public override void AddRecipes()
         {
             CreateRecipe()
-                .AddIngredient(ModContent.ItemType<StrangeStone>(), 5)
+                .AddIngredient(ModContent.ItemType<StrangeStone>(), 1)
+                .AddIngredient(ModContent.ItemType<ZodiacDragon>(), 1)
                 .AddTile(TileID.WorkBenches)
                 .Register();
         }
@@ -404,7 +408,8 @@ namespace AncientChineseMythology.Items.Waapons
         public override void AddRecipes()
         {
             CreateRecipe()
-                .AddIngredient(ModContent.ItemType<StrangeStone>(), 5)
+                .AddIngredient(ModContent.ItemType<StrangeStone>(), 1)
+                .AddIngredient(ModContent.ItemType<ZodiacHorse>(), 1)
                 .AddTile(TileID.WorkBenches)
                 .Register();
         }
@@ -501,7 +506,8 @@ namespace AncientChineseMythology.Items.Waapons
         public override void AddRecipes()
         {
             CreateRecipe()
-                .AddIngredient(ModContent.ItemType<StrangeStone>(), 5)
+                .AddIngredient(ModContent.ItemType<StrangeStone>(), 1)
+                .AddIngredient(ModContent.ItemType<ZodiacPig>(), 1)
                 .AddTile(TileID.WorkBenches)
                 .Register();
         }
@@ -585,7 +591,8 @@ namespace AncientChineseMythology.Items.Waapons
         public override void AddRecipes()
         {
             CreateRecipe()
-                .AddIngredient(ModContent.ItemType<StrangeStone>(), 5)
+                .AddIngredient(ModContent.ItemType<StrangeStone>(), 1)
+                .AddIngredient(ModContent.ItemType<ZodiacRabbit>(), 1)
                 .AddTile(TileID.WorkBenches)
                 .Register();
         }
@@ -680,7 +687,8 @@ namespace AncientChineseMythology.Items.Waapons
         public override void AddRecipes()
         {
             CreateRecipe()
-                .AddIngredient(ModContent.ItemType<StrangeStone>(), 5)
+                .AddIngredient(ModContent.ItemType<StrangeStone>(), 1)
+                .AddIngredient(ModContent.ItemType<ZodiacSnake>(), 1)
                 .AddTile(TileID.WorkBenches)
                 .Register();
         }
@@ -769,6 +777,15 @@ namespace AncientChineseMythology.Items.Waapons
                 return true;
             }
             return base.UseItem(player);
+        }
+
+        public override void AddRecipes()
+        {
+            CreateRecipe()
+                .AddIngredient(ModContent.ItemType<StrangeStone>(), 1)
+                .AddIngredient(ModContent.ItemType<ZodiacRat>(), 1)
+                .AddTile(TileID.WorkBenches)
+                .Register();
         }
 
         // 保留你原来的世界绘制代码

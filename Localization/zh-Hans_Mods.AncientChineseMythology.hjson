@@ -464,6 +464,11 @@ Items: {
 		// Tooltip: ""
 	}
 
+	Bone: {
+		DisplayName: 骨片
+		// Tooltip: ""
+	}
+
 	LingShiOre: {
 		DisplayName: 灵石
 		// Tooltip: ""
@@ -480,7 +485,7 @@ Items: {
 	}
 
 	TaiguWeaponWorkshopItem: {
-		// DisplayName: Taigu Weapon Workshop Item
+		DisplayName: 太古武器工坊
 		// Tooltip: ""
 	}
 }
@@ -518,12 +523,19 @@ NPCs: {
 	MengPoNPC.DisplayName: 孟婆
 	TuDiNPC.DisplayName: 土地
 	DaShengNPC.DisplayName: 齐天大圣
-	// ArchosaurBody1.DisplayName: Archosaur Body1
-	// ArchosaurBody2.DisplayName: Archosaur Body2
-	// ArchosaurBody3.DisplayName: Archosaur Body3
-	// ArchosaurBody4.DisplayName: Archosaur Body4
-	// ArchosaurHead.DisplayName: Archosaur Head
-	// ArchosaurTail.DisplayName: Archosaur Tail
+	ChangGhost.DisplayName: 伥鬼
+	ArchosaurBody1.DisplayName: 祖龙残魂
+	ArchosaurBody2.DisplayName: 祖龙残魂
+	ArchosaurBody3.DisplayName: 祖龙残魂
+	ArchosaurBody4.DisplayName: 祖龙残魂
+	ArchosaurHead.DisplayName: 祖龙残魂
+	ArchosaurTail.DisplayName: 祖龙残魂
+	CloneBossBody1.DisplayName: 祖龙残魂
+	CloneBossBody2.DisplayName: 祖龙残魂
+	CloneBossBody3.DisplayName: 祖龙残魂
+	CloneBossBody4.DisplayName: 祖龙残魂
+	CloneBossHead.DisplayName: 祖龙残魂
+	CloneBossTail.DisplayName: 祖龙残魂
 }
 
 Projectiles: {
@@ -571,6 +583,8 @@ Projectiles: {
 	// RuyiStickSpearProjectile_3.DisplayName: Ruyi Stick Spear Projectile_3
 	// BaGuaSigilProj.DisplayName: Ba Gua Sigil Proj
 	// DaShengStickProjectile.DisplayName: Da Sheng Stick Projectile
+	// FallingStarPierce.DisplayName: Falling Star Pierce
+	// ThunderOrb.DisplayName: Thunder Orb
 }
 
 // HeavenBiome.DisplayName: Heaven
@@ -606,7 +620,7 @@ Tiles: {
 	// FloatingBasalt.MapEntry: Floating Basalt
 	XuanTieOreTile.MapEntry: 玄铁
 	LingShiOreTile.MapEntry: 灵石
-	// TaiguWeaponWorkshop.MapEntry: Taigu Weapon Workshop
+	TaiguWeaponWorkshop.MapEntry: 太古武器工坊
 }
 
 Buffs: {

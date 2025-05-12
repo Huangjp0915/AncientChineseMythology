@@ -10,6 +10,7 @@ using Terraria.ModLoader.IO;
 using Microsoft.Xna.Framework;
 using AncientChineseMythology.Systems;
 using AncientChineseMythology.NPCs.Boss.BlackBear;
+using AncientChineseMythology.NPCs.Boss.Archosaur;
 
 
 namespace AncientChineseMythology
@@ -61,11 +62,11 @@ namespace AncientChineseMythology
                 }
                 //第1个Boss第1个Boss第1个Boss第1个Boss第1个Boss
                 //***********************************************************************************************************************************
-                string internalName = "BlackBear"; // 唯一标识符
-                float weight = 0.1f; // 权重
-                Func<bool> downed = () => DownedBossSystem.downedBlackBear; // Boss 击败状态
+                string internalName_01 = "BlackBear"; // 唯一标识符
+                float weight_01 = 0.1f; // 权重
+                Func<bool> downed_01 = () => DownedBossSystem.downedBlackBear; // Boss 击败状态
 
-                int bossType = ModContent.NPCType<BlackBear>(); // Boss 的 NPC 类型
+                int bossType_01 = ModContent.NPCType<BlackBear>(); // Boss 的 NPC 类型
                                                                 //int spawnItem = ModContent.ItemType<Items.MyBoss1Summoner>(); // 召唤 Boss 的物品类型
 
                 //List<int> collectibles = new List<int>()
@@ -73,7 +74,7 @@ namespace AncientChineseMythology
 
                 //};
                 // 自定义图标显示法
-                var customPortrait = (SpriteBatch sb, Rectangle rect, Color color) =>
+                var customPortrait_01 = (SpriteBatch sb, Rectangle rect, Color color) =>
                 {
                     Texture2D texture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear").Value;
                     Vector2 centered = new Vector2(rect.X + (rect.Width / 2) - (texture.Width / 2), rect.Y + (rect.Height / 2) - (texture.Height / 2));
@@ -84,24 +85,70 @@ namespace AncientChineseMythology
                 bossChecklist.Call(
                     "LogBoss",
                     Mod,
-                    internalName,
-                    weight,
-                    downed,
-                    bossType,
+                    internalName_01,
+                    weight_01,
+                    downed_01,
+                    bossType_01,
                     new Dictionary<string, object>()
                     {
                         //["spawnItems"] = spawnItem,// 召唤物品
                         ["displayName"] = Language.GetText("黑熊金"),// 显示名称
                         //["spawnInfo"] = Language.GetText(""),// 召唤信息
                         //["collectibles"] = collectibles,// 收集物品
-                        ["customPortrait"] = customPortrait// 自定义图标显示法
+                        ["customPortrait"] = customPortrait_01// 自定义图标显示法
 
                     }
                 );
                 //自定义图标显示法
-                var customPortrait1 = (SpriteBatch sb, Rectangle rect, Color color) =>
+                var customPortrait1_01 = (SpriteBatch sb, Rectangle rect, Color color) =>
                 {
                     Texture2D texture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear").Value;
+                    Vector2 centered = new Vector2(rect.X + (rect.Width / 2) - (texture.Width / 2), rect.Y + (rect.Height / 2) - (texture.Height / 2));
+                    sb.Draw(texture, centered, color);
+                };
+
+                //***********************************************************************************************************************************
+                string internalName_05 = "Archosaur"; // 唯一标识符
+                float weight_05 = 0.1f; // 权重
+                Func<bool> downed_05 = () => DownedBossSystem.downedBlackBear; // Boss 击败状态
+
+                int bossType_05 = ModContent.NPCType<ArchosaurBoss>(); // Boss 的 NPC 类型
+                                                                //int spawnItem = ModContent.ItemType<Items.MyBoss1Summoner>(); // 召唤 Boss 的物品类型
+
+                //List<int> collectibles = new List<int>()
+                //{
+
+                //};
+                // 自定义图标显示法
+                var customPortrait_05 = (SpriteBatch sb, Rectangle rect, Color color) =>
+                {
+                    Texture2D texture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Boss/Archosaur/Archosaur").Value;
+                    Vector2 centered = new Vector2(rect.X + (rect.Width / 2) - (texture.Width / 2), rect.Y + (rect.Height / 2) - (texture.Height / 2));
+                    sb.Draw(texture, centered, color);
+                };
+
+                // 注册 Boss 信息
+                bossChecklist.Call(
+                    "LogBoss",
+                    Mod,
+                    internalName_05,
+                    weight_05,
+                    downed_05,
+                    bossType_05,
+                    new Dictionary<string, object>()
+                    {
+                        //["spawnItems"] = spawnItem,// 召唤物品
+                        ["displayName"] = Language.GetText("祖龙残魂"),// 显示名称
+                        //["spawnInfo"] = Language.GetText(""),// 召唤信息
+                        //["collectibles"] = collectibles,// 收集物品
+                        ["customPortrait"] = customPortrait_05// 自定义图标显示法
+
+                    }
+                );
+                //自定义图标显示法
+                var customPortrait1_05 = (SpriteBatch sb, Rectangle rect, Color color) =>
+                {
+                    Texture2D texture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Boss/Archosaur/Archosaur").Value;
                     Vector2 centered = new Vector2(rect.X + (rect.Width / 2) - (texture.Width / 2), rect.Y + (rect.Height / 2) - (texture.Height / 2));
                     sb.Draw(texture, centered, color);
                 };
@@ -111,22 +158,28 @@ namespace AncientChineseMythology
         public class DownedBossSystem : ModSystem
         {
             public static bool downedBlackBear = false; // 跟踪 BlackBear 是否已被击败
+            public static bool downedArchosaur = false;
 
             public override void SaveWorldData(TagCompound tag)
             {
                 tag["downedBlackBear"] = downedBlackBear; // 保存状态
+                tag["downedArchosaur"] = downedArchosaur; // 保存状态
             }
 
             public override void LoadWorldData(TagCompound tag)
             {
                 downedBlackBear = tag.GetBool("downedBlackBear"); // 加载状态
+                downedArchosaur = tag.GetBool("downedArchosaur"); // 加载状态
             }
 
             public override void OnWorldLoad()
             {
                 // 重置所有 Boss 的击败状态
                 downedBlackBear = false;
+                downedArchosaur = false;
             }
         }
+
+        
     }
 }

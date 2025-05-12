@@ -153,6 +153,7 @@ namespace AncientChineseMythology.NPCs
         {
             NPC.velocity = Vector2.Lerp(NPC.rotation.ToRotationVector2() * NPC.spriteDirection, FatherNPC.rotation.ToRotationVector2() * FatherNPC.spriteDirection, 0.5f);
             NPC.Center = FatherNPC.Center - NPC.velocity * (NPC.width + FatherNPC.width) / 2;
+            NPC.Center = new Vector2((int)NPC.Center.X, (int)NPC.Center.Y);
         }
         /// <summary>
         /// 修改生成的NPC类型

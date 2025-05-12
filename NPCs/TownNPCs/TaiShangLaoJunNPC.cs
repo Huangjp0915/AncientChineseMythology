@@ -122,7 +122,7 @@ namespace AncientChineseMythology.NPCs.TownNPCs
                 .Add<NingShenDan>()
                 .Add<XuanGangDan>()
                 .Add<DiHuo>()
-                //.Add<BaGuaZhenpan>()
+                .Add<BaGuaZhenpan>()
                 //.Add<ZhenfaBook>()  
                 //.Add<ZhenfaPaper>()  
                 //.Add<XuanYuanDan>()

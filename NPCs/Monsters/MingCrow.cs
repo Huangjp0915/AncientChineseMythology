@@ -1,4 +1,5 @@
 using System;
+using AncientChineseMythology.Items.Materials;
 using AncientChineseMythology.Items.Weapons.SummoningStaffs;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -289,6 +290,7 @@ namespace AncientChineseMythology.NPCs.Monsters
         public override void ModifyNPCLoot(NPCLoot npcLoot)
         {
             npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<MingCrowStaff>(), 100));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<Bone>(), 15));
         }
     }
 }

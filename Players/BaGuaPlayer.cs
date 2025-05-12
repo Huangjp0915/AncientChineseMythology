@@ -36,6 +36,8 @@ namespace AncientChineseMythology.Players
             ProjectileID.IceBoomerang,
             ProjectileID.Shroomerang
         };
+        private int FallingStarTimer;
+        private const int FallingStarCD = 15;   // 每 15 tick ≈ 0.25 s 召唤 1 颗
 
         public override void PostUpdateEquips()
         {
@@ -120,6 +122,13 @@ namespace AncientChineseMythology.Players
                 Name          = "回旋镖阵",
                 Desc          = "一直飞出回旋镖",
                 ApplyEffect = p => p.DoBoomerang()
+            },
+            new Formation {
+                RequiredTypes = [
+                    ItemID.Starfury,ItemID.ManaCrystal, ItemID.ManaCrystal, ItemID.ManaCrystal, ItemID.ManaCrystal,ItemID.ManaCrystal, ModContent.ItemType<LingShiOre>(), ModContent.ItemType<LingShiOre>()],
+                Name = "落星阵",
+                Desc = "召唤流星自动砸向敌人",
+                ApplyEffect = p => p.DoFallingStar()
             },
             /* ... 可继续追加 ... */
         };
@@ -261,6 +270,38 @@ namespace AncientChineseMythology.Players
             int projType = BoomerangIDs[Main.rand.Next(BoomerangIDs.Length)];
             Projectile.NewProjectile(Player.GetSource_FromThis(), Player.Center, dir,
                                       projType, 25, 2f, Player.whoAmI);
+        }
+
+        /* ───────── 落星阵法 ───────── */
+        public void DoFallingStar()
+        {
+            FallingStarTimer++;
+            if (FallingStarTimer < FallingStarCD) return;
+            FallingStarTimer = 0;
+
+            // 寻找最近的非友好 NPC（与回旋镖逻辑保持一致）
+            NPC target = null;
+            float dist2 = 600 * 600;
+            foreach (NPC npc in Main.npc)
+                if (npc.CanBeChasedBy(Player) && !npc.friendly)
+                {
+                    float d = Vector2.DistanceSquared(npc.Center, Player.Center);
+                    if (d < dist2) { dist2 = d; target = npc; }
+                }
+            if (target == null) return;
+
+            // 确定星星出生点：目标上方 600 像素随机 ±80 X 偏移
+            Vector2 spawn = new(target.Center.X + Main.rand.Next(-80, 81), target.Center.Y - 600f);
+            Vector2 vel   = Vector2.UnitY * 16f;           // 垂直向下
+
+            int dmg = 80;      // 调整为想要的伤害
+            float kb = 1.5f;   // 击退
+
+            Projectile.NewProjectile(
+                Player.GetSource_FromThis(),
+                spawn, vel,
+                ProjectileID.Starfury, // 原版星怒坠星弹道 & 贴图
+                dmg, kb, Player.whoAmI);
         }
     }
 }

@@ -1,3 +1,4 @@
+using AncientChineseMythology.Items.Materials;
 using AncientChineseMythology.Projectiles;
 using Terraria;
 using Terraria.ID;
@@ -28,6 +29,14 @@ namespace AncientChineseMythology.Items.Waapons.Swords
             Item.shoot = ModContent.ProjectileType<BlankProjectile>(); // 射击类型
             Item.shootSpeed = 16;
             Item.noUseGraphic = false; // 显示使用图标
+        }
+
+        public override void AddRecipes()
+        {
+            CreateRecipe()
+                .AddIngredient(ModContent.ItemType<Bone>(), 20)
+                .AddTile(TileID.Anvils)
+                .Register();
         }
     }
 }

@@ -36,6 +36,56 @@ namespace AncientChineseMythology.Global
                     5  // 最大数量
                 ));
             }
+
+            if (npc.type == ModContent.NPCType<BloodCrow>())
+            {
+                npcLoot.Add(ItemDropRule.Common(
+                    ModContent.ItemType<YaoQiFragment>(), 
+                    10, // 掉落几率 1/10
+                    1, // 最小数量
+                    2  // 最大数量
+                ));
+            }
+
+            if (npc.type == ModContent.NPCType<ChangGhost>())
+            {
+                npcLoot.Add(ItemDropRule.Common(
+                    ModContent.ItemType<YaoQiFragment>(), 
+                    10, // 掉落几率 1/10
+                    1, // 最小数量
+                    2  // 最大数量
+                ));
+            }
+
+            if (npc.type == ModContent.NPCType<Demon>())
+            {
+                npcLoot.Add(ItemDropRule.Common(
+                    ModContent.ItemType<YaoQiFragment>(), 
+                    10, // 掉落几率 1/10
+                    1, // 最小数量
+                    2  // 最大数量
+                ));
+            }
+
+            if (npc.type == ModContent.NPCType<JiaoSha>())
+            {
+                npcLoot.Add(ItemDropRule.Common(
+                    ModContent.ItemType<YaoQiFragment>(), 
+                    10, // 掉落几率 1/10
+                    1, // 最小数量
+                    2  // 最大数量
+                ));
+            }
+
+            if (npc.type == ModContent.NPCType<MingCrow>())
+            {
+                npcLoot.Add(ItemDropRule.Common(
+                    ModContent.ItemType<YaoQiFragment>(), 
+                    10, // 掉落几率 1/10
+                    1, // 最小数量
+                    2  // 最大数量
+                ));
+            }
         }
     }
 }

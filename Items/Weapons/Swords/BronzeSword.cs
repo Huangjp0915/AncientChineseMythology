@@ -5,6 +5,7 @@ using Terraria.ModLoader;
 using Microsoft.Xna.Framework;
 using System.Linq;
 using AncientChineseMythology.Projectiles;
+using AncientChineseMythology.Items.Bronze;
 
 namespace AncientChineseMythology.Items.Waapons.Swords
 {
@@ -50,6 +51,14 @@ namespace AncientChineseMythology.Items.Waapons.Swords
                 target.HitEffect();
                 target.checkDead();
             }
+        }
+
+        public override void AddRecipes()
+        {
+            CreateRecipe()
+                .AddIngredient(ModContent.ItemType<BronzeIngot>(), 18)
+                .AddTile(TileID.Anvils)
+                .Register();
         }
     }
 }

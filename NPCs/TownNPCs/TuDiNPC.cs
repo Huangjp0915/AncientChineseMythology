@@ -111,7 +111,6 @@ namespace AncientChineseMythology.NPCs.TownNPCs
 
         public override void AddShops() {
             new NPCShop(Type)
-                .Add<BaGuaZhenpan>()
                 .Add<ZhenfaBook>()  
                 .Add<ZhenfaPaper>()  
                 .Register();
