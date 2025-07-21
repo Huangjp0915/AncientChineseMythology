@@ -1,4 +1,4 @@
-using Terraria;
+﻿using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -9,13 +9,12 @@ namespace AncientChineseMythology.Items.Herbs
         public override string Texture => "AncientChineseMythology/Textures/Items/Herbs/IronArmorFlower";
         public override void SetStaticDefaults() => Item.ResearchUnlockCount = 25;
 
-        public override void SetDefaults()
-        {
-            Item.width  = 20;
+        public override void SetDefaults() {
+            Item.width = 20;
             Item.height = 20;
             Item.maxStack = 999;
             Item.value = Item.buyPrice(gold: 10);
-            Item.rare  = ItemRarityID.Green;
+            Item.rare = ItemRarityID.Green;
         }
     }
 }

@@ -1,9 +1,9 @@
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
-using System;
 
 namespace AncientChineseMythology.NPCs.Monsters
 {
@@ -75,12 +75,10 @@ namespace AncientChineseMythology.NPCs.Monsters
         // 伪路径，防止 tModLoader 自动加载单张贴图
         public override string Texture => "AncientChineseMythology/Textures/NPCs/Monsters/Demon/idle_01";
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             // 加载各状态动画贴图
             attackTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/Demon/Attack").Value;
             dieTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/Demon/Die").Value;
@@ -104,8 +102,7 @@ namespace AncientChineseMythology.NPCs.Monsters
             NPC.aiStyle = -1;
         }
 
-        public override float SpawnChance(NPCSpawnInfo spawnInfo)
-        {
+        public override float SpawnChance(NPCSpawnInfo spawnInfo) {
             return !Main.dayTime ? 0.4f : 0f;
         }
 
@@ -117,8 +114,7 @@ namespace AncientChineseMythology.NPCs.Monsters
         /// Die：死亡动画
         /// Hurt：受伤状态
         /// </summary>
-        private AnimationState GetAnimationState()
-        {
+        private AnimationState GetAnimationState() {
             if (isDying)
                 return AnimationState.Die;
             if (hurtTimer > 0)
@@ -135,12 +131,10 @@ namespace AncientChineseMythology.NPCs.Monsters
             return AnimationState.Run;
         }
 
-        public override void AI()
-        {
+        public override void AI() {
             // 目标检测及朝向设置
             NPC.TargetClosest(true);
-            if (NPC.target < 0 || NPC.target >= Main.maxPlayers)
-            {
+            if (NPC.target < 0 || NPC.target >= Main.maxPlayers) {
                 NPC.velocity = Vector2.Zero;
                 return;
             }
@@ -150,8 +144,7 @@ namespace AncientChineseMythology.NPCs.Monsters
             NPC.spriteDirection = target.Center.X < NPC.Center.X ? -1 : 1;
 
             // 玩家死亡时淡出处理
-            if (target.dead)
-            {
+            if (target.dead) {
                 NPC.velocity = Vector2.Zero;
                 NPC.alpha += 5;
                 if (NPC.alpha >= 255)
@@ -162,28 +155,23 @@ namespace AncientChineseMythology.NPCs.Monsters
                 NPC.timeLeft = 300;
 
             //  死亡与受伤处理
-            if (isDying)
-            {
+            if (isDying) {
                 NPC.damage = 0;
                 NPC.velocity = Vector2.Zero;
                 dieTimer++;
                 // 使用 dieTimer 来计算死亡动画帧（PreDraw中直接使用 dieTimer/frameDuration）
-                if (dieTimer > dieFrameCount * frameDuration + 10)
-                {
+                if (dieTimer > dieFrameCount * frameDuration + 10) {
                     NPC.NPCLoot();
                     NPC.active = false;
                 }
                 return;
             }
-            if (hurtTimer > 0)
-            {
+            if (hurtTimer > 0) {
                 NPC.velocity = Vector2.Zero;
             }
-            else
-            {
+            else {
                 // 非攻击状态下的追击逻辑
-                if (!isAttacking)
-                {
+                if (!isAttacking) {
                     Vector2 toPlayer = target.Center - NPC.Center;
                     float dist = toPlayer.Length();
                     if (toPlayer != Vector2.Zero)
@@ -200,26 +188,22 @@ namespace AncientChineseMythology.NPCs.Monsters
                     if (attackCooldown <= 0 && dist >= minRange && dist <= maxRange)
                         StartAttack();
                 }
-                else
-                {
+                else {
                     // 攻击期间保持静止，不受目标移动干扰
                     NPC.velocity = Vector2.Zero;
                 }
 
                 // 攻击动画处理及远程投射
-                if (isAttacking)
-                {
+                if (isAttacking) {
                     attackAnimTimer++;
                     // 每隔 (projectilesFired+1)*30 帧重置 didDamageThisAttack，允许多次发射
                     if (attackAnimTimer >= (projectilesFired + 1) * 30)
                         didDamageThisAttack = false;
 
-                    if (!didDamageThisAttack && (attackAnimTimer / frameDuration) % attackFrameCount == attackTriggerFrame)
-                    {
+                    if (!didDamageThisAttack && (attackAnimTimer / frameDuration) % attackFrameCount == attackTriggerFrame) {
                         FireProjectile(target);
                     }
-                    if (attackAnimTimer >= fullAttackDuration)
-                    {
+                    if (attackAnimTimer >= fullAttackDuration) {
                         attackCooldown = 90;
                         attackAnimTimer = 0;
                         projectilesFired = 0;
@@ -234,13 +218,10 @@ namespace AncientChineseMythology.NPCs.Monsters
 
             // 平台检测及穿越属性设置
             bool onPlatform = false;
-            for (int i = (int)(NPC.Bottom.X / 16); i <= (int)((NPC.Bottom.X + NPC.width) / 16); i++)
-            {
-                for (int j = (int)(NPC.Bottom.Y / 16); j <= (int)((NPC.Bottom.Y + 1) / 16); j++)
-                {
+            for (int i = (int)(NPC.Bottom.X / 16); i <= (int)((NPC.Bottom.X + NPC.width) / 16); i++) {
+                for (int j = (int)(NPC.Bottom.Y / 16); j <= (int)((NPC.Bottom.Y + 1) / 16); j++) {
                     Tile tile = Main.tile[i, j];
-                    if (tile != null && tile.HasTile && Main.tileSolidTop[tile.TileType])
-                    {
+                    if (tile != null && tile.HasTile && Main.tileSolidTop[tile.TileType]) {
                         onPlatform = true;
                         break;
                     }
@@ -255,24 +236,20 @@ namespace AncientChineseMythology.NPCs.Monsters
                 NPC.noTileCollide = false;
 
             // invincibleTimer 处理
-            if (!Collision.CanHitLine(NPC.position, NPC.width, NPC.height, target.position, target.width, target.height))
-            {
+            if (!Collision.CanHitLine(NPC.position, NPC.width, NPC.height, target.position, target.width, target.height)) {
                 invincibleTimer++;
-                if (invincibleTimer == 120)
-                {
+                if (invincibleTimer == 120) {
                     initialVelocity = -NPC.velocity;
                     if (initialVelocity != Vector2.Zero)
                         initialVelocity.Normalize();
                 }
-                if (invincibleTimer > 120)
-                {
+                if (invincibleTimer > 120) {
                     NPC.velocity = initialVelocity;
                     // 此处设置 spriteDirection 根据初始反向速度，而不是始终面向目标
                     NPC.spriteDirection = initialVelocity.X > 0 ? 1 : -1;
                 }
             }
-            else
-            {
+            else {
                 invincibleTimer = 0;
             }
 
@@ -291,16 +268,13 @@ namespace AncientChineseMythology.NPCs.Monsters
                 stuckCounter++;
             else
                 stuckCounter = 0;
-            if (stuckCounter > 30)
-            {
+            if (stuckCounter > 30) {
                 float currentDist = Vector2.Distance(NPC.Center, target.Center);
                 bool canAttack = (!isAttacking && attackCooldown <= 0 && currentDist <= maxRange);
-                if (currentDist < minRange && canAttack)
-                {
+                if (currentDist < minRange && canAttack) {
                     StartAttack();
                 }
-                else
-                {
+                else {
                     float verticalDir = Main.rand.NextBool() ? -1f : 1f;
                     float horizontalOffset = Main.rand.NextFloat(-0.5f, 0.5f);
                     Vector2 newDir = new Vector2(horizontalOffset, verticalDir).SafeNormalize(Vector2.UnitY);
@@ -323,16 +297,14 @@ namespace AncientChineseMythology.NPCs.Monsters
 
         #region 攻击、死亡及辅助方法
 
-        private void StartAttack()
-        {
+        private void StartAttack() {
             isAttacking = true;
             attackAnimTimer = 0;
             didDamageThisAttack = false;
             projectilesFired = 0;
         }
 
-        private void FireProjectile(Player target)
-        {
+        private void FireProjectile(Player target) {
             int projectileType = ModContent.ProjectileType<Projectiles.Demon_Proj>();
             Vector2 spawnPos = NPC.Center + attackOffset;
             Vector2 projVel = target.Center - (NPC.Center + attackOffset);
@@ -344,8 +316,7 @@ namespace AncientChineseMythology.NPCs.Monsters
             didDamageThisAttack = true;
         }
 
-        private void Despawn()
-        {
+        private void Despawn() {
             NPC.active = false;
         }
 
@@ -353,34 +324,28 @@ namespace AncientChineseMythology.NPCs.Monsters
 
         #region 受击与绘制
 
-        public override void HitEffect(NPC.HitInfo hit)
-        {
-            if (!isDying && NPC.life <= 0)
-            {
+        public override void HitEffect(NPC.HitInfo hit) {
+            if (!isDying && NPC.life <= 0) {
                 isDying = true;
                 NPC.life = 1; // 确保 NPC 不会被重复击杀
                 NPC.dontTakeDamage = true;
                 NPC.damage = 0;
                 NPC.netUpdate = true;
             }
-            else
-            {
+            else {
                 hurtTimer = 20;
             }
         }
 
-        public override void OnHitByItem(Player player, Item item, NPC.HitInfo hit, int damageDone)
-        {
+        public override void OnHitByItem(Player player, Item item, NPC.HitInfo hit, int damageDone) {
             ApplyKnockback(hit);
         }
 
-        public override void OnHitByProjectile(Projectile projectile, NPC.HitInfo hit, int damageDone)
-        {
+        public override void OnHitByProjectile(Projectile projectile, NPC.HitInfo hit, int damageDone) {
             ApplyKnockback(hit);
         }
 
-        private void ApplyKnockback(NPC.HitInfo hit)
-        {
+        private void ApplyKnockback(NPC.HitInfo hit) {
             float factor = 0.3f;
             Vector2 extraForce = new Vector2(hit.Knockback * factor * hit.HitDirection,
                                                -hit.Knockback * factor * 0.1f);
@@ -388,13 +353,11 @@ namespace AncientChineseMythology.NPCs.Monsters
             hurtTimer = 20;
         }
 
-        public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
-        {
+        public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
             AnimationState state = GetCurrentAnimationState();
             Texture2D texture;
             int totalFrames = 1;
-            switch (state)
-            {
+            switch (state) {
                 case AnimationState.Attack:
                     texture = attackTexture;
                     totalFrames = attackFrameCount;
@@ -437,8 +400,7 @@ namespace AncientChineseMythology.NPCs.Monsters
         }
 
         // 根据当前情况返回绘制用的动画状态
-        private AnimationState GetCurrentAnimationState()
-        {
+        private AnimationState GetCurrentAnimationState() {
             if (isDying)
                 return AnimationState.Die;
             if (hurtTimer > 0)

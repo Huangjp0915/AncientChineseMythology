@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -17,23 +17,20 @@ namespace AncientChineseMythology.Projectiles
 
         public override void SetDefaults() {
             Projectile.CloneDefaults(ProjectileID.Wisp); // 仅复制基础属性，AI 将被覆盖
-            Projectile.width  = 32;   // 根据贴图实际像素调整
+            Projectile.width = 32;   // 根据贴图实际像素调整
             Projectile.height = 32;
             Projectile.aiStyle = -1;  // 禁用 Wisp 原生 AI
         }
 
         public override void AI() {
             Player player = Main.player[Projectile.owner];
-            int buffType  = ModContent.BuffType<Buffs.ShenxianGuanglunBuff>();
+            int buffType = ModContent.BuffType<Buffs.ShenxianGuanglunBuff>();
 
-            if (!player.HasBuff(buffType))
-            {
-                if (player.dead)
-                {
+            if (!player.HasBuff(buffType)) {
+                if (player.dead) {
                     player.AddBuff(buffType, 18000); // 死亡保留
                 }
-                else
-                {
+                else {
                     Projectile.Kill();               // 主动取消 → 消失
                     return;
                 }

@@ -1,10 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using AncientChineseMythology.Projectiles;
+using Microsoft.Xna.Framework;
+using System.Collections.Generic;
+using System.Linq;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
-using Microsoft.Xna.Framework;
-using System.Linq;
-using AncientChineseMythology.Projectiles;
 
 namespace AncientChineseMythology.Items.Waapons.Swords
 {
@@ -12,8 +12,7 @@ namespace AncientChineseMythology.Items.Waapons.Swords
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Swords/BlackBearSword"; // 使用物品的纹理作为投射物的纹理
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.damage = 47; // 基础伤害
             Item.crit = 15; // 爆击率
             Item.DamageType = DamageClass.Melee; // 伤害类型

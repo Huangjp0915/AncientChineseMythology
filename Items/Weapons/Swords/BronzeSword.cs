@@ -1,11 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using AncientChineseMythology.Items.Bronze;
+using AncientChineseMythology.Projectiles;
+using Microsoft.Xna.Framework;
+using System.Collections.Generic;
+using System.Linq;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
-using Microsoft.Xna.Framework;
-using System.Linq;
-using AncientChineseMythology.Projectiles;
-using AncientChineseMythology.Items.Bronze;
 
 namespace AncientChineseMythology.Items.Waapons.Swords
 {
@@ -13,8 +13,7 @@ namespace AncientChineseMythology.Items.Waapons.Swords
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Swords/BronzeSword"; // 使用物品的纹理作为投射物的纹理
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.damage = 8; // 基础伤害
             Item.crit = 15; // 爆击率
             Item.DamageType = DamageClass.Melee; // 伤害类型
@@ -34,18 +33,14 @@ namespace AncientChineseMythology.Items.Waapons.Swords
             Item.shootSpeed = 1f; // 射击速度
         }
 
-        public override void OnHitNPC(Player player, NPC target, NPC.HitInfo hit, int damageDone)
-        {
-            if(!target.HasBuff(BuffID.Poisoned))
-            {
+        public override void OnHitNPC(Player player, NPC target, NPC.HitInfo hit, int damageDone) {
+            if (!target.HasBuff(BuffID.Poisoned)) {
                 target.AddBuff(BuffID.Poisoned, 180); // 给目标添加中毒状态
             }
         }
 
-        public override void ModifyHitNPC(Player player, NPC target, ref NPC.HitModifiers modifiers)
-        {
-            if (Main.rand.NextBool(100))
-            {
+        public override void ModifyHitNPC(Player player, NPC target, ref NPC.HitModifiers modifiers) {
+            if (Main.rand.NextBool(100)) {
                 // 秒杀 NPC
                 target.life = 0;
                 target.HitEffect();
@@ -53,8 +48,7 @@ namespace AncientChineseMythology.Items.Waapons.Swords
             }
         }
 
-        public override void AddRecipes()
-        {
+        public override void AddRecipes() {
             CreateRecipe()
                 .AddIngredient(ModContent.ItemType<BronzeIngot>(), 18)
                 .AddTile(TileID.Anvils)

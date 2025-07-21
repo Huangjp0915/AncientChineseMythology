@@ -1,4 +1,4 @@
-using AncientChineseMythology.Content.Items.Placeables;
+﻿using AncientChineseMythology.Content.Items.Placeables;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.DataStructures;
@@ -13,8 +13,7 @@ namespace AncientChineseMythology.Tiles
     {
         public override string Texture => "AncientChineseMythology/Textures/Tiles/Placable/TaiguWeaponWorkshop";
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             // 基本属性
             Main.tileFrameImportant[Type] = true;
             Main.tileTable[Type] = true;              // 让房屋系统把它当桌子

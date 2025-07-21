@@ -1,9 +1,9 @@
-using Terraria;
-using Terraria.UI;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Terraria.GameContent;
 using System;
+using Terraria;
+using Terraria.GameContent;
+using Terraria.UI;
 
 namespace AncientChineseMythology.UI
 {
@@ -16,16 +16,14 @@ namespace AncientChineseMythology.UI
 
         private int originalStack = 0;      // 放入时的初始堆叠，用于进度条
 
-        public UIItemSlot(int pixelSize)
-        {
+        public UIItemSlot(int pixelSize) {
             size = pixelSize;
             item.TurnToAir();
             Width.Set(size, 0f);
             Height.Set(size, 0f);
         }
 
-        protected override void DrawSelf(SpriteBatch sb)
-        {
+        protected override void DrawSelf(SpriteBatch sb) {
             var dim = GetInnerDimensions();
 
             /* ---------- 背景框 ---------- */
@@ -47,8 +45,7 @@ namespace AncientChineseMythology.UI
                 originalStack = item.stack; // 第一次放入或补充时刷新基准
 
             /* ---------- 物品贴图 ---------- */
-            if (!item.IsAir)
-            {
+            if (!item.IsAir) {
                 Main.instance.LoadItem(item.type);
                 Texture2D tex = TextureAssets.Item[item.type].Value;
                 Rectangle frame = tex.Frame();
@@ -60,8 +57,7 @@ namespace AncientChineseMythology.UI
                 sb.Draw(tex, pos, frame, Color.White, 0f, Vector2.Zero, iconScale, SpriteEffects.None, 0f);
 
                 /* ---------- 数量文本 ---------- */
-                if (item.stack > 1)
-                {
+                if (item.stack > 1) {
                     Utils.DrawBorderString(sb,
                                             item.stack.ToString(),
                                             dim.Position() + new Vector2(2f, size - 18f),
@@ -70,8 +66,7 @@ namespace AncientChineseMythology.UI
                 }
 
                 /* ---------- 耐久 / 进度条 ---------- */
-                if (originalStack > 0 && item.stack < originalStack)
-                {
+                if (originalStack > 0 && item.stack < originalStack) {
                     float ratio = item.stack / (float)originalStack; // 0~1
                     int barWidth = (int)(size * ratio);
                     Rectangle bar = new((int)dim.X, (int)dim.Y + size - 6, barWidth, 4);
@@ -81,8 +76,7 @@ namespace AncientChineseMythology.UI
 
             /* ---------- 鼠标交互 ---------- */
             if (ContainsPoint(Main.MouseScreen) &&
-                Main.mouseLeft && Main.mouseLeftRelease)
-            {
+                Main.mouseLeft && Main.mouseLeftRelease) {
                 Main.mouseLeftRelease = false;
                 Utils.Swap(ref item, ref Main.mouseItem);
 

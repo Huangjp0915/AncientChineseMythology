@@ -1,3 +1,5 @@
+﻿using AncientChineseMythology.Items.Weapons.Staffs;
+using AncientChineseMythology.Systems;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
@@ -8,15 +10,13 @@ using Terraria.ID;
 using Terraria.Localization;
 using Terraria.ModLoader;
 using Terraria.Utilities;
-using AncientChineseMythology.Systems;
-using AncientChineseMythology.Items.Weapons.Staffs;
 
 namespace AncientChineseMythology.NPCs.TownNPCs
 {
     [AutoloadHead]
     public class LaoDieNPC : ModNPC
     {
-        public override string Texture     => "AncientChineseMythology/Textures/NPCs/TownNPCs/LaoDie/LaoDieNPC";
+        public override string Texture => "AncientChineseMythology/Textures/NPCs/TownNPCs/LaoDie/LaoDieNPC";
         public override string HeadTexture => "AncientChineseMythology/Textures/NPCs/TownNPCs/LaoDie/LaoDieNPC_Head";
 
         private static Profiles.StackedNPCProfile npcProfile;
@@ -24,26 +24,26 @@ namespace AncientChineseMythology.NPCs.TownNPCs
 
         public override void SetStaticDefaults() {
             // 帧数/攻击帧配置——与向导一致
-            Main.npcFrameCount[Type]              = 25;
-            NPCID.Sets.ExtraFramesCount[Type]     = 9;
-            NPCID.Sets.AttackFrameCount[Type]     = 4;
-            NPCID.Sets.DangerDetectRange[Type]    = 500;
-            NPCID.Sets.PrettySafe[Type]           = 300;
+            Main.npcFrameCount[Type] = 25;
+            NPCID.Sets.ExtraFramesCount[Type] = 9;
+            NPCID.Sets.AttackFrameCount[Type] = 4;
+            NPCID.Sets.DangerDetectRange[Type] = 500;
+            NPCID.Sets.PrettySafe[Type] = 300;
 
-            NPCID.Sets.AttackType[Type]          = 1;  // 近战摇符纸
-            NPCID.Sets.AttackTime[Type]          = 45; // 较快
+            NPCID.Sets.AttackType[Type] = 1;  // 近战摇符纸
+            NPCID.Sets.AttackTime[Type] = 45; // 较快
             NPCID.Sets.AttackAverageChance[Type] = 30;
-            NPCID.Sets.HatOffsetY[Type]          = 4;
+            NPCID.Sets.HatOffsetY[Type] = 4;
 
             // ActsLikeTownNPC 但不占房
-            NPCID.Sets.ActsLikeTownNPC[Type]      = true;
-            NPCID.Sets.NoTownNPCHappiness[Type]   = true;
+            NPCID.Sets.ActsLikeTownNPC[Type] = true;
+            NPCID.Sets.NoTownNPCHappiness[Type] = true;
             NPCID.Sets.SpawnsWithCustomName[Type] = true;
             NPCID.Sets.ShimmerTownTransform[Type] = true;
 
             // Bestiary 绘制偏移
             NPCID.Sets.NPCBestiaryDrawModifiers modifiers = new() {
-                Velocity  = 1f,
+                Velocity = 1f,
                 Direction = 1
             };
             NPCID.Sets.NPCBestiaryDrawOffset.Add(Type, modifiers);
@@ -53,13 +53,13 @@ namespace AncientChineseMythology.NPCs.TownNPCs
         public override void SetDefaults() {
             NPC.friendly = true;
             NPC.townNPC = true;
-            NPC.width    = 18;
-            NPC.height   = 40;
-            NPC.aiStyle  = 7;                // Town AI
+            NPC.width = 18;
+            NPC.height = 40;
+            NPC.aiStyle = 7;                // Town AI
             AnimationType = NPCID.Guide;     // 帧切换
-            NPC.damage   = 10;
-            NPC.defense  = 12;
-            NPC.lifeMax  = 250;
+            NPC.damage = 10;
+            NPC.defense = 12;
+            NPC.lifeMax = 250;
             NPC.knockBackResist = 0.5f;
             NPC.HitSound = SoundID.NPCHit1;
             NPC.DeathSound = SoundID.NPCDeath1;
@@ -72,13 +72,12 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             });
         }
 
-        public override bool CanTownNPCSpawn(int numTownNPCs)
-        {
+        public override bool CanTownNPCSpawn(int numTownNPCs) {
             if (NPC.AnyNPCs(Type)) return false;
             // 只有玩家触发圣主雕像事件后才允许搬入
             return AncientChineseMythologySystem.triggeredShengZhuStatue;
         }
-        
+
         public override float SpawnChance(NPCSpawnInfo spawnInfo) {
             return 0f;
         }
@@ -133,9 +132,10 @@ namespace AncientChineseMythology.NPCs.TownNPCs
                 int itemType = ModContent.ItemType<Pufferfish>();
                 Main.GetItemDrawFrame(itemType, out item, out frame);
                 offset = (int)Main.DrawPlayerItemPos(1f, itemType).X - 12;
-            } else {
-                item   = shimmerWeapon.Value;
-                frame  = item.Frame();
+            }
+            else {
+                item = shimmerWeapon.Value;
+                frame = item.Frame();
                 offset = -2;
             }
         }

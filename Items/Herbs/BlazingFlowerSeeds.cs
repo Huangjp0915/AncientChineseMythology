@@ -1,4 +1,4 @@
-using AncientChineseMythology.Tiles.Herbs;
+﻿using AncientChineseMythology.Tiles.Herbs;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -10,9 +10,8 @@ namespace AncientChineseMythology.Items.Herbs
         public override string Texture => "AncientChineseMythology/Textures/Items/Herbs/BlazingFlowerSeeds";
         public override void SetStaticDefaults() => Item.ResearchUnlockCount = 25;
 
-        public override void SetDefaults()
-        {
-            Item.width  = 14;
+        public override void SetDefaults() {
+            Item.width = 14;
             Item.height = 14;
             Item.maxStack = 999;
             Item.consumable = true;
@@ -20,7 +19,7 @@ namespace AncientChineseMythology.Items.Herbs
             Item.useStyle = ItemUseStyleID.Swing;
             Item.useTime = Item.useAnimation = 15;
             Item.autoReuse = true;
-            Item.UseSound  = SoundID.Grass;
+            Item.UseSound = SoundID.Grass;
 
             Item.rare = ItemRarityID.Blue;
             Item.createTile = ModContent.TileType<BlazingFlowerHerbTile>();

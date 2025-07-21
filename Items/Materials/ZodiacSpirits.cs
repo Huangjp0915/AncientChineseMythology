@@ -1,4 +1,4 @@
-using Terraria;
+﻿using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -8,12 +8,10 @@ namespace AncientChineseMythology.Items.Materials
     public class ZodiacRat : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Materials/ZodiacSpirits/ZodiacRat";
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 20;
             Item.height = 20;
             Item.maxStack = 999;
@@ -26,12 +24,10 @@ namespace AncientChineseMythology.Items.Materials
     public class ZodiacCow : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Materials/ZodiacSpirits/ZodiacCow";
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 20;
             Item.height = 20;
             Item.maxStack = 999;
@@ -44,12 +40,10 @@ namespace AncientChineseMythology.Items.Materials
     public class ZodiacTiger : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Materials/ZodiacSpirits/ZodiacTiger";
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 20;
             Item.height = 20;
             Item.maxStack = 999;
@@ -62,12 +56,10 @@ namespace AncientChineseMythology.Items.Materials
     public class ZodiacRabbit : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Materials/ZodiacSpirits/ZodiacRabbit";
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 20;
             Item.height = 20;
             Item.maxStack = 999;
@@ -80,12 +72,10 @@ namespace AncientChineseMythology.Items.Materials
     public class ZodiacDragon : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Materials/ZodiacSpirits/ZodiacDragon";
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 20;
             Item.height = 20;
             Item.maxStack = 999;
@@ -98,12 +88,10 @@ namespace AncientChineseMythology.Items.Materials
     public class ZodiacSnake : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Materials/ZodiacSpirits/ZodiacSnake";
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 20;
             Item.height = 20;
             Item.maxStack = 999;
@@ -116,12 +104,10 @@ namespace AncientChineseMythology.Items.Materials
     public class ZodiacHorse : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Materials/ZodiacSpirits/ZodiacHorse";
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 20;
             Item.height = 20;
             Item.maxStack = 999;
@@ -134,12 +120,10 @@ namespace AncientChineseMythology.Items.Materials
     public class ZodiacGoat : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Materials/ZodiacSpirits/ZodiacGoat";
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 20;
             Item.height = 20;
             Item.maxStack = 999;
@@ -152,12 +136,10 @@ namespace AncientChineseMythology.Items.Materials
     public class ZodiacMonkey : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Materials/ZodiacSpirits/ZodiacMonkey";
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 20;
             Item.height = 20;
             Item.maxStack = 999;
@@ -170,12 +152,10 @@ namespace AncientChineseMythology.Items.Materials
     public class ZodiacChicken : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Materials/ZodiacSpirits/ZodiacChicken";
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 20;
             Item.height = 20;
             Item.maxStack = 999;
@@ -188,12 +168,10 @@ namespace AncientChineseMythology.Items.Materials
     public class ZodiacDog : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Materials/ZodiacSpirits/ZodiacDog";
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 20;
             Item.height = 20;
             Item.maxStack = 999;
@@ -206,12 +184,10 @@ namespace AncientChineseMythology.Items.Materials
     public class ZodiacPig : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Materials/ZodiacSpirits/ZodiacPig";
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 20;
             Item.height = 20;
             Item.maxStack = 999;

@@ -1,6 +1,6 @@
-﻿using System;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.GameContent;
@@ -16,8 +16,7 @@ namespace AncientChineseMythology.Projectiles
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/GoldenStickSpearProjectile";
         private bool isReturning = false;// 是否正在返回
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Projectile.width = 142;
             Projectile.height = 142;
             Projectile.aiStyle = -1;
@@ -31,9 +30,8 @@ namespace AncientChineseMythology.Projectiles
             Projectile.tileCollide = false;
             Projectile.friendly = true;
         }
-        
-        public override void OnSpawn(IEntitySource source)
-        {
+
+        public override void OnSpawn(IEntitySource source) {
             Projectile.damage = Projectile.damage / 2;
             Projectile.knockBack *= 0.2f;
         }
@@ -47,42 +45,35 @@ namespace AncientChineseMythology.Projectiles
             Projectile.velocity = move;
         }
 
-        public override void AI()
-        {
+        public override void AI() {
             Player player = Main.player[Projectile.owner];
 
             Projectile.direction = player.direction;
             player.heldProj = Projectile.whoAmI;// 玩家持有弹道
 
-            if (isReturning)
-            {
+            if (isReturning) {
                 Projectile.timeLeft = 13;
                 //回到玩家身边销毁
                 MoveToTarget(player.Center); // 移动到鼠标位置
-                if (Projectile.Distance(player.Center) < 10f)
-                {
+                if (Projectile.Distance(player.Center) < 10f) {
                     Projectile.Kill(); // 销毁弹道
                 }
             }
-            if (Main.mouseRight)
-            {
+            if (Main.mouseRight) {
                 Projectile.timeLeft = 13;
                 if (Main.mouseLeft)
                     isReturning = true;
-                if(!isReturning)
-                {
+                if (!isReturning) {
                     MoveToTarget(Main.MouseWorld); // 移动到鼠标位置
 
-                    if (Projectile.Distance(Main.MouseWorld) < 10f && Main.mouseRight)
-                    {
+                    if (Projectile.Distance(Main.MouseWorld) < 10f && Main.mouseRight) {
                         // 停止移动以便旋转
                         Projectile.velocity = Vector2.Zero;
                         Projectile.Center = Main.MouseWorld;
                     }
                 }
             }
-            else if(!isReturning)
-            {
+            else if (!isReturning) {
                 player.immune = true;// 玩家无敌
                 player.immuneTime = 30; // 确保无敌时间短于冲刺持续时间
 
@@ -102,8 +93,7 @@ namespace AncientChineseMythology.Projectiles
             {
                 Projectile.rotation += 0.4f; // 左右旋转
             }
-            else
-            {
+            else {
                 Projectile.rotation -= 0.4f; // 左右旋转
             }
             // 计算右上角位置并生成粒子
@@ -127,15 +117,13 @@ namespace AncientChineseMythology.Projectiles
             Main.dust[dust_2].scale = 1.2f;
             Main.dust[dust_2].alpha = 100;
         }
-        
+
         [Obsolete]
-        public override void OnKill(int timeLeft)
-        {
+        public override void OnKill(int timeLeft) {
             Player player = Main.player[Projectile.owner];
             player.velocity *= 0.8f;
         }
-        public override bool PreDraw(ref Microsoft.Xna.Framework.Color lightColor)
-        {
+        public override bool PreDraw(ref Microsoft.Xna.Framework.Color lightColor) {
             Texture2D texture = TextureAssets.Projectile[Type].Value;
             Rectangle rectangle = new Rectangle(
                 0,

@@ -1,4 +1,4 @@
-using AncientChineseMythology.Buffs;
+﻿using AncientChineseMythology.Buffs;
 using AncientChineseMythology.Projectiles;
 using Microsoft.Xna.Framework;
 using Terraria;
@@ -28,21 +28,17 @@ namespace AncientChineseMythology.Items.Summons
             Item.shoot = ModContent.ProjectileType<ShenxianGuanglunPet>(); // 直接生成弹幕
         }
 
-        public override bool? UseItem(Player player)
-        {
-            if (player.whoAmI == Main.myPlayer)
-            {
+        public override bool? UseItem(Player player) {
+            if (player.whoAmI == Main.myPlayer) {
                 // 1. 给 buff（会在 Buff.Update 里被续到 18000）
                 player.AddBuff(Item.buffType, 3600);
 
                 // 2. 先删除玩家已有的同类光宠，防止重复
-                for (int i = 0; i < Main.maxProjectiles; i++)
-                {
+                for (int i = 0; i < Main.maxProjectiles; i++) {
                     Projectile proj = Main.projectile[i];
                     if (proj.active &&
                         proj.owner == player.whoAmI &&
-                        proj.type == ModContent.ProjectileType<ShenxianGuanglunPet>())
-                    {
+                        proj.type == ModContent.ProjectileType<ShenxianGuanglunPet>()) {
                         proj.Kill();
                     }
                 }

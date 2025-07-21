@@ -1,6 +1,6 @@
+﻿using AncientChineseMythology.Items.Materials;
 using Terraria;
 using Terraria.ModLoader;
-using AncientChineseMythology.Items.Materials;
 
 namespace AncientChineseMythology
 {
@@ -11,11 +11,9 @@ namespace AncientChineseMythology
         public override bool InstancePerEntity => true;
 
         // 当 NPC 死亡掉落时调用
-        public override void ModifyNPCLoot(NPC npc, NPCLoot npcLoot)
-        {
+        public override void ModifyNPCLoot(NPC npc, NPCLoot npcLoot) {
             // 万分之一掉落概率 (1/10000)
-            if (Main.rand.Next(10000) < 1)
-            {
+            if (Main.rand.Next(10000) < 1) {
                 // 定义 12 个生肖精魄物品的 ID 数组
                 int[] zodiacSpiritIDs = new int[]
                 {

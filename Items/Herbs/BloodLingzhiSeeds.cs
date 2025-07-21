@@ -1,4 +1,4 @@
-using AncientChineseMythology.Tiles.Herbs;
+﻿using AncientChineseMythology.Tiles.Herbs;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -11,8 +11,7 @@ namespace AncientChineseMythology.Items.Herbs
 
         public override void SetStaticDefaults() => Item.ResearchUnlockCount = 25;
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 14;
             Item.height = 14;
             Item.maxStack = 999;

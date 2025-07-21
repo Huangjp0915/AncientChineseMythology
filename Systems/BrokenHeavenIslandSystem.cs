@@ -1,27 +1,26 @@
+﻿using Microsoft.Xna.Framework;
+using StructureHelper.API;
+using System.Collections.Generic;
 using System.IO;
-using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
-using StructureHelper.API;  
-using Terraria.DataStructures;
-using System.Collections.Generic;
 
 namespace AncientChineseMythology.Systems
 {
     public class BrokenHeavenIslandSystem : ModSystem
     {
-        public static bool      HeavenPlaced { get; private set; }
+        public static bool HeavenPlaced { get; private set; }
         public static Rectangle HeavenRect;            // 进入此矩形则触发 HeavenBiome
 
         /* ── 生命周期 ───────────────────────── */
-        public override void OnWorldLoad()  => HeavenPlaced = false;
+        public override void OnWorldLoad() => HeavenPlaced = false;
         public override void OnWorldUnload() => HeavenPlaced = false;
 
         /* ── 每帧检测：服务器端击败 ML → 生成建筑 ── */
-        public override void PreUpdateWorld()
-        {
+        public override void PreUpdateWorld() {
             if (HeavenPlaced || !NPC.downedMoonlord ||
                 Main.netMode == NetmodeID.MultiplayerClient)
                 return;
@@ -34,8 +33,7 @@ namespace AncientChineseMythology.Systems
         }
 
         /* ── 把 sky.shstruct 插进世界 ──────────── */
-        private static void PlaceHeavenStructure()
-        {
+        private static void PlaceHeavenStructure() {
             Mod mod = ModContent.GetInstance<AncientChineseMythology>();
 
             // 1) 用 Generator API 先读取尺寸
@@ -47,13 +45,11 @@ namespace AncientChineseMythology.Systems
             int yMin = (int)(Main.worldSurface * 0.30);
             int yMax = (int)(Main.worldSurface * 0.40);
 
-            for (int i = 0; i < 200; i++)
-            {
+            for (int i = 0; i < 200; i++) {
                 int xTry = WorldGen.genRand.Next(200, Main.maxTilesX - w - 200);
                 int yTry = WorldGen.genRand.Next(yMin, yMax);
 
-                if (!AreaHasSolid(new Rectangle(xTry, yTry, w, h)))
-                {
+                if (!AreaHasSolid(new Rectangle(xTry, yTry, w, h))) {
                     Generator.GenerateStructure("structures/sky",
                         new Point16(xTry, yTry), mod);
                     FinishPlacement(xTry, yTry, w, h);
@@ -69,8 +65,7 @@ namespace AncientChineseMythology.Systems
             FinishPlacement(xMid, yMid, w, h);
         }
 
-        private static bool AreaHasSolid(Rectangle area)
-        {
+        private static bool AreaHasSolid(Rectangle area) {
             for (int x = area.Left; x < area.Right; x++)
                 for (int y = area.Top; y < area.Bottom; y++)
                     if (Main.tile[x, y].HasTile)
@@ -78,8 +73,7 @@ namespace AncientChineseMythology.Systems
             return false;
         }
 
-        private static void FinishPlacement(int x, int y, int w, int h)
-        {
+        private static void FinishPlacement(int x, int y, int w, int h) {
             HeavenRect = new Rectangle(x, y, w, h);
 
             if (Main.netMode != NetmodeID.Server)
@@ -88,27 +82,24 @@ namespace AncientChineseMythology.Systems
         }
 
         /* ── 存档 & 读取 ─────────────────────── */
-        public override void SaveWorldData(TagCompound tag)
-        {
+        public override void SaveWorldData(TagCompound tag) {
             if (!HeavenPlaced) return;                 // 没生成就不保存
 
             tag["HeavenPlaced"] = true;
-            tag["HeavenRect"]   = new List<int> {
+            tag["HeavenRect"] = new List<int> {
                 HeavenRect.X, HeavenRect.Y,
                 HeavenRect.Width, HeavenRect.Height
             };
         }
 
-        public override void LoadWorldData(TagCompound tag)
-        {
+        public override void LoadWorldData(TagCompound tag) {
             HeavenPlaced = tag.GetBool("HeavenPlaced");
             if (HeavenPlaced && tag.TryGet<List<int>>("HeavenRect", out var l) && l.Count == 4)
                 HeavenRect = new Rectangle(l[0], l[1], l[2], l[3]);
         }
 
         /* ── 联机同步 ─────────────────────────── */
-        public override void NetSend(BinaryWriter w)
-        {
+        public override void NetSend(BinaryWriter w) {
             w.Write(HeavenPlaced);
             if (!HeavenPlaced) return;
 
@@ -118,8 +109,7 @@ namespace AncientChineseMythology.Systems
             w.Write(HeavenRect.Height);
         }
 
-        public override void NetReceive(BinaryReader r)
-        {
+        public override void NetReceive(BinaryReader r) {
             HeavenPlaced = r.ReadBoolean();
             if (!HeavenPlaced) return;
 

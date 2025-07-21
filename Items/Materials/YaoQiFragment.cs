@@ -1,4 +1,4 @@
-using Terraria;
+﻿using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -9,13 +9,11 @@ namespace AncientChineseMythology.Items.Materials
 
         public override string Texture => "AncientChineseMythology/Textures/Items/Materials/YaoQiFragment";
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             Item.ResearchUnlockCount = 50; // 允许在旅程模式研究
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             // 基础属性
             Item.width = 24;          // 物品宽度
             Item.height = 24;         // 物品高度
@@ -24,8 +22,7 @@ namespace AncientChineseMythology.Items.Materials
             Item.rare = ItemRarityID.Blue;         // 稀有度
         }
 
-        public override void PostUpdate()
-        {
+        public override void PostUpdate() {
             // 强制把物品的速度清零，让它停留在原地
             Item.velocity = Microsoft.Xna.Framework.Vector2.Zero;
 

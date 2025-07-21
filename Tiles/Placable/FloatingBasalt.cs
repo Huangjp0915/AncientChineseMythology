@@ -1,4 +1,4 @@
-using Terraria;
+﻿using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -8,8 +8,7 @@ namespace AncientChineseMythology.Tiles.Placable
     {
         public override string Texture => "AncientChineseMythology/Textures/Tiles/Placable/FloatingBasalt";
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             // 完全克隆 Stone 的属性
             Main.tileSolid[Type] = true;
             Main.tileMergeDirt[Type] = true;

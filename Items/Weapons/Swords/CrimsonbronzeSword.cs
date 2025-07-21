@@ -1,9 +1,9 @@
-﻿using Terraria;
+﻿using AncientChineseMythology.Projectiles;
+using Microsoft.Xna.Framework;
+using Terraria;
+using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
-using Microsoft.Xna.Framework;
-using AncientChineseMythology.Projectiles;
-using Terraria.DataStructures;
 
 
 namespace AncientChineseMythology.Items.Waapons.Swords
@@ -12,8 +12,7 @@ namespace AncientChineseMythology.Items.Waapons.Swords
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Swords/CrimsonbronzeSword"; // 使用物品的纹理作为投射物的纹理
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.damage = 59; // 基础伤害
             Item.crit = 2; // 爆击率
             Item.DamageType = DamageClass.Melee; // 伤害类型
@@ -33,55 +32,47 @@ namespace AncientChineseMythology.Items.Waapons.Swords
             Item.shootSpeed = 1f; // 射击速度
         }
 
-        public override void OnHitNPC(Player player, NPC target, NPC.HitInfo hit, int damageDone)
-        {
-            if(!target.HasBuff(BuffID.OnFire))
-            {
-                target.AddBuff(BuffID.OnFire, 180); 
+        public override void OnHitNPC(Player player, NPC target, NPC.HitInfo hit, int damageDone) {
+            if (!target.HasBuff(BuffID.OnFire)) {
+                target.AddBuff(BuffID.OnFire, 180);
             }
         }
         // 启用右键备用功能
-        public override bool AltFunctionUse(Player player)
-        {
+        public override bool AltFunctionUse(Player player) {
             return true;
         }
-        public override void HoldItem(Player player)
-        {
+        public override void HoldItem(Player player) {
             //if(Main.mouseRight)
             //{
-                
+
             //}
-            if(player.altFunctionUse == 2)
-            {
+            if (player.altFunctionUse == 2) {
                 Item.noMelee = true;
                 Item.noUseGraphic = true;
                 Item.UseSound = null; // 使用音效
                 ////Main.NewText("You can't use this item while holding right mouse button.", 175, 75, 255); // 右键提示信息
                 //SoundEngine.PlaySound(SoundID.Item1, player.position); // 使用音效
-            }else
-            {
+            }
+            else {
                 Item.noMelee = false;
                 Item.noUseGraphic = false;
                 //Item.UseSound = SoundID.Item1; // 使用音效
             }
         }
-        public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback)
-        {
+        public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
             if (player.altFunctionUse == 2) // 右键射击
             {
                 Projectile.NewProjectile(source, position, velocity, ModContent.ProjectileType<CrimsonbronzeSwordProj1>(), damage, knockback, Main.myPlayer);
                 return false;
             }
-            else if (!Main.mouseRight)
-            {
+            else if (!Main.mouseRight) {
                 Projectile.NewProjectile(source, position, velocity, ModContent.ProjectileType<BlankProjectile>(), damage, knockback, Main.myPlayer);
                 return false;
             }
             return false; // 返回 false 以防止原始投射物被发射
         }
 
-        public override void AddRecipes()
-        {
+        public override void AddRecipes() {
             CreateRecipe()
                 .AddIngredient(ModContent.ItemType<Cuprite.Cuprite>(), 10)
                 .AddTile(TileID.Anvils)

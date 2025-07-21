@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -9,8 +9,7 @@ namespace AncientChineseMythology.Projectiles
     {
 
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/YuChangSwordBean";
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Projectile.width = 50;  // 贴图宽度
             Projectile.height = 50; // 贴图高度
             Projectile.friendly = true; //
@@ -22,13 +21,11 @@ namespace AncientChineseMythology.Projectiles
             Projectile.penetrate = 1; // 确保射弹击中后消失（触发OnHitNPC）
         }
 
-        public override void AI()
-        {
+        public override void AI() {
             // 旋转贴图以匹配飞行方向
             Projectile.rotation = Projectile.velocity.ToRotation() + Projectile.ai[0];
-            
-            if (Main.rand.NextFloat() < 0.3f)
-           {
+
+            if (Main.rand.NextFloat() < 0.3f) {
                 Dust dust = Dust.NewDustDirect(
                     Projectile.position,
                     Projectile.width,
@@ -42,17 +39,14 @@ namespace AncientChineseMythology.Projectiles
 
         }
 
-        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
-        {
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
             // 生成金色爆炸粒子
             SpawnGoldenExplosion(target.Center);
         }
 
-        private void SpawnGoldenExplosion(Vector2 position)
-        {
+        private void SpawnGoldenExplosion(Vector2 position) {
             // 生成20个金色粒子
-            for (int i = 0; i < 20; i++)
-            {
+            for (int i = 0; i < 20; i++) {
                 // 随机方向和速度
                 Vector2 speed = Main.rand.NextVector2Circular(5f, 5f);
                 Dust dust = Dust.NewDustPerfect(

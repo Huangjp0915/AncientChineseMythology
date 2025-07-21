@@ -1,4 +1,4 @@
-using AncientChineseMythology.NPCs.Boss.BlackBear;
+﻿using AncientChineseMythology.NPCs.Boss.BlackBear;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
@@ -10,12 +10,10 @@ namespace AncientChineseMythology.Items.Summons
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Summons/JiaSha";
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 28;
             Item.height = 30;
             // 使用举起使用风格，类似其他召唤物品
@@ -30,31 +28,24 @@ namespace AncientChineseMythology.Items.Summons
         }
 
         // 限制使用条件：只能在丛林生物群落中且处于地表
-        public override bool CanUseItem(Player player)
-        {
+        public override bool CanUseItem(Player player) {
             // 如果该 Boss 已存在，则不能再次使用
-            if (NPC.AnyNPCs(ModContent.NPCType<BlackBear>()))
-            {
-                if (Main.myPlayer == player.whoAmI)
-                {
+            if (NPC.AnyNPCs(ModContent.NPCType<BlackBear>())) {
+                if (Main.myPlayer == player.whoAmI) {
                     Main.NewText("BlackBear已经存在了!", Color.Red);
                 }
                 return false;
             }
             // 检查是否在丛林区域
-            if (!player.ZoneJungle)
-            {
-                if (Main.myPlayer == player.whoAmI)
-                {
+            if (!player.ZoneJungle) {
+                if (Main.myPlayer == player.whoAmI) {
                     Main.NewText("你必须要在丛林使用！", Color.Red);
                 }
                 return false;
             }
             // 检查是否在地表（Overworld高度）
-            if (!player.ZoneOverworldHeight)
-            {
-                if (Main.myPlayer == player.whoAmI)
-                {
+            if (!player.ZoneOverworldHeight) {
+                if (Main.myPlayer == player.whoAmI) {
                     Main.NewText("这个必须要在地表才行！", Color.Red);
                 }
                 return false;
@@ -63,10 +54,8 @@ namespace AncientChineseMythology.Items.Summons
         }
 
         // 使用物品时召唤 Boss
-        public override bool? UseItem(Player player)
-        {
-            if (Main.myPlayer == player.whoAmI)
-            {
+        public override bool? UseItem(Player player) {
+            if (Main.myPlayer == player.whoAmI) {
                 // 在玩家位置召唤 Boss，召唤后显示提示信息
                 NPC.SpawnBoss((int)player.Center.X, (int)player.Center.Y, ModContent.NPCType<BlackBear>(), player.whoAmI);
 

@@ -1,9 +1,9 @@
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Terraria;
-using Terraria.ID;
-using Terraria.ModLoader;
-using Terraria.Localization;
 using Terraria.DataStructures;
+using Terraria.ID;
+using Terraria.Localization;
+using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Tiles.Placable
 {
@@ -11,8 +11,7 @@ namespace AncientChineseMythology.Tiles.Placable
     {
         public override string Texture => "AncientChineseMythology/Textures/Tiles/Placable/XuanTieOreTile";
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             Main.tileSolid[Type] = true;
             Main.tileMergeDirt[Type] = true;
             Main.tileSpelunker[Type] = true;
@@ -32,7 +31,7 @@ namespace AncientChineseMythology.Tiles.Placable
             AddMapEntry(new Color(110, 110, 120), name);     // 深灰色
 
             MineResist = 3.3f;   // 挖掘速度
-            MinPick   = 35;      // 铜镐即可
+            MinPick = 35;      // 铜镐即可
         }
 
         public override bool IsTileBiomeSightable(int i, int j, ref Color sightColor) {
@@ -40,10 +39,8 @@ namespace AncientChineseMythology.Tiles.Placable
             return true;
         }
 
-        public override void KillTile(int i, int j, ref bool fail, ref bool effectOnly, ref bool noItem)
-        {
-            if (!fail && !effectOnly && !noItem)
-            {
+        public override void KillTile(int i, int j, ref bool fail, ref bool effectOnly, ref bool noItem) {
+            if (!fail && !effectOnly && !noItem) {
                 Item.NewItem(new EntitySource_TileBreak(i, j), i * 16, j * 16, 16, 16,
                              ModContent.ItemType<Items.XuanTie.XuanTieOre>());
             }

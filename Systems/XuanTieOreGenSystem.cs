@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Terraria;
 using Terraria.IO;
 using Terraria.ModLoader;
@@ -8,11 +8,9 @@ namespace AncientChineseMythology.Systems
 {
     public class XuanTieOreGenSystem : ModSystem
     {
-        public override void ModifyWorldGenTasks(List<GenPass> tasks, ref double totalWeight)
-        {
+        public override void ModifyWorldGenTasks(List<GenPass> tasks, ref double totalWeight) {
             int shiniesIndex = tasks.FindIndex(pass => pass.Name.Equals("Shinies"));
-            if (shiniesIndex != -1)
-            {
+            if (shiniesIndex != -1) {
                 tasks.Insert(shiniesIndex + 1,
                     new XuanTieOreGenPass("Generating XuanTie Ore", 237.43f));
             }
@@ -22,8 +20,7 @@ namespace AncientChineseMythology.Systems
         {
             public XuanTieOreGenPass(string name, float loadWeight) : base(name, loadWeight) { }
 
-            protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration)
-            {
+            protected override void ApplyPass(GenerationProgress progress, GameConfiguration configuration) {
                 progress.Message = "Scattering XuanTie Ore";
 
                 int maxX = Main.maxTilesX;
@@ -31,8 +28,7 @@ namespace AncientChineseMythology.Systems
                 // 与铁矿接近的密度系数
                 int oreVeins = (int)((maxX * maxY) * 4E-04);
 
-                for (int i = 0; i < oreVeins; i++)
-                {
+                for (int i = 0; i < oreVeins; i++) {
                     // 地表到地下岩层之间随机
                     int x = WorldGen.genRand.Next(0, maxX);
                     int y = WorldGen.genRand.Next((int)Main.worldSurface, Main.UnderworldLayer);

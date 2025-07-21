@@ -1,15 +1,15 @@
-﻿using Terraria;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using System;
+using System.Drawing;
+using Terraria;
+using Terraria.Audio;
+using Terraria.DataStructures;
+using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using System.Drawing;
 using Color = Microsoft.Xna.Framework.Color;
 using Rectangle = Microsoft.Xna.Framework.Rectangle;
-using Terraria.GameContent;
-using System;
-using Terraria.DataStructures;
-using Terraria.Audio;
 
 namespace AncientChineseMythology.NPCs.Boss.BlackBear
 {
@@ -23,8 +23,7 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
 
         public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear_Proj3"; // 使用物品的纹理作为投射物的纹理
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Projectile.hostile = true; // 敌方伤害
             Projectile.width = 80; // 弹幕宽度
             Projectile.height = 56; // 弹幕高度
@@ -38,13 +37,11 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
             Projectile.light = 0f; // 发光亮度
         }
 
-        public override void OnSpawn(IEntitySource source)
-        {
+        public override void OnSpawn(IEntitySource source) {
             Projectile.damage = 0; // 弹幕伤害为 0
         }
 
-        public override void AI()
-        {
+        public override void AI() {
             // 透明度变化逻辑
             opacityTimer++;
             Projectile.alpha = (int)(1 + 100 * Math.Sin(opacityTimer * 0.1));
@@ -55,8 +52,7 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
             targetPosition = player.Center;
             Vector2 direction = targetPosition - Projectile.Center + new Vector2(0, -100);
             direction.Normalize();
-            if (Projectile.Distance(targetPosition + new Vector2(0, -100)) < 20 && !isAttacking)
-            {
+            if (Projectile.Distance(targetPosition + new Vector2(0, -100)) < 20 && !isAttacking) {
                 isAttacking = true;
                 Projectile.Center = player.Center + new Vector2(0, -100);
             }
@@ -65,16 +61,13 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
             else
                 Projectile.velocity = Vector2.Zero; // 停止移动
 
-            if (owner.life > 1)
-            {
+            if (owner.life > 1) {
                 Projectile.timeLeft = 10;
                 attackDuration++;
             }
-            if (owner.life <= 1 || owner.type != ModContent.NPCType<BlackBear>() || !owner.active)
-            {
+            if (owner.life <= 1 || owner.type != ModContent.NPCType<BlackBear>() || !owner.active) {
                 // 扩散的金色粒子
-                for (int i = 0; i < 10; i++)
-                {
+                for (int i = 0; i < 10; i++) {
                     Vector2 position = Projectile.position + new Vector2(Main.rand.Next(-10, 10), Main.rand.Next(-10, 10));
                     int dustType = DustID.Gold;
                     int dustIndex = Dust.NewDust(position, 0, 0, dustType, 0, 0, 100, default);
@@ -84,38 +77,32 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
                 Projectile.Kill(); // 如果敌人不再存在，销毁弹幕
             }
 
-            if (isAttacking && attackTimer >= 240)
-            {
+            if (isAttacking && attackTimer >= 240) {
                 attackTimer--;
             }
 
-            if (isAttacking && attackTimer == 240)
-            {
+            if (isAttacking && attackTimer == 240) {
                 int projectileCount = Main.rand.Next(6, 12);
-                for (int i = 0; i < projectileCount; i++)
-                {
+                for (int i = 0; i < projectileCount; i++) {
                     int projectileType = ModContent.ProjectileType<BlackBear_Proj4>();
                     Vector2 spawnPosition = Projectile.Center + new Vector2(Main.rand.NextFloat(-Projectile.width / 2, Projectile.width / 2), -Projectile.height / 2);
                     Projectile.NewProjectile(Projectile.GetSource_FromAI(), spawnPosition, Vector2.Zero, projectileType, Projectile.originalDamage, 0, Main.myPlayer);
                 }
             }
 
-            if (attackDuration >= 240)
-            {
+            if (attackDuration >= 240) {
                 isAttacking = false;
                 attackDuration = 0;
                 attackTimer = 300;
             }
         }
 
-        public override void OnHitPlayer(Player target, Player.HurtInfo info)
-        {
+        public override void OnHitPlayer(Player target, Player.HurtInfo info) {
             //attackTimer = 0;
             //isAttacking = false;
         }
 
-        public override bool PreDraw(ref Color lightColor)
-        {
+        public override bool PreDraw(ref Color lightColor) {
             Texture2D texture = TextureAssets.Projectile[Type].Value;
             ProjectileID.Sets.TrailingMode[Type] = 2; // 设置尾迹模式为2，即尾迹为圆形
             ProjectileID.Sets.TrailCacheLength[Type] = 8; // 设置尾迹缓存长度为8，即最多保留8个尾迹
@@ -126,17 +113,16 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
                texture.Width,
                texture.Height / Main.projFrames[Type]
            );
-            if(Projectile.velocity.Length() > 0.1f)
-            for (int i = 0; i < ProjectileID.Sets.TrailCacheLength[Type]; i++)
-            {
-                float factor = 1 - (float)i / ProjectileID.Sets.TrailCacheLength[Type];
-                Vector2 oldcenter = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
-                Main.EntitySpriteDraw(texture, oldcenter, rectangle, Color.White * factor * 0.8f * Projectile.Opacity,
-                    Projectile.oldRot[i],
-                    new Vector2(texture.Width / 2, texture.Height / 2 / Main.projFrames[Type]),
-                    Projectile.scale * 0.8f,
-                    SpriteEffects.None, 0);
-            }
+            if (Projectile.velocity.Length() > 0.1f)
+                for (int i = 0; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
+                    float factor = 1 - (float)i / ProjectileID.Sets.TrailCacheLength[Type];
+                    Vector2 oldcenter = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
+                    Main.EntitySpriteDraw(texture, oldcenter, rectangle, Color.White * factor * 0.8f * Projectile.Opacity,
+                        Projectile.oldRot[i],
+                        new Vector2(texture.Width / 2, texture.Height / 2 / Main.projFrames[Type]),
+                        Projectile.scale * 0.8f,
+                        SpriteEffects.None, 0);
+                }
 
             Main.EntitySpriteDraw(
                 texture,

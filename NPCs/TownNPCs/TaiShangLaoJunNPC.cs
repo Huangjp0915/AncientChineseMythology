@@ -1,10 +1,10 @@
+﻿using AncientChineseMythology.Items;
+using AncientChineseMythology.Items.Materials;
+using AncientChineseMythology.Items.Potions;
+using AncientChineseMythology.Items.Weapons.SummoningStaffs;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
-using AncientChineseMythology.Items.Potions;
-using AncientChineseMythology.Items.Materials;
-using AncientChineseMythology.Items.Weapons.SummoningStaffs;
-using AncientChineseMythology.Items;
 
 namespace AncientChineseMythology.NPCs.TownNPCs
 {
@@ -15,8 +15,7 @@ namespace AncientChineseMythology.NPCs.TownNPCs
         public override string Texture => "AncientChineseMythology/Textures/NPCs/TownNPCs/TaiShangLaoJun/TaiShangLaoJunNPC";
         public override string HeadTexture => "AncientChineseMythology/Textures/NPCs/TownNPCs/TaiShangLaoJun/TaiShangLaoJunNPC_Head";
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             // ---- 让NPC使用向导AI、向导动画 ----
             NPC.aiStyle = 7;       // TownNPC通用AI
             AIType = NPCID.Guide;  // 行为(移动/攻击判定)仿照向导
@@ -29,7 +28,7 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             NPCID.Sets.ExtraFramesCount[Type] = NPCID.Sets.ExtraFramesCount[NPCID.Guide];
             NPCID.Sets.AttackFrameCount[Type] = NPCID.Sets.AttackFrameCount[NPCID.Guide];
             NPCID.Sets.DangerDetectRange[Type] = NPCID.Sets.DangerDetectRange[NPCID.Guide];
-            NPCID.Sets.AttackType[Type] = NPCID.Sets.AttackType[NPCID.Guide]; 
+            NPCID.Sets.AttackType[Type] = NPCID.Sets.AttackType[NPCID.Guide];
             NPCID.Sets.AttackTime[Type] = NPCID.Sets.AttackTime[NPCID.Guide];
             NPCID.Sets.AttackAverageChance[Type] = NPCID.Sets.AttackAverageChance[NPCID.Guide];
             NPCID.Sets.ShimmerTownTransform[Type] = true;
@@ -37,8 +36,7 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             NPCID.Sets.NoTownNPCHappiness[Type] = true;
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             NPC.width = 18;
             NPC.height = 40;
 
@@ -59,22 +57,17 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             NPC.knockBackResist = 0.5f;
         }
 
-        public override bool CanTownNPCSpawn(int numTownNPCs)
-        {
+        public override bool CanTownNPCSpawn(int numTownNPCs) {
             if (NPC.AnyNPCs(Type)) return false;
-            
+
             // 遍历所有玩家
-            for (int i = 0; i < Main.maxPlayers; i++)
-            {
+            for (int i = 0; i < Main.maxPlayers; i++) {
                 Player player = Main.player[i];
-                if (player.active && !player.dead)
-                {
+                if (player.active && !player.dead) {
                     int count = 0;
                     // 遍历玩家背包中的所有物品
-                    for (int j = 0; j < player.inventory.Length; j++)
-                    {
-                        if (player.inventory[j].type == ModContent.ItemType<ScrapElixir>())
-                        {
+                    for (int j = 0; j < player.inventory.Length; j++) {
+                        if (player.inventory[j].type == ModContent.ItemType<ScrapElixir>()) {
                             count += player.inventory[j].stack;
                         }
                     }
@@ -87,8 +80,7 @@ namespace AncientChineseMythology.NPCs.TownNPCs
         }
         public override bool CanChat() => true;
 
-        public override string GetChat()
-        {
+        public override string GetChat() {
             string[] dialogues =
             {
                 "我是太上老君，炼丹炉就在我的身边。",
@@ -99,23 +91,19 @@ namespace AncientChineseMythology.NPCs.TownNPCs
         }
 
         // 对话按钮仅显示“商店”
-        public override void SetChatButtons(ref string button, ref string button2)
-        {
+        public override void SetChatButtons(ref string button, ref string button2) {
             button = "商店";
             button2 = "";
         }
 
-        public override void OnChatButtonClicked(bool firstButton, ref string shopName)
-        {
-            if (firstButton)
-            {
+        public override void OnChatButtonClicked(bool firstButton, ref string shopName) {
+            if (firstButton) {
                 shopName = "TaiShangLaoJunShop";
             }
         }
 
         // 定义专属商店
-        public override void AddShops()
-        {
+        public override void AddShops() {
             new NPCShop(Type, "TaiShangLaoJunShop")
                 .Add<PoJunDan>()
                 .Add<XuePoDan>()

@@ -1,20 +1,20 @@
+﻿using AncientChineseMythology.Tiles.Herbs;
 using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using Terraria;
+using Terraria.GameContent.Generation;
 using Terraria.ID;
+using Terraria.IO;
+using Terraria.Localization;
 using Terraria.ModLoader;
 using Terraria.WorldBuilding;
-using Terraria.Localization;
-using Terraria.GameContent.Generation;
-using Terraria.IO;
-using AncientChineseMythology.Tiles.Herbs;
 
 namespace AncientChineseMythology.Worldgen
 {
     public class IronArmorFlowerGenSystem : ModSystem
     {
         internal static LocalizedText PassText;
-        private static readonly Point[] Off4 = { new(1,0), new(-1,0), new(0,1), new(0,-1) };
+        private static readonly Point[] Off4 = { new(1, 0), new(-1, 0), new(0, 1), new(0, -1) };
 
         public override void SetStaticDefaults() =>
             PassText = Mod.GetLocalization("WorldGen.IronArmorFlowerPass");
@@ -33,8 +33,8 @@ namespace AncientChineseMythology.Worldgen
                 int i = WorldGen.genRand.Next(300, Main.maxTilesX - 300);
                 int j = WorldGen.genRand.Next((int)Main.worldSurface, (int)Main.rockLayer);
 
-                while (j < Main.maxTilesY - 200 && !Main.tileSolid[Main.tile[i,j].TileType]) j++;
-                int groundType = Main.tile[i,j].TileType;
+                while (j < Main.maxTilesY - 200 && !Main.tileSolid[Main.tile[i, j].TileType]) j++;
+                int groundType = Main.tile[i, j].TileType;
                 if (groundType != TileID.Stone && groundType != TileID.Mud) continue;
 
                 bool nearOre = false;
@@ -45,14 +45,14 @@ namespace AncientChineseMythology.Worldgen
                 if (!nearOre) continue;
 
                 WorldGen.PlaceTile(i, j - 1,
-                    ModContent.TileType<IronArmorFlowerHerbTile>(), mute:true);
+                    ModContent.TileType<IronArmorFlowerHerbTile>(), mute: true);
             }
         }
 
         private void SpawnStarflower(CommandCaller caller, string input, string[] args) {
-			Player p = caller.Player;
-			Point tilePos = p.Center.ToTileCoordinates();
-			WorldGen.PlaceTile(tilePos.X, tilePos.Y, ModContent.TileType<IronArmorFlowerHerbTile>());
-		}
+            Player p = caller.Player;
+            Point tilePos = p.Center.ToTileCoordinates();
+            WorldGen.PlaceTile(tilePos.X, tilePos.Y, ModContent.TileType<IronArmorFlowerHerbTile>());
+        }
     }
 }

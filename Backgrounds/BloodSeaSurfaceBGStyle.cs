@@ -1,5 +1,5 @@
+﻿using Microsoft.Xna.Framework;
 using Terraria.ModLoader;
-using Microsoft.Xna.Framework;
 
 namespace AncientChineseMythology.Backgrounds
 {
@@ -18,18 +18,16 @@ namespace AncientChineseMythology.Backgrounds
         private int farSlot, midSlot, closeSlot;
         private bool loaded;
 
-        private void Ensure()
-        {
+        private void Ensure() {
             if (loaded) return;
-            farSlot   = ChooseFarTexture();
-            midSlot   = ChooseMiddleTexture();
+            farSlot = ChooseFarTexture();
+            midSlot = ChooseMiddleTexture();
             closeSlot = BackgroundTextureLoader.GetBackgroundSlot(Mod, "Textures/Backgrounds/BloodSea_Close");
             loaded = true;
         }
 
         /* 只有 Far 这一个钩子，把 3 层一次性处理 */
-        public override void ModifyFarFades(float[] fades, float transitionSpeed)
-        {
+        public override void ModifyFarFades(float[] fades, float transitionSpeed) {
             Ensure();
             for (int i = 0; i < fades.Length; i++) {
                 bool isMine = (i == farSlot) || (i == midSlot) || (i == closeSlot);

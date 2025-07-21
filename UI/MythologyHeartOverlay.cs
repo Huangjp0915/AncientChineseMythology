@@ -1,4 +1,4 @@
-using AncientChineseMythology.Players;
+﻿using AncientChineseMythology.Players;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;                // Asset<T>
 using Terraria;
@@ -11,10 +11,9 @@ namespace AncientChineseMythology.Content.UI;
 public class MythologyHeartOverlay : ModResourceOverlay
 {
     private static int GetTier(Player p) =>
-        p.GetModPlayer<MythologyPlayer>().GetResourceTier(); 
+        p.GetModPlayer<MythologyPlayer>().GetResourceTier();
 
-    public override bool PreDrawResource(ResourceOverlayDrawContext ctx)
-    {
+    public override bool PreDrawResource(ResourceOverlayDrawContext ctx) {
         // ——— 判定正在画星还是心 ———
         Asset<Texture2D> tex = ctx.texture;
 
@@ -35,9 +34,9 @@ public class MythologyHeartOverlay : ModResourceOverlay
             return true;
 
         // ———拼自定义贴图路径 ———
-        int tier      = GetTier(Main.LocalPlayer);             // 0=金心，1=橙心…
+        int tier = GetTier(Main.LocalPlayer);             // 0=金心，1=橙心…
         string folder = isHeart ? "Hearts" : "Stars";
-        string file   = isHeart
+        string file = isHeart
                         ? (tex == TextureAssets.Heart2 ? "Heart2" : "Heart")   // 保证两帧都能换
                         : $"Star_{starFrame}";                                // Star_0…Star_3
 

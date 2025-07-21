@@ -1,10 +1,10 @@
-﻿using Terraria;
+﻿using AncientChineseMythology.Buffs;
+using AncientChineseMythology.Projectiles;
+using Microsoft.Xna.Framework;
+using Terraria;
+using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
-using Microsoft.Xna.Framework;
-using Terraria.DataStructures;
-using AncientChineseMythology.Projectiles;
-using AncientChineseMythology.Buffs;
 
 namespace AncientChineseMythology.Items.Weapons.SummoningStaffs
 {
@@ -12,8 +12,7 @@ namespace AncientChineseMythology.Items.Weapons.SummoningStaffs
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Summoning Staffs/BlackBearStaff"; // 使用物品的纹理作为投射物的纹理
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.damage = 25; // 基础伤害
             Item.crit = 3; // 暴击率
             Item.DamageType = DamageClass.Summon; // 伤害类型
@@ -34,12 +33,10 @@ namespace AncientChineseMythology.Items.Weapons.SummoningStaffs
             Item.shootSpeed = 1f; // 射击速度
             Item.buffType = ModContent.BuffType<BuffsBlackBearStaff>(); // 召唤物品的buff类型
         }
-        public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback)
-        {
+        public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
             // 检查当前召唤物的数量
             int summonCount = player.ownedProjectileCounts[type];
-            if (summonCount >= 1)
-            {
+            if (summonCount >= 1) {
                 return false;
             }
 

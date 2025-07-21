@@ -1,6 +1,6 @@
+﻿using AncientChineseMythology.Projectiles;
 using Terraria;
 using Terraria.ModLoader;
-using AncientChineseMythology.Projectiles;
 
 namespace AncientChineseMythology.Buffs
 {
@@ -17,7 +17,7 @@ namespace AncientChineseMythology.Buffs
             // 保活 + 召唤弹幕
             if (player.buffTime[buffIndex] > 1)
                 player.buffTime[buffIndex] = 18000;
-            
+
             player.GetModPlayer<ACMPlayer>().shenxianLightPet = true;
 
             if (player.whoAmI == Main.myPlayer && player.ownedProjectileCounts[ModContent.ProjectileType<ShenxianGuanglunPet>()] <= 0) {

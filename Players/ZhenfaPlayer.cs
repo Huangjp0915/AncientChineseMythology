@@ -1,12 +1,12 @@
+﻿using AncientChineseMythology.Items;
+using AncientChineseMythology.Systems;
+using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using Terraria;
+using Terraria.Audio;
+using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
-using Terraria.ID;
-using Microsoft.Xna.Framework;
-using Terraria.Audio;
-using AncientChineseMythology.Items;
-using AncientChineseMythology.Systems;
 
 namespace AncientChineseMythology.Players
 {
@@ -15,28 +15,24 @@ namespace AncientChineseMythology.Players
         public List<string> DiscoveredRecipes = new();
 
         #region ── 保存 / 读取 ────────────────────────────────────────────
-        public override void SaveData(TagCompound tag)
-        {
+        public override void SaveData(TagCompound tag) {
             tag["ZhenfaRecipes"] = DiscoveredRecipes;
         }
 
-        public override void LoadData(TagCompound tag)
-        {
+        public override void LoadData(TagCompound tag) {
             DiscoveredRecipes = tag.Get<List<string>>("ZhenfaRecipes") ?? new();
         }
         #endregion
 
         #region ── API 给纸张调用 ────────────────────────────────────────
-        public string DiscoverRandomRecipe()
-        {
+        public string DiscoverRandomRecipe() {
             List<string> candidates = ZhenfaRecipeCatalog.AllRecipes.FindAll(r => !DiscoveredRecipes.Contains(r));
             if (candidates.Count == 0) return null;
 
             string pick = Main.rand.NextFromList(candidates.ToArray());
             DiscoveredRecipes.Add(pick);
 
-            if (Main.myPlayer == Player.whoAmI)
-            {
+            if (Main.myPlayer == Player.whoAmI) {
                 Main.NewText($"你领悟了新的阵法：{pick}！", Color.LightGreen);
                 SoundEngine.PlaySound(SoundID.Unlock, Player.Center);
             }

@@ -1,4 +1,4 @@
-using AncientChineseMythology.Players;
+﻿using AncientChineseMythology.Players;
 using AncientChineseMythology.Projectiles;
 using AncientChineseMythology.Systems;
 using Microsoft.Xna.Framework;
@@ -19,19 +19,17 @@ namespace AncientChineseMythology.NPCs.Boss.TribulationCloud
         private int attackTimer;
         private int strikesDone;
         private bool tribulationEnded = false;   // 防止重复结算
-        private const int BaseStrikeDamage   = 40;   // 所有难度共同的基础值
-        private const int PerMajorIncrement  = 60;   // 每提升 1 大境界额外加多少
+        private const int BaseStrikeDamage = 40;   // 所有难度共同的基础值
+        private const int PerMajorIncrement = 60;   // 每提升 1 大境界额外加多少
         private const int PerStrikeIncrement = 30;   // 每多 1 道闪电额外加多少
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             Main.npcFrameCount[Type] = 1;
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             NPC.lifeMax = 2_000_000;
-            NPC.damage  = 0;                    // 本体不造成接触伤害
+            NPC.damage = 0;                    // 本体不造成接触伤害
             NPC.defense = 100;
             NPC.dontTakeDamage = true;              // 完全免疫所有外部伤害
             NPC.dontTakeDamageFromHostiles = true;  // 避免被其它怪/炮台误伤
@@ -46,8 +44,7 @@ namespace AncientChineseMythology.NPCs.Boss.TribulationCloud
             TotalStrikes = Main.rand.Next(5, 18);   // 2-9 之间的整数
         }
 
-        public override void AI()
-        {
+        public override void AI() {
             // 确保锁定一个有效目标
             if (!Main.player[NPC.target].active || Main.player[NPC.target].dead)
                 NPC.TargetClosest();
@@ -55,16 +52,14 @@ namespace AncientChineseMythology.NPCs.Boss.TribulationCloud
             Player player = Main.player[NPC.target];
 
             // 若已完成结算，直接消失
-            if (tribulationEnded)
-            {
+            if (tribulationEnded) {
                 NPC.active = false;
                 TribulationWeather.Stop();
                 return;
             }
 
             // 玩家死亡 ⇒ 失败
-            if (player.dead)
-            {
+            if (player.dead) {
                 FailTribulation(player);
                 tribulationEnded = true;
                 NPC.active = false;
@@ -73,8 +68,7 @@ namespace AncientChineseMythology.NPCs.Boss.TribulationCloud
             }
 
             // 9 次闪电后玩家仍存活 ⇒ 成功
-            if (strikesDone >= TotalStrikes)
-            {
+            if (strikesDone >= TotalStrikes) {
                 SuccessTribulation(player);
                 tribulationEnded = true;
                 NPC.active = false;
@@ -88,11 +82,9 @@ namespace AncientChineseMythology.NPCs.Boss.TribulationCloud
             NPC.Center = Vector2.Lerp(NPC.Center, desiredPos, 0.12f);
 
             // -------- 攻击逻辑 --------
-            if (strikesDone < TotalStrikes)
-            {
+            if (strikesDone < TotalStrikes) {
                 attackTimer++;
-                if (attackTimer >= StrikeInterval)
-                {
+                if (attackTimer >= StrikeInterval) {
                     attackTimer = 0;
                     DoLightningStrike(player);
                 }
@@ -100,12 +92,11 @@ namespace AncientChineseMythology.NPCs.Boss.TribulationCloud
         }
 
 
-        private void DoLightningStrike(Player player)
-        {
+        private void DoLightningStrike(Player player) {
             MythologyPlayer mp = player.GetModPlayer<MythologyPlayer>();
-            int damage = BaseStrikeDamage + PerMajorIncrement ^ mp.Major + 
+            int damage = BaseStrikeDamage + PerMajorIncrement ^ mp.Major +
                          PerStrikeIncrement * strikesDone;
-            
+
             // 难度系数（原版 Expert=1.5, Master=2.0）
             if (Main.masterMode)
                 damage = (int)(damage * 1.6f);
@@ -136,19 +127,16 @@ namespace AncientChineseMythology.NPCs.Boss.TribulationCloud
             strikesDone++;                  // 记得在外部调用后递增已劈次数
         }
 
-        public override void OnKill()
-        {
+        public override void OnKill() {
             Player p = Main.player[NPC.target];
             if (p.active)
                 p.GetModPlayer<MythologyPlayer>().AdvanceMajor(p); // 正式突破
         }
 
-        private void FailTribulation(Player player)
-        {
+        private void FailTribulation(Player player) {
             MythologyPlayer mp = player.GetModPlayer<MythologyPlayer>();
 
-            if (mp.Minor > 0)
-            {
+            if (mp.Minor > 0) {
                 mp.Minor--;              // 小境界 -1，至少保底 0
                 mp.StageExp = 0;
             }
@@ -156,8 +144,7 @@ namespace AncientChineseMythology.NPCs.Boss.TribulationCloud
             Main.NewText($"{player.name} 的渡劫失败，小境界下降！", Color.OrangeRed);
         }
 
-        private void SuccessTribulation(Player player)
-        {
+        private void SuccessTribulation(Player player) {
             MythologyPlayer mp = player.GetModPlayer<MythologyPlayer>();
 
             mp.Major++;        // 大境界 +1

@@ -1,9 +1,9 @@
-﻿using System.Linq;
+﻿using AncientChineseMythology.Items.Summons;
+using AncientChineseMythology.Items.Weapons.Sticks;
+using System.Linq;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
-using AncientChineseMythology.Items.Summons;
-using AncientChineseMythology.Items.Weapons.Sticks;
 
 namespace AncientChineseMythology.NPCs.TownNPCs
 {
@@ -16,8 +16,7 @@ namespace AncientChineseMythology.NPCs.TownNPCs
         // 头像
         public override string HeadTexture => "AncientChineseMythology/Textures/NPCs/TownNPCs/Tangseng/TangSengNPC_Head";
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             // ---- 让NPC使用向导AI、向导动画 ----
             NPC.aiStyle = 7;       // TownNPC通用AI
             AIType = NPCID.Guide;  // 行为(移动/攻击判定)仿照向导
@@ -30,7 +29,7 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             NPCID.Sets.ExtraFramesCount[Type] = NPCID.Sets.ExtraFramesCount[NPCID.Guide];
             NPCID.Sets.AttackFrameCount[Type] = NPCID.Sets.AttackFrameCount[NPCID.Guide];
             NPCID.Sets.DangerDetectRange[Type] = NPCID.Sets.DangerDetectRange[NPCID.Guide];
-            NPCID.Sets.AttackType[Type] = NPCID.Sets.AttackType[NPCID.Guide]; 
+            NPCID.Sets.AttackType[Type] = NPCID.Sets.AttackType[NPCID.Guide];
             NPCID.Sets.AttackTime[Type] = NPCID.Sets.AttackTime[NPCID.Guide];
             NPCID.Sets.AttackAverageChance[Type] = NPCID.Sets.AttackAverageChance[NPCID.Guide];
             NPCID.Sets.ShimmerTownTransform[Type] = true;
@@ -38,8 +37,7 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             NPCID.Sets.NoTownNPCHappiness[Type] = true;
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             NPC.width = 18;
             NPC.height = 40;
 
@@ -63,16 +61,14 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             // TownNPCStayingHomeless = true;
         }
 
-        public override bool CanTownNPCSpawn(int numTownNPCs) 
-        {
+        public override bool CanTownNPCSpawn(int numTownNPCs) {
             if (NPC.AnyNPCs(Type)) return false;
 
             return true;
         }
         public override bool CanChat() => true;
 
-        public override string GetChat()
-        {
+        public override string GetChat() {
             string[] dialogues = {
                 "我感应到人间妖气日盛，恐有截教之乱。",
                 "封神大战的余波尚未平息，万望小心。",
@@ -83,21 +79,18 @@ namespace AncientChineseMythology.NPCs.TownNPCs
         }
 
         // 设置对话按钮
-        public override void SetChatButtons(ref string button, ref string button2)
-        {
+        public override void SetChatButtons(ref string button, ref string button2) {
             button = "帮助";
             button2 = "请求木棍";
         }
 
-        public override void OnChatButtonClicked(bool firstButton, ref string shopName)
-        {
+        public override void OnChatButtonClicked(bool firstButton, ref string shopName) {
             Player player = Main.LocalPlayer;
             // 面向玩家
             NPC.direction = (player.Center.X < NPC.Center.X) ? -1 : 1;
             NPC.spriteDirection = NPC.direction;
 
-            if (firstButton)
-            {
+            if (firstButton) {
                 // “帮助”逻辑（检测棍子进阶）
                 var stickProgression = new (int itemType, string itemName, string craftHint)[]
                 {
@@ -111,52 +104,42 @@ namespace AncientChineseMythology.NPCs.TownNPCs
                 };
 
                 int highestIndex = -1;
-                for (int i = 0; i < stickProgression.Length; i++)
-                {
+                for (int i = 0; i < stickProgression.Length; i++) {
                     int type = stickProgression[i].itemType;
-                    if (player.inventory.Any(item => item != null && item.type == type))
-                    {
+                    if (player.inventory.Any(item => item != null && item.type == type)) {
                         highestIndex = i;
                     }
                 }
 
-                if (highestIndex == -1)
-                {
+                if (highestIndex == -1) {
                     Main.npcChatText = "你还没有任何棍子，要不要找我拿一根呢？";
                 }
-                else
-                {
+                else {
                     var (curID, curName, curHint) = stickProgression[highestIndex];
-                    if (highestIndex == stickProgression.Length - 1)
-                    {
+                    if (highestIndex == stickProgression.Length - 1) {
                         Main.npcChatText = $"你已经有这根棍子了还不满足吗？再往上可就得找那些神仙了！{curHint}";
                     }
-                    else
-                    {
+                    else {
                         var (nextID, nextName, nextHint) = stickProgression[highestIndex + 1];
                         Main.npcChatText = $"你现在有“{curName}”，下一步可以合成“{nextName}”。\n{nextHint}";
                     }
                 }
             }
-            else
-            {
+            else {
                 bool hasStick = player.inventory.Any(item => item != null && item.type == ModContent.ItemType<WoodenStick>() && item.stack > 0);
-                if (hasStick)
-                {
+                if (hasStick) {
                     Main.npcChatText = "阿弥陀佛，施主不要贪心";
                 }
-                else
-                {
+                else {
                     player.QuickSpawnItem(player.GetSource_FromThis(), ModContent.ItemType<WoodenStick>());
                     Main.npcChatText = "这根木棍送给你，但切记不可贪心";
                 }
-                
+
             }
             Main.player[Main.myPlayer].SetTalkNPC(NPC.whoAmI);
         }
 
-        public override void ModifyNPCLoot(NPCLoot npcLoot)
-        {
+        public override void ModifyNPCLoot(NPCLoot npcLoot) {
             npcLoot.Add(Terraria.GameContent.ItemDropRules.ItemDropRule.Common(ModContent.ItemType<JiaSha>(), 1));
         }
     }

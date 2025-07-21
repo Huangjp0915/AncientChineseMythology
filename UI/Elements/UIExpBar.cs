@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.GameContent;
@@ -13,8 +13,7 @@ public class UIExpBar : UIElement
 
     public void SetPercent(float p) => _percent = Utils.Clamp(p, 0f, 1f);
 
-    protected override void DrawSelf(SpriteBatch sb)
-    {
+    protected override void DrawSelf(SpriteBatch sb) {
         var r = GetDimensions().ToRectangle();
         sb.Draw(_pixel, r, Color.Black * .6f);
         var fg = new Rectangle(r.X + 2, r.Y + 2,

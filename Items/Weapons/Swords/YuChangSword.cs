@@ -1,9 +1,9 @@
+﻿using AncientChineseMythology.Projectiles;
+using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
-using Terraria.DataStructures;
-using Microsoft.Xna.Framework;
-using AncientChineseMythology.Projectiles;
 
 namespace AncientChineseMythology.Items.Waapons.Swords
 {
@@ -11,11 +11,10 @@ namespace AncientChineseMythology.Items.Waapons.Swords
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Swords/YuChangSword";
 
-       private int attackCounter = 0; // 攻击计数器
-       private int cooldownTimer = 0; // 冷却计时器
+        private int attackCounter = 0; // 攻击计数器
+        private int cooldownTimer = 0; // 冷却计时器
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.damage = 35; //基础伤害
             Item.crit = 80; //暴击率
             Item.DamageType = DamageClass.Melee; //伤害类型
@@ -32,16 +31,14 @@ namespace AncientChineseMythology.Items.Waapons.Swords
             Item.shoot = ModContent.ProjectileType<YuChangSwordProjectile>(); //绑定自定义投射物
             Item.shootSpeed = 1f; //射弹速度 
             Item.noMelee = true; // 禁用近战碰撞框
-            
-        }  
-        
+
+        }
+
         // 使能右键
         public override bool AltFunctionUse(Player player) => true;
 
-        public override bool CanUseItem(Player player)
-        {
-            if (player.altFunctionUse == 2)
-            {
+        public override bool CanUseItem(Player player) {
+            if (player.altFunctionUse == 2) {
                 // 右键技能：检查冷却
                 if (cooldownTimer > 0)
                     return false;
@@ -55,8 +52,7 @@ namespace AncientChineseMythology.Items.Waapons.Swords
                 Item.noMelee = true;
                 return true;
             }
-            else
-            {
+            else {
                 // 左键保持原逻辑
                 Item.useStyle = ItemUseStyleID.Rapier;
                 Item.useTime = 14;
@@ -68,10 +64,8 @@ namespace AncientChineseMythology.Items.Waapons.Swords
             }
         }
 
-        public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 pos, Vector2 vel, int type, int damage, float knockback)
-        {
-            if (player.altFunctionUse == 2)
-            {
+        public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 pos, Vector2 vel, int type, int damage, float knockback) {
+            if (player.altFunctionUse == 2) {
                 // 右键：发射主动技能投射物，伤害 300%，无限穿透
                 Vector2 direction = Vector2.Normalize(Main.MouseWorld - player.Center);
                 Projectile.NewProjectile(
@@ -87,12 +81,10 @@ namespace AncientChineseMythology.Items.Waapons.Swords
                 cooldownTimer = 20 * 60;
                 return false;
             }
-            else
-            {
+            else {
                 // 左键：原有主弹幕 + 每4次连击发射射弹
                 Projectile.NewProjectile(source, pos, vel, type, damage, knockback, player.whoAmI);
-                if (++attackCounter >= 4)
-                {
+                if (++attackCounter >= 4) {
                     attackCounter = 0;
                     Projectile.NewProjectile(source, player.Center, vel * 20f,
                         ModContent.ProjectileType<YuChangSwordBeanProjectile>(),
@@ -102,23 +94,20 @@ namespace AncientChineseMythology.Items.Waapons.Swords
             }
         }
 
-        public override void UpdateInventory(Player player)
-        {
-          // 每帧减少冷却
-              if (cooldownTimer > 0)
+        public override void UpdateInventory(Player player) {
+            // 每帧减少冷却
+            if (cooldownTimer > 0)
                 cooldownTimer--;
         }
 
-       
- 
+
+
     }
-     public class YuChangSwordFishingPlayer : ModPlayer
+    public class YuChangSwordFishingPlayer : ModPlayer
     {
-        public override void CatchFish(FishingAttempt attempt,ref int itemDrop,ref int npcSpawn,ref AdvancedPopupRequest sonar, ref Vector2 sonarPosition)
-        {
+        public override void CatchFish(FishingAttempt attempt, ref int itemDrop, ref int npcSpawn, ref AdvancedPopupRequest sonar, ref Vector2 sonarPosition) {
             // 1% 几率钓到鱼肠剑
-            if (Main.rand.NextFloat() < 0.01f)
-            {
+            if (Main.rand.NextFloat() < 0.01f) {
                 itemDrop = ModContent.ItemType<YuChangSword>();
             }
         }

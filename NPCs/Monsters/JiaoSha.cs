@@ -1,12 +1,12 @@
+﻿using AncientChineseMythology.Items.Materials;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System;
 using Terraria;
 using Terraria.DataStructures;
+using Terraria.GameContent.ItemDropRules;
 using Terraria.ID;
 using Terraria.ModLoader;
-using System;
-using Terraria.GameContent.ItemDropRules;
-using AncientChineseMythology.Items.Materials;
 
 namespace AncientChineseMythology.NPCs.Monsters
 {
@@ -81,19 +81,17 @@ namespace AncientChineseMythology.NPCs.Monsters
         // 强制使用假的 Texture 路径（防止自动加载单张贴图）
         public override string Texture => "AncientChineseMythology/Textures/NPCs/Monsters/JiaoSha/idle_1";
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             // 加载各动画贴图
             attackTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/JiaoSha/attack").Value;
-            dieTexture    = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/JiaoSha/die").Value;
-            hurtTexture   = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/JiaoSha/hurt").Value;
-            idleTexture   = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/JiaoSha/idle").Value;
-            jumpTexture   = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/JiaoSha/jump").Value;
-            runTexture    = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/JiaoSha/run").Value;
+            dieTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/JiaoSha/die").Value;
+            hurtTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/JiaoSha/hurt").Value;
+            idleTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/JiaoSha/idle").Value;
+            jumpTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/JiaoSha/jump").Value;
+            runTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/JiaoSha/run").Value;
 
             // NPC 基本属性
             NPC.width = 40;
@@ -113,24 +111,21 @@ namespace AncientChineseMythology.NPCs.Monsters
             NPC.aiStyle = -1;
         }
 
-        public override float SpawnChance(NPCSpawnInfo spawnInfo)
-        {
+        public override float SpawnChance(NPCSpawnInfo spawnInfo) {
             if (!Main.dayTime && spawnInfo.Player.ZoneBeach)
                 return 0.6f;
             return 0f;
         }
 
         // 根据当前条件返回动画状态
-        private JiaoShaState GetCurrentState()
-        {
+        private JiaoShaState GetCurrentState() {
             if (dying)
                 return JiaoShaState.Die;
             if (hurtTimer > 0)
                 return JiaoShaState.Hurt;
 
             Player player = Main.player[NPC.target];
-            if (player != null && player.active && !player.dead)
-            {
+            if (player != null && player.active && !player.dead) {
                 float dist = Vector2.Distance(NPC.Center, player.Center);
                 // 当非常靠近且攻击冷却归零时，进入 Attack
                 if (dist <= attackRange && attackCooldown <= 0)
@@ -138,8 +133,7 @@ namespace AncientChineseMythology.NPCs.Monsters
             }
             if (!onGround)
                 return JiaoShaState.Jump;
-            if (player != null && player.active && !player.dead)
-            {
+            if (player != null && player.active && !player.dead) {
                 float dist = Vector2.Distance(NPC.Center, player.Center);
                 if (dist <= chaseRange)
                     return JiaoShaState.Run;
@@ -147,12 +141,10 @@ namespace AncientChineseMythology.NPCs.Monsters
             return JiaoShaState.Idle;
         }
 
-        public override void AI()
-        {
+        public override void AI() {
             //目标检测与朝向设置
             NPC.TargetClosest(true);
-            if (NPC.target < 0 || NPC.target >= Main.maxPlayers)
-            {
+            if (NPC.target < 0 || NPC.target >= Main.maxPlayers) {
                 DespawnLogic();
                 return;
             }
@@ -162,19 +154,16 @@ namespace AncientChineseMythology.NPCs.Monsters
             NPC.spriteDirection = player.Center.X < NPC.Center.X ? -1 : 1;
 
             // 玩家死亡时淡出
-            if (player.dead)
-            {
+            if (player.dead) {
                 state = JiaoShaState.Idle;
                 NPC.velocity.X = 0f;
                 frameTimer++;
-                if (frameTimer > 10)
-                {
+                if (frameTimer > 10) {
                     frameTimer = 0;
                     currentFrame++;
                 }
                 deathIdleTimer++;
-                if (deathIdleTimer > 300)
-                {
+                if (deathIdleTimer > 300) {
                     NPC.alpha += 5;
                     if (NPC.alpha >= 255)
                         NPC.active = false;
@@ -191,20 +180,17 @@ namespace AncientChineseMythology.NPCs.Monsters
                 jumpCooldown--;
 
             // 死亡处理
-            if (dying)
-            {
+            if (dying) {
                 NPC.damage = 0;
                 DoDieLogic();
                 return;
             }
 
             // 状态更新：若受伤，则 Hurt；否则根据与玩家距离更新状态
-            if (hurtTimer > 0)
-            {
+            if (hurtTimer > 0) {
                 state = JiaoShaState.Hurt;
             }
-            else
-            {
+            else {
                 float dist = Vector2.Distance(NPC.Center, player.Center);
                 if (dist <= attackRange && attackCooldown <= 0)
                     state = JiaoShaState.Attack;
@@ -215,8 +201,7 @@ namespace AncientChineseMythology.NPCs.Monsters
             }
 
             // 根据状态执行逻辑
-            switch (state)
-            {
+            switch (state) {
                 case JiaoShaState.Idle:
                     NPC.velocity.X = 0f;
                     break;
@@ -256,13 +241,10 @@ namespace AncientChineseMythology.NPCs.Monsters
 
             // 平台检测及穿越设置
             bool platformHere = false;
-            for (int i = (int)(NPC.Bottom.X / 16); i <= (int)((NPC.Bottom.X + NPC.width) / 16); i++)
-            {
-                for (int j = (int)((NPC.Bottom.Y - 2) / 16); j <= (int)((NPC.Bottom.Y + 2) / 16); j++)
-                {
+            for (int i = (int)(NPC.Bottom.X / 16); i <= (int)((NPC.Bottom.X + NPC.width) / 16); i++) {
+                for (int j = (int)((NPC.Bottom.Y - 2) / 16); j <= (int)((NPC.Bottom.Y + 2) / 16); j++) {
                     Tile tile = Main.tile[i, j];
-                    if (tile != null && tile.HasTile && Main.tileSolidTop[tile.TileType])
-                    {
+                    if (tile != null && tile.HasTile && Main.tileSolidTop[tile.TileType]) {
                         platformHere = true;
                         break;
                     }
@@ -270,18 +252,15 @@ namespace AncientChineseMythology.NPCs.Monsters
                 if (platformHere)
                     break;
             }
-            if (platformHere)
-            {
+            if (platformHere) {
                 // 计算 NPC 与玩家的垂直距离
                 float vertDist = Math.Abs(player.Center.Y - NPC.Bottom.Y);
                 // 如果玩家在蛟鲨上方（玩家高出蛟鲨超过 16 像素），则允许跳跃（不掉下平台）
-                if (player.Center.Y < NPC.Bottom.Y - 16f)
-                {
+                if (player.Center.Y < NPC.Bottom.Y - 16f) {
                     NPC.noTileCollide = false;
                     // 在跑动逻辑中会处理跳跃
                 }
-                else
-                {
+                else {
                     // 当玩家与 NPC 垂直距离较大时，且 NPC 正在下落，则允许穿越平台
                     if (NPC.velocity.Y > 1f && vertDist > 32f)
                         NPC.noTileCollide = true;
@@ -289,44 +268,36 @@ namespace AncientChineseMythology.NPCs.Monsters
                         NPC.noTileCollide = false;
                 }
             }
-            else
-            {
+            else {
                 NPC.noTileCollide = false;
             }
 
             // invincibleTimer 处理：当目标不可见时沿反方向离开
-            if (!Collision.CanHitLine(NPC.position, NPC.width, NPC.height, player.position, player.width, player.height))
-            {
+            if (!Collision.CanHitLine(NPC.position, NPC.width, NPC.height, player.position, player.width, player.height)) {
                 invincibleTimer++;
-                if (invincibleTimer == 120)
-                {
+                if (invincibleTimer == 120) {
                     initialVelocity = -NPC.velocity;
                     if (initialVelocity != Vector2.Zero)
                         initialVelocity.Normalize();
                 }
-                if (invincibleTimer > 120)
-                {
+                if (invincibleTimer > 120) {
                     NPC.velocity = initialVelocity;
                     NPC.spriteDirection = initialVelocity.X > 0 ? 1 : -1;
                 }
             }
-            else
-            {
+            else {
                 invincibleTimer = 0;
             }
         }
 
-        private void DoRunLogic(Player player)
-        {
+        private void DoRunLogic(Player player) {
             // 先根据水平位置设定移动
-            if (player.Center.X > NPC.Center.X)
-            {
+            if (player.Center.X > NPC.Center.X) {
                 NPC.direction = 1;
                 NPC.spriteDirection = 1;
                 NPC.velocity.X = runSpeed;
             }
-            else
-            {
+            else {
                 NPC.direction = -1;
                 NPC.spriteDirection = -1;
                 NPC.velocity.X = -runSpeed;
@@ -334,23 +305,18 @@ namespace AncientChineseMythology.NPCs.Monsters
 
             // 跳跃逻辑：
             // 如果玩家明显高于蛟鲨，强制跳跃以向上追赶
-            if (onGround && jumpCooldown <= 0)
-            {
-                if (player.Center.Y < NPC.Center.Y - 32f)
-                {
+            if (onGround && jumpCooldown <= 0) {
+                if (player.Center.Y < NPC.Center.Y - 32f) {
                     NPC.velocity.Y = -9f - Main.rand.Next(0, 3);
                     jumpCooldown = 20;
                 }
-                else
-                {
+                else {
                     // 检查前方障碍，若存在障碍且玩家水平位置低于或接近蛟鲨，则尝试跳跃
                     int checkX = (int)((NPC.position.X + (NPC.direction == 1 ? NPC.width : 0)) / 16f) + (NPC.direction == 1 ? 2 : -2);
                     int checkY = (int)((NPC.position.Y + NPC.height - 4) / 16f);
-                    if (Main.tile[checkX, checkY] != null && Main.tile[checkX, checkY].HasTile)
-                    {
+                    if (Main.tile[checkX, checkY] != null && Main.tile[checkX, checkY].HasTile) {
                         // 仅当玩家水平位置低于或接近时才跳跃，避免攻击时跳跃导致平台脱离
-                        if (player.Center.Y >= NPC.Center.Y - 4)
-                        {
+                        if (player.Center.Y >= NPC.Center.Y - 4) {
                             NPC.velocity.Y = -6f - Main.rand.Next(0, 3);
                             jumpCooldown = 20;
                         }
@@ -359,17 +325,14 @@ namespace AncientChineseMythology.NPCs.Monsters
             }
         }
 
-        private void DoAttackLogic(Player player, bool isSpecial)
-        {
+        private void DoAttackLogic(Player player, bool isSpecial) {
             NPC.velocity.X = 0f;
             attackAnimTimer++;
             int totalAttackDuration = 40; // 攻击动画总时长设为 40 帧
-            if (!didDamageThisAttack && attackAnimTimer == 20)
-            {
+            if (!didDamageThisAttack && attackAnimTimer == 20) {
                 float dist = Vector2.Distance(NPC.Center, player.Center);
                 float range = isSpecial ? attackRange * 1.2f : attackRange;
-                if (dist <= range)
-                {
+                if (dist <= range) {
                     player.Hurt(PlayerDeathReason.ByNPC(NPC.whoAmI), NPC.damage, NPC.spriteDirection);
                     Vector2 knockbackDir = (player.Center - NPC.Center);
                     if (knockbackDir != Vector2.Zero)
@@ -381,8 +344,7 @@ namespace AncientChineseMythology.NPCs.Monsters
                 }
                 didDamageThisAttack = true;
             }
-            if (attackAnimTimer >= totalAttackDuration)
-            {
+            if (attackAnimTimer >= totalAttackDuration) {
                 didDamageThisAttack = false;
                 attackAnimTimer = 0;
                 attackCooldown = 60;
@@ -390,20 +352,17 @@ namespace AncientChineseMythology.NPCs.Monsters
             }
         }
 
-        private void DoDieLogic()
-        {
+        private void DoDieLogic() {
             if (dieTimer == 0)
                 currentFrame = 0;
             NPC.velocity.X = 0f;
             dieTimer++;
-            if (dieTimer > (DieFrameCount * frameDuration) + 10)
-            {
+            if (dieTimer > (DieFrameCount * frameDuration) + 10) {
                 NPC.NPCLoot();
                 NPC.active = false;
             }
             frameTimer++;
-            if (frameTimer >= 10)
-            {
+            if (frameTimer >= 10) {
                 frameTimer = 0;
                 currentFrame++;
                 if (currentFrame >= DieFrameCount)
@@ -411,18 +370,15 @@ namespace AncientChineseMythology.NPCs.Monsters
             }
         }
 
-        private void DespawnLogic()
-        {
+        private void DespawnLogic() {
             NPC.velocity.X = 0f;
             NPC.velocity.Y -= 0.2f;
             if (NPC.timeLeft > 10)
                 NPC.timeLeft = 10;
         }
 
-        public override void HitEffect(NPC.HitInfo hit)
-        {
-            if (!dying && NPC.life <= 0)
-            {
+        public override void HitEffect(NPC.HitInfo hit) {
+            if (!dying && NPC.life <= 0) {
                 dying = true;
                 NPC.life = 1; // 防止重复死亡
                 NPC.dontTakeDamage = true;
@@ -430,24 +386,20 @@ namespace AncientChineseMythology.NPCs.Monsters
                 NPC.netUpdate = true;
                 state = JiaoShaState.Die;
             }
-            else
-            {
+            else {
                 hurtTimer = 20;
             }
         }
 
-        public override void OnHitByItem(Player player, Item item, NPC.HitInfo hit, int damageDone)
-        {
+        public override void OnHitByItem(Player player, Item item, NPC.HitInfo hit, int damageDone) {
             ApplyKnockback(hit);
         }
 
-        public override void OnHitByProjectile(Projectile projectile, NPC.HitInfo hit, int damageDone)
-        {
+        public override void OnHitByProjectile(Projectile projectile, NPC.HitInfo hit, int damageDone) {
             ApplyKnockback(hit);
         }
 
-        private void ApplyKnockback(NPC.HitInfo hit)
-        {
+        private void ApplyKnockback(NPC.HitInfo hit) {
             float factor = 0.3f;
             Vector2 extraForce = new Vector2(hit.Knockback * factor * hit.HitDirection,
                                                -hit.Knockback * factor * 0.05f);
@@ -455,13 +407,11 @@ namespace AncientChineseMythology.NPCs.Monsters
             hurtTimer = 20;
         }
 
-        public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
-        {
+        public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
             JiaoShaState drawState = state;
             Texture2D texture;
             int totalFrames = 1;
-            switch (drawState)
-            {
+            switch (drawState) {
                 case JiaoShaState.Attack:
                     texture = attackTexture;
                     totalFrames = AttackFrameCount;
@@ -505,8 +455,7 @@ namespace AncientChineseMythology.NPCs.Monsters
             return false;
         }
 
-        public override void ModifyNPCLoot(NPCLoot npcLoot)
-        {
+        public override void ModifyNPCLoot(NPCLoot npcLoot) {
             npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<Bone>(), 15));
         }
     }

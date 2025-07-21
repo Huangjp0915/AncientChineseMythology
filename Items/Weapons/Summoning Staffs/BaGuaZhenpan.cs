@@ -1,9 +1,9 @@
+﻿using AncientChineseMythology.Buffs;
+using AncientChineseMythology.Projectiles;
+using AncientChineseMythology.UI;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
-using AncientChineseMythology.Buffs;
-using AncientChineseMythology.Projectiles;
-using AncientChineseMythology.UI;
 
 namespace AncientChineseMythology.Items.Weapons.SummoningStaffs
 {
@@ -11,12 +11,10 @@ namespace AncientChineseMythology.Items.Weapons.SummoningStaffs
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Summoning Staffs/BaGuaZhenpan";
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 32;
             Item.height = 32;
             Item.useTime = 20;
@@ -29,8 +27,7 @@ namespace AncientChineseMythology.Items.Weapons.SummoningStaffs
         // 启用右键逻辑
         public override bool AltFunctionUse(Player player) => true;
 
-        public override bool? UseItem(Player player)
-        {
+        public override bool? UseItem(Player player) {
             if (player.altFunctionUse == 2) // 右键：切换 UI
             {
                 BaGuaUISystem.Toggle(player);   // static 方法开关
@@ -41,8 +38,7 @@ namespace AncientChineseMythology.Items.Weapons.SummoningStaffs
                 player.AddBuff(ModContent.BuffType<BaGuaBuff>(), buffTime);
 
                 // 确保同一玩家只有一个阵图
-                if (player.ownedProjectileCounts[ModContent.ProjectileType<BaGuaSigilProj>()] == 0)
-                {
+                if (player.ownedProjectileCounts[ModContent.ProjectileType<BaGuaSigilProj>()] == 0) {
                     Projectile.NewProjectile(
                         player.GetSource_ItemUse(Item),
                         player.Center,

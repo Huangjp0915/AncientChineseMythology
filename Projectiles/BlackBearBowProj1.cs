@@ -1,18 +1,17 @@
-﻿using Terraria;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using Terraria;
+using Terraria.DataStructures;
+using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using Terraria.GameContent;
-using Terraria.DataStructures;
 
 namespace AncientChineseMythology.Projectiles
 {
     public class BlackBearBowProj1 : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear_Head_Boss"; // 使用物品的纹理作为投射物的纹理
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Projectile.width = 20; // 弹幕宽度
             Projectile.height = 20; // 弹幕高度
             Projectile.friendly = true; // 友方弹幕
@@ -27,22 +26,18 @@ namespace AncientChineseMythology.Projectiles
             Projectile.usesLocalNPCImmunity = true; //独立无敌帧
             Projectile.localNPCHitCooldown = 10; //独立无敌帧时间
         }
-        public override void OnSpawn(IEntitySource source)
-        {
+        public override void OnSpawn(IEntitySource source) {
             //Projectile.velocity = Projectile.velocity.RotatedByRandom(360f); // 随机旋转弹幕速度
             Projectile.damage += Main.rand.Next(Projectile.damage / 2, Projectile.damage); // 随机增加伤害
             Projectile.knockBack += Main.rand.Next((int)Projectile.knockBack, (int)Projectile.knockBack * 2); // 随机增加击退力量
         }
-        public override void AI()
-        {
+        public override void AI() {
             Projectile.rotation += Projectile.velocity.X * 0.05f; // 旋转速度为弹幕速度的 0.05倍
         }
 
         [System.Obsolete]
-        public override void OnKill(int timeLeft)
-        {
-            for (int i = 0; i < 3; i++)
-            {
+        public override void OnKill(int timeLeft) {
+            for (int i = 0; i < 3; i++) {
                 int dustType = DustID.YellowTorch;
                 int dustIndex = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height, dustType);
                 Dust dust = Main.dust[dustIndex];
@@ -83,7 +78,7 @@ namespace AncientChineseMythology.Projectiles
                 // 使用弹幕的速度方向来计算旋转角度
                 float rotation = Projectile.velocity.ToRotation();
 
-                Main.EntitySpriteDraw(texture2, oldcenter, rectangle2, Color.White*factor*0.72f,//颜色逐渐变淡
+                Main.EntitySpriteDraw(texture2, oldcenter, rectangle2, Color.White * factor * 0.72f,//颜色逐渐变淡
                     rotation,//使用速度方向的旋转角度
                     new Vector2(texture2.Width / 2, texture2.Height / 2 / Main.projFrames[Type]),
                     new Vector2(0.6f),

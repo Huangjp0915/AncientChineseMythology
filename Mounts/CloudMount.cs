@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.ID;
@@ -11,37 +11,35 @@ namespace AncientChineseMythology.Mounts
         /*──────── 常量区 ────────*/
         private const float VertSpeed = 0.35f;   // 垂直推力
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             /*──基础属性──*/
-            MountData.buff          = ModContent.BuffType<Buffs.CloudMountBuff>();
-            MountData.spawnDust     = DustID.Cloud;
-            MountData.heightBoost   = 60;
-            MountData.runSpeed      = 8f;
-            MountData.dashSpeed     = 8f;
-            MountData.acceleration  = 0.25f;
-            MountData.jumpHeight    = 10;
-            MountData.jumpSpeed     = 6f;
+            MountData.buff = ModContent.BuffType<Buffs.CloudMountBuff>();
+            MountData.spawnDust = DustID.Cloud;
+            MountData.heightBoost = 60;
+            MountData.runSpeed = 8f;
+            MountData.dashSpeed = 8f;
+            MountData.acceleration = 0.25f;
+            MountData.jumpHeight = 10;
+            MountData.jumpSpeed = 6f;
             MountData.flightTimeMax = int.MaxValue;  // 无限飞
-            MountData.constantJump  = true;          // 按住空格可持续上升
-            MountData.usesHover     = true;
-            MountData.fallDamage    = 0f;
+            MountData.constantJump = true;          // 按住空格可持续上升
+            MountData.usesHover = true;
+            MountData.fallDamage = 0f;
 
             /*──帧设置──*/
-            MountData.totalFrames         = 1;
-            MountData.standingFrameStart  = 0;
-            MountData.standingFrameCount = 1; 
-            MountData.runningFrameStart   = 0;
-            MountData.inAirFrameStart     = 0;
-            MountData.idleFrameStart      = 0;
-            MountData.playerYOffsets      = new int[1] { 40 }; // 抬高玩家腰部
+            MountData.totalFrames = 1;
+            MountData.standingFrameStart = 0;
+            MountData.standingFrameCount = 1;
+            MountData.runningFrameStart = 0;
+            MountData.inAirFrameStart = 0;
+            MountData.idleFrameStart = 0;
+            MountData.playerYOffsets = new int[1] { 40 }; // 抬高玩家腰部
 
             /*──贴图──*/
-            if (!Main.dedServ)
-            {
+            if (!Main.dedServ) {
                 MountData.frontTexture = ModContent.Request<Texture2D>(
                     "AncientChineseMythology/Textures/Mounts/Cloud/CloudMount");
-                MountData.textureWidth  = 150;
+                MountData.textureWidth = 150;
                 MountData.textureHeight = 64;
             }
 
@@ -52,8 +50,7 @@ namespace AncientChineseMythology.Mounts
         }
 
         /*──────── 粒子 + 垂直控制 ────────*/
-        public override void UpdateEffects(Player player)
-        {
+        public override void UpdateEffects(Player player) {
             /*云雾粒子*/
             /*if (Main.rand.NextBool(4)) {
                 Dust a = Dust.NewDustPerfect(
@@ -99,9 +96,9 @@ namespace AncientChineseMythology.Mounts
                 player.fallStart = (int)(player.position.Y / 16f);
             }
 
-            if (wantAscend)        player.velocity.Y -= VertSpeed;
-            else if (wantDescend)  player.velocity.Y += VertSpeed;
-            else                   player.velocity.Y *= .95f;
+            if (wantAscend) player.velocity.Y -= VertSpeed;
+            else if (wantDescend) player.velocity.Y += VertSpeed;
+            else player.velocity.Y *= .95f;
 
             /*防止翅膀条与坐骑冲突*/
             player.wingTime = player.wingTimeMax = 0;

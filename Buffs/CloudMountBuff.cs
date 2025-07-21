@@ -1,11 +1,12 @@
-using AncientChineseMythology.Mounts;
+﻿using AncientChineseMythology.Mounts;
 using Terraria;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Buffs
 {
 
-    public class CloudMountBuff : ModBuff {
+    public class CloudMountBuff : ModBuff
+    {
         public override string Texture => "AncientChineseMythology/Textures/Buffs/CloudMountBuff";
 
         public override void SetStaticDefaults() {

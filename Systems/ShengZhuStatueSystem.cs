@@ -1,35 +1,35 @@
-using Terraria;
-using Terraria.ModLoader;
-using Terraria.WorldBuilding;
+﻿using AncientChineseMythology.Tiles.Placable;
 using System.Collections.Generic;
+using Terraria;
+using Terraria.DataStructures;
 using Terraria.GameContent.Generation;
 using Terraria.IO;
-using Terraria.DataStructures;
-using AncientChineseMythology.Tiles.Placable;
+using Terraria.ModLoader;
+using Terraria.WorldBuilding;
 
 namespace AncientChineseMythology.Content.Systems
 {
-	public class ShengZhuStatueSystem : ModSystem
-	{
+    public class ShengZhuStatueSystem : ModSystem
+    {
 
-		public override void ModifyWorldGenTasks(List<GenPass> tasks, ref double totalWeight) {
-			int idx = tasks.FindIndex(p => p.Name == "Sky Lakes");
-			if (idx != -1) tasks.Insert(idx + 1, new PassLegacy("ShengZhu Statue", Generate));
-		}
-		private void Generate(GenerationProgress progress, GameConfiguration _) {
-			progress.Message = "Placing the ShengZhu Statue";
-			while (true) {
-				int i = WorldGen.genRand.Next(200, Main.maxTilesX - 200);
-				int j = (int)Main.worldSurface - 10;
-				for (; j < Main.worldSurface + 50; j++) {
-					if (Main.tileSolid[Main.tile[i, j].TileType]) {
-						WorldGen.PlaceObject(i, j, ModContent.TileType<ShengZhuStatueTile>());
-						if (Main.tile[i, j].HasTile) return;
-						break;
-					}
-				}
-			}
-		}
+        public override void ModifyWorldGenTasks(List<GenPass> tasks, ref double totalWeight) {
+            int idx = tasks.FindIndex(p => p.Name == "Sky Lakes");
+            if (idx != -1) tasks.Insert(idx + 1, new PassLegacy("ShengZhu Statue", Generate));
+        }
+        private void Generate(GenerationProgress progress, GameConfiguration _) {
+            progress.Message = "Placing the ShengZhu Statue";
+            while (true) {
+                int i = WorldGen.genRand.Next(200, Main.maxTilesX - 200);
+                int j = (int)Main.worldSurface - 10;
+                for (; j < Main.worldSurface + 50; j++) {
+                    if (Main.tileSolid[Main.tile[i, j].TileType]) {
+                        WorldGen.PlaceObject(i, j, ModContent.TileType<ShengZhuStatueTile>());
+                        if (Main.tile[i, j].HasTile) return;
+                        break;
+                    }
+                }
+            }
+        }
 
         internal void TriggerStatue(Point16 pos, int playerID) {
             Player pl = Main.player[playerID];
@@ -48,5 +48,5 @@ namespace AncientChineseMythology.Content.Systems
         private static bool IsCharm(Item item) =>
             item.ModItem != null && item.ModItem.GetType().Name.Contains("Charm");
 
-	}
+    }
 }

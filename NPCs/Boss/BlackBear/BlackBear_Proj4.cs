@@ -1,15 +1,15 @@
-﻿using Terraria;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using System;
+using System.Drawing;
+using Terraria;
+using Terraria.Audio;
+using Terraria.DataStructures;
+using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using System.Drawing;
 using Color = Microsoft.Xna.Framework.Color;
 using Rectangle = Microsoft.Xna.Framework.Rectangle;
-using Terraria.GameContent;
-using System;
-using Terraria.DataStructures;
-using Terraria.Audio;
 
 namespace AncientChineseMythology.NPCs.Boss.BlackBear
 {
@@ -17,8 +17,7 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
     {
         public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear_Head_Boss"; // 使用物品的纹理作为投射物的纹理
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Projectile.hostile = true; // 敌方伤害
             Projectile.width = 32; // 弹幕宽度
             Projectile.height = 32; // 弹幕高度
@@ -32,8 +31,7 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
             Projectile.light = 0.25f; // 发光亮度
         }
 
-        public override void OnSpawn(IEntitySource source)
-        {
+        public override void OnSpawn(IEntitySource source) {
             // 获取玩家的位置
             Player player = Main.player[Projectile.owner];
             SoundEngine.PlaySound(new SoundStyle("AncientChineseMythology/Sounds/BlackBear/BlackBear_Attack_2"), player.Center);
@@ -49,15 +47,13 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
             Projectile.rotation = Main.rand.NextFloat(0, MathHelper.TwoPi);
         }
 
-        public override void AI()
-        {
+        public override void AI() {
             // 模拟重力
             Projectile.velocity.Y += 0.2f; // 向下的速度影响
             Projectile.rotation += 0.5f; // 旋转速度
         }
-        
-        public override bool PreDraw(ref Color lightColor)
-        {
+
+        public override bool PreDraw(ref Color lightColor) {
             Texture2D texture = TextureAssets.Projectile[Type].Value;
             Rectangle sourceRectangle = new Rectangle(0, 0, texture.Width, texture.Height);
             Vector2 origin = new Vector2(texture.Width / 2, texture.Height / 2);

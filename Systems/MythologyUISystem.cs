@@ -1,9 +1,9 @@
-using System.Collections.Generic;
+﻿using AncientChineseMythology.UI;
 using Microsoft.Xna.Framework;
+using System.Collections.Generic;
 using Terraria;
 using Terraria.ModLoader;
 using Terraria.UI;
-using AncientChineseMythology.UI;
 
 namespace AncientChineseMythology.Systems;
 
@@ -13,8 +13,7 @@ public class MythologyUISystem : ModSystem
     private UserInterface _ui;
     private MythologySidebar _sidebar;
 
-    public override void Load()
-    {
+    public override void Load() {
         if (Main.dedServ) return;
 
         ToggleKey = KeybindLoader.RegisterKeybind(Mod, "Toggle Cultivation Panel", "P");
@@ -29,11 +28,9 @@ public class MythologyUISystem : ModSystem
 
     public override void UpdateUI(GameTime gameTime) => _ui?.Update(gameTime);
 
-    public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers)
-    {
+    public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers) {
         int index = layers.FindIndex(l => l.Name.Equals("Vanilla: Mouse Text"));
-        if (index != -1)
-        {
+        if (index != -1) {
             layers.Insert(index, new LegacyGameInterfaceLayer(
                 "AncientChineseMythology: Cultivation Sidebar",
                 () => { _ui.Draw(Main.spriteBatch, new GameTime()); return true; },
@@ -41,9 +38,8 @@ public class MythologyUISystem : ModSystem
         }
     }
 
-    public override void PostUpdateInput()
-    {
+    public override void PostUpdateInput() {
         if (ToggleKey.JustPressed)
-            _sidebar.Toggle();  
+            _sidebar.Toggle();
     }
 }

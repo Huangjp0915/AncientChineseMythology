@@ -1,4 +1,4 @@
-using AncientChineseMythology.Items.Materials;
+﻿using AncientChineseMythology.Items.Materials;
 using AncientChineseMythology.Projectiles;
 using Terraria;
 using Terraria.ID;
@@ -10,8 +10,7 @@ namespace AncientChineseMythology.Items.Waapons.Swords
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Swords/BoneSword"; // 使用物品的纹理作为投射物的纹理
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.damage = 3; // 基础伤害
             Item.crit = 5; // 爆击率
             Item.DamageType = DamageClass.Melee; // 伤害类型
@@ -31,8 +30,7 @@ namespace AncientChineseMythology.Items.Waapons.Swords
             Item.noUseGraphic = false; // 显示使用图标
         }
 
-        public override void AddRecipes()
-        {
+        public override void AddRecipes() {
             CreateRecipe()
                 .AddIngredient(ModContent.ItemType<Bone>(), 20)
                 .AddTile(TileID.Anvils)

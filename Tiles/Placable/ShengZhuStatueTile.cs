@@ -1,4 +1,4 @@
-using AncientChineseMythology.Content.Systems;
+﻿using AncientChineseMythology.Content.Systems;
 using AncientChineseMythology.Items.Waapons;
 using AncientChineseMythology.Systems;
 using Microsoft.Xna.Framework;
@@ -15,8 +15,7 @@ namespace AncientChineseMythology.Tiles.Placable
     {
         public override string Texture => "AncientChineseMythology/Textures/Tiles/Placable/ShengZhuStatueTile";
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             Main.tileFrameImportant[Type] = true;
             Main.tileObsidianKill[Type] = true;
             TileID.Sets.DisableSmartCursor[Type] = true;
@@ -30,12 +29,11 @@ namespace AncientChineseMythology.Tiles.Placable
 
             DustType = DustID.Gold;
 
-			AddMapEntry(new Color(0xEF,0xD9,0xA6),
-				Language.GetText("Mods.AncientChineseMythology.MapObject.ShengZhuStatue"));
+            AddMapEntry(new Color(0xEF, 0xD9, 0xA6),
+                Language.GetText("Mods.AncientChineseMythology.MapObject.ShengZhuStatue"));
         }
 
-        public override bool RightClick(int i, int j)
-        {
+        public override bool RightClick(int i, int j) {
             Player pl = Main.LocalPlayer;
             int ratCharmType = ModContent.ItemType<RatCharm>();
 
@@ -56,8 +54,7 @@ namespace AncientChineseMythology.Tiles.Placable
             return true;
         }
 
-        public override void MouseOver(int i, int j)
-        {
+        public override void MouseOver(int i, int j) {
             Player player = Main.LocalPlayer;
             player.noThrow = 2;
             player.cursorItemIconEnabled = true;

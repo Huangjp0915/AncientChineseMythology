@@ -1,10 +1,10 @@
-﻿using Terraria;
-using Terraria.ID;
-using Terraria.ModLoader;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
+using Terraria;
 using Terraria.GameContent;
+using Terraria.ID;
+using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Projectiles
 {
@@ -14,8 +14,7 @@ namespace AncientChineseMythology.Projectiles
 
         Player player => Main.player[Projectile.owner];
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             ProjectileID.Sets.MinionSacrificable[Projectile.type] = true;
             Projectile.width = 22; // 弹幕宽度
             Projectile.height = 18; // 弹幕高度
@@ -33,13 +32,11 @@ namespace AncientChineseMythology.Projectiles
             Projectile.rotation = Projectile.velocity.ToRotation(); // 设置初始旋转角度
             base.SetDefaults();
         }
-        public override bool? CanCutTiles()
-        {
+        public override bool? CanCutTiles() {
             return false;//我们不想召唤兽会割草
         }
 
-        void AttackShooting(NPC target)
-        {
+        void AttackShooting(NPC target) {
 
             Projectile.ai[0]++;//随便拿一个ai0当计时器
             if (Projectile.ai[0] == 60)//每半秒攻击一次
@@ -51,17 +48,15 @@ namespace AncientChineseMythology.Projectiles
                 Vector2 direction = target.Center - player.Center;
                 direction.Normalize();
                 int projectileCount = Main.rand.Next(4, 6);
-                for (int i = 0; i < projectileCount; i++)
-                {
+                for (int i = 0; i < projectileCount; i++) {
                     int projectileType = ModContent.ProjectileType<BlackBearStaffProj2>();
                     Vector2 spawnPosition = Projectile.Center;
-                    Projectile.NewProjectile(Projectile.GetSource_FromAI(), spawnPosition, direction*16f, projectileType, Projectile.originalDamage, 0, Main.myPlayer);
+                    Projectile.NewProjectile(Projectile.GetSource_FromAI(), spawnPosition, direction * 16f, projectileType, Projectile.originalDamage, 0, Main.myPlayer);
                 }
             }
-        } 
+        }
 
-        public override void AI()
-        {
+        public override void AI() {
 
             if (player.HasBuff<Buffs.BuffsBlackBearStaff>()) // 如果玩家有召唤物BUFF
                 Projectile.timeLeft = 2; // 维持住弹幕的时间
@@ -69,13 +64,11 @@ namespace AncientChineseMythology.Projectiles
             NPC target = null; // 先设出目标NPC，默认为空
 
             // 这一段是当你的召唤兽设定了右键锁敌情况下必须要写的部分,防止进行寻敌判定
-            if (player.HasMinionAttackTargetNPC)
-            {
+            if (player.HasMinionAttackTargetNPC) {
                 target = Main.npc[player.MinionAttackTargetNPC]; // 让目标为鼠标锁住的敌人
                 float between = Vector2.Distance(target.Center, Projectile.Center);
                 // 小于2000防止锁住太远的敌人
-                if (between < 2000f)
-                {
+                if (between < 2000f) {
                     target = null;
                 }
             }
@@ -90,8 +83,7 @@ namespace AncientChineseMythology.Projectiles
 
             if (target != null && target.active) // 如果目标不为空且存活在此处执行攻击性AI
             {
-                if (target.active)
-                {
+                if (target.active) {
                     if (Vector2.Distance(player.Center, target.Center) > 2000)//如果找到的目标距离玩家太远了
                     {
                         Vector2 p = Vector2.Lerp(Projectile.Center, player.Center, 0.1f);
@@ -132,19 +124,19 @@ namespace AncientChineseMythology.Projectiles
             //这里我们介绍一个能产生高亮叠加绘制的办法（A=0）
             Color MyColor = Color.White;
             MyColor.A = 0;//让A=0是为了能直接叠加颜色
-            if(player.velocity.X != 0)
-            for (int i = 0; i < ProjectileID.Sets.TrailCacheLength[Type]; i++)//循环上限小于轨迹长度
-            {
-                float factor = 1 - (float)i / ProjectileID.Sets.TrailCacheLength[Type];//计算当前位置的透明度因子
-                //定义一个从新到旧由1逐渐减少到0的变量，比如i = 0时，factor = 1
-                Vector2 oldcenter = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;//获取旧位置的中心点
-                //由于轨迹只能记录弹幕碰撞箱左上角位置，我们要手动加上弹幕宽高一半来获取中心
-                Main.EntitySpriteDraw(texture, oldcenter, rectangle, MyColor * factor,//颜色逐渐变淡
-                    Projectile.oldRot[i],//弹幕轨迹上的曾经的方向
-                    new Vector2(texture.Width / 2, texture.Height / 2 / Main.projFrames[Type]),
-                     new Vector2(1f),
-                     SpriteEffects.None, 0);//最后两个参数是贴图缩放和旋转，这里不用管
-            }
+            if (player.velocity.X != 0)
+                for (int i = 0; i < ProjectileID.Sets.TrailCacheLength[Type]; i++)//循环上限小于轨迹长度
+                {
+                    float factor = 1 - (float)i / ProjectileID.Sets.TrailCacheLength[Type];//计算当前位置的透明度因子
+                                                                                           //定义一个从新到旧由1逐渐减少到0的变量，比如i = 0时，factor = 1
+                    Vector2 oldcenter = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;//获取旧位置的中心点
+                                                                                                         //由于轨迹只能记录弹幕碰撞箱左上角位置，我们要手动加上弹幕宽高一半来获取中心
+                    Main.EntitySpriteDraw(texture, oldcenter, rectangle, MyColor * factor,//颜色逐渐变淡
+                        Projectile.oldRot[i],//弹幕轨迹上的曾经的方向
+                        new Vector2(texture.Width / 2, texture.Height / 2 / Main.projFrames[Type]),
+                         new Vector2(1f),
+                         SpriteEffects.None, 0);//最后两个参数是贴图缩放和旋转，这里不用管
+                }
             //由于tr绘制是先执行的先绘制，所以要想残影不覆盖到本体上面，就要先写残影绘制
 
             Main.EntitySpriteDraw(  //entityspritedraw是弹幕，NPC等常用的绘制方法

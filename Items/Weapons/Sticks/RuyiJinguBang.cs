@@ -1,4 +1,4 @@
-using Terraria;
+﻿using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -6,15 +6,13 @@ namespace AncientChineseMythology.Items.Weapons.Sticks
 {
     public class RuyiJinguBang : ModItem
     {
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             // DisplayName.SetDefault("如意金箍棒");
             // Tooltip.SetDefault("唐僧口中的神兵，威力大增！");
             Item.ResearchUnlockCount = 1; // 允许在旅程模式研究
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.damage = 120;
             Item.DamageType = DamageClass.Melee;
             Item.width = 48;

@@ -1,9 +1,9 @@
+﻿using AncientChineseMythology.Items.Materials;
+using AncientChineseMythology.Projectiles;
+using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using AncientChineseMythology.Items.Materials;
-using AncientChineseMythology.Projectiles;
-using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -20,14 +20,14 @@ namespace AncientChineseMythology.Players
         private const float Scale = 0.10f;
         public const int SlotCount = 8;
         public Item[] BaGuaItems = new Item[SlotCount];
-        public string CurrentName  = "";
-        public string CurrentDesc  = "";
+        public string CurrentName = "";
+        public string CurrentDesc = "";
         private const int WearInterval = 60 * 60 * 30;      // 30
         private int[] wearCounter = new int[SlotCount];
 
         /*  ----------------- 阵法内定义 ----------------- */
-        private bool  phoenixActive;
-        private int   phoenixCD;
+        private bool phoenixActive;
+        private int phoenixCD;
         private const int PhoenixCDMax = 60 * 60 * 10; // 10 min冷却
         private static readonly int[] BoomerangIDs = {
             ProjectileID.Flamarang,
@@ -39,11 +39,9 @@ namespace AncientChineseMythology.Players
         private int FallingStarTimer;
         private const int FallingStarCD = 15;   // 每 15 tick ≈ 0.25 s 召唤 1 颗
 
-        public override void PostUpdateEquips()
-        {
+        public override void PostUpdateEquips() {
             // 若拥有八卦 Buff，则缩放最终生命 / 魔力
-            if (Player.HasBuff(ModContent.BuffType<Buffs.BaGuaBuff>()))
-            {
+            if (Player.HasBuff(ModContent.BuffType<Buffs.BaGuaBuff>())) {
                 // 1. 缩放最大值
                 Player.statLifeMax2 = (int)(Player.statLifeMax2 * Scale);
                 Player.statManaMax2 = (int)(Player.statManaMax2 * Scale);
@@ -58,10 +56,8 @@ namespace AncientChineseMythology.Players
         }
 
         /* 初始化数组 */
-        public override void Initialize()
-        {
-            for (int i = 0; i < SlotCount; i++)
-            {
+        public override void Initialize() {
+            for (int i = 0; i < SlotCount; i++) {
                 BaGuaItems[i] = new Item();
                 BaGuaItems[i].TurnToAir();
                 wearCounter[i] = 0;
@@ -70,18 +66,15 @@ namespace AncientChineseMythology.Players
 
         public void ResetWear(int idx) => wearCounter[idx] = 0;
 
-        public override void PostUpdate()
-        {
+        public override void PostUpdate() {
             // 只在玩家带着 BaGuaBuff 时消耗材料；去掉这行就永久计时
             if (!Player.HasBuff(ModContent.BuffType<Buffs.BaGuaBuff>()))
                 return;
 
-            for (int i = 0; i < SlotCount; i++)
-            {
+            for (int i = 0; i < SlotCount; i++) {
                 if (BaGuaItems[i].IsAir) { wearCounter[i] = 0; continue; }
 
-                if (++wearCounter[i] >= WearInterval)
-                {
+                if (++wearCounter[i] >= WearInterval) {
                     wearCounter[i] = 0;
 
                     if (BaGuaItems[i].stack > 1)
@@ -90,8 +83,7 @@ namespace AncientChineseMythology.Players
                         BaGuaItems[i].TurnToAir();   // 没了就清空
 
                     // 多人联机同步
-                    if (Main.netMode == NetmodeID.Server)
-                    {
+                    if (Main.netMode == NetmodeID.Server) {
                         ModPacket p = Mod.GetPacket();
                         p.Write((byte)MessageType.SyncBaGuaSlot);
                         p.Write((byte)Player.whoAmI);
@@ -133,8 +125,7 @@ namespace AncientChineseMythology.Players
             /* ... 可继续追加 ... */
         };
 
-        public override void ResetEffects()
-        {
+        public override void ResetEffects() {
             // 默认清空显示文本
             CurrentName = "";
             CurrentDesc = "";
@@ -147,11 +138,9 @@ namespace AncientChineseMythology.Players
 
             int[] cur = BaGuaItems.Where(it => !it.IsAir).Select(it => it.type).ToArray();
 
-            foreach (var f in Formations)
-            {
+            foreach (var f in Formations) {
                 if (cur.Length == f.RequiredTypes.Length &&
-                    cur.All(t => f.RequiredTypes.Contains(t)))
-                {
+                    cur.All(t => f.RequiredTypes.Contains(t))) {
                     CurrentName = f.Name;
                     CurrentDesc = f.Desc;
                     f.ApplyEffect(this);
@@ -163,15 +152,14 @@ namespace AncientChineseMythology.Players
         /* ----------------- 内部结构体 ----------------- */
         private struct Formation
         {
-            public int[]  RequiredTypes;
+            public int[] RequiredTypes;
             public string Name;
             public string Desc;
             public Action<BaGuaPlayer> ApplyEffect;
         }
 
         /* ---- 保存 / 读取到角色文件 ---- */
-        public override void SaveData(TagCompound tag)
-        {
+        public override void SaveData(TagCompound tag) {
             var list = new List<TagCompound>(SlotCount);
             foreach (Item it in BaGuaItems)
                 list.Add(ItemIO.Save(it));
@@ -179,21 +167,18 @@ namespace AncientChineseMythology.Players
             tag["Wear"] = wearCounter;
         }
 
-        public override void LoadData(TagCompound tag)
-        {
-            if (tag.ContainsKey("BaGuaItems"))
-            {
+        public override void LoadData(TagCompound tag) {
+            if (tag.ContainsKey("BaGuaItems")) {
                 var list = tag.GetList<TagCompound>("BaGuaItems");
                 for (int i = 0; i < SlotCount && i < list.Count; i++)
                     BaGuaItems[i] = ItemIO.Load(list[i]);
             }
             if (tag.ContainsKey("Wear"))
-                 wearCounter = tag.GetIntArray("Wear");
+                wearCounter = tag.GetIntArray("Wear");
         }
 
         /* ───────── 镇海阵：防+15、荆棘、减速 ───────── */
-        private void DoZhenHai()
-        {
+        private void DoZhenHai() {
             // 1) 额外防御 +15
             Player.statDefense += 15;
 
@@ -206,16 +191,13 @@ namespace AncientChineseMythology.Players
         }
 
         /* ───────── 朱雀涅槃：一次性复活 ───────── */
-        public void DoPhoenix()
-        {
+        public void DoPhoenix() {
             phoenixActive = true;
         }
 
         public override bool PreKill(double damage, int hitDirection, bool pvp,
-                                     ref bool playSound, ref bool genGore, ref PlayerDeathReason damageSource)
-        {
-            if (phoenixActive && phoenixCD == 0)
-            {
+                                     ref bool playSound, ref bool genGore, ref PlayerDeathReason damageSource) {
+            if (phoenixActive && phoenixCD == 0) {
                 PhoenixRebirth();
                 phoenixCD = PhoenixCDMax;
                 return false;   // 阻止死亡
@@ -223,8 +205,7 @@ namespace AncientChineseMythology.Players
             return true;        // 允许死亡
         }
 
-        private void PhoenixRebirth()
-        {
+        private void PhoenixRebirth() {
             int heal = Player.statLifeMax2 / 2;
             Player.statLife = heal;
             Player.HealEffect(heal, true);
@@ -249,8 +230,7 @@ namespace AncientChineseMythology.Players
         /* ───────── 回旋镖阵法 ───────── */
         private int BoomerangTimer;
         private const int BoomerangCD = 10;
-        public void DoBoomerang()
-        {
+        public void DoBoomerang() {
             BoomerangTimer++;
             if (BoomerangTimer < BoomerangCD) return;
             BoomerangTimer = 0;
@@ -258,8 +238,7 @@ namespace AncientChineseMythology.Players
             NPC target = null;
             float dist2 = 600 * 600;
             foreach (NPC npc in Main.npc)
-                if (npc.CanBeChasedBy(Player) && !npc.friendly)
-                {
+                if (npc.CanBeChasedBy(Player) && !npc.friendly) {
                     float d = Vector2.DistanceSquared(npc.Center, Player.Center);
                     if (d < dist2) { dist2 = d; target = npc; }
                 }
@@ -273,8 +252,7 @@ namespace AncientChineseMythology.Players
         }
 
         /* ───────── 落星阵法 ───────── */
-        public void DoFallingStar()
-        {
+        public void DoFallingStar() {
             FallingStarTimer++;
             if (FallingStarTimer < FallingStarCD) return;
             FallingStarTimer = 0;
@@ -283,8 +261,7 @@ namespace AncientChineseMythology.Players
             NPC target = null;
             float dist2 = 600 * 600;
             foreach (NPC npc in Main.npc)
-                if (npc.CanBeChasedBy(Player) && !npc.friendly)
-                {
+                if (npc.CanBeChasedBy(Player) && !npc.friendly) {
                     float d = Vector2.DistanceSquared(npc.Center, Player.Center);
                     if (d < dist2) { dist2 = d; target = npc; }
                 }
@@ -292,7 +269,7 @@ namespace AncientChineseMythology.Players
 
             // 确定星星出生点：目标上方 600 像素随机 ±80 X 偏移
             Vector2 spawn = new(target.Center.X + Main.rand.Next(-80, 81), target.Center.Y - 600f);
-            Vector2 vel   = Vector2.UnitY * 16f;           // 垂直向下
+            Vector2 vel = Vector2.UnitY * 16f;           // 垂直向下
 
             int dmg = 80;      // 调整为想要的伤害
             float kb = 1.5f;   // 击退

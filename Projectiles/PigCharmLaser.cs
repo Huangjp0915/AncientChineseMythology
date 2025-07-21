@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.ModLoader;
@@ -8,7 +8,7 @@ namespace AncientChineseMythology.Projectiles
     public class PigCharmLaser : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/PigCharmLaser";
-        
+
         // 定义状态枚举：0=发射，1=持续，2=结束
         private enum LaserState
         {
@@ -29,14 +29,12 @@ namespace AncientChineseMythology.Projectiles
         // 每帧持续时间（每隔 FrameDuration 帧切换动画帧）
         private const int FrameDuration = 5;
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             // 初始状态使用发射动画的帧数
             Main.projFrames[Projectile.type] = FiringFrameCount;
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Projectile.width = 10;  // 初始尺寸，实际碰撞框在 AI 中更新
             Projectile.height = 10;
             Projectile.friendly = true;
@@ -54,11 +52,9 @@ namespace AncientChineseMythology.Projectiles
             Projectile.ai[0] = 0f;
         }
 
-        public override void AI()
-        {
+        public override void AI() {
             Player player = Main.player[Projectile.owner];
-            if (player.dead)
-            {
+            if (player.dead) {
                 Projectile.Kill();
                 return;
             }
@@ -70,24 +66,20 @@ namespace AncientChineseMythology.Projectiles
             Vector2 origin = player.Center;
             Vector2 diff = Main.MouseWorld - origin;
             float idealDistance = diff.Length();
-            if (idealDistance < 0.0001f)
-            {
+            if (idealDistance < 0.0001f) {
                 idealDistance = 0.0001f;
                 diff = Vector2.UnitY;
             }
-            else
-            {
+            else {
                 diff.Normalize();
             }
 
             // 地形阻挡检测：逐步检测，若遇到实心砖块，则截断激光
             float step = 8f; // 检测步长
             float effectiveDistance = idealDistance;
-            for (float d = 0; d < idealDistance; d += step)
-            {
+            for (float d = 0; d < idealDistance; d += step) {
                 Vector2 checkPos = origin + diff * d;
-                if (Collision.SolidCollision(checkPos, 1, 1))
-                {
+                if (Collision.SolidCollision(checkPos, 1, 1)) {
                     effectiveDistance = d - 1f;
                     break;
                 }
@@ -98,8 +90,7 @@ namespace AncientChineseMythology.Projectiles
 
             // 在激光沿途添加蓝色光照
             float lightStep = 16f;
-            for (float d = 0; d < effectiveDistance; d += lightStep)
-            {
+            for (float d = 0; d < effectiveDistance; d += lightStep) {
                 Vector2 lightPos = origin + diff * d;
                 Lighting.AddLight(lightPos, new Vector3(0.2f, 0.4f, 1f));
             }
@@ -113,62 +104,47 @@ namespace AncientChineseMythology.Projectiles
 
             // 状态切换处理
             LaserState state = (LaserState)(int)Projectile.localAI[0];
-            if (state == LaserState.Firing)
-            {
-                if (!player.channel)
-                {
+            if (state == LaserState.Firing) {
+                if (!player.channel) {
                     EnterEndingState();
                 }
-                else
-                {
+                else {
                     // 每次AI调用增加0.5f
                     Projectile.ai[0] += 0.5f;
-                    if (Projectile.ai[0] >= 60f)
-                    {
+                    if (Projectile.ai[0] >= 60f) {
                         Projectile.ai[0] = 0f;
-                        if (player.statMana >= 10)
-                        {
+                        if (player.statMana >= 10) {
                             player.statMana -= 10;
                         }
-                        else
-                        {
+                        else {
                             EnterEndingState();
                         }
                     }
-                    
-                    if (Projectile.frame >= FiringFrameCount - 1 && Projectile.frameCounter >= FrameDuration - 1)
-                    {
+
+                    if (Projectile.frame >= FiringFrameCount - 1 && Projectile.frameCounter >= FrameDuration - 1) {
                         EnterContinuousState();
                     }
                 }
             }
-            else if (state == LaserState.Continuous)
-            {
-                if (!player.channel)
-                {
+            else if (state == LaserState.Continuous) {
+                if (!player.channel) {
                     EnterEndingState();
                 }
-                else
-                {
+                else {
                     Projectile.ai[0] += 0.5f;
-                    if (Projectile.ai[0] >= 60f)
-                    {
+                    if (Projectile.ai[0] >= 60f) {
                         Projectile.ai[0] = 0f;
-                        if (player.statMana >= 10)
-                        {
+                        if (player.statMana >= 10) {
                             player.statMana -= 10;
                         }
-                        else
-                        {
+                        else {
                             EnterEndingState();
                         }
                     }
                 }
             }
-            else if (state == LaserState.Ending)
-            {
-                if (Projectile.frame >= EndingFrameCount - 1 && Projectile.frameCounter >= FrameDuration - 1)
-                {
+            else if (state == LaserState.Ending) {
+                if (Projectile.frame >= EndingFrameCount - 1 && Projectile.frameCounter >= FrameDuration - 1) {
                     Projectile.Kill();
                     return;
                 }
@@ -181,49 +157,39 @@ namespace AncientChineseMythology.Projectiles
             UpdateAnimationFrames();
         }
 
-        private void UpdateAnimationFrames()
-        {
+        private void UpdateAnimationFrames() {
             LaserState state = (LaserState)(int)Projectile.localAI[0];
             Projectile.frameCounter++;
-            if (Projectile.frameCounter >= FrameDuration)
-            {
+            if (Projectile.frameCounter >= FrameDuration) {
                 Projectile.frameCounter = 0;
-                if (state == LaserState.Continuous)
-                {
+                if (state == LaserState.Continuous) {
                     // 持续状态循环播放
                     Projectile.frame = (Projectile.frame + 1) % ContinuousFrameCount;
                 }
-                else if (state == LaserState.Firing)
-                {
+                else if (state == LaserState.Firing) {
                     Projectile.frame++;
-                    if (Projectile.frame >= FiringFrameCount)
-                    {
+                    if (Projectile.frame >= FiringFrameCount) {
                         EnterContinuousState();
                     }
                 }
-                else if (state == LaserState.Ending)
-                {
+                else if (state == LaserState.Ending) {
                     Projectile.frame++;
-                    if (Projectile.frame >= EndingFrameCount)
-                    {
+                    if (Projectile.frame >= EndingFrameCount) {
                         Projectile.frame = EndingFrameCount - 1;
                     }
                 }
             }
         }
 
-        private void EnterContinuousState()
-        {
+        private void EnterContinuousState() {
             Projectile.localAI[0] = (int)LaserState.Continuous;
             Projectile.frame = 0;
             Projectile.frameCounter = 0;
             Main.projFrames[Projectile.type] = ContinuousFrameCount;
         }
 
-        private void EnterEndingState()
-        {
-            if ((LaserState)(int)Projectile.localAI[0] != LaserState.Ending)
-            {
+        private void EnterEndingState() {
+            if ((LaserState)(int)Projectile.localAI[0] != LaserState.Ending) {
                 Projectile.localAI[0] = (int)LaserState.Ending;
                 Projectile.frame = 0;
                 Projectile.frameCounter = 0;
@@ -231,8 +197,7 @@ namespace AncientChineseMythology.Projectiles
             }
         }
 
-        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox)
-        {
+        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
             Player player = Main.player[Projectile.owner];
             Vector2 start = player.Center;
             float effectiveDistance = Projectile.ai[1];
@@ -241,25 +206,21 @@ namespace AncientChineseMythology.Projectiles
             return Collision.CheckAABBvLineCollision(targetHitbox.TopLeft(), targetHitbox.Size(), start, end, 10f, ref collisionPoint);
         }
 
-        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
-        {
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
             Projectile.Kill();
         }
 
-        public override bool PreDraw(ref Color lightColor)
-        {
+        public override bool PreDraw(ref Color lightColor) {
             Player player = Main.player[Projectile.owner];
             float effectiveDistance = Projectile.ai[1];
             LaserState state = (LaserState)(int)Projectile.localAI[0];
             string texturePath = FiringTexturePath;
             int frameCount = FiringFrameCount;
-            if (state == LaserState.Continuous)
-            {
+            if (state == LaserState.Continuous) {
                 texturePath = ContinuousTexturePath;
                 frameCount = ContinuousFrameCount;
             }
-            else if (state == LaserState.Ending)
-            {
+            else if (state == LaserState.Ending) {
                 texturePath = EndingTexturePath;
                 frameCount = EndingFrameCount;
             }

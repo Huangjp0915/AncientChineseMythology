@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.Enums;
@@ -11,14 +11,13 @@ namespace AncientChineseMythology.Tiles.Placable
     {
         public override string Texture => "AncientChineseMythology/Textures/Tiles/Placable/ElixirFurnaceTile";
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             // 基础设置
             Main.tileLighted[Type] = true;
             Main.tileFrameImportant[Type] = true;
             Main.tileNoAttach[Type] = false; // 允许无背景墙放置
             Main.tileLavaDeath[Type] = true;
-            
+
             // 3x3布局（48px = 3格x16px）
             TileObjectData.newTile.CopyFrom(TileObjectData.Style3x3);
             TileObjectData.newTile.Width = 3;
@@ -36,20 +35,18 @@ namespace AncientChineseMythology.Tiles.Placable
 
             // 地图标记
             AddMapEntry(new Color(150, 120, 80), CreateMapEntryName());
-            
+
             // 动画设置（若需要）
             AnimationFrameHeight = 48;
         }
 
         // 发光效果
-        public override void ModifyLight(int i, int j, ref float r, ref float g, ref float b)
-        {
+        public override void ModifyLight(int i, int j, ref float r, ref float g, ref float b) {
             r = 0.8f; g = 0.6f; b = 0.4f;
         }
 
         // 精准掉落控制
-        public override void KillMultiTile(int i, int j, int frameX, int frameY)
-        {
+        public override void KillMultiTile(int i, int j, int frameX, int frameY) {
             int left = i - frameX / 16; // 每格16px
             int top = j - frameY / 16;
             if (left < 0 || top < 0) return;

@@ -1,8 +1,8 @@
-// Players/CupriteSetBonusPlayer.cs
+﻿// Players/CupriteSetBonusPlayer.cs
+using AncientChineseMythology.Items;   // 含 Player.HurtInfo
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
-using AncientChineseMythology.Items;   // 含 Player.HurtInfo
 
 namespace AncientChineseMythology.Players
 {
@@ -11,20 +11,17 @@ namespace AncientChineseMythology.Players
         /// <summary>在三件套装备检查里设为 true。</summary>
         public bool cupriteSet;
 
-        public override void ResetEffects()
-        {
+        public override void ResetEffects() {
             cupriteSet = false;
         }
 
         // ────────── 近战或接触伤害 ──────────
-        public override void OnHitByNPC(NPC npc, Player.HurtInfo hurtInfo)
-        {
+        public override void OnHitByNPC(NPC npc, Player.HurtInfo hurtInfo) {
             TryInflictBurn(npc);
         }
 
         // ────────── 远程 / 魔法 / 投射物伤害 ──────────
-        public override void OnHitByProjectile(Projectile proj, Player.HurtInfo hurtInfo)
-        {
+        public override void OnHitByProjectile(Projectile proj, Player.HurtInfo hurtInfo) {
             if (!cupriteSet || proj.friendly || !proj.hostile) return;
 
             int npcIndex = ResolveShooterIndex(proj);
@@ -32,8 +29,7 @@ namespace AncientChineseMythology.Players
         }
 
         // 根据 owner / ai[0] / ai[1] 三种惯例尝试找出发射者
-        private static int ResolveShooterIndex(Projectile proj)
-        {
+        private static int ResolveShooterIndex(Projectile proj) {
             // 最常见：npcProj==true 且 owner 保存 NPC 索引 :contentReference[oaicite:2]{index=2}
             if (proj.npcProj && proj.owner >= 0 && proj.owner < Main.maxNPCs)
                 return proj.owner;
@@ -50,13 +46,11 @@ namespace AncientChineseMythology.Players
         }
 
         // ────────── 公共工具方法 ──────────
-        private void TryInflictBurn(NPC npc)
-        {
+        private void TryInflictBurn(NPC npc) {
             if (!cupriteSet || npc.friendly || !npc.active)
                 return;
 
-            if (Main.rand.NextFloat() < CupriteArmorConstants.BurnChance)
-            {
+            if (Main.rand.NextFloat() < CupriteArmorConstants.BurnChance) {
                 npc.AddBuff(BuffID.OnFire, CupriteArmorConstants.BurnDurationTicks);
             }
         }

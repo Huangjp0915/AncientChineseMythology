@@ -1,25 +1,25 @@
-using Terraria.ID;
+﻿using AncientChineseMythology.Items.Bronze;
 using Terraria;
+using Terraria.ID;
 using Terraria.ModLoader;
-using AncientChineseMythology.Items.Bronze;
 
 namespace AncientChineseMythology.Items.Cuprite
 {
 
     [AutoloadEquip(EquipType.Legs)]
 
-    public class CupriteLeggings : ModItem {
+    public class CupriteLeggings : ModItem
+    {
         public override string Texture => "AncientChineseMythology/Textures/Items/Cuprite/CupriteLeggings";
         public override void SetDefaults() {
-            Item.width  = 18;
+            Item.width = 18;
             Item.height = 18;
-            Item.value  = Item.sellPrice(silver: 70);
-            Item.rare   = ItemRarityID.Green;
+            Item.value = Item.sellPrice(silver: 70);
+            Item.rare = ItemRarityID.Green;
             Item.defense = 9;
         }
 
-        public override void AddRecipes()
-        {
+        public override void AddRecipes() {
             Recipe recipe = CreateRecipe();
             recipe.AddIngredient(ModContent.ItemType<Cuprite>(), 20);
             recipe.AddIngredient(ModContent.ItemType<BronzeIngot>(), 10);

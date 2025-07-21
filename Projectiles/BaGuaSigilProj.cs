@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ModLoader;
 
@@ -6,14 +6,12 @@ namespace AncientChineseMythology.Projectiles
 {
     public class BaGuaSigilProj : ModProjectile
     {
-        public override string Texture => "AncientChineseMythology/Textures/Projectiles/BaGuaSigilProj"; 
-        
-        public override void SetStaticDefaults()
-        {
+        public override string Texture => "AncientChineseMythology/Textures/Projectiles/BaGuaSigilProj";
+
+        public override void SetStaticDefaults() {
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Projectile.width = 64;
             Projectile.height = 64;
             Projectile.friendly = false;
@@ -23,11 +21,9 @@ namespace AncientChineseMythology.Projectiles
             Projectile.ignoreWater = true;
         }
 
-        public override void AI()
-        {
+        public override void AI() {
             Player owner = Main.player[Projectile.owner];
-            if (!owner.active || owner.dead || !owner.HasBuff(ModContent.BuffType<Buffs.BaGuaBuff>()))
-            {
+            if (!owner.active || owner.dead || !owner.HasBuff(ModContent.BuffType<Buffs.BaGuaBuff>())) {
                 Projectile.Kill();
                 return;
             }

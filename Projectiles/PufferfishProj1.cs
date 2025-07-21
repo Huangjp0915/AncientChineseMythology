@@ -1,9 +1,9 @@
-﻿using Terraria;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using Terraria;
+using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using Terraria.GameContent;
 
 namespace AncientChineseMythology.Projectiles
 {
@@ -13,8 +13,7 @@ namespace AncientChineseMythology.Projectiles
         Player player => Main.player[Projectile.owner]; // 玩家实例
         float LaserLength = 0; // 激光的长度
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             Main.projFrames[Projectile.type] = 1;
             ProjectileID.Sets.DrawScreenCheckFluff[Type] = 200; //超过屏幕外多少可以绘制
             base.SetStaticDefaults();
@@ -34,8 +33,7 @@ namespace AncientChineseMythology.Projectiles
                 LaserLength += 2;//距离+2
             }
         }
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Projectile.width = 32; // 弹幕宽度
             Projectile.height = 32; // 弹幕高度
             Projectile.friendly = true; // 友方弹幕
@@ -58,14 +56,12 @@ namespace AncientChineseMythology.Projectiles
                 Projectile.localAI[0]++;
             if (Projectile.timeLeft < 26) Projectile.localAI[0]--;//弹幕快要消失时减少
             SetLaserPosition();//进行碰撞判断
-            if (player.channel)
-            {
+            if (player.channel) {
                 if (player.direction == 1)//如果玩家朝着右边
                 {
                     player.itemRotation = Projectile.velocity.ToRotation();//获取玩家到弹幕向量的方向
                 }
-                else
-                {
+                else {
                     player.itemRotation = Projectile.velocity.ToRotation() + 3.1415926f;//反之需要+半圈
                 }
                 player.heldProj = Projectile.whoAmI;//之前漏讲了，手持弹幕要写这个
@@ -76,22 +72,20 @@ namespace AncientChineseMythology.Projectiles
             Projectile.Center = player.Center + Projectile.velocity.SafeNormalize(Vector2.Zero) * 40;//弹幕位置在玩家位置的右边，距离40像素
             //让弹幕的位置保持在距离玩家80的地方，这样能有武器的感觉
             Projectile.velocity = Vector2.Lerp(Projectile.velocity, Main.MouseWorld - player.Center, 0.8f);//0.05f是平滑度
-           
-            if(Projectile.timeLeft % 30 == 0)
-            //让激光方向追着鼠标走
-            Dust.NewDustDirect(Projectile.Center + Projectile.velocity.SafeNormalize(Vector2.Zero) * LaserLength//激光头部的位置
-                + Main.rand.NextVector2Circular(100, 100), 0, 0, DustID.GreenFairy, 1, 1, 0).scale = 2f;//激光头部的头发
-            if(Projectile.timeLeft % 30 == 0)
-            Dust.NewDustDirect(Projectile.Center + Projectile.velocity.SafeNormalize(Vector2.Zero) * LaserLength//尾巴的位置
-                + Main.rand.NextVector2Circular(80, 80), 0, 0, DustID.Confetti_Green, 1, 1, 0).scale = 1.5f;//激光尾部的尾巴
+
+            if (Projectile.timeLeft % 30 == 0)
+                //让激光方向追着鼠标走
+                Dust.NewDustDirect(Projectile.Center + Projectile.velocity.SafeNormalize(Vector2.Zero) * LaserLength//激光头部的位置
+                    + Main.rand.NextVector2Circular(100, 100), 0, 0, DustID.GreenFairy, 1, 1, 0).scale = 2f;//激光头部的头发
+            if (Projectile.timeLeft % 30 == 0)
+                Dust.NewDustDirect(Projectile.Center + Projectile.velocity.SafeNormalize(Vector2.Zero) * LaserLength//尾巴的位置
+                    + Main.rand.NextVector2Circular(80, 80), 0, 0, DustID.Confetti_Green, 1, 1, 0).scale = 1.5f;//激光尾部的尾巴
         }
-        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
-        {
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
             //粒子效果
             int dustIndex = Dust.NewDust(target.position, target.width, target.height, DustID.GreenFairy, 0f, 0f, 100, default(Color), 1f);
             Main.dust[dustIndex].velocity *= 2f;
-            if (Main.rand.NextBool(2))
-            {
+            if (Main.rand.NextBool(2)) {
                 Main.dust[dustIndex].scale = 0.5f;
                 Main.dust[dustIndex].fadeIn = 1f + (float)Main.rand.Next(10) * 0.05f;
             }

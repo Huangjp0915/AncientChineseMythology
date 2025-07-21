@@ -1,19 +1,17 @@
+﻿using SubworldLibrary;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
-using SubworldLibrary;
 
 namespace AncientChineseMythology.Items
 {
     public class SkyKey : ModItem
     {
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             Item.ResearchUnlockCount = 1; // 允许在旅程模式研究
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 20;
             Item.height = 20;
             Item.useStyle = ItemUseStyleID.HoldUp;

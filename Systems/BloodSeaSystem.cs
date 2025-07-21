@@ -1,19 +1,19 @@
+﻿using System;
 using System.Collections.Generic;
 using Terraria;
+using Terraria.GameContent.Generation;
 using Terraria.ID;
 using Terraria.IO;
 using Terraria.ModLoader;
-using Terraria.WorldBuilding;
-using Terraria.GameContent.Generation;
-using System;
 using Terraria.ModLoader.IO;
+using Terraria.WorldBuilding;
 
 namespace AncientChineseMythology.Systems
 {
     public class BloodSeaSystem : ModSystem
     {
-        private const int BloodSeaWidth = 400;   
-        public static int NearbyBloodTiles; 
+        private const int BloodSeaWidth = 400;
+        public static int NearbyBloodTiles;
         private static int BloodSeaStart => Main.maxTilesX - BloodSeaWidth;
         private static bool bloodSeaConverted;
 
@@ -62,11 +62,9 @@ namespace AncientChineseMythology.Systems
                     WorldGen.PlaceLiquid(x, y, (byte)LiquidID.Water, (byte)255);
         }*/
 
-        public override void PreUpdateWorld()
-        {
+        public override void PreUpdateWorld() {
             // 只在服务器或单机端执行；客户端等待同步即可
-            if (!bloodSeaConverted && Main.hardMode && Main.netMode != NetmodeID.MultiplayerClient)
-            {
+            if (!bloodSeaConverted && Main.hardMode && Main.netMode != NetmodeID.MultiplayerClient) {
                 ConvertRightOceanToBloodSea();   // ← 真正执行改造
                 bloodSeaConverted = true;
 
@@ -76,28 +74,25 @@ namespace AncientChineseMythology.Systems
             }
         }
 
-        private static void ConvertRightOceanToBloodSea()
-        {
-            int endX   = Main.maxTilesX - 1;
+        private static void ConvertRightOceanToBloodSea() {
+            int endX = Main.maxTilesX - 1;
             int startX = Math.Max(0, endX - BloodSeaWidth);
 
-            int topY    = (int)Main.worldSurface - 120;
+            int topY = (int)Main.worldSurface - 120;
             int bottomY = (int)Main.worldSurface + 120;
 
             ushort bloodSand = (ushort)ModContent.TileType<Tiles.Placable.BloodSeaSand>();
 
             // ① 替换所有沙系方块
             for (int x = startX; x <= endX; x++)
-                for (int y = topY; y <= bottomY; y++)
-                {
+                for (int y = topY; y <= bottomY; y++) {
                     Tile t = Main.tile[x, y];
                     if (!t.HasTile) continue;
 
                     if (t.TileType == TileID.Sand ||
                         t.TileType == TileID.Sandstone ||
                         t.TileType == TileID.HardenedSand ||
-                        t.TileType == TileID.Dirt)
-                    {
+                        t.TileType == TileID.Dirt) {
                         WorldGen.KillTile(x, y, noItem: true);
                         WorldGen.PlaceTile(x, y, bloodSand, forced: true);
                     }
@@ -115,18 +110,15 @@ namespace AncientChineseMythology.Systems
                 Main.NewText("血液逐渐涌上来了！", 200, 0, 0);
         }
 
-        public override void OnWorldLoad()
-        {
+        public override void OnWorldLoad() {
             bloodSeaConverted = false;
         }
 
-        public override void SaveWorldData(TagCompound tag)
-        {
+        public override void SaveWorldData(TagCompound tag) {
             tag["bloodSeaConverted"] = bloodSeaConverted;
         }
 
-        public override void LoadWorldData(TagCompound tag)
-        {
+        public override void LoadWorldData(TagCompound tag) {
             bloodSeaConverted = tag.GetBool("bloodSeaConverted");
         }
     }

@@ -1,4 +1,4 @@
-using Terraria;
+﻿using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -7,8 +7,7 @@ namespace AncientChineseMythology.Items.Bronze
     public class BronzePickaxe : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Bronze/BronzePickaxe";
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.damage = 15; // 镐力
             Item.noMelee = false; // 攻击类型
             Item.width = 40;
@@ -23,8 +22,7 @@ namespace AncientChineseMythology.Items.Bronze
             Item.autoReuse = true;
         }
 
-        public override void AddRecipes()
-        {
+        public override void AddRecipes() {
             Recipe recipe = CreateRecipe();
             recipe.AddIngredient(ModContent.ItemType<BronzeIngot>(), 12);
             recipe.AddTile(TileID.Anvils);

@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.ModLoader;
@@ -9,8 +9,7 @@ namespace AncientChineseMythology.Projectiles
     {
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/YuChangSwordProjectile";
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Projectile.width = 50;
             Projectile.height = 50;
             Projectile.friendly = true;
@@ -21,8 +20,7 @@ namespace AncientChineseMythology.Projectiles
             Projectile.ownerHitCheck = true;
         }
 
-        public override void AI()
-        {
+        public override void AI() {
             Player player = Main.player[Projectile.owner];
             Vector2 handPosition = player.RotatedRelativePoint(player.MountedCenter, true);
 
@@ -48,13 +46,12 @@ namespace AncientChineseMythology.Projectiles
                 Projectile.Kill();
         }
 
-        public override bool PreDraw(ref Color lightColor)
-        {
+        public override bool PreDraw(ref Color lightColor) {
             Texture2D texture = ModContent.Request<Texture2D>(Texture).Value;
-            
+
             Vector2 origin = new Vector2(texture.Width / 2, texture.Height / 2);// 统一使用中心锚点
-            
-            
+
+
             Main.EntitySpriteDraw(
                 texture,
                 Projectile.Center - Main.screenPosition,

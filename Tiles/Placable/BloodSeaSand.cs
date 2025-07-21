@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -8,9 +8,8 @@ namespace AncientChineseMythology.Tiles.Placable
     public class BloodSeaSand : ModTile
     {
         public override string Texture => "AncientChineseMythology/Textures/Tiles/Placable/BloodSeaSand";
-        public override void SetStaticDefaults()
-        {
-            Main.tileSolid[Type]      = true;
+        public override void SetStaticDefaults() {
+            Main.tileSolid[Type] = true;
             Main.tileSand[Type] = true;
             Main.tileMergeDirt[Type] = true;
             Main.tileBlockLight[Type] = true;

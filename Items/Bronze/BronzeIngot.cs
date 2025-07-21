@@ -1,4 +1,4 @@
-using Terraria;
+﻿using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -7,12 +7,10 @@ namespace AncientChineseMythology.Items.Bronze
     public class BronzeIngot : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Bronze/BronzeIngot";
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 20;
             Item.height = 20;
             Item.maxStack = 999;
@@ -20,8 +18,7 @@ namespace AncientChineseMythology.Items.Bronze
             Item.rare = ItemRarityID.White;
         }
 
-        public override void AddRecipes()
-        {
+        public override void AddRecipes() {
             // 1. 使用 2 个铜矿 + 1 个铁矿
             Recipe recipe1 = CreateRecipe();
             recipe1.AddIngredient(ItemID.CopperOre, 2);

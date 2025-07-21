@@ -1,4 +1,4 @@
-// Content/Items/Armor/CupriteHelmet.cs
+﻿// Content/Items/Armor/CupriteHelmet.cs
 using AncientChineseMythology.Items.Bronze;
 using AncientChineseMythology.Players;
 using Terraria;
@@ -10,7 +10,8 @@ namespace AncientChineseMythology.Items.Cuprite
 {
 
     [AutoloadEquip(EquipType.Head)]
-    public class CupriteHelmet : ModItem {
+    public class CupriteHelmet : ModItem
+    {
         public override string Texture => "AncientChineseMythology/Textures/Items/Cuprite/CupriteHelmet";
         public static LocalizedText SetBonusText { get; private set; }
 
@@ -22,24 +23,23 @@ namespace AncientChineseMythology.Items.Cuprite
         }
 
         public override void SetDefaults() {
-            Item.width  = 18;
+            Item.width = 18;
             Item.height = 18;
-            Item.value  = Item.sellPrice(silver: 80);
-            Item.rare   = ItemRarityID.Green;
+            Item.value = Item.sellPrice(silver: 80);
+            Item.rare = ItemRarityID.Green;
             Item.defense = 9;
         }
 
         public override bool IsArmorSet(Item head, Item body, Item legs) =>
             body.type == ModContent.ItemType<CupriteBreastplate>() &&
-            legs.type == ModContent.ItemType<CupriteLeggings>(); 
+            legs.type == ModContent.ItemType<CupriteLeggings>();
 
         public override void UpdateArmorSet(Player player) {
-            player.setBonus = SetBonusText.Value;                     
+            player.setBonus = SetBonusText.Value;
             player.GetModPlayer<CupriteSetBonusPlayer>().cupriteSet = true;
         }
 
-        public override void AddRecipes()
-        {
+        public override void AddRecipes() {
             Recipe recipe = CreateRecipe();
             recipe.AddIngredient(ModContent.ItemType<Cuprite>(), 15);
             recipe.AddIngredient(ModContent.ItemType<BronzeIngot>(), 10);

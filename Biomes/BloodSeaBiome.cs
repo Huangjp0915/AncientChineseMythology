@@ -1,8 +1,8 @@
-using Terraria;
-using Terraria.ModLoader;
-using AncientChineseMythology.Systems;
+﻿using AncientChineseMythology.Systems;
 using AncientChineseMythology.WaterStyles;
+using Terraria;
 using Terraria.Graphics.Capture;
+using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Biomes
 {
@@ -11,14 +11,14 @@ namespace AncientChineseMythology.Biomes
         public override ModWaterStyle WaterStyle => ModContent.GetInstance<BloodSeaWaterStyle>();
 
         public override CaptureBiome.TileColorStyle TileColorStyle => CaptureBiome.TileColorStyle.Crimson;
-        
-        public override SceneEffectPriority Priority  
+
+        public override SceneEffectPriority Priority
             => SceneEffectPriority.BiomeHigh;
 
-        public override int Music 
+        public override int Music
             => MusicLoader.GetMusicSlot(Mod, "Sounds/Music/BloodSeaTheme");
 
-        public override ModSurfaceBackgroundStyle SurfaceBackgroundStyle 
+        public override ModSurfaceBackgroundStyle SurfaceBackgroundStyle
             => ModContent.GetInstance<Backgrounds.BloodSeaSurfaceBGStyle>();
 
         public override bool IsBiomeActive(Player player)

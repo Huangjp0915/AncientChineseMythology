@@ -1,7 +1,7 @@
+﻿using AncientChineseMythology.Players;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
-using AncientChineseMythology.Players;
 
 namespace AncientChineseMythology.Items.Potions
 {
@@ -9,12 +9,10 @@ namespace AncientChineseMythology.Items.Potions
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Potions/XuanYuanDan";
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 20;
             Item.height = 28;
             Item.maxStack = 30;
@@ -28,8 +26,7 @@ namespace AncientChineseMythology.Items.Potions
             Item.value = Item.buyPrice(gold: 50);
         }
 
-        public override bool? UseItem(Player player)
-        {
+        public override bool? UseItem(Player player) {
             var mp = player.GetModPlayer<MythologyPlayer>();
             // 给固定经验值，也可根据当前 Major/Minor 调整
             const int ExpAmount = 500;

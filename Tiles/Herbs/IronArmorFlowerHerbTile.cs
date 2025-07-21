@@ -1,4 +1,4 @@
-using AncientChineseMythology.Items.Herbs;
+﻿using AncientChineseMythology.Items.Herbs;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System.Collections.Generic;
@@ -9,23 +9,25 @@ using Terraria.Localization;
 using Terraria.ModLoader;
 using Terraria.ObjectData;
 
-namespace AncientChineseMythology.Tiles.Herbs {
+namespace AncientChineseMythology.Tiles.Herbs
+{
 
     // 三阶段：种子→生长→成熟
     public enum IronArmorStage : byte { Seed, Growing, Mature }
 
-    public class IronArmorFlowerHerbTile : ModTile {
+    public class IronArmorFlowerHerbTile : ModTile
+    {
 
         public override string Texture => "AncientChineseMythology/Textures/Tiles/Herbs/IronArmorFlowerHerbTile";
         private const int FrameW = 18;
-        private static readonly Point[] Off4 = { new(1,0), new(-1,0), new(0,1), new(0,-1) };
+        private static readonly Point[] Off4 = { new(1, 0), new(-1, 0), new(0, 1), new(0, -1) };
 
         public override void SetStaticDefaults() {
             Main.tileFrameImportant[Type] = true;
-            Main.tileCut[Type]            = true;
-            Main.tileNoFail[Type]         = true;
-            Main.tileObsidianKill[Type]   = true;
-            TileID.Sets.ReplaceTileBreakUp[Type]      = true;
+            Main.tileCut[Type] = true;
+            Main.tileNoFail[Type] = true;
+            Main.tileObsidianKill[Type] = true;
+            TileID.Sets.ReplaceTileBreakUp[Type] = true;
             TileID.Sets.IgnoredByGrowingSaplings[Type] = true;
 
             TileMaterials.SetForTileId(Type, TileMaterials._materialsByName["Plant"]);
@@ -42,13 +44,11 @@ namespace AncientChineseMythology.Tiles.Herbs {
             HitSound = SoundID.Grass;
         }
 
-        public override bool CanPlace(int i, int j)
-        {
+        public override bool CanPlace(int i, int j) {
             int gi = i;       // ground x
             int gj = j + 1;   // ground y：植株下方那格
 
-            foreach (Point p in Off4)
-            {
+            foreach (Point p in Off4) {
                 Tile near = Framing.GetTileSafely(gi + p.X, gj + p.Y);
                 if (near.HasTile && TileID.Sets.Ore[near.TileType])
                     return base.CanPlace(i, j);

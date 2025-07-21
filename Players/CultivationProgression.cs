@@ -1,4 +1,4 @@
-namespace AncientChineseMythology.Players;
+﻿namespace AncientChineseMythology.Players;
 
 public static class CultivationProgression
 {
@@ -49,12 +49,11 @@ public static class CultivationProgression
     //  小境界增益基准随大境界线性递增，比如：
     //  在 major=0 时 minor 每级增益为 (10,10,1,0.02)
     //  在 major=N 时增益为 (10 + 2*N, 10 + 2*N, 1 + 0.5*N, 0.02 + 0.005*N)
-    public static (int hp, int mana, int def, float dmg) GetMinorBonusBase(int major)
-    {
-        int hp   = 10 + 2 * major;
+    public static (int hp, int mana, int def, float dmg) GetMinorBonusBase(int major) {
+        int hp = 10 + 2 * major;
         int mana = 10 + 2 * major;
-        int def  = 1 + major / 2;
-        float dmg= 0.02f + 0.005f * major;
+        int def = 1 + major / 2;
+        float dmg = 0.02f + 0.005f * major;
         return (hp, mana, def, dmg);
     }
 }

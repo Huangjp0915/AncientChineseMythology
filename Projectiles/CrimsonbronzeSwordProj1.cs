@@ -47,23 +47,19 @@ namespace AncientChineseMythology.Projectiles
             Unwind
         }
 
-        private AttackStage CurrentStage
-        {
+        private AttackStage CurrentStage {
             get => (AttackStage)Projectile.localAI[0];
-            set
-            {
+            set {
                 Projectile.localAI[0] = (float)value;
                 Timer = 0; // 切换状态时重置计时器
             }
         }
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             ProjectileID.Sets.HeldProjDoesNotUsePlayerGfxOffY[Type] = true;
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Projectile.width = 80; // 投射物的碰撞箱宽度
             Projectile.height = 80; // 投射物的碰撞箱高度
             Projectile.friendly = true; // 投射物可以击中敌人
@@ -76,35 +72,30 @@ namespace AncientChineseMythology.Projectiles
             Projectile.DamageType = DamageClass.MeleeNoSpeed; // 投射物为近战投射物
         }
 
-        public override void OnSpawn(IEntitySource source)
-        {
+        public override void OnSpawn(IEntitySource source) {
             Projectile.spriteDirection = Main.MouseWorld.X > Owner.MountedCenter.X ? 1 : -1;
             float targetAngle = (Main.MouseWorld - Owner.MountedCenter).ToRotation();
             InitialAngle = targetAngle - FIRSTHALFSWING * SWINGRANGE * Projectile.spriteDirection * 1.2f; // 计算角度
             Projectile.alpha = 200;
         }
 
-        public override void SendExtraAI(BinaryWriter writer)
-        {
+        public override void SendExtraAI(BinaryWriter writer) {
             // 这个投射物的 Projectile.spriteDirection 在 OnSpawn 中根据拥有者的鼠标位置得出，因此需要同步。spriteDirection 不是自动同步的字段. 由于所有 Projectile.ai 插槽都已使用，因此我们将其手动同步。
             writer.Write((sbyte)Projectile.spriteDirection);
         }
 
-        public override void ReceiveExtraAI(BinaryReader reader)
-        {
+        public override void ReceiveExtraAI(BinaryReader reader) {
             Projectile.spriteDirection = reader.ReadSByte();
         }
 
-        public override void AI()
-        {
+        public override void AI() {
             Player player = Main.player[Projectile.owner];
             // 更新投射物的位置和旋转
             Projectile.oldPos[0] = Projectile.position;
             Projectile.oldRot[0] = Projectile.rotation;
 
             // 更新历史位置和旋转
-            for (int i = Projectile.oldPos.Length - 1; i > 0; i--)
-            {
+            for (int i = Projectile.oldPos.Length - 1; i > 0; i--) {
                 Projectile.oldPos[i] = Projectile.oldPos[i - 1];
                 Projectile.oldRot[i] = Projectile.oldRot[i - 1];
             }
@@ -112,38 +103,32 @@ namespace AncientChineseMythology.Projectiles
             Owner.itemAnimation = 2; // 延长使用动画
             Owner.itemTime = 2;
 
-            if (!Owner.active || Owner.dead || Owner.noItems || Owner.CCed)
-            {
+            if (!Owner.active || Owner.dead || Owner.noItems || Owner.CCed) {
                 Projectile.Kill();
                 return;
             }
 
             // 仅保留挥舞的逻辑
-            if (CurrentStage == AttackStage.Prepare)
-            {
+            if (CurrentStage == AttackStage.Prepare) {
                 PrepareStrike();
                 Projectile.spriteDirection = Main.MouseWorld.X > Owner.MountedCenter.X ? 1 : -1;
                 float targetAngle = (Main.MouseWorld - Owner.MountedCenter).ToRotation();
                 InitialAngle = targetAngle - FIRSTHALFSWING * SWINGRANGE * Projectile.spriteDirection * 1.2f; // 计算角度
             }
-            else if (CurrentStage == AttackStage.Execute)
-            {
+            else if (CurrentStage == AttackStage.Execute) {
                 ExecuteStrike();
                 Attack_1();
             }
-            else if (CurrentStage == AttackStage.Unwind)
-            {
+            else if (CurrentStage == AttackStage.Unwind) {
                 UnwindStrike();
             }
 
-            if (Main.MouseWorld.X > player.Center.X)
-            {
+            if (Main.MouseWorld.X > player.Center.X) {
                 Vector2 directionToMouse = Main.MouseWorld - Owner.Center + new Vector2(0, 100f);
                 directionToMouse.Normalize();
                 swordCenter = Owner.Center - directionToMouse * 40f;
             }
-            else
-            {
+            else {
                 Vector2 directionToMouse = Main.MouseWorld - Owner.Center + new Vector2(100, 150f);
                 directionToMouse.Normalize();
                 swordCenter = Owner.Center - directionToMouse * 40f;
@@ -159,10 +144,8 @@ namespace AncientChineseMythology.Projectiles
             //    Projectile.scale = MathHelper.Lerp(0.1f, 1f, timerCounter / 60f);
             //}
 
-            if (timerCounter > 60)
-            {
-                if (timerCounter % 10 == 0)
-                {
+            if (timerCounter > 60) {
+                if (timerCounter % 10 == 0) {
                     // 粒子效果
                     int dustIndex = Dust.NewDust(swordCenter, 0, 0, DustID.Torch, 0f, 0f, 1, default, 1f);
                     Main.dust[dustIndex].noGravity = false;
@@ -178,22 +161,19 @@ namespace AncientChineseMythology.Projectiles
             if (isStart || Timer <= 8)
                 Timer++;
         }
-        
-        public override bool PreDraw(ref Microsoft.Xna.Framework.Color lightColor)
-        {
+
+        public override bool PreDraw(ref Microsoft.Xna.Framework.Color lightColor) {
             // 根据方向计算剑的原点（护手）并偏移剑的旋转（因为剑的贴图是倾斜的）
             Microsoft.Xna.Framework.Vector2 origin;
             float rotationOffset;
             SpriteEffects effects;
 
-            if (Projectile.spriteDirection > 0)
-            {
+            if (Projectile.spriteDirection > 0) {
                 origin = new Microsoft.Xna.Framework.Vector2(0, Projectile.height);
                 rotationOffset = MathHelper.ToRadians(45f);
                 effects = SpriteEffects.None;
             }
-            else
-            {
+            else {
                 origin = new Microsoft.Xna.Framework.Vector2(Projectile.width, Projectile.height);
                 rotationOffset = MathHelper.ToRadians(135f);
                 effects = SpriteEffects.FlipHorizontally;
@@ -207,22 +187,22 @@ namespace AncientChineseMythology.Projectiles
             Microsoft.Xna.Framework.Rectangle destinationRectangle = new Microsoft.Xna.Framework.Rectangle(
                 0, 0, (int)(Projectile.width), (int)(Projectile.height)
                 );
-            if(timerCounter > 60)
-            //先绘制拖尾
-            for (int i = 0; i < 9; i++) // 循环上限小于轨迹长度
-            {
-                float factor = 0.5f - (float)i / 18; // 计算透明度因子
-                Microsoft.Xna.Framework.Vector2 oldCenter = Projectile.oldPos[i + 1] + Projectile.Size / 2 - Main.screenPosition; // 获取旧位置的中心点
-                // 绘制拖尾
-                Main.EntitySpriteDraw(texture, oldCenter,
-                    destinationRectangle,
-                    MyColor * factor, // 颜色逐渐变淡
-                    Projectile.oldRot[i] + rotationOffset, // 弹幕轨迹上的曾经的方向
-                    origin, // 贴图参照原点在左上角
-                    Projectile.scale * 1f, // 缩放
-                    effects,
-                    0); // 层级
-            }
+            if (timerCounter > 60)
+                //先绘制拖尾
+                for (int i = 0; i < 9; i++) // 循环上限小于轨迹长度
+                {
+                    float factor = 0.5f - (float)i / 18; // 计算透明度因子
+                    Microsoft.Xna.Framework.Vector2 oldCenter = Projectile.oldPos[i + 1] + Projectile.Size / 2 - Main.screenPosition; // 获取旧位置的中心点
+                                                                                                                                      // 绘制拖尾
+                    Main.EntitySpriteDraw(texture, oldCenter,
+                        destinationRectangle,
+                        MyColor * factor, // 颜色逐渐变淡
+                        Projectile.oldRot[i] + rotationOffset, // 弹幕轨迹上的曾经的方向
+                        origin, // 贴图参照原点在左上角
+                        Projectile.scale * 1f, // 缩放
+                        effects,
+                        0); // 层级
+                }
             Main.spriteBatch.Draw(texture, Projectile.Center - Main.screenPosition, default, lightColor * Projectile.Opacity, Projectile.rotation + rotationOffset, origin, Projectile.scale, effects, 0);
 
             // 由于我们在进行自定义绘制，因此不进行正常绘制
@@ -231,8 +211,7 @@ namespace AncientChineseMythology.Projectiles
 
 
         // 找到剑的起始和结束位置，并使用线段碰撞检测与敌人检查碰撞
-        public override bool? Colliding(Microsoft.Xna.Framework.Rectangle projHitbox, Microsoft.Xna.Framework.Rectangle targetHitbox)
-        {
+        public override bool? Colliding(Microsoft.Xna.Framework.Rectangle projHitbox, Microsoft.Xna.Framework.Rectangle targetHitbox) {
             Microsoft.Xna.Framework.Vector2 start = Owner.MountedCenter;
             Microsoft.Xna.Framework.Vector2 end = start + Projectile.rotation.ToRotationVector2() * ((Projectile.Size.Length()) * Projectile.scale * 1.05f);
             float collisionPoint = 0f;
@@ -240,31 +219,27 @@ namespace AncientChineseMythology.Projectiles
         }
 
         // 对瓦片进行类似的碰撞检测
-        public override void CutTiles()
-        {
+        public override void CutTiles() {
             Microsoft.Xna.Framework.Vector2 start = Owner.MountedCenter;
             Microsoft.Xna.Framework.Vector2 end = start + Projectile.rotation.ToRotationVector2() * (Projectile.Size.Length() * Projectile.scale * 1.05f);
             Utils.PlotTileLine(start, end, 15 * Projectile.scale, DelegateMethods.CutTiles);
         }
 
         // 确保投射物仅在释放阶段和放松阶段造成伤害
-        public override bool? CanDamage()
-        {
+        public override bool? CanDamage() {
             if (CurrentStage == AttackStage.Prepare)
                 return false;
             return base.CanDamage();
         }
 
-        public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers)
-        {
+        public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers) {
             // 确保击退方向远离玩家
             modifiers.HitDirectionOverride = target.position.X > Owner.MountedCenter.X ? 1 : -1;
 
         }
 
         // 方便设置投射物和手臂位置的函数
-        public void SetSwordPosition()
-        {
+        public void SetSwordPosition() {
             Player player = Main.player[Projectile.owner];
             Projectile.rotation = InitialAngle + Projectile.spriteDirection * Progress; // 设置投射物的旋转
 
@@ -282,50 +257,40 @@ namespace AncientChineseMythology.Projectiles
         }
 
         // 准备攻击的函数
-        private void PrepareStrike()
-        {
+        private void PrepareStrike() {
             Progress = WINDUP * SWINGRANGE * (1f - Timer / prepTime); // 从初始角度计算旋转
             Size = MathHelper.SmoothStep(0, 1, Timer / prepTime); // 增加大小
 
-            if (Timer >= prepTime)
-            {
+            if (Timer >= prepTime) {
                 SoundEngine.PlaySound(SoundID.Item1); // 播放声音
                 CurrentStage = AttackStage.Execute; // 进入执行阶段
             }
         }
 
         // 执行挥动的函数
-        private void ExecuteStrike()
-        {
+        private void ExecuteStrike() {
             Progress = MathHelper.SmoothStep(0, SWINGRANGE, (1f - UNWIND / 2) * Timer / (execTime * 2));
 
-            if (Timer >= execTime * 3)
-            {
+            if (Timer >= execTime * 3) {
                 CurrentStage = AttackStage.Unwind; // 完成攻击，进入放松阶段
             }
         }
 
         // 放松的函数，剑消失
-        private void UnwindStrike()
-        {
+        private void UnwindStrike() {
             Progress = MathHelper.SmoothStep(0, SWINGRANGE, (1f - UNWIND / 10) + UNWIND * Timer / hideTime);
 
-            if (Timer >= hideTime)
-            {
+            if (Timer >= hideTime) {
                 Projectile.Kill(); // 杀死投射物
             }
         }
-        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
-        {
-            if(!target.HasBuff(BuffID.OnFire))
-            {
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            if (!target.HasBuff(BuffID.OnFire)) {
                 target.AddBuff(BuffID.OnFire, 180); // 给受伤的敌人添加燃烧效果
             }
         }
-        private void Attack_1()
-        {
-            if (!isattacking)
-            {
+        private void Attack_1() {
+            if (!isattacking) {
                 // 获取玩家中心位置
                 Microsoft.Xna.Framework.Vector2 playerCenter = Owner.MountedCenter;
 
@@ -352,8 +317,7 @@ namespace AncientChineseMythology.Projectiles
     {
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/CrimsonbronzeSwordProj2"; // 使用物品的纹理作为投射物的纹理
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Projectile.knockBack = 0.6f; // 击退
             Projectile.width = 90; // 弹幕宽度
             Projectile.height = 90; // 弹幕高度
@@ -366,8 +330,7 @@ namespace AncientChineseMythology.Projectiles
             Projectile.alpha = 1; // 透明度
             Projectile.light = 0.75f; // 发光亮度
         }
-        public override void OnSpawn(IEntitySource source)
-        {
+        public override void OnSpawn(IEntitySource source) {
             int randomValue = Main.rand.Next(100);
 
             if (randomValue < 35)
@@ -385,22 +348,18 @@ namespace AncientChineseMythology.Projectiles
             else
                 Projectile.damage *= 8;
         }
-        public override void AI()
-        {
+        public override void AI() {
             Projectile.rotation = Projectile.velocity.ToRotation();
             // 绘制气体
             int num = 5;
-            for (int i = 0; i < num; i++)
-            {
-                int dustIndex = Dust.NewDust(new Vector2(Projectile.position.X, Projectile.position.Y), 
+            for (int i = 0; i < num; i++) {
+                int dustIndex = Dust.NewDust(new Vector2(Projectile.position.X, Projectile.position.Y),
                     Projectile.width, Projectile.height, DustID.Torch, 0f, 0f, 100, Color.DarkGoldenrod, 2f);
                 Main.dust[dustIndex].noGravity = true;
             }
         }
-        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
-        {
-            if (!target.HasBuff(BuffID.OnFire))
-            {
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            if (!target.HasBuff(BuffID.OnFire)) {
                 target.AddBuff(BuffID.OnFire, 180); // 给受伤的敌人添加燃烧效果
             }
         }
@@ -457,14 +416,11 @@ namespace AncientChineseMythology.Projectiles
         }
         // 弹幕消失时的特效
         [Obsolete]
-        public override void OnKill(int timeLeft)
-        {
-            for (int i = 0; i < 6; i++)
-            {
+        public override void OnKill(int timeLeft) {
+            for (int i = 0; i < 6; i++) {
                 int dustIndex = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height, DustID.Torch, 0f, 0f, 100, default(Color), 2f);
                 Main.dust[dustIndex].velocity *= 3f;
-                if (Main.rand.NextBool(2))
-                {
+                if (Main.rand.NextBool(2)) {
                     Main.dust[dustIndex].scale = 0.5f;
                     Main.dust[dustIndex].fadeIn = 1f + (float)Main.rand.Next(10) * 0.1f;
                 }

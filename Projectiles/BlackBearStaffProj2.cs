@@ -1,13 +1,13 @@
-﻿using Terraria;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using System;
+using Terraria;
+using Terraria.DataStructures;
+using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using Color = Microsoft.Xna.Framework.Color;
 using Rectangle = Microsoft.Xna.Framework.Rectangle;
-using Terraria.GameContent;
-using System;
-using Terraria.DataStructures;
 
 namespace AncientChineseMythology.Projectiles
 {
@@ -15,8 +15,7 @@ namespace AncientChineseMythology.Projectiles
     {
         public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear_Head_Boss"; // 使用物品的纹理作为投射物的纹理
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Projectile.width = 20; // 弹幕宽度
             Projectile.height = 20; // 弹幕高度
             Projectile.friendly = true; // 友方弹幕
@@ -29,10 +28,9 @@ namespace AncientChineseMythology.Projectiles
             Projectile.light = 0.25f; // 发光亮度
         }
 
-        public override void OnSpawn(IEntitySource source)
-        {
+        public override void OnSpawn(IEntitySource source) {
             // 在玩家方向上进行一定的偏移
-            float angleOffset = Main.rand.NextFloat(-MathHelper.PiOver4/4, MathHelper.PiOver4/4); // 偏移角度范围为 -45 到 45 度
+            float angleOffset = Main.rand.NextFloat(-MathHelper.PiOver4 / 4, MathHelper.PiOver4 / 4); // 偏移角度范围为 -45 到 45 度
             Projectile.velocity = Projectile.velocity.RotatedBy(angleOffset);
 
             // 随机化大小
@@ -42,26 +40,22 @@ namespace AncientChineseMythology.Projectiles
             Projectile.rotation = Main.rand.NextFloat(0, MathHelper.TwoPi);
         }
 
-        public override void AI()
-        {
+        public override void AI() {
             // 模拟重力
             Projectile.velocity.Y += 0.2f; // 向下的速度影响
             Projectile.rotation += 0.5f; // 旋转速度
         }
 
         [Obsolete]
-        public override void OnKill(int timeLeft)
-        {
+        public override void OnKill(int timeLeft) {
             //粒子效果
-            for (int i = 0; i < 3; i++)
-            {
-                int dustIndex = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height, 
+            for (int i = 0; i < 3; i++) {
+                int dustIndex = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height,
                     DustID.YellowTorch, Projectile.velocity.X * 0.2f, Projectile.velocity.Y * 0.2f, 100, Color.White, 1.5f);
                 Main.dust[dustIndex].noGravity = true;
             }
         }
-        public override bool PreDraw(ref Color lightColor)
-        {
+        public override bool PreDraw(ref Color lightColor) {
             Texture2D texture = TextureAssets.Projectile[Type].Value;
 
             Rectangle sourceRectangle = new Rectangle(0, 0, texture.Width, texture.Height);

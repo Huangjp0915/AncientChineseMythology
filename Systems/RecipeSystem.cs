@@ -1,4 +1,4 @@
-// Systems/RecipeSystem.cs
+﻿// Systems/RecipeSystem.cs
 using AncientChineseMythology.Items.Herbs;
 using AncientChineseMythology.Items.Materials;
 using AncientChineseMythology.Items.Potions;
@@ -11,14 +11,13 @@ namespace AncientChineseMythology.Systems
 {
     public class RecipeSystem : ModSystem
     {
-        public override void AddRecipes()
-        {
+        public override void AddRecipes() {
             Recipe.Create(ModContent.ItemType<ScrapElixir>())
                 .AddIngredient(ItemID.FallenStar, 5)
                 .AddIngredient(ModContent.ItemType<YaoQiFragment>(), 5)
                 .AddTile<ElixirFurnaceTile>()
                 .Register();
-            
+
             Recipe.Create(ModContent.ItemType<XuePoDan>())
                 .AddIngredient(ItemID.Daybloom, 9)
                 .AddIngredient(ModContent.ItemType<BloodLingzhi>(), 9)

@@ -1,17 +1,16 @@
-﻿using Terraria;
-using Terraria.ModLoader;
-using Microsoft.Xna.Framework;
-using Terraria.DataStructures;
+﻿using Microsoft.Xna.Framework;
+using Terraria;
 using Terraria.Audio;
+using Terraria.DataStructures;
 using Terraria.ID;
+using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Projectiles
 {
     public class BlankProjectile : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/BlankProjectile"; // 弹幕贴图
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Projectile.width = 10; // 弹幕宽度
             Projectile.height = 10; // 弹幕高度
             Projectile.friendly = true; // 友方弹幕
@@ -30,8 +29,7 @@ namespace AncientChineseMythology.Projectiles
             Projectile.damage = 0;
         }
 
-        public override void AI()
-        {
+        public override void AI() {
             //获取玩家
             Player player = Main.player[Projectile.owner];
             //获取玩家位置
@@ -40,6 +38,6 @@ namespace AncientChineseMythology.Projectiles
             Projectile.position = playerPos;
         }
     }
-       
-     
+
+
 }

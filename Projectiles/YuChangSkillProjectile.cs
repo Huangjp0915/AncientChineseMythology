@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -9,8 +9,7 @@ namespace AncientChineseMythology.Projectiles
     {
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/YuChangSwordProjectile";
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Projectile.width = 50;                  // 碰撞箱宽度
             Projectile.height = 50;                 // 碰撞箱高度
             Projectile.friendly = true;             // 对玩家友好
@@ -23,8 +22,7 @@ namespace AncientChineseMythology.Projectiles
 
         }
 
-        public override void AI()
-        {
+        public override void AI() {
             // 偏转315°始终保持朝向飞行方向
             Projectile.rotation = Projectile.velocity.ToRotation()
                 + MathHelper.PiOver2
@@ -43,11 +41,10 @@ namespace AncientChineseMythology.Projectiles
             );
             d.noGravity = true;               // 无重力
             d.velocity = Projectile.velocity * 0.15f; // 轻微跟随飞行方向
-             
+
         }
 
-        public override bool OnTileCollide(Vector2 oldVelocity)
-        {
+        public override bool OnTileCollide(Vector2 oldVelocity) {
             // 碰撞方块时销毁投射物
             Projectile.Kill();
             return false;

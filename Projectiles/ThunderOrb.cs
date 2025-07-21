@@ -1,31 +1,30 @@
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.Audio;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Projectiles{
+namespace AncientChineseMythology.Projectiles
+{
     public class ThunderOrb : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/ThunderOrb";
 
-        private const int MaxLife = 60; 
-        
-        public override void SetDefaults()
-        {
-            Projectile.width  = 18;
+        private const int MaxLife = 60;
+
+        public override void SetDefaults() {
+            Projectile.width = 18;
             Projectile.height = 18;
             Projectile.friendly = false;
-            Projectile.hostile  = true;
-            Projectile.aiStyle  = 0;
+            Projectile.hostile = true;
+            Projectile.aiStyle = 0;
             Projectile.penetrate = 1;
-            Projectile.timeLeft  = 600;
+            Projectile.timeLeft = 600;
             Main.projFrames[Projectile.type] = 4;
         }
 
-        public override void AI()
-        {
-                /* ① 首帧初始化血量 */
+        public override void AI() {
+            /* ① 首帧初始化血量 */
             if (Projectile.localAI[0] <= 0f)
                 Projectile.localAI[0] = MaxLife;
 
@@ -62,12 +61,12 @@ namespace AncientChineseMythology.Projectiles{
                 if (meleeBox.Intersects(orbBox))
                     ApplyDamage(plr.GetWeaponDamage(plr.HeldItem));
             }
-            
+
             Projectile.velocity *= 1.02f;
             // 简单寻的：向玩家轻微修正
             int targetIdx = Player.FindClosest(Projectile.Center, 1, 1);
             Player target = Main.player[targetIdx];
-            
+
             Vector2 desired = (target.Center - Projectile.Center).SafeNormalize(Vector2.Zero) * 6f;
             Projectile.velocity = Vector2.Lerp(Projectile.velocity, desired, 0.05f);
             Lighting.AddLight(Projectile.Center, 0.4f, 0.6f, 1f);
@@ -87,22 +86,19 @@ namespace AncientChineseMythology.Projectiles{
                 Projectile.Kill();
         }
 
-        public override void OnKill(int timeLeft)
-        {
+        public override void OnKill(int timeLeft) {
             // 小范围爆炸 & 闪电尘
             SoundEngine.PlaySound(SoundID.Item94, Projectile.Center);
             for (int i = 0; i < 20; i++)
                 Dust.NewDustDirect(Projectile.position, 18, 18, DustID.Electric, Scale: 1.4f);
         }
 
-        public override void OnHitPlayer(Player target, Player.HurtInfo info)
-        {
+        public override void OnHitPlayer(Player target, Player.HurtInfo info) {
             // 命中玩家后立刻销毁
             Projectile.Kill();
         }
 
-        public override bool OnTileCollide(Vector2 oldVelocity)
-        {
+        public override bool OnTileCollide(Vector2 oldVelocity) {
             // 撞墙时播放粒子／音效后销毁
             SoundEngine.PlaySound(SoundID.Dig, Projectile.position);
             Projectile.Kill();

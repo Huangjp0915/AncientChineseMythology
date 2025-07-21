@@ -1,4 +1,4 @@
-using Terraria;
+﻿using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -6,14 +6,12 @@ namespace AncientChineseMythology.Items.Weapons.Sticks
 {
     public class TrueRuyiStick : ModItem
     {
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             Item.ResearchUnlockCount = 1; // 允许在旅程模式研究
         }
 
-        public override void SetDefaults()
-        {
-            Item.damage = 32; 
+        public override void SetDefaults() {
+            Item.damage = 32;
             Item.DamageType = DamageClass.Melee;
             Item.width = 48;
             Item.height = 48;

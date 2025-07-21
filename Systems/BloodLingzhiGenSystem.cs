@@ -1,13 +1,13 @@
+﻿using AncientChineseMythology.Tiles.Herbs;
 using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using Terraria;
+using Terraria.GameContent.Generation;
 using Terraria.ID;
+using Terraria.IO;
+using Terraria.Localization;
 using Terraria.ModLoader;
 using Terraria.WorldBuilding;
-using Terraria.Localization;
-using Terraria.GameContent.Generation;
-using Terraria.IO;
-using AncientChineseMythology.Tiles.Herbs;
 
 namespace AncientChineseMythology.Worldgen
 {
@@ -18,20 +18,17 @@ namespace AncientChineseMythology.Worldgen
         public override void SetStaticDefaults() =>
             PassText = Mod.GetLocalization("WorldGen.BloodLingzhiPass");
 
-        public override void ModifyWorldGenTasks(List<GenPass> tasks, ref double _)
-        {
+        public override void ModifyWorldGenTasks(List<GenPass> tasks, ref double _) {
             int idx = tasks.FindIndex(g => g.Name == "Underworld");
             if (idx == -1) idx = tasks.Count - 1;
             tasks.Insert(idx + 1, new PassLegacy(PassText.Value, Generate));
         }
 
-        private void Generate(GenerationProgress progress, GameConfiguration _)
-        {
+        private void Generate(GenerationProgress progress, GameConfiguration _) {
             progress.Message = PassText.Value;
             int tries = Main.maxTilesX / 3;
 
-            for (int n = 0; n < tries; n++)
-            {
+            for (int n = 0; n < tries; n++) {
                 int i = WorldGen.genRand.Next(200, Main.maxTilesX - 200);
                 int j = WorldGen.genRand.Next((int)Main.worldSurface, (int)Main.rockLayer);
 
@@ -47,21 +44,20 @@ namespace AncientChineseMythology.Worldgen
             }
         }
         private void SpawnStarflower(CommandCaller caller, string input, string[] args) {
-			Player p = caller.Player;
-			Point tilePos = p.Center.ToTileCoordinates();
-			WorldGen.PlaceTile(tilePos.X, tilePos.Y, ModContent.TileType<BloodLingzhiHerbTile>());
-		}
+            Player p = caller.Player;
+            Point tilePos = p.Center.ToTileCoordinates();
+            WorldGen.PlaceTile(tilePos.X, tilePos.Y, ModContent.TileType<BloodLingzhiHerbTile>());
+        }
     }
 
     static class WorldgenHelpers
     {
-        public static bool IsCrimson(int i,int j)
-        {
+        public static bool IsCrimson(int i, int j) {
             // 判定方式：检查 tile 或 wall 是否为猩红系
-            Tile t = Framing.GetTileSafely(i,j);
-            return t.TileType == TileID.Crimstone    || t.TileType == TileID.CrimsonGrass
+            Tile t = Framing.GetTileSafely(i, j);
+            return t.TileType == TileID.Crimstone || t.TileType == TileID.CrimsonGrass
                 || t.TileType == TileID.CrimstoneBrick
-                || t.WallType == WallID.CrimsonGrassUnsafe ||t.WallType == WallID.CrimstoneUnsafe 
+                || t.WallType == WallID.CrimsonGrassUnsafe || t.WallType == WallID.CrimstoneUnsafe
                 || t.WallType == WallID.Flesh;
         }
     }

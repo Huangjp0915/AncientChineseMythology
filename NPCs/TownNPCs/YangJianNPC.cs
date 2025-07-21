@@ -1,4 +1,4 @@
-using AncientChineseMythology.Systems;
+﻿using AncientChineseMythology.Systems;
 using Terraria;
 using Terraria.GameContent;
 using Terraria.GameContent.Bestiary;
@@ -22,22 +22,22 @@ namespace AncientChineseMythology.NPCs.TownNPCs
 
         public override void SetStaticDefaults() {
             // ★ 帧数与官方示例一致
-            Main.npcFrameCount[Type]              = 25;
-            NPCID.Sets.ExtraFramesCount[Type]     = 9;
-            NPCID.Sets.AttackFrameCount[Type]     = 4;
-            NPCID.Sets.DangerDetectRange[Type]    = 700;
-            NPCID.Sets.PrettySafe[Type]           = 300;
-            NPCID.Sets.AttackType[Type]          = 0;  // 近战摇符纸
-            NPCID.Sets.AttackTime[Type]          = 30; // 较快
+            Main.npcFrameCount[Type] = 25;
+            NPCID.Sets.ExtraFramesCount[Type] = 9;
+            NPCID.Sets.AttackFrameCount[Type] = 4;
+            NPCID.Sets.DangerDetectRange[Type] = 700;
+            NPCID.Sets.PrettySafe[Type] = 300;
+            NPCID.Sets.AttackType[Type] = 0;  // 近战摇符纸
+            NPCID.Sets.AttackTime[Type] = 30; // 较快
             NPCID.Sets.AttackAverageChance[Type] = 30;
-            NPCID.Sets.HatOffsetY[Type]          = 4;
+            NPCID.Sets.HatOffsetY[Type] = 4;
             NPCID.Sets.ShimmerTownTransform[Type] = true;
 
             // 关键：既是 Town AI，又非真正城镇 NPC
-            NPCID.Sets.ActsLikeTownNPC[Type]      = true;
-            NPCID.Sets.NoTownNPCHappiness[Type]   = true;
+            NPCID.Sets.ActsLikeTownNPC[Type] = true;
+            NPCID.Sets.NoTownNPCHappiness[Type] = true;
             NPCID.Sets.SpawnsWithCustomName[Type] = true;
-            NPCID.Sets.FaceEmote[Type]            = 0; // 若有自定义表情可替换
+            NPCID.Sets.FaceEmote[Type] = 0; // 若有自定义表情可替换
 
             // Bestiary 绘制方向
             NPCID.Sets.NPCBestiaryDrawModifiers draw = new() {
@@ -50,12 +50,12 @@ namespace AncientChineseMythology.NPCs.TownNPCs
         public override void SetDefaults() {
             NPC.friendly = true;
             NPC.townNPC = true;
-            NPC.width    = 18;
-            NPC.height   = 40;
-            NPC.aiStyle  = 7;
-            NPC.damage   = 15;
-            NPC.defense  = 18;
-            NPC.lifeMax  = 300;
+            NPC.width = 18;
+            NPC.height = 40;
+            NPC.aiStyle = 7;
+            NPC.damage = 15;
+            NPC.defense = 18;
+            NPC.lifeMax = 300;
             NPC.knockBackResist = 0.5f;
             NPC.HitSound = SoundID.NPCHit1;
             NPC.DeathSound = SoundID.NPCDeath1;

@@ -1,19 +1,18 @@
-﻿using Terraria;
-using Terraria.ID;
-using Terraria.ModLoader;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System.Collections.Generic;
 using System.Linq;
+using Terraria;
 using Terraria.GameContent;
+using Terraria.ID;
+using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Items.Weapons.Staffs
 {
     public class Pufferfish : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Staffs/Pufferfish";
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.damage = 1111;
             Item.crit = 10;
             Item.DamageType = DamageClass.Magic;
@@ -37,8 +36,7 @@ namespace AncientChineseMythology.Items.Weapons.Staffs
             Item.scale = 0.5f;
         }
 
-        public override bool PreDrawInWorld(SpriteBatch spriteBatch, Color lightColor, Color alphaColor, ref float rotation, ref float scale, int whoAmI)
-        {
+        public override bool PreDrawInWorld(SpriteBatch spriteBatch, Color lightColor, Color alphaColor, ref float rotation, ref float scale, int whoAmI) {
             Texture2D texture = TextureAssets.Item[Type].Value;//声明本弹幕的材质
             Rectangle sourceRectangle = new Rectangle(0, 0, texture.Width, texture.Height);
             Vector2 drawPosition = Item.Center - Main.screenPosition;

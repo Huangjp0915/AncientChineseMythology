@@ -1,11 +1,11 @@
-﻿using Terraria;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using System;
+using Terraria;
+using Terraria.DataStructures;
+using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using Terraria.GameContent;
-using Terraria.DataStructures;
-using System;
 
 namespace AncientChineseMythology.Projectiles
 {
@@ -13,8 +13,7 @@ namespace AncientChineseMythology.Projectiles
     {
         public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear_Head_Boss"; // 使用物品的纹理作为投射物的纹理
         private Vector2 mouseposition; // 鼠标目标位置
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Projectile.width = 20; // 弹幕宽度
             Projectile.height = 20; // 弹幕高度
             Projectile.friendly = true; // 友方弹幕
@@ -29,8 +28,7 @@ namespace AncientChineseMythology.Projectiles
             Projectile.usesLocalNPCImmunity = true; //独立无敌帧
             Projectile.localNPCHitCooldown = 10; //独立无敌帧时间
         }
-        public override void OnSpawn(IEntitySource source)
-        {
+        public override void OnSpawn(IEntitySource source) {
             // 获取当前显示屏的宽度和高度
             int screenWidth = Main.screenWidth;
             int screenHeight = Main.screenHeight;
@@ -52,21 +50,17 @@ namespace AncientChineseMythology.Projectiles
             Vector2 spawnPosition = playerCenter + direction * spawnRange;
 
             // 确保生成位置在屏幕边缘
-            if (spawnPosition.X < Main.screenPosition.X)
-            {
+            if (spawnPosition.X < Main.screenPosition.X) {
                 spawnPosition.X = Main.screenPosition.X;
             }
-            else if (spawnPosition.X > Main.screenPosition.X + screenWidth)
-            {
+            else if (spawnPosition.X > Main.screenPosition.X + screenWidth) {
                 spawnPosition.X = Main.screenPosition.X + screenWidth;
             }
 
-            if (spawnPosition.Y < Main.screenPosition.Y)
-            {
+            if (spawnPosition.Y < Main.screenPosition.Y) {
                 spawnPosition.Y = Main.screenPosition.Y;
             }
-            else if (spawnPosition.Y > Main.screenPosition.Y + screenHeight)
-            {
+            else if (spawnPosition.Y > Main.screenPosition.Y + screenHeight) {
                 spawnPosition.Y = Main.screenPosition.Y + screenHeight;
             }
 
@@ -79,57 +73,45 @@ namespace AncientChineseMythology.Projectiles
             Projectile.velocity = direction * 26f;
 
         }
-        public override void AI()
-        {
+        public override void AI() {
             Projectile.rotation += Projectile.velocity.X * 0.05f; // 旋转速度为弹幕速度的 0.05倍
 
             //// 获取鼠标的位置
             //Vector2 mousePosition = Main.MouseWorld;
 
             // 判断弹幕是否到达鼠标位置
-            if (Math.Abs(Projectile.velocity.X) > Math.Abs(Projectile.velocity.Y))
-            {
+            if (Math.Abs(Projectile.velocity.X) > Math.Abs(Projectile.velocity.Y)) {
                 // 弹幕是从屏幕两边中的一边为起始点出发的
-                if (Projectile.velocity.X > 0)
-                {
+                if (Projectile.velocity.X > 0) {
                     // 弹幕是从屏幕左边出发的
-                    if (Projectile.position.X >= mouseposition.X)
-                    {
+                    if (Projectile.position.X >= mouseposition.X) {
                         Projectile.tileCollide = true;
                     }
                 }
-                else
-                {
+                else {
                     // 弹幕是从屏幕右边出发的
-                    if (Projectile.position.X <= mouseposition.X)
-                    {
+                    if (Projectile.position.X <= mouseposition.X) {
                         Projectile.tileCollide = true;
                     }
                 }
             }
-            else
-            {
+            else {
                 // 弹幕是从屏幕上下中的一边为起始点出发的
-                if (Projectile.velocity.Y > 0)
-                {
+                if (Projectile.velocity.Y > 0) {
                     // 弹幕是从屏幕上边出发的
-                    if (Projectile.position.Y >= mouseposition.Y)
-                    {
+                    if (Projectile.position.Y >= mouseposition.Y) {
                         Projectile.tileCollide = true;
                     }
                 }
-                else
-                {
+                else {
                     // 弹幕是从屏幕下边出发的
-                    if (Projectile.position.Y <= mouseposition.Y)
-                    {
+                    if (Projectile.position.Y <= mouseposition.Y) {
                         Projectile.tileCollide = true;
                     }
                 }
             }
         }
-        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
-        {
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
             int dustType = DustID.YellowTorch;
             int dustIndex = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height, dustType);
             Dust dust = Main.dust[dustIndex];
@@ -139,14 +121,12 @@ namespace AncientChineseMythology.Projectiles
             dust.scale = 1.5f;
 
             if (Projectile.damage > 1)
-                Projectile.damage -= (int)(Projectile.damage*0.25f);
+                Projectile.damage -= (int)(Projectile.damage * 0.25f);
         }
 
         [Obsolete]
-        public override void OnKill(int timeLeft)
-        {
-            for (int i = 0; i < 3; i++)
-            {
+        public override void OnKill(int timeLeft) {
+            for (int i = 0; i < 3; i++) {
                 int dustType = DustID.YellowTorch;
                 int dustIndex = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height, dustType);
                 Dust dust = Main.dust[dustIndex];
@@ -191,7 +171,7 @@ namespace AncientChineseMythology.Projectiles
                 // 使用弹幕的速度方向来计算旋转角度
                 float rotation = Projectile.velocity.ToRotation();
 
-                Main.EntitySpriteDraw(texture2, oldcenter, rectangle2, Color.White*factor*0.72f,//颜色逐渐变淡
+                Main.EntitySpriteDraw(texture2, oldcenter, rectangle2, Color.White * factor * 0.72f,//颜色逐渐变淡
                     rotation,//使用速度方向的旋转角度
                     new Vector2(texture2.Width / 2, texture2.Height / 2 / Main.projFrames[Type]),
                     new Vector2(0.8f),

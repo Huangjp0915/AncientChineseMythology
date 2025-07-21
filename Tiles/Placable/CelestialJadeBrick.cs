@@ -1,4 +1,4 @@
-using Terraria;
+﻿using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -8,9 +8,8 @@ namespace AncientChineseMythology.Tiles.Placable
     {
         public override string Texture => "AncientChineseMythology/Textures/Tiles/Placable/CelestialJadeBrick";
 
-        public override void SetStaticDefaults()
-        {
-            
+        public override void SetStaticDefaults() {
+
             // 复制 BlueBrick 的全部属性
             Main.tileSolid[Type] = true;
             Main.tileBlockLight[Type] = true;

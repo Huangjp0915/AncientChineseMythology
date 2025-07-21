@@ -1,4 +1,4 @@
-using AncientChineseMythology.Buffs;
+﻿using AncientChineseMythology.Buffs;
 using AncientChineseMythology.Items.Materials;
 using AncientChineseMythology.Projectiles;
 using Microsoft.Xna.Framework;
@@ -15,12 +15,10 @@ namespace AncientChineseMythology.Items.Waapons
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Charms/ChickenCharm";
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 20;
             Item.height = 20;
             Item.accessory = true;
@@ -28,32 +26,27 @@ namespace AncientChineseMythology.Items.Waapons
             Item.rare = ItemRarityID.Red;
         }
 
-        public override void UpdateAccessory(Player player, bool hideVisual)
-        {
+        public override void UpdateAccessory(Player player, bool hideVisual) {
             // 赋予无限飞行时间
             player.wingTime = int.MaxValue;
             // 防止坠落伤害
             player.noFallDmg = true;
-            
+
             // 控制垂直运动
-            if (player.controlUp || player.controlJump)
-            {
+            if (player.controlUp || player.controlJump) {
                 // 向上飞行：提升速度到 -12f
                 player.velocity.Y = -12f;
             }
-            else if (player.controlDown)
-            {
+            else if (player.controlDown) {
                 // 向下飞行：提升速度到 12f
                 player.velocity.Y = 12f;
                 // 模拟平台下穿：尝试将玩家位置向下移动 4 像素，但仅在不会碰撞到实心方块的情况下
                 Vector2 newPos = player.position + new Vector2(0, 4f);
-                if (!Collision.SolidCollision(newPos, player.width, player.height))
-                {
+                if (!Collision.SolidCollision(newPos, player.width, player.height)) {
                     player.position = newPos;
                 }
             }
-            else
-            {
+            else {
                 // 悬浮时保持垂直速度 0
                 player.velocity.Y = 0f;
             }
@@ -62,8 +55,7 @@ namespace AncientChineseMythology.Items.Waapons
             player.AddBuff(ModContent.BuffType<ChickenCharmBuff>(), 2);
         }
 
-        public override void AddRecipes()
-        {
+        public override void AddRecipes() {
             CreateRecipe()
                 .AddIngredient(ModContent.ItemType<StrangeStone>(), 1)
                 .AddIngredient(ModContent.ItemType<ZodiacChicken>(), 1)
@@ -78,8 +70,7 @@ namespace AncientChineseMythology.Items.Waapons
             Color alphaColor,
             ref float rotation,
             ref float scale,
-            int whoAmI)
-        {
+            int whoAmI) {
             // 让物品在地上时，绘制更小
             float customScale = 0.5f;
 
@@ -116,21 +107,18 @@ namespace AncientChineseMythology.Items.Waapons
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Charms/CowCharm";
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
         }
-        
-        public override void SetDefaults()
-        {
+
+        public override void SetDefaults() {
             Item.width = 20;
             Item.height = 20;
             Item.accessory = true;
             Item.value = Item.buyPrice(gold: 100);
             Item.rare = ItemRarityID.Red;
         }
-        
-        public override void UpdateAccessory(Player player, bool hideVisual)
-        {
+
+        public override void UpdateAccessory(Player player, bool hideVisual) {
             // 增加防御力
             player.statDefense += 40;
             // 增加所有伤害80%
@@ -139,8 +127,7 @@ namespace AncientChineseMythology.Items.Waapons
             player.AddBuff(ModContent.BuffType<CowCharmBuff>(), 2);
         }
 
-        public override void AddRecipes()
-        {
+        public override void AddRecipes() {
             CreateRecipe()
                 .AddIngredient(ModContent.ItemType<StrangeStone>(), 1)
                 .AddIngredient(ModContent.ItemType<ZodiacCow>(), 1)
@@ -155,8 +142,7 @@ namespace AncientChineseMythology.Items.Waapons
             Color alphaColor,
             ref float rotation,
             ref float scale,
-            int whoAmI)
-        {
+            int whoAmI) {
             // 让物品在地上时，绘制更小
             float customScale = 0.5f;
 
@@ -193,12 +179,10 @@ namespace AncientChineseMythology.Items.Waapons
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Charms/DogCharm";
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 20;
             Item.height = 20;
             Item.accessory = true;
@@ -207,12 +191,11 @@ namespace AncientChineseMythology.Items.Waapons
             Item.rare = ItemRarityID.Red;
         }
 
-        public override void UpdateAccessory(Player player, bool hideVisual)
-        {
+        public override void UpdateAccessory(Player player, bool hideVisual) {
             // Terraria 的生命回复计算方式：lifeRegen 每秒回复的生命为 lifeRegen/2
             // 因此这里增加 100，即每秒回复 50 点生命
             player.lifeRegen += 100;
-            
+
             // 增加魔力回复效果（具体数值可根据测试进行调整）
             player.manaRegenBonus += 50;
 
@@ -220,8 +203,7 @@ namespace AncientChineseMythology.Items.Waapons
             player.AddBuff(ModContent.BuffType<DogCharmBuff>(), 2);
         }
 
-        public override void AddRecipes()
-        {
+        public override void AddRecipes() {
             CreateRecipe()
                 .AddIngredient(ModContent.ItemType<StrangeStone>(), 1)
                 .AddIngredient(ModContent.ItemType<ZodiacDog>(), 1)
@@ -236,8 +218,7 @@ namespace AncientChineseMythology.Items.Waapons
             Color alphaColor,
             ref float rotation,
             ref float scale,
-            int whoAmI)
-        {
+            int whoAmI) {
             // 让物品在地上时，绘制更小
             float customScale = 0.5f;
 
@@ -274,12 +255,10 @@ namespace AncientChineseMythology.Items.Waapons
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Charms/DragonCharm";
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 28;
             Item.height = 30;
             Item.scale = 0.4f;
@@ -299,22 +278,19 @@ namespace AncientChineseMythology.Items.Waapons
         }
 
         // 每次使用武器时扣除玩家30点生命值
-       public override bool? UseItem(Player player)
-        {
+        public override bool? UseItem(Player player) {
             int damage = 30; // 固定扣除的生命值
             player.statLife -= damage;
             // 显示红色的伤害文字
             CombatText.NewText(player.Hitbox, Microsoft.Xna.Framework.Color.Red, damage, true);
             // 如果血量扣除后小于等于0，则触发死亡
-            if (player.statLife <= 0)
-            {
+            if (player.statLife <= 0) {
                 player.KillMe(PlayerDeathReason.ByCustomReason($"{player.name} 被龙符咒榨干了..."), damage, 0);
             }
             return true;
         }
 
-        public override void AddRecipes()
-        {
+        public override void AddRecipes() {
             CreateRecipe()
                 .AddIngredient(ModContent.ItemType<StrangeStone>(), 1)
                 .AddIngredient(ModContent.ItemType<ZodiacDragon>(), 1)
@@ -329,8 +305,7 @@ namespace AncientChineseMythology.Items.Waapons
             Color alphaColor,
             ref float rotation,
             ref float scale,
-            int whoAmI)
-        {
+            int whoAmI) {
             // 让物品在地上时，绘制更小
             float customScale = 0.5f;
 
@@ -367,12 +342,10 @@ namespace AncientChineseMythology.Items.Waapons
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Charms/HorseCharm";
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 20;
             Item.height = 20;
             Item.accessory = true;
@@ -380,24 +353,19 @@ namespace AncientChineseMythology.Items.Waapons
             Item.rare = ItemRarityID.Red;
         }
 
-        public override void UpdateAccessory(Player player, bool hideVisual)
-        {
+        public override void UpdateAccessory(Player player, bool hideVisual) {
             // 移除玩家当前所有的 debuff
-            for (int i = player.buffType.Length - 1; i >= 0; i--)
-            {
+            for (int i = player.buffType.Length - 1; i >= 0; i--) {
                 int buffID = player.buffType[i];
-                if (buffID > 0 && Main.debuff[buffID])
-                {
+                if (buffID > 0 && Main.debuff[buffID]) {
                     player.DelBuff(i);
                 }
             }
-            
+
             // 设置所有 debuff 类型的免疫标记为 true
             // buffImmune 数组的长度通常覆盖了所有可能的 buff
-            for (int i = 0; i < player.buffImmune.Length; i++)
-            {
-                if (Main.debuff[i])
-                {
+            for (int i = 0; i < player.buffImmune.Length; i++) {
+                if (Main.debuff[i]) {
                     player.buffImmune[i] = true;
                 }
             }
@@ -405,8 +373,7 @@ namespace AncientChineseMythology.Items.Waapons
             player.AddBuff(ModContent.BuffType<HorseCharmBuff>(), 2);
         }
 
-        public override void AddRecipes()
-        {
+        public override void AddRecipes() {
             CreateRecipe()
                 .AddIngredient(ModContent.ItemType<StrangeStone>(), 1)
                 .AddIngredient(ModContent.ItemType<ZodiacHorse>(), 1)
@@ -421,8 +388,7 @@ namespace AncientChineseMythology.Items.Waapons
             Color alphaColor,
             ref float rotation,
             ref float scale,
-            int whoAmI)
-        {
+            int whoAmI) {
             // 让物品在地上时，绘制更小
             float customScale = 0.5f;
 
@@ -459,12 +425,10 @@ namespace AncientChineseMythology.Items.Waapons
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Charms/PigCharm";
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 28;
             Item.height = 30;
             // 使用举起的使用方式
@@ -483,13 +447,10 @@ namespace AncientChineseMythology.Items.Waapons
             // 本物品本身不消耗魔力，魔力消耗在激光内控制
         }
 
-        public override void HoldItem(Player player)
-        {
+        public override void HoldItem(Player player) {
             // 如果玩家在按住左键，并且还没有生成该激光，则生成
-            if (player.channel)
-            {
-                if (player.ownedProjectileCounts[ModContent.ProjectileType<Projectiles.PigCharmLaser>()] <= 0)
-                {
+            if (player.channel) {
+                if (player.ownedProjectileCounts[ModContent.ProjectileType<Projectiles.PigCharmLaser>()] <= 0) {
                     Projectile.NewProjectile(
                         player.GetSource_ItemUse(Item),
                         player.Center,
@@ -503,8 +464,7 @@ namespace AncientChineseMythology.Items.Waapons
             }
         }
 
-        public override void AddRecipes()
-        {
+        public override void AddRecipes() {
             CreateRecipe()
                 .AddIngredient(ModContent.ItemType<StrangeStone>(), 1)
                 .AddIngredient(ModContent.ItemType<ZodiacPig>(), 1)
@@ -519,8 +479,7 @@ namespace AncientChineseMythology.Items.Waapons
             Color alphaColor,
             ref float rotation,
             ref float scale,
-            int whoAmI)
-        {
+            int whoAmI) {
             // 让物品在地上时，绘制更小
             float customScale = 0.5f;
 
@@ -557,12 +516,10 @@ namespace AncientChineseMythology.Items.Waapons
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Charms/RabbitCharm";
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 20;
             Item.height = 20;
             Item.accessory = true;
@@ -570,8 +527,7 @@ namespace AncientChineseMythology.Items.Waapons
             Item.rare = ItemRarityID.Red;
         }
 
-        public override void UpdateAccessory(Player player, bool hideVisual)
-        {
+        public override void UpdateAccessory(Player player, bool hideVisual) {
             // 将最高奔跑速度设为 15
             player.maxRunSpeed = 15f;
             // 提高加速速度，让玩家能更快达到最高速度
@@ -580,16 +536,14 @@ namespace AncientChineseMythology.Items.Waapons
             player.moveSpeed += 0.3f;
 
             // 当玩家没有按左右方向键时，立即将水平速度归零
-            if (!player.controlLeft && !player.controlRight)
-            {
+            if (!player.controlLeft && !player.controlRight) {
                 player.velocity.X = 0f;
             }
 
             player.AddBuff(ModContent.BuffType<RabbitCharmBuff>(), 2);
         }
 
-        public override void AddRecipes()
-        {
+        public override void AddRecipes() {
             CreateRecipe()
                 .AddIngredient(ModContent.ItemType<StrangeStone>(), 1)
                 .AddIngredient(ModContent.ItemType<ZodiacRabbit>(), 1)
@@ -604,8 +558,7 @@ namespace AncientChineseMythology.Items.Waapons
             Color alphaColor,
             ref float rotation,
             ref float scale,
-            int whoAmI)
-        {
+            int whoAmI) {
             // 让物品在地上时，绘制更小
             float customScale = 0.5f;
 
@@ -642,12 +595,10 @@ namespace AncientChineseMythology.Items.Waapons
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Charms/SnakeCharm";
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 20;
             Item.height = 20;
             Item.scale = 0.4f;
@@ -663,29 +614,24 @@ namespace AncientChineseMythology.Items.Waapons
         }
 
         // 允许 alt 功能（右键使用）
-        public override bool AltFunctionUse(Player player)
-        {
+        public override bool AltFunctionUse(Player player) {
             return true;
         }
 
         // 根据按键使用效果不同
-        public override bool? UseItem(Player player)
-        {
-            if (player.altFunctionUse == 2)
-            {
+        public override bool? UseItem(Player player) {
+            if (player.altFunctionUse == 2) {
                 // 右键使用：解除隐身（清除对应 Buff）
                 player.ClearBuff(ModContent.BuffType<SnakeInvisibilityBuff>());
             }
-            else
-            {
+            else {
                 // 左键使用：赋予无限隐身，使用 int.MaxValue 作为时长
                 player.AddBuff(ModContent.BuffType<SnakeInvisibilityBuff>(), int.MaxValue);
             }
             return true;
         }
 
-        public override void AddRecipes()
-        {
+        public override void AddRecipes() {
             CreateRecipe()
                 .AddIngredient(ModContent.ItemType<StrangeStone>(), 1)
                 .AddIngredient(ModContent.ItemType<ZodiacSnake>(), 1)
@@ -700,8 +646,7 @@ namespace AncientChineseMythology.Items.Waapons
             Color alphaColor,
             ref float rotation,
             ref float scale,
-            int whoAmI)
-        {
+            int whoAmI) {
             // 让物品在地上时，绘制更小
             float customScale = 0.5f;
 
@@ -738,13 +683,11 @@ namespace AncientChineseMythology.Items.Waapons
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Charms/RatCharm";
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             Item.ResearchUnlockCount = 1;
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 20;
             Item.height = 20;
             Item.maxStack = 1;
@@ -755,10 +698,8 @@ namespace AncientChineseMythology.Items.Waapons
         public override bool AltFunctionUse(Player player)
             => player.inventory[player.selectedItem].type == Item.type;
 
-        public override bool CanUseItem(Player player)
-        {
-            if (player.altFunctionUse == 2)
-            {
+        public override bool CanUseItem(Player player) {
+            if (player.altFunctionUse == 2) {
                 if (player.inventory[player.selectedItem].type != Item.type)
                     return false;
             }
@@ -768,10 +709,8 @@ namespace AncientChineseMythology.Items.Waapons
         public override bool ConsumeItem(Player player)
             => player.inventory[player.selectedItem].type == Item.type;
 
-        public override bool? UseItem(Player player)
-        {
-            if (player.altFunctionUse == 2)
-            {
+        public override bool? UseItem(Player player) {
+            if (player.altFunctionUse == 2) {
                 // 这里写你的召唤逻辑，比如在 UseItem 中调用系统接口
                 // 示例：ModContent.GetInstance<你的系统>().DoSomething();
                 return true;
@@ -779,8 +718,7 @@ namespace AncientChineseMythology.Items.Waapons
             return base.UseItem(player);
         }
 
-        public override void AddRecipes()
-        {
+        public override void AddRecipes() {
             CreateRecipe()
                 .AddIngredient(ModContent.ItemType<StrangeStone>(), 1)
                 .AddIngredient(ModContent.ItemType<ZodiacRat>(), 1)
@@ -795,8 +733,7 @@ namespace AncientChineseMythology.Items.Waapons
             Color alphaColor,
             ref float rotation,
             ref float scale,
-            int whoAmI)
-        {
+            int whoAmI) {
             float customScale = 0.5f;
             var texture = TextureAssets.Item[Item.type].Value;
             Vector2 drawPosition = Item.Center - Main.screenPosition;
@@ -814,6 +751,6 @@ namespace AncientChineseMythology.Items.Waapons
             );
             return false;
         }
-	}
+    }
 
 }

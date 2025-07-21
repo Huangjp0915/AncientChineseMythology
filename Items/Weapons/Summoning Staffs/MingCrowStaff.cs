@@ -1,46 +1,43 @@
+﻿using AncientChineseMythology.Buffs;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
-using AncientChineseMythology.Buffs;
 
 namespace AncientChineseMythology.Items.Weapons.SummoningStaffs
 {
     public class MingCrowStaff : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Summoning Staffs/MingCrowStaff";
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             ItemID.Sets.GamepadWholeScreenUseRange[Type] = true;
-            ItemID.Sets.StaffMinionSlotsRequired[Type]   = 1f;
+            ItemID.Sets.StaffMinionSlotsRequired[Type] = 1f;
         }
 
-        public override void SetDefaults()
-        {
-            Item.damage      = 12;
-            Item.DamageType  = DamageClass.Summon;
-            Item.mana        = 10;
-            Item.width       = 42;
-            Item.height      = 42;
-            Item.useTime     = Item.useAnimation = 25;
-            Item.useStyle    = ItemUseStyleID.Shoot;
-            Item.noMelee     = true;
-            Item.knockBack   = 1f;
-            Item.value       = Item.sellPrice(gold: 80);
-            Item.rare        = ItemRarityID.Orange;
-            Item.UseSound    = SoundID.Item44;
-            Item.autoReuse   = true;
+        public override void SetDefaults() {
+            Item.damage = 12;
+            Item.DamageType = DamageClass.Summon;
+            Item.mana = 10;
+            Item.width = 42;
+            Item.height = 42;
+            Item.useTime = Item.useAnimation = 25;
+            Item.useStyle = ItemUseStyleID.Shoot;
+            Item.noMelee = true;
+            Item.knockBack = 1f;
+            Item.value = Item.sellPrice(gold: 80);
+            Item.rare = ItemRarityID.Orange;
+            Item.UseSound = SoundID.Item44;
+            Item.autoReuse = true;
 
-            Item.buffType    = ModContent.BuffType<MingCrowMinionBuff>();
-            Item.shoot       = ModContent.ProjectileType<Projectiles.Minions.MingCrowMinion>();
-            Item.shootSpeed  = 10f;
+            Item.buffType = ModContent.BuffType<MingCrowMinionBuff>();
+            Item.shoot = ModContent.ProjectileType<Projectiles.Minions.MingCrowMinion>();
+            Item.shootSpeed = 10f;
         }
 
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source,
                                    Vector2 position, Vector2 velocity,
-                                   int type, int damage, float knockback)
-        {
+                                   int type, int damage, float knockback) {
             // ① 生成新冥鸦（引擎会自动处理“槽已满”→牺牲旧召唤物）
             position = Main.MouseWorld;
             velocity = Vector2.Zero; // 初速 0，AI 自行加速

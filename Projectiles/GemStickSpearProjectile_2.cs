@@ -1,6 +1,6 @@
-﻿using System;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.GameContent;
@@ -19,8 +19,7 @@ namespace AncientChineseMythology.Projectiles
         private bool isNext = false;
         private Color swingColor;
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Projectile.width = 142;
             Projectile.height = 142;
             Projectile.aiStyle = -1;
@@ -35,8 +34,7 @@ namespace AncientChineseMythology.Projectiles
             Projectile.friendly = true;
         }
         private Player Owner => Main.player[Projectile.owner];
-        public override void OnSpawn(IEntitySource source)
-        {
+        public override void OnSpawn(IEntitySource source) {
             // 随机选择颜色
             Color[] colors = { Color.Red * 0.8f, Color.Green * 1.6f, Color.Blue, Color.Gold * 0.8f, Color.Purple, Color.White * 0.5f };
             swingColor = colors[Main.rand.Next(colors.Length)];
@@ -51,8 +49,7 @@ namespace AncientChineseMythology.Projectiles
             Projectile.velocity = move;
         }
 
-        public override void AI()
-        {
+        public override void AI() {
             Player player = Main.player[Projectile.owner];
             // 随机选择粒子类型
             int[] dustTypes = { DustID.RedTorch, DustID.BubbleBurst_Blue, DustID.Poisoned, DustID.MagicMirror, DustID.GoldFlame, DustID.Shadowflame };
@@ -61,11 +58,9 @@ namespace AncientChineseMythology.Projectiles
             Projectile.direction = player.direction;
             player.heldProj = Projectile.whoAmI;// 玩家持有弹道
 
-            if (Main.mouseRight && !isNext)
-            {
+            if (Main.mouseRight && !isNext) {
                 Projectile.timeLeft = 30;
-                if(!isReturning)
-                {
+                if (!isReturning) {
                     // 停止移动以便旋转
                     Projectile.velocity = Vector2.Zero;
                     Projectile.Center = player.Center;
@@ -76,41 +71,34 @@ namespace AncientChineseMythology.Projectiles
                 if (Main.mouseLeft)
                     isReturning = true;
             }
-            if(!isReturning && !Main.mouseRight || isNext)
-            {
+            if (!isReturning && !Main.mouseRight || isNext) {
                 Projectile.width = 30;
                 Projectile.height = 30;
-                if(!isNext)
-                {
+                if (!isNext) {
                     Projectile.Center = player.Center;
                     isNext = true;
                 }
                 //Projectile.timeLeft = 13;
-                for (int i = 0; i < 2; i++)
-                {
+                for (int i = 0; i < 2; i++) {
                     int dust = Dust.NewDust(player.Center, 10, 10, selectedDustType, 0, 0, 1, swingColor, 1f);
                     Main.dust[dust].noGravity = true;
                     Main.dust[dust].velocity *= 0.2f;
                 }
                 if (!isEnd)
-                MoveToTarget(Main.MouseWorld); // 移动到玩家位置
-                if (Projectile.Distance(Main.MouseWorld) < 40f)
-                {
+                    MoveToTarget(Main.MouseWorld); // 移动到玩家位置
+                if (Projectile.Distance(Main.MouseWorld) < 40f) {
                     isEnd = true;
                     MoveToTarget(player.Center);
-                    
+
                 }
             }
-            if (Projectile.Distance(player.Center) < 60f && isEnd)
-            {
+            if (Projectile.Distance(player.Center) < 60f && isEnd) {
                 Projectile.Kill(); // 销毁弹道
             }
-            if (isReturning && !isNext)
-            {
+            if (isReturning && !isNext) {
                 Projectile.Center = Main.MouseWorld;
                 Projectile.knockBack = Projectile.knockBack * 0.99f;
-                if (!Main.mouseRight)
-                {
+                if (!Main.mouseRight) {
                     player.immune = true;// 玩家无敌
                     player.immuneTime = 30; // 确保无敌时间短于冲刺持续时间
 
@@ -134,14 +122,13 @@ namespace AncientChineseMythology.Projectiles
                 else
                     Projectile.rotation += 0.4f; // 左右旋转
             }
-            else
-            {
+            else {
                 if (isNext)
                     Projectile.rotation = Projectile.velocity.ToRotation() + MathHelper.PiOver4; // 左右旋转
                 else
                     Projectile.rotation -= 0.4f; // 左右旋转
             }
-            
+
             // 计算右上角位置并生成粒子
             Vector2 dustOffset = new Vector2(60, -60);
             Vector2 rotatedDustOffset = dustOffset.RotatedBy(Projectile.rotation);
@@ -163,30 +150,25 @@ namespace AncientChineseMythology.Projectiles
             Main.dust[dust_2].scale = 1.2f;
             Main.dust[dust_2].alpha = 100;
         }
-        public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers)
-        {
+        public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers) {
             // 确保击退方向远离玩家
             modifiers.HitDirectionOverride = target.position.X > Owner.MountedCenter.X ? 1 : -1;
-            if (isNext)
-            {
+            if (isNext) {
                 modifiers.FinalDamage *= 2f;
             }
-            if (Main.mouseRight && !isNext)
-            {
-                if(isReturning)
+            if (Main.mouseRight && !isNext) {
+                if (isReturning)
                     modifiers.FinalDamage *= 0.25f;
                 else
                     modifiers.FinalDamage *= 0.5f;
             }
         }
         [Obsolete]
-        public override void OnKill(int timeLeft)
-        {
+        public override void OnKill(int timeLeft) {
             Player player = Main.player[Projectile.owner];
             player.velocity *= 0.8f;
         }
-        public override bool PreDraw(ref Microsoft.Xna.Framework.Color lightColor)
-        {
+        public override bool PreDraw(ref Microsoft.Xna.Framework.Color lightColor) {
             Texture2D texture = TextureAssets.Projectile[Type].Value;
             Rectangle rectangle = new Rectangle(
                 0,

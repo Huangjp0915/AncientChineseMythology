@@ -1,26 +1,22 @@
+﻿using AncientChineseMythology.Buffs;
+using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ModLoader;
-using Microsoft.Xna.Framework;
-using AncientChineseMythology.Buffs;
 
 namespace AncientChineseMythology.Players
 {
     public class NingShenDanDebuffPlayer : ModPlayer
     {
         public int ningShenTimer = 0;
-        
-        public override void ResetEffects()
-        {
-            if (!Player.HasBuff(ModContent.BuffType<NingShenDanDebuff>()))
-            {
+
+        public override void ResetEffects() {
+            if (!Player.HasBuff(ModContent.BuffType<NingShenDanDebuff>())) {
                 ningShenTimer = 0;
             }
         }
-        
-        public override void PostUpdate()
-        {
-            if (Player.HasBuff(ModContent.BuffType<NingShenDanDebuff>()))
-            {
+
+        public override void PostUpdate() {
+            if (Player.HasBuff(ModContent.BuffType<NingShenDanDebuff>())) {
                 ningShenTimer++;
                 if (ningShenTimer >= 60) // 每秒 (60 ticks) 扣除 5 点魔力
                 {
