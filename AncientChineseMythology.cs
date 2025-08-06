@@ -1,13 +1,10 @@
-﻿using AncientChineseMythology.NPCs.Boss.Archosaur;
+﻿global using InnoVault;
+global using Microsoft.Xna.Framework;
+using AncientChineseMythology.NPCs.Boss.Archosaur;
 using AncientChineseMythology.NPCs.Boss.BlackBear;
-using AncientChineseMythology.Systems;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using Terraria;
-using Terraria.ID;
 using Terraria.Localization;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;

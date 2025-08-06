@@ -1,6 +1,7 @@
 ﻿using AncientChineseMythology.UI;
 using Microsoft.Xna.Framework;
 using System.Collections.Generic;
+using System.Reflection;
 using Terraria;
 using Terraria.ModLoader;
 using Terraria.UI;
@@ -9,14 +10,14 @@ namespace AncientChineseMythology.Systems;
 
 public class MythologyUISystem : ModSystem
 {
-    internal static ModKeybind ToggleKey;
+    //internal static ModKeybind ToggleKey;
     private UserInterface _ui;
     private MythologySidebar _sidebar;
 
     public override void Load() {
         if (Main.dedServ) return;
 
-        ToggleKey = KeybindLoader.RegisterKeybind(Mod, "Toggle Cultivation Panel", "P");
+        //ToggleKey = KeybindLoader.RegisterKeybind(Mod, "Toggle Cultivation Panel", "P");
 
         _ui = new UserInterface();
 
@@ -38,8 +39,8 @@ public class MythologyUISystem : ModSystem
         }
     }
 
-    public override void PostUpdateInput() {
-        if (ToggleKey.JustPressed)
-            _sidebar.Toggle();
-    }
+    //public override void PostUpdateInput() {
+    //    if (ToggleKey.JustPressed)
+    //        _sidebar.Toggle();
+    //}
 }

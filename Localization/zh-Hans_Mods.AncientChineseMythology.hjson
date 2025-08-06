@@ -536,6 +536,7 @@ NPCs: {
 	CloneBossBody4.DisplayName: 祖龙残魂
 	CloneBossHead.DisplayName: 祖龙残魂
 	CloneBossTail.DisplayName: 祖龙残魂
+	// Hanba.DisplayName: Hanba
 }
 
 Projectiles: {
@@ -584,6 +585,7 @@ Projectiles: {
 	// BaGuaSigilProj.DisplayName: Ba Gua Sigil Proj
 	// DaShengStickProjectile.DisplayName: Da Sheng Stick Projectile
 	// FallingStarPierce.DisplayName: Falling Star Pierce
+	// Lightning.DisplayName: Lightning
 	// ThunderOrb.DisplayName: Thunder Orb
 }
 

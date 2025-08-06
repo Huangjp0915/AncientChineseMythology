@@ -487,6 +487,7 @@ NPCs: {
 	CloneBossBody4.DisplayName: Clone Boss Body4
 	CloneBossHead.DisplayName: Clone Boss Head
 	CloneBossTail.DisplayName: Clone Boss Tail
+	Hanba.DisplayName: Hanba
 }
 
 Projectiles: {
