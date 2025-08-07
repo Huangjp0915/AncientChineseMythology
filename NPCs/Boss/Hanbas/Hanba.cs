@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using Terraria;
+using Terraria.Audio;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -52,24 +53,19 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
             NPC.TargetClosest();
             Player target = Main.player[NPC.target];
 
+            float angend = MathHelper.Lerp(0, MathHelper.TwoPi, NPC.localAI[0]) + Main.rand.NextFloat(-0.1f, 0.1f);
+
             //更自然的出生偏移角度（非对称 + 扰动）
-            float indexFrac = (NPC.whoAmI % 16f) / 16f;
-            float angle = MathHelper.Lerp(-0.97f, 0.97f, indexFrac) + Main.rand.NextFloat(-0.1f, 0.1f);
-            Vector2 spawnOffset = Vector2.UnitY.RotatedBy(angle) * 300f;
-
-            if (NPC.whoAmI % 2 == 1) {
-                spawnOffset *= -1f;
-            }
-
+            Vector2 spawnOffset = Vector2.UnitY.RotatedBy(angend) * 300f;
             Vector2 destination = target.Center + spawnOffset;
-
+           
             ref float generalTimer = ref NPC.ai[2];
             ref float attackTimer = ref NPC.ai[1];
             ref float state = ref NPC.ai[0];
 
             Lighting.AddLight(NPC.Center, Color.Red.ToVector3() * NPC.scale);
 
-            float hoverSpeed = 22f;
+            float hoverSpeed = 32f;
 
             NPC.damage = state == 2f ? NPC.defDamage : 0;
 
@@ -105,6 +101,12 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
                 case 2f: //冲刺阶段
                     NPC.knockBackResist = 0f;
                     NPC.damage = 95;
+                    if (attackTimer == 0) {
+                        SoundEngine.PlaySound(SoundID.Roar, NPC.Center, (ActiveSound soundInstance) => {
+                            soundInstance.Position = NPC.Center;
+                            return true;
+                        });
+                    }
                     attackTimer++;
 
                     //冲刺失败后进入短暂思考状态
@@ -121,6 +123,11 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
                     attackTimer++;
 
                     if (attackTimer > 20f) {
+                        if (!VaultUtils.isClient) {
+                            NPC.localAI[0] = Main.rand.NextFloat();
+                            NPC.netUpdate = true;
+                        }
+                        
                         state = 0f;
                         attackTimer = 0f;
                         NPC.netUpdate = true;
@@ -129,7 +136,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
             }
 
             generalTimer++;
-            NPC.rotation = 0;
+            NPC.rotation = MathHelper.Lerp(NPC.rotation, NPC.velocity.X * 0.02f, 0.1f);
 
             VaultUtils.ClockFrame(ref frame, 5, maxFrame - 1);
         }
