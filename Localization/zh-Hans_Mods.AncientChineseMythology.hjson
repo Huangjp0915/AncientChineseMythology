@@ -542,6 +542,7 @@ NPCs: {
 	CloneBossHead.DisplayName: 祖龙残魂
 	CloneBossTail.DisplayName: 祖龙残魂
 	// Hanba.DisplayName: Hanba
+	// Talisman.DisplayName: Talisman
 }
 
 Projectiles: {

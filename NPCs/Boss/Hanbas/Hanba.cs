@@ -19,10 +19,11 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
         private int frame;
         private const int maxFrame = 4;
         public static int ReelBackTime => Main.masterMode ? 50 : 60;
-        private static List<Vector2> EyesOffset = new List<Vector2>();
+        private readonly static List<Vector2> EyesOffset = [];
+        private readonly int[] otherAI = new int[aiSlot];
         private const int aiSlot = 12;
-        private int[] otherAI = new int[aiSlot];
         private Vector2 OrigRestrictionPos;
+        internal bool HasTalisman;
         public override void Load() {
             EyesOffset.Add(new Vector2(0, -44));
             EyesOffset.Add(new Vector2(0, 50));
@@ -44,6 +45,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
             NPC.width = 140;
             NPC.height = 140;
             NPC.defense = 25;
+            NPC.damage = 60;
             NPC.value = Item.buyPrice(0, 50, 0, 0);
             NPC.lifeMax = 400000;
             NPC.aiStyle = -1;
@@ -54,6 +56,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
             NPC.noTileCollide = true;
             NPC.HitSound = SoundID.NPCHit9;
             NPC.DeathSound = SoundID.NPCDeath14;
+            Music = MusicLoader.GetMusicSlot("AncientChineseMythology/Sounds/Music/Hanba");
         }
 
         public override bool CheckActive() {
@@ -62,6 +65,9 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
 
         public override bool? DrawHealthBar(byte hbPosition, ref float scale, ref Vector2 position) {
             scale = 1.5f;
+            if (HasTalisman) {
+                return false;//有符纸时不绘制小血条
+            }
             return base.DrawHealthBar(hbPosition, ref scale, ref position);
         }
 
@@ -72,6 +78,15 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
         public override void AI() {
             NPC.TargetClosest();
             Player target = Main.player[NPC.target];
+            if (!target.Alives()) {
+                NPC.TargetClosest();
+                target = Main.player[NPC.target];
+                if (!target.Alives()) {
+                    NPC.ai[0] = -1;
+                    NPC.ai[1] = 0f;
+                    NPC.ai[2] = 0f;
+                }
+            }
 
             float angend = MathHelper.Lerp(0, MathHelper.TwoPi, NPC.localAI[0]) + Main.rand.NextFloat(-0.1f, 0.1f);
 
@@ -83,15 +98,40 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
             ref float attackTimer = ref NPC.ai[1];
             ref float state = ref NPC.ai[0];
 
-            Lighting.AddLight(NPC.Center, Color.Red.ToVector3() * NPC.scale);
+            if (generalTimer == 0 && !HasTalisman && !VaultUtils.isClient) {
+                HasTalisman = true;
+                NPC.NewNPCDirect(NPC.FromObjectGetParent(), NPC.Center
+                    , ModContent.NPCType<Talisman>(), ai0: NPC.whoAmI, target: NPC.target);
+            }
+
+            Lighting.AddLight(NPC.Center, Color.Orange.ToVector3() * NPC.scale);
 
             float hoverSpeed = 32f;
 
             NPC.damage = state == 2f ? NPC.defDamage : 0;
 
+            NPC.dontTakeDamage = HasTalisman;
+
             bool setNPCRot = true;
 
             switch (state) {
+                //失去目标，脱战
+                case -1f:
+                    if (attackTimer == 0) {
+                        HanbaLaser.AllVanish();
+                        HanbaBigLaser.AllVanish();
+                    }
+
+                    NPC.velocity = new Vector2(0, 60);
+
+                    attackTimer++;
+
+                    if (attackTimer > 180) {
+                        NPC.active = false;
+                        NPC.netUpdate = true;
+                    }
+
+                    break;
                 //靠近预热
                 case 0f:
                     NPC.velocity = Vector2.Lerp(NPC.velocity, NPC.SafeDirectionTo(destination) * hoverSpeed, 0.1f);
@@ -153,7 +193,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
                         }
 
                         state = 0f;
-                        if (otherAI[0] > 4) {
+                        if (otherAI[0] > 4 && !HasTalisman) {//触发切换到下一阶段，需要打掉符纸
                             otherAI[0] = 0;
                             state = 4f;
                         }
@@ -179,13 +219,21 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
                         otherAI[1] = 1;
                         NPC.velocity *= 0.9f;
 
-                        if (!VaultUtils.isClient) {
-                            //多阶段释放
-                            if (attackTimer == 30) {
+                        //多阶段释放
+                        if (attackTimer == 30) {
+                            if (!VaultUtils.isClient) {
+                                Projectile.NewProjectile(NPC.FromObjectGetParent(), NPC.Center, Vector2.Zero
+                                , ModContent.ProjectileType<Shockwave>(), 0, 0, -1, 0, 0.6f);
+
                                 Projectile.NewProjectile(NPC.GetSource_FromAI(), GetPlayerByRandOffest(target), Vector2.Zero, ModContent.ProjectileType<LocustSet>(), NPC.damage, 2);
                             }
+                        }
 
-                            if (attackTimer == 150) {
+                        if (attackTimer == 150) {
+                            if (!VaultUtils.isClient) {
+                                Projectile.NewProjectile(NPC.FromObjectGetParent(), NPC.Center, Vector2.Zero
+                                , ModContent.ProjectileType<Shockwave>(), 0, 0, -1, 0, 0.6f);
+
                                 //上下收束式攻击
                                 Vector2 basePos = GetPlayerByRandOffest(target);
                                 for (int i = -2; i <= 2; i++) {
@@ -195,25 +243,35 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
                                     Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, velocity, ModContent.ProjectileType<LocustSet>(), GetBossDamage(), 2);
                                 }
                             }
+                        }
 
-                            //来吧你这狗种，我旱魃武神便要在此将你轰下口牙
-                            if (attackTimer == 270) {
-                                //斜角双发，模拟大范围扫荡
-                                Vector2 basePos = GetPlayerByRandOffest(target);
+                        //来吧你这狗种，我旱魃武神便要在此将你轰下口牙
+                        if (attackTimer == 270) {
+                            //斜角双发，模拟大范围扫荡
+                            Vector2 basePos = GetPlayerByRandOffest(target);
 
-                                Vector2[] angles = [
-                                    MathHelper.PiOver4.ToRotationVector2(),
+                            Vector2[] angles = [
+                                MathHelper.PiOver4.ToRotationVector2(),
                                     (-MathHelper.PiOver4).ToRotationVector2(),
                                     (MathHelper.PiOver4 * 0.5f).ToRotationVector2(),
                                     (-MathHelper.PiOver4 * 0.5f).ToRotationVector2()
-                                ];
+                            ];
+
+                            if (!VaultUtils.isClient) {
+                                Projectile.NewProjectile(NPC.FromObjectGetParent(), NPC.Center, Vector2.Zero
+                                , ModContent.ProjectileType<Shockwave>(), 0, 0, -1, 0, 0.6f);
 
                                 foreach (var dir in angles) {
                                     Projectile.NewProjectile(NPC.GetSource_FromAI(), basePos, dir, ModContent.ProjectileType<LocustSet>(), GetBossDamage(), 2);
                                 }
                             }
+                        }
 
-                            if (attackTimer == 390) {
+                        if (attackTimer == 390) {
+                            if (!VaultUtils.isClient) {
+                                Projectile.NewProjectile(NPC.FromObjectGetParent(), NPC.Center, Vector2.Zero
+                                , ModContent.ProjectileType<Shockwave>(), 0, 0, -1, 0, 0.6f);
+
                                 //最后一波蝗虫突击：他妈的一百匹力量大圆弧+追踪
                                 Vector2 basePos = GetPlayerByRandOffest(target);
                                 for (int i = 0; i < 8; i++) {
@@ -305,6 +363,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
                 //鬼眼，开！三层鬼域，这座城市，我接管了
                 case 6f:
                     if (attackTimer == 0) {
+                        HanbaFireBall.KillAll();//干掉上阶段可能遗留的火球
                         OrigRestrictionPos = target.Center;
                         NPC.Center = OrigRestrictionPos;
                         NPC.velocity *= 0.5f;
@@ -313,6 +372,10 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
 
                     if (attackTimer == 10) {
                         SoundEngine.PlaySound(SoundID.ForceRoar, NPC.Center);
+                        if (!VaultUtils.isClient) {
+                            Projectile.NewProjectile(NPC.FromObjectGetParent(), NPC.Center, Vector2.Zero
+                            , ModContent.ProjectileType<Shockwave>(), 0, 0, -1, 0, 0.6f);
+                        }
                     }
 
                     if (attackTimer == 90) {
@@ -376,12 +439,19 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
 
                     if (attackTimer == 130) {
                         SoundEngine.PlaySound(SoundID.Item74 with { Pitch = -0.2f }, NPC.Center);
-                        Projectile.NewProjectile(NPC.FromObjectGetParent(), NPC.Center, Vector2.Zero, ModContent.ProjectileType<HanbaBigLaser>(), GetBossDamage(), 0, -1, NPC.whoAmI);
+                        if (!VaultUtils.isClient) {
+                            int proj = Projectile.NewProjectile(NPC.FromObjectGetParent(), NPC.Center, Vector2.Zero
+                            , ModContent.ProjectileType<HanbaBigLaser>(), GetBossDamage(), 0, -1, NPC.whoAmI);
+                            Main.projectile[proj].rotation = target.Center.To(NPC.Center).ToRotation();
+                        }
                     }
 
                     if (attackTimer > 130 && attackTimer % 10 == 0) {
                         SoundEngine.PlaySound(SoundID.Item74, NPC.Center);
-                        Projectile.NewProjectile(NPC.FromObjectGetParent(), NPC.Center, Vector2.Zero, ModContent.ProjectileType<Shockwave>(), 0, 0, -1, 0, 0.6f);
+                        if (!VaultUtils.isClient) {
+                            Projectile.NewProjectile(NPC.FromObjectGetParent(), NPC.Center, Vector2.Zero
+                            , ModContent.ProjectileType<Shockwave>(), 0, 0, -1, 0, 0.6f);
+                        }                      
                     }
 
                     attackTimer++;
@@ -406,6 +476,14 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
         }
 
         internal Vector2 GetOrigPos() => OrigRestrictionPos;
+
+        internal void TalismanKill() {
+            HasTalisman = false;
+            NPC.ai[0] = 4f;
+            NPC.ai[1] = 0f;
+            otherAI[0] = 0;
+            NPC.netUpdate = true;
+        }
 
         private void CarftRestriction() {
             int size = 800;
@@ -483,6 +561,75 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
             }
             spriteBatch.Draw(mainValue, NPC.Center - Main.screenPosition, rectangle, drawColor
                 , NPC.rotation, rectangle.Size() / 2, NPC.scale, SpriteEffects.None, 0);
+
+            foreach (var npc in Main.ActiveNPCs) {
+                if (npc.type != ModContent.NPCType<Talisman>()) {
+                    continue;
+                }
+                if (npc.ai[0] != NPC.whoAmI) {
+                    continue;
+                }
+                if (npc.ModNPC is Talisman talisman) {
+                    talisman.DoDraw(spriteBatch, drawColor);
+                }
+            }
+            return false;
+        }
+    }
+
+    internal class Talisman : ModNPC
+    {
+        private Hanba Hanba { get; set; }
+        public override void SetDefaults() {
+            NPC.npcSlots = 4f;
+            NPC.width = 40;
+            NPC.height = 140;
+            NPC.defense = 25;
+            NPC.damage = 60;
+            NPC.value = Item.buyPrice(0, 5, 0, 0);
+            NPC.lifeMax = 60000;
+            NPC.aiStyle = -1;
+            AIType = -1;
+            NPC.knockBackResist = 0f;
+            NPC.boss = true;
+            NPC.noGravity = true;
+            NPC.noTileCollide = true;
+            NPC.HitSound = SoundID.NPCHit9;
+            NPC.DeathSound = SoundID.NPCDeath14;
+        }
+
+        public override void ApplyDifficultyAndPlayerScaling(int numPlayers, float balance, float bossAdjustment) {
+            NPC.lifeMax = 50000;
+            if (Main.expertMode) {
+                NPC.lifeMax += 5000;
+            }
+            if (Main.masterMode) {
+                NPC.lifeMax += 5000;
+            }
+        }
+
+        public override void AI() {
+            NPC npc = Main.npc[(int)NPC.ai[0]];
+            if (npc.Alives() && npc.ModNPC is not null && npc.ModNPC is Hanba boss) {
+                Hanba = boss;
+                NPC.Center = Hanba.NPC.Center;
+                NPC.rotation = Hanba.NPC.rotation;
+            }
+        }
+
+        public override void OnKill() {
+            if (Hanba.NPC.Alives()) {
+                Hanba.TalismanKill();
+            }
+        }
+
+        public void DoDraw(SpriteBatch spriteBatch, Color drawColor) {
+            Texture2D mainValue = TextureAssets.Npc[Type].Value;
+            spriteBatch.Draw(mainValue, NPC.Center - Main.screenPosition, null, drawColor
+                , NPC.rotation, mainValue.Size() / 2, 0.4f, SpriteEffects.None, 0);
+        }
+
+        public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
             return false;
         }
     }
@@ -495,6 +642,16 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
             Projectile.friendly = false;
             Projectile.timeLeft = 220;
             Projectile.tileCollide = false;
+        }
+
+        public static void KillAll() {
+            foreach (var proj in Main.ActiveProjectiles) {
+                if (proj.type != ModContent.ProjectileType<HanbaFireBall>()) {
+                    continue;
+                }
+                proj.Kill();
+                proj.netUpdate = true;
+            }
         }
 
         public override void AI() {

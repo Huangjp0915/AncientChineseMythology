@@ -493,6 +493,7 @@ NPCs: {
 	CloneBossHead.DisplayName: Clone Boss Head
 	CloneBossTail.DisplayName: Clone Boss Tail
 	Hanba.DisplayName: Hanba
+	Talisman.DisplayName: Talisman
 }
 
 Projectiles: {
