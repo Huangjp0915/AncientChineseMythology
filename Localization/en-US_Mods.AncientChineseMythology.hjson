@@ -439,6 +439,11 @@ Items: {
 		DisplayName: Taigu Weapon Workshop Item
 		Tooltip: ""
 	}
+
+	TestItem: {
+		DisplayName: Test Item
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -538,6 +543,11 @@ Projectiles: {
 	FallingStarPierce.DisplayName: Falling Star Pierce
 	Lightning.DisplayName: Lightning
 	ThunderOrb.DisplayName: Thunder Orb
+	LocustSet.DisplayName: Locust Set
+	HanbaFireBall.DisplayName: Hanba Fire Ball
+	HanbaLaser.DisplayName: Hanba Laser
+	HanbaBigLaser.DisplayName: Hanba Big Laser
+	Shockwave.DisplayName: Shockwave
 }
 
 HeavenBiome.DisplayName: Heaven
