@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,11 +8,10 @@ using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
-using static AncientChineseMythology.AncientChineseMythology;
 
 namespace AncientChineseMythology.Projectiles
 {
-    class GemStickSpearProjectile : ModProjectile
+    internal class GemStickSpearProjectile : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/GemStickSpearProjectile";
         // 定义一些常量，决定剑的挥动范围

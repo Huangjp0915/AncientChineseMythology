@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.DataStructures;
@@ -11,7 +10,7 @@ using Rectangle = Microsoft.Xna.Framework.Rectangle;
 
 namespace AncientChineseMythology.Projectiles
 {
-    class IronStickSpearProjectile_2 : ModProjectile
+    internal class IronStickSpearProjectile_2 : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/IronStickSpearProjectile";
         private bool isRush = false;

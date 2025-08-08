@@ -1,8 +1,6 @@
 ﻿using AncientChineseMythology.Projectiles;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
-using System.Collections.Generic;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -170,7 +168,7 @@ namespace AncientChineseMythology.NPCs.Boss.Archosaur
             }
         }
 
-        void ThrowThunderballs() {
+        private void ThrowThunderballs() {
             if (!NPC.HasValidTarget) NPC.TargetClosest(true);
             Player target = Main.player[NPC.target];
 
@@ -206,7 +204,7 @@ namespace AncientChineseMythology.NPCs.Boss.Archosaur
         }
 
 
-        void SpawnClone() {
+        private void SpawnClone() {
             Vector2 pos = NPC.Center + Main.rand.NextVector2CircularEdge(250f, 250f);
 
             int id = NPC.NewNPC(                       // 只填必要参数
@@ -218,7 +216,7 @@ namespace AncientChineseMythology.NPCs.Boss.Archosaur
             NPC.ai[3] = id;                            //    宿主这边继续记录分身索引
         }
 
-        void SelfDamage(float ratio) {
+        private void SelfDamage(float ratio) {
             int dmg = (int)(NPC.lifeMax * ratio);
             NPC.life -= dmg;
             if (NPC.life < 0) NPC.life = 0;

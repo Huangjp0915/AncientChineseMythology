@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.DataStructures;
@@ -11,7 +10,7 @@ using Rectangle = Microsoft.Xna.Framework.Rectangle;
 
 namespace AncientChineseMythology.Projectiles
 {
-    class GemStickSpearProjectile_2 : ModProjectile
+    internal class GemStickSpearProjectile_2 : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/GemStickSpearProjectile";
         private bool isReturning = false;// 是否正在返回

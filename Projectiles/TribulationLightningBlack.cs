@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using Terraria;
@@ -40,6 +39,7 @@ namespace AncientChineseMythology.Projectiles
 
         private readonly List<LightTreeBlack> trees = new();
 
+        [Obsolete]
         public override void AI() {
             timerCount++;
             if (timerCount <= 0) return;
@@ -138,6 +138,7 @@ namespace AncientChineseMythology.Projectiles
             this.owner = owner;
         }
 
+        [Obsolete]
         private void ApplyDamage(Vector2 position, float damage) {
             foreach (Player plr in Main.player) {
                 if (!plr.active || plr.dead) continue;
@@ -185,6 +186,7 @@ namespace AncientChineseMythology.Projectiles
             return random.NextFloatDirection() * range;
         }
 
+        [Obsolete]
         public void Generate(Vector2 targetPosition) {
             // 计算从初始位置到目标位置的方向
             Vector2 directionToTarget = targetPosition - position;
@@ -196,6 +198,7 @@ namespace AncientChineseMythology.Projectiles
             root = _build(root, directionToTarget, Main.rand.NextBool(), position);
         }
 
+        [Obsolete]
         private Node _build(Node node, Vector2 directionToTarget, bool isMain, Vector2 currentPosition) {
             cnt++;
             // 终止条件：节点位置与目标位置小于一定值时终止

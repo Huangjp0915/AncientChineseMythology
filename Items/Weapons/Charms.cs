@@ -1,7 +1,6 @@
 ﻿using AncientChineseMythology.Buffs;
 using AncientChineseMythology.Items.Materials;
 using AncientChineseMythology.Projectiles;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.DataStructures;
@@ -278,6 +277,7 @@ namespace AncientChineseMythology.Items.Waapons
         }
 
         // 每次使用武器时扣除玩家30点生命值
+        [System.Obsolete]
         public override bool? UseItem(Player player) {
             int damage = 30; // 固定扣除的生命值
             player.statLife -= damage;

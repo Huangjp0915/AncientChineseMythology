@@ -2,7 +2,6 @@
 using AncientChineseMythology.Players;
 using AncientChineseMythology.Systems;
 using AncientChineseMythology.UI.Elements;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using Terraria;
@@ -164,7 +163,7 @@ public class MythologySidebar : UIState
     }
 }
 
-class SidebarTabButton : UIImageButton
+internal class SidebarTabButton : UIImageButton
 {
     public bool IsCollapsed = true;
     private readonly Asset<Texture2D> Texture2D;

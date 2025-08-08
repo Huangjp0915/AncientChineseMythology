@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.DataStructures;
@@ -9,7 +8,7 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Projectiles
 {
-    class WoodenStickSpearProjectile_2 : ModProjectile
+    internal class WoodenStickSpearProjectile_2 : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/WoodenStickSpearProjectile_2";
 

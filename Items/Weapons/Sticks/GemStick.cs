@@ -1,6 +1,5 @@
 ﻿using AncientChineseMythology.Items.Materials;
 using AncientChineseMythology.Projectiles;
-using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;

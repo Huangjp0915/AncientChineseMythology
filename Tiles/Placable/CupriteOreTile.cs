@@ -1,5 +1,4 @@
 ﻿using AncientChineseMythology.Items.Cuprite;
-using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;

@@ -1,5 +1,4 @@
 ﻿using AncientChineseMythology.Tiles.Herbs;
-using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using Terraria;
 using Terraria.GameContent.Generation;
@@ -30,7 +29,7 @@ namespace AncientChineseMythology.Worldgen
 
             for (int n = 0; n < tries; n++) {
                 int i = WorldGen.genRand.Next(200, Main.maxTilesX - 200);
-                int j = (int)Main.UnderworldLayer + 50;                       // 从地狱层顶向下找灰烬
+                int j = Main.UnderworldLayer + 50;                       // 从地狱层顶向下找灰烬
                 while (j < Main.maxTilesY - 200 && !Main.tile[i, j].HasTile) j++;
                 if (Main.tile[i, j].TileType != TileID.Ash) continue;
 

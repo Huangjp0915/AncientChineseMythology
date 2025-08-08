@@ -1,6 +1,5 @@
 ﻿using AncientChineseMythology.Buffs;
 using AncientChineseMythology.Projectiles;
-using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;

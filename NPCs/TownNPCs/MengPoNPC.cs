@@ -1,5 +1,4 @@
 ﻿using AncientChineseMythology.Items.Potions;
-using AncientChineseMythology.Systems;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using Terraria;

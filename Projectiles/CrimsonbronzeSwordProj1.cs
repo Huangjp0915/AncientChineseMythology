@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.IO;
 using Terraria;
@@ -185,7 +184,7 @@ namespace AncientChineseMythology.Projectiles
             MyColor.A = 0; // 设置A为255以确保可见
                            // 计算绘制位置和大小
             Microsoft.Xna.Framework.Rectangle destinationRectangle = new Microsoft.Xna.Framework.Rectangle(
-                0, 0, (int)(Projectile.width), (int)(Projectile.height)
+                0, 0, Projectile.width, Projectile.height
                 );
             if (timerCounter > 60)
                 //先绘制拖尾
@@ -307,13 +306,13 @@ namespace AncientChineseMythology.Projectiles
                 Microsoft.Xna.Framework.Vector2 direction = (Main.MouseWorld - position).SafeNormalize(Microsoft.Xna.Framework.Vector2.UnitY);
 
                 // 创建新的弹幕
-                int newProjectile = Projectile.NewProjectile(Owner.GetSource_FromThis(), position, direction * 21, ModContent.ProjectileType<CrimsonbronzeSwordProj2>(), (int)Projectile.damage, 0f, Projectile.owner);
+                int newProjectile = Projectile.NewProjectile(Owner.GetSource_FromThis(), position, direction * 21, ModContent.ProjectileType<CrimsonbronzeSwordProj2>(), Projectile.damage, 0f, Projectile.owner);
                 isattacking = true; // 标记为正在攻击
             }
         }
     }
 
-    class CrimsonbronzeSwordProj2 : ModProjectile
+    internal class CrimsonbronzeSwordProj2 : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/CrimsonbronzeSwordProj2"; // 使用物品的纹理作为投射物的纹理
 
@@ -422,7 +421,7 @@ namespace AncientChineseMythology.Projectiles
                 Main.dust[dustIndex].velocity *= 3f;
                 if (Main.rand.NextBool(2)) {
                     Main.dust[dustIndex].scale = 0.5f;
-                    Main.dust[dustIndex].fadeIn = 1f + (float)Main.rand.Next(10) * 0.1f;
+                    Main.dust[dustIndex].fadeIn = 1f + Main.rand.Next(10) * 0.1f;
                 }
             }
         }

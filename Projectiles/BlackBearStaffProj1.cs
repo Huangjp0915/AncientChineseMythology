@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.GameContent;
@@ -12,7 +11,7 @@ namespace AncientChineseMythology.Projectiles
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Summoning Staffs/BlackBearStaff"; // 使用物品的纹理作为投射物的纹理
 
-        Player player => Main.player[Projectile.owner];
+        private Player player => Main.player[Projectile.owner];
 
         public override void SetDefaults() {
             ProjectileID.Sets.MinionSacrificable[Projectile.type] = true;
@@ -36,7 +35,7 @@ namespace AncientChineseMythology.Projectiles
             return false;//我们不想召唤兽会割草
         }
 
-        void AttackShooting(NPC target) {
+        private void AttackShooting(NPC target) {
 
             Projectile.ai[0]++;//随便拿一个ai0当计时器
             if (Projectile.ai[0] == 60)//每半秒攻击一次

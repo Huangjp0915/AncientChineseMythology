@@ -1,6 +1,4 @@
 ﻿using AncientChineseMythology.Items;
-using AncientChineseMythology.Items.Weapons.SummoningStaffs;
-using AncientChineseMythology.Systems;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using Terraria;

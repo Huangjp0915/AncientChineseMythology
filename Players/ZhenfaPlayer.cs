@@ -1,6 +1,5 @@
 ﻿using AncientChineseMythology.Items;
 using AncientChineseMythology.Systems;
-using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using Terraria;
 using Terraria.Audio;

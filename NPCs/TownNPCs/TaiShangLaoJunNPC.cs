@@ -1,5 +1,4 @@
-﻿using AncientChineseMythology.Items;
-using AncientChineseMythology.Items.Materials;
+﻿using AncientChineseMythology.Items.Materials;
 using AncientChineseMythology.Items.Potions;
 using AncientChineseMythology.Items.Weapons.SummoningStaffs;
 using Terraria;

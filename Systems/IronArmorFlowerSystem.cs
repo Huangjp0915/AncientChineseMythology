@@ -1,5 +1,4 @@
 ﻿using AncientChineseMythology.Tiles.Herbs;
-using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using Terraria;
 using Terraria.GameContent.Generation;

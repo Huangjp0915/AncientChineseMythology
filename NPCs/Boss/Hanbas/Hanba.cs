@@ -20,7 +20,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
         private int frame;
         private const int maxFrame = 4;
         public static int ReelBackTime => Main.masterMode ? 50 : 60;
-        private readonly static List<Vector2> EyesOffset = [];
+        private static readonly List<Vector2> EyesOffset = [];
         private readonly int[] otherAI = new int[aiSlot];
         private const int aiSlot = 12;
         private Vector2 OrigRestrictionPos;
@@ -151,7 +151,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
                     }
                     break;
                 //蓄力准备
-                case 1f: 
+                case 1f:
                     NPC.velocity *= 0.975f;
                     attackTimer++;
 
@@ -177,7 +177,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
                     }
                     break;
                 //冲刺阶段
-                case 2f: 
+                case 2f:
                     NPC.knockBackResist = 0f;
                     NPC.damage = 95;
                     if (attackTimer == 0) {
@@ -197,7 +197,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
                     }
                     break;
                 //停顿等待阶段
-                case 3f: 
+                case 3f:
                     NPC.velocity *= 0.9f;
                     attackTimer++;
 
@@ -218,7 +218,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
                     }
                     break;
                 //蝗虫过境
-                case 4f: 
+                case 4f:
                     attackTimer++;
 
                     Vector2 hoverTargetPos = target.Center + new Vector2(0, -300);
@@ -310,7 +310,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
                     }
                     break;
                 //眼睛吐火球魅力时刻
-                case 5f: 
+                case 5f:
                     if (attackTimer <= 160) {//小于160的常规移动，而大于这个时间的则受惯性冲刺影响
                         NPC.velocity = Vector2.Lerp(NPC.velocity, NPC.SafeDirectionTo(target.Center) * hoverSpeed / 4f, 0.1f);
                     }
@@ -466,7 +466,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
                         if (!VaultUtils.isClient) {
                             Projectile.NewProjectile(NPC.FromObjectGetParent(), NPC.Center, Vector2.Zero
                             , ModContent.ProjectileType<Shockwave>(), 0, 0, -1, 0, 0.6f);
-                        }                      
+                        }
                     }
 
                     attackTimer++;
@@ -678,7 +678,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
                     Main.dust[dust].noGravity = true;
                 }
             }
-            
+
             if (++Projectile.ai[0] < 100) {
                 Projectile.velocity = Projectile.velocity.RotatedBy(0.02f * Projectile.ai[2]);
             }
@@ -702,7 +702,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
             Projectile.tileCollide = false;
         }
 
-        public new static void AllVanish() {
+        public static new void AllVanish() {
             foreach (var proj in Main.ActiveProjectiles) {
                 if (proj.type != ModContent.ProjectileType<HanbaBigLaser>()) {
                     continue;
@@ -1064,10 +1064,10 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
     [VaultLoaden("AncientChineseMythology/Textures/Backgrounds/")]
     internal class HanbaSky : CustomSky
     {
-        bool active;
-        float intensity;
-        float maxIntensity = 0.6f;
-        Color skyColor;
+        private bool active;
+        private float intensity;
+        private float maxIntensity = 0.6f;
+        private Color skyColor;
         internal static string name;
         internal static Asset<Texture2D> HanbaSkySun;
         internal static Asset<Texture2D> HanbaSkyColorBar;

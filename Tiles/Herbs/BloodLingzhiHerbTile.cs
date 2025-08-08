@@ -1,5 +1,4 @@
 ﻿using AncientChineseMythology.Items.Herbs;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System.Collections.Generic;
 using Terraria;
@@ -9,7 +8,8 @@ using Terraria.ObjectData;
 
 namespace AncientChineseMythology.Tiles.Herbs
 {
-    enum BloodLingzhiStage : byte { Seed, Growing, Mature }
+    internal enum BloodLingzhiStage : byte
+    { Seed, Growing, Mature }
 
     public class BloodLingzhiHerbTile : ModTile
     {

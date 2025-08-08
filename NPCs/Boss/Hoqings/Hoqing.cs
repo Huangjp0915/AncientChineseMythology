@@ -1,5 +1,4 @@
-﻿using AncientChineseMythology.NPCs.Boss.Hanbas;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using System;
 using Terraria;
@@ -138,7 +137,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
                         if (otherAI[1] > 0) {
                             otherAI[2] = 15;
                         }
-                        
+
                         NPC.netUpdate = true;
                     }
                     else {
@@ -153,10 +152,10 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
                                     if (otherAI[2] == 0 && otherAI[1] > 0) {
                                         TeleportNearTarget(target);
                                     }
-                                }                                
+                                }
                             }
                         }
-                        
+
                         //平时持续小幅追踪，模拟压迫感逼近
                         float baseSpeed = 10f;
                         float inertia = 20f;
@@ -261,7 +260,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
                             otherAI[1]++;
                             state = 0;
                         }
-                        
+
                         NPC.netUpdate = true;
                     }
                     break;
@@ -549,7 +548,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
 
             if (VaultUtils.isServer) {
                 return;
-            } 
+            }
 
             VaultUtils.ClockFrame(ref Projectile.frame, 5, 3);
 
@@ -710,10 +709,10 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
 
     internal class HoqingSky : CustomSky
     {
-        bool active;
-        float intensity;
-        float maxIntensity = 0.8f; //更高压迫感
-        Color skyColor;
+        private bool active;
+        private float intensity;
+        private float maxIntensity = 0.8f; //更高压迫感
+        private Color skyColor;
 
         internal static string name;
         internal static Asset<Texture2D> HanbaSkySun;

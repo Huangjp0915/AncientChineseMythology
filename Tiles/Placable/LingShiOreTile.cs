@@ -1,6 +1,5 @@
 ﻿// AncientChineseMythology/Tiles/Placable/LingShiOreTile.cs
 using AncientChineseMythology.Items.Materials;
-using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;

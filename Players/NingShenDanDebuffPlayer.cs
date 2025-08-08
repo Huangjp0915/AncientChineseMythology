@@ -1,5 +1,4 @@
 ﻿using AncientChineseMythology.Buffs;
-using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ModLoader;
 

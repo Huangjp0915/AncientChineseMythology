@@ -1,5 +1,4 @@
-﻿using AncientChineseMythology.NPCs.Boss.Hanbas;
-using AncientChineseMythology.NPCs.Boss.Hoqings;
+﻿using AncientChineseMythology.NPCs.Boss.Hoqings;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.ID;

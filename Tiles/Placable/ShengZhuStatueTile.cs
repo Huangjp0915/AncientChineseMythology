@@ -1,7 +1,6 @@
 ﻿using AncientChineseMythology.Content.Systems;
 using AncientChineseMythology.Items.Waapons;
 using AncientChineseMythology.Systems;
-using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;

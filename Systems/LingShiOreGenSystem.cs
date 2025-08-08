@@ -35,7 +35,7 @@ namespace AncientChineseMythology.Systems
                 for (int i = 0; i < oreVeins; i++) {
                     int x = WorldGen.genRand.Next(0, maxX);
                     int y = WorldGen.genRand.Next((int)Main.rockLayer,
-                                                  (int)Main.UnderworldLayer);  // 洞穴层往下
+                                                  Main.UnderworldLayer);  // 洞穴层往下
 
                     WorldGen.OreRunner(
                         x, y,

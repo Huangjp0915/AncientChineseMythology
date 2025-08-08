@@ -3,7 +3,6 @@ using AncientChineseMythology.Items.Waapons.Swords;
 using AncientChineseMythology.Items.Weapons.Bows;
 using AncientChineseMythology.Items.Weapons.SummoningStaffs;
 using AncientChineseMythology.Systems;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -13,7 +12,6 @@ using Terraria.GameContent.ItemDropRules;
 using Terraria.Graphics.CameraModifiers;
 using Terraria.ID;
 using Terraria.ModLoader;
-using static AncientChineseMythology.AncientChineseMythology;
 
 namespace AncientChineseMythology.NPCs.Boss.BlackBear
 {

@@ -1,5 +1,4 @@
 ﻿using AncientChineseMythology.Tiles.Herbs;
-using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 using Terraria;
 using Terraria.GameContent.Generation;
@@ -50,7 +49,7 @@ namespace AncientChineseMythology.Worldgen
         }
     }
 
-    static class WorldgenHelpers
+    internal static class WorldgenHelpers
     {
         public static bool IsCrimson(int i, int j) {
             // 判定方式：检查 tile 或 wall 是否为猩红系

@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.GameContent;
 using Terraria.ID;
@@ -10,15 +9,15 @@ namespace AncientChineseMythology.Projectiles
     public class PufferfishProj1 : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/PufferfishProj1";
-        Player player => Main.player[Projectile.owner]; // 玩家实例
-        float LaserLength = 0; // 激光的长度
+        private Player player => Main.player[Projectile.owner]; // 玩家实例
+        private float LaserLength = 0; // 激光的长度
 
         public override void SetStaticDefaults() {
             Main.projFrames[Projectile.type] = 1;
             ProjectileID.Sets.DrawScreenCheckFluff[Type] = 200; //超过屏幕外多少可以绘制
             base.SetStaticDefaults();
         }
-        void SetLaserPosition()//不穿墙的判断
+        private void SetLaserPosition()//不穿墙的判断
         {
             LaserLength = 20;
             Vector2 unit = Projectile.velocity.SafeNormalize(Vector2.Zero);
@@ -87,7 +86,7 @@ namespace AncientChineseMythology.Projectiles
             Main.dust[dustIndex].velocity *= 2f;
             if (Main.rand.NextBool(2)) {
                 Main.dust[dustIndex].scale = 0.5f;
-                Main.dust[dustIndex].fadeIn = 1f + (float)Main.rand.Next(10) * 0.05f;
+                Main.dust[dustIndex].fadeIn = 1f + Main.rand.Next(10) * 0.05f;
             }
         }
         public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox)//重写碰撞判定

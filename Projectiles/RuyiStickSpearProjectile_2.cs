@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,7 +8,6 @@ using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
-using static AncientChineseMythology.AncientChineseMythology;
 using Color = Microsoft.Xna.Framework.Color;
 using Rectangle = Microsoft.Xna.Framework.Rectangle;
 
@@ -32,7 +30,7 @@ namespace AncientChineseMythology.Projectiles
         }
     }
 
-    class RuyiStickSpearProjectile_2 : ModProjectile
+    internal class RuyiStickSpearProjectile_2 : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/RuyiStickSpearProjectile";
         private Color swingColor;
@@ -179,7 +177,7 @@ namespace AncientChineseMythology.Projectiles
         }
     }
 
-    class RuyiStickSpearProjectile_3 : ModProjectile
+    internal class RuyiStickSpearProjectile_3 : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/RuyiStickSpearProjectile";
         // 定义一些常量，决定剑的挥动范围
@@ -227,7 +225,7 @@ namespace AncientChineseMythology.Projectiles
         private float hideTime => 4f / Owner.GetTotalAttackSpeed(Projectile.DamageType);
         private Player Owner => Main.player[Projectile.owner];
         private bool isHit = false;
-        Vector2 HitPositon = Vector2.Zero;
+        private Vector2 HitPositon = Vector2.Zero;
 
         public override void SetStaticDefaults() {
             ProjectileID.Sets.HeldProjDoesNotUsePlayerGfxOffY[Type] = true;

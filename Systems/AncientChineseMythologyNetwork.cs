@@ -1,7 +1,4 @@
-﻿using AncientChineseMythology.Systems;
-using Terraria;
-using Terraria.ID;
-using Terraria.ModLoader;
+﻿using Terraria.ModLoader;
 
 namespace AncientChineseMythology
 {
