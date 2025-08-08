@@ -564,6 +564,27 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
             SoundEngine.PlaySound(SoundID.Roar, NPC.Center);
         }
 
+        public override void HitEffect(NPC.HitInfo hit) {
+            if (NPC.life > 0) {
+                return;
+            }
+            int Hanba_Body = Mod.Find<ModGore>("Hanba_Body2").Type;
+            int Hanba_Body2 = Mod.Find<ModGore>("Hanba_Body2").Type;
+            int Hanba_Eye = Mod.Find<ModGore>("Hanba_Eye").Type;
+            int Hanba_Top = Mod.Find<ModGore>("Hanba_Top").Type;
+
+            var entitySource = NPC.GetSource_Death();
+
+            for (int i = 0; i < 2; i++) {
+                Gore.NewGore(entitySource, NPC.position, new Vector2(Main.rand.Next(-6, 7), Main.rand.Next(-6, 7)), Hanba_Body);
+                Gore.NewGore(entitySource, NPC.position, new Vector2(Main.rand.Next(-6, 7), Main.rand.Next(-6, 7)), Hanba_Body2);
+                Gore.NewGore(entitySource, NPC.position, new Vector2(Main.rand.Next(-6, 7), Main.rand.Next(-6, 7)), Hanba_Top);
+            }
+            foreach (var pos in EyesOffset) {
+                Gore.NewGore(entitySource, NPC.Center + pos, new Vector2(Main.rand.Next(-6, 7), Main.rand.Next(-6, 7)), Hanba_Eye);
+            }
+        }
+
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
             Texture2D mainValue = TextureAssets.Npc[Type].Value;
             Rectangle rectangle = VaultUtils.GetRectangle(mainValue, frame, maxFrame);

@@ -274,6 +274,25 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
             FindFrame(targetFrame);
         }
 
+        public override void HitEffect(NPC.HitInfo hit) {
+            if (NPC.life > 0) {
+                return;
+            }
+            int Hoqing_Buttom = Mod.Find<ModGore>("Hoqing_Buttom").Type;
+            int Hoqing_Left = Mod.Find<ModGore>("Hoqing_Left").Type;
+            int Hoqing_Nose = Mod.Find<ModGore>("Hoqing_Nose").Type;
+            int Hoqing_Top = Mod.Find<ModGore>("Hoqing_Top").Type;
+
+            var entitySource = NPC.GetSource_Death();
+
+            Gore.NewGore(entitySource, NPC.position, new Vector2(Main.rand.Next(-6, 7), Main.rand.Next(-6, 7)), Hoqing_Nose);
+            for (int i = 0; i < 2; i++) {
+                Gore.NewGore(entitySource, NPC.position, new Vector2(Main.rand.Next(-6, 7), Main.rand.Next(-6, 7)), Hoqing_Buttom);
+                Gore.NewGore(entitySource, NPC.position, new Vector2(Main.rand.Next(-6, 7), Main.rand.Next(-6, 7)), Hoqing_Left);
+                Gore.NewGore(entitySource, NPC.position, new Vector2(Main.rand.Next(-6, 7), Main.rand.Next(-6, 7)), Hoqing_Top);
+            }
+        }
+
         private void TeleportNearTarget(Player target) {
             Vector2 offset = Main.rand.NextVector2Unit() * Main.rand.Next(300, 500);
             NPC.position = target.Center + offset - NPC.Size / 2f;

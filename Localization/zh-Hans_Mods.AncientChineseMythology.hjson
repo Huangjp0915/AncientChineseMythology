@@ -1,4 +1,4 @@
-Items: {
+﻿Items: {
 	RuyiJinguBang: {
 		DisplayName: 如意金箍棒
 		Tooltip:
@@ -492,6 +492,11 @@ Items: {
 	TestItem: {
 		// DisplayName: Test Item
 		// Tooltip: ""
+	}
+
+	RedwoodCoffin: {
+		DisplayName: 红木棺材
+		Tooltip: ""
 	}
 }
 

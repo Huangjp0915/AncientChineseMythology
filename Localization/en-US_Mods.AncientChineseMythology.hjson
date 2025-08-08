@@ -1,4 +1,4 @@
-Items: {
+﻿Items: {
 	RuyiJinguBang: {
 		DisplayName: RuyiJinguBang
 		Tooltip: ""
@@ -442,6 +442,11 @@ Items: {
 
 	TestItem: {
 		DisplayName: Test Item
+		Tooltip: ""
+	}
+
+	RedwoodCoffin: {
+		DisplayName: Redwood Coffin
 		Tooltip: ""
 	}
 }
