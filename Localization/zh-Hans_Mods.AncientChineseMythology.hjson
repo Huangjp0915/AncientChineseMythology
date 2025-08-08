@@ -1,4 +1,4 @@
-﻿Items: {
+Items: {
 	RuyiJinguBang: {
 		DisplayName: 如意金箍棒
 		Tooltip:
@@ -277,27 +277,27 @@
 
 	BronzeAxe: {
 		DisplayName: 青铜斧
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	BronzePickaxe: {
 		DisplayName: 青铜镐
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	Pufferfish: {
 		DisplayName: 河豚鱼
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	Starflower: {
 		DisplayName: 星辰花
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	StarflowerSeeds: {
 		DisplayName: 星辰花种子
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	ShengZhuStatue: {
@@ -312,32 +312,32 @@
 
 	IronArmorFlower: {
 		DisplayName: 铁甲花
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	IronArmorFlowerSeeds: {
 		DisplayName: 铁甲花种子
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	BlazingFlower: {
 		DisplayName: 怒焰花
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	BlazingFlowerSeeds: {
 		DisplayName: 怒焰花种子
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	BloodLingzhi: {
 		DisplayName: 血灵芝
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	BloodLingzhiSeeds: {
 		DisplayName: 血灵芝种子
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	MingCrowStaff: {
@@ -357,12 +357,12 @@
 
 	BloodSeaSand: {
 		DisplayName: 血海砂
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	BloodSeaSandstone: {
-		//DisplayName: Blood Sea Sandstone
-		//Tooltip: ""
+		// DisplayName: Blood Sea Sandstone
+		// Tooltip: ""
 	}
 
 	SkyAltarItem: {
@@ -378,32 +378,32 @@
 	CupriteHelmet: {
 		SetBonus: 受到近战伤害时有30%让对方被灼烧
 		DisplayName: 赤铜头盔
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	CupriteBreastplate: {
 		DisplayName: 赤铜甲
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	CupriteLeggings: {
 		DisplayName: 赤铜护胫
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	CelestialJadeBrick: {
 		DisplayName: 天阶玉砖
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	CloudyGoldSand: {
 		DisplayName: 云霞金沙
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	FloatingBasalt: {
 		DisplayName: 浮空玄石
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	ChengYingReins: {
@@ -422,17 +422,17 @@
 
 	ShenxianGuanglunItem: {
 		DisplayName: 神仙光轮
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	CloudMountItem: {
 		DisplayName: 祥云
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	GanJiangSword: {
 		DisplayName: 干将剑
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	XuanTieBar: {
@@ -442,7 +442,7 @@
 
 	XuanTieOre: {
 		DisplayName: 玄铁矿
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	XuanTieSword: {
@@ -461,37 +461,37 @@
 
 	BoneSword: {
 		DisplayName: 骨刃
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	Bone: {
 		DisplayName: 骨片
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	LingShiOre: {
 		DisplayName: 灵石
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	ZhenfaBook: {
 		DisplayName: 阵法百科全书
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	ZhenfaPaper: {
 		DisplayName: 阵法纸
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	TaiguWeaponWorkshopItem: {
 		DisplayName: 太古武器工坊
-		//Tooltip: ""
+		// Tooltip: ""
 	}
 
 	TestItem: {
-		//DisplayName: Test Item
-		//Tooltip: ""
+		// DisplayName: Test Item
+		// Tooltip: ""
 	}
 }
 
@@ -500,18 +500,18 @@ NPCs: {
 		DisplayName: 唐僧
 
 		TownNPCMood: {
-			//Content: 我很满足。
-			//NoHome: 我讨厌没有家。
-			//FarFromHome: 我离家太远了。
-			//LoveSpace: 我非常喜欢有这么大的空间。
-			//DislikeCrowded: 我不喜欢这么拥挤。
-			//HateCrowded: 我讨厌这么拥挤。
-			//LikeNPC_Princess: 我喜欢 {NPCName}。
-			//Princess_LovesNPC: 我喜欢 {NPCName}。
+			// Content: 我很满足。
+			// NoHome: 我讨厌没有家。
+			// FarFromHome: 我离家太远了。
+			// LoveSpace: 我非常喜欢有这么大的空间。
+			// DislikeCrowded: 我不喜欢这么拥挤。
+			// HateCrowded: 我讨厌这么拥挤。
+			// LikeNPC_Princess: 我喜欢 {NPCName}。
+			// Princess_LovesNPC: 我喜欢 {NPCName}。
 		}
 	}
 
-	//Angry_gargoyle.DisplayName: Angry_gargoyle
+	// Angry_gargoyle.DisplayName: Angry_gargoyle
 	angry_gargoyle.DisplayName: 愤怒的石像鬼
 	BlackBear.DisplayName: 黑熊金
 	TaiShangLaoJunNPC.DisplayName: 太上老君
@@ -541,10 +541,10 @@ NPCs: {
 	CloneBossBody4.DisplayName: 祖龙残魂
 	CloneBossHead.DisplayName: 祖龙残魂
 	CloneBossTail.DisplayName: 祖龙残魂
-	//Hanba.DisplayName: Hanba
-	//Talisman.DisplayName: Talisman
-	//Hoqing.DisplayName: Hoqing
-	//GhostFire.DisplayName: Ghost Fire
+	// Hanba.DisplayName: Hanba
+	// Talisman.DisplayName: Talisman
+	// Hoqing.DisplayName: Hoqing
+	// GhostFire.DisplayName: Ghost Fire
 }
 
 Projectiles: {
@@ -553,75 +553,75 @@ Projectiles: {
 	BlackBear_Proj2.DisplayName: 黑熊金
 	BlackBear_Proj3.DisplayName: 黑熊金
 	BlackBear_Proj4.DisplayName: 黑熊金
-	//GoldenStickSpearProjectile.DisplayName: Golden Stick Spear Projectile
-	//IronStickSpearProjectile.DisplayName: Iron Stick Spear Projectile
-	//WoodenStickSpearProjectile.DisplayName: Wooden Stick Spear Projectile
-	//GemStickSpearProjectile.DisplayName: Gem Stick Spear Projectile
+	// GoldenStickSpearProjectile.DisplayName: Golden Stick Spear Projectile
+	// IronStickSpearProjectile.DisplayName: Iron Stick Spear Projectile
+	// WoodenStickSpearProjectile.DisplayName: Wooden Stick Spear Projectile
+	// GemStickSpearProjectile.DisplayName: Gem Stick Spear Projectile
 	DragonCharmExplosion.DisplayName: 龙符咒
 	DragonCharmLaser.DisplayName: 龙符咒
-	//PigCharmLaser.DisplayName: Pig Charm Laser
-	//WoodenStickSpearProjectile_2.DisplayName: Wooden Stick Spear Projectile_2
-	//IronStickSpearProjectile_2.DisplayName: Iron Stick Spear Projectile_2
-	//IronStickSpearProjectile_3.DisplayName: Iron Stick Spear Projectile_3
-	//GoldenStickSpearProjectile_2.DisplayName: Golden Stick Spear Projectile_2
-	//GemStickSpearProjectile_2.DisplayName: Gem Stick Spear Projectile_2
+	// PigCharmLaser.DisplayName: Pig Charm Laser
+	// WoodenStickSpearProjectile_2.DisplayName: Wooden Stick Spear Projectile_2
+	// IronStickSpearProjectile_2.DisplayName: Iron Stick Spear Projectile_2
+	// IronStickSpearProjectile_3.DisplayName: Iron Stick Spear Projectile_3
+	// GoldenStickSpearProjectile_2.DisplayName: Golden Stick Spear Projectile_2
+	// GemStickSpearProjectile_2.DisplayName: Gem Stick Spear Projectile_2
 	BlackBearStaffProj1.DisplayName: 黑熊金
 	BlackBearStaffProj2.DisplayName: 黑熊金
-	//BlackBearSwordProj1.DisplayName: Black Bear Sword Proj1
+	// BlackBearSwordProj1.DisplayName: Black Bear Sword Proj1
 	BlackBearBowProj1.DisplayName: 黑熊金
 	BlankProjectile.DisplayName: 黑熊金
-	//CrimsonbronzeSwordProj1.DisplayName: Crimsonbronze Sword Proj1
-	//CrimsonbronzeSwordProj2.DisplayName: Crimsonbronze Sword Proj2
+	// CrimsonbronzeSwordProj1.DisplayName: Crimsonbronze Sword Proj1
+	// CrimsonbronzeSwordProj2.DisplayName: Crimsonbronze Sword Proj2
 	Demon_Proj.DisplayName: 噩梦梦魇
-	//PufferfishProj1.DisplayName: Pufferfish Proj1
-	//MingCrowMinion.DisplayName: Ming Crow Minion
+	// PufferfishProj1.DisplayName: Pufferfish Proj1
+	// MingCrowMinion.DisplayName: Ming Crow Minion
 	TribulationLightning.DisplayName: 劫雷
-	//EvilIntentionProj2.DisplayName: Evil Intention Proj2
+	// EvilIntentionProj2.DisplayName: Evil Intention Proj2
 	TribulationLightningBlack.DisplayName: 玄雷
 	TribulationLightningPurple.DisplayName: 紫霄雷
 	TribulationLightningRed.DisplayName: 赤雷
-	//ChengYingHitbox.DisplayName: Cheng Ying Hitbox
-	//YuChangSkillProjectile.DisplayName: Yu Chang Skill Projectile
-	//YuChangSwordBeanProjectile.DisplayName: Yu Chang Sword Bean Projectile
-	//YuChangSwordProjectile.DisplayName: Yu Chang Sword Projectile
-	//ShenxianGuanglunPet.DisplayName: Shenxian Guanglun Pet
-	//GanJiangSwordProj.DisplayName: Gan Jiang Sword Proj
-	//GanJiangSwordProj_2.DisplayName: Gan Jiang Sword Proj_2
-	//RuyiStickSpearProjectile.DisplayName: Ruyi Stick Spear Projectile
-	//RuyiStickSpearProjectile_2.DisplayName: Ruyi Stick Spear Projectile_2
-	//RuyiStickSpearProjectile_3.DisplayName: Ruyi Stick Spear Projectile_3
-	//BaGuaSigilProj.DisplayName: Ba Gua Sigil Proj
-	//DaShengStickProjectile.DisplayName: Da Sheng Stick Projectile
-	//FallingStarPierce.DisplayName: Falling Star Pierce
-	//Lightning.DisplayName: Lightning
-	//ThunderOrb.DisplayName: Thunder Orb
-	//LocustSet.DisplayName: Locust Set
-	//HanbaFireBall.DisplayName: Hanba Fire Ball
-	//HanbaLaser.DisplayName: Hanba Laser
-	//HanbaBigLaser.DisplayName: Hanba Big Laser
-	//Shockwave.DisplayName: Shockwave
-	//GhostFireProj.DisplayName: Ghost Fire Proj
-	//HoqingShadow.DisplayName: Hoqing Shadow
-	//OblivionFireOrb.DisplayName: Oblivion Fire Orb
-	//HoqingRingFire.DisplayName: Hoqing Ring Fire
+	// ChengYingHitbox.DisplayName: Cheng Ying Hitbox
+	// YuChangSkillProjectile.DisplayName: Yu Chang Skill Projectile
+	// YuChangSwordBeanProjectile.DisplayName: Yu Chang Sword Bean Projectile
+	// YuChangSwordProjectile.DisplayName: Yu Chang Sword Projectile
+	// ShenxianGuanglunPet.DisplayName: Shenxian Guanglun Pet
+	// GanJiangSwordProj.DisplayName: Gan Jiang Sword Proj
+	// GanJiangSwordProj_2.DisplayName: Gan Jiang Sword Proj_2
+	// RuyiStickSpearProjectile.DisplayName: Ruyi Stick Spear Projectile
+	// RuyiStickSpearProjectile_2.DisplayName: Ruyi Stick Spear Projectile_2
+	// RuyiStickSpearProjectile_3.DisplayName: Ruyi Stick Spear Projectile_3
+	// BaGuaSigilProj.DisplayName: Ba Gua Sigil Proj
+	// DaShengStickProjectile.DisplayName: Da Sheng Stick Projectile
+	// FallingStarPierce.DisplayName: Falling Star Pierce
+	// Lightning.DisplayName: Lightning
+	// ThunderOrb.DisplayName: Thunder Orb
+	// LocustSet.DisplayName: Locust Set
+	// HanbaFireBall.DisplayName: Hanba Fire Ball
+	// HanbaLaser.DisplayName: Hanba Laser
+	// HanbaBigLaser.DisplayName: Hanba Big Laser
+	// Shockwave.DisplayName: Shockwave
+	// GhostFireProj.DisplayName: Ghost Fire Proj
+	// HoqingShadow.DisplayName: Hoqing Shadow
+	// OblivionFireOrb.DisplayName: Oblivion Fire Orb
+	// HoqingRingFire.DisplayName: Hoqing Ring Fire
 }
 
-//HeavenBiome.DisplayName: Heaven
+// HeavenBiome.DisplayName: Heaven
 
 Biomes: {
 	HeavenBiome: {
 		TownNPCDialogueName: 天庭
-		//DisplayName: Heaven Biome
+		// DisplayName: Heaven Biome
 	}
 
 	TestBiome: {
-		//DisplayName: Test Biome
-		//TownNPCDialogueName: the Test Biome
+		// DisplayName: Test Biome
+		// TownNPCDialogueName: the Test Biome
 	}
 
 	BloodSeaBiome: {
 		DisplayName: 血海
-		//TownNPCDialogueName: the Blood Sea Biome
+		// TownNPCDialogueName: the Blood Sea Biome
 	}
 }
 
@@ -633,10 +633,10 @@ Tiles: {
 	StarflowerHerbTile.MapEntry: 星辰花
 	IronArmorFlowerHerbTile.MapEntry: 铁甲花
 	SkyAltarTile.MapEntry: 天庭祭坛
-	//CloudyGoldGrass.MapEntry: Cloudy Gold Grass
+	// CloudyGoldGrass.MapEntry: Cloudy Gold Grass
 	CelestialJadeBrick.MapEntry: 天阶玉砖
-	//CloudyGoldSand.MapEntry: Cloudy Gold Sand
-	//FloatingBasalt.MapEntry: Floating Basalt
+	// CloudyGoldSand.MapEntry: Cloudy Gold Sand
+	// FloatingBasalt.MapEntry: Floating Basalt
 	XuanTieOreTile.MapEntry: 玄铁
 	LingShiOreTile.MapEntry: 灵石
 	TaiguWeaponWorkshop.MapEntry: 太古武器工坊
@@ -739,13 +739,13 @@ Buffs: {
 	}
 
 	XuanTieBleed: {
-		//DisplayName: Xuan Tie Bleed
-		//Description: Mods.AncientChineseMythology.Buffs.XuanTieBleed.Description
+		// DisplayName: Xuan Tie Bleed
+		// Description: Mods.AncientChineseMythology.Buffs.XuanTieBleed.Description
 	}
 
 	BaGuaBuff: {
 		DisplayName: 八卦阵
-		//Description: Mods.AncientChineseMythology.Buffs.BaGuaBuff.Description
+		// Description: Mods.AncientChineseMythology.Buffs.BaGuaBuff.Description
 	}
 }
 
