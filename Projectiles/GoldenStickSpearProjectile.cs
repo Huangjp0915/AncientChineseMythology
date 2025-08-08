@@ -220,7 +220,7 @@ namespace AncientChineseMythology.Projectiles
             sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
             //开始顶点绘制
 
-            List<Vertex> ve = new List<Vertex>();
+            List<ColoredVertex> ve = new List<ColoredVertex>();
 
             Color color = Color.DarkGoldenrod * 0.24f;
             Color color1 = Color.Gold * 0.12f;
@@ -231,10 +231,10 @@ namespace AncientChineseMythology.Projectiles
                 ) {
                 if (Projectile.spriteDirection > 0) {
                     for (int i = 0; i < 12; i++) {
-                        ve.Add(new Vertex(player.Center - Main.screenPosition + new Vector2(0, -115).RotatedBy(Projectile.oldRot[i] + rotationOffset * 2),
+                        ve.Add(new ColoredVertex(player.Center - Main.screenPosition + new Vector2(0, -115).RotatedBy(Projectile.oldRot[i] + rotationOffset * 2),
                             new Vector3(i / 12f, 1, 1),
                             color));
-                        ve.Add(new Vertex(player.Center - Main.screenPosition + new Vector2(0, -40).RotatedBy(Projectile.oldRot[i] + rotationOffset * 2),
+                        ve.Add(new ColoredVertex(player.Center - Main.screenPosition + new Vector2(0, -40).RotatedBy(Projectile.oldRot[i] + rotationOffset * 2),
                             new Vector3(i / 12f, 0, 1),
                             color1));
 
@@ -243,10 +243,10 @@ namespace AncientChineseMythology.Projectiles
                 else {
                     for (int i = 0; i < 12; i++) {
 
-                        ve.Add(new Vertex(player.Center - Main.screenPosition + new Vector2(0, -40).RotatedBy(Projectile.oldRot[i] - rotationOffset * 2),
+                        ve.Add(new ColoredVertex(player.Center - Main.screenPosition + new Vector2(0, -40).RotatedBy(Projectile.oldRot[i] - rotationOffset * 2),
                             new Vector3(i / 12f, 1, 1),
                             color1));
-                        ve.Add(new Vertex(player.Center - Main.screenPosition + new Vector2(0, -115).RotatedBy(Projectile.oldRot[i] - rotationOffset * 2),
+                        ve.Add(new ColoredVertex(player.Center - Main.screenPosition + new Vector2(0, -115).RotatedBy(Projectile.oldRot[i] - rotationOffset * 2),
                             new Vector3(i / 12f, 0, 1),
                             color));
                     }
@@ -256,20 +256,20 @@ namespace AncientChineseMythology.Projectiles
                 && CurrentStage != AttackStage.Prepare) {
                 if (Projectile.spriteDirection > 0) {
                     for (int i = 0; i < 12; i++) {
-                        ve.Add(new Vertex(player.Center - Main.screenPosition - new Vector2(0, -40).RotatedBy(Projectile.oldRot[i] - rotationOffset * 2),
+                        ve.Add(new ColoredVertex(player.Center - Main.screenPosition - new Vector2(0, -40).RotatedBy(Projectile.oldRot[i] - rotationOffset * 2),
                             new Vector3(i / 12f, 1, 1),
                             color1));
-                        ve.Add(new Vertex(player.Center - Main.screenPosition - new Vector2(0, -115).RotatedBy(Projectile.oldRot[i] - rotationOffset * 2),
+                        ve.Add(new ColoredVertex(player.Center - Main.screenPosition - new Vector2(0, -115).RotatedBy(Projectile.oldRot[i] - rotationOffset * 2),
                             new Vector3(i / 12f, 0, 1),
                             color));
                     }
                 }
                 else {
                     for (int i = 0; i < 12; i++) {
-                        ve.Add(new Vertex(player.Center - Main.screenPosition - new Vector2(0, -115).RotatedBy(Projectile.oldRot[i] + rotationOffset * 2),
+                        ve.Add(new ColoredVertex(player.Center - Main.screenPosition - new Vector2(0, -115).RotatedBy(Projectile.oldRot[i] + rotationOffset * 2),
                             new Vector3(i / 12f, 1, 1),
                             color));
-                        ve.Add(new Vertex(player.Center - Main.screenPosition - new Vector2(0, -40).RotatedBy(Projectile.oldRot[i] + rotationOffset * 2),
+                        ve.Add(new ColoredVertex(player.Center - Main.screenPosition - new Vector2(0, -40).RotatedBy(Projectile.oldRot[i] + rotationOffset * 2),
                             new Vector3(i / 12f, 0, 1),
                             color1));
                     }

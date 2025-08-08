@@ -21,15 +21,15 @@ namespace AncientChineseMythology.Systems
 
         /* ── 每帧检测：服务器端击败 ML → 生成建筑 ── */
         public override void PreUpdateWorld() {
-            if (HeavenPlaced || !NPC.downedMoonlord ||
-                Main.netMode == NetmodeID.MultiplayerClient)
-                return;
+            //if (HeavenPlaced || !NPC.downedMoonlord ||
+            //    Main.netMode == NetmodeID.MultiplayerClient)
+            //    return;
 
-            PlaceHeavenStructure();
-            HeavenPlaced = true;
+            //PlaceHeavenStructure();
+            //HeavenPlaced = true;
 
-            if (Main.netMode == NetmodeID.Server)
-                NetMessage.SendData(MessageID.WorldData);
+            //if (Main.netMode == NetmodeID.Server)
+            //    NetMessage.SendData(MessageID.WorldData);
         }
 
         /* ── 把 sky.shstruct 插进世界 ──────────── */

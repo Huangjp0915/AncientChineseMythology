@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent;
+using Terraria.Graphics.Effects;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -98,17 +99,22 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
             ref float attackTimer = ref NPC.ai[1];
             ref float state = ref NPC.ai[0];
 
-            if (generalTimer == 0 && !HasTalisman && !VaultUtils.isClient) {
-                HasTalisman = true;
-                NPC.NewNPCDirect(NPC.FromObjectGetParent(), NPC.Center
-                    , ModContent.NPCType<Talisman>(), ai0: NPC.whoAmI, target: NPC.target);
+            if (generalTimer == 0) {
+                if (!VaultUtils.isServer && !SkyManager.Instance[HanbaSky.name].IsActive()) {
+                    SkyManager.Instance.Activate(HanbaSky.name);
+                }
+                if (!HasTalisman && !VaultUtils.isClient) {
+                    HasTalisman = true;
+                    NPC.NewNPCDirect(NPC.FromObjectGetParent(), NPC.Center
+                        , ModContent.NPCType<Talisman>(), ai0: NPC.whoAmI, target: NPC.target);
+                }
             }
 
             Lighting.AddLight(NPC.Center, Color.Orange.ToVector3() * NPC.scale);
 
             float hoverSpeed = 32f;
 
-            NPC.damage = state == 2f ? NPC.defDamage : 0;
+            NPC.damage = NPC.defDamage;
 
             NPC.dontTakeDamage = HasTalisman;
 
@@ -148,6 +154,15 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
                 case 1f: 
                     NPC.velocity *= 0.975f;
                     attackTimer++;
+
+                    if (attackTimer == ReelBackTime / 2) {
+                        if (!VaultUtils.isClient) {
+                            for (int i = 0; i < 8; i++) {
+                                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, NPC.Center.To(target.Center).RotatedByRandom(0.6f).UnitVector() * 10
+                                        , ModContent.ProjectileType<HanbaFireBall>(), GetBossDamage(), 2f, Main.myPlayer);
+                            }
+                        }
+                    }
 
                     if (attackTimer >= ReelBackTime) {
                         //冲刺方向扰动
@@ -1043,6 +1058,93 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
                 Rotation + MathHelper.Pi + MathHelper.PiOver4 * Math.Sign(Velocity.X), TexValue.Size() / 2, Scale, spriteEffects, 0);
 
             return false;
+        }
+    }
+
+    [VaultLoaden("AncientChineseMythology/Textures/Backgrounds/")]
+    internal class HanbaSky : CustomSky
+    {
+        bool active;
+        float intensity;
+        float maxIntensity = 0.6f;
+        Color skyColor;
+        internal static string name;
+        internal static Asset<Texture2D> HanbaSkySun;
+        internal static Asset<Texture2D> HanbaSkyColorBar;
+        public static void LoadInstance() {
+            name = "AncientChineseMythology:HanbaSky";
+            SkyManager.Instance[name] = new HanbaSky();
+        }
+
+        public override void Activate(Vector2 position, params object[] args) {
+            active = true;
+            intensity = 0.01f;
+        }
+
+        public override void Deactivate(params object[] args) {
+            active = false;
+        }
+
+        public override void Draw(SpriteBatch spriteBatch, float minDepth, float maxDepth) {
+            // 轻微抖动效果，营造焦灼震颤氛围
+            Vector2 shake = Main.rand.NextVector2Circular(2f * intensity, 2f * intensity);
+
+            // 背景天空层（主色调）
+            spriteBatch.Draw(VaultAsset.placeholder2.Value, new Rectangle((int)shake.X, (int)shake.Y, Main.screenWidth, Main.screenHeight), skyColor * intensity);
+
+            // 渲染渐变色层（比如橙红色霞光）
+            spriteBatch.Draw(HanbaSkyColorBar.Value, new Rectangle(0, 0, Main.screenWidth, Main.screenHeight), Color.White * intensity);
+
+            // 渲染焦日（带光晕）
+            Vector2 sunPos = new Vector2(1447, 80);
+            Color sunColor = new Color(255, 180, 100, 0) * intensity * 1.2f;
+            spriteBatch.Draw(HanbaSkySun.Value, sunPos, null, sunColor, 0f, new Vector2(90), 1.5f, SpriteEffects.None, 0f);
+        }
+
+        public override bool IsActive() {
+            return active;
+        }
+
+        public override void Reset() {
+            active = false;
+            intensity = 0.01f;
+        }
+
+        public override void Update(GameTime gameTime) {
+            if (NPC.AnyNPCs(ModContent.NPCType<Hanba>())) {
+                NPC boss = null;
+                foreach (var npc in Main.ActiveNPCs) {
+                    if (npc.type == ModContent.NPCType<Hanba>()) {
+                        boss = npc;
+                        break;
+                    }
+                }
+
+                if (boss != null) {
+                    float distance = Main.LocalPlayer.Distance(boss.Center);
+                    float t = MathHelper.Clamp(distance / 1600f, 0f, 1f); // 越近越暗红
+                    skyColor = VaultUtils.MultiStepColorLerp(t,
+                        new Color(100, 30, 0),    // 焦棕
+                        new Color(140, 20, 20),   // 血红
+                        new Color(255, 80, 0));   // 炽橙
+
+                    if (intensity < maxIntensity)
+                        intensity += 0.01f;
+
+                    active = true;
+                }
+            }
+            else {
+                intensity -= 0.01f;
+                if (intensity <= 0f) {
+                    intensity = 0f;
+                    Deactivate();
+                }
+            }
+        }
+
+        public override Color OnTileColor(Color inColor) {
+            return inColor * (1f - intensity);
         }
     }
 }

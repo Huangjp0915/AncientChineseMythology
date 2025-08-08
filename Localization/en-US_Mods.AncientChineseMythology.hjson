@@ -494,6 +494,8 @@ NPCs: {
 	CloneBossTail.DisplayName: Clone Boss Tail
 	Hanba.DisplayName: Hanba
 	Talisman.DisplayName: Talisman
+	Hoqing.DisplayName: Hoqing
+	GhostFire.DisplayName: Ghost Fire
 }
 
 Projectiles: {
@@ -549,6 +551,9 @@ Projectiles: {
 	HanbaLaser.DisplayName: Hanba Laser
 	HanbaBigLaser.DisplayName: Hanba Big Laser
 	Shockwave.DisplayName: Shockwave
+	GhostFireProj.DisplayName: Ghost Fire Proj
+	HoqingShadow.DisplayName: Hoqing Shadow
+	OblivionFireOrb.DisplayName: Oblivion Fire Orb
 }
 
 HeavenBiome.DisplayName: Heaven

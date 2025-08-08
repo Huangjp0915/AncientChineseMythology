@@ -1,4 +1,5 @@
 ﻿using AncientChineseMythology.NPCs.Boss.Hanbas;
+using AncientChineseMythology.NPCs.Boss.Hoqings;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.ID;
@@ -42,7 +43,7 @@ namespace AncientChineseMythology
         }
 
         public override bool? UseItem(Player player) {
-            Projectile.NewProjectile(player.FromObjectGetParent(), player.Center, player.Center.To(Main.MouseWorld).UnitVector(), ModContent.ProjectileType<Shockwave>(), 20, 2);
+            Projectile.NewProjectile(player.FromObjectGetParent(), player.Center, player.Center.To(Main.MouseWorld).UnitVector() * 8, ModContent.ProjectileType<GhostFireProj>(), 20, 2);
             return true;
         }
     }

@@ -2,6 +2,7 @@
 global using Microsoft.Xna.Framework;
 using AncientChineseMythology.NPCs.Boss.Archosaur;
 using AncientChineseMythology.NPCs.Boss.BlackBear;
+using AncientChineseMythology.NPCs.Boss.Hanbas;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
@@ -15,26 +16,6 @@ namespace AncientChineseMythology
     // Please read https://github.com/tModLoader/tModLoader/wiki/Basic-tModLoader-Modding-Guide#mod-skeleton-contents for more information about the various files in a mod.
     public class AncientChineseMythology : Mod
     {
-        public struct Vertex : IVertexType
-        {
-            private static VertexDeclaration _vertexDeclaration = new VertexDeclaration(new VertexElement[3]
-            {
-            new VertexElement(0,VertexElementFormat.Vector2,VertexElementUsage.Position,0),
-            new VertexElement(8,VertexElementFormat.Color,VertexElementUsage.Color,0),
-            new VertexElement(12,VertexElementFormat.Vector3,VertexElementUsage.TextureCoordinate,0)
-            });
-            public Vector2 Position;
-            public Color Color;
-            public Vector3 TexCoord;
-            public Vertex(Vector2 position, Vector3 texCoord, Color color) {
-                Position = position;
-                TexCoord = texCoord;
-                Color = color;
-            }
-            public VertexDeclaration VertexDeclaration {
-                get => _vertexDeclaration;
-            }
-        }
         public enum AncientChineseMythologyMessageType : byte
         {
             SyncGrowthPlayer
@@ -43,7 +24,7 @@ namespace AncientChineseMythology
         public class BossChecklistIntegration : ModSystem
         {
             private static readonly Version BossChecklistAPIVersion = new Version(1, 6); // 版本设置
-
+            
             public override void PostSetupContent() {
                 DoBossChecklistIntegration();
             }
@@ -163,6 +144,11 @@ namespace AncientChineseMythology
             }
         }
 
-
+        public override void Load() {
+            if (VaultUtils.isServer) {
+                return;
+            }
+            HanbaSky.LoadInstance();
+        }
     }
 }
