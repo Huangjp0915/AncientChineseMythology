@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent;
@@ -22,7 +23,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
         public static int ReelBackTime => Main.masterMode ? 50 : 60;
         private static readonly List<Vector2> EyesOffset = [];
         private readonly int[] otherAI = new int[aiSlot];
-        private const int aiSlot = 12;
+        private const int aiSlot = 4;
         private Vector2 OrigRestrictionPos;
         internal bool HasTalisman;
         public override void Load() {
@@ -58,6 +59,18 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
             NPC.HitSound = SoundID.NPCHit9;
             NPC.DeathSound = SoundID.NPCDeath14;
             Music = MusicLoader.GetMusicSlot("AncientChineseMythology/Sounds/Music/Hanba");
+        }
+
+        public override void SendExtraAI(BinaryWriter writer) {
+            for (int i = 0; i < aiSlot; i++) {
+                writer.Write(otherAI[i]);
+            }
+        }
+
+        public override void ReceiveExtraAI(BinaryReader reader) {
+            for (int i = 0; i < aiSlot; i++) {
+                otherAI[i] = reader.ReadInt32();
+            }
         }
 
         public override bool CheckActive() {

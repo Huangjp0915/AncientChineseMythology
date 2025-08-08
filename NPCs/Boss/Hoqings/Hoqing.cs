@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using System;
+using System.IO;
 using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent;
@@ -44,6 +45,18 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
             NPC.HitSound = SoundID.NPCHit2;
             NPC.DeathSound = SoundID.NPCDeath14;
             Music = MusicLoader.GetMusicSlot("AncientChineseMythology/Sounds/Music/Hanba");
+        }
+
+        public override void SendExtraAI(BinaryWriter writer) {
+            for (int i = 0; i < aiSlot; i++) {
+                writer.Write(otherAI[i]);
+            }
+        }
+
+        public override void ReceiveExtraAI(BinaryReader reader) {
+            for (int i = 0; i < aiSlot; i++) {
+                otherAI[i] = reader.ReadInt32();
+            }
         }
 
         public override bool CheckActive() {
