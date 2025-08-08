@@ -835,22 +835,22 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
         }
 
         public static float DistanceToRectEdge(Vector2 origin, Vector2 direction, Vector2 rectCenter, float sizeX, float sizeY) {
-            // 半宽/高
+            //半宽/高
             float halfX = sizeX;
             float halfY = sizeY;
 
-            // 计算矩形的边界
+            //计算矩形的边界
             float left = rectCenter.X - halfX;
             float right = rectCenter.X + halfX;
             float top = rectCenter.Y - halfY;
             float bottom = rectCenter.Y + halfY;
 
-            // 单位化方向向量
+            //单位化方向向量
             direction = direction.SafeNormalize(Vector2.UnitY);
 
             float tMin = float.PositiveInfinity;
 
-            // 检查 X 边界
+            //检查 X 边界
             if (direction.X != 0f) {
                 float tx1 = (left - origin.X) / direction.X;
                 float tx2 = (right - origin.X) / direction.X;
@@ -864,7 +864,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
                 }
             }
 
-            // 检查 Y 边界
+            //检查 Y 边界
             if (direction.Y != 0f) {
                 float ty1 = (top - origin.Y) / direction.Y;
                 float ty2 = (bottom - origin.Y) / direction.Y;
@@ -878,7 +878,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
                 }
             }
 
-            // 返回距离
+            //返回距离
             return float.IsInfinity(tMin) ? 2000f : tMin;
         }
 
@@ -1045,7 +1045,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
         public override void AI() {
             Rotation = Velocity.ToRotation();
 
-            // 振荡轨迹
+            //振荡轨迹
             float waveStrength = 2.5f;
             Vector2 normal = Velocity.SafeNormalize(Vector2.UnitX).RotatedBy(MathHelper.PiOver2);
             Position += normal * (float)Math.Sin(Time / 6f + waveOffset) * waveStrength;
@@ -1086,16 +1086,16 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
         }
 
         public override void Draw(SpriteBatch spriteBatch, float minDepth, float maxDepth) {
-            // 轻微抖动效果，营造焦灼震颤氛围
+            //轻微抖动效果，营造焦灼震颤氛围
             Vector2 shake = Main.rand.NextVector2Circular(2f * intensity, 2f * intensity);
 
-            // 背景天空层（主色调）
+            //背景天空层（主色调）
             spriteBatch.Draw(VaultAsset.placeholder2.Value, new Rectangle((int)shake.X, (int)shake.Y, Main.screenWidth, Main.screenHeight), skyColor * intensity);
 
-            // 渲染渐变色层（比如橙红色霞光）
+            //渲染渐变色层（比如橙红色霞光）
             spriteBatch.Draw(HanbaSkyColorBar.Value, new Rectangle(0, 0, Main.screenWidth, Main.screenHeight), Color.White * intensity);
 
-            // 渲染焦日（带光晕）
+            //渲染焦日（带光晕）
             Vector2 sunPos = new Vector2(1447, 80);
             Color sunColor = new Color(255, 180, 100, 0) * intensity * 1.2f;
             spriteBatch.Draw(HanbaSkySun.Value, sunPos, null, sunColor, 0f, new Vector2(90), 1.5f, SpriteEffects.None, 0f);
@@ -1122,11 +1122,11 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
 
                 if (boss != null) {
                     float distance = Main.LocalPlayer.Distance(boss.Center);
-                    float t = MathHelper.Clamp(distance / 1600f, 0f, 1f); // 越近越暗红
+                    float t = MathHelper.Clamp(distance / 1600f, 0f, 1f); //越近越暗红
                     skyColor = VaultUtils.MultiStepColorLerp(t,
-                        new Color(100, 30, 0),    // 焦棕
-                        new Color(140, 20, 20),   // 血红
-                        new Color(255, 80, 0));   // 炽橙
+                        new Color(100, 30, 0),    //焦棕
+                        new Color(140, 20, 20),   //血红
+                        new Color(255, 80, 0));   //炽橙
 
                     if (intensity < maxIntensity)
                         intensity += 0.01f;

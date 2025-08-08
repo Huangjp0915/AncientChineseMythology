@@ -554,6 +554,7 @@ Projectiles: {
 	GhostFireProj.DisplayName: Ghost Fire Proj
 	HoqingShadow.DisplayName: Hoqing Shadow
 	OblivionFireOrb.DisplayName: Oblivion Fire Orb
+	HoqingRingFire.DisplayName: Hoqing Ring Fire
 }
 
 HeavenBiome.DisplayName: Heaven

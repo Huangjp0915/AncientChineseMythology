@@ -3,6 +3,7 @@ global using Microsoft.Xna.Framework;
 using AncientChineseMythology.NPCs.Boss.Archosaur;
 using AncientChineseMythology.NPCs.Boss.BlackBear;
 using AncientChineseMythology.NPCs.Boss.Hanbas;
+using AncientChineseMythology.NPCs.Boss.Hoqings;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
@@ -149,6 +150,7 @@ namespace AncientChineseMythology
                 return;
             }
             HanbaSky.LoadInstance();
+            HoqingSky.LoadInstance();
         }
     }
 }

@@ -43,7 +43,7 @@ namespace AncientChineseMythology
         }
 
         public override bool? UseItem(Player player) {
-            Projectile.NewProjectile(player.FromObjectGetParent(), player.Center, player.Center.To(Main.MouseWorld).UnitVector() * 8, ModContent.ProjectileType<GhostFireProj>(), 20, 2);
+            Projectile.NewProjectile(player.FromObjectGetParent(), player.Center, player.Center.To(Main.MouseWorld).UnitVector() * 8, ModContent.ProjectileType<HoqingShadow>(), 20, 2);
             return true;
         }
     }

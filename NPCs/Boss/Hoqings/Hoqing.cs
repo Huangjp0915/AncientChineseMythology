@@ -1,9 +1,11 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.NPCs.Boss.Hanbas;
+using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent;
+using Terraria.Graphics.Effects;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -79,6 +81,12 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
             ref float state = ref NPC.ai[0];
             bool setNPCRot = true;
 
+            if (generalTimer == 0) {
+                if (!VaultUtils.isServer && !SkyManager.Instance[HoqingSky.name].IsActive()) {
+                    SkyManager.Instance.Activate(HoqingSky.name);
+                }
+            }
+
             switch (state) {
                 //失去目标，脱战
                 case -1f:
@@ -103,6 +111,12 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
                             NPC.NewNPCDirect(NPC.FromObjectGetParent(), NPC.Center
                                 , ModContent.NPCType<GhostFire>(), ai0: NPC.whoAmI, ai1: i, target: NPC.target);
                         }
+                        HoqingRingFire.AllVanish(NPC.whoAmI);
+                        for (int i = 0; i < 28; i++) {
+                            Projectile.NewProjectile(NPC.FromObjectGetParent(), NPC.Center, Vector2.Zero
+                                        , ModContent.ProjectileType<HoqingRingFire>(), NPC.damage, 2
+                                        , ai0: NPC.whoAmI, ai2: MathHelper.TwoPi / 28 * i);
+                        }
                     }
 
                     attackTimer++;
@@ -121,9 +135,28 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
                             }
                         }
 
+                        if (otherAI[1] > 0) {
+                            otherAI[2] = 15;
+                        }
+                        
                         NPC.netUpdate = true;
                     }
                     else {
+                        if (attackTimer % 5 == 0) {
+                            if (otherAI[2] > 0) {
+                                otherAI[2]--;
+                                if (!VaultUtils.isClient) {
+                                    Projectile.NewProjectile(NPC.FromObjectGetParent(), NPC.Center
+                                        , new Vector2(Main.rand.Next(-13, 13), Main.rand.Next(-13, 13))
+                                        , ModContent.ProjectileType<HoqingShadow>(), NPC.damage, 2, ai2: NPC.whoAmI);
+
+                                    if (otherAI[2] == 0 && otherAI[1] > 0) {
+                                        TeleportNearTarget(target);
+                                    }
+                                }                                
+                            }
+                        }
+                        
                         //平时持续小幅追踪，模拟压迫感逼近
                         float baseSpeed = 10f;
                         float inertia = 20f;
@@ -137,6 +170,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
                     if (!NPC.AnyNPCs(ModContent.NPCType<GhostFire>())) {
                         attackTimer = 0;
                         state = 1f;
+                        HoqingRingFire.AllVanish(NPC.whoAmI);
                     }
                     break;
                 //瞎勾巴甩弹幕
@@ -224,14 +258,12 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
 
                         if (++otherAI[0] > 4) {
                             otherAI[0] = 0;
+                            otherAI[1]++;
                             state = 0;
                         }
                         
                         NPC.netUpdate = true;
                     }
-                    break;
-                //先淫叫然后充能甩大激光柱子
-                case 2f:
                     break;
             }
 
@@ -241,6 +273,20 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
             }
 
             FindFrame(targetFrame);
+        }
+
+        private void TeleportNearTarget(Player target) {
+            Vector2 offset = Main.rand.NextVector2Unit() * Main.rand.Next(300, 500);
+            NPC.position = target.Center + offset - NPC.Size / 2f;
+
+            //粒子效果
+            for (int i = 0; i < 30; i++) {
+                Vector2 dustVel = Main.rand.NextVector2Circular(3f, 3f);
+                Dust.NewDustPerfect(NPC.Center, DustID.GreenTorch, dustVel, 100, Color.Magenta, 1.5f).noGravity = true;
+            }
+
+            //音效
+            SoundEngine.PlaySound(SoundID.Item8, NPC.Center);//魔法瞬移声
         }
 
         private new void FindFrame(int targetFrame) {
@@ -283,6 +329,101 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
         }
     }
 
+    internal class HoqingRingFire : ModProjectile
+    {
+        public override string Texture => "AncientChineseMythology/NPCs/Boss/Hoqings/GhostFire";
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.TrailingMode[Type] = 3;
+            ProjectileID.Sets.TrailCacheLength[Type] = 12;
+        }
+        public override void SetDefaults() {
+            Projectile.width = Projectile.height = 32;
+            Projectile.friendly = false;
+            Projectile.hostile = true;
+            Projectile.penetrate = -1;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.timeLeft = 300;
+        }
+
+        public static void AllVanish(int npc) {
+            foreach (var proj in Main.ActiveProjectiles) {
+                if (proj.type != ModContent.ProjectileType<HoqingRingFire>() || proj.ai[0] != npc) {
+                    continue;
+                }
+                proj.localAI[1] = 1f;
+                proj.netUpdate = true;
+            }
+        }
+
+        public override void AI() {
+            NPC boss = Main.npc[(int)Projectile.ai[0]];
+            if (boss.Alives()) {
+                Projectile.timeLeft = 2;
+                Projectile.ai[1] += 0.2f;
+                Vector2 targetPos = boss.Center + (Projectile.ai[1] + Projectile.ai[2]).ToRotationVector2() * Projectile.localAI[0];
+                Projectile.velocity = Projectile.Center.To(targetPos);
+                Projectile.rotation = 0;
+                if (Projectile.localAI[0] < 900 && Projectile.localAI[1] == 0) {
+                    Projectile.localAI[0] += 10;
+                }
+            }
+            else {
+                Projectile.localAI[1] = 1f;
+            }
+
+            if (Projectile.localAI[1] == 1) {
+                if (Projectile.localAI[0] > 0) {
+                    Projectile.localAI[0] -= 10;
+                }
+                else {
+                    Projectile.Kill();
+                }
+            }
+
+            if (VaultUtils.isServer) {
+                return;
+            }
+
+            VaultUtils.ClockFrame(ref Projectile.frame, 5, 3);
+
+            //粒子拖尾（多种颜色/变化大小）
+            for (int i = 0; i < 2; i++) {
+                Vector2 offset = Projectile.velocity * -0.2f * i;
+                int dust = Dust.NewDust(Projectile.position + offset, Projectile.width, Projectile.height, DustID.GreenTorch,
+                    0f, 0f, 150, Color.Lerp(Color.Lime, Color.Cyan, Main.rand.NextFloat()), Main.rand.NextFloat(1.2f, 2.4f));
+                Main.dust[dust].velocity *= 0.1f;
+                Main.dust[dust].noGravity = true;
+            }
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            Texture2D tex = TextureAssets.Projectile[Type].Value;
+            Rectangle rect = VaultUtils.GetRectangle(tex, Projectile.frame, 4);
+            Vector2 origin = rect.Size() / 2f;
+
+            Color baseColor = Color.Lerp(Color.LimeGreen, Color.Cyan, 0.5f);
+            float scale = Projectile.scale;
+
+            //绘制残影（幽光拖尾）
+            float alpha = 0.4f;
+            for (int i = 0; i < Projectile.oldPos.Length; i++) {
+                Vector2 pos = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
+                float fade = alpha * (1f - i / (float)Projectile.oldPos.Length);
+                Main.spriteBatch.Draw(tex, pos, rect, baseColor * fade, Projectile.rotation, origin, scale, SpriteEffects.None, 0f);
+            }
+
+            //主体 + 发光外层
+            Vector2 drawPos = Projectile.Center - Main.screenPosition;
+            Main.spriteBatch.Draw(tex, drawPos, rect, baseColor, Projectile.rotation, origin, scale, SpriteEffects.None, 0f);
+
+            //外层发光（更大的，半透明）
+            Main.spriteBatch.Draw(tex, drawPos, rect, baseColor * 0.3f, Projectile.rotation, origin, scale * 1.4f, SpriteEffects.None, 0f);
+
+            return false;
+        }
+    }
+
     internal class HoqingShadow : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/NPCs/Boss/Hoqings/Hoqing";
@@ -293,6 +434,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
             Projectile.penetrate = -1;
             Projectile.tileCollide = false;
             Projectile.ignoreWater = true;
+            Projectile.timeLeft = 120;
         }
 
         public override void AI() {
@@ -303,9 +445,14 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
 
             Projectile.velocity *= 0.98f;
 
+            Projectile.position += Main.npc[(int)Projectile.ai[2]].velocity;
+
             Projectile.ai[0]++;
 
             Projectile.ai[1] *= 0.9f;
+            if (Projectile.ai[1] < 0.05f) {
+                Projectile.Kill();
+            }
         }
 
         public override bool PreDraw(ref Color lightColor) {
@@ -335,7 +482,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
         }
 
         public override void AI() {
-            //自动旋转
+            //自旋转
             Projectile.rotation += 0.1f;
 
             //微漂浮扰动轨迹
@@ -361,10 +508,8 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
             Texture2D tex = TextureAssets.Projectile[Type].Value;
             Vector2 origin = tex.Size() / 2f;
 
-            //主色调：基于AI周期变化做颜色渐变
             Color coreColor = Color.Lerp(Color.MediumPurple, Color.DeepPink, (float)Math.Sin(Projectile.ai[0]) * 0.5f + 0.5f);
 
-            //====== 绘制残影轨迹 ======
             float trailOpacity = 0.35f;
             for (int i = 0; i < Projectile.oldPos.Length; i++) {
                 float fade = trailOpacity * (1f - i / (float)Projectile.oldPos.Length);
@@ -373,12 +518,9 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
                 Main.spriteBatch.Draw(tex, pos, null, color, Projectile.rotation, origin, Projectile.scale, SpriteEffects.None, 0);
             }
 
-            //====== 绘制发光层（大而透明） ======
             float glowScale = 1.4f + 0.1f * (float)Math.Sin(Projectile.ai[0] * 2);
             Color glowColor = coreColor * 0.25f;
             Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, glowColor, Projectile.rotation, origin, Projectile.scale * glowScale, SpriteEffects.None, 0f);
-
-            //====== 主体绘制 ======
             Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, coreColor, Projectile.rotation, origin, Projectile.scale, SpriteEffects.None, 0f);
 
             return false;
@@ -405,8 +547,9 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
         public override void AI() {
             Projectile.rotation = Projectile.velocity.ToRotation() + MathHelper.PiOver2;
 
-            if (VaultUtils.isServer)
+            if (VaultUtils.isServer) {
                 return;
+            } 
 
             VaultUtils.ClockFrame(ref Projectile.frame, 5, 3);
 
@@ -469,7 +612,6 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
             NPC.aiStyle = -1;
             AIType = -1;
             NPC.knockBackResist = 0f;
-            NPC.boss = true;
             NPC.noGravity = true;
             NPC.noTileCollide = true;
             NPC.HitSound = SoundID.NPCHit9;
@@ -565,4 +707,105 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
             Main.instance.DrawCacheNPCProjectiles.Add(index);
         }
     }
+
+    internal class HoqingSky : CustomSky
+    {
+        bool active;
+        float intensity;
+        float maxIntensity = 0.8f; //更高压迫感
+        Color skyColor;
+
+        internal static string name;
+        internal static Asset<Texture2D> HanbaSkySun;
+        internal static Asset<Texture2D> HanbaSkyColorBar;
+
+        public static void LoadInstance() {
+            name = "AncientChineseMythology:HoqingSky";
+            SkyManager.Instance[name] = new HoqingSky();
+        }
+
+        public override void Activate(Vector2 position, params object[] args) {
+            active = true;
+            intensity = 0.01f;
+        }
+
+        public override void Deactivate(params object[] args) {
+            active = false;
+        }
+
+        public override void Reset() {
+            active = false;
+            intensity = 0.01f;
+        }
+
+        public override bool IsActive() => active;
+
+        public override void Update(GameTime gameTime) {
+            if (NPC.AnyNPCs(ModContent.NPCType<Hoqing>())) {
+                NPC boss = null;
+                foreach (var npc in Main.ActiveNPCs) {
+                    if (npc.type == ModContent.NPCType<Hoqing>()) {
+                        boss = npc;
+                        break;
+                    }
+                }
+
+                if (boss != null) {
+                    float distance = Main.LocalPlayer.Distance(boss.Center);
+                    float t = MathHelper.Clamp(distance / 1600f, 0f, 1f);
+
+                    //亡灵风格多重色阶：深靛 -> 幽蓝紫 -> 淡蓝魂光
+                    skyColor = VaultUtils.MultiStepColorLerp(t,
+                        new Color(20, 20, 40),   //深靛（最压迫）
+                        new Color(40, 60, 90),   //幽蓝紫
+                        new Color(80, 130, 160)); //魂蓝（近Boss时）
+
+                    if (intensity < maxIntensity)
+                        intensity += 0.01f;
+
+                    active = true;
+                }
+            }
+            else {
+                intensity -= 0.01f;
+                if (intensity <= 0f) {
+                    intensity = 0f;
+                    Deactivate();
+                }
+            }
+        }
+
+        public override void Draw(SpriteBatch spriteBatch, float minDepth, float maxDepth) {
+            Vector2 shake = Main.rand.NextVector2Circular(1.5f * intensity, 1.5f * intensity); //更幽柔的震颤
+
+            //背景主色调（幽蓝调）
+            spriteBatch.Draw(VaultAsset.placeholder2.Value,
+                new Rectangle((int)shake.X, (int)shake.Y, Main.screenWidth, Main.screenHeight),
+                skyColor * intensity);
+
+            //渐变冷色雾气层（由 HanbaSkyColorBar 替代使用）
+            if (HanbaSkyColorBar?.Value != null) {
+                Color mistColor = VaultUtils.MultiStepColorLerp(0.4f, Color.Cyan, Color.Blue);
+                spriteBatch.Draw(HanbaSkyColorBar.Value,
+                    new Rectangle(0, 0, Main.screenWidth, Main.screenHeight),
+                    mistColor * intensity);
+            }
+
+            //冥日替代图（可命名为幽月/冥眼等）
+            if (HanbaSkySun?.Value != null) {
+                Vector2 sunPos = new Vector2(Main.screenWidth / 2f, 140);
+                Color sunColor = new Color(100, 150, 255, 0) * intensity * 1.5f;
+
+                spriteBatch.Draw(HanbaSkySun.Value,
+                    sunPos, null, sunColor, 0f, HanbaSkySun.Size() / 2f, 1.8f, SpriteEffects.None, 0f);
+            }
+        }
+
+        public override Color OnTileColor(Color inColor) {
+            //所有地表颜色变冷/失色
+            Color desaturated = Color.Lerp(inColor, Color.DarkSlateGray, 0.4f);
+            return Color.Lerp(inColor, desaturated, intensity);
+        }
+    }
+
 }
