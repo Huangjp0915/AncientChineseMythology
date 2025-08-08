@@ -15,7 +15,7 @@ namespace AncientChineseMythology.Items.Weapons.Staffs
             Item.DamageType = DamageClass.Magic;
             Item.width = 25;
             Item.height = 31;
-            Item.useTime = 25; // 使用时间为15帧（1秒大约60帧）
+            Item.useTime = 25; //使用时间为15帧（1秒大约60帧）
             Item.useAnimation = 25;
             Item.useStyle = ItemUseStyleID.HoldUp;
             Item.knockBack = 18;
@@ -23,13 +23,13 @@ namespace AncientChineseMythology.Items.Weapons.Staffs
             Item.rare = ItemRarityID.Red;
             Item.UseSound = SoundID.Item13;
             Item.autoReuse = true;
-            Item.noMelee = true; // 无法近战
+            Item.noMelee = true; //无法近战
             //Item.useTurn = true;
             Item.noUseGraphic = false;
-            Item.shoot = ModContent.ProjectileType<Projectiles.PufferfishProj1>(); // 射击类型
-            Item.shootSpeed = 12f; // 射击速度
+            Item.shoot = ModContent.ProjectileType<Projectiles.PufferfishProj1>(); //射击类型
+            Item.shootSpeed = 12f; //射击速度
 
-            Item.mana = 2 * 60 / Item.useTime; // 每秒60帧，计算每帧消耗的法力值
+            Item.mana = 2 * 60 / Item.useTime; //每秒60帧，计算每帧消耗的法力值
             Item.scale = 0.5f;
         }
 

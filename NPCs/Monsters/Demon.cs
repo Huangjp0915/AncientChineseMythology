@@ -8,7 +8,7 @@ namespace AncientChineseMythology.NPCs.Monsters
 {
     public class Demon : ModNPC
     {
-        // 动画状态枚举（主要用于绘制）
+        //动画状态枚举（主要用于绘制）
         private enum AnimationState
         {
             Attack,
@@ -18,67 +18,67 @@ namespace AncientChineseMythology.NPCs.Monsters
             Idle
         }
 
-        // 动画控制变量
+        //动画控制变量
         private float animationCounter = 0f;
         private int frameDuration = 6;
-        private int frameTimer = 0;          // 辅助计时（用于死亡动画）
-        private int currentFrame = 0;        // 用于记录死亡动画当前帧（PreDraw直接使用 dieTimer）
+        private int frameTimer = 0;          //辅助计时（用于死亡动画）
+        private int currentFrame = 0;        //用于记录死亡动画当前帧（PreDraw直接使用 dieTimer）
 
-        // 各动画帧数
+        //各动画帧数
         private int attackFrameCount = 6;
         private int dieFrameCount = 10;
         private int runFrameCount = 4;
         private int hurtFrameCount = 3;
         private int idleFrameCount = 4;
 
-        // 攻击控制变量
+        //攻击控制变量
         private int attackCooldown = 0;
         private int attackAnimTimer = 0;
         private bool didDamageThisAttack = false;
-        private int attackTriggerFrame = 3;  // 当攻击动画播放到此帧时发射投射物
+        private int attackTriggerFrame = 3;  //当攻击动画播放到此帧时发射投射物
         private int projectilesFired = 0;
         private Vector2 attackOffset = new Vector2(0, -5);
 
-        // 不可打断的攻击标记及持续时长
+        //不可打断的攻击标记及持续时长
         private bool isAttacking = false;
-        private int fullAttackDuration = (3 * 30) + 30; // 约 120 帧
+        private int fullAttackDuration = (3 * 30) + 30; //约 120 帧
 
-        // 状态标记
+        //状态标记
         private bool isDying = false;
         private int dieTimer = 0;
         private int hurtTimer = 0;
 
-        // 额外击退效果
+        //额外击退效果
         private Vector2 extraKnockbackForce = Vector2.Zero;
 
-        // 移动与攻击参数
+        //移动与攻击参数
         private float flySpeed = 5f;
-        // 远程攻击条件：目标距离在200～400之间触发
+        //远程攻击条件：目标距离在200～400之间触发
         private float minRange = 200f;
         private float maxRange = 400f;
 
-        // 位置卡住检测
+        //位置卡住检测
         private int stuckCounter = 0;
 
-        // invincibleTimer 处理：记录失敌/被阻挡时的计时，并记录初始速度
+        //invincibleTimer 处理：记录失敌/被阻挡时的计时，并记录初始速度
         private int invincibleTimer = 0;
         private Vector2 initialVelocity = Vector2.Zero;
 
-        // 贴图资源
+        //贴图资源
         private Texture2D attackTexture;
         private Texture2D dieTexture;
         private Texture2D runTexture;
         private Texture2D hurtTexture;
         private Texture2D idleTexture;
 
-        // 伪路径，防止 tModLoader 自动加载单张贴图
+        //伪路径，防止 tModLoader 自动加载单张贴图
         public override string Texture => "AncientChineseMythology/Textures/NPCs/Monsters/Demon/idle_01";
 
         public override void SetStaticDefaults() {
         }
 
         public override void SetDefaults() {
-            // 加载各状态动画贴图
+            //加载各状态动画贴图
             attackTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/Demon/Attack").Value;
             dieTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/Demon/Die").Value;
             runTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Monsters/Demon/Run").Value;
@@ -95,7 +95,7 @@ namespace AncientChineseMythology.NPCs.Monsters
             NPC.HitSound = SoundID.NPCHit1;
             NPC.DeathSound = SoundID.NPCDeath1;
 
-            // 能飞行，但与实体碰撞；平台穿越逻辑在 AI 中控制
+            //能飞行，但与实体碰撞；平台穿越逻辑在 AI 中控制
             NPC.noGravity = true;
             NPC.noTileCollide = false;
             NPC.aiStyle = -1;
@@ -105,14 +105,14 @@ namespace AncientChineseMythology.NPCs.Monsters
             return !Main.dayTime ? 0.4f : 0f;
         }
 
-        /// <summary>
-        /// 根据当前条件返回动画状态（主要用于绘制）
-        /// 攻击状态：当目标距离小于70 或处于 [minRange, maxRange] 内且正在攻击
-        /// Idle：当目标处于理想停留状态
-        /// Run：其它情况
-        /// Die：死亡动画
-        /// Hurt：受伤状态
-        /// </summary>
+        ///<summary>
+        ///根据当前条件返回动画状态（主要用于绘制）
+        ///攻击状态：当目标距离小于70 或处于 [minRange, maxRange] 内且正在攻击
+        ///Idle：当目标处于理想停留状态
+        ///Run：其它情况
+        ///Die：死亡动画
+        ///Hurt：受伤状态
+        ///</summary>
         private AnimationState GetAnimationState() {
             if (isDying)
                 return AnimationState.Die;
@@ -131,7 +131,7 @@ namespace AncientChineseMythology.NPCs.Monsters
         }
 
         public override void AI() {
-            // 目标检测及朝向设置
+            //目标检测及朝向设置
             NPC.TargetClosest(true);
             if (NPC.target < 0 || NPC.target >= Main.maxPlayers) {
                 NPC.velocity = Vector2.Zero;
@@ -139,10 +139,10 @@ namespace AncientChineseMythology.NPCs.Monsters
             }
             Player target = Main.player[NPC.target];
 
-            // 始终使 NPC 面向玩家
+            //始终使 NPC 面向玩家
             NPC.spriteDirection = target.Center.X < NPC.Center.X ? -1 : 1;
 
-            // 玩家死亡时淡出处理
+            //玩家死亡时淡出处理
             if (target.dead) {
                 NPC.velocity = Vector2.Zero;
                 NPC.alpha += 5;
@@ -153,12 +153,12 @@ namespace AncientChineseMythology.NPCs.Monsters
             if (Main.netMode != NetmodeID.MultiplayerClient)
                 NPC.timeLeft = 300;
 
-            //  死亡与受伤处理
+            // 死亡与受伤处理
             if (isDying) {
                 NPC.damage = 0;
                 NPC.velocity = Vector2.Zero;
                 dieTimer++;
-                // 使用 dieTimer 来计算死亡动画帧（PreDraw中直接使用 dieTimer/frameDuration）
+                //使用 dieTimer 来计算死亡动画帧（PreDraw中直接使用 dieTimer/frameDuration）
                 if (dieTimer > dieFrameCount * frameDuration + 10) {
                     NPC.NPCLoot();
                     NPC.active = false;
@@ -169,7 +169,7 @@ namespace AncientChineseMythology.NPCs.Monsters
                 NPC.velocity = Vector2.Zero;
             }
             else {
-                // 非攻击状态下的追击逻辑
+                //非攻击状态下的追击逻辑
                 if (!isAttacking) {
                     Vector2 toPlayer = target.Center - NPC.Center;
                     float dist = toPlayer.Length();
@@ -177,25 +177,25 @@ namespace AncientChineseMythology.NPCs.Monsters
                         toPlayer.Normalize();
 
                     if (dist < minRange)
-                        NPC.velocity = -toPlayer * flySpeed;  // 目标过近则后退
+                        NPC.velocity = -toPlayer * flySpeed;  //目标过近则后退
                     else if (dist > maxRange)
-                        NPC.velocity = toPlayer * flySpeed;   // 目标过远则追近
+                        NPC.velocity = toPlayer * flySpeed;   //目标过远则追近
                     else
-                        NPC.velocity = Vector2.Zero;          // 理想范围内停留
+                        NPC.velocity = Vector2.Zero;          //理想范围内停留
 
-                    // 当目标处于 [minRange, maxRange] 内且攻击冷却结束时，开始攻击
+                    //当目标处于 [minRange, maxRange] 内且攻击冷却结束时，开始攻击
                     if (attackCooldown <= 0 && dist >= minRange && dist <= maxRange)
                         StartAttack();
                 }
                 else {
-                    // 攻击期间保持静止，不受目标移动干扰
+                    //攻击期间保持静止，不受目标移动干扰
                     NPC.velocity = Vector2.Zero;
                 }
 
-                // 攻击动画处理及远程投射
+                //攻击动画处理及远程投射
                 if (isAttacking) {
                     attackAnimTimer++;
-                    // 每隔 (projectilesFired+1)*30 帧重置 didDamageThisAttack，允许多次发射
+                    //每隔 (projectilesFired+1)*30 帧重置 didDamageThisAttack，允许多次发射
                     if (attackAnimTimer >= (projectilesFired + 1) * 30)
                         didDamageThisAttack = false;
 
@@ -211,11 +211,11 @@ namespace AncientChineseMythology.NPCs.Monsters
                 }
             }
 
-            // 攻击冷却递减
+            //攻击冷却递减
             if (attackCooldown > 0)
                 attackCooldown--;
 
-            // 平台检测及穿越属性设置
+            //平台检测及穿越属性设置
             bool onPlatform = false;
             for (int i = (int)(NPC.Bottom.X / 16); i <= (int)((NPC.Bottom.X + NPC.width) / 16); i++) {
                 for (int j = (int)(NPC.Bottom.Y / 16); j <= (int)((NPC.Bottom.Y + 1) / 16); j++) {
@@ -228,13 +228,13 @@ namespace AncientChineseMythology.NPCs.Monsters
                 if (onPlatform)
                     break;
             }
-            // 若在平台上且正处于下落状态，则允许穿越平台
+            //若在平台上且正处于下落状态，则允许穿越平台
             if (onPlatform && NPC.velocity.Y > 0)
                 NPC.noTileCollide = true;
             else
                 NPC.noTileCollide = false;
 
-            // invincibleTimer 处理
+            //invincibleTimer 处理
             if (!Collision.CanHitLine(NPC.position, NPC.width, NPC.height, target.position, target.width, target.height)) {
                 invincibleTimer++;
                 if (invincibleTimer == 120) {
@@ -244,7 +244,7 @@ namespace AncientChineseMythology.NPCs.Monsters
                 }
                 if (invincibleTimer > 120) {
                     NPC.velocity = initialVelocity;
-                    // 此处设置 spriteDirection 根据初始反向速度，而不是始终面向目标
+                    //此处设置 spriteDirection 根据初始反向速度，而不是始终面向目标
                     NPC.spriteDirection = initialVelocity.X > 0 ? 1 : -1;
                 }
             }
@@ -252,16 +252,16 @@ namespace AncientChineseMythology.NPCs.Monsters
                 invincibleTimer = 0;
             }
 
-            // 额外击退效果叠加与衰减
+            //额外击退效果叠加与衰减
             NPC.velocity += extraKnockbackForce;
             extraKnockbackForce *= 0.9f;
 
-            // TileCollision 处理
-            bool fallThrough = NPC.velocity.Y > 0; // 向下运动允许穿越平台
+            //TileCollision 处理
+            bool fallThrough = NPC.velocity.Y > 0; //向下运动允许穿越平台
             Vector2 startPosition = NPC.position;
             NPC.velocity = Collision.TileCollision(NPC.position, NPC.velocity, NPC.width, NPC.height, fallThrough);
 
-            // 位置卡住检测
+            //位置卡住检测
             float distanceMoved = Vector2.DistanceSquared(NPC.position, startPosition);
             if (distanceMoved < 1f)
                 stuckCounter++;
@@ -285,11 +285,11 @@ namespace AncientChineseMythology.NPCs.Monsters
             if (hurtTimer > 0)
                 hurtTimer--;
 
-            // 更新动画计时器
+            //更新动画计时器
             animationCounter += 1f;
 
-            // 始终保持 NPC 面向玩家
-            // 如果 invincibleTimer 未触发则保持面向目标，否则由 invincibleTimer 处理 spriteDirection
+            //始终保持 NPC 面向玩家
+            //如果 invincibleTimer 未触发则保持面向目标，否则由 invincibleTimer 处理 spriteDirection
             if (invincibleTimer <= 120)
                 NPC.spriteDirection = target.Center.X < NPC.Center.X ? -1 : 1;
         }
@@ -326,7 +326,7 @@ namespace AncientChineseMythology.NPCs.Monsters
         public override void HitEffect(NPC.HitInfo hit) {
             if (!isDying && NPC.life <= 0) {
                 isDying = true;
-                NPC.life = 1; // 确保 NPC 不会被重复击杀
+                NPC.life = 1; //确保 NPC 不会被重复击杀
                 NPC.dontTakeDamage = true;
                 NPC.damage = 0;
                 NPC.netUpdate = true;
@@ -382,7 +382,7 @@ namespace AncientChineseMythology.NPCs.Monsters
             int frameHeight = texture.Height / totalFrames;
             int currentAnimFrame;
             if (isDying)
-                // 使用 dieTimer 来计算当前死亡动画帧
+                //使用 dieTimer 来计算当前死亡动画帧
                 currentAnimFrame = Math.Min((int)(dieTimer / (float)frameDuration), totalFrames - 1);
             else if (state == AnimationState.Attack)
                 currentAnimFrame = (attackAnimTimer / frameDuration) % totalFrames;
@@ -398,7 +398,7 @@ namespace AncientChineseMythology.NPCs.Monsters
             return false;
         }
 
-        // 根据当前情况返回绘制用的动画状态
+        //根据当前情况返回绘制用的动画状态
         private AnimationState GetCurrentAnimationState() {
             if (isDying)
                 return AnimationState.Die;

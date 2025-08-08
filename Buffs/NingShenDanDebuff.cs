@@ -13,7 +13,7 @@ namespace AncientChineseMythology.Buffs
         }
 
         public override void Update(Player player, ref int buffIndex) {
-            // 后遗症效果扣魔由 ModPlayer 处理
+            //后遗症效果扣魔由 ModPlayer 处理
         }
     }
 }

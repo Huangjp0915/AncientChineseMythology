@@ -12,11 +12,11 @@ public static class CultivationProgression
     public const int MinorPerMajor = 4;
     public static readonly string[] MinorNames = { "初期", "中期", "后期", "大圆满" };
 
-    // 经验表：每个小境界所需的「阶段经验」。这里按等差递增可随时调整
+    //经验表：每个小境界所需的「阶段经验」。这里按等差递增可随时调整
     public static int ExpFor(int major, int minor)
         => 500 * (major * MinorPerMajor + minor + 1);
 
-    // 击杀表：想晋升下一个大境界需要的击杀量
+    //击杀表：想晋升下一个大境界需要的击杀量
     public static readonly int[] KillsForMajorUp = {
         100, 1000, 5000, 10000,
         30000, 80000, 100000, 150000,
@@ -46,9 +46,9 @@ public static class CultivationProgression
         3.30f,3.90f,4.5f,5f
     };
 
-    //  小境界增益基准随大境界线性递增，比如：
-    //  在 major=0 时 minor 每级增益为 (10,10,1,0.02)
-    //  在 major=N 时增益为 (10 + 2*N, 10 + 2*N, 1 + 0.5*N, 0.02 + 0.005*N)
+    // 小境界增益基准随大境界线性递增，比如：
+    // 在 major=0 时 minor 每级增益为 (10,10,1,0.02)
+    // 在 major=N 时增益为 (10 + 2*N, 10 + 2*N, 1 + 0.5*N, 0.02 + 0.005*N)
     public static (int hp, int mana, int def, float dmg) GetMinorBonusBase(int major) {
         int hp = 10 + 2 * major;
         int mana = 10 + 2 * major;

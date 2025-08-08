@@ -9,10 +9,10 @@ namespace AncientChineseMythology.Tiles.Placable
         public override string Texture => "AncientChineseMythology/Textures/Tiles/Placable/FloatingBasalt";
 
         public override void SetStaticDefaults() {
-            // 完全克隆 Stone 的属性
+            //完全克隆 Stone 的属性
             Main.tileSolid[Type] = true;
             Main.tileMergeDirt[Type] = true;
-            TileID.Sets.Conversion.Stone[Type] = false;  // 受腐化/神圣转换
+            TileID.Sets.Conversion.Stone[Type] = false;  //受腐化/神圣转换
             DustType = DustID.Stone;
             HitSound = SoundID.Tink;
             RegisterItemDrop(ModContent.ItemType<Items.Placable.FloatingBasalt>());

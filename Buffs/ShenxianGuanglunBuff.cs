@@ -8,13 +8,13 @@ namespace AncientChineseMythology.Buffs
     {
         public override string Texture => "AncientChineseMythology/Textures/Buffs/ShenxianGuanglunBuff";
         public override void SetStaticDefaults() {
-            // 装备栏里显示为“光宠”
-            Main.lightPet[Type] = true;  // 标记为光宠 Buff 
+            //装备栏里显示为“光宠”
+            Main.lightPet[Type] = true;  //标记为光宠 Buff 
             Main.buffNoTimeDisplay[Type] = false;
         }
 
         public override void Update(Player player, ref int buffIndex) {
-            // 保活 + 召唤弹幕
+            //保活 + 召唤弹幕
             if (player.buffTime[buffIndex] > 1)
                 player.buffTime[buffIndex] = 18000;
 

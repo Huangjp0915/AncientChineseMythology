@@ -10,7 +10,7 @@ namespace AncientChineseMythology.Items.Placeable
         public override string Texture => "AncientChineseMythology/Textures/Items/Placable/ShengZhuStatue";
 
         public override void SetDefaults() {
-            Item.CloneDefaults(ItemID.ArmorStatue);      // 基础属性
+            Item.CloneDefaults(ItemID.ArmorStatue);      //基础属性
             Item.createTile = ModContent.TileType<ShengZhuStatueTile>();
             Item.maxStack = 1;
             Item.rare = ItemRarityID.Orange;

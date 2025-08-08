@@ -16,7 +16,7 @@ namespace AncientChineseMythology.Tiles.Placable
             AddMapEntry(new Color(180, 20, 20));
             DustType = DustID.Blood;
 
-            // 正确的掉落注册方式
+            //正确的掉落注册方式
             RegisterItemDrop(ModContent.ItemType<Items.Placable.BloodSeaSand>());
         }
     }

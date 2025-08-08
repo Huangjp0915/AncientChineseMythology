@@ -19,7 +19,7 @@ namespace AncientChineseMythology.Tiles.Placable
             Main.tileObsidianKill[Type] = true;
             TileID.Sets.DisableSmartCursor[Type] = true;
 
-            // 改用 Style2x2 并自定义成 2×3
+            //改用 Style2x2 并自定义成 2×3
             TileObjectData.newTile.CopyFrom(TileObjectData.Style2x2);
             TileObjectData.newTile.Width = 2;
             TileObjectData.newTile.Height = 3;
@@ -36,15 +36,15 @@ namespace AncientChineseMythology.Tiles.Placable
             Player pl = Main.LocalPlayer;
             int ratCharmType = ModContent.ItemType<RatCharm>();
 
-            // 条件 A：真正手持鼠符咒  
+            //条件 A：真正手持鼠符咒  
             if (pl.HeldItem.type != ratCharmType)
                 return false;
 
-            // 条件 B：鼠标上不拿着鼠符咒  
+            //条件 B：鼠标上不拿着鼠符咒  
             if (Main.mouseItem.type == ratCharmType)
                 return false;
 
-            // 满足上述条件，才进行召唤逻辑
+            //满足上述条件，才进行召唤逻辑
             ModContent
                 .GetInstance<ShengZhuStatueSystem>()
                 .TriggerStatue(new Point16(i, j), pl.whoAmI);

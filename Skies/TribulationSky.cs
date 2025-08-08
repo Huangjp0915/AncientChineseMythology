@@ -3,7 +3,7 @@ using Terraria;
 using Terraria.Graphics.Effects;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Skies         // ← 修正命名空间
+namespace AncientChineseMythology.Skies         //← 修正命名空间
 {
     public class TribulationSky : CustomSky
     {
@@ -12,7 +12,7 @@ namespace AncientChineseMythology.Skies         // ← 修正命名空间
 
         /* ========= 必须实现的抽象方法 ========= */
         public override void Activate(Vector2 position, params object[] args) {
-            _active = true;               // 或根据需要使用 position
+            _active = true;               //或根据需要使用 position
         }
         public override void Deactivate(params object[] args) => _active = false;
         public override void Reset() => _opacity = 0f;

@@ -18,9 +18,9 @@ namespace AncientChineseMythology.Worldgen
             StarflowerPassText = Mod.GetLocalization("WorldGen.StarflowerPass");
         }
 
-        // 将一个自定义 GenPass 插入原版任务表 —— 参考 ExampleOreSystem :contentReference[oaicite:4]{index=4}
+        //将一个自定义 GenPass 插入原版任务表 —— 参考 ExampleOreSystem :contentReference[oaicite:4]{index=4}
         public override void ModifyWorldGenTasks(List<GenPass> tasks, ref double totalWeight) {
-            int index = tasks.FindIndex(g => g.Name.Equals("Sky Lakes")); // 在云岛生成完成后插入
+            int index = tasks.FindIndex(g => g.Name.Equals("Sky Lakes")); //在云岛生成完成后插入
             if (index != -1) {
                 tasks.Insert(index + 1, new PassLegacy(StarflowerPassText.Value, GenerateStarflowers));
             }
@@ -28,11 +28,11 @@ namespace AncientChineseMythology.Worldgen
 
         private void GenerateStarflowers(GenerationProgress progress, GameConfiguration _config) {
             progress.Message = StarflowerPassText.Value;
-            int tries = Main.maxTilesX / 3; // roughly one per 3 screens
+            int tries = Main.maxTilesX / 3; //roughly one per 3 screens
 
             for (int t = 0; t < tries; t++) {
                 int i = WorldGen.genRand.Next(100, Main.maxTilesX - 100);
-                // 找到天空岛表面
+                //找到天空岛表面
                 for (int j = 200; j < Main.worldSurface; j++) {
                     Tile tile = Framing.GetTileSafely(i, j);
                     if (tile.HasTile && (tile.TileType == TileID.Cloud || tile.TileType == TileID.RainCloud)) {

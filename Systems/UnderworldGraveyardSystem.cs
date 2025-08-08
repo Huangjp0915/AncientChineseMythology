@@ -11,10 +11,10 @@ namespace AncientChineseMythology
         {
             if (SubworldSystem.IsActive<UnderworldSubworld>())
             {
-                // 确保视觉效果
+                //确保视觉效果
                 Main.GraveyardVisualIntensity = 1f;
                 
-                // 更新所有玩家的区域状态
+                //更新所有玩家的区域状态
                 foreach (Player player in Main.player)
                 {
                     if (player.active && !player.dead)

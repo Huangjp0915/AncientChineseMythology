@@ -147,7 +147,7 @@ namespace AncientChineseMythology.Projectiles
             for (int i = 0; i < particleCount; i++) {
                 Vector2 velocity = Main.rand.NextVector2Circular(4f, 6f);
 
-                // 创建粒子
+                //创建粒子
                 Dust dust = Dust.NewDustPerfect(target.Center, DustID.Clentaminator_Green, velocity, 100, Color.Blue, 1f);
                 dust.noGravity = true;
                 dust.fadeIn = 0.8f;

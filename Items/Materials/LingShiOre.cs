@@ -1,4 +1,4 @@
-﻿// AncientChineseMythology/Items/LingShi/LingShiOre.cs
+﻿//AncientChineseMythology/Items/LingShi/LingShiOre.cs
 using AncientChineseMythology.Tiles.Placable;
 using Terraria;
 using Terraria.ID;
@@ -15,7 +15,7 @@ namespace AncientChineseMythology.Items.Materials
             Item.width = 20;
             Item.height = 20;
             Item.maxStack = 999;
-            Item.value = Terraria.Item.buyPrice(silver: 60); // 注意用类型名 :contentReference[oaicite:4]{index=4}:contentReference[oaicite:5]{index=5}
+            Item.value = Terraria.Item.buyPrice(silver: 60); //注意用类型名 :contentReference[oaicite:4]{index=4}:contentReference[oaicite:5]{index=5}
             Item.rare = ItemRarityID.Green;
 
             Item.useTurn = true;

@@ -7,7 +7,7 @@ namespace AncientChineseMythology.Buffs
     {
         public override string Texture => "AncientChineseMythology/Textures/Buffs/BlankBuff";
         public override void SetStaticDefaults() {
-            Main.debuff[Type] = true;   // 视为 Debuff
+            Main.debuff[Type] = true;   //视为 Debuff
             Main.buffNoSave[Type] = true;
             Main.pvpBuff[Type] = true;
         }

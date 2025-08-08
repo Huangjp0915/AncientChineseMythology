@@ -10,12 +10,12 @@ namespace AncientChineseMythology.Tiles.Placable
 
         public override void SetStaticDefaults() {
 
-            // 复制 BlueBrick 的全部属性
+            //复制 BlueBrick 的全部属性
             Main.tileSolid[Type] = true;
             Main.tileBlockLight[Type] = true;
             TileID.Sets.CanBeDugByShovel[Type] = TileID.Sets.CanBeDugByShovel[TileID.AncientBlueBrick];
 
-            // 让锤子可以雕刻出多种形状
+            //让锤子可以雕刻出多种形状
             DustType = DustID.BlueCrystalShard;
             HitSound = SoundID.Tink;
             RegisterItemDrop(ModContent.ItemType<Items.Placable.CelestialJadeBrick>());

@@ -8,7 +8,7 @@ namespace AncientChineseMythology.Walls
     {
         public override string Texture => "AncientChineseMythology/Textures/Walls/BloodSeaWall";
         public override void SetStaticDefaults() {
-            Main.wallHouse[Type] = false;  // 不计作可居住
+            Main.wallHouse[Type] = false;  //不计作可居住
             AddMapEntry(new Color(160, 0, 0));
             DustType = DustID.Blood;
         }

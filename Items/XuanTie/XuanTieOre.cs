@@ -20,7 +20,7 @@ namespace AncientChineseMythology.Items.XuanTie
             Item.useTime = 10;
             Item.useAnimation = 15;
             Item.consumable = true;
-            // 直接复用天然 Tile
+            //直接复用天然 Tile
             Item.createTile = ModContent.TileType<Tiles.Placable.XuanTieOreTile>();
         }
     }

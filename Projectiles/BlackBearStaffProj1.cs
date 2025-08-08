@@ -9,26 +9,26 @@ namespace AncientChineseMythology.Projectiles
 {
     public class BlackBearStaffProj1 : ModProjectile
     {
-        public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Summoning Staffs/BlackBearStaff"; // 使用物品的纹理作为投射物的纹理
+        public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Summoning Staffs/BlackBearStaff"; //使用物品的纹理作为投射物的纹理
 
         private Player player => Main.player[Projectile.owner];
 
         public override void SetDefaults() {
             ProjectileID.Sets.MinionSacrificable[Projectile.type] = true;
-            Projectile.width = 22; // 弹幕宽度
-            Projectile.height = 18; // 弹幕高度
-            Projectile.friendly = true; // 友方弹幕
-            Projectile.tileCollide = false; // 不与瓷砖碰撞
-            Projectile.DamageType = DamageClass.Summon; // 伤害类型改为召唤伤害
-            Projectile.penetrate = -1; // 无限穿透
-            Projectile.ignoreWater = true; // 无视液体
-            Projectile.timeLeft = 120; // 存在时间无限
-            Projectile.alpha = 100; // 透明度
-            Projectile.light = 0.75f; // 发光亮度
-            Projectile.minion = true; // 设置为召唤物
-            Projectile.minionSlots = 0.5f; // 占用一个召唤栏位
+            Projectile.width = 22; //弹幕宽度
+            Projectile.height = 18; //弹幕高度
+            Projectile.friendly = true; //友方弹幕
+            Projectile.tileCollide = false; //不与瓷砖碰撞
+            Projectile.DamageType = DamageClass.Summon; //伤害类型改为召唤伤害
+            Projectile.penetrate = -1; //无限穿透
+            Projectile.ignoreWater = true; //无视液体
+            Projectile.timeLeft = 120; //存在时间无限
+            Projectile.alpha = 100; //透明度
+            Projectile.light = 0.75f; //发光亮度
+            Projectile.minion = true; //设置为召唤物
+            Projectile.minionSlots = 0.5f; //占用一个召唤栏位
             Projectile.aiStyle = -1;//不使用原版AI
-            Projectile.rotation = Projectile.velocity.ToRotation(); // 设置初始旋转角度
+            Projectile.rotation = Projectile.velocity.ToRotation(); //设置初始旋转角度
             base.SetDefaults();
         }
         public override bool? CanCutTiles() {
@@ -41,9 +41,9 @@ namespace AncientChineseMythology.Projectiles
             if (Projectile.ai[0] == 60)//每半秒攻击一次
             {
                 Projectile.ai[0] = 0;
-                // 获取玩家的位置
+                //获取玩家的位置
                 Player player = Main.player[Projectile.owner];
-                // 计算方向向量
+                //计算方向向量
                 Vector2 direction = target.Center - player.Center;
                 direction.Normalize();
                 int projectileCount = Main.rand.Next(4, 6);
@@ -57,30 +57,30 @@ namespace AncientChineseMythology.Projectiles
 
         public override void AI() {
 
-            if (player.HasBuff<Buffs.BuffsBlackBearStaff>()) // 如果玩家有召唤物BUFF
-                Projectile.timeLeft = 2; // 维持住弹幕的时间
+            if (player.HasBuff<Buffs.BuffsBlackBearStaff>()) //如果玩家有召唤物BUFF
+                Projectile.timeLeft = 2; //维持住弹幕的时间
 
-            NPC target = null; // 先设出目标NPC，默认为空
+            NPC target = null; //先设出目标NPC，默认为空
 
-            // 这一段是当你的召唤兽设定了右键锁敌情况下必须要写的部分,防止进行寻敌判定
+            //这一段是当你的召唤兽设定了右键锁敌情况下必须要写的部分,防止进行寻敌判定
             if (player.HasMinionAttackTargetNPC) {
-                target = Main.npc[player.MinionAttackTargetNPC]; // 让目标为鼠标锁住的敌人
+                target = Main.npc[player.MinionAttackTargetNPC]; //让目标为鼠标锁住的敌人
                 float between = Vector2.Distance(target.Center, Projectile.Center);
-                // 小于2000防止锁住太远的敌人
+                //小于2000防止锁住太远的敌人
                 if (between < 2000f) {
                     target = null;
                 }
             }
 
-            if (target == null || !target.active) // 如果目标是空的或者失活的，那么重新寻找敌人
+            if (target == null || !target.active) //如果目标是空的或者失活的，那么重新寻找敌人
             {
-                int t = Projectile.FindTargetWithLineOfSight(1500); // 寻找1500像素范围内最近敌人号码（不隔墙）
-                                                                    // 这个方法如果在没有敌怪时会返回-1，用来检测是否能找到敌人
+                int t = Projectile.FindTargetWithLineOfSight(1500); //寻找1500像素范围内最近敌人号码（不隔墙）
+                                                                    //这个方法如果在没有敌怪时会返回-1，用来检测是否能找到敌人
                 if (t >= 0)
-                    target = Main.npc[t]; // 定义这个NPC为目标
+                    target = Main.npc[t]; //定义这个NPC为目标
             }
 
-            if (target != null && target.active) // 如果目标不为空且存活在此处执行攻击性AI
+            if (target != null && target.active) //如果目标不为空且存活在此处执行攻击性AI
             {
                 if (target.active) {
                     if (Vector2.Distance(player.Center, target.Center) > 2000)//如果找到的目标距离玩家太远了
@@ -92,12 +92,12 @@ namespace AncientChineseMythology.Projectiles
                     AttackShooting(target);//进行攻击AI
                 }
             }
-            Projectile.velocity = Vector2.Zero; // 弹幕速度清零
-            // 使用正弦波使弹幕上下浮动
-            float floatAmplitude = 4f; // 漂浮幅度
-            float floatSpeed = 0.05f; // 漂浮速度，可以调整以加快或减慢浮动效果
+            Projectile.velocity = Vector2.Zero; //弹幕速度清零
+            //使用正弦波使弹幕上下浮动
+            float floatAmplitude = 4f; //漂浮幅度
+            float floatSpeed = 0.05f; //漂浮速度，可以调整以加快或减慢浮动效果
 
-            // 计算浮动的偏移量
+            //计算浮动的偏移量
             Projectile.position.Y = player.Center.Y - 60 + (float)Math.Sin(Main.GameUpdateCount * floatSpeed) * floatAmplitude;
             Projectile.rotation = 0;
             Projectile.position.X = player.Center.X - 12;

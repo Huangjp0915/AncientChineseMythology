@@ -17,8 +17,8 @@ namespace AncientChineseMythology.Buffs
 
         public override void Update(Player player, ref int buffIndex) {
             if (!player.mount.Active || player.mount.Type != ModContent.MountType<ChengYingMount>())
-                player.mount.SetMount(ModContent.MountType<ChengYingMount>(), player); // 保持激活
-            player.buffTime[buffIndex] = 2; // 始终刷新
+                player.mount.SetMount(ModContent.MountType<ChengYingMount>(), player); //保持激活
+            player.buffTime[buffIndex] = 2; //始终刷新
         }
     }
 }

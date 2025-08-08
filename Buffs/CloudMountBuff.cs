@@ -17,7 +17,7 @@ namespace AncientChineseMythology.Buffs
 
         public override void Update(Player player, ref int buffIndex) {
             player.mount.SetMount(ModContent.MountType<CloudMount>(), player);
-            player.buffTime[buffIndex] = 10; // 永续
+            player.buffTime[buffIndex] = 10; //永续
         }
     }
 }

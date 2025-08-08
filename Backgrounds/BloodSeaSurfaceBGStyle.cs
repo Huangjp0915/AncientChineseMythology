@@ -30,7 +30,7 @@ namespace AncientChineseMythology.Backgrounds
             Ensure();
             for (int i = 0; i < fades.Length; i++) {
                 bool isMine = (i == farSlot) || (i == midSlot) || (i == closeSlot);
-                float target = isMine ? 1f : 0f;                    // 只留血海三层
+                float target = isMine ? 1f : 0f;                    //只留血海三层
                 fades[i] = MathHelper.Lerp(fades[i], target, transitionSpeed);
             }
         }

@@ -7,7 +7,7 @@ namespace AncientChineseMythology.Items.Weapons.Sticks
     public class TrueRuyiStick : ModItem
     {
         public override void SetStaticDefaults() {
-            Item.ResearchUnlockCount = 1; // 允许在旅程模式研究
+            Item.ResearchUnlockCount = 1; //允许在旅程模式研究
         }
 
         public override void SetDefaults() {
@@ -31,12 +31,12 @@ namespace AncientChineseMythology.Items.Weapons.Sticks
         {
             Recipe recipe = CreateRecipe();
             recipe.AddIngredient(ModContent.ItemType<RuyiStick>(), 1);
-            recipe.AddIngredient(ItemID.SoulofFright, 50); // 恐惧之魂
-            recipe.AddIngredient(ItemID.SoulofMight, 50); // 视域之魂
-            recipe.AddIngredient(ItemID.SoulofSight, 50); // 力量之魂
-            recipe.AddIngredient(ItemID.SoulofFlight , 30); // 飞翔之魂
-            recipe.AddIngredient(ItemID.SoulofLight, 30); // 光明之魂
-            recipe.AddIngredient(ItemID.SoulofNight, 30); // 黑暗之魂
+            recipe.AddIngredient(ItemID.SoulofFright, 50); //恐惧之魂
+            recipe.AddIngredient(ItemID.SoulofMight, 50); //视域之魂
+            recipe.AddIngredient(ItemID.SoulofSight, 50); //力量之魂
+            recipe.AddIngredient(ItemID.SoulofFlight , 30); //飞翔之魂
+            recipe.AddIngredient(ItemID.SoulofLight, 30); //光明之魂
+            recipe.AddIngredient(ItemID.SoulofNight, 30); //黑暗之魂
             recipe.AddIngredient(ModContent.ItemType<YaoQiFragment>(), 80);
             recipe.AddTile(TileID.Anvils);
             recipe.Register();

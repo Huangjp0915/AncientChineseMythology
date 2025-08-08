@@ -8,7 +8,7 @@ namespace AncientChineseMythology.Items
 {
     public class ZhenfaBook : ModItem
     {
-        // 直接使用 vanilla Book (ID 149) 的贴图
+        //直接使用 vanilla Book (ID 149) 的贴图
         public override string Texture => "Terraria/Images/Item_149";
 
         public override void SetStaticDefaults() {
@@ -27,7 +27,7 @@ namespace AncientChineseMythology.Items
         }
 
         public override bool? UseItem(Player player) {
-            // 切换 UI
+            //切换 UI
             if (player.whoAmI == Main.myPlayer) {
                 ZhenfaUISystem.ToggleBookUI();
             }

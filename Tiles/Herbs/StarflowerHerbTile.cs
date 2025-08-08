@@ -23,33 +23,33 @@ namespace AncientChineseMythology.Tiles.Herbs
             Main.tileCut[Type] = true;
             Main.tileNoFail[Type] = true;
             Main.tileObsidianKill[Type] = true;
-            TileID.Sets.ReplaceTileBreakUp[Type] = true;  // 方便重新种植 :contentReference[oaicite:1]{index=1}
+            TileID.Sets.ReplaceTileBreakUp[Type] = true;  //方便重新种植 :contentReference[oaicite:1]{index=1}
             TileID.Sets.IgnoredByGrowingSaplings[Type] = true;
 
-            TileMaterials.SetForTileId(Type, TileMaterials._materialsByName["Plant"]);  // 高尔夫物理 :contentReference[oaicite:2]{index=2}
+            TileMaterials.SetForTileId(Type, TileMaterials._materialsByName["Plant"]);  //高尔夫物理 :contentReference[oaicite:2]{index=2}
 
             LocalizedText name = CreateMapEntryName();
             AddMapEntry(new Color(100, 158, 255), name);
 
             TileObjectData.newTile.CopyFrom(TileObjectData.StyleAlch);
             TileObjectData.newTile.AnchorValidTiles = new int[] {
-                TileID.Cloud, TileID.RainCloud        // 只允许种在云块上
+                TileID.Cloud, TileID.RainCloud        //只允许种在云块上
 			};
             TileObjectData.addTile(Type);
 
-            DustType = DustID.BlueTorch;  // 蓝色星光尘
+            DustType = DustID.BlueTorch;  //蓝色星光尘
             HitSound = SoundID.Grass;
         }
 
         public override bool CanPlace(int i, int j) {
-            // 允许重新种在已完全绽放的星辰花上 :contentReference[oaicite:3]{index=3}
+            //允许重新种在已完全绽放的星辰花上 :contentReference[oaicite:3]{index=3}
             Tile tile = Framing.GetTileSafely(i, j);
             if (tile.HasTile && tile.TileType == Type)
                 return GetStage(tile) == StarflowerStage.Bloom;
             return base.CanPlace(i, j);
         }
 
-        // 夜晚时才判定为可掉落
+        //夜晚时才判定为可掉落
         public override bool CanDrop(int i, int j) =>
             GetStage(i, j) == StarflowerStage.Bloom && !Main.dayTime;
 
@@ -69,21 +69,21 @@ namespace AncientChineseMythology.Tiles.Herbs
             yield return new Item(ModContent.ItemType<StarflowerSeeds>(), seedAmt);
         }
 
-        // 控制生长：白天→Growing，夜晚→Bloom
+        //控制生长：白天→Growing，夜晚→Bloom
         public override void RandomUpdate(int i, int j) {
             Tile tile = Framing.GetTileSafely(i, j);
             StarflowerStage stage = GetStage(tile);
 
             if (Main.dayTime && stage == StarflowerStage.Bloom) {
-                // 白天闭合
+                //白天闭合
                 tile.TileFrameX -= FrameWidth;
             }
             else if (!Main.dayTime && stage == StarflowerStage.Growing) {
-                // 夜晚开放
+                //夜晚开放
                 tile.TileFrameX += FrameWidth;
             }
             else if (stage == StarflowerStage.Seed) {
-                // 任何时间都能从种子→Growing
+                //任何时间都能从种子→Growing
                 tile.TileFrameX += FrameWidth;
             }
             if (Main.netMode != NetmodeID.SinglePlayer)
@@ -91,7 +91,7 @@ namespace AncientChineseMythology.Tiles.Herbs
         }
 
         public override bool IsTileSpelunkable(int i, int j) =>
-            !Main.dayTime && GetStage(i, j) == StarflowerStage.Bloom;  // 夜晚才闪光
+            !Main.dayTime && GetStage(i, j) == StarflowerStage.Bloom;  //夜晚才闪光
 
         public override void SetSpriteEffects(int i, int j, ref SpriteEffects effects) {
             if (i % 2 == 0) effects = SpriteEffects.FlipHorizontally;

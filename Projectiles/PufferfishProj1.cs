@@ -9,8 +9,8 @@ namespace AncientChineseMythology.Projectiles
     public class PufferfishProj1 : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/PufferfishProj1";
-        private Player player => Main.player[Projectile.owner]; // 玩家实例
-        private float LaserLength = 0; // 激光的长度
+        private Player player => Main.player[Projectile.owner]; //玩家实例
+        private float LaserLength = 0; //激光的长度
 
         public override void SetStaticDefaults() {
             Main.projFrames[Projectile.type] = 1;
@@ -33,18 +33,18 @@ namespace AncientChineseMythology.Projectiles
             }
         }
         public override void SetDefaults() {
-            Projectile.width = 32; // 弹幕宽度
-            Projectile.height = 32; // 弹幕高度
-            Projectile.friendly = true; // 友方弹幕
-            Projectile.tileCollide = false; // 不与瓷砖碰撞
-            Projectile.DamageType = DamageClass.Magic; // 伤害类型
-            Projectile.penetrate = -1; // 穿透
-            Projectile.ignoreWater = true; // 无视液体
-            Projectile.timeLeft = 60; // 存在时间，单位为帧
-            Projectile.alpha = 100; // 透明度
-            Projectile.light = 0.75f; // 发光亮度
+            Projectile.width = 32; //弹幕宽度
+            Projectile.height = 32; //弹幕高度
+            Projectile.friendly = true; //友方弹幕
+            Projectile.tileCollide = false; //不与瓷砖碰撞
+            Projectile.DamageType = DamageClass.Magic; //伤害类型
+            Projectile.penetrate = -1; //穿透
+            Projectile.ignoreWater = true; //无视液体
+            Projectile.timeLeft = 60; //存在时间，单位为帧
+            Projectile.alpha = 100; //透明度
+            Projectile.light = 0.75f; //发光亮度
         }
-        public override bool ShouldUpdatePosition()// 不更新位置
+        public override bool ShouldUpdatePosition()//不更新位置
         {
             return false;
         }

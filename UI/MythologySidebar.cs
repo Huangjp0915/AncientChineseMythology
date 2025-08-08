@@ -16,9 +16,9 @@ namespace AncientChineseMythology.UI;
 public class MythologySidebar : UIState
 {
     /* ── 参数 ───────────────────────────── */
-    private const int W = 220;          // 面板宽
-    private const int H = 230;          // 面板高
-    private const int TAB = 32;         // 标签宽高
+    private const int W = 220;          //面板宽
+    private const int H = 230;          //面板高
+    private const int TAB = 32;         //标签宽高
 
     private bool _collapsed = true;
 
@@ -40,7 +40,7 @@ public class MythologySidebar : UIState
         Left.Set(0, 0);
         Top.Set(270, 0);
 
-        // 主面板
+        //主面板
         _panel = new UIPanel();
         _panel.SetPadding(6);
         _panel.Left.Set(-W, 0);
@@ -48,10 +48,10 @@ public class MythologySidebar : UIState
         _panel.Height.Set(H, 0);
         Append(_panel);
 
-        // 标签按钮
+        //标签按钮
         var tex = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/UI/ToggleTab");
         _tab = new SidebarTabButton(tex);
-        _tab.Left.Set(0, 0);                                 // 与容器同起点
+        _tab.Left.Set(0, 0);                                 //与容器同起点
         _tab.Top.Set((H - TAB) / 2f, 0);
         _tab.Width.Set(TAB, 0); _tab.Height.Set(TAB, 0);
         _tab.OnLeftClick += (_, _) => Toggle();
@@ -85,7 +85,7 @@ public class MythologySidebar : UIState
 
         _exp = Add(ref y);
 
-        //Toggle();   // 第一次调用让面板展开，玩家进入时就能看到
+        //Toggle();   //第一次调用让面板展开，玩家进入时就能看到
     }
 
     private UIText Add(ref float y) {
@@ -98,10 +98,10 @@ public class MythologySidebar : UIState
     public void Toggle() {
         _collapsed = !_collapsed;
 
-        // 仅移动位置，不重建控件，避免事件丢失
+        //仅移动位置，不重建控件，避免事件丢失
         _panel.Left.Pixels = _collapsed ? -W : 0;
         _tab.Left.Pixels = _collapsed ? 0 : W;
-        _tab.IsCollapsed = _collapsed;          // 让按钮朝向更新
+        _tab.IsCollapsed = _collapsed;          //让按钮朝向更新
 
         _panel.Recalculate();
         _tab.Recalculate();
@@ -141,22 +141,22 @@ public class MythologySidebar : UIState
         MythologyPlayer mp = p.GetModPlayer<MythologyPlayer>();
         if (!mp.CanMajorAdvance()) return;
 
-        // 场上已存在任意云体则退出
+        //场上已存在任意云体则退出
         if (NPC.AnyNPCs(ModContent.NPCType<TribulationCloudPurple>()) ||
             NPC.AnyNPCs(ModContent.NPCType<TribulationCloudRed>()) ||
             NPC.AnyNPCs(ModContent.NPCType<TribulationCloudBlack>())) return;
 
-        // —— 权重随机决定类型 ——
+        //—— 权重随机决定类型 ——
         float roll = Main.rand.NextFloat();
         int type = roll < 0.70f ? ModContent.NPCType<TribulationCloudPurple>()
                 : roll < 0.85f ? ModContent.NPCType<TribulationCloudRed>()
                                 : ModContent.NPCType<TribulationCloudBlack>();
 
-        // 把请求扔给系统计时器
+        //把请求扔给系统计时器
         ModContent.GetInstance<TribulationSpawnSystem>()
                 .RequestSpawn(Main.myPlayer, type);
 
-        // 立即触发天气 & 文本
+        //立即触发天气 & 文本
         TribulationWeather.Start();
         SoundEngine.PlaySound(SoundID.Roar, p.Center);
         Main.NewText("劫云正在酝酿……", Color.LightSkyBlue);

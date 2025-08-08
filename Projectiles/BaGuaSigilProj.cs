@@ -14,8 +14,8 @@ namespace AncientChineseMythology.Projectiles
             Projectile.width = 64;
             Projectile.height = 64;
             Projectile.friendly = false;
-            Projectile.penetrate = -1;        // 不消失
-            Projectile.timeLeft = 3600;        // 理论上由 Buff 管理
+            Projectile.penetrate = -1;        //不消失
+            Projectile.timeLeft = 3600;        //理论上由 Buff 管理
             Projectile.tileCollide = false;
             Projectile.ignoreWater = true;
         }
@@ -27,11 +27,11 @@ namespace AncientChineseMythology.Projectiles
                 return;
             }
 
-            // 固定在玩家头顶 40 像素处
+            //固定在玩家头顶 40 像素处
             Projectile.Center = owner.Center + new Vector2(0, -15f);
-            Projectile.rotation += 0.03f;      // 缓慢旋转
+            Projectile.rotation += 0.03f;      //缓慢旋转
         }
 
-        public override bool? CanDamage() => false; // 纯装饰
+        public override bool? CanDamage() => false; //纯装饰
     }
 }

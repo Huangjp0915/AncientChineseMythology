@@ -10,22 +10,22 @@ namespace AncientChineseMythology.NPCs.TownNPCs
     [AutoloadHead]
     public class TangSengNPC : ModNPC
     {
-        // 如果这张贴图跟向导帧数一致，就可直接在这里声明
-        // 默认贴图(走路/Idle/等)：
+        //如果这张贴图跟向导帧数一致，就可直接在这里声明
+        //默认贴图(走路/Idle/等)：
         public override string Texture => "AncientChineseMythology/Textures/NPCs/TownNPCs/Tangseng/TangSengNPC";
-        // 头像
+        //头像
         public override string HeadTexture => "AncientChineseMythology/Textures/NPCs/TownNPCs/Tangseng/TangSengNPC_Head";
 
         public override void SetStaticDefaults() {
-            // ---- 让NPC使用向导AI、向导动画 ----
-            NPC.aiStyle = 7;       // TownNPC通用AI
-            AIType = NPCID.Guide;  // 行为(移动/攻击判定)仿照向导
-            AnimationType = NPCID.Guide; // 动画帧切换也交给向导
+            //---- 让NPC使用向导AI、向导动画 ----
+            NPC.aiStyle = 7;       //TownNPC通用AI
+            AIType = NPCID.Guide;  //行为(移动/攻击判定)仿照向导
+            AnimationType = NPCID.Guide; //动画帧切换也交给向导
 
-            // 同步向导的帧数
+            //同步向导的帧数
             Main.npcFrameCount[Type] = Main.npcFrameCount[NPCID.Guide];
 
-            // 复制向导设置，防止花屏或报错
+            //复制向导设置，防止花屏或报错
             NPCID.Sets.ExtraFramesCount[Type] = NPCID.Sets.ExtraFramesCount[NPCID.Guide];
             NPCID.Sets.AttackFrameCount[Type] = NPCID.Sets.AttackFrameCount[NPCID.Guide];
             NPCID.Sets.DangerDetectRange[Type] = NPCID.Sets.DangerDetectRange[NPCID.Guide];
@@ -41,7 +41,7 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             NPC.width = 18;
             NPC.height = 40;
 
-            // 再次确认
+            //再次确认
             NPC.aiStyle = 7;
             AIType = NPCID.Guide;
             AnimationType = NPCID.Guide;
@@ -57,8 +57,8 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             NPC.DeathSound = SoundID.NPCDeath1;
             NPC.knockBackResist = 0.5f;
 
-            // 如果不想让他找房子住，就 = true
-            // TownNPCStayingHomeless = true;
+            //如果不想让他找房子住，就 = true
+            //TownNPCStayingHomeless = true;
         }
 
         public override bool CanTownNPCSpawn(int numTownNPCs) {
@@ -78,7 +78,7 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             return dialogues[Main.rand.Next(dialogues.Length)];
         }
 
-        // 设置对话按钮
+        //设置对话按钮
         public override void SetChatButtons(ref string button, ref string button2) {
             button = "帮助";
             button2 = "请求木棍";
@@ -86,12 +86,12 @@ namespace AncientChineseMythology.NPCs.TownNPCs
 
         public override void OnChatButtonClicked(bool firstButton, ref string shopName) {
             Player player = Main.LocalPlayer;
-            // 面向玩家
+            //面向玩家
             NPC.direction = (player.Center.X < NPC.Center.X) ? -1 : 1;
             NPC.spriteDirection = NPC.direction;
 
             if (firstButton) {
-                // “帮助”逻辑（检测棍子进阶）
+                //“帮助”逻辑（检测棍子进阶）
                 var stickProgression = new (int itemType, string itemName, string craftHint)[]
                 {
                     (ModContent.ItemType<WoodenStick>(), "木棍","你可以去地底找寻一些铁矿，或许对你有些帮助"),

@@ -23,16 +23,16 @@ namespace AncientChineseMythology.Items.Summons
             Item.value = Item.buyPrice(gold: 5);
             Item.rare = ItemRarityID.Pink;
             Item.noMelee = true;
-            Item.buffType = ModContent.BuffType<ShenxianGuanglunBuff>(); // 给予 Buff
-            Item.shoot = ModContent.ProjectileType<ShenxianGuanglunPet>(); // 直接生成弹幕
+            Item.buffType = ModContent.BuffType<ShenxianGuanglunBuff>(); //给予 Buff
+            Item.shoot = ModContent.ProjectileType<ShenxianGuanglunPet>(); //直接生成弹幕
         }
 
         public override bool? UseItem(Player player) {
             if (player.whoAmI == Main.myPlayer) {
-                // 1. 给 buff（会在 Buff.Update 里被续到 18000）
+                //1. 给 buff（会在 Buff.Update 里被续到 18000）
                 player.AddBuff(Item.buffType, 3600);
 
-                // 2. 先删除玩家已有的同类光宠，防止重复
+                //2. 先删除玩家已有的同类光宠，防止重复
                 for (int i = 0; i < Main.maxProjectiles; i++) {
                     Projectile proj = Main.projectile[i];
                     if (proj.active &&
@@ -42,7 +42,7 @@ namespace AncientChineseMythology.Items.Summons
                     }
                 }
 
-                // 3. 立即生成新宠物
+                //3. 立即生成新宠物
                 Projectile.NewProjectile(
                     player.GetSource_ItemUse(Item),
                     player.Center,

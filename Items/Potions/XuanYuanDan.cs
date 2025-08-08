@@ -28,7 +28,7 @@ namespace AncientChineseMythology.Items.Potions
 
         public override bool? UseItem(Player player) {
             var mp = player.GetModPlayer<MythologyPlayer>();
-            // 给固定经验值，也可根据当前 Major/Minor 调整
+            //给固定经验值，也可根据当前 Major/Minor 调整
             const int ExpAmount = 500;
             mp.AddStageExp(ExpAmount);
             Main.NewText($"获得了 {ExpAmount} 点修炼经验", 50, 255, 50);

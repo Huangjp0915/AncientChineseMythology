@@ -22,6 +22,6 @@ namespace AncientChineseMythology.Content.Items.Placeables
             Item.rare = ItemRarityID.Orange;
         }
 
-        // 以后想添加配方就在这里写 AddRecipes()
+        //以后想添加配方就在这里写 AddRecipes()
     }
 }

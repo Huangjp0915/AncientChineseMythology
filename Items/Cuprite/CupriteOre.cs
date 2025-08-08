@@ -19,13 +19,13 @@ namespace AncientChineseMythology.Items.Cuprite
             Item.value = Item.buyPrice(gold: 1);
             Item.rare = ItemRarityID.White;
 
-            // 设置为可放置的 Tile 物品
+            //设置为可放置的 Tile 物品
             Item.useTurn = true;
             Item.autoReuse = true;
             Item.useStyle = ItemUseStyleID.Swing;
             Item.useTime = 10;
             Item.useAnimation = 15;
-            Item.consumable = true; // 使用后消耗物品
+            Item.consumable = true; //使用后消耗物品
             Item.createTile = ModContent.TileType<PlacedCupriteOreTile>();
         }
     }

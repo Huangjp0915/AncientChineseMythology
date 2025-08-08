@@ -9,29 +9,29 @@ namespace AncientChineseMythology.Projectiles
 {
     public class BlackBearBowProj1 : ModProjectile
     {
-        public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear_Head_Boss"; // 使用物品的纹理作为投射物的纹理
+        public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear_Head_Boss"; //使用物品的纹理作为投射物的纹理
         public override void SetDefaults() {
-            Projectile.width = 20; // 弹幕宽度
-            Projectile.height = 20; // 弹幕高度
-            Projectile.friendly = true; // 友方弹幕
-            Projectile.tileCollide = false; // 不与瓷砖碰撞
-            Projectile.DamageType = DamageClass.Melee; // 伤害类型
-            Projectile.penetrate = 1; // 穿透
-            Projectile.ignoreWater = true; // 无视液体
-            Projectile.timeLeft = 90; // 存在时间，单位为帧
-            Projectile.alpha = 1; // 透明度
-            Projectile.aiStyle = -1;// 自定义ai
-            Projectile.light = 0.25f; // 发光亮度
+            Projectile.width = 20; //弹幕宽度
+            Projectile.height = 20; //弹幕高度
+            Projectile.friendly = true; //友方弹幕
+            Projectile.tileCollide = false; //不与瓷砖碰撞
+            Projectile.DamageType = DamageClass.Melee; //伤害类型
+            Projectile.penetrate = 1; //穿透
+            Projectile.ignoreWater = true; //无视液体
+            Projectile.timeLeft = 90; //存在时间，单位为帧
+            Projectile.alpha = 1; //透明度
+            Projectile.aiStyle = -1;//自定义ai
+            Projectile.light = 0.25f; //发光亮度
             Projectile.usesLocalNPCImmunity = true; //独立无敌帧
             Projectile.localNPCHitCooldown = 10; //独立无敌帧时间
         }
         public override void OnSpawn(IEntitySource source) {
-            //Projectile.velocity = Projectile.velocity.RotatedByRandom(360f); // 随机旋转弹幕速度
-            Projectile.damage += Main.rand.Next(Projectile.damage / 2, Projectile.damage); // 随机增加伤害
-            Projectile.knockBack += Main.rand.Next((int)Projectile.knockBack, (int)Projectile.knockBack * 2); // 随机增加击退力量
+            //Projectile.velocity = Projectile.velocity.RotatedByRandom(360f); //随机旋转弹幕速度
+            Projectile.damage += Main.rand.Next(Projectile.damage / 2, Projectile.damage); //随机增加伤害
+            Projectile.knockBack += Main.rand.Next((int)Projectile.knockBack, (int)Projectile.knockBack * 2); //随机增加击退力量
         }
         public override void AI() {
-            Projectile.rotation += Projectile.velocity.X * 0.05f; // 旋转速度为弹幕速度的 0.05倍
+            Projectile.rotation += Projectile.velocity.X * 0.05f; //旋转速度为弹幕速度的 0.05倍
         }
 
         [System.Obsolete]
@@ -74,7 +74,7 @@ namespace AncientChineseMythology.Projectiles
                                                                                        //定义一个从新到旧由1逐渐减少到0的变量，比如i = 0时，factor = 1
                 Vector2 oldcenter = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;//获取旧位置的中心点
                 //由于轨迹只能记录弹幕碰撞箱左上角位置，我们要手动加上弹幕宽高一半来获取中心
-                // 使用弹幕的速度方向来计算旋转角度
+                //使用弹幕的速度方向来计算旋转角度
                 float rotation = Projectile.velocity.ToRotation();
 
                 Main.EntitySpriteDraw(texture2, oldcenter, rectangle2, Color.White * factor * 0.72f,//颜色逐渐变淡

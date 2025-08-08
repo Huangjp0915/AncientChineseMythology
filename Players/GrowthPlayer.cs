@@ -12,7 +12,7 @@ namespace AncientChineseMythology.Players
         public List<int> growthEnemies = new List<int>();
 
         public override void ResetEffects() {
-            // 如果需要每帧重置某些数据，可以放这里
+            //如果需要每帧重置某些数据，可以放这里
         }
 
         public override void SaveData(TagCompound tag) {
@@ -25,9 +25,9 @@ namespace AncientChineseMythology.Players
             growthEnemies = tag.Get<List<int>>("growthEnemies");
         }
 
-        // 重写 SyncPlayer 方法进行数据同步
+        //重写 SyncPlayer 方法进行数据同步
         public override void SyncPlayer(int toWho, int fromWho, bool newPlayer) {
-            // 创建一个 ModPacket 发送数据
+            //创建一个 ModPacket 发送数据
             ModPacket packet = Mod.GetPacket();
             packet.Write((byte)AncientChineseMythologyMessageType.SyncGrowthPlayer);
             packet.Write(Player.whoAmI);

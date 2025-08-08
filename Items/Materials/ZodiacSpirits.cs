@@ -4,7 +4,7 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Items.Materials
 {
-    // 生肖鼠精魄
+    //生肖鼠精魄
     public class ZodiacRat : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Materials/ZodiacSpirits/ZodiacRat";
@@ -20,7 +20,7 @@ namespace AncientChineseMythology.Items.Materials
         }
     }
 
-    // 生肖牛精魄
+    //生肖牛精魄
     public class ZodiacCow : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Materials/ZodiacSpirits/ZodiacCow";
@@ -36,7 +36,7 @@ namespace AncientChineseMythology.Items.Materials
         }
     }
 
-    // 生肖虎精魄
+    //生肖虎精魄
     public class ZodiacTiger : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Materials/ZodiacSpirits/ZodiacTiger";
@@ -52,7 +52,7 @@ namespace AncientChineseMythology.Items.Materials
         }
     }
 
-    // 生肖兔精魄
+    //生肖兔精魄
     public class ZodiacRabbit : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Materials/ZodiacSpirits/ZodiacRabbit";
@@ -68,7 +68,7 @@ namespace AncientChineseMythology.Items.Materials
         }
     }
 
-    // 生肖龙精魄
+    //生肖龙精魄
     public class ZodiacDragon : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Materials/ZodiacSpirits/ZodiacDragon";
@@ -84,7 +84,7 @@ namespace AncientChineseMythology.Items.Materials
         }
     }
 
-    // 生肖蛇精魄
+    //生肖蛇精魄
     public class ZodiacSnake : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Materials/ZodiacSpirits/ZodiacSnake";
@@ -100,7 +100,7 @@ namespace AncientChineseMythology.Items.Materials
         }
     }
 
-    // 生肖马精魄
+    //生肖马精魄
     public class ZodiacHorse : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Materials/ZodiacSpirits/ZodiacHorse";
@@ -116,7 +116,7 @@ namespace AncientChineseMythology.Items.Materials
         }
     }
 
-    // 生肖羊精魄
+    //生肖羊精魄
     public class ZodiacGoat : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Materials/ZodiacSpirits/ZodiacGoat";
@@ -132,7 +132,7 @@ namespace AncientChineseMythology.Items.Materials
         }
     }
 
-    // 生肖猴精魄
+    //生肖猴精魄
     public class ZodiacMonkey : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Materials/ZodiacSpirits/ZodiacMonkey";
@@ -148,7 +148,7 @@ namespace AncientChineseMythology.Items.Materials
         }
     }
 
-    // 生肖鸡精魄
+    //生肖鸡精魄
     public class ZodiacChicken : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Materials/ZodiacSpirits/ZodiacChicken";
@@ -164,7 +164,7 @@ namespace AncientChineseMythology.Items.Materials
         }
     }
 
-    // 生肖狗精魄
+    //生肖狗精魄
     public class ZodiacDog : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Materials/ZodiacSpirits/ZodiacDog";
@@ -180,7 +180,7 @@ namespace AncientChineseMythology.Items.Materials
         }
     }
 
-    // 生肖猪精魄
+    //生肖猪精魄
     public class ZodiacPig : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Materials/ZodiacSpirits/ZodiacPig";

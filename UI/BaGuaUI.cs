@@ -10,19 +10,19 @@ namespace AncientChineseMythology.UI
     public class BaGuaUI : UIState
     {
         /* ===== 可调参数 ===== */
-        private const int SLOT = 40;     // 每格尺寸
-        private const float marginX = -350f;  // 初始偏移
+        private const int SLOT = 40;     //每格尺寸
+        private const float marginX = -350f;  //初始偏移
         private const float marginY = -265f;
-        private const float RADIUS = 68f;    // 环半径
-        private const float RING_SHIFT_X = 6f;   // 正值 → 向右移
-        private const float RING_SHIFT_Y = 3f;   // 正值 → 向下移
+        private const float RADIUS = 68f;    //环半径
+        private const float RING_SHIFT_X = 6f;   //正值 → 向右移
+        private const float RING_SHIFT_Y = 3f;   //正值 → 向下移
         public UIItemSlot[] Slots { get; private set; }
         /* =================== */
 
-        private UIElement root;               // 整块可拖动面板
+        private UIElement root;               //整块可拖动面板
         private bool dragging;
         private Vector2 dragOffset;
-        private bool prevMouseLeft;         // 记住上一帧鼠标状态
+        private bool prevMouseLeft;         //记住上一帧鼠标状态
 
         /* ---------- 初始化 ---------- */
         public override void OnInitialize() {
@@ -54,7 +54,7 @@ namespace AncientChineseMythology.UI
                 root.Append(slot);
             }
 
-            PlaceAtInitial();                // ★ 首帧精准定位
+            PlaceAtInitial();                //★ 首帧精准定位
         }
 
         public override void OnActivate() => PlaceAtInitial();
@@ -75,7 +75,7 @@ namespace AncientChineseMythology.UI
 
             /* 拖动中 */
             if (dragging) {
-                if (!mouseNow)               // 松手结束
+                if (!mouseNow)               //松手结束
                     dragging = false;
                 else {
                     root.Left.Set(Main.mouseX - dragOffset.X, 0);
@@ -84,7 +84,7 @@ namespace AncientChineseMythology.UI
                 }
             }
 
-            prevMouseLeft = mouseNow;        // 记录状态供下一帧比较
+            prevMouseLeft = mouseNow;        //记录状态供下一帧比较
         }
 
         /* ---------- 初次放置 ---------- */

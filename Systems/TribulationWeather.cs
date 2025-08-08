@@ -19,7 +19,7 @@ namespace AncientChineseMythology.Systems
             /* 客户端激活天空滤镜 */
             if (Main.netMode != NetmodeID.Server) {
                 var sky = SkyManager.Instance[SkyKey];
-                sky?.Activate(Vector2.Zero);          // 索引器可能返回 null，判空即可
+                sky?.Activate(Vector2.Zero);          //索引器可能返回 null，判空即可
             }
         }
 
@@ -29,7 +29,7 @@ namespace AncientChineseMythology.Systems
 
             if (Main.netMode != NetmodeID.Server) {
                 var sky = SkyManager.Instance[SkyKey];
-                sky?.Deactivate();                    // 同理
+                sky?.Deactivate();                    //同理
             }
         }
     }

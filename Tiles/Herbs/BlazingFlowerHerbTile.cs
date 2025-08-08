@@ -27,7 +27,7 @@ namespace AncientChineseMythology.Tiles.Herbs
             AddMapEntry(new Color(255, 90, 40));
 
             TileObjectData.newTile.CopyFrom(TileObjectData.StyleAlch);
-            TileObjectData.newTile.AnchorValidTiles = new int[] { TileID.Ash };   // 只允许灰烬块
+            TileObjectData.newTile.AnchorValidTiles = new int[] { TileID.Ash };   //只允许灰烬块
             TileObjectData.addTile(Type);
 
             HitSound = SoundID.Grass;
@@ -36,7 +36,7 @@ namespace AncientChineseMythology.Tiles.Herbs
 
         public override bool CanDrop(int i, int j) =>
             GetStage(i, j) == BlazingStage.Bloom &&
-            IsEvening();                       // 仅傍晚盛开时可掉落
+            IsEvening();                       //仅傍晚盛开时可掉落
 
         public override IEnumerable<Item> GetItemDrops(int i, int j) {
             if (!IsEvening()) yield break;
@@ -58,12 +58,12 @@ namespace AncientChineseMythology.Tiles.Herbs
 
             bool evening = IsEvening();
             if (evening && stage == BlazingStage.Growing) {
-                t.TileFrameX += FrameW;                 // 傍晚盛开
+                t.TileFrameX += FrameW;                 //傍晚盛开
             }
             else if (!evening && stage == BlazingStage.Bloom) {
-                t.TileFrameX -= FrameW;                 // 其余时间闭合
+                t.TileFrameX -= FrameW;                 //其余时间闭合
             }
-            else if (stage == BlazingStage.Seed) {      // 种子任何时间 → Growing
+            else if (stage == BlazingStage.Seed) {      //种子任何时间 → Growing
                 t.TileFrameX += FrameW;
             }
 
@@ -78,7 +78,7 @@ namespace AncientChineseMythology.Tiles.Herbs
             e = (i & 1) == 0 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
 
         private static bool IsEvening() =>
-            Main.dayTime && Main.time >= 27000.0;   // 18:00~19:30
+            Main.dayTime && Main.time >= 27000.0;   //18:00~19:30
 
         private static BlazingStage GetStage(Tile t) => (BlazingStage)(t.TileFrameX / FrameW);
         private static BlazingStage GetStage(int i, int j) => GetStage(Framing.GetTileSafely(i, j));

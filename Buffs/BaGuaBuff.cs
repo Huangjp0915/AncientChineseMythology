@@ -20,11 +20,11 @@ namespace AncientChineseMythology.Buffs
             var bp = Main.LocalPlayer.GetModPlayer<Players.BaGuaPlayer>();
 
             if (!string.IsNullOrEmpty(bp.CurrentName)) {
-                // tip 最前放阵法名称，换行再放描述
+                //tip 最前放阵法名称，换行再放描述
                 tip = $"{bp.CurrentName}\n{bp.CurrentDesc}";
             }
             else {
-                tip = "没有激活的阵法";               // 可自定义为空或其它文字
+                tip = "没有激活的阵法";               //可自定义为空或其它文字
             }
         }
     }

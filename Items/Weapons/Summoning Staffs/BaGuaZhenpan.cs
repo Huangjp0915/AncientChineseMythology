@@ -24,20 +24,20 @@ namespace AncientChineseMythology.Items.Weapons.SummoningStaffs
             Item.value = Item.buyPrice(5, 0, 0, 0);
         }
 
-        // 启用右键逻辑
+        //启用右键逻辑
         public override bool AltFunctionUse(Player player) => true;
 
         public override bool? UseItem(Player player) {
-            if (player.altFunctionUse == 2) // 右键：切换 UI
+            if (player.altFunctionUse == 2) //右键：切换 UI
             {
-                BaGuaUISystem.Toggle(player);   // static 方法开关
+                BaGuaUISystem.Toggle(player);   //static 方法开关
             }
-            else                          // 左键：施加 Buff + 生成阵图
+            else                          //左键：施加 Buff + 生成阵图
             {
-                const int buffTime = 60 * 60; // 60 秒
+                const int buffTime = 60 * 60; //60 秒
                 player.AddBuff(ModContent.BuffType<BaGuaBuff>(), buffTime);
 
-                // 确保同一玩家只有一个阵图
+                //确保同一玩家只有一个阵图
                 if (player.ownedProjectileCounts[ModContent.ProjectileType<BaGuaSigilProj>()] == 0) {
                     Projectile.NewProjectile(
                         player.GetSource_ItemUse(Item),

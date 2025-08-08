@@ -11,7 +11,7 @@ namespace AncientChineseMythology.NPCs.TownNPCs
     [AutoloadHead]
     public class YangJianNPC : ModNPC
     {
-        // ------------------------ 静态字段 ------------------------
+        //------------------------ 静态字段 ------------------------
         private static Profiles.StackedNPCProfile npcProfile;
 
         public override string Texture => "AncientChineseMythology/Textures/NPCs/TownNPCs/YangJian/YangJianNPC";
@@ -21,25 +21,25 @@ namespace AncientChineseMythology.NPCs.TownNPCs
         }
 
         public override void SetStaticDefaults() {
-            // ★ 帧数与官方示例一致
+            //★ 帧数与官方示例一致
             Main.npcFrameCount[Type] = 25;
             NPCID.Sets.ExtraFramesCount[Type] = 9;
             NPCID.Sets.AttackFrameCount[Type] = 4;
             NPCID.Sets.DangerDetectRange[Type] = 700;
             NPCID.Sets.PrettySafe[Type] = 300;
-            NPCID.Sets.AttackType[Type] = 0;  // 近战摇符纸
-            NPCID.Sets.AttackTime[Type] = 30; // 较快
+            NPCID.Sets.AttackType[Type] = 0;  //近战摇符纸
+            NPCID.Sets.AttackTime[Type] = 30; //较快
             NPCID.Sets.AttackAverageChance[Type] = 30;
             NPCID.Sets.HatOffsetY[Type] = 4;
             NPCID.Sets.ShimmerTownTransform[Type] = true;
 
-            // 关键：既是 Town AI，又非真正城镇 NPC
+            //关键：既是 Town AI，又非真正城镇 NPC
             NPCID.Sets.ActsLikeTownNPC[Type] = true;
             NPCID.Sets.NoTownNPCHappiness[Type] = true;
             NPCID.Sets.SpawnsWithCustomName[Type] = true;
-            NPCID.Sets.FaceEmote[Type] = 0; // 若有自定义表情可替换
+            NPCID.Sets.FaceEmote[Type] = 0; //若有自定义表情可替换
 
-            // Bestiary 绘制方向
+            //Bestiary 绘制方向
             NPCID.Sets.NPCBestiaryDrawModifiers draw = new() {
                 Velocity = 1f,
                 Direction = 1
@@ -60,7 +60,7 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             NPC.HitSound = SoundID.NPCHit1;
             NPC.DeathSound = SoundID.NPCDeath1;
 
-            AnimationType = NPCID.Guide; // 复用向导帧切换方式
+            AnimationType = NPCID.Guide; //复用向导帧切换方式
         }
 
         public override void SetBestiary(BestiaryDatabase db, BestiaryEntry be) {
@@ -96,7 +96,7 @@ namespace AncientChineseMythology.NPCs.TownNPCs
         }
 
         public override void TownNPCAttackProj(ref int projType, ref int attackDelay) {
-            projType = ProjectileID.PurificationPowder; // 像撒符灰
+            projType = ProjectileID.PurificationPowder; //像撒符灰
             attackDelay = 1;
         }
 

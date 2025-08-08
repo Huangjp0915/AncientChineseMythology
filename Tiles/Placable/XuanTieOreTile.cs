@@ -14,7 +14,7 @@ namespace AncientChineseMythology.Tiles.Placable
             Main.tileSolid[Type] = true;
             Main.tileMergeDirt[Type] = true;
             Main.tileSpelunker[Type] = true;
-            Main.tileOreFinderPriority[Type] = 320;          // 接近 Iron
+            Main.tileOreFinderPriority[Type] = 320;          //接近 Iron
             Main.tileShine[Type] = 900;
             Main.tileShine2[Type] = true;
             Main.tileBlockLight[Type] = true;
@@ -27,10 +27,10 @@ namespace AncientChineseMythology.Tiles.Placable
             DustType = DustID.Iron;
 
             LocalizedText name = CreateMapEntryName();
-            AddMapEntry(new Color(110, 110, 120), name);     // 深灰色
+            AddMapEntry(new Color(110, 110, 120), name);     //深灰色
 
-            MineResist = 3.3f;   // 挖掘速度
-            MinPick = 35;      // 铜镐即可
+            MineResist = 3.3f;   //挖掘速度
+            MinPick = 35;      //铜镐即可
         }
 
         public override bool IsTileBiomeSightable(int i, int j, ref Color sightColor) {

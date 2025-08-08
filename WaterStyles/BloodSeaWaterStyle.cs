@@ -14,7 +14,7 @@ namespace AncientChineseMythology.WaterStyles
             rainTexture = Mod.Assets.Request<Texture2D>("Textures/WaterStyles/BloodSeaWaterStyle_Rain");
         }
 
-        private const string Base = "Textures/WaterStyles/BloodSeaWaterStyle";   // <-- 和 PNG 同级
+        private const string Base = "Textures/WaterStyles/BloodSeaWaterStyle";   //<-- 和 PNG 同级
 
         public override string Texture => $"{Mod.Name}/{Base}";
         public override string BlockTexture => $"{Mod.Name}/{Base}_Block";

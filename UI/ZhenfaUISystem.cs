@@ -14,10 +14,10 @@ namespace AncientChineseMythology.Systems
         internal static bool ShowBookUI;
 
         public override void Load() {
-            if (Main.dedServ) return;          // 服务器端不加载 UI
+            if (Main.dedServ) return;          //服务器端不加载 UI
 
-            BookUI = new ZhenfaBookUI();    // 仅实例化
-            _interface = new UserInterface();  // 尚未 SetState
+            BookUI = new ZhenfaBookUI();    //仅实例化
+            _interface = new UserInterface();  //尚未 SetState
         }
 
         public override void Unload() {
@@ -50,11 +50,11 @@ namespace AncientChineseMythology.Systems
             if (ShowBookUI) {
                 Main.playerInventory = false;
 
-                // ★ 先 Activate → 创建所有 UIElement，避免 _list 空引用
+                //★ 先 Activate → 创建所有 UIElement，避免 _list 空引用
                 BookUI.Activate();
 
                 _interface.SetState(BookUI);
-                BookUI.RebuildList();           // 现在安全调用
+                BookUI.RebuildList();           //现在安全调用
 
                 Main.LocalPlayer.mouseInterface = true;
             }

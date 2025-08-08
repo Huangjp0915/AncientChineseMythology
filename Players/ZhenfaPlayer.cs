@@ -36,7 +36,7 @@ namespace AncientChineseMythology.Players
                 SoundEngine.PlaySound(SoundID.Unlock, Player.Center);
             }
 
-            // 若 UI 正在打开，刷新列表
+            //若 UI 正在打开，刷新列表
             if (ZhenfaUISystem.ShowBookUI)
                 ZhenfaUISystem.BookUI?.RebuildList();
 

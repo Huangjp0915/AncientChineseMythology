@@ -1,4 +1,4 @@
-﻿// AncientChineseMythology/Systems/LingShiOreGenSystem.cs
+﻿//AncientChineseMythology/Systems/LingShiOreGenSystem.cs
 using AncientChineseMythology.Tiles.Placable;
 using System.Collections.Generic;
 using Terraria;
@@ -35,12 +35,12 @@ namespace AncientChineseMythology.Systems
                 for (int i = 0; i < oreVeins; i++) {
                     int x = WorldGen.genRand.Next(0, maxX);
                     int y = WorldGen.genRand.Next((int)Main.rockLayer,
-                                                  Main.UnderworldLayer);  // 洞穴层往下
+                                                  Main.UnderworldLayer);  //洞穴层往下
 
                     WorldGen.OreRunner(
                         x, y,
-                        WorldGen.genRand.Next(5, 9),   // 矿脉宽度
-                        WorldGen.genRand.Next(4, 8),   // 矿脉深度
+                        WorldGen.genRand.Next(5, 9),   //矿脉宽度
+                        WorldGen.genRand.Next(4, 8),   //矿脉深度
                         (ushort)ModContent.TileType<LingShiOreTile>());
                 }
             }

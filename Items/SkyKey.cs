@@ -7,7 +7,7 @@ namespace AncientChineseMythology.Items
     public class SkyKey : ModItem
     {
         public override void SetStaticDefaults() {
-            Item.ResearchUnlockCount = 1; // 允许在旅程模式研究
+            Item.ResearchUnlockCount = 1; //允许在旅程模式研究
         }
 
         public override void SetDefaults() {
@@ -16,7 +16,7 @@ namespace AncientChineseMythology.Items
             Item.useStyle = ItemUseStyleID.HoldUp;
             Item.useTime = 20;
             Item.useAnimation = 20;
-            Item.consumable = false; // 使用后消耗
+            Item.consumable = false; //使用后消耗
             Item.maxStack = 1;
             Item.rare = ItemRarityID.Yellow;
         }

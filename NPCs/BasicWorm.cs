@@ -5,9 +5,9 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.NPCs
 {
-    /// <summary>
-    /// 摘要：NPC的width是虫子距离上一节的距离
-    /// </summary>
+    ///<summary>
+    ///摘要：NPC的width是虫子距离上一节的距离
+    ///</summary>
     public abstract class BasicWorm : ModNPC
     {
         public enum WormType : byte
@@ -16,18 +16,18 @@ namespace AncientChineseMythology.NPCs
             Body,
             Tail
         }
-        public override void SetDefaults() // 子类保留这个的Base以方便调用父类的修改AIStyle与AIType
+        public override void SetDefaults() //子类保留这个的Base以方便调用父类的修改AIStyle与AIType
         {
-            NPC.aiStyle = -1; // 这是为了避免NPC的AI类型与原版有所冲突
+            NPC.aiStyle = -1; //这是为了避免NPC的AI类型与原版有所冲突
         }
-        /// <summary>
-        /// 启用SPDir翻转
-        /// </summary>
+        ///<summary>
+        ///启用SPDir翻转
+        ///</summary>
         public virtual bool IsUseSpriteDirection => false;
         public abstract WormType NPCWormType { get; }
-        /// <summary>
-        /// 上一个Worm
-        /// </summary>
+        ///<summary>
+        ///上一个Worm
+        ///</summary>
         public int FatherWorm = -1;
         public NPC FatherNPC {
             get {
@@ -37,25 +37,25 @@ namespace AncientChineseMythology.NPCs
             }
         }
 
-        /// <summary>
-        /// 时候生成了下一节NPC
-        /// </summary>
+        ///<summary>
+        ///时候生成了下一节NPC
+        ///</summary>
         public bool IsSummonNPC;
-        /// <summary>
-        /// 召唤NPC的Type,请在SetDefaults中设置,也可以根据SummonCount在ChangeSummonType修改
-        /// </summary>
+        ///<summary>
+        ///召唤NPC的Type,请在SetDefaults中设置,也可以根据SummonCount在ChangeSummonType修改
+        ///</summary>
         public int SummonNPCType;
-        /// <summary>
-        /// 召唤NPC的时间
-        /// </summary>
+        ///<summary>
+        ///召唤NPC的时间
+        ///</summary>
         public int SummonTime;
-        /// <summary>
-        /// 召唤上限,请在SetDefaults中设置
-        /// </summary>
+        ///<summary>
+        ///召唤上限,请在SetDefaults中设置
+        ///</summary>
         public int SummonMax;
-        /// <summary>
-        /// 召唤次数
-        /// </summary>
+        ///<summary>
+        ///召唤次数
+        ///</summary>
         public int SummonCount;
         public override void SendExtraAI(BinaryWriter writer) {
             writer.Write(FatherWorm);
@@ -81,17 +81,17 @@ namespace AncientChineseMythology.NPCs
                     SummonCount = basicWorm.SummonCount + 1;
                 }
 
-                while (npc.ModNPC is BasicWorm basicWorm1 && basicWorm1.FatherWorm != -1) // 找到头部
+                while (npc.ModNPC is BasicWorm basicWorm1 && basicWorm1.FatherWorm != -1) //找到头部
                 {
-                    npc = Main.npc[basicWorm1.FatherWorm]; // 迭代NPC
+                    npc = Main.npc[basicWorm1.FatherWorm]; //迭代NPC
                 }
                 if (npc.active && npc.ModNPC is BasicWorm)
                     NPC.realLife = npc.whoAmI;
             }
         }
-        /// <summary>
-        /// 有事没事不要重写这个，这个是根据NPCWormType来确定NPC的AI
-        /// </summary>
+        ///<summary>
+        ///有事没事不要重写这个，这个是根据NPCWormType来确定NPC的AI
+        ///</summary>
         public override void PostAI() {
             switch (NPCWormType) {
                 case WormType.Head:
@@ -121,24 +121,24 @@ namespace AncientChineseMythology.NPCs
                         if (NPCWormType == WormType.Tail && FatherNPC != null)
                             NPC.spriteDirection = FatherNPC.spriteDirection;
                         else
-                            NPC.spriteDirection = NPC.velocity.X > 0 ? 1 : -1; // 自动修改朝向
+                            NPC.spriteDirection = NPC.velocity.X > 0 ? 1 : -1; //自动修改朝向
                     }
                     if (NPC.spriteDirection == -1)
                         NPC.rotation += MathHelper.Pi;
                     break;
             }
         }
-        /// <summary>
-        /// 可以重写这个方法来改变位置算法
-        /// </summary>
+        ///<summary>
+        ///可以重写这个方法来改变位置算法
+        ///</summary>
         public virtual void ChangePos() {
             NPC.velocity = Vector2.Lerp(NPC.rotation.ToRotationVector2() * NPC.spriteDirection, FatherNPC.rotation.ToRotationVector2() * FatherNPC.spriteDirection, 0.5f);
             NPC.Center = FatherNPC.Center - NPC.velocity * (NPC.width + FatherNPC.width) / 2;
             NPC.Center = new Vector2((int)NPC.Center.X, (int)NPC.Center.Y);
         }
-        /// <summary>
-        /// 修改生成的NPC类型
-        /// </summary>
+        ///<summary>
+        ///修改生成的NPC类型
+        ///</summary>
         public virtual void ChangeSummonType() {
 
         }

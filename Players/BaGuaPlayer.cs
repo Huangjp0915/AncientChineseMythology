@@ -14,19 +14,19 @@ namespace AncientChineseMythology.Players
 {
     public class BaGuaPlayer : ModPlayer
     {
-        // 常量：倍率
+        //常量：倍率
         private const float Scale = 0.10f;
         public const int SlotCount = 8;
         public Item[] BaGuaItems = new Item[SlotCount];
         public string CurrentName = "";
         public string CurrentDesc = "";
-        private const int WearInterval = 60 * 60 * 30;      // 30
+        private const int WearInterval = 60 * 60 * 30;      //30
         private int[] wearCounter = new int[SlotCount];
 
         /*  ----------------- 阵法内定义 ----------------- */
         private bool phoenixActive;
         private int phoenixCD;
-        private const int PhoenixCDMax = 60 * 60 * 10; // 10 min冷却
+        private const int PhoenixCDMax = 60 * 60 * 10; //10 min冷却
         private static readonly int[] BoomerangIDs = {
             ProjectileID.Flamarang,
             ProjectileID.EnchantedBoomerang,
@@ -35,16 +35,16 @@ namespace AncientChineseMythology.Players
             ProjectileID.Shroomerang
         };
         private int FallingStarTimer;
-        private const int FallingStarCD = 15;   // 每 15 tick ≈ 0.25 s 召唤 1 颗
+        private const int FallingStarCD = 15;   //每 15 tick ≈ 0.25 s 召唤 1 颗
 
         public override void PostUpdateEquips() {
-            // 若拥有八卦 Buff，则缩放最终生命 / 魔力
+            //若拥有八卦 Buff，则缩放最终生命 / 魔力
             if (Player.HasBuff(ModContent.BuffType<Buffs.BaGuaBuff>())) {
-                // 1. 缩放最大值
+                //1. 缩放最大值
                 Player.statLifeMax2 = (int)(Player.statLifeMax2 * Scale);
                 Player.statManaMax2 = (int)(Player.statManaMax2 * Scale);
 
-                // 2. 防止当前值溢出新上限
+                //2. 防止当前值溢出新上限
                 if (Player.statLife > Player.statLifeMax2)
                     Player.statLife = Player.statLifeMax2;
 
@@ -65,7 +65,7 @@ namespace AncientChineseMythology.Players
         public void ResetWear(int idx) => wearCounter[idx] = 0;
 
         public override void PostUpdate() {
-            // 只在玩家带着 BaGuaBuff 时消耗材料；去掉这行就永久计时
+            //只在玩家带着 BaGuaBuff 时消耗材料；去掉这行就永久计时
             if (!Player.HasBuff(ModContent.BuffType<Buffs.BaGuaBuff>()))
                 return;
 
@@ -76,11 +76,11 @@ namespace AncientChineseMythology.Players
                     wearCounter[i] = 0;
 
                     if (BaGuaItems[i].stack > 1)
-                        BaGuaItems[i].stack--;       // 掉 1 个
+                        BaGuaItems[i].stack--;       //掉 1 个
                     else
-                        BaGuaItems[i].TurnToAir();   // 没了就清空
+                        BaGuaItems[i].TurnToAir();   //没了就清空
 
-                    // 多人联机同步
+                    //多人联机同步
                     if (Main.netMode == NetmodeID.Server) {
                         ModPacket p = Mod.GetPacket();
                         p.Write((byte)MessageType.SyncBaGuaSlot);
@@ -124,7 +124,7 @@ namespace AncientChineseMythology.Players
         };
 
         public override void ResetEffects() {
-            // 默认清空显示文本
+            //默认清空显示文本
             CurrentName = "";
             CurrentDesc = "";
 
@@ -142,7 +142,7 @@ namespace AncientChineseMythology.Players
                     CurrentName = f.Name;
                     CurrentDesc = f.Desc;
                     f.ApplyEffect(this);
-                    break;          // 命中一个即可
+                    break;          //命中一个即可
                 }
             }
         }
@@ -177,15 +177,15 @@ namespace AncientChineseMythology.Players
 
         /* ───────── 镇海阵：防+15、荆棘、减速 ───────── */
         private void DoZhenHai() {
-            // 1) 额外防御 +15
+            //1) 额外防御 +15
             Player.statDefense += 15;
 
-            // 2) 100% 荆棘反伤：1f == 100%（与荆棘药剂相同）
+            //2) 100% 荆棘反伤：1f == 100%（与荆棘药剂相同）
             Player.thorns += 1f;
 
-            // 3) 移动速度 -15%
-            Player.moveSpeed -= 0.4f;          // 整体加速系数
-            Player.maxRunSpeed *= 0.6f;        // 封顶跑速也同步降低，手感更一致
+            //3) 移动速度 -15%
+            Player.moveSpeed -= 0.4f;          //整体加速系数
+            Player.maxRunSpeed *= 0.6f;        //封顶跑速也同步降低，手感更一致
         }
 
         /* ───────── 朱雀涅槃：一次性复活 ───────── */
@@ -198,9 +198,9 @@ namespace AncientChineseMythology.Players
             if (phoenixActive && phoenixCD == 0) {
                 PhoenixRebirth();
                 phoenixCD = PhoenixCDMax;
-                return false;   // 阻止死亡
+                return false;   //阻止死亡
             }
-            return true;        // 允许死亡
+            return true;        //允许死亡
         }
 
         private void PhoenixRebirth() {
@@ -209,9 +209,9 @@ namespace AncientChineseMythology.Players
             Player.HealEffect(heal, true);
 
             Player.immune = true;
-            Player.immuneTime = 120;        // 2 秒无敌
+            Player.immuneTime = 120;        //2 秒无敌
 
-            // 400 点范围火爆
+            //400 点范围火爆
             Projectile.NewProjectile(
                 Player.GetSource_FromThis(),
                 Player.Center,
@@ -255,7 +255,7 @@ namespace AncientChineseMythology.Players
             if (FallingStarTimer < FallingStarCD) return;
             FallingStarTimer = 0;
 
-            // 寻找最近的非友好 NPC（与回旋镖逻辑保持一致）
+            //寻找最近的非友好 NPC（与回旋镖逻辑保持一致）
             NPC target = null;
             float dist2 = 600 * 600;
             foreach (NPC npc in Main.npc)
@@ -265,17 +265,17 @@ namespace AncientChineseMythology.Players
                 }
             if (target == null) return;
 
-            // 确定星星出生点：目标上方 600 像素随机 ±80 X 偏移
+            //确定星星出生点：目标上方 600 像素随机 ±80 X 偏移
             Vector2 spawn = new(target.Center.X + Main.rand.Next(-80, 81), target.Center.Y - 600f);
-            Vector2 vel = Vector2.UnitY * 16f;           // 垂直向下
+            Vector2 vel = Vector2.UnitY * 16f;           //垂直向下
 
-            int dmg = 80;      // 调整为想要的伤害
-            float kb = 1.5f;   // 击退
+            int dmg = 80;      //调整为想要的伤害
+            float kb = 1.5f;   //击退
 
             Projectile.NewProjectile(
                 Player.GetSource_FromThis(),
                 spawn, vel,
-                ProjectileID.Starfury, // 原版星怒坠星弹道 & 贴图
+                ProjectileID.Starfury, //原版星怒坠星弹道 & 贴图
                 dmg, kb, Player.whoAmI);
         }
     }

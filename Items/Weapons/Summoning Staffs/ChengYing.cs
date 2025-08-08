@@ -26,7 +26,7 @@ namespace AncientChineseMythology.Items.Weapons.SummoningStaffs
         }
 
         public override bool? UseItem(Player player) {
-            player.AddBuff(ModContent.BuffType<ChengYingBuff>(), 2); // 2 tick，Mount 会自动刷新
+            player.AddBuff(ModContent.BuffType<ChengYingBuff>(), 2); //2 tick，Mount 会自动刷新
             return true;
         }
     }

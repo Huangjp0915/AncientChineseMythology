@@ -10,45 +10,45 @@ namespace AncientChineseMythology.Projectiles
 {
     public class BlackBearSwordProj1 : ModProjectile
     {
-        public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear_Head_Boss"; // 使用物品的纹理作为投射物的纹理
-        private Vector2 mouseposition; // 鼠标目标位置
+        public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear_Head_Boss"; //使用物品的纹理作为投射物的纹理
+        private Vector2 mouseposition; //鼠标目标位置
         public override void SetDefaults() {
-            Projectile.width = 20; // 弹幕宽度
-            Projectile.height = 20; // 弹幕高度
-            Projectile.friendly = true; // 友方弹幕
-            Projectile.tileCollide = false; // 不与瓷砖碰撞
-            Projectile.DamageType = DamageClass.Melee; // 伤害类型
-            Projectile.penetrate = -1; // 穿透
-            Projectile.ignoreWater = true; // 无视液体
-            Projectile.timeLeft = 90; // 存在时间，单位为帧
-            Projectile.alpha = 1; // 透明度
-            Projectile.aiStyle = -1;// 自定义ai
-            Projectile.light = 0.25f; // 发光亮度
+            Projectile.width = 20; //弹幕宽度
+            Projectile.height = 20; //弹幕高度
+            Projectile.friendly = true; //友方弹幕
+            Projectile.tileCollide = false; //不与瓷砖碰撞
+            Projectile.DamageType = DamageClass.Melee; //伤害类型
+            Projectile.penetrate = -1; //穿透
+            Projectile.ignoreWater = true; //无视液体
+            Projectile.timeLeft = 90; //存在时间，单位为帧
+            Projectile.alpha = 1; //透明度
+            Projectile.aiStyle = -1;//自定义ai
+            Projectile.light = 0.25f; //发光亮度
             Projectile.usesLocalNPCImmunity = true; //独立无敌帧
             Projectile.localNPCHitCooldown = 10; //独立无敌帧时间
         }
         public override void OnSpawn(IEntitySource source) {
-            // 获取当前显示屏的宽度和高度
+            //获取当前显示屏的宽度和高度
             int screenWidth = Main.screenWidth;
             int screenHeight = Main.screenHeight;
 
-            // 获取玩家的中心位置
+            //获取玩家的中心位置
             Vector2 playerCenter = Main.player[Projectile.owner].Center;
 
-            // 获取鼠标的位置
+            //获取鼠标的位置
             Vector2 mousePosition = Main.MouseWorld;
-            mouseposition = mousePosition;// 保存
-            // 计算鼠标位置到玩家位置的连线方向
+            mouseposition = mousePosition;//保存
+            //计算鼠标位置到玩家位置的连线方向
             Vector2 direction = mousePosition - playerCenter;
             direction.Normalize();
 
-            // 计算弹幕生成位置的范围
-            float spawnRange = -1000f; // 生成位置的范围，可以根据需要调整
+            //计算弹幕生成位置的范围
+            float spawnRange = -1000f; //生成位置的范围，可以根据需要调整
 
-            // 计算生成位置
+            //计算生成位置
             Vector2 spawnPosition = playerCenter + direction * spawnRange;
 
-            // 确保生成位置在屏幕边缘
+            //确保生成位置在屏幕边缘
             if (spawnPosition.X < Main.screenPosition.X) {
                 spawnPosition.X = Main.screenPosition.X;
             }
@@ -63,47 +63,47 @@ namespace AncientChineseMythology.Projectiles
                 spawnPosition.Y = Main.screenPosition.Y + screenHeight;
             }
 
-            // 设置弹幕的位置
+            //设置弹幕的位置
             Projectile.position = spawnPosition;
 
-            // 设置弹幕的速度为向鼠标方向，大小为28
+            //设置弹幕的速度为向鼠标方向，大小为28
             direction = mousePosition - Projectile.position;
             direction.Normalize();
             Projectile.velocity = direction * 26f;
 
         }
         public override void AI() {
-            Projectile.rotation += Projectile.velocity.X * 0.05f; // 旋转速度为弹幕速度的 0.05倍
+            Projectile.rotation += Projectile.velocity.X * 0.05f; //旋转速度为弹幕速度的 0.05倍
 
-            //// 获取鼠标的位置
+            ////获取鼠标的位置
             //Vector2 mousePosition = Main.MouseWorld;
 
-            // 判断弹幕是否到达鼠标位置
+            //判断弹幕是否到达鼠标位置
             if (Math.Abs(Projectile.velocity.X) > Math.Abs(Projectile.velocity.Y)) {
-                // 弹幕是从屏幕两边中的一边为起始点出发的
+                //弹幕是从屏幕两边中的一边为起始点出发的
                 if (Projectile.velocity.X > 0) {
-                    // 弹幕是从屏幕左边出发的
+                    //弹幕是从屏幕左边出发的
                     if (Projectile.position.X >= mouseposition.X) {
                         Projectile.tileCollide = true;
                     }
                 }
                 else {
-                    // 弹幕是从屏幕右边出发的
+                    //弹幕是从屏幕右边出发的
                     if (Projectile.position.X <= mouseposition.X) {
                         Projectile.tileCollide = true;
                     }
                 }
             }
             else {
-                // 弹幕是从屏幕上下中的一边为起始点出发的
+                //弹幕是从屏幕上下中的一边为起始点出发的
                 if (Projectile.velocity.Y > 0) {
-                    // 弹幕是从屏幕上边出发的
+                    //弹幕是从屏幕上边出发的
                     if (Projectile.position.Y >= mouseposition.Y) {
                         Projectile.tileCollide = true;
                     }
                 }
                 else {
-                    // 弹幕是从屏幕下边出发的
+                    //弹幕是从屏幕下边出发的
                     if (Projectile.position.Y <= mouseposition.Y) {
                         Projectile.tileCollide = true;
                     }
@@ -167,7 +167,7 @@ namespace AncientChineseMythology.Projectiles
                                                                                        //定义一个从新到旧由1逐渐减少到0的变量，比如i = 0时，factor = 1
                 Vector2 oldcenter = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;//获取旧位置的中心点
                 //由于轨迹只能记录弹幕碰撞箱左上角位置，我们要手动加上弹幕宽高一半来获取中心
-                // 使用弹幕的速度方向来计算旋转角度
+                //使用弹幕的速度方向来计算旋转角度
                 float rotation = Projectile.velocity.ToRotation();
 
                 Main.EntitySpriteDraw(texture2, oldcenter, rectangle2, Color.White * factor * 0.72f,//颜色逐渐变淡

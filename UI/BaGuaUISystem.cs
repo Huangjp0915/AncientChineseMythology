@@ -48,10 +48,10 @@ namespace AncientChineseMythology.UI
             visible = !visible;
             if (visible) {
                 Main.playerInventory = true;
-                uiInstance.LoadFromPlayer(player);   // 打开时读取
+                uiInstance.LoadFromPlayer(player);   //打开时读取
             }
             else {
-                uiInstance.SaveToPlayer(player);     // 关闭时保存
+                uiInstance.SaveToPlayer(player);     //关闭时保存
             }
         }
 

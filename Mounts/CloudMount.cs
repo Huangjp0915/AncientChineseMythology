@@ -8,7 +8,7 @@ namespace AncientChineseMythology.Mounts
     public class CloudMount : ModMount
     {
         /*──────── 常量区 ────────*/
-        private const float VertSpeed = 0.35f;   // 垂直推力
+        private const float VertSpeed = 0.35f;   //垂直推力
 
         public override void SetStaticDefaults() {
             /*──基础属性──*/
@@ -20,8 +20,8 @@ namespace AncientChineseMythology.Mounts
             MountData.acceleration = 0.25f;
             MountData.jumpHeight = 10;
             MountData.jumpSpeed = 6f;
-            MountData.flightTimeMax = int.MaxValue;  // 无限飞
-            MountData.constantJump = true;          // 按住空格可持续上升
+            MountData.flightTimeMax = int.MaxValue;  //无限飞
+            MountData.constantJump = true;          //按住空格可持续上升
             MountData.usesHover = true;
             MountData.fallDamage = 0f;
 
@@ -32,7 +32,7 @@ namespace AncientChineseMythology.Mounts
             MountData.runningFrameStart = 0;
             MountData.inAirFrameStart = 0;
             MountData.idleFrameStart = 0;
-            MountData.playerYOffsets = new int[1] { 40 }; // 抬高玩家腰部
+            MountData.playerYOffsets = new int[1] { 40 }; //抬高玩家腰部
 
             /*──贴图──*/
             if (!Main.dedServ) {
@@ -83,14 +83,14 @@ namespace AncientChineseMythology.Mounts
             }*/
 
             /*W / S / Space 垂直操控*/
-            bool wantAscend = player.controlUp || player.controlJump; // W 或 空格
+            bool wantAscend = player.controlUp || player.controlJump; //W 或 空格
             bool wantDescend = player.controlDown;
             bool onGround = player.velocity.Y == 0f &&
                             Collision.SolidCollision(
                                 player.position + new Vector2(0, player.height),
                                 player.width, 2);
 
-            if (onGround && wantAscend) {        // 贴地起跳
+            if (onGround && wantAscend) {        //贴地起跳
                 player.velocity.Y = -6f;
                 player.fallStart = (int)(player.position.Y / 16f);
             }

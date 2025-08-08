@@ -20,21 +20,21 @@ namespace AncientChineseMythology.Items.Potions
             Item.value = Item.buyPrice(0, 2, 0, 0);
             Item.rare = ItemRarityID.Green;
 
-            // 药水设置
+            //药水设置
             Item.useStyle = ItemUseStyleID.DrinkLiquid;
             Item.useAnimation = 15;
             Item.useTime = 15;
             Item.useTurn = true;
             Item.consumable = true;
 
-            // 使用后给予60秒正面Buff（破军丹效果）
+            //使用后给予60秒正面Buff（破军丹效果）
             Item.buffType = ModContent.BuffType<PoJunDanBuff>();
-            Item.buffTime = 3600; // 60秒
+            Item.buffTime = 3600; //60秒
             Item.UseSound = SoundID.Item3;
         }
 
         public override bool? UseItem(Player player) {
-            // 同时施加10分钟药水病
+            //同时施加10分钟药水病
             player.AddBuff(BuffID.PotionSickness, 36000, false);
             return base.UseItem(player);
         }

@@ -40,7 +40,7 @@ namespace AncientChineseMythology.Projectiles
             Vector2 mousPos = Main.MouseWorld;
 
             Projectile.direction = player.direction;
-            player.heldProj = Projectile.whoAmI;// 玩家持有弹道
+            player.heldProj = Projectile.whoAmI;//玩家持有弹道
 
             Projectile.position = player.Center + direction * 0f - new Vector2(Projectile.width / 2, Projectile.height / 2);
 
@@ -50,17 +50,17 @@ namespace AncientChineseMythology.Projectiles
 
                 Projectile.damage = Projectile.originalDamage * 2;
                 Projectile.knockBack = 10f;
-                player.immune = true;// 玩家无敌
-                player.immuneTime = 2; // 确保无敌时间短于冲刺持续时间
+                player.immune = true;//玩家无敌
+                player.immuneTime = 2; //确保无敌时间短于冲刺持续时间
 
                 if (!isRush)
                     Projectile.rotation = direction.ToRotation() + MathHelper.ToRadians(45f);
                 isRush = true;
                 if (Projectile.timeLeft >= 3) {
-                    player.velocity = direction * 36f; // 12f * 10 = 120像素
+                    player.velocity = direction * 36f; //12f * 10 = 120像素
 
                     Projectile.direction = player.direction;
-                    player.heldProj = Projectile.whoAmI;// 玩家持有弹道
+                    player.heldProj = Projectile.whoAmI;//玩家持有弹道
 
                     Projectile.position = player.Center + direction * 0f - new Vector2(Projectile.width / 2, Projectile.height / 2);
 
@@ -81,11 +81,11 @@ namespace AncientChineseMythology.Projectiles
                     Projectile.rotation += MathHelper.ToRadians(18f);
                 Projectile.timeLeft = 13;
                 Owner.SetCompositeArmFront(true, Player.CompositeArmStretchAmount.Full,
-                    Projectile.rotation - MathHelper.ToRadians(-45f)); // 设置手臂位置（由于手臂起始时低下，所以有 90 度偏移）
+                    Projectile.rotation - MathHelper.ToRadians(-45f)); //设置手臂位置（由于手臂起始时低下，所以有 90 度偏移）
                 Projectile.damage = Projectile.originalDamage / 2;
                 Projectile.knockBack = Projectile.knockBack * 0.99f;
 
-                // 计算右上角位置并生成粒子
+                //计算右上角位置并生成粒子
                 Vector2 dustOffset = new Vector2(60, -60);
                 Vector2 rotatedDustOffset = dustOffset.RotatedBy(Projectile.rotation);
                 Vector2 dustPosition = Projectile.Center + rotatedDustOffset - new Vector2(8, 5);
@@ -122,9 +122,9 @@ namespace AncientChineseMythology.Projectiles
                 texture.Height / Main.projFrames[Type]
             );
 
-            Vector2 origin = new Vector2(texture.Width / 2, texture.Height / Main.projFrames[Type] / 2); // 设置原点为左下方
+            Vector2 origin = new Vector2(texture.Width / 2, texture.Height / Main.projFrames[Type] / 2); //设置原点为左下方
             if (!Main.mouseRight) {
-                origin = new Vector2(32, texture.Height / Main.projFrames[Type] - 32); // 设置原点为左下方
+                origin = new Vector2(32, texture.Height / Main.projFrames[Type] - 32); //设置原点为左下方
             }
             Main.EntitySpriteDraw(
                 texture,//第一个参数是材质

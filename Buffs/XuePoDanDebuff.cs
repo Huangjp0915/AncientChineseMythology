@@ -13,7 +13,7 @@ namespace AncientChineseMythology.Buffs
         }
 
         public override void Update(Player player, ref int buffIndex) {
-            // 效果由 ModPlayer 中处理，这里可添加额外视觉效果
+            //效果由 ModPlayer 中处理，这里可添加额外视觉效果
         }
     }
 }

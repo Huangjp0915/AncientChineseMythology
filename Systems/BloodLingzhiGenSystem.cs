@@ -31,11 +31,11 @@ namespace AncientChineseMythology.Worldgen
                 int i = WorldGen.genRand.Next(200, Main.maxTilesX - 200);
                 int j = WorldGen.genRand.Next((int)Main.worldSurface, (int)Main.rockLayer);
 
-                // 下落到实心方块顶面
+                //下落到实心方块顶面
                 while (j < Main.maxTilesY - 200 && !Main.tile[i, j].HasTile) j++;
                 if (!Main.tile[i, j].HasTile || !Main.tileSolid[Main.tile[i, j].TileType]) continue;
 
-                // 位置必须位于猩红生物群系
+                //位置必须位于猩红生物群系
                 if (!WorldgenHelpers.IsCrimson(i, j)) continue;
 
                 WorldGen.PlaceTile(i, j - 1,
@@ -52,7 +52,7 @@ namespace AncientChineseMythology.Worldgen
     internal static class WorldgenHelpers
     {
         public static bool IsCrimson(int i, int j) {
-            // 判定方式：检查 tile 或 wall 是否为猩红系
+            //判定方式：检查 tile 或 wall 是否为猩红系
             Tile t = Framing.GetTileSafely(i, j);
             return t.TileType == TileID.Crimstone || t.TileType == TileID.CrimsonGrass
                 || t.TileType == TileID.CrimstoneBrick

@@ -12,12 +12,12 @@ namespace AncientChineseMythology.Items.Placable
         public override string Texture => "AncientChineseMythology/Textures/Items/Placable/ElixirFurnaceItem";
 
         public override void SetStaticDefaults() {
-            Item.ResearchUnlockCount = 1; // 允许在旅程模式研究
+            Item.ResearchUnlockCount = 1; //允许在旅程模式研究
         }
 
         public override void SetDefaults() {
-            Item.width = 48;  // 物品宽度匹配贴图
-            Item.height = 48; // 物品高度匹配贴图
+            Item.width = 48;  //物品宽度匹配贴图
+            Item.height = 48; //物品高度匹配贴图
             Item.maxStack = 99;
             Item.useTurn = true;
             Item.autoReuse = true;
@@ -26,7 +26,7 @@ namespace AncientChineseMythology.Items.Placable
             Item.useStyle = ItemUseStyleID.Swing;
             Item.consumable = true;
             Item.value = Item.sellPrice(0, 0, 50, 0);
-            Item.createTile = ModContent.TileType<ElixirFurnaceTile>(); // 关联Tile
+            Item.createTile = ModContent.TileType<ElixirFurnaceTile>(); //关联Tile
 
         }
 

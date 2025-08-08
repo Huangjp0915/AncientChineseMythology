@@ -11,7 +11,7 @@ using Terraria.ObjectData;
 namespace AncientChineseMythology.Tiles.Herbs
 {
 
-    // 三阶段：种子→生长→成熟
+    //三阶段：种子→生长→成熟
     public enum IronArmorStage : byte { Seed, Growing, Mature }
 
     public class IronArmorFlowerHerbTile : ModTile
@@ -32,9 +32,9 @@ namespace AncientChineseMythology.Tiles.Herbs
             TileMaterials.SetForTileId(Type, TileMaterials._materialsByName["Plant"]);
 
             LocalizedText name = CreateMapEntryName();
-            AddMapEntry(new Color(150, 150, 200), name);               // 浅铁灰
+            AddMapEntry(new Color(150, 150, 200), name);               //浅铁灰
 
-            // 只能种在石/泥，但必须靠近矿石
+            //只能种在石/泥，但必须靠近矿石
             TileObjectData.newTile.CopyFrom(TileObjectData.StyleAlch);
             TileObjectData.newTile.AnchorValidTiles = new int[] { TileID.Stone, TileID.Mud, TileID.Dirt };
             TileObjectData.addTile(Type);
@@ -44,8 +44,8 @@ namespace AncientChineseMythology.Tiles.Herbs
         }
 
         public override bool CanPlace(int i, int j) {
-            int gi = i;       // ground x
-            int gj = j + 1;   // ground y：植株下方那格
+            int gi = i;       //ground x
+            int gj = j + 1;   //ground y：植株下方那格
 
             foreach (Point p in Off4) {
                 Tile near = Framing.GetTileSafely(gi + p.X, gj + p.Y);
@@ -80,7 +80,7 @@ namespace AncientChineseMythology.Tiles.Herbs
         }
 
         public override bool IsTileSpelunkable(int i, int j) =>
-            GetStage(i, j) == IronArmorStage.Mature;          // 成熟闪光
+            GetStage(i, j) == IronArmorStage.Mature;          //成熟闪光
 
         public override void SetSpriteEffects(int i, int j, ref SpriteEffects effects) {
             if (i % 2 == 0) effects = SpriteEffects.FlipHorizontally;

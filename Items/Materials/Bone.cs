@@ -14,9 +14,9 @@ namespace AncientChineseMythology.Items.Materials
         public override void SetDefaults() {
             Item.width = 20;
             Item.height = 20;
-            // 物品价值10金
+            //物品价值10金
             Item.value = Item.buyPrice(gold: 1);
-            // 稀有度可根据需求调整
+            //稀有度可根据需求调整
             Item.rare = ItemRarityID.Blue;
             Item.consumable = true;
         }

@@ -21,25 +21,25 @@ namespace AncientChineseMythology.NPCs.TownNPCs
         private static Asset<Texture2D> shimmerWeapon;
 
         public override void SetStaticDefaults() {
-            // 帧数/攻击帧配置——与向导一致
+            //帧数/攻击帧配置——与向导一致
             Main.npcFrameCount[Type] = 25;
             NPCID.Sets.ExtraFramesCount[Type] = 9;
             NPCID.Sets.AttackFrameCount[Type] = 4;
             NPCID.Sets.DangerDetectRange[Type] = 500;
             NPCID.Sets.PrettySafe[Type] = 300;
 
-            NPCID.Sets.AttackType[Type] = 1;  // 近战摇符纸
-            NPCID.Sets.AttackTime[Type] = 45; // 较快
+            NPCID.Sets.AttackType[Type] = 1;  //近战摇符纸
+            NPCID.Sets.AttackTime[Type] = 45; //较快
             NPCID.Sets.AttackAverageChance[Type] = 30;
             NPCID.Sets.HatOffsetY[Type] = 4;
 
-            // ActsLikeTownNPC 但不占房
+            //ActsLikeTownNPC 但不占房
             NPCID.Sets.ActsLikeTownNPC[Type] = true;
             NPCID.Sets.NoTownNPCHappiness[Type] = true;
             NPCID.Sets.SpawnsWithCustomName[Type] = true;
             NPCID.Sets.ShimmerTownTransform[Type] = true;
 
-            // Bestiary 绘制偏移
+            //Bestiary 绘制偏移
             NPCID.Sets.NPCBestiaryDrawModifiers modifiers = new() {
                 Velocity = 1f,
                 Direction = 1
@@ -53,8 +53,8 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             NPC.townNPC = true;
             NPC.width = 18;
             NPC.height = 40;
-            NPC.aiStyle = 7;                // Town AI
-            AnimationType = NPCID.Guide;     // 帧切换
+            NPC.aiStyle = 7;                //Town AI
+            AnimationType = NPCID.Guide;     //帧切换
             NPC.damage = 10;
             NPC.defense = 12;
             NPC.lifeMax = 250;
@@ -71,7 +71,7 @@ namespace AncientChineseMythology.NPCs.TownNPCs
         }
 
         public override bool CanTownNPCSpawn(int numTownNPCs) {
-            if (!Main.hardMode)                 // ← 新增
+            if (!Main.hardMode)                 //← 新增
                 return false;
 
             if (NPC.AnyNPCs(Type))
@@ -91,11 +91,11 @@ namespace AncientChineseMythology.NPCs.TownNPCs
             chat.Add("俺老孙乃齐天大圣孙悟空！石破天惊，万妖俯首！");
             chat.Add("踏南天，碎凌霄。若一去不回……便一去不回！");
             chat.Add("天压我，我劈开这天；地阻我，我踏碎这地！");
-            return chat;                       // WeightedRandom 支持隐式转换
+            return chat;                       //WeightedRandom 支持隐式转换
         }
 
         public override void SetChatButtons(ref string button, ref string button2) {
-            button = Language.GetTextValue("LegacyInterface.28"); // “商店”
+            button = Language.GetTextValue("LegacyInterface.28"); //“商店”
         }
 
         public override void OnChatButtonClicked(bool firstButton, ref string shop) {
@@ -119,7 +119,7 @@ namespace AncientChineseMythology.NPCs.TownNPCs
         }
 
         public override void TownNPCAttackProj(ref int projType, ref int attackDelay) {
-            projType = ProjectileID.PurificationPowder; // 像撒符灰
+            projType = ProjectileID.PurificationPowder; //像撒符灰
             attackDelay = 1;
         }
 

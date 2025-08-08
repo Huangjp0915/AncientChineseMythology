@@ -33,7 +33,7 @@ namespace AncientChineseMythology.NPCs.Boss.Archosaur
             _ = TextureAssets.Npc[Type].Value;
             Texture2D tex = TextureAssets.Npc[Type].Value;
             Vector2 origin = new(NPC.spriteDirection == -1 ? 0 : tex.Width, 20);
-            if (NPCWormType == WormType.Head) // 头部执行AI
+            if (NPCWormType == WormType.Head) //头部执行AI
             {
                 origin.Y += 34;
                 origin.X = NPC.spriteDirection == -1 ? (tex.Width / 4) : (tex.Width / 4 * 3);
@@ -57,16 +57,16 @@ namespace AncientChineseMythology.NPCs.Boss.Archosaur
             base.AI();
             NPC.dontTakeDamage = false;
 
-            if (NPCWormType == WormType.Head) // 头部执行AI
+            if (NPCWormType == WormType.Head) //头部执行AI
             {
-                Vector2 vel = Target.Center - NPC.Center; // 目标方向
+                Vector2 vel = Target.Center - NPC.Center; //目标方向
                 NPC.rotation = NPC.velocity.ToRotation();
                 NPC.spriteDirection = NPC.velocity.X <= 0 ? -1 : 1;
                 if (NPC.spriteDirection == -1)
                     NPC.rotation += MathHelper.Pi;
                 if (vel.Length() > 300) {
-                    Vector2 changeVel = vel.SafeNormalize(Vector2.UnitX); // 改变的速度
-                    NPC.velocity = (NPC.velocity * 50 + changeVel * 32) / 51f; // 修改速度
+                    Vector2 changeVel = vel.SafeNormalize(Vector2.UnitX); //改变的速度
+                    NPC.velocity = (NPC.velocity * 50 + changeVel * 32) / 51f; //修改速度
                 }
                 else
                     NPC.velocity *= 1.01f;
@@ -74,7 +74,7 @@ namespace AncientChineseMythology.NPCs.Boss.Archosaur
         }
 
         public override void OnKill() {
-            // ai[3] 存的是宿主索引（SpawnClone 时已经赋值）
+            //ai[3] 存的是宿主索引（SpawnClone 时已经赋值）
             int hostIdx = (int)NPC.ai[1];
             if (hostIdx >= 0 && Main.npc[hostIdx].active) {
                 NPC host = Main.npc[hostIdx];

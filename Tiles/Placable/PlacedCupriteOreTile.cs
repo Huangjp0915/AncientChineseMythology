@@ -32,7 +32,7 @@ namespace AncientChineseMythology.Tiles.Placable
 
         public override void KillTile(int i, int j, ref bool fail, ref bool effectOnly, ref bool noItem) {
             if (!fail && !effectOnly && !noItem) {
-                // 掉落原来的矿石物品
+                //掉落原来的矿石物品
                 Item.NewItem(new EntitySource_TileBreak(i, j), i * 16, j * 16, 16, 16, ModContent.ItemType<CupriteOre>());
             }
         }

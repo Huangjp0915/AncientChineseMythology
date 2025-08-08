@@ -8,8 +8,8 @@ namespace AncientChineseMythology.UI
 {
     public class ZhenfaBookUI : UIState
     {
-        private UIPanel root;      // 外层可拖动面板
-        private UIList list;      // 配方列表
+        private UIPanel root;      //外层可拖动面板
+        private UIList list;      //配方列表
         private UIScrollbar scroll;
         private UIText title;
 
@@ -24,21 +24,21 @@ namespace AncientChineseMythology.UI
         private const float TITLE_H = 26f;
 
         public override void OnInitialize() {
-            // 根面板（不再设置 HAlign/VAlign，完全由 Left/Top 控制）
+            //根面板（不再设置 HAlign/VAlign，完全由 Left/Top 控制）
             root = new UIPanel();
             root.SetPadding(12);
             root.Width.Set(WIDTH, 0f);
             root.Height.Set(HEIGHT, 0f);
             Append(root);
 
-            // 标题
+            //标题
             title = new UIText("阵法百科全书", 0.9f, true) {
                 HAlign = 0.5f,
                 TextColor = new Color(255, 240, 170)
             };
             root.Append(title);
 
-            // 配方列表
+            //配方列表
             list = new UIList {
                 Width = { Pixels = -24, Percent = 1f },
                 Height = { Pixels = -68, Percent = 1f },
@@ -47,7 +47,7 @@ namespace AncientChineseMythology.UI
             };
             root.Append(list);
 
-            // 滚动条
+            //滚动条
             scroll = new UIScrollbar();
             scroll.SetView(100f, 1000f);
             scroll.Height.Set(-68, 1f);
@@ -56,7 +56,7 @@ namespace AncientChineseMythology.UI
             root.Append(scroll);
             list.SetScrollbar(scroll);
 
-            // 初始居中
+            //初始居中
             PlaceAtCenter();
         }
 

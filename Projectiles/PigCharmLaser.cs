@@ -8,7 +8,7 @@ namespace AncientChineseMythology.Projectiles
     {
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/PigCharmLaser";
 
-        // 定义状态枚举：0=发射，1=持续，2=结束
+        //定义状态枚举：0=发射，1=持续，2=结束
         private enum LaserState
         {
             Firing = 0,
@@ -16,38 +16,38 @@ namespace AncientChineseMythology.Projectiles
             Ending = 2
         }
 
-        // 三个贴图路径
+        //三个贴图路径
         private const string FiringTexturePath = "AncientChineseMythology/Textures/Projectiles/PigCharmLaser_Firing";
         private const string ContinuousTexturePath = "AncientChineseMythology/Textures/Projectiles/PigCharmLaser_Continuous";
         private const string EndingTexturePath = "AncientChineseMythology/Textures/Projectiles/PigCharmLaser_Ending";
 
-        // 每个动画状态的帧数（均为8帧）
+        //每个动画状态的帧数（均为8帧）
         private const int FiringFrameCount = 8;
         private const int ContinuousFrameCount = 8;
         private const int EndingFrameCount = 8;
-        // 每帧持续时间（每隔 FrameDuration 帧切换动画帧）
+        //每帧持续时间（每隔 FrameDuration 帧切换动画帧）
         private const int FrameDuration = 5;
 
         public override void SetStaticDefaults() {
-            // 初始状态使用发射动画的帧数
+            //初始状态使用发射动画的帧数
             Main.projFrames[Projectile.type] = FiringFrameCount;
         }
 
         public override void SetDefaults() {
-            Projectile.width = 10;  // 初始尺寸，实际碰撞框在 AI 中更新
+            Projectile.width = 10;  //初始尺寸，实际碰撞框在 AI 中更新
             Projectile.height = 10;
             Projectile.friendly = true;
             Projectile.hostile = false;
-            Projectile.penetrate = 1; // 命中一个敌人后结束
-            // 设为 false，因为手动检测地形阻挡
+            Projectile.penetrate = 1; //命中一个敌人后结束
+            //设为 false，因为手动检测地形阻挡
             Projectile.tileCollide = false;
             Projectile.ignoreWater = true;
             Projectile.timeLeft = 3600;
             Projectile.extraUpdates = 1;
             Projectile.DamageType = DamageClass.Magic;
-            // 初始状态为 Firing
+            //初始状态为 Firing
             Projectile.localAI[0] = (int)LaserState.Firing;
-            // 用于记录扣魔力计时（单位帧），初始为0
+            //用于记录扣魔力计时（单位帧），初始为0
             Projectile.ai[0] = 0f;
         }
 
@@ -58,10 +58,10 @@ namespace AncientChineseMythology.Projectiles
                 return;
             }
 
-            // 添加蓝色亮光
+            //添加蓝色亮光
             Lighting.AddLight(Projectile.Center, new Vector3(0f, 0f, 1f));
 
-            // 计算玩家中心到鼠标的理想距离与方向
+            //计算玩家中心到鼠标的理想距离与方向
             Vector2 origin = player.Center;
             Vector2 diff = Main.MouseWorld - origin;
             float idealDistance = diff.Length();
@@ -73,8 +73,8 @@ namespace AncientChineseMythology.Projectiles
                 diff.Normalize();
             }
 
-            // 地形阻挡检测：逐步检测，若遇到实心砖块，则截断激光
-            float step = 8f; // 检测步长
+            //地形阻挡检测：逐步检测，若遇到实心砖块，则截断激光
+            float step = 8f; //检测步长
             float effectiveDistance = idealDistance;
             for (float d = 0; d < idealDistance; d += step) {
                 Vector2 checkPos = origin + diff * d;
@@ -87,7 +87,7 @@ namespace AncientChineseMythology.Projectiles
                 effectiveDistance = 8f;
             Projectile.ai[1] = effectiveDistance;
 
-            // 在激光沿途添加蓝色光照
+            //在激光沿途添加蓝色光照
             float lightStep = 16f;
             for (float d = 0; d < effectiveDistance; d += lightStep) {
                 Vector2 lightPos = origin + diff * d;
@@ -96,19 +96,19 @@ namespace AncientChineseMythology.Projectiles
             Vector2 endPos = origin + diff * effectiveDistance;
             Lighting.AddLight(endPos, new Vector3(0.2f, 0.4f, 1f));
 
-            // 设置激光位置、旋转
+            //设置激光位置、旋转
             Projectile.rotation = diff.ToRotation() - MathHelper.PiOver2;
             Projectile.position = origin;
             Projectile.velocity = Vector2.Zero;
 
-            // 状态切换处理
+            //状态切换处理
             LaserState state = (LaserState)(int)Projectile.localAI[0];
             if (state == LaserState.Firing) {
                 if (!player.channel) {
                     EnterEndingState();
                 }
                 else {
-                    // 每次AI调用增加0.5f
+                    //每次AI调用增加0.5f
                     Projectile.ai[0] += 0.5f;
                     if (Projectile.ai[0] >= 60f) {
                         Projectile.ai[0] = 0f;
@@ -149,7 +149,7 @@ namespace AncientChineseMythology.Projectiles
                 }
             }
 
-            // 高度 = effectiveDistance, 宽度固定（10像素）
+            //高度 = effectiveDistance, 宽度固定（10像素）
             Projectile.width = 10;
             Projectile.height = (int)effectiveDistance;
 
@@ -162,7 +162,7 @@ namespace AncientChineseMythology.Projectiles
             if (Projectile.frameCounter >= FrameDuration) {
                 Projectile.frameCounter = 0;
                 if (state == LaserState.Continuous) {
-                    // 持续状态循环播放
+                    //持续状态循环播放
                     Projectile.frame = (Projectile.frame + 1) % ContinuousFrameCount;
                 }
                 else if (state == LaserState.Firing) {
@@ -228,7 +228,7 @@ namespace AncientChineseMythology.Projectiles
             int frameHeight = texture.Height / frameCount;
             Rectangle frame = new Rectangle(0, Projectile.frame * frameHeight, texture.Width, frameHeight);
 
-            // 绘制原点设为贴图上方中点，使贴图的顶部始终对齐玩家中心
+            //绘制原点设为贴图上方中点，使贴图的顶部始终对齐玩家中心
             Vector2 drawOrigin = new Vector2(frame.Width / 2f, 0f);
             float scale = effectiveDistance / frameHeight;
             if (scale < 0.1f)

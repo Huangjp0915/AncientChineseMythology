@@ -38,7 +38,7 @@ namespace AncientChineseMythology.Content.Systems
             for (int k = 0; k < pl.inventory.Length; k++) {
                 if (IsCharm(pl.inventory[k])) pl.inventory[k].TurnToAir();
             }
-            for (int k = 0; k < pl.armor.Length; k++) {                 // 20 个装备/配饰槽 :contentReference[oaicite:3]{index=3}
+            for (int k = 0; k < pl.armor.Length; k++) {                 //20 个装备/配饰槽 :contentReference[oaicite:3]{index=3}
                 if (IsCharm(pl.armor[k])) pl.armor[k].TurnToAir();
             }
 

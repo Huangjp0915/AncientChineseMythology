@@ -1,63 +1,63 @@
-﻿// MIT License
+﻿//MIT License
 //
-// Copyright(c) 2023 Jordan Peck (jordan.me2@gmail.com)
-// Copyright(c) 2023 Contributors
+//Copyright(c) 2023 Jordan Peck (jordan.me2@gmail.com)
+//Copyright(c) 2023 Contributors
 //
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files(the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions :
+//Permission is hereby granted, free of charge, to any person obtaining a copy
+//of this software and associated documentation files(the "Software"), to deal
+//in the Software without restriction, including without limitation the rights
+//to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
+//copies of the Software, and to permit persons to whom the Software is
+//furnished to do so, subject to the following conditions :
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
+//The above copyright notice and this permission notice shall be included in all
+//copies or substantial portions of the Software.
 //
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+//THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
+//AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+//OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+//SOFTWARE.
 //
-// .'',;:cldxkO00KKXXNNWWWNNXKOkxdollcc::::::;:::ccllloooolllllllllooollc:,'...        ...........',;cldxkO000Okxdlc::;;;,,;;;::cclllllll
-// ..',;:ldxO0KXXNNNNNNNNXXK0kxdolcc::::::;;;,,,,,,;;;;;;;;;;:::cclllllc:;'....       ...........',;:ldxO0KXXXK0Okxdolc::;;;;::cllodddddo
-// ...',:loxO0KXNNNNNXXKK0Okxdolc::;::::::::;;;,,'''''.....''',;:clllllc:;,'............''''''''',;:loxO0KXNNNNNXK0Okxdollccccllodxxxxxxd
-// ....';:ldkO0KXXXKK00Okxdolcc:;;;;;::cclllcc:;;,''..... ....',;clooddolcc:;;;;,,;;;;;::::;;;;;;:cloxk0KXNWWWWWWNXKK0Okxddoooddxxkkkkkxx
-// .....';:ldxkOOOOOkxxdolcc:;;;,,,;;:cllooooolcc:;'...      ..,:codxkkkxddooollloooooooollcc:::::clodkO0KXNWWWWWWNNXK00Okxxxxxxxxkkkkxxx
-// . ....';:cloddddo___________,,,,;;:clooddddoolc:,...      ..,:ldx__00OOOkkk___kkkkkkxxdollc::::cclodkO0KXXNNNNNNXXK0OOkxxxxxxxxxxxxddd
-// .......',;:cccc:|           |,,,;;:cclooddddoll:;'..     ..';cox|  \KKK000|   |KK00OOkxdocc___;::clldxxkO0KKKKK00Okkxdddddddddddddddoo
-// .......'',,,,,''|   ________|',,;;::cclloooooolc:;'......___:ldk|   \KK000|   |XKKK0Okxolc|   |;;::cclodxxkkkkxxdoolllcclllooodddooooo
-// ''......''''....|   |  ....'',,,,;;;::cclloooollc:;,''.'|   |oxk|    \OOO0|   |KKK00Oxdoll|___|;;;;;::ccllllllcc::;;,,;;;:cclloooooooo
-// ;;,''.......... |   |_____',,;;;____:___cllo________.___|   |___|     \xkk|   |KK_______ool___:::;________;;;_______...'',;;:ccclllloo
-// c:;,''......... |         |:::/     '   |lo/        |           |      \dx|   |0/       \d|   |cc/        |'/       \......',,;;:ccllo
-// ol:;,'..........|    _____|ll/    __    |o/   ______|____    ___|   |   \o|   |/   ___   \|   |o/   ______|/   ___   \ .......'',;:clo
-// dlc;,...........|   |::clooo|    /  |   |x\___   \KXKKK0|   |dol|   |\   \|   |   |   |   |   |d\___   \..|   |  /   /       ....',:cl
-// xoc;'...  .....'|   |llodddd|    \__|   |_____\   \KKK0O|   |lc:|   |'\       |   |___|   |   |_____\   \.|   |_/___/...      ...',;:c
-// dlc;'... ....',;|   |oddddddo\          |          |Okkx|   |::;|   |..\      |\         /|   |          | \         |...    ....',;:c
-// ol:,'.......',:c|___|xxxddollc\_____,___|_________/ddoll|___|,,,|___|...\_____|:\ ______/l|___|_________/...\________|'........',;::cc
-// c:;'.......';:codxxkkkkxxolc::;::clodxkOO0OOkkxdollc::;;,,''''',,,,''''''''''',,'''''',;:loxkkOOkxol:;,'''',,;:ccllcc:;,'''''',;::ccll
-// ;,'.......',:codxkOO0OOkxdlc:;,,;;:cldxxkkxxdolc:;;,,''.....'',;;:::;;,,,'''''........,;cldkO0KK0Okdoc::;;::cloodddoolc:;;;;;::ccllooo
-// .........',;:lodxOO0000Okdoc:,,',,;:clloddoolc:;,''.......'',;:clooollc:;;,,''.......',:ldkOKXNNXX0Oxdolllloddxxxxxxdolccccccllooodddd
-// .    .....';:cldxkO0000Okxol:;,''',,;::cccc:;,,'.......'',;:cldxxkkxxdolc:;;,'.......';coxOKXNWWWNXKOkxddddxxkkkkkkxdoollllooddxxxxkkk
-//       ....',;:codxkO000OOxdoc:;,''',,,;;;;,''.......',,;:clodkO00000Okxolc::;,,''..',;:ldxOKXNWWWNNK0OkkkkkkkkkkkxxddooooodxxkOOOOO000
-//       ....',;;clodxkkOOOkkdolc:;,,,,,,,,'..........,;:clodxkO0KKXKK0Okxdolcc::;;,,,;;:codkO0XXNNNNXKK0OOOOOkkkkxxdoollloodxkO0KKKXXXXX
+//.'',;:cldxkO00KKXXNNWWWNNXKOkxdollcc::::::;:::ccllloooolllllllllooollc:,'...        ...........',;cldxkO000Okxdlc::;;;,,;;;::cclllllll
+//..',;:ldxO0KXXNNNNNNNNXXK0kxdolcc::::::;;;,,,,,,;;;;;;;;;;:::cclllllc:;'....       ...........',;:ldxO0KXXXK0Okxdolc::;;;;::cllodddddo
+//...',:loxO0KXNNNNNXXKK0Okxdolc::;::::::::;;;,,'''''.....''',;:clllllc:;,'............''''''''',;:loxO0KXNNNNNXK0Okxdollccccllodxxxxxxd
+//....';:ldkO0KXXXKK00Okxdolcc:;;;;;::cclllcc:;;,''..... ....',;clooddolcc:;;;;,,;;;;;::::;;;;;;:cloxk0KXNWWWWWWNXKK0Okxddoooddxxkkkkkxx
+//.....';:ldxkOOOOOkxxdolcc:;;;,,,;;:cllooooolcc:;'...      ..,:codxkkkxddooollloooooooollcc:::::clodkO0KXNWWWWWWNNXK00Okxxxxxxxxkkkkxxx
+//. ....';:cloddddo___________,,,,;;:clooddddoolc:,...      ..,:ldx__00OOOkkk___kkkkkkxxdollc::::cclodkO0KXXNNNNNNXXK0OOkxxxxxxxxxxxxddd
+//.......',;:cccc:|           |,,,;;:cclooddddoll:;'..     ..';cox|  \KKK000|   |KK00OOkxdocc___;::clldxxkO0KKKKK00Okkxdddddddddddddddoo
+//.......'',,,,,''|   ________|',,;;::cclloooooolc:;'......___:ldk|   \KK000|   |XKKK0Okxolc|   |;;::cclodxxkkkkxxdoolllcclllooodddooooo
+//''......''''....|   |  ....'',,,,;;;::cclloooollc:;,''.'|   |oxk|    \OOO0|   |KKK00Oxdoll|___|;;;;;::ccllllllcc::;;,,;;;:cclloooooooo
+//;;,''.......... |   |_____',,;;;____:___cllo________.___|   |___|     \xkk|   |KK_______ool___:::;________;;;_______...'',;;:ccclllloo
+//c:;,''......... |         |:::/     '   |lo/        |           |      \dx|   |0/       \d|   |cc/        |'/       \......',,;;:ccllo
+//ol:;,'..........|    _____|ll/    __    |o/   ______|____    ___|   |   \o|   |/   ___   \|   |o/   ______|/   ___   \ .......'',;:clo
+//dlc;,...........|   |::clooo|    /  |   |x\___   \KXKKK0|   |dol|   |\   \|   |   |   |   |   |d\___   \..|   |  /   /       ....',:cl
+//xoc;'...  .....'|   |llodddd|    \__|   |_____\   \KKK0O|   |lc:|   |'\       |   |___|   |   |_____\   \.|   |_/___/...      ...',;:c
+//dlc;'... ....',;|   |oddddddo\          |          |Okkx|   |::;|   |..\      |\         /|   |          | \         |...    ....',;:c
+//ol:,'.......',:c|___|xxxddollc\_____,___|_________/ddoll|___|,,,|___|...\_____|:\ ______/l|___|_________/...\________|'........',;::cc
+//c:;'.......';:codxxkkkkxxolc::;::clodxkOO0OOkkxdollc::;;,,''''',,,,''''''''''',,'''''',;:loxkkOOkxol:;,'''',,;:ccllcc:;,'''''',;::ccll
+//;,'.......',:codxkOO0OOkxdlc:;,,;;:cldxxkkxxdolc:;;,,''.....'',;;:::;;,,,'''''........,;cldkO0KK0Okdoc::;;::cloodddoolc:;;;;;::ccllooo
+//.........',;:lodxOO0000Okdoc:,,',,;:clloddoolc:;,''.......'',;:clooollc:;;,,''.......',:ldkOKXNNXX0Oxdolllloddxxxxxxdolccccccllooodddd
+//.    .....';:cldxkO0000Okxol:;,''',,;::cccc:;,,'.......'',;:cldxxkkxxdolc:;;,'.......';coxOKXNWWWNXKOkxddddxxkkkkkkxdoollllooddxxxxkkk
+//      ....',;:codxkO000OOxdoc:;,''',,,;;;;,''.......',,;:clodkO00000Okxolc::;,,''..',;:ldxOKXNWWWNNK0OkkkkkkkkkkkxxddooooodxxkOOOOO000
+//      ....',;;clodxkkOOOkkdolc:;,,,,,,,,'..........,;:clodxkO0KKXKK0Okxdolcc::;;,,,;;:codkO0XXNNNNXKK0OOOOOkkkkxxdoollloodxkO0KKKXXXXX
 //
-// VERSION: 1.1.1
-// https://github.com/Auburn/FastNoiseLite
+//VERSION: 1.1.1
+//https://github.com/Auburn/FastNoiseLite
 
 using System;
 using System.Runtime.CompilerServices;
 
-// Switch between using floats or doubles for input position
+//Switch between using floats or doubles for input position
 using FNLfloat = System.Single;
 //using FNLfloat = System.Double;
 
 public class FastNoiseLite
 {
-    private const short INLINE = 256; // MethodImplOptions.AggressiveInlining;
-    private const short OPTIMISE = 512; // MethodImplOptions.AggressiveOptimization;
+    private const short INLINE = 256; //MethodImplOptions.AggressiveInlining;
+    private const short OPTIMISE = 512; //MethodImplOptions.AggressiveOptimization;
 
     public enum NoiseType
     {
@@ -143,163 +143,163 @@ public class FastNoiseLite
     private TransformType3D mWarpTransformType3D = TransformType3D.DefaultOpenSimplex2;
     private float mDomainWarpAmp = 1.0f;
 
-    /// <summary>
-    /// Create new FastNoise object with optional seed
-    /// </summary>
+    ///<summary>
+    ///Create new FastNoise object with optional seed
+    ///</summary>
     public FastNoiseLite(int seed = 1337) {
         SetSeed(seed);
     }
 
-    /// <summary>
-    /// Sets seed used for all noise types
-    /// </summary>
-    /// <remarks>
-    /// Default: 1337
-    /// </remarks>
+    ///<summary>
+    ///Sets seed used for all noise types
+    ///</summary>
+    ///<remarks>
+    ///Default: 1337
+    ///</remarks>
     public void SetSeed(int seed) { mSeed = seed; }
 
-    /// <summary>
-    /// Sets frequency for all noise types
-    /// </summary>
-    /// <remarks>
-    /// Default: 0.01
-    /// </remarks>
+    ///<summary>
+    ///Sets frequency for all noise types
+    ///</summary>
+    ///<remarks>
+    ///Default: 0.01
+    ///</remarks>
     public void SetFrequency(float frequency) { mFrequency = frequency; }
 
-    /// <summary>
-    /// Sets noise algorithm used for GetNoise(...)
-    /// </summary>
-    /// <remarks>
-    /// Default: OpenSimplex2
-    /// </remarks>
+    ///<summary>
+    ///Sets noise algorithm used for GetNoise(...)
+    ///</summary>
+    ///<remarks>
+    ///Default: OpenSimplex2
+    ///</remarks>
     public void SetNoiseType(NoiseType noiseType) {
         mNoiseType = noiseType;
         UpdateTransformType3D();
     }
 
-    /// <summary>
-    /// Sets domain rotation type for 3D Noise and 3D DomainWarp.
-    /// Can aid in reducing directional artifacts when sampling a 2D plane in 3D
-    /// </summary>
-    /// <remarks>
-    /// Default: None
-    /// </remarks>
+    ///<summary>
+    ///Sets domain rotation type for 3D Noise and 3D DomainWarp.
+    ///Can aid in reducing directional artifacts when sampling a 2D plane in 3D
+    ///</summary>
+    ///<remarks>
+    ///Default: None
+    ///</remarks>
     public void SetRotationType3D(RotationType3D rotationType3D) {
         mRotationType3D = rotationType3D;
         UpdateTransformType3D();
         UpdateWarpTransformType3D();
     }
 
-    /// <summary>
-    /// Sets method for combining octaves in all fractal noise types
-    /// </summary>
-    /// <remarks>
-    /// Default: None
-    /// Note: FractalType.DomainWarp... only affects DomainWarp(...)
-    /// </remarks>
+    ///<summary>
+    ///Sets method for combining octaves in all fractal noise types
+    ///</summary>
+    ///<remarks>
+    ///Default: None
+    ///Note: FractalType.DomainWarp... only affects DomainWarp(...)
+    ///</remarks>
     public void SetFractalType(FractalType fractalType) { mFractalType = fractalType; }
 
-    /// <summary>
-    /// Sets octave count for all fractal noise types 
-    /// </summary>
-    /// <remarks>
-    /// Default: 3
-    /// </remarks>
+    ///<summary>
+    ///Sets octave count for all fractal noise types 
+    ///</summary>
+    ///<remarks>
+    ///Default: 3
+    ///</remarks>
     public void SetFractalOctaves(int octaves) {
         mOctaves = octaves;
         CalculateFractalBounding();
     }
 
-    /// <summary>
-    /// Sets octave lacunarity for all fractal noise types
-    /// </summary>
-    /// <remarks>
-    /// Default: 2.0
-    /// </remarks>
+    ///<summary>
+    ///Sets octave lacunarity for all fractal noise types
+    ///</summary>
+    ///<remarks>
+    ///Default: 2.0
+    ///</remarks>
     public void SetFractalLacunarity(float lacunarity) { mLacunarity = lacunarity; }
 
-    /// <summary>
-    /// Sets octave gain for all fractal noise types
-    /// </summary>
-    /// <remarks>
-    /// Default: 0.5
-    /// </remarks>
+    ///<summary>
+    ///Sets octave gain for all fractal noise types
+    ///</summary>
+    ///<remarks>
+    ///Default: 0.5
+    ///</remarks>
     public void SetFractalGain(float gain) {
         mGain = gain;
         CalculateFractalBounding();
     }
 
-    /// <summary>
-    /// Sets octave weighting for all none DomainWarp fratal types
-    /// </summary>
-    /// <remarks>
-    /// Default: 0.0
-    /// Note: Keep between 0...1 to maintain -1...1 output bounding
-    /// </remarks>
+    ///<summary>
+    ///Sets octave weighting for all none DomainWarp fratal types
+    ///</summary>
+    ///<remarks>
+    ///Default: 0.0
+    ///Note: Keep between 0...1 to maintain -1...1 output bounding
+    ///</remarks>
     public void SetFractalWeightedStrength(float weightedStrength) { mWeightedStrength = weightedStrength; }
 
-    /// <summary>
-    /// Sets strength of the fractal ping pong effect
-    /// </summary>
-    /// <remarks>
-    /// Default: 2.0
-    /// </remarks>
+    ///<summary>
+    ///Sets strength of the fractal ping pong effect
+    ///</summary>
+    ///<remarks>
+    ///Default: 2.0
+    ///</remarks>
     public void SetFractalPingPongStrength(float pingPongStrength) { mPingPongStrength = pingPongStrength; }
 
 
-    /// <summary>
-    /// Sets distance function used in cellular noise calculations
-    /// </summary>
-    /// <remarks>
-    /// Default: Distance
-    /// </remarks>
+    ///<summary>
+    ///Sets distance function used in cellular noise calculations
+    ///</summary>
+    ///<remarks>
+    ///Default: Distance
+    ///</remarks>
     public void SetCellularDistanceFunction(CellularDistanceFunction cellularDistanceFunction) { mCellularDistanceFunction = cellularDistanceFunction; }
 
-    /// <summary>
-    /// Sets return type from cellular noise calculations
-    /// </summary>
-    /// <remarks>
-    /// Default: EuclideanSq
-    /// </remarks>
+    ///<summary>
+    ///Sets return type from cellular noise calculations
+    ///</summary>
+    ///<remarks>
+    ///Default: EuclideanSq
+    ///</remarks>
     public void SetCellularReturnType(CellularReturnType cellularReturnType) { mCellularReturnType = cellularReturnType; }
 
-    /// <summary>
-    /// Sets the maximum distance a cellular point can move from it's grid position
-    /// </summary>
-    /// <remarks>
-    /// Default: 1.0
-    /// Note: Setting this higher than 1 will cause artifacts
-    /// </remarks> 
+    ///<summary>
+    ///Sets the maximum distance a cellular point can move from it's grid position
+    ///</summary>
+    ///<remarks>
+    ///Default: 1.0
+    ///Note: Setting this higher than 1 will cause artifacts
+    ///</remarks> 
     public void SetCellularJitter(float cellularJitter) { mCellularJitterModifier = cellularJitter; }
 
 
-    /// <summary>
-    /// Sets the warp algorithm when using DomainWarp(...)
-    /// </summary>
-    /// <remarks>
-    /// Default: OpenSimplex2
-    /// </remarks>
+    ///<summary>
+    ///Sets the warp algorithm when using DomainWarp(...)
+    ///</summary>
+    ///<remarks>
+    ///Default: OpenSimplex2
+    ///</remarks>
     public void SetDomainWarpType(DomainWarpType domainWarpType) {
         mDomainWarpType = domainWarpType;
         UpdateWarpTransformType3D();
     }
 
 
-    /// <summary>
-    /// Sets the maximum warp distance from original position when using DomainWarp(...)
-    /// </summary>
-    /// <remarks>
-    /// Default: 1.0
-    /// </remarks>
+    ///<summary>
+    ///Sets the maximum warp distance from original position when using DomainWarp(...)
+    ///</summary>
+    ///<remarks>
+    ///Default: 1.0
+    ///</remarks>
     public void SetDomainWarpAmp(float domainWarpAmp) { mDomainWarpAmp = domainWarpAmp; }
 
 
-    /// <summary>
-    /// 2D noise at given position using current settings
-    /// </summary>
-    /// <returns>
-    /// Noise output bounded between -1...1
-    /// </returns>
+    ///<summary>
+    ///2D noise at given position using current settings
+    ///</summary>
+    ///<returns>
+    ///Noise output bounded between -1...1
+    ///</returns>
     [MethodImpl(OPTIMISE)]
     public float GetNoise(FNLfloat x, FNLfloat y) {
         TransformNoiseCoordinate(ref x, ref y);
@@ -316,12 +316,12 @@ public class FastNoiseLite
         }
     }
 
-    /// <summary>
-    /// 3D noise at given position using current settings
-    /// </summary>
-    /// <returns>
-    /// Noise output bounded between -1...1
-    /// </returns>
+    ///<summary>
+    ///3D noise at given position using current settings
+    ///</summary>
+    ///<returns>
+    ///Noise output bounded between -1...1
+    ///</returns>
     [MethodImpl(OPTIMISE)]
     public float GetNoise(FNLfloat x, FNLfloat y, FNLfloat z) {
         TransformNoiseCoordinate(ref x, ref y, ref z);
@@ -339,14 +339,14 @@ public class FastNoiseLite
     }
 
 
-    /// <summary>
-    /// 2D warps the input position using current domain warp settings
-    /// </summary>
-    /// <example>
-    /// Example usage with GetNoise
-    /// <code>DomainWarp(ref x, ref y)
-    /// noise = GetNoise(x, y)</code>
-    /// </example>
+    ///<summary>
+    ///2D warps the input position using current domain warp settings
+    ///</summary>
+    ///<example>
+    ///Example usage with GetNoise
+    ///<code>DomainWarp(ref x, ref y)
+    ///noise = GetNoise(x, y)</code>
+    ///</example>
     [MethodImpl(OPTIMISE)]
     public void DomainWarp(ref FNLfloat x, ref FNLfloat y) {
         switch (mFractalType) {
@@ -362,14 +362,14 @@ public class FastNoiseLite
         }
     }
 
-    /// <summary>
-    /// 3D warps the input position using current domain warp settings
-    /// </summary>
-    /// <example>
-    /// Example usage with GetNoise
-    /// <code>DomainWarp(ref x, ref y, ref z)
-    /// noise = GetNoise(x, y, z)</code>
-    /// </example>
+    ///<summary>
+    ///3D warps the input position using current domain warp settings
+    ///</summary>
+    ///<example>
+    ///Example usage with GetNoise
+    ///<code>DomainWarp(ref x, ref y, ref z)
+    ///noise = GetNoise(x, y, z)</code>
+    ///</example>
     [MethodImpl(OPTIMISE)]
     public void DomainWarp(ref FNLfloat x, ref FNLfloat y, ref FNLfloat z) {
         switch (mFractalType) {
@@ -565,7 +565,7 @@ public class FastNoiseLite
         mFractalBounding = 1 / ampFractal;
     }
 
-    // Hashing
+    //Hashing
     private const int PrimeX = 501125321;
     private const int PrimeY = 1136930381;
     private const int PrimeZ = 1720413743;
@@ -684,7 +684,7 @@ public class FastNoiseLite
     }
 
 
-    // Generic noise gen
+    //Generic noise gen
 
     private float GenNoiseSingle(int seed, FNLfloat x, FNLfloat y) {
         switch (mNoiseType) {
@@ -725,7 +725,7 @@ public class FastNoiseLite
     }
 
 
-    // Noise Coordinate Transforms (frequency, and possible skew or rotation)
+    //Noise Coordinate Transforms (frequency, and possible skew or rotation)
 
     [MethodImpl(INLINE)]
     private void TransformNoiseCoordinate(ref FNLfloat x, ref FNLfloat y) {
@@ -774,7 +774,7 @@ public class FastNoiseLite
             break;
             case TransformType3D.DefaultOpenSimplex2: {
                 const FNLfloat R3 = (FNLfloat)(2.0 / 3.0);
-                FNLfloat r = (x + y + z) * R3; // Rotation, not skew
+                FNLfloat r = (x + y + z) * R3; //Rotation, not skew
                 x = r - x;
                 y = r - y;
                 z = r - z;
@@ -808,7 +808,7 @@ public class FastNoiseLite
     }
 
 
-    // Domain Warp Coordinate Transforms
+    //Domain Warp Coordinate Transforms
 
     [MethodImpl(INLINE)]
     private void TransformDomainWarpCoordinate(ref FNLfloat x, ref FNLfloat y) {
@@ -848,7 +848,7 @@ public class FastNoiseLite
             break;
             case TransformType3D.DefaultOpenSimplex2: {
                 const FNLfloat R3 = (FNLfloat)(2.0 / 3.0);
-                FNLfloat r = (x + y + z) * R3; // Rotation, not skew
+                FNLfloat r = (x + y + z) * R3; //Rotation, not skew
                 x = r - x;
                 y = r - y;
                 z = r - z;
@@ -882,7 +882,7 @@ public class FastNoiseLite
     }
 
 
-    // Fractal FBm
+    //Fractal FBm
 
     private float GenFractalFBm(FNLfloat x, FNLfloat y) {
         int seed = mSeed;
@@ -922,7 +922,7 @@ public class FastNoiseLite
     }
 
 
-    // Fractal Ridged
+    //Fractal Ridged
 
     private float GenFractalRidged(FNLfloat x, FNLfloat y) {
         int seed = mSeed;
@@ -962,7 +962,7 @@ public class FastNoiseLite
     }
 
 
-    // Fractal PingPong 
+    //Fractal PingPong 
 
     private float GenFractalPingPong(FNLfloat x, FNLfloat y) {
         int seed = mSeed;
@@ -1002,10 +1002,10 @@ public class FastNoiseLite
     }
 
 
-    // Simplex/OpenSimplex2 Noise
+    //Simplex/OpenSimplex2 Noise
 
     private float SingleSimplex(int seed, FNLfloat x, FNLfloat y) {
-        // 2D OpenSimplex2 case uses the same algorithm as ordinary Simplex.
+        //2D OpenSimplex2 case uses the same algorithm as ordinary Simplex.
 
         const float SQRT3 = 1.7320508075688772935274463415059f;
         const float G2 = (3 - SQRT3) / 6;
@@ -1068,12 +1068,12 @@ public class FastNoiseLite
     }
 
     private float SingleOpenSimplex2(int seed, FNLfloat x, FNLfloat y, FNLfloat z) {
-        // 3D OpenSimplex2 case uses two offset rotated cube grids.
+        //3D OpenSimplex2 case uses two offset rotated cube grids.
 
         /*
          * --- Rotation moved to TransformNoiseCoordinate method ---
          * const FNfloat R3 = (FNfloat)(2.0 / 3.0);
-         * FNfloat r = (x + y + z) * R3; // Rotation, not skew
+         * FNfloat r = (x + y + z) * R3; //Rotation, not skew
          * x = r - x; y = r - y; z = r - z;
         */
 
@@ -1153,10 +1153,10 @@ public class FastNoiseLite
     }
 
 
-    // OpenSimplex2S Noise
+    //OpenSimplex2S Noise
 
     private float SingleOpenSimplex2S(int seed, FNLfloat x, FNLfloat y) {
-        // 2D OpenSimplex2S case is a modified 2D simplex noise.
+        //2D OpenSimplex2S case is a modified 2D simplex noise.
 
         const FNLfloat SQRT3 = (FNLfloat)1.7320508075688772935274463415059;
         const FNLfloat G2 = (3 - SQRT3) / 6;
@@ -1190,7 +1190,7 @@ public class FastNoiseLite
         float y1 = y0 - (float)(1 - 2 * G2);
         value += (a1 * a1) * (a1 * a1) * GradCoord(seed, i1, j1, x1, y1);
 
-        // Nested conditionals were faster than compact bit logic/arithmetic.
+        //Nested conditionals were faster than compact bit logic/arithmetic.
         float xmyi = xi - yi;
         if (t > G2) {
             if (xi + xmyi > 1) {
@@ -1267,12 +1267,12 @@ public class FastNoiseLite
     }
 
     private float SingleOpenSimplex2S(int seed, FNLfloat x, FNLfloat y, FNLfloat z) {
-        // 3D OpenSimplex2S case uses two offset rotated cube grids.
+        //3D OpenSimplex2S case uses two offset rotated cube grids.
 
         /*
          * --- Rotation moved to TransformNoiseCoordinate method ---
          * const FNfloat R3 = (FNfloat)(2.0 / 3.0);
-         * FNfloat r = (x + y + z) * R3; // Rotation, not skew
+         * FNfloat r = (x + y + z) * R3; //Rotation, not skew
          * x = r - x; y = r - y; z = r - z;
         */
 
@@ -1440,7 +1440,7 @@ public class FastNoiseLite
     }
 
 
-    // Cellular Noise
+    //Cellular Noise
 
     private float SingleCellular(int seed, FNLfloat x, FNLfloat y) {
         int xr = FastRound(x);
@@ -1694,7 +1694,7 @@ public class FastNoiseLite
     }
 
 
-    // Perlin Noise
+    //Perlin Noise
 
     private float SinglePerlin(int seed, FNLfloat x, FNLfloat y) {
         int x0 = FastFloor(x);
@@ -1754,7 +1754,7 @@ public class FastNoiseLite
     }
 
 
-    // Value Cubic Noise
+    //Value Cubic Noise
 
     private float SingleValueCubic(int seed, FNLfloat x, FNLfloat y) {
         int x1 = FastFloor(x);
@@ -1837,7 +1837,7 @@ public class FastNoiseLite
     }
 
 
-    // Value Noise
+    //Value Noise
 
     private float SingleValue(int seed, FNLfloat x, FNLfloat y) {
         int x0 = FastFloor(x);
@@ -1885,7 +1885,7 @@ public class FastNoiseLite
     }
 
 
-    // Domain Warp
+    //Domain Warp
 
     private void DoSingleDomainWarp(int seed, float amp, float freq, FNLfloat x, FNLfloat y, ref FNLfloat xr, ref FNLfloat yr) {
         switch (mDomainWarpType) {
@@ -1916,7 +1916,7 @@ public class FastNoiseLite
     }
 
 
-    // Domain Warp Single Wrapper
+    //Domain Warp Single Wrapper
 
     private void DomainWarpSingle(ref FNLfloat x, ref FNLfloat y) {
         int seed = mSeed;
@@ -1944,7 +1944,7 @@ public class FastNoiseLite
     }
 
 
-    // Domain Warp Fractal Progressive
+    //Domain Warp Fractal Progressive
 
     private void DomainWarpFractalProgressive(ref FNLfloat x, ref FNLfloat y) {
         int seed = mSeed;
@@ -1984,7 +1984,7 @@ public class FastNoiseLite
     }
 
 
-    // Domain Warp Fractal Independant
+    //Domain Warp Fractal Independant
     private void DomainWarpFractalIndependent(ref FNLfloat x, ref FNLfloat y) {
         FNLfloat xs = x;
         FNLfloat ys = y;
@@ -2023,7 +2023,7 @@ public class FastNoiseLite
     }
 
 
-    // Domain Warp Basic Grid
+    //Domain Warp Basic Grid
 
     private void SingleDomainWarpBasicGrid(int seed, float warpAmp, float frequency, FNLfloat x, FNLfloat y, ref FNLfloat xr, ref FNLfloat yr) {
         FNLfloat xf = x * frequency;
@@ -2114,7 +2114,7 @@ public class FastNoiseLite
     }
 
 
-    // Domain Warp Simplex/OpenSimplex2
+    //Domain Warp Simplex/OpenSimplex2
     private void SingleDomainWarpSimplexGradient(int seed, float warpAmp, float frequency, FNLfloat x, FNLfloat y, ref FNLfloat xr, ref FNLfloat yr, bool outGradOnly) {
         const float SQRT3 = 1.7320508075688772935274463415059f;
         const float G2 = (3 - SQRT3) / 6;
@@ -2213,7 +2213,7 @@ public class FastNoiseLite
         /*
          * --- Rotation moved to TransformDomainWarpCoordinate method ---
          * const FNfloat R3 = (FNfloat)(2.0 / 3.0);
-         * FNfloat r = (x + y + z) * R3; // Rotation, not skew
+         * FNfloat r = (x + y + z) * R3; //Rotation, not skew
          * x = r - x; y = r - y; z = r - z;
         */
 

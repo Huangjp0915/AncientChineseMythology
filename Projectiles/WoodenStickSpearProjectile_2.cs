@@ -40,10 +40,10 @@ namespace AncientChineseMythology.Projectiles
             else
                 Projectile.rotation += MathHelper.ToRadians(20f);
             if (Projectile.timeLeft >= 3) {
-                player.velocity = direction * 26f; // 12f * 10 = 120像素
+                player.velocity = direction * 26f; //12f * 10 = 120像素
 
                 Projectile.direction = player.direction;
-                player.heldProj = Projectile.whoAmI;// 玩家持有弹道
+                player.heldProj = Projectile.whoAmI;//玩家持有弹道
 
                 Projectile.position = player.Center + direction * 0f - new Vector2(Projectile.width / 2, Projectile.height / 2);
 
@@ -62,8 +62,8 @@ namespace AncientChineseMythology.Projectiles
             else {
                 player.velocity *= 0.8f;
             }
-            player.immune = true;// 玩家无敌
-            player.immuneTime = 2; // 确保无敌时间短于冲刺持续时间
+            player.immune = true;//玩家无敌
+            player.immuneTime = 2; //确保无敌时间短于冲刺持续时间
         }
 
         [Obsolete]
@@ -74,8 +74,8 @@ namespace AncientChineseMythology.Projectiles
         public override bool PreDraw(ref Microsoft.Xna.Framework.Color lightColor) {
             Texture2D texture = TextureAssets.Projectile[Type].Value;
 
-            ProjectileID.Sets.TrailingMode[Type] = 2; // 设置尾迹模式为2，即尾迹为圆形
-            ProjectileID.Sets.TrailCacheLength[Type] = 8; // 设置尾迹缓存长度为6，即最多保留6个尾迹
+            ProjectileID.Sets.TrailingMode[Type] = 2; //设置尾迹模式为2，即尾迹为圆形
+            ProjectileID.Sets.TrailCacheLength[Type] = 8; //设置尾迹缓存长度为6，即最多保留6个尾迹
 
             Rectangle rectangle = new Rectangle(
                 0,

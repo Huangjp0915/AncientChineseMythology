@@ -25,8 +25,8 @@ namespace AncientChineseMythology.Biomes
                 return false;
 
             /* scan parameters */
-            const int scanRadius = 180;   // tiles
-            const int needCloud = 2000;  // clouds required
+            const int scanRadius = 180;   //tiles
+            const int needCloud = 2000;  //clouds required
 
             int cloudCnt = 0;
 
@@ -58,7 +58,7 @@ namespace AncientChineseMythology.Biomes
 
         /*public override void SpecialVisuals(Player player, bool isActive)
         {
-            // 离开天庭 → 不刷雾
+            //离开天庭 → 不刷雾
             if (!isActive)
                 return;
 
@@ -69,24 +69,24 @@ namespace AncientChineseMythology.Biomes
         /* ───── 2. 每帧尝试生成 mistLayers 个粒子 ───── */
         /*for (int i = 0; i < mistLayers; i++)
         {
-            // 2.1 以玩家为中心随机一个 tile 点
+            //2.1 以玩家为中心随机一个 tile 点
             int tryX = (int)(player.Center.X / 16) + Main.rand.Next(-RangeTiles, RangeTiles + 1);
             int tryY = (int)(player.Center.Y / 16) + Main.rand.Next(-RangeTiles / 2, RangeTiles / 2 + 1);
 
-            // 世界边界保护
+            //世界边界保护
             if (!WorldGen.InWorld(tryX, tryY, 5))
                 continue;
 
-            // 2.2 寻找离该点最近的“地表”——向下搜最多 20 格，直到找到实心块
+            //2.2 寻找离该点最近的“地表”——向下搜最多 20 格，直到找到实心块
             int groundY = tryY;
             while (groundY < Main.maxTilesY - 10 &&
                 !Main.tile[tryX, groundY].HasTile)
                 groundY++;
 
-            if (groundY >= Main.maxTilesY - 10) // 找不到地面
+            if (groundY >= Main.maxTilesY - 10) //找不到地面
                 continue;
 
-            // 2.3 把生成位置放到地表上方 3–5 格处，让雾刚好贴地
+            //2.3 把生成位置放到地表上方 3–5 格处，让雾刚好贴地
             int spawnY = groundY - Main.rand.Next(3, 6);
             if (spawnY <= 10)
                 continue;
@@ -95,18 +95,18 @@ namespace AncientChineseMythology.Biomes
 
             /* ───── 3. 生成 DustID.EctoMist (173) ───── */
         /*int dustIndex = Dust.NewDust(
-            spawnPos,            // 位置（像素）
-            0, 0,                // 宽高 0 = 精确点
-            DustID.Smoke,     // 173
-            Main.rand.NextFloat(-0.15f, 0.15f),   // 横向微漂
-            Main.rand.NextFloat(-0.05f, -0.25f),  // 慢速上升
-            100,                 // Alpha
-            default,             // 颜色留默认 → 灰白
-            0.9f + mistLayers * 0.05f); // 尺寸随层数略增
+            spawnPos,            //位置（像素）
+            0, 0,                //宽高 0 = 精确点
+            DustID.Smoke,     //173
+            Main.rand.NextFloat(-0.15f, 0.15f),   //横向微漂
+            Main.rand.NextFloat(-0.05f, -0.25f),  //慢速上升
+            100,                 //Alpha
+            default,             //颜色留默认 → 灰白
+            0.9f + mistLayers * 0.05f); //尺寸随层数略增
 
         Dust d = Main.dust[dustIndex];
         d.noGravity = true;
-        d.fadeIn    = 1f + Main.rand.NextFloat(0.5f); // 先淡入再淡出
+        d.fadeIn    = 1f + Main.rand.NextFloat(0.5f); //先淡入再淡出
     }
 }
 

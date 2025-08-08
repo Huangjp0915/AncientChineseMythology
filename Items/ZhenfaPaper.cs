@@ -27,14 +27,14 @@ namespace AncientChineseMythology.Items
         }
 
         public override bool CanUseItem(Player player) {
-            // 没有百科全书就不能用
+            //没有百科全书就不能用
             if (!player.HasItem(ModContent.ItemType<ZhenfaBook>()))
                 return false;
 
-            // 若已全部解锁，提示一次并阻止使用
+            //若已全部解锁，提示一次并阻止使用
             var modPlr = player.GetModPlayer<ZhenfaPlayer>();
             if (modPlr.DiscoveredRecipes.Count >= ZhenfaRecipeCatalog.AllRecipes.Count) {
-                // 只在点击第一帧发送提示，避免刷屏
+                //只在点击第一帧发送提示，避免刷屏
                 if (player.whoAmI == Main.myPlayer && player.itemAnimation == 0)
                     Main.NewText("百科全书中的阵法已经全部解锁！", Color.OrangeRed);
 
@@ -45,9 +45,9 @@ namespace AncientChineseMythology.Items
         }
 
         public override bool? UseItem(Player player) {
-            // 只有能用时才会走到这里，因此必定解锁成功
+            //只有能用时才会走到这里，因此必定解锁成功
             player.GetModPlayer<ZhenfaPlayer>().DiscoverRandomRecipe();
-            return true; // 正常消耗
+            return true; //正常消耗
         }
     }
 }

@@ -13,7 +13,7 @@ namespace AncientChineseMythology.Buffs
         }
 
         public override void Update(Player player, ref int buffIndex) {
-            // 后遗症效果由 ModPlayer 处理，此处无需额外逻辑
+            //后遗症效果由 ModPlayer 处理，此处无需额外逻辑
         }
     }
 }

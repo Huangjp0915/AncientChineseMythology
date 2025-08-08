@@ -38,7 +38,7 @@ public class MythologyUISystem : ModSystem
     }
 
     //public override void PostUpdateInput() {
-    //    if (ToggleKey.JustPressed)
-    //        _sidebar.Toggle();
+    //   if (ToggleKey.JustPressed)
+    //       _sidebar.Toggle();
     //}
 }

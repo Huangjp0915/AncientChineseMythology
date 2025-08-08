@@ -1,4 +1,4 @@
-﻿// AncientChineseMythology/Tiles/Placable/LingShiOreTile.cs
+﻿//AncientChineseMythology/Tiles/Placable/LingShiOreTile.cs
 using AncientChineseMythology.Items.Materials;
 using Terraria;
 using Terraria.DataStructures;
@@ -18,7 +18,7 @@ namespace AncientChineseMythology.Tiles.Placable
             Main.tileSolid[Type] = true;
             Main.tileMergeDirt[Type] = true;
             Main.tileSpelunker[Type] = true;
-            Main.tileOreFinderPriority[Type] = 430;  // 高于赤铜 :contentReference[oaicite:0]{index=0}:contentReference[oaicite:1]{index=1}
+            Main.tileOreFinderPriority[Type] = 430;  //高于赤铜 :contentReference[oaicite:0]{index=0}:contentReference[oaicite:1]{index=1}
             Main.tileShine[Type] = 1100;
             Main.tileShine2[Type] = true;
             Main.tileBlockLight[Type] = true;

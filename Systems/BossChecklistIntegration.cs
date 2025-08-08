@@ -10,7 +10,7 @@ namespace AncientChineseMythology.Systems
 {
     public class BossChecklistIntegration : ModSystem
     {
-        private static readonly Version BossChecklistAPIVersion = new Version(1, 6); // 版本设置
+        private static readonly Version BossChecklistAPIVersion = new Version(1, 6); //版本设置
 
         public override void PostSetupContent() {
             DoBossChecklistIntegration();
@@ -18,29 +18,29 @@ namespace AncientChineseMythology.Systems
 
         private void DoBossChecklistIntegration() {
             if (!ModLoader.TryGetMod("BossChecklist", out Mod bossChecklist) || bossChecklist.Version < BossChecklistAPIVersion) {
-                return; // 如果未找到模组或版本不匹配
+                return; //如果未找到模组或版本不匹配
             }
             //第1个Boss第1个Boss第1个Boss第1个Boss第1个Boss
             //***********************************************************************************************************************************
-            string internalName_01 = "BlackBear"; // 唯一标识符
-            float weight_01 = 0.1f; // 权重
-            Func<bool> downed_01 = () => DownedBossSystem.downedBlackBear; // Boss 击败状态
+            string internalName_01 = "BlackBear"; //唯一标识符
+            float weight_01 = 0.1f; //权重
+            Func<bool> downed_01 = () => DownedBossSystem.downedBlackBear; //Boss 击败状态
 
-            int bossType_01 = ModContent.NPCType<BlackBear>(); // Boss 的 NPC 类型
-                                                               //int spawnItem = ModContent.ItemType<Items.MyBoss1Summoner>(); // 召唤 Boss 的物品类型
+            int bossType_01 = ModContent.NPCType<BlackBear>(); //Boss 的 NPC 类型
+                                                               //int spawnItem = ModContent.ItemType<Items.MyBoss1Summoner>(); //召唤 Boss 的物品类型
 
             //List<int> collectibles = new List<int>()
             //{
 
             //};
-            // 自定义图标显示法
+            //自定义图标显示法
             var customPortrait_01 = (SpriteBatch sb, Rectangle rect, Color color) => {
                 Texture2D texture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear").Value;
                 Vector2 centered = new Vector2(rect.X + (rect.Width / 2) - (texture.Width / 2), rect.Y + (rect.Height / 2) - (texture.Height / 2));
                 sb.Draw(texture, centered, color);
             };
 
-            // 注册 Boss 信息
+            //注册 Boss 信息
             bossChecklist.Call(
                 "LogBoss",
                 Mod,
@@ -49,11 +49,11 @@ namespace AncientChineseMythology.Systems
                 downed_01,
                 bossType_01,
                 new Dictionary<string, object>() {
-                    //["spawnItems"] = spawnItem,// 召唤物品
-                    ["displayName"] = Language.GetText("黑熊金"),// 显示名称
-                                                              //["spawnInfo"] = Language.GetText(""),// 召唤信息
-                                                              //["collectibles"] = collectibles,// 收集物品
-                    ["customPortrait"] = customPortrait_01// 自定义图标显示法
+                    //["spawnItems"] = spawnItem,//召唤物品
+                    ["displayName"] = Language.GetText("黑熊金"),//显示名称
+                                                              //["spawnInfo"] = Language.GetText(""),//召唤信息
+                                                              //["collectibles"] = collectibles,//收集物品
+                    ["customPortrait"] = customPortrait_01//自定义图标显示法
 
                 }
             );
@@ -65,25 +65,25 @@ namespace AncientChineseMythology.Systems
             };
 
             //***********************************************************************************************************************************
-            string internalName_05 = "Archosaur"; // 唯一标识符
-            float weight_05 = 0.1f; // 权重
-            Func<bool> downed_05 = () => DownedBossSystem.downedBlackBear; // Boss 击败状态
+            string internalName_05 = "Archosaur"; //唯一标识符
+            float weight_05 = 0.1f; //权重
+            Func<bool> downed_05 = () => DownedBossSystem.downedBlackBear; //Boss 击败状态
 
-            int bossType_05 = ModContent.NPCType<ArchosaurBoss>(); // Boss 的 NPC 类型
-                                                                   //int spawnItem = ModContent.ItemType<Items.MyBoss1Summoner>(); // 召唤 Boss 的物品类型
+            int bossType_05 = ModContent.NPCType<ArchosaurBoss>(); //Boss 的 NPC 类型
+                                                                   //int spawnItem = ModContent.ItemType<Items.MyBoss1Summoner>(); //召唤 Boss 的物品类型
 
             //List<int> collectibles = new List<int>()
             //{
 
             //};
-            // 自定义图标显示法
+            //自定义图标显示法
             var customPortrait_05 = (SpriteBatch sb, Rectangle rect, Color color) => {
                 Texture2D texture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Boss/Archosaur/Archosaur").Value;
                 Vector2 centered = new Vector2(rect.X + (rect.Width / 2) - (texture.Width / 2), rect.Y + (rect.Height / 2) - (texture.Height / 2));
                 sb.Draw(texture, centered, color);
             };
 
-            // 注册 Boss 信息
+            //注册 Boss 信息
             bossChecklist.Call(
                 "LogBoss",
                 Mod,
@@ -92,11 +92,11 @@ namespace AncientChineseMythology.Systems
                 downed_05,
                 bossType_05,
                 new Dictionary<string, object>() {
-                    //["spawnItems"] = spawnItem,// 召唤物品
-                    ["displayName"] = Language.GetText("祖龙残魂"),// 显示名称
-                                                               //["spawnInfo"] = Language.GetText(""),// 召唤信息
-                                                               //["collectibles"] = collectibles,// 收集物品
-                    ["customPortrait"] = customPortrait_05// 自定义图标显示法
+                    //["spawnItems"] = spawnItem,//召唤物品
+                    ["displayName"] = Language.GetText("祖龙残魂"),//显示名称
+                                                               //["spawnInfo"] = Language.GetText(""),//召唤信息
+                                                               //["collectibles"] = collectibles,//收集物品
+                    ["customPortrait"] = customPortrait_05//自定义图标显示法
 
                 }
             );

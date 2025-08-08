@@ -1,4 +1,4 @@
-﻿// Content/Items/Armor/CupriteHelmet.cs
+﻿//Content/Items/Armor/CupriteHelmet.cs
 using AncientChineseMythology.Items.Bronze;
 using AncientChineseMythology.Players;
 using Terraria;
@@ -16,7 +16,7 @@ namespace AncientChineseMythology.Items.Cuprite
         public static LocalizedText SetBonusText { get; private set; }
 
         public override void SetStaticDefaults() {
-            // 本地化键：Mods.AncientChineseMythology.Items.CupriteHelmet.SetBonus
+            //本地化键：Mods.AncientChineseMythology.Items.CupriteHelmet.SetBonus
             SetBonusText = this.GetLocalization("SetBonus").WithFormatArgs(
                 (int)(CupriteArmorConstants.BurnChance * 100),
                 CupriteArmorConstants.BurnDurationTicks / 60);

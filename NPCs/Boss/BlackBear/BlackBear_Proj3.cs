@@ -13,37 +13,37 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
     public class BlackBear_Proj3 : ModProjectile
     {
         private int attackTimer = 300;
-        private int attackDuration = 0; // 攻击持续时间
+        private int attackDuration = 0; //攻击持续时间
         private Vector2 targetPosition;
         private bool isAttacking = false;
-        private int opacityTimer = 0; // 透明度计时器
+        private int opacityTimer = 0; //透明度计时器
 
-        public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear_Proj3"; // 使用物品的纹理作为投射物的纹理
+        public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear_Proj3"; //使用物品的纹理作为投射物的纹理
 
         public override void SetDefaults() {
-            Projectile.hostile = true; // 敌方伤害
-            Projectile.width = 80; // 弹幕宽度
-            Projectile.height = 56; // 弹幕高度
-            Projectile.friendly = false; // 友方弹幕
-            Projectile.tileCollide = false; // 不与瓷砖碰撞
-            Projectile.DamageType = DamageClass.Default; // 伤害类型
-            Projectile.penetrate = 1; // 穿透
-            Projectile.ignoreWater = true; // 无视液体
-            Projectile.timeLeft = 360; // 存在时间，单位为帧
-            Projectile.alpha = 1; // 透明度
-            Projectile.light = 0f; // 发光亮度
+            Projectile.hostile = true; //敌方伤害
+            Projectile.width = 80; //弹幕宽度
+            Projectile.height = 56; //弹幕高度
+            Projectile.friendly = false; //友方弹幕
+            Projectile.tileCollide = false; //不与瓷砖碰撞
+            Projectile.DamageType = DamageClass.Default; //伤害类型
+            Projectile.penetrate = 1; //穿透
+            Projectile.ignoreWater = true; //无视液体
+            Projectile.timeLeft = 360; //存在时间，单位为帧
+            Projectile.alpha = 1; //透明度
+            Projectile.light = 0f; //发光亮度
         }
 
         public override void OnSpawn(IEntitySource source) {
-            Projectile.damage = 0; // 弹幕伤害为 0
+            Projectile.damage = 0; //弹幕伤害为 0
         }
 
         public override void AI() {
-            // 透明度变化逻辑
+            //透明度变化逻辑
             opacityTimer++;
             Projectile.alpha = (int)(1 + 100 * Math.Sin(opacityTimer * 0.1));
 
-            // 使弹幕时刻跟随敌人 BlackBear
+            //使弹幕时刻跟随敌人 BlackBear
             NPC owner = Main.npc[Projectile.owner];
             Player player = Main.player[Main.myPlayer];
             targetPosition = player.Center;
@@ -54,16 +54,16 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
                 Projectile.Center = player.Center + new Vector2(0, -100);
             }
             else if (!isAttacking)
-                Projectile.velocity = direction * 36f; // 设置速度
+                Projectile.velocity = direction * 36f; //设置速度
             else
-                Projectile.velocity = Vector2.Zero; // 停止移动
+                Projectile.velocity = Vector2.Zero; //停止移动
 
             if (owner.life > 1) {
                 Projectile.timeLeft = 10;
                 attackDuration++;
             }
             if (owner.life <= 1 || owner.type != ModContent.NPCType<BlackBear>() || !owner.active) {
-                // 扩散的金色粒子
+                //扩散的金色粒子
                 for (int i = 0; i < 10; i++) {
                     Vector2 position = Projectile.position + new Vector2(Main.rand.Next(-10, 10), Main.rand.Next(-10, 10));
                     int dustType = DustID.Gold;
@@ -71,7 +71,7 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
                     Main.dust[dustIndex].noGravity = true;
                     //Main.dust[dustIndex].velocity *= 0.2f;
                 }
-                Projectile.Kill(); // 如果敌人不再存在，销毁弹幕
+                Projectile.Kill(); //如果敌人不再存在，销毁弹幕
             }
 
             if (isAttacking && attackTimer >= 240) {
@@ -101,8 +101,8 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
 
         public override bool PreDraw(ref Color lightColor) {
             Texture2D texture = TextureAssets.Projectile[Type].Value;
-            ProjectileID.Sets.TrailingMode[Type] = 2; // 设置尾迹模式为2，即尾迹为圆形
-            ProjectileID.Sets.TrailCacheLength[Type] = 8; // 设置尾迹缓存长度为8，即最多保留8个尾迹
+            ProjectileID.Sets.TrailingMode[Type] = 2; //设置尾迹模式为2，即尾迹为圆形
+            ProjectileID.Sets.TrailCacheLength[Type] = 8; //设置尾迹缓存长度为8，即最多保留8个尾迹
 
             Rectangle rectangle = new Rectangle(
                0,
@@ -125,7 +125,7 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
                 texture,
                 Projectile.Center - Main.screenPosition,
                 rectangle,
-                Color.White * Projectile.Opacity, // 使用纯白颜色
+                Color.White * Projectile.Opacity, //使用纯白颜色
                 Projectile.rotation,
                 new Vector2(texture.Width / 2, texture.Height / Main.projFrames[Type] / 2),
                 Projectile.scale * 0.8f,

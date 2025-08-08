@@ -24,11 +24,11 @@ namespace AncientChineseMythology.Tiles.Herbs
             TileID.Sets.ReplaceTileBreakUp[Type] = true;
             TileID.Sets.IgnoredByGrowingSaplings[Type] = true;
 
-            AddMapEntry(new Color(180, 30, 50));   // 深血色
+            AddMapEntry(new Color(180, 30, 50));   //深血色
 
-            // StyleAlch：允许种在任何实心方块表面
+            //StyleAlch：允许种在任何实心方块表面
             TileObjectData.newTile.CopyFrom(TileObjectData.StyleAlch);
-            TileObjectData.newTile.AnchorValidTiles = null;           // 不限制基底类型
+            TileObjectData.newTile.AnchorValidTiles = null;           //不限制基底类型
             TileObjectData.addTile(Type);
 
             HitSound = SoundID.Grass;
@@ -36,11 +36,11 @@ namespace AncientChineseMythology.Tiles.Herbs
         }
 
         public override bool CanPlace(int i, int j) {
-            // 检查玩家所在位置是否猩红
+            //检查玩家所在位置是否猩红
             Player pl = Main.LocalPlayer;
             if (pl == null || !pl.ZoneCrimson) return false;
 
-            // 地面须为实心方块
+            //地面须为实心方块
             Tile ground = Framing.GetTileSafely(i, j + 1);
             return ground.HasTile && Main.tileSolid[ground.TileType];
         }

@@ -25,19 +25,19 @@ namespace AncientChineseMythology.Systems
 
                 int maxX = Main.maxTilesX;
                 int maxY = Main.maxTilesY;
-                // 与铁矿接近的密度系数
+                //与铁矿接近的密度系数
                 int oreVeins = (int)((maxX * maxY) * 4E-04);
 
                 for (int i = 0; i < oreVeins; i++) {
-                    // 地表到地下岩层之间随机
+                    //地表到地下岩层之间随机
                     int x = WorldGen.genRand.Next(0, maxX);
                     int y = WorldGen.genRand.Next((int)Main.worldSurface, Main.UnderworldLayer);
 
                     WorldGen.OreRunner(
                         x,
                         y,
-                        WorldGen.genRand.Next(4, 9),    // vein radius
-                        WorldGen.genRand.Next(3, 7),    // vein steps
+                        WorldGen.genRand.Next(4, 9),    //vein radius
+                        WorldGen.genRand.Next(3, 7),    //vein steps
                         (ushort)ModContent.TileType<Tiles.Placable.XuanTieOreTile>()
                     );
                 }
