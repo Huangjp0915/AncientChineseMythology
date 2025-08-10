@@ -1,6 +1,8 @@
 ﻿using AncientChineseMythology.NPCs.Boss.Hoqings;
+using AncientChineseMythology.Structures;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
+using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -42,7 +44,10 @@ namespace AncientChineseMythology
         }
 
         public override bool? UseItem(Player player) {
-            Projectile.NewProjectile(player.FromObjectGetParent(), player.Center, player.Center.To(Main.MouseWorld).UnitVector() * 8, ModContent.ProjectileType<HoqingShadow>(), 20, 2);
+            //new Point16(3973, 171).GetRectangleFromPoints(new Point16(4426, 414)).LoggerDomp();
+            //AsgardStructure.DoLoad<AsgardStructure>();
+            //Main.MouseWorld.ToTileCoordinates16().LoggerDomp();
+            //Projectile.NewProjectile(player.FromObjectGetParent(), player.Center, player.Center.To(Main.MouseWorld).UnitVector() * 8, ModContent.ProjectileType<HoqingShadow>(), 20, 2);
             return true;
         }
     }
