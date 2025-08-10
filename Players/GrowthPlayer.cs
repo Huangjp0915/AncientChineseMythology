@@ -24,19 +24,5 @@ namespace AncientChineseMythology.Players
             growthBonus = tag.GetFloat("growthBonus");
             growthEnemies = tag.Get<List<int>>("growthEnemies");
         }
-
-        //重写 SyncPlayer 方法进行数据同步
-        public override void SyncPlayer(int toWho, int fromWho, bool newPlayer) {
-            //创建一个 ModPacket 发送数据
-            ModPacket packet = Mod.GetPacket();
-            packet.Write((byte)AncientChineseMythologyMessageType.SyncGrowthPlayer);
-            packet.Write(Player.whoAmI);
-            packet.Write(growthBonus);
-            packet.Write(growthEnemies.Count);
-            foreach (int enemy in growthEnemies) {
-                packet.Write(enemy);
-            }
-            packet.Send(toWho, fromWho);
-        }
     }
 }
