@@ -1,4 +1,4 @@
-﻿Items: {
+Items: {
 	RuyiJinguBang: {
 		DisplayName: RuyiJinguBang
 		Tooltip: ""
@@ -501,6 +501,8 @@ NPCs: {
 	Talisman.DisplayName: Talisman
 	Hoqing.DisplayName: Hoqing
 	GhostFire.DisplayName: Ghost Fire
+	Yingou.DisplayName: Yingou
+	YingouHand.DisplayName: Yingou Hand
 }
 
 Projectiles: {
@@ -560,6 +562,9 @@ Projectiles: {
 	HoqingShadow.DisplayName: Hoqing Shadow
 	OblivionFireOrb.DisplayName: Oblivion Fire Orb
 	HoqingRingFire.DisplayName: Hoqing Ring Fire
+	SaberHell.DisplayName: Saber Hell
+	YingouFireBall.DisplayName: Yingou Fire Ball
+	SaberKiller.DisplayName: Saber Killer
 }
 
 HeavenBiome.DisplayName: Heaven

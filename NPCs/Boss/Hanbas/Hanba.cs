@@ -169,6 +169,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
                     attackTimer++;
 
                     if (attackTimer == ReelBackTime / 2) {
+                        SoundEngine.PlaySound(SoundID.Item74, NPC.Center);
                         if (!VaultUtils.isClient) {
                             for (int i = 0; i < 8; i++) {
                                 Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, NPC.Center.To(target.Center).RotatedByRandom(0.6f).UnitVector() * 10
