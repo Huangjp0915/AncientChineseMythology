@@ -1,6 +1,4 @@
-﻿using AncientChineseMythology.NPCs.Boss.Hanbas;
-using InnoVault.PRT;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using System;
 using System.Collections.Generic;
@@ -19,7 +17,23 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
     [AutoloadBossHead]
     internal class Yingou : ModNPC
     {
+        public AttackAIStyle aitype = AttackAIStyle.Melee;
+        public enum AttackAIStyle
+        {
+            Idle,
+            Melee,
+            Wave,
+            Circle
+        }
         public int seed = -1;
+        public Random random = null;
+        public bool spawnHands = true;
+        public int aichange = 0;
+        public float circleCounter = 0;
+        public float circlespeed = 0;
+        internal ref int swordDir => ref otherAI[3];
+        private readonly int[] otherAI = new int[aiSlot];
+        private const int aiSlot = 4;
         public static int ReelBackTime => Main.masterMode ? 50 : 60;
         public override void OnSpawn(IEntitySource source) {
             seed = Main.rand.Next(0, 10000);
@@ -45,7 +59,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             NPC.defense = 60;
             NPC.lifeMax = 420000;
             NPC.HitSound = SoundID.NPCHit1;
-            NPC.DeathSound = SoundID.NPCHit1;
+            NPC.DeathSound = SoundID.Roar;
             NPC.value = 20000f;
             NPC.knockBackResist = 0f;
             NPC.noTileCollide = true;
@@ -55,30 +69,14 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             Music = MusicLoader.GetMusicSlot("AncientChineseMythology/Sounds/Music/Yingou");
         }
 
-
         public override void SendExtraAI(BinaryWriter writer) {
             writer.Write(seed);
         }
+
         public override void ReceiveExtraAI(BinaryReader reader) {
             seed = reader.ReadInt32();
         }
 
-        public Random random = null;
-        public bool spawnHands = true;
-        public enum AttackAIStyle
-        {
-            Idle,
-            Melee,
-            Wave,
-            Circle
-        }
-        public int aichange = 0;
-        public AttackAIStyle aitype = AttackAIStyle.Melee;
-        public float circleCounter = 0;
-        public float circlespeed = 0;
-        internal ref int swordDir => ref otherAI[3];
-        private readonly int[] otherAI = new int[aiSlot];
-        private const int aiSlot = 4;
         public override void AI() {
             if (spawnHands) {
                 spawnHands = false;
@@ -209,6 +207,12 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                         if (!VaultUtils.isClient) {
                             //炫酷版发射
                             int fireballCount = 8;
+                            if (Main.expertMode) {
+                                fireballCount += 4;
+                            }
+                            if (Main.masterMode) {
+                                fireballCount += 4;
+                            }
                             float spread = MathHelper.ToRadians(60); //总散射角
                             float baseAngle = NPC.DirectionTo(target.Center).ToRotation();
 
@@ -217,7 +221,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                                 float angleOffset = MathHelper.Lerp(-spread / 2, spread / 2, i / (float)(fireballCount - 1));
 
                                 //基础速度带点随机
-                                float speed = Main.rand.NextFloat(8f, 12f);
+                                float speed = Main.rand.NextFloat(18f, 22f);
                                 Vector2 velocity = baseAngle.ToRotationVector2().RotatedBy(angleOffset) * speed;
 
                                 //粒子特效：发射闪光
@@ -229,10 +233,9 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                                     }
                                 }
 
-                                //分帧延迟发射，让视觉上像“扇形展开”
-                                float delay = i * 0.6f; //每发间隔3帧
+                                float pwoer = i * 0.2f;
                                 Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, velocity,
-                                        ModContent.ProjectileType<YingouFireBall>(), GetBossDamage(), 2f, Main.myPlayer, 0, 0, delay);
+                                        ModContent.ProjectileType<YingouFireBall>(), GetBossDamage(), 2f, Main.myPlayer, 0, 0, pwoer);
                             }
                             Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(6, 15); //屏幕震动
                         }
@@ -458,17 +461,22 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
         private static Asset<Texture2D> SwordSlashTexture;
         public List<Vector2> oldPos = new List<Vector2>();
         public List<float> oldRots = new List<float>();
+        public float trailOffset = 0;
         public int attackCd = 0;
         public int noHomingTime = 0;
         public Player handPlayer = null;
         public int handPlayerTime = 0;
         public int handUp = 0;
         public int counter1 = 6;
-        public int direction {
+        public float circleDist = 0;
+        public bool circle = false;
+        public bool needSpawnRotProj = true;
+        public float swingAngle;
+        public float swingPhase;
+        public int Direction {
             get { return (int)NPC.ai[1]; }
             set { NPC.ai[1] = value; }
         }
-
         public override void SetStaticDefaults() {
             Main.npcFrameCount[NPC.type] = 1;
             NPCID.Sets.MustAlwaysDraw[NPC.type] = true;
@@ -515,17 +523,14 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
         public override bool CanHitPlayer(Player target, ref int cooldownSlot) {
             return handPlayerTime <= 0;
         }
+
         public override void OnHitPlayer(Player target, Player.HurtInfo hurtInfo) {
             if (handPlayerTime <= 0) {
                 handPlayer = target;
                 handPlayerTime = 8;
             }
         }
-        public float circleDist = 0;
-        public bool circle = false;
-        public bool needSpawnRotProj = true;
-        public float swingAngle;
-        public float swingPhase;
+
         public override void AI() {
             if (counter1 > 0) {
                 counter1--;
@@ -637,6 +642,15 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 if (Main.GameUpdateCount % 20 == 0) {
                     SoundEngine.PlaySound(SoundID.Item71 with { Volume = 0.8f, PitchVariance = 0.2f }, NPC.Center);
                 }
+
+                if (++NPC.ai[2] > 4) {
+                    NPC.ai[2] = 0;
+                    if (!VaultUtils.isClient) {
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, NPC.rotation.ToRotationVector2().UnitVector() * 16,
+                            ModContent.ProjectileType<YingouFireBall>(), NPC.damage / 2, 2f, Main.myPlayer, 0, 1, Main.rand.NextFloat(0.6f));
+                    }
+
+                }
             }
             else {
                 circleDist = 100;
@@ -646,10 +660,10 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             NPC.damage = owner.damage;
             NPC.scale = owner.scale;
 
-            Vector2 targetPos = owner.Center + new Vector2(direction * 100 * NPC.scale, (handUp > 0 ? -80 : 0));
+            Vector2 targetPos = owner.Center + new Vector2(Direction * 100 * NPC.scale, (handUp > 0 ? 90 : 0));
             if (modNpc.aitype == Yingou.AttackAIStyle.Circle) {
                 //在螺旋中更新位置
-                targetPos = owner.Center + new Vector2(circleDist * direction, 0).RotatedBy(modNpc.circleCounter * modNpc.swordDir);
+                targetPos = owner.Center + new Vector2(circleDist * Direction, 0).RotatedBy(modNpc.circleCounter * modNpc.swordDir);
                 NPC.Center += (targetPos - NPC.Center) * 0.35f;  //略减平滑系数以增加挥舞感
             }
             else {
@@ -684,17 +698,11 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 oldRots.RemoveAt(0);
             }
         }
+
         public override bool CheckActive() {
             return false;
         }
-        public override void PostAI() {
-            NPC owner = Main.npc[(int)NPC.ai[0]];
-            if (!owner.active) {
-                return;
-            }
 
-        }
-        public float trailOffset = 0;
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
             trailOffset += 0.06f;
 
@@ -741,13 +749,13 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
 
             Texture2D tex = TextureAssets.Npc[NPC.type].Value;
-            Vector2 origin = direction > 0 ? new Vector2(0, tex.Height) : new Vector2(tex.Width, tex.Height);
-            float rotation = NPC.rotation + (direction > 0 ? MathHelper.ToRadians(18) : MathHelper.ToRadians(-18 + 180));
-            SpriteEffects effects = direction > 0 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
+            Vector2 origin = Direction > 0 ? new Vector2(0, tex.Height) : new Vector2(tex.Width, tex.Height);
+            float rotation = NPC.rotation + (Direction > 0 ? MathHelper.ToRadians(18) : MathHelper.ToRadians(-18 + 180));
+            SpriteEffects effects = Direction > 0 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
 
             float sengs = 0.2f;
             for (int i = 0; i < NPC.oldPos.Length; i++) {
-                float rot = NPC.oldRot[i] + (direction > 0 ? MathHelper.ToRadians(18) : MathHelper.ToRadians(-18 + 180));
+                float rot = NPC.oldRot[i] + (Direction > 0 ? MathHelper.ToRadians(18) : MathHelper.ToRadians(-18 + 180));
                 Vector2 drawOldPos = NPC.oldPos[i] + NPC.Size / 2 - Main.screenPosition;
                 Main.EntitySpriteDraw(tex, drawOldPos, null, Color.White * sengs, rot, origin, NPC.scale * (sengs + 0.8f), effects);
                 sengs *= 0.98f;
@@ -783,6 +791,9 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             if (!VaultUtils.isServer) {
                 for (int i = 0; i < 6; i++) {
                     int dustType = Main.rand.NextBool(2) ? DustID.Torch : DustID.Shadowflame;
+                    if (Projectile.ai[1] == 1f) {
+                        dustType = DustID.Torch;
+                    }
                     int dust = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height,
                         dustType, Projectile.velocity.X / 2, Projectile.velocity.Y / 2, 150,
                         default, Main.rand.NextFloat(1f, 3.5f));
