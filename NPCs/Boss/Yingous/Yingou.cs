@@ -77,6 +77,10 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             seed = reader.ReadInt32();
         }
 
+        public override void ApplyDifficultyAndPlayerScaling(int numPlayers, float balance, float bossAdjustment) {
+            NPC.lifeMax = (int)(NPC.lifeMax * 0.8f * balance * bossAdjustment);
+        }
+
         public override void AI() {
             if (spawnHands) {
                 spawnHands = false;
@@ -503,8 +507,6 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             NPC.noGravity = true;
             NPC.dontCountMe = true;
             NPC.dontTakeDamage = true;
-            NPCID.Sets.TrailingMode[Type] = 3;
-            NPCID.Sets.TrailCacheLength[Type] = 11;
         }
 
         public static Rectangle getRectCentered(Vector2 center, float w, float h) {
