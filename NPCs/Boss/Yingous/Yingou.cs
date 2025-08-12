@@ -518,7 +518,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
         }
 
         public override bool ModifyCollisionData(Rectangle victimHitbox, ref int immunityCooldownSlot, ref MultipliableFloat damageMultiplier, ref Rectangle npcHitbox) {
-            npcHitbox = getRectCentered(NPC.Center + NPC.rotation.ToRotationVector2() * 64 * NPC.scale, NPC.width * NPC.scale, NPC.height * NPC.scale);
+            npcHitbox = getRectCentered(NPC.Center + NPC.rotation.ToRotationVector2() * 120 * NPC.scale, NPC.width * NPC.scale, NPC.height * NPC.scale);
             return true;
         }
 
@@ -539,18 +539,18 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 return;
             }
 
-            NPC owner = Main.npc[(int)NPC.ai[0]];
-            Player target = Main.player[owner.target];
+            NPC boss = Main.npc[(int)NPC.ai[0]];
+            Player target = Main.player[boss.target];
 
-            if (!owner.Alives() || owner.ModNPC is not Yingou) {  //修正了Alives()为active，假设是笔误
+            if (!boss.Alives() || boss.ModNPC is not Yingou) {
                 NPC.active = false;
                 NPC.netUpdate = true;
                 return;
             }
 
-            NPC.realLife = owner.whoAmI;
-            NPC.target = owner.target;
-            Yingou modNpc = (Yingou)owner.ModNPC;
+            NPC.realLife = boss.whoAmI;
+            NPC.target = boss.target;
+            Yingou modNpc = (Yingou)boss.ModNPC;
 
             //根据攻击类型设置减速系数
             NPC.velocity *= (modNpc.aitype == Yingou.AttackAIStyle.Melee) ? 0.94f : 0.98f;  //略微调整减速以增加挥舞的流畅感
@@ -635,11 +635,11 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 }
 
                 //螺旋效果：距离逐渐缩小，同时保持旋转
-                circleDist = circleDist + (getDistance(owner.Center, target.Center) * 0.8f - circleDist) * 0.015f;  //调整系数，使其缓慢靠近玩家
-                if (circleDist < 200) {  //最小距离，防止过于贴近
-                    circleDist = 200;
+                circleDist = circleDist + (getDistance(boss.Center, target.Center) * 0.8f - circleDist) * 0.015f;  //调整系数，使其缓慢靠近玩家
+                if (circleDist < 100) {  //最小距离，防止过于贴近
+                    circleDist = 100;
                 }
-                modNpc.circleCounter += 0.05f;  //略增旋转速度以增强动态感
+                modNpc.circleCounter += 0.06f;  //略增旋转速度以增强动态感
 
                 if (Main.GameUpdateCount % 20 == 0) {
                     SoundEngine.PlaySound(SoundID.Item71 with { Volume = 0.8f, PitchVariance = 0.2f }, NPC.Center);
@@ -659,13 +659,13 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 needSpawnRotProj = true;
             }
 
-            NPC.damage = owner.damage;
-            NPC.scale = owner.scale;
+            NPC.damage = boss.damage;
+            NPC.scale = boss.scale;
 
-            Vector2 targetPos = owner.Center + new Vector2(Direction * 100 * NPC.scale, (handUp > 0 ? 90 : 0));
+            Vector2 targetPos = boss.Center + new Vector2(Direction * 100 * NPC.scale, (handUp > 0 ? 90 : 0));
             if (modNpc.aitype == Yingou.AttackAIStyle.Circle) {
                 //在螺旋中更新位置
-                targetPos = owner.Center + new Vector2(circleDist * Direction, 0).RotatedBy(modNpc.circleCounter * modNpc.swordDir);
+                targetPos = boss.Center + new Vector2(circleDist * Direction, 0).RotatedBy(modNpc.circleCounter * modNpc.swordDir);
                 NPC.Center += (targetPos - NPC.Center) * 0.35f;  //略减平滑系数以增加挥舞感
             }
             else {
@@ -681,7 +681,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                     if (handPlayerTime > 0) {
                         handPlayerTime--;
                         if (handPlayerTime == 0) {
-                            handPlayer.velocity = (owner.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 20f;
+                            handPlayer.velocity = (boss.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 20f;
                         }
                     }
                 }
@@ -691,7 +691,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 NPC.Center = targetPos;
             }
 
-            NPC.rotation = (NPC.Center - owner.Center).ToRotation();
+            NPC.rotation = (NPC.Center - boss.Center).ToRotation();
 
             oldPos.Add(NPC.Center);
             oldRots.Add(NPC.rotation);
@@ -725,10 +725,10 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                     float t = i / (float)count;
                     Color c = Color.Lerp(startColor * 0.01f, endColor, t) * 1f;
                     Vector2 basePos = oldPos[i] - Main.screenPosition;
-                    Vector2 rotVec = oldRots[i].ToRotationVector2();
+                    Vector2 rotVec = (oldRots[i] + (Direction > 0 ? MathHelper.ToRadians(18) : MathHelper.ToRadians(-18))).ToRotationVector2();
                     float scaleFactor = 1 - t;
-                    float offset1 = 16 + 180 * NPC.scale * scaleFactor * 0.5f;
-                    float offset2 = 16 + 180 * NPC.scale - 80 * NPC.scale * scaleFactor * 0.5f;
+                    float offset1 = 16 + 260 * NPC.scale * scaleFactor * 0.5f;
+                    float offset2 = 16 + 260 * NPC.scale - 80 * NPC.scale * scaleFactor * 0.5f;
 
                     vertices.Add(new ColoredVertex(basePos + rotVec * offset1, new Vector3(t + trailOffset, 1, 1), c));
                     vertices.Add(new ColoredVertex(basePos + rotVec * offset2, new Vector3(t + trailOffset, 0, 1), c));
@@ -897,9 +897,11 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
     internal class SaberKiller : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/NPCs/Boss/Yingous/YingouHand";
-        public override void SetDefaults() {
+        public override void SetStaticDefaults() {
             ProjectileID.Sets.TrailingMode[Type] = 3;
             ProjectileID.Sets.TrailCacheLength[Type] = 8;
+        }
+        public override void SetDefaults() {
             Projectile.width = Projectile.height = 84;
             Projectile.tileCollide = false;
             Projectile.hostile = true;
@@ -954,7 +956,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
     {
         private bool active;
         private float intensity;
-        private float maxIntensity = 0.6f;
+        private const float maxIntensity = 0.6f;
         private Color skyColor;
         internal static string name;
         public static void LoadInstance() {

@@ -503,6 +503,8 @@ NPCs: {
 	GhostFire.DisplayName: Ghost Fire
 	Yingou.DisplayName: Yingou
 	YingouHand.DisplayName: Yingou Hand
+	Jiangcen.DisplayName: Jiangcen
+	JiangcenHammer.DisplayName: Jiangcen Hammer
 }
 
 Projectiles: {
@@ -565,6 +567,8 @@ Projectiles: {
 	SaberHell.DisplayName: Saber Hell
 	YingouFireBall.DisplayName: Yingou Fire Ball
 	SaberKiller.DisplayName: Saber Killer
+	JiangcenFireBall.DisplayName: Jiangcen Fire Ball
+	HeuderHammer.DisplayName: Heuder Hammer
 }
 
 HeavenBiome.DisplayName: Heaven
