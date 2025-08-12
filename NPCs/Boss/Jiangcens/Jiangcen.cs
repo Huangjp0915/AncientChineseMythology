@@ -718,7 +718,7 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
                 float t = MathHelper.Clamp(distance / 1600f, 0f, 1f);
 
                 //非线性渐变，更突兀的近距离颜色变化
-                t = t * t;
+                t *= t;
 
                 //三段式 + 深红脉动
                 Color nearRed = new Color(160, 0, 20);
