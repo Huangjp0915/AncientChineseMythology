@@ -1,4 +1,4 @@
-﻿namespace AncientChineseMythology.Items
+﻿namespace AncientChineseMythology.Players
 {
     public static class CupriteArmorConstants
     {

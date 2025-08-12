@@ -1,5 +1,4 @@
 ﻿//Players/CupriteSetBonusPlayer.cs
-using AncientChineseMythology.Items;   //含 Player.HurtInfo
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
