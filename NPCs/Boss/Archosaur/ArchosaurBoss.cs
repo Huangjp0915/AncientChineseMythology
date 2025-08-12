@@ -70,13 +70,13 @@ namespace AncientChineseMythology.NPCs.Boss.Archosaur
     public class ArchosaurHead : ArchosaurBoss
     {
         private static readonly SoundStyle SummonSfx =
-            new($"{nameof(AncientChineseMythology)}/Sounds/Archosaur/ArchosaurSummon") {
+            new("AncientChineseMythology/Sounds/Archosaur/ArchosaurSummon") {
                 Volume = 1f,
                 PitchVariance = .12f,
                 MaxInstances = 5,
             };
         private static readonly SoundStyle DeathSfx =
-            new($"{nameof(AncientChineseMythology)}/Sounds/Archosaur/ArchosaurDeath") {
+            new($"AncientChineseMythology/Sounds/Archosaur/ArchosaurDeath") {
                 Volume = 1f,
                 PitchVariance = .04f,
                 MaxInstances = 3,

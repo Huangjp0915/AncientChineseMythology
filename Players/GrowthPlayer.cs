@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
-using Terraria;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
-using static AncientChineseMythology.AncientChineseMythology;
 
 namespace AncientChineseMythology.Players
 {
