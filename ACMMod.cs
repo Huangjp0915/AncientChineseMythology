@@ -10,7 +10,7 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology
 {
-    public class AncientChineseMythology : Mod
+    public class ACMMod : Mod
     {
         public override void Load() {
             if (VaultUtils.isServer) {
