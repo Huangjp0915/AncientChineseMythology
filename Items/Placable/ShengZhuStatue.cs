@@ -3,7 +3,7 @@ using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Items.Placeable
+namespace AncientChineseMythology.Items.Placable
 {
     public class ShengZhuStatue : ModItem
     {

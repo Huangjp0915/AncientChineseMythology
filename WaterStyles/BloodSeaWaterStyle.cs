@@ -1,4 +1,4 @@
-﻿using AncientChineseMythology.WaterfallStyles;
+﻿using AncientChineseMythology.WaterfallStyle;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using Terraria;

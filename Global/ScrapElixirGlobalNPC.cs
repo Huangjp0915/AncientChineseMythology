@@ -5,7 +5,7 @@ using Terraria;
 using Terraria.GameContent.ItemDropRules;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology
+namespace AncientChineseMythology.Global
 {
     public class ScrapElixirGlobalNPC : GlobalNPC
     {

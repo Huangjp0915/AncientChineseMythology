@@ -1,6 +1,6 @@
 ﻿using Terraria.ModLoader;
 
-namespace AncientChineseMythology
+namespace AncientChineseMythology.Systems
 {
     public class AncientChineseMythologyNetwork : ModSystem
     {

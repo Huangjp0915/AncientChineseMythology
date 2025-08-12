@@ -1,7 +1,7 @@
 ﻿using AncientChineseMythology.Items;
-using AncientChineseMythology.Items.Waapons.Swords;
 using AncientChineseMythology.Items.Weapons.Bows;
 using AncientChineseMythology.Items.Weapons.SummoningStaffs;
+using AncientChineseMythology.Items.Weapons.Swords;
 using AncientChineseMythology.Systems;
 using Microsoft.Xna.Framework.Graphics;
 using System;

@@ -7,7 +7,7 @@ using Terraria.IO;
 using Terraria.ModLoader;
 using Terraria.WorldBuilding;
 
-namespace AncientChineseMythology.Content.Systems
+namespace AncientChineseMythology.Systems
 {
     public class ShengZhuStatueSystem : ModSystem
     {

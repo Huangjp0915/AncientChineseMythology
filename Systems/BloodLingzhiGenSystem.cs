@@ -8,7 +8,7 @@ using Terraria.Localization;
 using Terraria.ModLoader;
 using Terraria.WorldBuilding;
 
-namespace AncientChineseMythology.Worldgen
+namespace AncientChineseMythology.Systems
 {
     public class BloodLingzhiGenSystem : ModSystem
     {

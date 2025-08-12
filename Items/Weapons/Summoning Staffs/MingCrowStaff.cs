@@ -1,4 +1,5 @@
 ﻿using AncientChineseMythology.Buffs;
+using AncientChineseMythology.Projectiles;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
@@ -30,7 +31,7 @@ namespace AncientChineseMythology.Items.Weapons.SummoningStaffs
             Item.autoReuse = true;
 
             Item.buffType = ModContent.BuffType<MingCrowMinionBuff>();
-            Item.shoot = ModContent.ProjectileType<Projectiles.Minions.MingCrowMinion>();
+            Item.shoot = ModContent.ProjectileType<MingCrowMinion>();
             Item.shootSpeed = 10f;
         }
 

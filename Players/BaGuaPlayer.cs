@@ -8,7 +8,7 @@ using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
-using static AncientChineseMythology.AncientChineseMythologyNetwork;
+using static AncientChineseMythology.Systems.AncientChineseMythologyNetwork;
 
 namespace AncientChineseMythology.Players
 {

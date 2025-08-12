@@ -3,7 +3,7 @@ using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Projectiles.Minions
+namespace AncientChineseMythology.Projectiles
 {
     public class MingCrowMinion : ModProjectile
     {
@@ -138,7 +138,7 @@ namespace AncientChineseMythology.Projectiles.Minions
             }
 
             //朝向
-            Projectile.spriteDirection = (Projectile.velocity.X >= 0f) ? -1 : 1;
+            Projectile.spriteDirection = Projectile.velocity.X >= 0f ? -1 : 1;
 
             //--------- 帧动画 ----------
             if (++Projectile.frameCounter >= 6) {
@@ -149,14 +149,14 @@ namespace AncientChineseMythology.Projectiles.Minions
 
         //---------- 自绘以切换贴图 ----------
         public override bool PreDraw(ref Color lightColor) {
-            Texture2D tex = (animState == AnimState.Attack) ? attackTexture : flyTexture;
+            Texture2D tex = animState == AnimState.Attack ? attackTexture : flyTexture;
 
             int frameH = tex.Height / FramesPerAnim;
             Rectangle src = new Rectangle(0, Projectile.frame * frameH,
                                           tex.Width, frameH);
 
             Vector2 origin = new(tex.Width * 0.5f, frameH * 0.5f);
-            SpriteEffects fx = (Projectile.spriteDirection == -1)
+            SpriteEffects fx = Projectile.spriteDirection == -1
                                ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
 
             Main.EntitySpriteDraw(tex,

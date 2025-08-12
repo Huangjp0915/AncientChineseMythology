@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Projectiles;
+﻿using AncientChineseMythology.Players;
+using AncientChineseMythology.Projectiles;
 using Terraria;
 using Terraria.ModLoader;
 

@@ -8,7 +8,7 @@ using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Items.Waapons
+namespace AncientChineseMythology.Items.Weapons
 {
     public class ChickenCharm : ModItem
     {
@@ -282,7 +282,7 @@ namespace AncientChineseMythology.Items.Waapons
             int damage = 30; //固定扣除的生命值
             player.statLife -= damage;
             //显示红色的伤害文字
-            CombatText.NewText(player.Hitbox, Microsoft.Xna.Framework.Color.Red, damage, true);
+            CombatText.NewText(player.Hitbox, Color.Red, damage, true);
             //如果血量扣除后小于等于0，则触发死亡
             if (player.statLife <= 0) {
                 player.KillMe(PlayerDeathReason.ByCustomReason($"{player.name} 被龙符咒榨干了..."), damage, 0);
@@ -450,12 +450,12 @@ namespace AncientChineseMythology.Items.Waapons
         public override void HoldItem(Player player) {
             //如果玩家在按住左键，并且还没有生成该激光，则生成
             if (player.channel) {
-                if (player.ownedProjectileCounts[ModContent.ProjectileType<Projectiles.PigCharmLaser>()] <= 0) {
+                if (player.ownedProjectileCounts[ModContent.ProjectileType<PigCharmLaser>()] <= 0) {
                     Projectile.NewProjectile(
                         player.GetSource_ItemUse(Item),
                         player.Center,
                         Vector2.Zero,
-                        ModContent.ProjectileType<Projectiles.PigCharmLaser>(),
+                        ModContent.ProjectileType<PigCharmLaser>(),
                         Item.damage,
                         Item.knockBack,
                         player.whoAmI

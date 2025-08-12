@@ -4,7 +4,7 @@ using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Items.Waapons.Swords
+namespace AncientChineseMythology.Items.Weapons.Swords
 {
     public class YuChangSword : ModItem
     {

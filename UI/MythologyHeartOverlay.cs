@@ -5,7 +5,7 @@ using Terraria;
 using Terraria.GameContent;           //TextureAssets
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Content.UI;
+namespace AncientChineseMythology.UI;
 
 [Autoload(Side = ModSide.Client)]
 public class MythologyHeartOverlay : ModResourceOverlay
@@ -37,7 +37,7 @@ public class MythologyHeartOverlay : ModResourceOverlay
         int tier = GetTier(Main.LocalPlayer);             //0=金心，1=橙心…
         string folder = isHeart ? "Hearts" : "Stars";
         string file = isHeart
-                        ? (tex == TextureAssets.Heart2 ? "Heart2" : "Heart")   //保证两帧都能换
+                        ? tex == TextureAssets.Heart2 ? "Heart2" : "Heart"   //保证两帧都能换
                         : $"Star_{starFrame}";                                //Star_0…Star_3
 
         string path = $"AncientChineseMythology/Textures/UI/{folder}/Tier{tier}/{file}";

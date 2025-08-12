@@ -2,7 +2,7 @@
 using Terraria;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.GlobalItems
+namespace AncientChineseMythology.Global
 {
     public class PoJunDanGlobalItem : GlobalItem
     {

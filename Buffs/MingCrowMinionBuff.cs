@@ -1,4 +1,5 @@
-﻿using Terraria;
+﻿using AncientChineseMythology.Projectiles;
+using Terraria;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Buffs
@@ -14,7 +15,7 @@ namespace AncientChineseMythology.Buffs
 
         //只要冥鸦还活着就不断刷新 buff 时间
         public override void Update(Player player, ref int buffIndex) {
-            if (player.ownedProjectileCounts[ModContent.ProjectileType<Projectiles.Minions.MingCrowMinion>()] > 0) {
+            if (player.ownedProjectileCounts[ModContent.ProjectileType<MingCrowMinion>()] > 0) {
                 player.buffTime[buffIndex] = 2; //5 分钟相当于“永久”
             }
         }
@@ -23,7 +24,7 @@ namespace AncientChineseMythology.Buffs
             //获取本地玩家
             Player player = Main.LocalPlayer;
             //冥鸦 Minion 类型
-            int mcType = ModContent.ProjectileType<Projectiles.Minions.MingCrowMinion>();
+            int mcType = ModContent.ProjectileType<MingCrowMinion>();
 
             //遍历并清除所有该玩家的冥鸦投射物
             for (int i = 0; i < Main.maxProjectiles; i++) {

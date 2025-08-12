@@ -2,7 +2,7 @@
 using Terraria;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology
+namespace AncientChineseMythology.Players
 {
     public class XuePoDanDebuffPlayer : ModPlayer
     {

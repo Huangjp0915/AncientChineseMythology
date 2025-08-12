@@ -1,4 +1,4 @@
-﻿using AncientChineseMythology.Content.Items.Placeables;
+﻿using AncientChineseMythology.Items.Placable;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.Enums;
@@ -6,7 +6,7 @@ using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ObjectData;
 
-namespace AncientChineseMythology.Tiles
+namespace AncientChineseMythology.Tiles.Placable
 {
     public class TaiguWeaponWorkshop : ModTile
     {

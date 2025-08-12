@@ -1,11 +1,10 @@
-﻿using AncientChineseMythology.UI;
-using Terraria;
+﻿using Terraria;
 using Terraria.Audio;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.UI;
 
-namespace AncientChineseMythology.Systems
+namespace AncientChineseMythology.UI
 {
     public class ZhenfaUISystem : ModSystem
     {

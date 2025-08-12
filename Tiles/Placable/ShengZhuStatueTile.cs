@@ -1,5 +1,4 @@
-﻿using AncientChineseMythology.Content.Systems;
-using AncientChineseMythology.Items.Waapons;
+﻿using AncientChineseMythology.Items.Weapons;
 using AncientChineseMythology.Systems;
 using Terraria;
 using Terraria.DataStructures;

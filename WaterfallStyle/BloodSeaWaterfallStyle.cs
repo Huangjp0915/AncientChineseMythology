@@ -1,7 +1,7 @@
 ﻿using Terraria;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.WaterfallStyles
+namespace AncientChineseMythology.WaterfallStyle
 {
     public class BloodSeaWaterfallStyle : ModWaterfallStyle
     {

@@ -2,7 +2,7 @@
 using Terraria;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology
+namespace AncientChineseMythology.Global
 {
     //全局 NPC 类，用于统一处理怪物死亡掉落
     public class GlobalZodiacSpirits : GlobalNPC

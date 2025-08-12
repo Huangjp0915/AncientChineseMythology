@@ -1,6 +1,6 @@
 ﻿using Terraria.ModLoader;
 
-namespace AncientChineseMythology
+namespace AncientChineseMythology.Players
 {
     public class ACMPlayer : ModPlayer
     {

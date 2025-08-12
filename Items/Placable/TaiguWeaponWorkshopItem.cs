@@ -1,8 +1,9 @@
-﻿using Terraria;
+﻿using AncientChineseMythology.Tiles.Placable;
+using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Content.Items.Placeables
+namespace AncientChineseMythology.Items.Placable
 {
     public class TaiguWeaponWorkshopItem : ModItem
     {
@@ -13,7 +14,7 @@ namespace AncientChineseMythology.Content.Items.Placeables
 
         public override void SetDefaults() {
             Item.DefaultToPlaceableTile(
-                ModContent.TileType<Tiles.TaiguWeaponWorkshop>(), 0);
+                ModContent.TileType<TaiguWeaponWorkshop>(), 0);
 
             Item.width = 32;
             Item.height = 32;
