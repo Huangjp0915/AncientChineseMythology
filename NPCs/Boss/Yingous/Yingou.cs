@@ -16,7 +16,7 @@ using static AncientChineseMythology.Projectiles.RuyiStickSpearProjectile_3;
 
 namespace AncientChineseMythology.NPCs.Boss.Yingous
 {
-    public class YingouKnife : ModItem 
+    public class YingouKnife : ModItem
     {
         public override void SetDefaults() {
             Item.width = 80;
@@ -286,7 +286,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                         NPC.netUpdate = true;
                     }
                     break;
-                
+
                 //蓄力准备
                 case 2f:
                     NPC.velocity *= 0.975f;
@@ -477,7 +477,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                         if (attackTimer > 440) {
                             attackTimer = 0;
                             otherAI[1] = 0;
-                            
+
                             if (++otherAI[0] > 1) {
                                 state = 1f;
                                 attackTimer = 0f;
@@ -528,7 +528,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             generalTimer++;
 
         }
-        private static Vector2 GetPlayerByRandOffest(Player player) 
+        private static Vector2 GetPlayerByRandOffest(Player player)
             => player.Center + new Vector2(Main.rand.Next(-300, 300), Main.rand.Next(-300, 300));
         private int GetBossDamage(float scaling = 1f, bool getOrigDamage = false) {
             int num = NPC.damage;

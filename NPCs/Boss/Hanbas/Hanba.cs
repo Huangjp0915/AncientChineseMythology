@@ -1,5 +1,4 @@
-﻿using AncientChineseMythology.NPCs.Boss.Hoqings;
-using InnoVault.PRT;
+﻿using InnoVault.PRT;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using System;
@@ -15,7 +14,7 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.NPCs.Boss.Hanbas
 {
-    public class HanbaBook : ModItem 
+    public class HanbaBook : ModItem
     {
         public override void SetDefaults() {
             Item.useTime = Item.useAnimation = 32;

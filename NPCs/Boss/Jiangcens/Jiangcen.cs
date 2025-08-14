@@ -11,7 +11,7 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.NPCs.Boss.Jiangcens
 {
-    public class JiangcenHammerItem : ModItem 
+    public class JiangcenHammerItem : ModItem
     {
         public override string Texture => "AncientChineseMythology/NPCs/Boss/Jiangcens/JiangcenHammer";
         public override void SetDefaults() {
@@ -33,7 +33,7 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
         }
     }
 
-    public class JiangcenHammerProj : BaseHeldProj 
+    public class JiangcenHammerProj : BaseHeldProj
     {
         public override string Texture => "AncientChineseMythology/NPCs/Boss/Jiangcens/JiangcenHammer";
         public override void SetStaticDefaults() {
@@ -266,7 +266,7 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
                         NPC.NewNPCDirect(NPC.FromObjectGetParent(), NPC.Center, ModContent.NPCType<JiangcenHammer>(), NPC.whoAmI, NPC.whoAmI, i);
                     }
                 }
-                
+
                 for (int i = 0; i < 50; i++) {
                     Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Shadowflame, Main.rand.NextFloat(-4, 4), Main.rand.NextFloat(-4, 4), 150, Color.DarkRed, 2f);
                 }

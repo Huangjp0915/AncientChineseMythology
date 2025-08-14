@@ -1,12 +1,12 @@
-﻿using Terraria.DataStructures;
+﻿using InnoVault.TileProcessors;
+using Microsoft.Xna.Framework.Graphics;
 using Terraria;
+using Terraria.DataStructures;
+using Terraria.Enums;
+using Terraria.GameContent;
+using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ObjectData;
-using Terraria.ID;
-using Terraria.Enums;
-using InnoVault.TileProcessors;
-using Microsoft.Xna.Framework.Graphics;
-using Terraria.GameContent;
 
 namespace AncientChineseMythology.Items.Placable
 {

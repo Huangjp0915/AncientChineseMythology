@@ -15,7 +15,7 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.NPCs.Boss.Hoqings
 {
-    public class HoqingFireSummon : ModItem 
+    public class HoqingFireSummon : ModItem
     {
         public override void SetDefaults() {
             Item.width = 60;
@@ -62,7 +62,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
         }
     }
 
-    public class HoqingFireSummonProj : BaseHeldProj 
+    public class HoqingFireSummonProj : BaseHeldProj
     {
         public override string Texture => "AncientChineseMythology/NPCs/Boss/Hoqings/GhostFire";
         private int frame;
@@ -121,7 +121,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
 
             if (++Projectile.ai[2] > 60 + Projectile.ai[1] * 10) {
                 Projectile.ai[2] = 0;
-                
+
                 if (Projectile.IsOwnedByLocalPlayer()) {
                     NPC target = Projectile.Center.FindClosestNPC(1800);
                     if (target != null) {
