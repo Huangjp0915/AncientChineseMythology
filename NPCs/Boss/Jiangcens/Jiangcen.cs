@@ -1,15 +1,192 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using InnoVault.GameContent.BaseEntity;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent;
+using Terraria.GameContent.ItemDropRules;
 using Terraria.Graphics.Effects;
 using Terraria.ID;
 using Terraria.ModLoader;
-using static Terraria.ModLoader.ModContent;
 
 namespace AncientChineseMythology.NPCs.Boss.Jiangcens
 {
+    public class JiangcenHammerItem : ModItem 
+    {
+        public override string Texture => "AncientChineseMythology/NPCs/Boss/Jiangcens/JiangcenHammer";
+        public override void SetDefaults() {
+            Item.width = 150;
+            Item.height = 132;
+            Item.damage = 680;
+            Item.DamageType = DamageClass.Melee;
+            Item.useAnimation = Item.useTime = 22;
+            Item.shootSpeed = 25f;
+            Item.knockBack = 6f;
+            Item.shoot = ModContent.ProjectileType<JiangcenHammerProj>();
+            Item.useStyle = ItemUseStyleID.Swing;
+            Item.UseSound = SoundID.Item1;
+            Item.rare = ItemRarityID.Red;
+            Item.value = 2000;
+            Item.autoReuse = true;
+            Item.noMelee = true;
+            Item.noUseGraphic = true;
+        }
+    }
+
+    public class JiangcenHammerProj : BaseHeldProj 
+    {
+        public override string Texture => "AncientChineseMythology/NPCs/Boss/Jiangcens/JiangcenHammer";
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.TrailCacheLength[Projectile.type] = 18;
+            ProjectileID.Sets.TrailingMode[Projectile.type] = 2;
+        }
+
+        public override void SetDefaults() {
+            Projectile.localNPCHitCooldown = 30;
+            Projectile.extraUpdates = 3;
+            Projectile.penetrate = -1;
+            Projectile.width = Projectile.height = 132;
+            Projectile.friendly = true;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.DamageType = DamageClass.Melee;
+        }
+
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            // 紫色雷电爆发粒子
+            for (int i = 0; i < 125; i++) {
+                Vector2 dustVel = Main.rand.NextVector2Circular(16f, 26f);
+                Dust d = Dust.NewDustPerfect(
+                    target.Center,
+                    DustID.PurpleTorch, // 紫色火焰
+                    dustVel,
+                    150,
+                    Color.MediumPurple,
+                    Main.rand.NextFloat(11.2f, 31.8f)
+                );
+                d.noGravity = true;
+            }
+
+            // 黑暗雾气
+            for (int i = 0; i < 115; i++) {
+                Dust smoke = Dust.NewDustPerfect(
+                    target.Center,
+                    DustID.Smoke,
+                    Main.rand.NextVector2Circular(13f, 33f),
+                    200,
+                    Color.Purple * 0.7f,
+                    Main.rand.NextFloat(11f, 21.5f)
+                );
+                smoke.noGravity = true;
+            }
+
+            // 雷鸣音效
+            SoundEngine.PlaySound(SoundID.DD2_LightningBugZap, target.Center);
+
+            base.OnHitNPC(target, hit, damageDone);
+        }
+
+        public override void AI() {
+            //紫色光效
+            Lighting.AddLight(
+                Projectile.Center,
+                0.5f,
+                0.2f,
+                0.6f
+            );
+
+            Projectile.rotation += 0.4f; // 转得更快
+
+            //拖尾闪光
+            Dust trail = Dust.NewDustPerfect(
+                    Projectile.Center,
+                    DustID.MagicMirror,
+                    -Projectile.velocity * 0.2f,
+                    150,
+                    Color.MediumPurple,
+                    1.2f
+                );
+            trail.noGravity = true;
+
+            if (Projectile.soundDelay == 0) {
+                Projectile.soundDelay = 12;
+                SoundEngine.PlaySound(SoundID.Item7, Projectile.position); //魔法雷鸣
+            }
+
+            switch (Projectile.ai[0]) {
+                case 0f:
+                    Projectile.ai[1] += 1f;
+                    if (Projectile.ai[1] >= 40f) {
+                        Projectile.ai[0] = 1f;
+                        Projectile.ai[1] = 0f;
+                        Projectile.netUpdate = true;
+                    }
+                    break;
+                case 1f:
+                    float returnSpeed = 25f;
+                    float acceleration = 5f;
+                    Vector2 playerVec = Owner.Center - Projectile.Center;
+                    if (playerVec.Length() > 4000f) {
+                        Projectile.Kill();
+                    }
+                    playerVec.Normalize();
+                    playerVec *= returnSpeed;
+
+                    //X方向加速
+                    if (Projectile.velocity.X < playerVec.X) {
+                        Projectile.velocity.X += acceleration;
+                        if (Projectile.velocity.X < 0f && playerVec.X > 0f)
+                            Projectile.velocity.X += acceleration;
+                    }
+                    else if (Projectile.velocity.X > playerVec.X) {
+                        Projectile.velocity.X -= acceleration;
+                        if (Projectile.velocity.X > 0f && playerVec.X < 0f)
+                            Projectile.velocity.X -= acceleration;
+                    }
+
+                    //Y方向加速
+                    if (Projectile.velocity.Y < playerVec.Y) {
+                        Projectile.velocity.Y += acceleration;
+                        if (Projectile.velocity.Y < 0f && playerVec.Y > 0f)
+                            Projectile.velocity.Y += acceleration;
+                    }
+                    else if (Projectile.velocity.Y > playerVec.Y) {
+                        Projectile.velocity.Y -= acceleration;
+                        if (Projectile.velocity.Y > 0f && playerVec.Y < 0f)
+                            Projectile.velocity.Y -= acceleration;
+                    }
+
+                    //回到玩家后消失
+                    if (Main.myPlayer == Projectile.owner) {
+                        Rectangle projHitbox = new Rectangle((int)Projectile.position.X, (int)Projectile.position.Y, Projectile.width, Projectile.height);
+                        Rectangle playerHitbox = new Rectangle((int)Owner.position.X, (int)Owner.position.Y, Owner.width, Owner.height);
+                        if (projHitbox.Intersects(playerHitbox)) {
+                            Projectile.Kill();
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            Texture2D mainValue = TextureAssets.Projectile[Type].Value;
+            Rectangle rectangle = mainValue.GetRectangle();
+            float sengs = 0.6f;
+            for (int i = 0; i < Projectile.oldPos.Length; i++) {
+                Vector2 drawOldPos = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
+                Main.spriteBatch.Draw(mainValue, drawOldPos, rectangle, lightColor * sengs
+                    , Projectile.oldRot[i] + MathHelper.PiOver2, rectangle.Size() / 2, Projectile.scale, SpriteEffects.None, 0);
+                sengs *= 0.8f;
+            }
+            Main.spriteBatch.Draw(mainValue, Projectile.Center - Main.screenPosition, rectangle, lightColor
+                , Projectile.rotation + MathHelper.PiOver2, rectangle.Size() / 2, Projectile.scale, SpriteEffects.None, 0);
+            return false;
+        }
+    }
+
     [AutoloadBossHead]
     internal class Jiangcen : ModNPC
     {
@@ -42,6 +219,10 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
             NPC.HitSound = SoundID.NPCHit9;
             NPC.DeathSound = SoundID.NPCDeath14;
             Music = MusicLoader.GetMusicSlot("AncientChineseMythology/Sounds/Music/Yingou");
+        }
+
+        public override void ModifyNPCLoot(NPCLoot npcLoot) {
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<JiangcenHammerItem>()));
         }
 
         public override bool CheckActive() {
@@ -82,7 +263,7 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
 
                 if (!VaultUtils.isClient) {
                     for (int i = 0; i < 6; i++) {
-                        NPC.NewNPCDirect(NPC.FromObjectGetParent(), NPC.Center, NPCType<JiangcenHammer>(), NPC.whoAmI, NPC.whoAmI, i);
+                        NPC.NewNPCDirect(NPC.FromObjectGetParent(), NPC.Center, ModContent.NPCType<JiangcenHammer>(), NPC.whoAmI, NPC.whoAmI, i);
                     }
                 }
                 
@@ -112,7 +293,7 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
                         float Speed = 12f;
                         float rotation = (float)Math.Atan2(pos.Y - target.Center.Y, pos.X - target.Center.X);
                         Vector2 projSpeed = new Vector2((float)((Math.Cos(rotation) * Speed) * -1), (float)((Math.Sin(rotation) * Speed) * -1));
-                        int proj = Projectile.NewProjectile(this.FromObjectGetParent(), pos, projSpeed, ProjectileType<JiangcenFireBall>(), projectileBaseDamage, 0f, Main.myPlayer);
+                        int proj = Projectile.NewProjectile(this.FromObjectGetParent(), pos, projSpeed, ModContent.ProjectileType<JiangcenFireBall>(), projectileBaseDamage, 0f, Main.myPlayer);
 
                         //血雾特效
                         for (int p = 0; p < 15; p++) {
@@ -137,7 +318,7 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
                     float rotation = MathHelper.ToRadians(360);
                     for (int i = 0; i < numberProjectiles; i++) {
                         Vector2 perturbedSpeed = Vector2.One.RotatedBy(MathHelper.Lerp(-rotation, rotation, i / (numberProjectiles - 1))) * speed;
-                        Projectile.NewProjectile(NPC.FromObjectGetParent(), NPC.Center, perturbedSpeed, ProjectileType<HeuderHammer>(), (int)(projectileBaseDamage * 1.2f), 2f, Main.myPlayer);
+                        Projectile.NewProjectile(NPC.FromObjectGetParent(), NPC.Center, perturbedSpeed, ModContent.ProjectileType<HeuderHammer>(), (int)(projectileBaseDamage * 1.2f), 2f, Main.myPlayer);
                     }
                 }
                 state = aiTimer;
@@ -190,7 +371,7 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
                             float rotation = (float)Math.Atan2(NPC.Center.Y - target.Center.Y, NPC.Center.X - target.Center.X);
                             proj = Projectile.NewProjectile(NPC.FromObjectGetParent(), NPC.Center.X, NPC.Center.Y
                                 , (float)((Math.Cos(rotation) * speed) * -1), (float)((Math.Sin(rotation) * speed) * -1)
-                                , ProjectileType<HeuderHammer>(), projectileBaseDamage, 2f, Main.myPlayer);
+                                , ModContent.ProjectileType<HeuderHammer>(), projectileBaseDamage, 2f, Main.myPlayer);
                         }
                         if (proj != -1) {
                             Projectile ice = Main.projectile[proj];
@@ -228,7 +409,7 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
                         for (int i = 0; i < numProj; i++) {
                             Projectile proj = Main.projectile[Projectile.NewProjectile(NPC.FromObjectGetParent()
                                 , NPC.Center.X + Main.rand.Next(-1000, 1000), NPC.Center.Y - Main.rand.Next(800, 1800)
-                                , 0, speed, ProjectileType<JiangcenFireBall>(), projectileBaseDamage, 0f, Main.myPlayer)];
+                                , 0, speed, ModContent.ProjectileType<JiangcenFireBall>(), projectileBaseDamage, 0f, Main.myPlayer)];
                             proj.rotation = Main.rand.NextFloat((float)Math.PI * 2);
                         }
                     }
@@ -308,7 +489,7 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
                     float Speed = 12f;
                     float rotation = (float)Math.Atan2(storedPos.Y - target.Center.Y, storedPos.X - target.Center.X);
                     Vector2 projSpeed = new Vector2((float)((Math.Cos(rotation) * Speed) * -1), (float)((Math.Sin(rotation) * Speed) * -1));
-                    Projectile.NewProjectile(this.FromObjectGetParent(), storedPos, projSpeed, ProjectileType<JiangcenFireBall>(), projectileBaseDamage, 0f, Main.myPlayer);
+                    Projectile.NewProjectile(this.FromObjectGetParent(), storedPos, projSpeed, ModContent.ProjectileType<JiangcenFireBall>(), projectileBaseDamage, 0f, Main.myPlayer);
                     shootTimer = 0;
                 }
                 if (aiTimer % 120 == 0) {
@@ -332,7 +513,7 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
                     float rotation = (float)Math.Atan2(mouth.Y - target.Center.Y, mouth.X - target.Center.X);
                     Vector2 projSpeed = new Vector2((float)((Math.Cos(rotation) * Speed) * -1), (float)((Math.Sin(rotation) * Speed) * -1));
                     projSpeed = projSpeed.RotatedByRandom(MathHelper.ToRadians(10));
-                    Projectile.NewProjectile(this.FromObjectGetParent(), mouth, projSpeed, ProjectileType<JiangcenFireBall>(), projectileBaseDamage, 0f, Main.myPlayer);
+                    Projectile.NewProjectile(this.FromObjectGetParent(), mouth, projSpeed, ModContent.ProjectileType<JiangcenFireBall>(), projectileBaseDamage, 0f, Main.myPlayer);
                     shootTimer = 6;
                 }
                 if (aiTimer > 270) {
@@ -351,7 +532,7 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
                     float Speed = 24f;
                     float rotation = (float)Math.Atan2(NPC.Center.Y - target.Center.Y, NPC.Center.X - target.Center.X);
                     Vector2 projSpeed = new Vector2((float)((Math.Cos(rotation) * Speed) * -1), (float)((Math.Sin(rotation) * Speed) * -1));
-                    Projectile.NewProjectile(NPC.FromObjectGetParent(), NPC.Center, projSpeed, ProjectileType<JiangcenFireBall>(), 0, 0, Main.myPlayer);
+                    Projectile.NewProjectile(NPC.FromObjectGetParent(), NPC.Center, projSpeed, ModContent.ProjectileType<JiangcenFireBall>(), 0, 0, Main.myPlayer);
                 }
                 else if (shootTimer == -30) {
                     Vector2 toTarget = new Vector2(target.Center.X - NPC.Center.X, target.Center.Y - NPC.Center.Y);
@@ -397,10 +578,10 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
                 else d.scale *= 2.8f;
             }
             if (Main.netMode != NetmodeID.MultiplayerClient) {
-                Projectile.NewProjectile(NPC.FromObjectGetParent(), NPC.Center.X, NPC.Center.Y, 0, 0, ProjectileType<JiangcenFireBall>(), 0, 0f, Main.myPlayer);
+                Projectile.NewProjectile(NPC.FromObjectGetParent(), NPC.Center.X, NPC.Center.Y, 0, 0, ModContent.ProjectileType<JiangcenFireBall>(), 0, 0f, Main.myPlayer);
                 NPC.Center = toPos;
                 NPC.netUpdate = true;
-                Projectile.NewProjectile(NPC.FromObjectGetParent(), NPC.Center.X, NPC.Center.Y, 0, 0, ProjectileType<JiangcenFireBall>(), 0, 0f, Main.myPlayer);
+                Projectile.NewProjectile(NPC.FromObjectGetParent(), NPC.Center.X, NPC.Center.Y, 0, 0, ModContent.ProjectileType<JiangcenFireBall>(), 0, 0f, Main.myPlayer);
             }
         }
 
@@ -595,7 +776,7 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
 
         public static void KillAll() {
             foreach (var proj in Main.ActiveProjectiles) {
-                if (proj.type != ProjectileType<JiangcenFireBall>()) {
+                if (proj.type != ModContent.ProjectileType<JiangcenFireBall>()) {
                     continue;
                 }
                 proj.Kill();

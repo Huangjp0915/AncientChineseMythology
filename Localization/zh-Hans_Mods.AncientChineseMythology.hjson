@@ -1,4 +1,4 @@
-Items: {
+﻿Items: {
 	RuyiJinguBang: {
 		DisplayName: 如意金箍棒
 		Tooltip:
@@ -498,6 +498,26 @@ Items: {
 		DisplayName: 红木棺材
 		Tooltip: ""
 	}
+
+	HanbaBook: {
+		DisplayName: 旱日
+		Tooltip: ""
+	}
+
+	HoqingFireSummon: {
+		DisplayName: 劫骇
+		Tooltip: ""
+	}
+
+	JiangcenHammerItem: {
+		DisplayName: 雷鸣锤
+		Tooltip: ""
+	}
+
+	YingouKnife: {
+		DisplayName: 鬼牙
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -618,6 +638,10 @@ Projectiles: {
 	// SaberKiller.DisplayName: Saber Killer
 	// JiangcenFireBall.DisplayName: Jiangcen Fire Ball
 	// HeuderHammer.DisplayName: Heuder Hammer
+	// HanbaBookProj.DisplayName: Hanba Book Proj
+	// HoqingFireSummonProj.DisplayName: Hoqing Fire Summon Proj
+	// JiangcenHammerProj.DisplayName: Jiangcen Hammer Proj
+	// SaberHellFriendly.DisplayName: Saber Hell Friendly
 }
 
 // HeavenBiome.DisplayName: Heaven

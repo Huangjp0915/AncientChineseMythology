@@ -449,6 +449,26 @@ Items: {
 		DisplayName: Redwood Coffin
 		Tooltip: ""
 	}
+
+	HanbaBook: {
+		DisplayName: Hanba Book
+		Tooltip: ""
+	}
+
+	HoqingFireSummon: {
+		DisplayName: Hoqing Fire Summon
+		Tooltip: ""
+	}
+
+	JiangcenHammerItem: {
+		DisplayName: Jiangcen Hammer Item
+		Tooltip: ""
+	}
+
+	YingouKnife: {
+		DisplayName: Yingou Knife
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -569,6 +589,10 @@ Projectiles: {
 	SaberKiller.DisplayName: Saber Killer
 	JiangcenFireBall.DisplayName: Jiangcen Fire Ball
 	HeuderHammer.DisplayName: Heuder Hammer
+	HanbaBookProj.DisplayName: Hanba Book Proj
+	HoqingFireSummonProj.DisplayName: Hoqing Fire Summon Proj
+	JiangcenHammerProj.DisplayName: Jiangcen Hammer Proj
+	SaberHellFriendly.DisplayName: Saber Hell Friendly
 }
 
 HeavenBiome.DisplayName: Heaven
