@@ -1,6 +1,5 @@
 ﻿using AncientChineseMythology.Structures;
 using System.IO;
-using Terraria;
 using Terraria.DataStructures;
 
 namespace AncientChineseMythology
