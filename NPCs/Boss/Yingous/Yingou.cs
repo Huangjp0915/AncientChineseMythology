@@ -1,8 +1,6 @@
 ﻿using AncientChineseMythology.Items.Weapons.Bosses;
 using Microsoft.Xna.Framework.Graphics;
-using ReLogic.Content;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using Terraria;
 using Terraria.Audio;
@@ -19,29 +17,53 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
     [AutoloadBossHead]
     internal class Yingou : ModNPC
     {
-        public AttackAIStyle aitype = AttackAIStyle.Melee;
-        public enum AttackAIStyle
+        //====== 新阶段系统 ======
+        public enum BossPhase
         {
-            Idle,
-            Melee,
-            Wave,
-            Circle
+            Intro,
+            PatternSetA,   //基础挥砍 + 火球散射
+            SpiralDread,   //螺旋+环绕压迫
+            SaberHell,     //大刀地狱(扩展演出)
+            RecoverDash,   //回收冲刺（过渡）
         }
+
+        public BossPhase Phase {
+            get => (BossPhase)(int)NPC.ai[0];
+            set => NPC.ai[0] = (int)value;
+        }
+
+        public ref float PhaseTimer => ref NPC.ai[1];
+        public ref float LocalTimer => ref NPC.ai[2];
+        public float PhaseLoopCounter; //计数阶段循环次数
+
+        public AttackAIStyle aitype = AttackAIStyle.Melee; //保留给手部的模式提示
+        public enum AttackAIStyle { Idle, Melee, Wave, Circle }
+
         public int seed = -1;
         public Random random = null;
         public bool spawnHands = true;
-        public int aichange = 0;
         public float circleCounter = 0;
         public float circlespeed = 0;
         internal ref int swordDir => ref otherAI[3];
         private readonly int[] otherAI = new int[aiSlot];
         private const int aiSlot = 4;
         public static int ReelBackTime => Main.masterMode ? 50 : 60;
+
+        //视觉演出参数
+        private float introAppear; //0-1 出场插值
+        private float spiralPulse; //螺旋脉冲
+        private float saberCharge; //大刀地狱充能
+        private bool didIntroShock;
+
         public override void OnSpawn(IEntitySource source) {
             seed = Main.rand.Next(0, 10000);
             if (VaultUtils.isServer) {
                 NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, NPC.whoAmI);
             }
+            Phase = BossPhase.Intro;
+            PhaseTimer = 0;
+            LocalTimer = 0;
+            introAppear = 0;
         }
 
         public override void SetStaticDefaults() {
@@ -58,7 +80,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             NPC.width = 110;
             NPC.height = 110;
             NPC.damage = 66;
-            NPC.defense = 60;
+            NPC.defense = 40;
             NPC.lifeMax = 420000;
             NPC.HitSound = SoundID.NPCHit1;
             NPC.DeathSound = SoundID.Roar;
@@ -67,7 +89,6 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             NPC.noTileCollide = true;
             NPC.noGravity = true;
             NPC.dontCountMe = true;
-            NPC.defense = 40;
             Music = MusicLoader.GetMusicSlot("AncientChineseMythology/Sounds/Music/Yingou");
         }
 
@@ -77,17 +98,29 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
 
         public override void SendExtraAI(BinaryWriter writer) {
             writer.Write(seed);
+            writer.Write((int)Phase);
+            writer.Write(introAppear);
         }
 
         public override void ReceiveExtraAI(BinaryReader reader) {
             seed = reader.ReadInt32();
+            Phase = (BossPhase)reader.ReadInt32();
+            introAppear = reader.ReadSingle();
         }
 
         public override void ApplyDifficultyAndPlayerScaling(int numPlayers, float balance, float bossAdjustment) {
             NPC.lifeMax = (int)(NPC.lifeMax * 0.8f * balance * bossAdjustment);
         }
 
+        private void TransitionTo(BossPhase next) {
+            Phase = next;
+            PhaseTimer = 0;
+            LocalTimer = 0;
+            NPC.netUpdate = true;
+        }
+
         public override void AI() {
+            random ??= new Random(seed);
             if (spawnHands) {
                 spawnHands = false;
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
@@ -100,11 +133,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 SkyManager.Instance.Activate(YingouSky.name);
             }
 
-            if (swordDir == 0) {
-                swordDir = 1;
-            }
-
-            random ??= new Random(seed);
+            if (swordDir == 0) swordDir = 1;
 
             NPC.TargetClosest();
             Player target = Main.player[NPC.target];
@@ -112,665 +141,238 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 NPC.TargetClosest();
                 target = Main.player[NPC.target];
                 if (!target.Alives()) {
-                    NPC.ai[0] = -1;
-                    NPC.ai[1] = 0f;
-                    NPC.ai[2] = 0f;
+                    NPC.velocity *= 0.98f;
+                    return;
                 }
             }
 
-            float angend = MathHelper.Lerp(0, MathHelper.TwoPi, NPC.localAI[0]) + Main.rand.NextFloat(-0.1f, 0.1f);
-            //更自然的出生偏移角度（非对称 + 扰动）
-            Vector2 spawnOffset = Vector2.UnitY.RotatedBy(angend) * 300f;
-            Vector2 destination = target.Center + spawnOffset;
+            PhaseTimer++;
+            LocalTimer++;
 
-            ref float generalTimer = ref NPC.ai[2];
-            ref float attackTimer = ref NPC.ai[1];
-            ref float state = ref NPC.ai[0];
-
-            switch (state) {
-                //他妈砍砍砍宫崎英高小故事之小时候被爸爸拿着两把杀猪刀追着屁股砍
-                case 0:
-                    if (aitype == AttackAIStyle.Circle) {
-                        circleCounter += circlespeed * 0.25f; //降低旋转速率，防止鬼畜
-                        float radiusPulse = 1f + 0.05f * (float)Math.Sin(Main.GameUpdateCount * 0.05f);
-                        if (aichange < 2.5f * 60) {
-                            circlespeed = MathHelper.Clamp(circlespeed + 0.006f, 0, 1.2f);
-                            circlespeed *= 0.985f;
-                        }
-                        else {
-                            circlespeed *= 0.99f;
-                        }
-
-                        //环绕粒子演出
-                        if (Main.rand.NextBool(3)) {
-                            Dust.NewDustPerfect(NPC.Center, DustID.FireworkFountain_Yellow,
-                                Vector2.UnitX.RotatedByRandom(MathHelper.TwoPi) * Main.rand.NextFloat(0.5f, 1.5f),
-                                150, default, 1.2f).noGravity = true;
-                        }
-                    }
-
-                    if (!NPC.HasValidTarget) {
-                        NPC.target = NPC.FindClosestPlayer();
-                    }
-
-                    if (NPC.HasValidTarget) {
-                        NPC.velocity += (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 0.34f;
-                        NPC.velocity *= 0.98f;
-                        aichange++;
-
-                        //状态切换
-                        if (aitype == AttackAIStyle.Idle) {
-                            aitype = AttackAIStyle.Melee;
-                            aichange = 0;
-                        }
-                        if (aitype == AttackAIStyle.Melee && aichange > 4 * 60) {
-                            aitype = AttackAIStyle.Wave;
-                            aichange = 0;
-                        }
-                        if (aitype == AttackAIStyle.Wave && aichange > 8 * 60) {
-                            aitype = AttackAIStyle.Circle;
-                            aichange = 0;
-                            circleCounter = 0;
-                            circlespeed = 0;
-                        }
-                        if (aitype == AttackAIStyle.Circle && aichange > 4 * 60) {
-                            aitype = AttackAIStyle.Melee;
-                            aichange = 0;
-                            state = 1f;
-                            if (++otherAI[2] > 1) {
-                                otherAI[2] = 0;
-                                state = 5f;
-                            }
-                            NPC.netUpdate = true;
-                        }
-                    }
+            switch (Phase) {
+                case BossPhase.Intro:
+                    RunIntro(target);
                     break;
-
-                //靠近预热
-                case 1f:
-                    //加一点颤动感
-                    Vector2 jitter = new Vector2(Main.rand.NextFloat(-0.5f, 0.5f), Main.rand.NextFloat(-0.5f, 0.5f));
-                    NPC.velocity = Vector2.Lerp(NPC.velocity, NPC.SafeDirectionTo(destination) * 16 + jitter, 0.1f);
-
-                    if (NPC.WithinRange(destination, NPC.velocity.Length() * 1.65f)) {
-                        NPC.velocity = NPC.SafeDirectionTo(target.Center) * -7f;
-                        state = 2f;
-                        attackTimer = 0f;
-                        otherAI[0]++;
-                        NPC.netUpdate = true;
-                    }
+                case BossPhase.PatternSetA:
+                    RunPatternSetA(target);
                     break;
-
-                //蓄力准备
-                case 2f:
-                    NPC.velocity *= 0.975f;
-                    attackTimer++;
-
-                    //充能光效
-                    for (int i = 0; i < 6; i++) {
-                        Vector2 offset = Main.rand.NextFloat(MathHelper.TwoPi).ToRotationVector2() * Main.rand.Next(NPC.width);
-                        Dust.NewDustPerfect(NPC.Center + offset, DustID.GoldFlame, Vector2.Zero, 150, default, 1.8f).noGravity = true;
-                    }
-
-                    if (attackTimer == ReelBackTime / 2) {
-                        SoundEngine.PlaySound(SoundID.Item74, NPC.Center);
-                        if (!VaultUtils.isClient) {
-                            //炫酷版发射
-                            int fireballCount = 8;
-                            if (Main.expertMode) {
-                                fireballCount += 4;
-                            }
-                            if (Main.masterMode) {
-                                fireballCount += 4;
-                            }
-                            float spread = MathHelper.ToRadians(60); //总散射角
-                            float baseAngle = NPC.DirectionTo(target.Center).ToRotation();
-
-                            for (int i = 0; i < fireballCount; i++) {
-                                //计算每发的角度
-                                float angleOffset = MathHelper.Lerp(-spread / 2, spread / 2, i / (float)(fireballCount - 1));
-
-                                //基础速度带点随机
-                                float speed = Main.rand.NextFloat(18f, 22f);
-                                Vector2 velocity = baseAngle.ToRotationVector2().RotatedBy(angleOffset) * speed;
-
-                                //粒子特效：发射闪光
-                                if (!VaultUtils.isServer) {
-                                    for (int d = 0; d < 8; d++) {
-                                        int dust = Dust.NewDust(NPC.Center, 0, 0, DustID.PurpleTorch, velocity.X, velocity.Y, 150, default, 2f);
-                                        Main.dust[dust].noGravity = true;
-                                        Main.dust[dust].velocity *= 1.5f;
-                                    }
-                                }
-
-                                float pwoer = i * 0.2f;
-                                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, velocity,
-                                        ModContent.ProjectileType<YingouFireBall>(), GetBossDamage(), 2f, Main.myPlayer, 0, 0, pwoer);
-                            }
-                            Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(6, 15); //屏幕震动
-                        }
-                    }
-
-                    if (attackTimer >= ReelBackTime) {
-                        float dashAngleOffset = Main.rand.NextFloat(-0.12f, 0.12f);
-                        Vector2 dashDir = NPC.SafeDirectionTo(target.Center).RotatedBy(dashAngleOffset);
-                        NPC.velocity = dashDir * 16;
-
-                        NPC.oldPos = new Vector2[NPC.oldPos.Length];
-                        state = 3f;
-                        attackTimer = 0f;
-                        NPC.netUpdate = true;
-                    }
+                case BossPhase.SpiralDread:
+                    RunSpiral(target);
                     break;
-
-                //冲刺阶段
-                case 3f:
-                    NPC.knockBackResist = 0f;
-                    NPC.damage = 95;
-
-                    if (attackTimer == 0) {
-                        swordDir *= -1;
-                        SoundEngine.PlaySound(SoundID.Roar, NPC.Center, s => { s.Position = NPC.Center; return true; });
-                        aitype = AttackAIStyle.Circle;
-                        aichange = 0;
-                        circleCounter = 0;
-                        circlespeed = 0;
-                    }
-                    attackTimer++;
-
-                    if (attackTimer > 60f || NPC.collideX || NPC.collideY) {
-                        NPC.velocity = -Vector2.UnitY.RotatedByRandom(0.6f) * 3f;
-                        state = 4f;
-                        attackTimer = 0f;
-                        aitype = AttackAIStyle.Idle;
-                        NPC.netUpdate = true;
-                    }
+                case BossPhase.SaberHell:
+                    RunSaberHell(target);
                     break;
-
-                //停顿等待阶段
-                case 4f:
-                    NPC.velocity *= 0.9f;
-                    attackTimer++;
-
-                    if (attackTimer == 20f) {
-                        aitype = AttackAIStyle.Melee;
-                    }
-
-                    if (attackTimer > 20f) {
-                        if (!VaultUtils.isClient) {
-                            NPC.localAI[0] = Main.rand.NextFloat();
-                            NPC.netUpdate = true;
-                        }
-
-                        state = 1f;
-                        if (otherAI[0] > 4) {
-                            otherAI[0] = 0;
-                            state = 0f;
-                        }
-                        attackTimer = 0f;
-                        NPC.netUpdate = true;
-                    }
-                    break;
-
-                //大刀地狱
-                case 5f:
-                    aitype = AttackAIStyle.Idle;
-                    attackTimer++;
-
-                    Vector2 hoverTargetPos = target.Center + new Vector2(0, -300);
-
-                    if ((attackTimer < 120f || !NPC.WithinRange(hoverTargetPos, NPC.velocity.Length() * 1.65f)) && otherAI[1] == 0) {
-                        NPC.velocity = Vector2.Lerp(NPC.velocity, NPC.SafeDirectionTo(hoverTargetPos) * 36, 0.1f);
-                    }
-                    else {
-                        if (otherAI[1] == 0) {
-                            attackTimer = 0;
-                        }
-
-                        otherAI[1] = 1;
-                        NPC.velocity *= 0.9f;
-
-                        if (attackTimer % 60 == 10) {
-                            SoundEngine.PlaySound(SoundID.ForceRoar, NPC.Center);
-                            if (!VaultUtils.isClient) {
-                                Vector2 basePos = GetPlayerByRandOffest(target);
-                                float baseAngle = 0f;
-                                for (int i = -1; i <= 1; i++) {
-                                    float angleOffset = i * 0.15f; //角度偏移，错开发射方向
-                                    Vector2 dir = (basePos - NPC.Center).SafeNormalize(Vector2.UnitX).RotatedBy(baseAngle + angleOffset);
-                                    Vector2 spawnPos = basePos + new Vector2(i * 100, 0);
-                                    Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, dir, ModContent.ProjectileType<SaberHell>(), GetBossDamage(), 2);
-                                }
-                            }
-                        }
-
-                        if (attackTimer % 60 == 25) {
-                            SoundEngine.PlaySound(SoundID.ForceRoar, NPC.Center);
-                            if (!VaultUtils.isClient) {
-                                Vector2 basePos = GetPlayerByRandOffest(target) + new Vector2(0, -350);
-                                for (int i = -2; i <= 2; i++) {
-                                    Vector2 offset = new Vector2(i * 80, 0);
-                                    Vector2 pos = basePos + offset;
-                                    Vector2 velocity = (basePos - pos).SafeNormalize(Vector2.UnitY);
-                                    Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, velocity, ModContent.ProjectileType<SaberHell>(), GetBossDamage(), 2);
-                                }
-                            }
-                        }
-
-                        if (attackTimer == 170 || attackTimer == 210) {
-                            SoundEngine.PlaySound(SoundID.ForceRoar, NPC.Center);
-                            if (!VaultUtils.isClient) {
-                                Vector2 basePos = GetPlayerByRandOffest(target);
-                                Vector2[] angles = {
-                                    MathHelper.PiOver4.ToRotationVector2(),
-                                    (-MathHelper.PiOver4).ToRotationVector2(),
-                                    (MathHelper.PiOver4 * 0.5f).ToRotationVector2(),
-                                    (-MathHelper.PiOver4 * 0.5f).ToRotationVector2()
-                                };
-
-                                foreach (var dir in angles) {
-                                    Projectile.NewProjectile(NPC.GetSource_FromAI(), basePos, dir, ModContent.ProjectileType<SaberHell>(), GetBossDamage(), 2);
-                                }
-                            }
-                        }
-
-                        if (attackTimer >= 270 && attackTimer <= 390 && attackTimer % 20 == 0) {
-                            SoundEngine.PlaySound(SoundID.ForceRoar, NPC.Center);
-                            if (!VaultUtils.isClient) {
-                                Vector2 basePos = GetPlayerByRandOffest(target);
-                                int shotCount = 6;
-                                for (int i = 0; i < shotCount; i++) {
-                                    float angle = MathHelper.Lerp(-MathHelper.PiOver2 - 0.4f, -MathHelper.PiOver2 + 0.4f, i / (float)(shotCount - 1));
-                                    Vector2 dir = angle.ToRotationVector2();
-                                    Vector2 spawnPos = basePos + dir * 350;
-                                    Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, -dir, ModContent.ProjectileType<SaberHell>(), GetBossDamage(), 2);
-                                }
-                            }
-                        }
-
-                        if (attackTimer > 440) {
-                            attackTimer = 0;
-                            otherAI[1] = 0;
-
-                            if (++otherAI[0] > 1) {
-                                state = 1f;
-                                attackTimer = 0f;
-                                break;
-                            }
-
-                            float dashAngleOffset = Main.rand.NextFloat(-0.12f, 0.12f);
-                            Vector2 dashDir = NPC.SafeDirectionTo(target.Center).RotatedBy(dashAngleOffset);
-                            NPC.velocity = dashDir * 16;
-
-                            NPC.oldPos = new Vector2[NPC.oldPos.Length];
-                            state = 6f;
-                            attackTimer = 0f;
-                            NPC.netUpdate = true;
-                        }
-                    }
-                    break;
-
-                //过渡
-                case 6f:
-                    NPC.knockBackResist = 0f;
-                    NPC.damage = 95;
-
-                    if (attackTimer == 0) {
-                        swordDir *= -1;
-                        SoundEngine.PlaySound(SoundID.Roar, NPC.Center, s => { s.Position = NPC.Center; return true; });
-                        aitype = AttackAIStyle.Circle;
-                        aichange = 0;
-                        circleCounter = 0;
-                        circlespeed = 0;
-                    }
-                    attackTimer++;
-
-                    if (attackTimer > 60f || NPC.collideX || NPC.collideY) {
-                        NPC.velocity = -Vector2.UnitY.RotatedByRandom(0.6f) * 3f;
-                        state = 5f;
-                        attackTimer = 0f;
-                        aitype = AttackAIStyle.Idle;
-                        NPC.netUpdate = true;
-                    }
+                case BossPhase.RecoverDash:
+                    RunRecoverDash(target);
                     break;
             }
-
-            if (!NPC.HasValidTarget) {
-                aitype = AttackAIStyle.Idle;
-            }
-
-            generalTimer++;
-
         }
-        private static Vector2 GetPlayerByRandOffest(Player player)
-            => player.Center + new Vector2(Main.rand.Next(-300, 300), Main.rand.Next(-300, 300));
-        private int GetBossDamage(float scaling = 1f, bool getOrigDamage = false) {
-            int num = NPC.damage;
-            if (getOrigDamage) {
-                num = NPC.defDamage;
+
+        private void RunIntro(Player target) {
+            //出场缓动：从远处扭曲漂移进入
+            introAppear = ACMUtils.SineInOut(MathHelper.Clamp(PhaseTimer / 120f, 0, 1));
+            Vector2 appearOffset = new Vector2(0, -600).RotatedBy(MathHelper.ToRadians(PhaseTimer * 2));
+            Vector2 desired = target.Center + appearOffset * (1 - introAppear) + Vector2.Lerp(new Vector2(-300, -200), new Vector2(0, -120), ACMUtils.QuadOut(introAppear));
+            NPC.Center += (desired - NPC.Center) * 0.12f;
+            NPC.velocity *= 0.8f;
+
+            //扭曲粒子
+            if (!VaultUtils.isServer && PhaseTimer % 4 == 0) {
+                for (int i = 0; i < 6; i++) {
+                    Vector2 off = Main.rand.NextVector2CircularEdge(80, 80) * (1 - introAppear);
+                    int dust = Dust.NewDust(NPC.Center + off, 0, 0, DustID.GoldFlame, 0, 0, 150, default, Main.rand.NextFloat(1.2f, 2.6f));
+                    Main.dust[dust].noGravity = true;
+                    Main.dust[dust].velocity = -off.SafeNormalize(Vector2.Zero) * 2f + Main.rand.NextVector2Circular(1, 1);
+                }
             }
+
+            //屏幕聚焦 + 震动落点
+            if (!didIntroShock && introAppear > 0.92f) {
+                didIntroShock = true;
+                SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.4f, Volume = 1.2f }, NPC.Center);
+                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(10, 40);
+                for (int k = 0; k < 40; k++) {
+                    Vector2 vel = Main.rand.NextVector2Circular(12, 12);
+                    int dust = Dust.NewDust(NPC.Center, 0, 0, DustID.Torch, vel.X, vel.Y, 120, default, 2.2f);
+                    Main.dust[dust].noGravity = true;
+                }
+            }
+
+            if (PhaseTimer > 150) {
+                aitype = AttackAIStyle.Melee;
+                TransitionTo(BossPhase.PatternSetA);
+            }
+        }
+
+        private void RunPatternSetA(Player target) {
+            //移动：缓慢侧滑逼近 + 偶发腾挪
+            Vector2 baseDir = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero);
+            Vector2 lateral = baseDir.RotatedBy(MathHelper.PiOver2 * swordDir) * MathF.Sin(PhaseTimer * 0.04f) * 6f;
+            Vector2 desiredVel = baseDir * 10 + lateral;
+            NPC.velocity = Vector2.Lerp(NPC.velocity, desiredVel, 0.05f);
+
+            //每段循环内放出一次扇形火球
+            if (PhaseTimer % 120 == 60) {
+                DoFanFire(target, 9 + (Main.expertMode ? 3 : 0) + (Main.masterMode ? 4 : 0), 70, 18f, 22f);
+                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(6, 18);
+            }
+
+            //经过时间转向螺旋阶段
+            if (PhaseTimer > 600) {
+                TransitionTo(BossPhase.SpiralDread);
+                aitype = AttackAIStyle.Circle;
+                circleCounter = 0;
+                circlespeed = 0;
+            }
+        }
+
+        private void DoFanFire(Player target, int fireballCount, float totalSpreadDeg, float minSpeed, float maxSpeed) {
+            if (VaultUtils.isClient) return;
+            float spread = MathHelper.ToRadians(totalSpreadDeg);
+            float baseAngle = NPC.DirectionTo(target.Center).ToRotation();
+            for (int i = 0; i < fireballCount; i++) {
+                float angleOffset = MathHelper.Lerp(-spread / 2, spread / 2, i / (float)(fireballCount - 1));
+                float speed = Main.rand.NextFloat(minSpeed, maxSpeed);
+                Vector2 velocity = baseAngle.ToRotationVector2().RotatedBy(angleOffset) * speed;
+                float power = i * 0.15f;
+                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, velocity,
+                    ModContent.ProjectileType<YingouFireBall>(), GetBossDamage(), 2f, Main.myPlayer, 0, 0, power);
+            }
+        }
+
+        private void RunSpiral(Player target) {
+            spiralPulse += 0.03f;
+            circlespeed = MathHelper.Lerp(circlespeed, 1.4f, 0.01f);
+            circleCounter += circlespeed * 0.16f;
+
+            float radius = 1380 + MathF.Sin(spiralPulse * 2) * 90f * ACMUtils.SineInOut(MathF.Sin(spiralPulse));
+            Vector2 dest = target.Center + (circleCounter * swordDir).ToRotationVector2() * radius;
+            NPC.Center += (dest - NPC.Center) * 0.08f;
+            NPC.velocity *= 0.8f;
+
+            if (PhaseTimer % 90 == 20) {
+                DoRadialPulseProjectiles(10 + (Main.expertMode ? 4 : 0));
+            }
+            if (PhaseTimer % 150 == 80) {
+                DoTrackingArcFire(target, 6, 46f);
+            }
+
+            if (PhaseTimer > 540) {
+                TransitionTo(BossPhase.SaberHell);
+                aitype = AttackAIStyle.Idle;
+                saberCharge = 0;
+            }
+        }
+
+        private void DoRadialPulseProjectiles(int count) {
+            if (VaultUtils.isClient) return;
+            for (int i = 0; i < count; i++) {
+                float ang = MathHelper.TwoPi * i / count;
+                Vector2 vel = ang.ToRotationVector2() * 14f;
+                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                    ModContent.ProjectileType<YingouFireBall>(), GetBossDamage(0.7f), 2f, Main.myPlayer, 0, 1, Main.rand.NextFloat(1f));
+            }
+        }
+
+        private void DoTrackingArcFire(Player target, int arcCount, float arcRadius) {
+            if (VaultUtils.isClient) return;
+            Vector2 baseDir = NPC.DirectionTo(target.Center);
+            for (int a = 0; a < arcCount; a++) {
+                float t = a / (float)(arcCount - 1);
+                float ang = MathHelper.Lerp(-0.8f, 0.8f, t);
+                Vector2 offset = baseDir.RotatedBy(ang) * arcRadius;
+                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center + offset, (target.Center - (NPC.Center + offset)).SafeNormalize(Vector2.Zero) * 16f,
+                    ModContent.ProjectileType<YingouFireBall>(), GetBossDamage(0.8f), 2f, Main.myPlayer, 0, 0, t);
+            }
+        }
+
+        private void RunSaberHell(Player target) {
+            //蓄力 -> 连续多段释放
+            saberCharge = MathHelper.Clamp(saberCharge + 0.012f, 0, 1);
+            NPC.velocity *= 0.9f;
+            Vector2 hover = target.Center + new Vector2(0, -320 + MathF.Sin(PhaseTimer * 0.05f) * 30);
+            NPC.Center += (hover - NPC.Center) * 0.05f;
+
+            //充能粒子
+            if (!VaultUtils.isServer) {
+                for (int i = 0; i < 4; i++) {
+                    Vector2 off = Main.rand.NextVector2CircularEdge(160, 160) * saberCharge;
+                    int dust = Dust.NewDust(NPC.Center + off, 0, 0, DustID.PurpleTorch, 0, 0, 120, default, Main.rand.NextFloat(1.6f, 2.7f));
+                    Main.dust[dust].velocity = -off.SafeNormalize(Vector2.Zero) * 4f * Main.rand.NextFloat(0.4f, 1f);
+                    Main.dust[dust].noGravity = true;
+                }
+            }
+
+            if (PhaseTimer == 120) {
+                SoundEngine.PlaySound(SoundID.ForceRoar with { Pitch = -0.5f, Volume = 1.2f }, NPC.Center);
+                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(12, 36);
+            }
+
+            if (PhaseTimer > 140 && PhaseTimer % 50 == 0) {
+                PerformSaberPattern(target);
+            }
+
+            if (PhaseTimer > 420) {
+                TransitionTo(BossPhase.RecoverDash);
+                aitype = AttackAIStyle.Melee;
+                swordDir *= -1;
+            }
+        }
+
+        private void PerformSaberPattern(Player target) {
+            if (VaultUtils.isClient) return;
+            Vector2 basePos = target.Center;
+            for (int ring = 0; ring < 2; ring++) {
+                int slice = 6 + ring * 2;
+                for (int i = 0; i < slice; i++) {
+                    float ang = MathHelper.TwoPi * i / slice + ring * 0.15f;
+                    Vector2 dir = ang.ToRotationVector2();
+                    Vector2 spawn = basePos + dir * (260 + ring * 80);
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), spawn, -dir * 10,
+                        ModContent.ProjectileType<SaberHell>(), GetBossDamage(0.9f), 2);
+                }
+            }
+        }
+
+        private void RunRecoverDash(Player target) {
+            //强力冲刺 + 回到 PatternSetA
+            if (PhaseTimer == 1) {
+                Vector2 dashDir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY).RotatedBy(Main.rand.NextFloat(-0.2f, 0.2f));
+                NPC.velocity = dashDir * 30f;
+                SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.2f }, NPC.Center);
+                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(8, 24);
+            }
+            NPC.velocity *= 0.985f;
+            if (PhaseTimer > 40) {
+                PhaseLoopCounter++;
+                if (PhaseLoopCounter % 2 == 1) {
+                    TransitionTo(BossPhase.PatternSetA);
+                    aitype = AttackAIStyle.Melee;
+                }
+                else {
+                    TransitionTo(BossPhase.SpiralDread);
+                    aitype = AttackAIStyle.Circle;
+                    circleCounter = 0;
+                    circlespeed = 0;
+                }
+            }
+        }
+
+        private int GetBossDamage(float scaling = 1f, bool getOrigDamage = false) {
+            int num = getOrigDamage ? NPC.defDamage : NPC.damage;
             return (int)(num * scaling);
         }
+
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
             Texture2D mainValue = TextureAssets.Npc[NPC.type].Value;
-            float sengs = 0.2f;
+            float sengs = 0.25f;
             for (int i = 0; i < NPC.oldPos.Length; i++) {
                 Vector2 drawOldPos = NPC.oldPos[i] + NPC.Size / 2 - Main.screenPosition;
-                spriteBatch.Draw(mainValue, drawOldPos, null, drawColor * sengs
-                    , 0, mainValue.Size() / 2, NPC.scale, SpriteEffects.None, 0);
-                sengs *= 0.8f;
+                spriteBatch.Draw(mainValue, drawOldPos, null, drawColor * sengs, 0, mainValue.Size() / 2, NPC.scale * (0.9f + 0.1f * sengs), SpriteEffects.None, 0);
+                sengs *= 0.75f;
             }
-            Main.EntitySpriteDraw(mainValue, NPC.Center - Main.screenPosition, null, drawColor, NPC.rotation, mainValue.Size() / 2, NPC.scale, SpriteEffects.None);
-            return false;
-        }
-    }
-
-    internal class YingouHand : ModNPC
-    {
-        [VaultLoaden("AncientChineseMythology/NPCs/Boss/Yingous/")]
-        private static Asset<Texture2D> SwordSlashTexture;
-        public List<Vector2> oldPos = new List<Vector2>();
-        public List<float> oldRots = new List<float>();
-        public float trailOffset = 0;
-        public int attackCd = 0;
-        public int noHomingTime = 0;
-        public Player handPlayer = null;
-        public int handPlayerTime = 0;
-        public int handUp = 0;
-        public int counter1 = 6;
-        public float circleDist = 0;
-        public bool circle = false;
-        public bool needSpawnRotProj = true;
-        public float swingAngle;
-        public float swingPhase;
-        public int Direction {
-            get { return (int)NPC.ai[1]; }
-            set { NPC.ai[1] = value; }
-        }
-        public override void SetStaticDefaults() {
-            Main.npcFrameCount[NPC.type] = 1;
-            NPCID.Sets.MustAlwaysDraw[NPC.type] = true;
-            NPCID.Sets.MPAllowedEnemies[Type] = true;
-            NPCID.Sets.NPCBestiaryDrawModifiers nPCBestiaryDrawModifiers = new();
-            nPCBestiaryDrawModifiers.Hide = true;
-            NPCID.Sets.NPCBestiaryDrawModifiers value = nPCBestiaryDrawModifiers;
-            NPCID.Sets.NPCBestiaryDrawOffset[Type] = value;
-            NPCID.Sets.TrailingMode[Type] = 3;
-            NPCID.Sets.TrailCacheLength[Type] = 11;
-        }
-
-        public override void SetDefaults() {
-            NPC.width = 76;
-            NPC.height = 76;
-            NPC.damage = 0;
-            NPC.defense = 60;
-            NPC.lifeMax = 60000;
-            NPC.HitSound = SoundID.NPCHit1;
-            NPC.DeathSound = SoundID.NPCHit1;
-            NPC.value = 20000f;
-            NPC.knockBackResist = 0f;
-            NPC.noTileCollide = true;
-            NPC.noGravity = true;
-            NPC.dontCountMe = true;
-            NPC.dontTakeDamage = true;
-        }
-
-        public static Rectangle getRectCentered(Vector2 center, float w, float h) {
-            return new Rectangle((int)(center.X - w / 2), (int)(center.Y - h / 2), (int)w, (int)h);
-        }
-
-        public static float getDistance(Vector2 v1, Vector2 v2) {
-            return ((float)Math.Sqrt(Math.Pow(v2.X - v1.X, 2) + Math.Pow(v2.Y - v1.Y, 2)));
-        }
-
-        public override bool ModifyCollisionData(Rectangle victimHitbox, ref int immunityCooldownSlot, ref MultipliableFloat damageMultiplier, ref Rectangle npcHitbox) {
-            npcHitbox = getRectCentered(NPC.Center + NPC.rotation.ToRotationVector2() * 120 * NPC.scale, NPC.width * NPC.scale, NPC.height * NPC.scale);
-            return true;
-        }
-
-        public override bool CanHitPlayer(Player target, ref int cooldownSlot) {
-            return handPlayerTime <= 0;
-        }
-
-        public override void OnHitPlayer(Player target, Player.HurtInfo hurtInfo) {
-            if (handPlayerTime <= 0) {
-                handPlayer = target;
-                handPlayerTime = 8;
-            }
-        }
-
-        public override void AI() {
-            if (counter1 > 0) {
-                counter1--;
-                return;
-            }
-
-            NPC boss = Main.npc[(int)NPC.ai[0]];
-            Player target = Main.player[boss.target];
-
-            if (!boss.Alives() || boss.ModNPC is not Yingou) {
-                NPC.active = false;
-                NPC.netUpdate = true;
-                return;
-            }
-
-            NPC.realLife = boss.whoAmI;
-            NPC.target = boss.target;
-            Yingou modNpc = (Yingou)boss.ModNPC;
-
-            //根据攻击类型设置减速系数
-            NPC.velocity *= (modNpc.aitype == Yingou.AttackAIStyle.Melee) ? 0.94f : 0.98f;  //略微调整减速以增加挥舞的流畅感
-
-            //修改后的近战攻击逻辑：从直线冲刺改为弧形挥舞攻击，模拟刀刃扫荡
-            if (modNpc.aitype == Yingou.AttackAIStyle.Melee) {
-                if (attackCd <= 0) {
-                    //启动弧形挥舞：计算初始方向，然后在过程中添加旋转偏移
-                    Vector2 directionToTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero);
-                    NPC.velocity += directionToTarget * 36;  //初始冲刺速度降低，以允许弧形路径
-                    noHomingTime = 45;  //延长无 homing 时间以完成挥舞
-                    swingPhase = 0;  //新变量：挥舞阶段，用于控制弧形
-                    swingAngle = 0f;  //新变量：当前挥舞角度
-                    attackCd = modNpc.random.Next(120, 200);  //略微调整冷却以匹配新动画
-
-                    SoundEngine.PlaySound(
-                        SoundID.Item71 with {
-                            Volume = 1.0f, //音量
-                            PitchVariance = 0.1f //轻微音调变化
-                        },
-                        NPC.Center
-                    );
-                }
-                else {
-                    attackCd--;
-                }
-
-                //在挥舞过程中添加侧向速度以创建弧形路径
-                if (noHomingTime > 0 && swingPhase == 0) {
-                    swingAngle += MathHelper.ToRadians(4f);  //每帧增加角度，形成弧形
-                    Vector2 perpendicular = NPC.velocity.RotatedBy(MathHelper.PiOver2);  //垂直于当前速度的方向
-                    NPC.velocity += perpendicular.SafeNormalize(Vector2.Zero) * (float)Math.Sin(swingAngle) * 2f;  //添加正弦波偏移实现摆动
-                    if (swingAngle >= MathHelper.Pi) {  //挥舞半圈后结束阶段
-                        swingPhase = 1;
-
-                        SoundEngine.PlaySound(
-                        SoundID.Item71 with {
-                            Volume = 0.8f,
-                            Pitch = -0.2f
-                        },
-                        NPC.Center
-                    );
-                    }
-                }
-            }
-            else {
-                handPlayerTime = 0;
-                swingPhase = 0;  //重置挥舞变量
-                swingAngle = 0f;
-            }
-
-            //虚空光球攻击逻辑：保持原样，但略微调整以匹配整体节奏
-            if (modNpc.aitype == Yingou.AttackAIStyle.Wave) {
-                if (handUp >= 0) {
-                    if (handUp == 0) {
-                        NPC.velocity += (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 28;  //略减速度以区别
-                        noHomingTime = 35;
-
-                        SoundEngine.PlaySound(SoundID.Item71 with { Volume = 1.0f, PitchVariance = 0.1f }, NPC.Center);
-                    }
-                    handUp--;
-                }
-                if (attackCd <= 0) {
-                    SoundEngine.PlaySound(SoundID.Item71 with { Volume = 1.0f, PitchVariance = 0.1f }, NPC.Center);
-                    handUp = 58;
-                    attackCd = modNpc.random.Next(100, 180);
-                }
-                else {
-                    attackCd--;
-                }
-            }
-            else {
-                handUp = 0;
-            }
-
-            circle = false;
-            //修改后的环绕攻击逻辑：从简单环绕改为螺旋靠近，增加近战压迫感
-            if (modNpc.aitype == Yingou.AttackAIStyle.Circle) {
-                circle = true;
-                if (needSpawnRotProj) {
-                    needSpawnRotProj = false;
-                }
-
-                //螺旋效果：距离逐渐缩小，同时保持旋转
-                circleDist = circleDist + (getDistance(boss.Center, target.Center) * 0.8f - circleDist) * 0.015f;  //调整系数，使其缓慢靠近玩家
-                if (circleDist < 100) {  //最小距离，防止过于贴近
-                    circleDist = 100;
-                }
-                modNpc.circleCounter += 0.06f;  //略增旋转速度以增强动态感
-
-                if (Main.GameUpdateCount % 20 == 0) {
-                    SoundEngine.PlaySound(SoundID.Item71 with { Volume = 0.8f, PitchVariance = 0.2f }, NPC.Center);
-                }
-
-                if (++NPC.ai[2] > 4) {
-                    NPC.ai[2] = 0;
-                    if (!VaultUtils.isClient) {
-                        Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, NPC.rotation.ToRotationVector2().UnitVector() * 16,
-                            ModContent.ProjectileType<YingouFireBall>(), NPC.damage / 2, 2f, Main.myPlayer, 0, 1, Main.rand.NextFloat(0.6f));
-                    }
-
-                }
-            }
-            else {
-                circleDist = 100;
-                needSpawnRotProj = true;
-            }
-
-            NPC.damage = boss.damage;
-            NPC.scale = boss.scale;
-
-            Vector2 targetPos = boss.Center + new Vector2(Direction * 100 * NPC.scale, (handUp > 0 ? 90 : 0));
-            if (modNpc.aitype == Yingou.AttackAIStyle.Circle) {
-                //在螺旋中更新位置
-                targetPos = boss.Center + new Vector2(circleDist * Direction, 0).RotatedBy(modNpc.circleCounter * modNpc.swordDir);
-                NPC.Center += (targetPos - NPC.Center) * 0.35f;  //略减平滑系数以增加挥舞感
-            }
-            else {
-                if (handPlayerTime > 0) {
-                    handPlayer.Center = NPC.Center + NPC.rotation.ToRotationVector2() * 86;
-                    handPlayer.velocity *= 0;
-                }
-                if (noHomingTime > 0) {
-                    noHomingTime--;
-                }
-                else {
-                    NPC.Center += (targetPos - NPC.Center) * 0.22f;  //略调整以匹配新挥舞
-                    if (handPlayerTime > 0) {
-                        handPlayerTime--;
-                        if (handPlayerTime == 0) {
-                            handPlayer.velocity = (boss.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 20f;
-                        }
-                    }
-                }
-            }
-
-            if (getDistance(targetPos, NPC.Center) > 4600) {
-                NPC.Center = targetPos;
-            }
-
-            NPC.rotation = (NPC.Center - boss.Center).ToRotation();
-
-            oldPos.Add(NPC.Center);
-            oldRots.Add(NPC.rotation);
-            if (oldPos.Count > 24) {
-                oldPos.RemoveAt(0);
-                oldRots.RemoveAt(0);
-            }
-        }
-
-        public override bool CheckActive() {
-            return false;
-        }
-
-        public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
-            trailOffset += 0.06f;
-
-            SpriteBatch sb = Main.spriteBatch;
-            GraphicsDevice gd = Main.graphics.GraphicsDevice;
-
-            //结束当前批次，开始一个新的加色混合绘制
-            sb.End();
-            sb.Begin(SpriteSortMode.Immediate, BlendState.Additive, SamplerState.LinearWrap,
-                DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
-
-            //绘制三角带顶点方法，避免重复代码
-            void DrawTrail(Texture2D texture, Color startColor, Color endColor) {
-                List<ColoredVertex> vertices = new();
-
-                int count = oldRots.Count;
-                for (int i = 0; i < count; i++) {
-                    float t = i / (float)count;
-                    Color c = Color.Lerp(startColor * 0.01f, endColor, t) * 1f;
-                    Vector2 basePos = oldPos[i] - Main.screenPosition;
-                    Vector2 rotVec = (oldRots[i] + (Direction > 0 ? MathHelper.ToRadians(18) : MathHelper.ToRadians(-18))).ToRotationVector2();
-                    float scaleFactor = 1 - t;
-                    float offset1 = 16 + 260 * NPC.scale * scaleFactor * 0.5f;
-                    float offset2 = 16 + 260 * NPC.scale - 80 * NPC.scale * scaleFactor * 0.5f;
-
-                    vertices.Add(new ColoredVertex(basePos + rotVec * offset1, new Vector3(t + trailOffset, 1, 1), c));
-                    vertices.Add(new ColoredVertex(basePos + rotVec * offset2, new Vector3(t + trailOffset, 0, 1), c));
-                }
-
-                if (vertices.Count >= 3) {
-                    gd.Textures[0] = texture;
-                    gd.DrawUserPrimitives(PrimitiveType.TriangleStrip, vertices.ToArray(), 0, vertices.Count - 2);
-                }
-            }
-
-            //绘制金色到红色的轨迹
-            DrawTrail(VaultAsset.placeholder2.Value, Color.Gold, Color.Red);
-            //绘制白色轨迹
-            DrawTrail(SwordSlashTexture.Value, Color.White, Color.White);
-
-            //结束加色混合，恢复正常混合状态绘制NPC主体
-            sb.End();
-            sb.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.AnisotropicClamp,
-                DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
-
-            Texture2D tex = TextureAssets.Npc[NPC.type].Value;
-            Vector2 origin = Direction > 0 ? new Vector2(0, tex.Height) : new Vector2(tex.Width, tex.Height);
-            float rotation = NPC.rotation + (Direction > 0 ? MathHelper.ToRadians(18) : MathHelper.ToRadians(-18 + 180));
-            SpriteEffects effects = Direction > 0 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
-
-            float sengs = 0.2f;
-            for (int i = 0; i < NPC.oldPos.Length; i++) {
-                float rot = NPC.oldRot[i] + (Direction > 0 ? MathHelper.ToRadians(18) : MathHelper.ToRadians(-18 + 180));
-                Vector2 drawOldPos = NPC.oldPos[i] + NPC.Size / 2 - Main.screenPosition;
-                Main.EntitySpriteDraw(tex, drawOldPos, null, Color.White * sengs, rot, origin, NPC.scale * (sengs + 0.8f), effects);
-                sengs *= 0.98f;
-            }
-
-            Main.EntitySpriteDraw(tex, NPC.Center - Main.screenPosition, null, drawColor, rotation, origin, NPC.scale, effects);
-
+            float introScale = Phase == BossPhase.Intro ? MathHelper.Lerp(0.6f, 1f, ACMUtils.BackOut(introAppear)) : 1f;
+            Main.EntitySpriteDraw(mainValue, NPC.Center - Main.screenPosition, null, drawColor, NPC.rotation, mainValue.Size() / 2, NPC.scale * introScale, SpriteEffects.None);
             return false;
         }
     }
@@ -787,9 +389,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
 
         public static void KillAll() {
             foreach (var proj in Main.ActiveProjectiles) {
-                if (proj.type != ModContent.ProjectileType<YingouFireBall>()) {
-                    continue;
-                }
+                if (proj.type != ModContent.ProjectileType<YingouFireBall>()) continue;
                 proj.Kill();
                 proj.netUpdate = true;
             }
@@ -799,9 +399,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             if (!VaultUtils.isServer) {
                 for (int i = 0; i < 6; i++) {
                     int dustType = Main.rand.NextBool(2) ? DustID.Torch : DustID.Shadowflame;
-                    if (Projectile.ai[1] == 1f) {
-                        dustType = DustID.Torch;
-                    }
+                    if (Projectile.ai[1] == 1f) dustType = DustID.Torch;
                     int dust = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height,
                         dustType, Projectile.velocity.X / 2, Projectile.velocity.Y / 2, 150,
                         default, Main.rand.NextFloat(1f, 3.5f));
@@ -811,18 +409,13 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             }
 
             Projectile.ai[0]++;
-
-            //初期螺旋阶段
-            if (Projectile.ai[0] < 80) {
-                //在旋转基础上加入抖动偏移
+            if (Projectile.ai[0] < 80) { //螺旋阶段
                 float jitter = (float)Math.Sin(Projectile.ai[0] * 0.3f) * 0.1f;
                 Projectile.velocity = Projectile.velocity.RotatedBy((0.025f + jitter) * Projectile.ai[2]);
             }
-            //停顿脉冲阶段
-            else if (Projectile.ai[0] == 80) {
+            else if (Projectile.ai[0] == 80) { //脉冲
                 Projectile.velocity *= 0.3f;
                 if (!VaultUtils.isServer) {
-                    //脉冲粒子
                     for (int i = 0; i < 30; i++) {
                         Vector2 offset = Main.rand.NextVector2Circular(1f, 1f) * 40f;
                         int dust = Dust.NewDust(Projectile.Center + offset, 0, 0,
@@ -832,11 +425,9 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                     }
                 }
             }
-            //追踪阶段
-            else {
+            else { //追踪
                 Player player = Projectile.Center.FindClosestPlayer(3200, true);
                 if (player != null) {
-                    //速度周期性波动
                     float speedFactor = 1.2f + 0.3f * (float)Math.Sin(Projectile.ai[0] * 0.15f);
                     Vector2 targetSpeed = Projectile.SafeDirectionTo(player.Center) * Projectile.velocity.Length() * speedFactor;
                     Projectile.velocity = Vector2.Lerp(Projectile.velocity, targetSpeed, 0.05f);
@@ -858,44 +449,38 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
         public override void AI() {
             Projectile.velocity = Projectile.velocity.UnitVector();
             if (Projectile.localAI[0] < 40) {
-                if (Projectile.localAI[0] == 0) {
-                    Projectile.localAI[1] = 30;
-                }
+                if (Projectile.localAI[0] == 0) Projectile.localAI[1] = 30;
                 Projectile.localAI[0]++;
                 if (Projectile.localAI[0] == 40) {
                     int num = 1000;
                     int num2 = 36;
-                    Projectile.NewProjectile(Projectile.FromObjectGetParent()
-                        , Projectile.Center + Projectile.velocity * num, Projectile.velocity * -num2
-                        , ModContent.ProjectileType<SaberKiller>(), Projectile.damage, Projectile.knockBack
-                        , Main.myPlayer, Projectile.Center.X, Projectile.Center.Y);
+                    Projectile.NewProjectile(Projectile.FromObjectGetParent(),
+                        Projectile.Center + Projectile.velocity * num, Projectile.velocity * -num2,
+                        ModContent.ProjectileType<SaberKiller>(), Projectile.damage, Projectile.knockBack,
+                        Main.myPlayer, Projectile.Center.X, Projectile.Center.Y);
                     Projectile.velocity *= -1;
-                    Projectile.NewProjectile(Projectile.FromObjectGetParent()
-                        , Projectile.Center + Projectile.velocity * num, Projectile.velocity * -num2
-                        , ModContent.ProjectileType<SaberKiller>(), Projectile.damage, Projectile.knockBack
-                        , Main.myPlayer, Projectile.Center.X, Projectile.Center.Y);
+                    Projectile.NewProjectile(Projectile.FromObjectGetParent(),
+                        Projectile.Center + Projectile.velocity * num, Projectile.velocity * -num2,
+                        ModContent.ProjectileType<SaberKiller>(), Projectile.damage, Projectile.knockBack,
+                        Main.myPlayer, Projectile.Center.X, Projectile.Center.Y);
                 }
             }
             else {
-                if (Projectile.localAI[1] > 0) {
-                    Projectile.localAI[1]--;
-                }
+                if (Projectile.localAI[1] > 0) Projectile.localAI[1]--;
             }
         }
 
         public override bool PreDraw(ref Color lightColor) {
             Texture2D back = VaultAsset.placeholder2.Value;
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
-
             int width = 4400;
             int height = (int)(Projectile.localAI[0] * 3);
             float alpha = Projectile.localAI[1] / 60f;
-
             Rectangle rect = new Rectangle(-width / 2, -height / 2, width, height);
             Vector2 origin = new Vector2(rect.Width / 2, rect.Height / 2);
             Color drawColor = VaultUtils.MultiStepColorLerp(Projectile.localAI[0] / 40f, Color.Azure, Color.Red);
-            Main.spriteBatch.Draw(back, drawPos, rect, drawColor with { A = 155 } * alpha
-                , Projectile.velocity.ToRotation(), origin, 1f, SpriteEffects.None, 0f);
+            Main.spriteBatch.Draw(back, drawPos, rect, drawColor with { A = 155 } * alpha,
+                Projectile.velocity.ToRotation(), origin, 1f, SpriteEffects.None, 0f);
             return false;
         }
     }
@@ -927,8 +512,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                     for (int i = 0; i < 115; i++) {
                         Vector2 sparkPos = targetPos + Main.rand.NextVector2Circular(60, 60);
                         int dust = Dust.NewDust(sparkPos, 0, 0, DustID.Torch, 0, 0);
-                        Main.dust[dust].velocity = Main.rand.NextVector2Circular(6, 6);
-                        Main.dust[dust].velocity *= 1.5f;
+                        Main.dust[dust].velocity = Main.rand.NextVector2Circular(6, 6) * 1.5f;
                         Main.dust[dust].scale = Main.rand.NextFloat(1.2f, 3f);
                         Main.dust[dust].noGravity = true;
                     }
@@ -937,9 +521,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             }
             if (Projectile.ai[2] == 1f) {
                 Projectile.alpha -= 5;
-                if (Projectile.alpha <= 0f) {
-                    Projectile.Kill();
-                }
+                if (Projectile.alpha <= 0f) Projectile.Kill();
                 Projectile.alpha = (int)MathHelper.Clamp(Projectile.alpha, 0, 255);
             }
         }
@@ -949,97 +531,13 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             float sengs = 0.3f;
             for (int i = 0; i < Projectile.oldPos.Length; i++) {
                 Vector2 oldPos = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
-                Main.spriteBatch.Draw(value, oldPos, null, drawColor * sengs
-                , Projectile.rotation, value.Size() / 2, Projectile.scale, SpriteEffects.None, 0);
+                Main.spriteBatch.Draw(value, oldPos, null, drawColor * sengs,
+                    Projectile.rotation, value.Size() / 2, Projectile.scale, SpriteEffects.None, 0);
                 sengs *= 0.9f;
             }
-            Main.spriteBatch.Draw(value, Projectile.Center - Main.screenPosition, null, drawColor
-                , Projectile.rotation, value.Size() / 2, Projectile.scale, SpriteEffects.None, 0);
+            Main.spriteBatch.Draw(value, Projectile.Center - Main.screenPosition, null, drawColor,
+                Projectile.rotation, value.Size() / 2, Projectile.scale, SpriteEffects.None, 0);
             return false;
-        }
-    }
-
-    internal class YingouSky : CustomSky
-    {
-        private bool active;
-        private float intensity;
-        private const float maxIntensity = 0.6f;
-        private Color skyColor;
-        internal static string name;
-        public static void LoadInstance() {
-            name = "AncientChineseMythology:YingouSky";
-            SkyManager.Instance[name] = new YingouSky();
-        }
-
-        public override void Activate(Vector2 position, params object[] args) {
-            active = true;
-            intensity = 0.01f;
-        }
-
-        public override void Deactivate(params object[] args) {
-            active = false;
-        }
-
-        public override bool IsActive() {
-            return active;
-        }
-
-        public override void Reset() {
-            active = false;
-            intensity = 0.01f;
-        }
-
-        public override Color OnTileColor(Color inColor) {
-            return inColor * (1f - intensity);
-        }
-
-        public override void Draw(SpriteBatch spriteBatch, float minDepth, float maxDepth) {
-            //计算朝向Boss的拉扯抖动
-            NPC boss = GetBoss();
-            Vector2 pullShake = Vector2.Zero;
-            if (boss != null) {
-                pullShake = (boss.Center - Main.LocalPlayer.Center)
-                    .SafeNormalize(Vector2.Zero) * (2f * intensity);
-            }
-
-            spriteBatch.Draw(VaultAsset.placeholder2.Value,
-                new Rectangle((int)pullShake.X, (int)pullShake.Y, Main.screenWidth, Main.screenHeight),
-                skyColor * intensity);
-        }
-
-        public override void Update(GameTime gameTime) {
-            NPC boss = GetBoss();
-            if (boss != null) {
-                float distance = Main.LocalPlayer.Distance(boss.Center);
-                float t = MathHelper.Clamp(distance / 1600f, 0f, 1f); //越近越接近深紫与血红
-
-                //渐变主色调
-                skyColor = VaultUtils.MultiStepColorLerp(t,
-                    new Color(20, 10, 40),    //暗紫
-                    new Color(10, 40, 40),    //冷蓝绿
-                    new Color(120, 0, 0));    //深血红
-
-                if (intensity < maxIntensity)
-                    intensity += 0.01f;
-
-                active = true;
-            }
-            else {
-                intensity -= 0.01f;
-                if (intensity <= 0f) {
-                    intensity = 0f;
-                    Deactivate();
-                }
-            }
-        }
-
-        //方便调用的获取Boss方法
-        private static NPC GetBoss() {
-            foreach (var npc in Main.ActiveNPCs) {
-                if (npc.type == ModContent.NPCType<Yingou>())
-                    return npc;
-            }
-            return null;
         }
     }
 }
