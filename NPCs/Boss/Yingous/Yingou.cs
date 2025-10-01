@@ -28,6 +28,8 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             PatternSetA,   //基础挥砍 + 火球散射
             SpiralDread,   //螺旋+环绕压迫
             SaberHell,     //大刀地狱(扩展演出)
+            FrenzyDash,    // 新：多段连续追击冲刺
+            BladeScatter,  // 新：蓄力大斩 + 环形散射
             RecoverDash,   //回收冲刺（过渡）
         }
 
@@ -63,6 +65,17 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
         private int saberPatternIndex; // 当前图案序号
         private int lastSaberPatternTime; // 上一次释放图案的时间戳
         private int saberPatternsPerPhase = 5; // 每次 SaberHell 阶段释放几种图案
+
+        // FrenzyDash 状态
+        private int frenzyDashCount;
+        private int frenzyDashTotal;
+        private int frenzyDashState; // 0 telegraph,1 dash,2 recover
+        private int frenzyDashStateTimer;
+        private Vector2 frenzyDashDir;
+
+        // BladeScatter 状态
+        private float bladeScatterCharge;
+        private int bladeScatterRingCount;
 
         public override void OnSpawn(IEntitySource source) {
             seed = Main.rand.Next(0, 10000);
@@ -113,6 +126,13 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             writer.Write(introAppear);
             writer.Write(saberPatternIndex);
             writer.Write(lastSaberPatternTime);
+            writer.Write(frenzyDashCount);
+            writer.Write(frenzyDashTotal);
+            writer.Write(frenzyDashState);
+            writer.Write(frenzyDashStateTimer);
+            writer.WriteVector2(frenzyDashDir);
+            writer.Write(bladeScatterCharge);
+            writer.Write(bladeScatterRingCount);
         }
 
         public override void ReceiveExtraAI(BinaryReader reader) {
@@ -121,6 +141,13 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             introAppear = reader.ReadSingle();
             saberPatternIndex = reader.ReadInt32();
             lastSaberPatternTime = reader.ReadInt32();
+            frenzyDashCount = reader.ReadInt32();
+            frenzyDashTotal = reader.ReadInt32();
+            frenzyDashState = reader.ReadInt32();
+            frenzyDashStateTimer = reader.ReadInt32();
+            frenzyDashDir = reader.ReadVector2();
+            bladeScatterCharge = reader.ReadSingle();
+            bladeScatterRingCount = reader.ReadInt32();
         }
 
         public override void ApplyDifficultyAndPlayerScaling(int numPlayers, float balance, float bossAdjustment) {
@@ -135,6 +162,21 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             if (next == BossPhase.SaberHell) {
                 saberPatternIndex = 0;
                 lastSaberPatternTime = 0;
+            }
+            if (next == BossPhase.FrenzyDash) {
+                frenzyDashCount = 0;
+                frenzyDashTotal = 4 + (Main.expertMode ? 1 : 0) + (Main.masterMode ? 1 : 0);
+                frenzyDashState = 0;
+                if (!VaultUtils.isClient) {
+                    rotRandSet = Main.rand.NextFloat(MathHelper.TwoPi);
+                }
+                frenzyDashStateTimer = 0;
+                aitype = AttackAIStyle.Melee;
+            }
+            if (next == BossPhase.BladeScatter) {
+                bladeScatterCharge = 0;
+                bladeScatterRingCount = 0;
+                aitype = AttackAIStyle.Idle;
             }
         }
 
@@ -180,6 +222,12 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                     break;
                 case BossPhase.SaberHell:
                     RunSaberHell(target);
+                    break;
+                case BossPhase.FrenzyDash:
+                    RunFrenzyDash(target);
+                    break;
+                case BossPhase.BladeScatter:
+                    RunBladeScatter(target);
                     break;
                 case BossPhase.RecoverDash:
                     RunRecoverDash(target);
@@ -238,6 +286,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
 
             //经过时间转向螺旋阶段
             if (PhaseTimer > 600) {
+                YingouFireBall.KillAll();
                 TransitionTo(BossPhase.SpiralDread);
                 aitype = AttackAIStyle.Circle;
                 circleCounter = 0;
@@ -270,10 +319,10 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             NPC.velocity *= 0.8f;
 
             if (PhaseTimer % 90 == 20) {
-                DoRadialPulseProjectiles(10 + (Main.expertMode ? 4 : 0));
+                DoRadialPulseProjectiles(6 + (Main.expertMode ? 2 : 0));
             }
             if (PhaseTimer % 150 == 80) {
-                DoTrackingArcFire(target, 6, 46f);
+                DoTrackingArcFire(target, 3, 46f);
             }
             if (PhaseTimer % 10 == 0) {
                 Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, NPC.Center.To(target.Center).UnitVector() * 24,
@@ -312,7 +361,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             //蓄力 -> 连续多段释放
             saberCharge = MathHelper.Clamp(saberCharge + 0.012f, 0, 1);
             NPC.velocity *= 0.9f;
-            Vector2 hover = target.Center + new Vector2(0, -320 + MathF.Sin(PhaseTimer * 0.05f) * 30);
+            Vector2 hover = target.Center + new Vector2(0, -400 + MathF.Sin(PhaseTimer * 0.05f) * 30);
             NPC.Center += (hover - NPC.Center) * 0.05f;
 
             //充能粒子
@@ -335,10 +384,104 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 PerformNextSaberPattern(target);
             }
 
-            if (PhaseTimer > 420) {
-                TransitionTo(BossPhase.RecoverDash);
-                aitype = AttackAIStyle.Melee;
-                swordDir *= -1;
+            if (PhaseTimer > 420) TransitionTo(BossPhase.FrenzyDash); // 接入新冲刺阶段
+        }
+
+        private float rotRandSet = 0f;
+        private void RunFrenzyDash(Player target) {
+            // Telegraph -> Dash -> Recover，重复 frenzyDashTotal 次
+            frenzyDashStateTimer++;
+            switch (frenzyDashState) {
+                case 0: // telegraph
+                    NPC.velocity *= 0.85f;
+                    Vector2 hover = target.Center + new Vector2(0, -680).RotatedBy(rotRandSet);
+                    NPC.Center += (hover - NPC.Center) * 0.16f;
+                    if (!VaultUtils.isServer && frenzyDashStateTimer % 6 == 0) {
+                        int dust = Dust.NewDust(NPC.Center, 0, 0, DustID.GoldFlame, 0, 0, 150, default, 2f);
+                        Main.dust[dust].noGravity = true; Main.dust[dust].velocity = Main.rand.NextVector2Circular(3, 3);
+                    }
+                    if (frenzyDashStateTimer == 36) {
+                        frenzyDashDir = NPC.DirectionTo(target.Center).RotatedBy(Main.rand.NextFloat(-0.25f, 0.25f));
+                        NPC.velocity = frenzyDashDir * 36f;
+                        SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.2f, Volume = 0.9f, MaxInstances = 6 }, NPC.Center);
+                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(8, 18);
+                        frenzyDashState = 1; frenzyDashStateTimer = 0;
+                        if (!VaultUtils.isClient) {
+                            // dash 起手散出少量火球
+                            for (int i = 0; i < 5; i++) {
+                                Vector2 vel = frenzyDashDir.RotatedBy(MathHelper.Lerp(-0.4f, 0.4f, i / 4f)) * Main.rand.NextFloat(18, 26);
+                                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                                    ModContent.ProjectileType<YingouFireBall>(), GetBossDamage(0.75f), 2f);
+                            }
+                        }
+                    }
+                    break;
+                case 1: // dash
+                    NPC.velocity *= 0.985f;
+                    if (frenzyDashStateTimer % 6 == 0 && !VaultUtils.isClient) {
+                        Vector2 side = frenzyDashDir.RotatedBy(MathHelper.PiOver2);
+                        Vector2 posL = NPC.Center + side * 40;
+                        Vector2 posR = NPC.Center - side * 40;
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), posL, frenzyDashDir * 14f,
+                            ModContent.ProjectileType<YingouFireBall>(), GetBossDamage(0.6f), 2f, Main.myPlayer, 0, 1, Main.rand.NextFloat(0.5f));
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), posR, frenzyDashDir * 14f,
+                            ModContent.ProjectileType<YingouFireBall>(), GetBossDamage(0.6f), 2f, Main.myPlayer, 0, 1, Main.rand.NextFloat(0.5f));
+                    }
+                    if (frenzyDashStateTimer > 42 || NPC.collideX || NPC.collideY) {
+                        frenzyDashState = 2; frenzyDashStateTimer = 0; NPC.velocity *= 0.4f;
+                    }
+                    break;
+                case 2: // recover
+                    NPC.velocity *= 0.9f;
+                    if (frenzyDashStateTimer > 18) {
+                        frenzyDashCount++;
+                        if (frenzyDashCount >= frenzyDashTotal) {
+                            TransitionTo(BossPhase.BladeScatter);
+                        } else {
+                            frenzyDashState = 0; frenzyDashStateTimer = 0; swordDir *= -1; NPC.netUpdate = true;
+                            if (!VaultUtils.isClient) {
+                                rotRandSet = Main.rand.NextFloat(MathHelper.TwoPi);
+                            }
+                        }
+                    }
+                    break;
+            }
+        }
+
+        private void RunBladeScatter(Player target) {
+            bladeScatterCharge = MathHelper.Clamp(bladeScatterCharge + 0.01f, 0, 1);
+            Vector2 focus = target.Center + new Vector2(0, -260 + (float)Math.Sin(PhaseTimer * 0.05f) * 26f);
+            NPC.Center += (focus - NPC.Center) * 0.12f;
+            NPC.velocity *= 0.85f;
+            // Telegraph 环光
+            if (!VaultUtils.isServer && PhaseTimer % 5 == 0) {
+                for (int i = 0; i < 8; i++) {
+                    Vector2 off = Main.rand.NextVector2CircularEdge(180, 180) * bladeScatterCharge;
+                    int dust = Dust.NewDust(NPC.Center + off, 0, 0, DustID.GoldFlame, 0, 0, 140, default, 1.4f);
+                    Main.dust[dust].velocity = -off.SafeNormalize(Vector2.Zero) * 3f;
+                    Main.dust[dust].noGravity = true;
+                }
+            }
+            if (PhaseTimer == 1) SoundEngine.PlaySound(SoundID.Item71 with { Pitch = -0.4f, Volume = 0.9f }, NPC.Center);
+            if (PhaseTimer == 90 || PhaseTimer == 110 || PhaseTimer == 130) {
+                // 3 轮环形散射，角度错列
+                float startRot = (PhaseTimer == 90 ? 0f : (PhaseTimer == 110 ? 0.12f : 0.26f));
+                int count = 22 + (Main.expertMode ? 4 : 0);
+                float speed = 18f + (PhaseTimer - 90) * 0.2f;
+                ShootScatterRing(target.Center + VaultUtils.RandVr(660, 820), count, speed, startRot);
+                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(7, 18);
+                SoundEngine.PlaySound(SoundID.Item74 with { Pitch = 0.35f - (PhaseTimer - 90) * 0.01f, Volume = 1.1f }, NPC.Center);
+            }
+            if (PhaseTimer > 170) TransitionTo(BossPhase.RecoverDash);
+        }
+
+        private void ShootScatterRing(Vector2 center, int count, float speed, float startRotation) {
+            if (VaultUtils.isClient) return;
+            for (int i = 0; i < count; i++) {
+                float ang = startRotation + MathHelper.TwoPi * i / count;
+                Vector2 vel = ang.ToRotationVector2() * speed;
+                Projectile.NewProjectile(NPC.GetSource_FromAI(), center, vel,
+                    ModContent.ProjectileType<YingouFireBall>(), GetBossDamage(0.85f), 2f, Main.myPlayer, 0, 0, Main.rand.NextFloat(-1f, 1f));
             }
         }
 
@@ -461,15 +604,15 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             NPC.velocity *= 0.985f;
             if (PhaseTimer > 40) {
                 PhaseLoopCounter++;
-                if (PhaseLoopCounter % 2 == 1) {
-                    TransitionTo(BossPhase.PatternSetA);
-                    aitype = AttackAIStyle.Melee;
+                // 循环选择下一个阶段交错
+                if (PhaseLoopCounter % 3 == 0) {
+                    TransitionTo(BossPhase.FrenzyDash);
+                }
+                else if (PhaseLoopCounter % 2 == 0) {
+                    TransitionTo(BossPhase.BladeScatter);
                 }
                 else {
-                    TransitionTo(BossPhase.SpiralDread);
-                    aitype = AttackAIStyle.Circle;
-                    circleCounter = 0;
-                    circlespeed = 0;
+                    TransitionTo(BossPhase.PatternSetA);
                 }
             }
         }
@@ -487,8 +630,23 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 spriteBatch.Draw(mainValue, drawOldPos, null, drawColor * sengs, 0, mainValue.Size() / 2, NPC.scale * (0.9f + 0.1f * sengs), SpriteEffects.None, 0);
                 sengs *= 0.75f;
             }
-            float introScale = Phase == BossPhase.Intro ? MathHelper.Lerp(0.6f, 1f, ACMUtils.BackOut(introAppear)) : 1f;
-            Main.EntitySpriteDraw(mainValue, NPC.Center - Main.screenPosition, null, drawColor, NPC.rotation, mainValue.Size() / 2, NPC.scale * introScale, SpriteEffects.None);
+            float scale = NPC.scale;
+            if (Phase == BossPhase.BladeScatter && PhaseTimer < 90) {
+                float chargeT = MathHelper.Clamp(PhaseTimer / 90f, 0, 1);
+                float pulse = 1f + 0.15f * (float)Math.Sin(Main.GlobalTimeWrappedHourly * 8);
+                scale *= MathHelper.Lerp(1f, 1.15f, ACMUtils.SineInOut(chargeT)) * pulse;
+                // 绘制发光圆
+                if (SoftGlow != null) {
+                    for (int i = 0; i < 3; i++) {
+                        float gScale = 2.2f + i * 0.3f * chargeT;
+                        Color gCol = Color.Lerp(Color.OrangeRed, Color.Gold, 0.5f + 0.5f * (float)Math.Sin(chargeT * Math.PI)) * (0.5f - 0.15f * i);
+                        gCol.A = 0;
+                        spriteBatch.Draw(SoftGlow, NPC.Center - Main.screenPosition, null, gCol, 0, SoftGlow.Size() / 2, gScale, SpriteEffects.None, 0);
+                    }
+                }
+            }
+            float introScale = Phase == BossPhase.Intro ? MathHelper.Lerp(0.6f, 1f, ACMUtils.BackOut(introAppear)) : scale;
+            Main.EntitySpriteDraw(mainValue, NPC.Center - Main.screenPosition, null, drawColor, NPC.rotation, mainValue.Size() / 2, introScale, SpriteEffects.None);
             return false;
         }
     }
