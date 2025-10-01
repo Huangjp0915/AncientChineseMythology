@@ -14,9 +14,13 @@ using static AncientChineseMythology.Projectiles.RuyiStickSpearProjectile_3;
 
 namespace AncientChineseMythology.NPCs.Boss.Yingous
 {
+    [VaultLoaden("AncientChineseMythology/Textures/")]
     [AutoloadBossHead]
     internal class Yingou : ModNPC
     {
+        internal static Texture2D GlaciateWave;//一个水平向右的波浪形灰度图，适合做冲击类刀光一类的效果，大小512*512
+        internal static Texture2D SoftGlow;//一个模糊发光效果，圆点灰度图大小64*64
+        internal static Texture2D StarTexture;//一个星光点的纹理，大小326*326
         //====== 新阶段系统 ======
         public enum BossPhase
         {
@@ -55,6 +59,11 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
         private float saberCharge; //大刀地狱充能
         private bool didIntroShock;
 
+        // SaberHell 扩展图案控制
+        private int saberPatternIndex; // 当前图案序号
+        private int lastSaberPatternTime; // 上一次释放图案的时间戳
+        private int saberPatternsPerPhase = 5; // 每次 SaberHell 阶段释放几种图案
+
         public override void OnSpawn(IEntitySource source) {
             seed = Main.rand.Next(0, 10000);
             if (VaultUtils.isServer) {
@@ -64,6 +73,8 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             PhaseTimer = 0;
             LocalTimer = 0;
             introAppear = 0;
+            saberPatternIndex = 0;
+            lastSaberPatternTime = 0;
         }
 
         public override void SetStaticDefaults() {
@@ -100,12 +111,16 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             writer.Write(seed);
             writer.Write((int)Phase);
             writer.Write(introAppear);
+            writer.Write(saberPatternIndex);
+            writer.Write(lastSaberPatternTime);
         }
 
         public override void ReceiveExtraAI(BinaryReader reader) {
             seed = reader.ReadInt32();
             Phase = (BossPhase)reader.ReadInt32();
             introAppear = reader.ReadSingle();
+            saberPatternIndex = reader.ReadInt32();
+            lastSaberPatternTime = reader.ReadInt32();
         }
 
         public override void ApplyDifficultyAndPlayerScaling(int numPlayers, float balance, float bossAdjustment) {
@@ -117,6 +132,10 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             PhaseTimer = 0;
             LocalTimer = 0;
             NPC.netUpdate = true;
+            if (next == BossPhase.SaberHell) {
+                saberPatternIndex = 0;
+                lastSaberPatternTime = 0;
+            }
         }
 
         public override void AI() {
@@ -256,7 +275,10 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             if (PhaseTimer % 150 == 80) {
                 DoTrackingArcFire(target, 6, 46f);
             }
-
+            if (PhaseTimer % 10 == 0) {
+                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, NPC.Center.To(target.Center).UnitVector() * 24,
+                        ModContent.ProjectileType<SaberHell>(), GetBossDamage(0.9f), 2);
+            }
             if (PhaseTimer > 540) {
                 TransitionTo(BossPhase.SaberHell);
                 aitype = AttackAIStyle.Idle;
@@ -308,8 +330,9 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(12, 36);
             }
 
-            if (PhaseTimer > 140 && PhaseTimer % 50 == 0) {
-                PerformSaberPattern(target);
+            // 多图案轮换：每 70 tick 尝试触发一次（首段延迟 140）
+            if (PhaseTimer > 140 && PhaseTimer - lastSaberPatternTime >= 70 && saberPatternIndex < saberPatternsPerPhase) {
+                PerformNextSaberPattern(target);
             }
 
             if (PhaseTimer > 420) {
@@ -319,7 +342,31 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             }
         }
 
-        private void PerformSaberPattern(Player target) {
+        private void PerformNextSaberPattern(Player target) {
+            lastSaberPatternTime = (int)PhaseTimer;
+            switch (saberPatternIndex % 5) {
+                case 0:
+                    Pattern_RingDouble(target);
+                    break;
+                case 1:
+                    Pattern_CrossSweep(target);
+                    break;
+                case 2:
+                    Pattern_RotatingBlades(target);
+                    break;
+                case 3:
+                    Pattern_ConvergingSpokes(target);
+                    break;
+                case 4:
+                    Pattern_AimedWaveBursts(target);
+                    break;
+            }
+            saberPatternIndex++;
+            NPC.netUpdate = true;
+        }
+
+        // 原始环形 + 内环
+        private void Pattern_RingDouble(Player target) {
             if (VaultUtils.isClient) return;
             Vector2 basePos = target.Center;
             for (int ring = 0; ring < 2; ring++) {
@@ -332,6 +379,75 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                         ModContent.ProjectileType<SaberHell>(), GetBossDamage(0.9f), 2);
                 }
             }
+            Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(6, 18);
+            SoundEngine.PlaySound(SoundID.Item71 with { PitchVariance = 0.2f, Volume = 1f }, target.Center);
+        }
+
+        // 十字+斜十字扫线（延迟出现的刀幕）
+        private void Pattern_CrossSweep(Player target) {
+            if (VaultUtils.isClient) return;
+            int lines = 8; // 4 条正交 + 4 条斜线
+            for (int i = 0; i < lines; i++) {
+                float ang = MathHelper.PiOver4 * i; // 45° 递增
+                Vector2 dir = ang.ToRotationVector2();
+                Vector2 spawn = target.Center + dir * 600;
+                Projectile.NewProjectile(NPC.GetSource_FromAI(), spawn, -dir * 24,
+                    ModContent.ProjectileType<SaberHell>(), GetBossDamage(1f), 2);
+            }
+            Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(9, 22);
+            SoundEngine.PlaySound(SoundID.Item71 with { Pitch = -0.3f, Volume = 1.1f }, target.Center);
+        }
+
+        // 旋转刀阵（外圈绕玩家旋转后内收）
+        private void Pattern_RotatingBlades(Player target) {
+            if (VaultUtils.isClient) return;
+            int bladeCount = 10;
+            float baseRot = Main.rand.NextFloat(MathHelper.TwoPi);
+            for (int i = 0; i < bladeCount; i++) {
+                float ang = baseRot + MathHelper.TwoPi * i / bladeCount;
+                Vector2 spawn = target.Center + ang.ToRotationVector2() * 480f;
+                Vector2 vel = ang.ToRotationVector2().RotatedBy(MathHelper.PiOver2) * -20f; // 先切向旋转
+                int p = Projectile.NewProjectile(NPC.GetSource_FromAI(), spawn, vel,
+                    ModContent.ProjectileType<SaberHell>(), GetBossDamage(0.85f), 2);
+                if (p >= 0 && p < Main.maxProjectiles) {
+                    Main.projectile[p].localAI[0] = -60; // 利用负计时表示旋转阶段
+                    Main.projectile[p].ai[0] = target.Center.X;
+                    Main.projectile[p].ai[1] = target.Center.Y;
+                }
+            }
+            SoundEngine.PlaySound(SoundID.Item71 with { Pitch = 0.25f, Volume = 0.9f }, target.Center);
+        }
+
+        // 辐射收束：多条外向->停顿->反向回扑
+        private void Pattern_ConvergingSpokes(Player target) {
+            if (VaultUtils.isClient) return;
+            int spokes = 12;
+            for (int i = 0; i < spokes; i++) {
+                float ang = MathHelper.TwoPi * i / spokes;
+                Vector2 dir = ang.ToRotationVector2();
+                Vector2 spawn = target.Center + dir * 140;
+                int p = Projectile.NewProjectile(NPC.GetSource_FromAI(), spawn, dir * 28,
+                    ModContent.ProjectileType<SaberHell>(), GetBossDamage(0.75f), 2);
+                if (p >= 0 && p < Main.maxProjectiles) Main.projectile[p].localAI[0] = -30; // 先向外延伸再回收
+            }
+            SoundEngine.PlaySound(SoundID.Item71 with { Pitch = -0.1f, Volume = 1.05f }, target.Center);
+        }
+
+        // 多段朝向玩家的波状 burst
+        private void Pattern_AimedWaveBursts(Player target) {
+            if (VaultUtils.isClient) return;
+            int waves = 3;
+            for (int w = 0; w < waves; w++) {
+                for (int i = -2; i <= 2; i++) {
+                    float offsetAng = i * 0.11f + w * 0.05f;
+                    Vector2 dir = NPC.DirectionTo(target.Center).RotatedBy(offsetAng);
+                    Vector2 spawn = target.Center + dir.RotatedBy(MathHelper.PiOver2) * (i * 70) + new Vector2(0, -300 - w * 120);
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), spawn, dir * 22f,
+                        ModContent.ProjectileType<SaberHell>(), GetBossDamage(0.8f), 2);
+                }
+            }
+            Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(7, 20);
+            SoundEngine.PlaySound(SoundID.Item71 with { PitchVariance = 0.3f, Volume = 1f }, target.Center);
         }
 
         private void RunRecoverDash(Player target) {
@@ -373,170 +489,6 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             }
             float introScale = Phase == BossPhase.Intro ? MathHelper.Lerp(0.6f, 1f, ACMUtils.BackOut(introAppear)) : 1f;
             Main.EntitySpriteDraw(mainValue, NPC.Center - Main.screenPosition, null, drawColor, NPC.rotation, mainValue.Size() / 2, NPC.scale * introScale, SpriteEffects.None);
-            return false;
-        }
-    }
-
-    internal class YingouFireBall : ModProjectile
-    {
-        public override string Texture => "InnoVault/Assets/placeholder";
-        public override void SetDefaults() {
-            Projectile.width = Projectile.height = 32;
-            Projectile.friendly = false;
-            Projectile.timeLeft = 220;
-            Projectile.tileCollide = false;
-        }
-
-        public static void KillAll() {
-            foreach (var proj in Main.ActiveProjectiles) {
-                if (proj.type != ModContent.ProjectileType<YingouFireBall>()) continue;
-                proj.Kill();
-                proj.netUpdate = true;
-            }
-        }
-
-        public override void AI() {
-            if (!VaultUtils.isServer) {
-                for (int i = 0; i < 6; i++) {
-                    int dustType = Main.rand.NextBool(2) ? DustID.Torch : DustID.Shadowflame;
-                    if (Projectile.ai[1] == 1f) dustType = DustID.Torch;
-                    int dust = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height,
-                        dustType, Projectile.velocity.X / 2, Projectile.velocity.Y / 2, 150,
-                        default, Main.rand.NextFloat(1f, 3.5f));
-                    Main.dust[dust].noGravity = true;
-                    Main.dust[dust].velocity *= 0.6f;
-                }
-            }
-
-            Projectile.ai[0]++;
-            if (Projectile.ai[0] < 80) { //螺旋阶段
-                float jitter = (float)Math.Sin(Projectile.ai[0] * 0.3f) * 0.1f;
-                Projectile.velocity = Projectile.velocity.RotatedBy((0.025f + jitter) * Projectile.ai[2]);
-            }
-            else if (Projectile.ai[0] == 80) { //脉冲
-                Projectile.velocity *= 0.3f;
-                if (!VaultUtils.isServer) {
-                    for (int i = 0; i < 30; i++) {
-                        Vector2 offset = Main.rand.NextVector2Circular(1f, 1f) * 40f;
-                        int dust = Dust.NewDust(Projectile.Center + offset, 0, 0,
-                            DustID.PurpleTorch, 0f, 0f, 0, default, 2f);
-                        Main.dust[dust].noGravity = true;
-                        Main.dust[dust].velocity = offset.SafeNormalize(Vector2.Zero) * 4f;
-                    }
-                }
-            }
-            else { //追踪
-                Player player = Projectile.Center.FindClosestPlayer(3200, true);
-                if (player != null) {
-                    float speedFactor = 1.2f + 0.3f * (float)Math.Sin(Projectile.ai[0] * 0.15f);
-                    Vector2 targetSpeed = Projectile.SafeDirectionTo(player.Center) * Projectile.velocity.Length() * speedFactor;
-                    Projectile.velocity = Vector2.Lerp(Projectile.velocity, targetSpeed, 0.05f);
-                }
-            }
-        }
-    }
-
-    internal class SaberHell : ModProjectile
-    {
-        public override string Texture => "InnoVault/Assets/placeholder";
-        public override void SetDefaults() {
-            Projectile.width = Projectile.height = 32;
-            Projectile.friendly = false;
-            Projectile.timeLeft = 120;
-            Projectile.tileCollide = false;
-        }
-
-        public override void AI() {
-            Projectile.velocity = Projectile.velocity.UnitVector();
-            if (Projectile.localAI[0] < 40) {
-                if (Projectile.localAI[0] == 0) Projectile.localAI[1] = 30;
-                Projectile.localAI[0]++;
-                if (Projectile.localAI[0] == 40) {
-                    int num = 1000;
-                    int num2 = 36;
-                    Projectile.NewProjectile(Projectile.FromObjectGetParent(),
-                        Projectile.Center + Projectile.velocity * num, Projectile.velocity * -num2,
-                        ModContent.ProjectileType<SaberKiller>(), Projectile.damage, Projectile.knockBack,
-                        Main.myPlayer, Projectile.Center.X, Projectile.Center.Y);
-                    Projectile.velocity *= -1;
-                    Projectile.NewProjectile(Projectile.FromObjectGetParent(),
-                        Projectile.Center + Projectile.velocity * num, Projectile.velocity * -num2,
-                        ModContent.ProjectileType<SaberKiller>(), Projectile.damage, Projectile.knockBack,
-                        Main.myPlayer, Projectile.Center.X, Projectile.Center.Y);
-                }
-            }
-            else {
-                if (Projectile.localAI[1] > 0) Projectile.localAI[1]--;
-            }
-        }
-
-        public override bool PreDraw(ref Color lightColor) {
-            Texture2D back = VaultAsset.placeholder2.Value;
-            Vector2 drawPos = Projectile.Center - Main.screenPosition;
-            int width = 4400;
-            int height = (int)(Projectile.localAI[0] * 3);
-            float alpha = Projectile.localAI[1] / 60f;
-            Rectangle rect = new Rectangle(-width / 2, -height / 2, width, height);
-            Vector2 origin = new Vector2(rect.Width / 2, rect.Height / 2);
-            Color drawColor = VaultUtils.MultiStepColorLerp(Projectile.localAI[0] / 40f, Color.Azure, Color.Red);
-            Main.spriteBatch.Draw(back, drawPos, rect, drawColor with { A = 155 } * alpha,
-                Projectile.velocity.ToRotation(), origin, 1f, SpriteEffects.None, 0f);
-            return false;
-        }
-    }
-
-    internal class SaberKiller : ModProjectile
-    {
-        public override string Texture => "AncientChineseMythology/NPCs/Boss/Yingous/YingouHand";
-        public override void SetStaticDefaults() {
-            ProjectileID.Sets.TrailingMode[Type] = 3;
-            ProjectileID.Sets.TrailCacheLength[Type] = 8;
-        }
-        public override void SetDefaults() {
-            Projectile.width = Projectile.height = 84;
-            Projectile.tileCollide = false;
-            Projectile.hostile = true;
-            Projectile.friendly = false;
-            Projectile.timeLeft = 360;
-            Projectile.alpha = 255;
-            Projectile.penetrate = -1;
-            Projectile.extraUpdates = 1;
-        }
-        public override void AI() {
-            Projectile.rotation = Projectile.velocity.ToRotation();
-            Vector2 targetPos = new Vector2(Projectile.ai[0], Projectile.ai[1]);
-            if (targetPos.Distance(Projectile.Center) < 120) {
-                Projectile.velocity /= 2f;
-                if (Projectile.ai[2] == 0) {
-                    SoundEngine.PlaySound(SoundID.Item89, targetPos);
-                    for (int i = 0; i < 115; i++) {
-                        Vector2 sparkPos = targetPos + Main.rand.NextVector2Circular(60, 60);
-                        int dust = Dust.NewDust(sparkPos, 0, 0, DustID.Torch, 0, 0);
-                        Main.dust[dust].velocity = Main.rand.NextVector2Circular(6, 6) * 1.5f;
-                        Main.dust[dust].scale = Main.rand.NextFloat(1.2f, 3f);
-                        Main.dust[dust].noGravity = true;
-                    }
-                }
-                Projectile.ai[2] = 1f;
-            }
-            if (Projectile.ai[2] == 1f) {
-                Projectile.alpha -= 5;
-                if (Projectile.alpha <= 0f) Projectile.Kill();
-                Projectile.alpha = (int)MathHelper.Clamp(Projectile.alpha, 0, 255);
-            }
-        }
-        public override bool PreDraw(ref Color lightColor) {
-            Texture2D value = TextureAssets.Projectile[Type].Value;
-            Color drawColor = Color.White * (Projectile.alpha / 255f);
-            float sengs = 0.3f;
-            for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                Vector2 oldPos = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
-                Main.spriteBatch.Draw(value, oldPos, null, drawColor * sengs,
-                    Projectile.rotation, value.Size() / 2, Projectile.scale, SpriteEffects.None, 0);
-                sengs *= 0.9f;
-            }
-            Main.spriteBatch.Draw(value, Projectile.Center - Main.screenPosition, null, drawColor,
-                Projectile.rotation, value.Size() / 2, Projectile.scale, SpriteEffects.None, 0);
             return false;
         }
     }
