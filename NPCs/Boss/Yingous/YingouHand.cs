@@ -34,6 +34,13 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
         private Vector2 swingEnd;
         private float impactFlash;
 
+        // ===== FrenzyDash 专用参数 =====
+        private int frenzyDashHandState; // 0=空闲 1=展开 2=冲刺挥砍 3=收招
+        private float frenzyDashProgress; // 0-1 当前动作进度
+        private float frenzyDashTargetAngle; // 目标角度（相对于Boss->Player方向）
+        private float frenzyDashCurrentAngle; // 当前角度
+        private float frenzySlashFlash; // 斩击闪光
+
         public float swingAngle; //保留（旧）
         public float swingPhase; //保留（旧）
 
@@ -115,6 +122,12 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                     break;
                 case Yingou.BossPhase.SaberHell:
                     DoSaberChargePose(boss, target, yBoss);
+                    break;
+                case Yingou.BossPhase.FrenzyDash:
+                    DoFrenzyDashBlades(boss, target, yBoss);
+                    break;
+                case Yingou.BossPhase.BladeScatter:
+                    DoBladeScatterPose(boss, target, yBoss);
                     break;
                 case Yingou.BossPhase.RecoverDash:
                     DoRecoverFollow(boss, target, yBoss);
@@ -269,10 +282,196 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             }
         }
 
+        private void DoFrenzyDashBlades(NPC boss, Player target, Yingou yBoss) {
+            // 获取Boss的冲刺状态信息（通过反射或访问公开字段）
+            var bossYingou = boss.ModNPC as Yingou;
+            if (bossYingou == null) return;
+
+            // 通过访问Boss的AI变量推断当前冲刺状态
+            int bossFrenzyState = GetBossFrenzyState(boss);
+            int bossFrenzyStateTimer = GetBossFrenzyStateTimer(boss);
+
+            Vector2 bossToTarget = (target.Center - boss.Center).SafeNormalize(Vector2.UnitX);
+            float baseAngleToTarget = bossToTarget.ToRotation();
+
+            switch (bossFrenzyState) {
+                case 0: // Telegraph 展开阶段
+                    HandleFrenzyTelegraph(boss, target, baseAngleToTarget, bossFrenzyStateTimer);
+                    break;
+                case 1: // Dash 收束斩击阶段
+                    HandleFrenzyDash(boss, target, baseAngleToTarget, bossFrenzyStateTimer);
+                    break;
+                case 2: // Recover 收招阶段
+                    HandleFrenzyRecover(boss, target, baseAngleToTarget, bossFrenzyStateTimer);
+                    break;
+            }
+
+            // 防止离散
+            if (getDistance(boss.Center, NPC.Center) > 600) {
+                Vector2 clampPos = boss.Center + (NPC.Center - boss.Center).SafeNormalize(Vector2.Zero) * 600;
+                NPC.Center = clampPos;
+            }
+        }
+
+        private void HandleFrenzyTelegraph(NPC boss, Player target, float baseAngle, int stateTimer) {
+            if (frenzyDashHandState != 1) {
+                // 进入展开状态
+                frenzyDashHandState = 1;
+                frenzyDashProgress = 0;
+                // 设置展开目标角度：左手-90°，右手+90°
+                frenzyDashTargetAngle = baseAngle + (Direction > 0 ? MathHelper.PiOver2 : -MathHelper.PiOver2);
+                frenzyDashCurrentAngle = (NPC.Center - boss.Center).ToRotation();
+            }
+
+            // 展开动画：使用ElasticOut缓动，营造刀刃张力感
+            frenzyDashProgress = MathHelper.Clamp(stateTimer / 32f, 0, 1);
+            float easeT = ACMUtils.ElasticOut(frenzyDashProgress);
+            
+            // 角度插值
+            float targetAngle = LerpAngle(frenzyDashCurrentAngle, frenzyDashTargetAngle, easeT);
+            
+            // 距离随展开程度变化：向外扩展
+            float expandRadius = MathHelper.Lerp(120, 200, ACMUtils.SineInOut(frenzyDashProgress));
+            Vector2 desiredPos = boss.Center + targetAngle.ToRotationVector2() * expandRadius;
+            
+            NPC.Center += (desiredPos - NPC.Center) * 0.25f;
+            NPC.rotation = targetAngle;
+
+            // 展开过程的气流粒子
+            if (!VaultUtils.isServer && Main.rand.NextBool(4)) {
+                Vector2 sparkPos = NPC.Center + NPC.rotation.ToRotationVector2() * Main.rand.NextFloat(60, 120);
+                int dust = Dust.NewDust(sparkPos, 0, 0, DustID.GoldFlame, 0, 0, 140, default, 1.4f);
+                Main.dust[dust].noGravity = true;
+                Main.dust[dust].velocity = NPC.rotation.ToRotationVector2().RotatedBy(MathHelper.PiOver2 * Direction) * 3f;
+            }
+        }
+
+        private void HandleFrenzyDash(NPC boss, Player target, float baseAngle, int stateTimer) {
+            if (frenzyDashHandState != 2) {
+                // 进入冲刺斩击状态
+                frenzyDashHandState = 2;
+                frenzyDashProgress = 0;
+                frenzyDashCurrentAngle = NPC.rotation;
+                frenzyDashTargetAngle = baseAngle; // 目标：Boss到玩家的方向
+                SoundEngine.PlaySound(SoundID.Item71 with { Volume = 1.2f, Pitch = 0.3f }, NPC.Center);
+            }
+
+            // 快速收束斩击：使用QuadIn突然加速
+            frenzyDashProgress = MathHelper.Clamp(stateTimer / 20f, 0, 1);
+            float slashEase = ACMUtils.QuadIn(frenzyDashProgress);
+            
+            // 角度快速插值到目标
+            float currentAngle = LerpAngle(frenzyDashCurrentAngle, frenzyDashTargetAngle, slashEase);
+            
+            // 距离在斩击中先突进再稍微回拉
+            float dashRadius = MathHelper.Lerp(200, 140, ACMUtils.SineInOut(frenzyDashProgress));
+            if (frenzyDashProgress > 0.7f) {
+                dashRadius += 30f * (float)Math.Sin((frenzyDashProgress - 0.7f) * MathHelper.Pi / 0.3f); // 斩击突进
+            }
+            
+            Vector2 desiredPos = boss.Center + currentAngle.ToRotationVector2() * dashRadius;
+            NPC.Center += (desiredPos - NPC.Center) * 0.65f;
+            NPC.rotation = currentAngle;
+
+            // 斩击冲击效果
+            if (frenzyDashProgress > 0.6f && frenzySlashFlash == 0) {
+                frenzySlashFlash = 1f;
+                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(5, 12);
+                SoundEngine.PlaySound(SoundID.Item89 with { Volume = 1f, Pitch = -0.2f }, NPC.Center);
+                
+                // 斩击光效与粒子爆发
+                if (!VaultUtils.isServer) {
+                    for (int i = 0; i < 25; i++) {
+                        Vector2 vel = NPC.rotation.ToRotationVector2().RotatedByRandom(0.8f) * Main.rand.NextFloat(8, 16);
+                        int dust = Dust.NewDust(NPC.Center, 0, 0, DustID.Torch, vel.X, vel.Y, 120, default, Main.rand.NextFloat(1.8f, 2.8f));
+                        Main.dust[dust].noGravity = true;
+                    }
+                    
+                    // 发射几个斩击波
+                    if (!VaultUtils.isClient && Direction > 0) { // 只让右手发射避免重复
+                        for (int w = 0; w < 3; w++) {
+                            Vector2 waveVel = currentAngle.ToRotationVector2().RotatedBy(MathHelper.Lerp(-0.3f, 0.3f, w / 2f)) * 20f;
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, waveVel,
+                                ModContent.ProjectileType<YingouFireBall>(), boss.damage / 3, 1f, Main.myPlayer, 0, 1, Main.rand.NextFloat(0.8f));
+                        }
+                    }
+                }
+            }
+        }
+
+        private void HandleFrenzyRecover(NPC boss, Player target, float baseAngle, int stateTimer) {
+            if (frenzyDashHandState != 3) {
+                // 进入收招状态
+                frenzyDashHandState = 3;
+                frenzyDashProgress = 0;
+                frenzyDashCurrentAngle = NPC.rotation;
+            }
+
+            // 收招：回到休息位置，使用BackOut缓动
+            frenzyDashProgress = MathHelper.Clamp(stateTimer / 18f, 0, 1);
+            float recoverEase = ACMUtils.BackOut(frenzyDashProgress);
+            
+            Vector2 restOffset = new Vector2(Direction * 120, -40);
+            Vector2 restPos = boss.Center + restOffset;
+            float restAngle = (restPos - boss.Center).ToRotation();
+            
+            float currentAngle = LerpAngle(frenzyDashCurrentAngle, restAngle, recoverEase);
+            NPC.Center += (restPos - NPC.Center) * (0.15f + recoverEase * 0.2f);
+            NPC.rotation = currentAngle;
+
+            // 重置状态
+            if (frenzyDashProgress >= 1f) {
+                frenzyDashHandState = 0;
+                frenzySlashFlash = 0;
+            }
+        }
+
+        // 角度插值辅助函数
+        private float LerpAngle(float from, float to, float t) {
+            float diff = to - from;
+            while (diff > MathHelper.Pi) diff -= MathHelper.TwoPi;
+            while (diff < -MathHelper.Pi) diff += MathHelper.TwoPi;
+            return from + diff * t;
+        }
+
+        // 推断Boss的冲刺状态（通过AI变量模式识别）
+        private int GetBossFrenzyState(NPC boss) {
+            var yingou = boss.ModNPC as Yingou;
+            return yingou?.FrenzyDashState ?? 0;
+        }
+
+        private int GetBossFrenzyStateTimer(NPC boss) {
+            var yingou = boss.ModNPC as Yingou;
+            return yingou?.FrenzyDashStateTimer ?? 0;
+        }
+
         private void DoRecoverFollow(NPC boss, Player target, Yingou yBoss) {
             Vector2 desired = boss.Center + new Vector2(Direction * 130, -50);
             NPC.Center += (desired - NPC.Center) * 0.3f;
             NPC.rotation = (NPC.Center - boss.Center).ToRotation();
+        }
+
+        // ====== BladeScatter 蓄力姿态 ======
+        private void DoBladeScatterPose(NPC boss, Player target, Yingou yBoss) {
+            float chargeProgress = MathHelper.Clamp(boss.ai[1] / 90f, 0, 1);
+            
+            // 蓄力时双刀向上举起并向外张开
+            float chargeAngle = MathHelper.Lerp(-MathHelper.PiOver4, -MathHelper.PiOver2 - 0.3f, ACMUtils.SineInOut(chargeProgress));
+            chargeAngle += Direction * 0.4f; // 左右手差异
+            
+            float chargeRadius = MathHelper.Lerp(140, 180, chargeProgress);
+            Vector2 chargePos = boss.Center + chargeAngle.ToRotationVector2() * chargeRadius;
+            
+            NPC.Center += (chargePos - NPC.Center) * 0.2f;
+            NPC.rotation = chargeAngle;
+
+            // 蓄力粒子效果
+            if (!VaultUtils.isServer && Main.rand.NextBool(6)) {
+                Vector2 sparkPos = NPC.Center + Main.rand.NextVector2Circular(30, 30);
+                int dust = Dust.NewDust(sparkPos, 0, 0, DustID.GoldFlame, 0, 0, 140, default, 1.2f + chargeProgress);
+                Main.dust[dust].noGravity = true;
+                Main.dust[dust].velocity = (boss.Center - sparkPos).SafeNormalize(Vector2.Zero) * 2f;
+            }
         }
 
         public override bool CheckActive() => false;
@@ -311,6 +510,14 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             DrawTrail(VaultAsset.placeholder2.Value, Color.OrangeRed, Color.Red, impactFlash > 0 ? 1.4f : 1f);
             DrawTrail(SwordSlashTexture.Value, Color.White, Color.White);
 
+            // FrenzyDash 特殊拖尾效果
+            if (frenzySlashFlash > 0) {
+                Color flashColor = Color.Lerp(Color.Gold, Color.White, frenzySlashFlash);
+                DrawTrail(VaultAsset.placeholder2.Value, flashColor, flashColor * 0.6f, 1.8f);
+                frenzySlashFlash *= 0.85f;
+                if (frenzySlashFlash < 0.05f) frenzySlashFlash = 0;
+            }
+
             sb.End();
             sb.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.AnisotropicClamp,
                 DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
@@ -328,8 +535,12 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 sengs *= 0.9f;
             }
 
-            //斩击冲击高亮
-            Color bodyColor = drawColor * (impactFlash > 0 ? 1.3f : 1f);
+            //斩击冲击高亮 + FrenzyDash特殊效果
+            float totalFlash = Math.Max(impactFlash, frenzySlashFlash);
+            Color bodyColor = drawColor * (totalFlash > 0 ? (1.3f + totalFlash * 0.4f) : 1f);
+            if (frenzySlashFlash > 0) {
+                bodyColor = Color.Lerp(bodyColor, Color.Gold, frenzySlashFlash * 0.7f);
+            }
             Main.EntitySpriteDraw(tex, NPC.Center - Main.screenPosition, null, bodyColor, rotation, origin, NPC.scale, effects);
 
             if (impactFlash > 0) {

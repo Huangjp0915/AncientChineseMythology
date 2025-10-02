@@ -72,10 +72,15 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
         private int frenzyDashState; // 0 telegraph,1 dash,2 recover
         private int frenzyDashStateTimer;
         private Vector2 frenzyDashDir;
+        private float frenzyDashTelegraphAngle = 0f;
 
         // BladeScatter 状态
         private float bladeScatterCharge;
         private int bladeScatterRingCount;
+
+        // 公开访问器，供手部获取冲刺状态
+        public int FrenzyDashState => frenzyDashState;
+        public int FrenzyDashStateTimer => frenzyDashStateTimer;
 
         public override void OnSpawn(IEntitySource source) {
             seed = Main.rand.Next(0, 10000);
@@ -168,7 +173,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 frenzyDashTotal = 4 + (Main.expertMode ? 1 : 0) + (Main.masterMode ? 1 : 0);
                 frenzyDashState = 0;
                 if (!VaultUtils.isClient) {
-                    rotRandSet = Main.rand.NextFloat(MathHelper.TwoPi);
+                    frenzyDashTelegraphAngle = Main.rand.NextFloat(MathHelper.TwoPi);
                 }
                 frenzyDashStateTimer = 0;
                 aitype = AttackAIStyle.Melee;
@@ -387,14 +392,13 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             if (PhaseTimer > 420) TransitionTo(BossPhase.FrenzyDash); // 接入新冲刺阶段
         }
 
-        private float rotRandSet = 0f;
         private void RunFrenzyDash(Player target) {
             // Telegraph -> Dash -> Recover，重复 frenzyDashTotal 次
             frenzyDashStateTimer++;
             switch (frenzyDashState) {
                 case 0: // telegraph
                     NPC.velocity *= 0.85f;
-                    Vector2 hover = target.Center + new Vector2(0, -680).RotatedBy(rotRandSet);
+                    Vector2 hover = target.Center + new Vector2(0, -680).RotatedBy(frenzyDashTelegraphAngle);
                     NPC.Center += (hover - NPC.Center) * 0.16f;
                     if (!VaultUtils.isServer && frenzyDashStateTimer % 6 == 0) {
                         int dust = Dust.NewDust(NPC.Center, 0, 0, DustID.GoldFlame, 0, 0, 150, default, 2f);
@@ -406,27 +410,27 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                         SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.2f, Volume = 0.9f, MaxInstances = 6 }, NPC.Center);
                         Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(8, 18);
                         frenzyDashState = 1; frenzyDashStateTimer = 0;
-                        if (!VaultUtils.isClient) {
-                            // dash 起手散出少量火球
-                            for (int i = 0; i < 5; i++) {
-                                Vector2 vel = frenzyDashDir.RotatedBy(MathHelper.Lerp(-0.4f, 0.4f, i / 4f)) * Main.rand.NextFloat(18, 26);
-                                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                                    ModContent.ProjectileType<YingouFireBall>(), GetBossDamage(0.75f), 2f);
-                            }
-                        }
+                        //if (!VaultUtils.isClient) {
+                        //    // dash 起手散出少量火球
+                        //    for (int i = 0; i < 5; i++) {
+                        //        Vector2 vel = frenzyDashDir.RotatedBy(MathHelper.Lerp(-0.4f, 0.4f, i / 4f)) * Main.rand.NextFloat(18, 26);
+                        //        Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                        //            ModContent.ProjectileType<YingouFireBall>(), GetBossDamage(0.75f), 2f);
+                        //    }
+                        //}
                     }
                     break;
                 case 1: // dash
                     NPC.velocity *= 0.985f;
-                    if (frenzyDashStateTimer % 6 == 0 && !VaultUtils.isClient) {
-                        Vector2 side = frenzyDashDir.RotatedBy(MathHelper.PiOver2);
-                        Vector2 posL = NPC.Center + side * 40;
-                        Vector2 posR = NPC.Center - side * 40;
-                        Projectile.NewProjectile(NPC.GetSource_FromAI(), posL, frenzyDashDir * 14f,
-                            ModContent.ProjectileType<YingouFireBall>(), GetBossDamage(0.6f), 2f, Main.myPlayer, 0, 1, Main.rand.NextFloat(0.5f));
-                        Projectile.NewProjectile(NPC.GetSource_FromAI(), posR, frenzyDashDir * 14f,
-                            ModContent.ProjectileType<YingouFireBall>(), GetBossDamage(0.6f), 2f, Main.myPlayer, 0, 1, Main.rand.NextFloat(0.5f));
-                    }
+                    //if (frenzyDashStateTimer % 6 == 0 && !VaultUtils.isClient) {
+                    //    Vector2 side = frenzyDashDir.RotatedBy(MathHelper.PiOver2);
+                    //    Vector2 posL = NPC.Center + side * 40;
+                    //    Vector2 posR = NPC.Center - side * 40;
+                    //    Projectile.NewProjectile(NPC.GetSource_FromAI(), posL, frenzyDashDir * 14f,
+                    //        ModContent.ProjectileType<YingouFireBall>(), GetBossDamage(0.6f), 2f, Main.myPlayer, 0, 1, Main.rand.NextFloat(0.5f));
+                    //    Projectile.NewProjectile(NPC.GetSource_FromAI(), posR, frenzyDashDir * 14f,
+                    //        ModContent.ProjectileType<YingouFireBall>(), GetBossDamage(0.6f), 2f, Main.myPlayer, 0, 1, Main.rand.NextFloat(0.5f));
+                    //}
                     if (frenzyDashStateTimer > 42 || NPC.collideX || NPC.collideY) {
                         frenzyDashState = 2; frenzyDashStateTimer = 0; NPC.velocity *= 0.4f;
                     }
@@ -440,7 +444,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                         } else {
                             frenzyDashState = 0; frenzyDashStateTimer = 0; swordDir *= -1; NPC.netUpdate = true;
                             if (!VaultUtils.isClient) {
-                                rotRandSet = Main.rand.NextFloat(MathHelper.TwoPi);
+                                frenzyDashTelegraphAngle = Main.rand.NextFloat(MathHelper.TwoPi);
                             }
                         }
                     }
