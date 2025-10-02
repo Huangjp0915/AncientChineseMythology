@@ -959,6 +959,19 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             if (progress > 0.65f && !actionTriggered) {
                 actionTriggered = true;
                 SoundEngine.PlaySound(SoundID.Item29 with { Volume = 0.9f, Pitch = 0.1f }, NPC.Center);
+
+                Vector2 basePos = target.Center + new Vector2(0, NPC.ai[1] == 1f ? -160 : 160);
+                for (int ring = 0; ring < 2; ring++) {
+                    int slice = 6 + ring * 2;
+                    for (int i = 0; i < slice; i++) {
+                        float ang = MathHelper.TwoPi * i / slice + ring * 0.15f;
+                        Vector2 dir = ang.ToRotationVector2();
+                        Vector2 spawn = basePos + dir * (260 + ring * 80);
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), spawn, -dir * 10,
+                            ModContent.ProjectileType<SaberHell>(), 220, 2);
+                    }
+                }
+                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(6, 18);
             }
         }
 

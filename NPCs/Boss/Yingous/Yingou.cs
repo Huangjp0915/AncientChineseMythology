@@ -376,14 +376,14 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
         }
 
         private void RunPatternSetA(Player target) {
-            //移动：更加侵略性的逼近
+            //移动：稍微降低侵略性的逼近
             Vector2 baseDir = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero);
-            Vector2 lateral = baseDir.RotatedBy(MathHelper.PiOver2 * swordDir) * MathF.Sin(PhaseTimer * 0.06f) * 8f; //增加侧移幅度
-            Vector2 desiredVel = baseDir * 15 + lateral; //增加逼近速度
-            NPC.velocity = Vector2.Lerp(NPC.velocity, desiredVel, 0.08f);
+            Vector2 lateral = baseDir.RotatedBy(MathHelper.PiOver2 * swordDir) * MathF.Sin(PhaseTimer * 0.05f) * 6f; //减少侧移幅度和频率
+            Vector2 desiredVel = baseDir * 11f + lateral; //降低逼近速度从15到11
+            NPC.velocity = Vector2.Lerp(NPC.velocity, desiredVel, 0.06f); //降低加速度从0.08到0.06
 
-            //更频繁的主要攻击 - 从120减少到80tick周期
-            if (PhaseTimer % 80 == 30 && AreBothHandsReady() && actionCooldown <= 0) {
+            //适当降低主要攻击频率 - 从80改为90tick周期
+            if (PhaseTimer % 90 == 30 && AreBothHandsReady() && actionCooldown <= 0) {
                 //指挥双手执行更华丽的斩击动作
                 Vector2 fanDirection = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
                 float fanAngle = fanDirection.ToRotation();
@@ -419,17 +419,17 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             }
 
             //检查是否到了发射火球的时机
-            if (PhaseTimer % 80 == 50) {
-                DoFanFire(target, 8 + (Main.expertMode ? 3 : 0) + (Main.masterMode ? 3 : 0), 85, 20f, 26f); //增加弹幕密度和速度
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(8, 22);
-                SoundEngine.PlaySound(SoundID.Item74 with { Pitch = 0.2f, Volume = 1.2f }, NPC.Center);
+            if (PhaseTimer % 90 == 55) { //调整时机避免与主攻击重叠
+                DoFanFire(target, 7 + (Main.expertMode ? 2 : 0) + (Main.masterMode ? 2 : 0), 75, 18f, 24f); //稍微降低弹幕密度和速度
+                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(7, 20); //降低震动强度
+                SoundEngine.PlaySound(SoundID.Item74 with { Pitch = 0.2f, Volume = 1.1f }, NPC.Center); //降低音量
             }
 
-            //增加随机小规模攻击
-            if (PhaseTimer % 40 == 20 && AreBothHandsReady())
+            //降低随机小规模攻击频率
+            if (PhaseTimer % 50 == 25 && AreBothHandsReady()) //从40改为50tick
             {
                 Vector2 strikeDir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
-                if (Main.rand.NextBool()) //50%概率触发额外攻击
+                if (Main.rand.NextBool(3)) //降低概率从50%到33%
                 {
                     CommandRightHand(YingouHand.ActionCommand.QuickStrike, 
                         target.Center + strikeDir * 120, strikeDir.ToRotation());
@@ -461,26 +461,26 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
         }
 
         private void RunSpiral(Player target) {
-            spiralPulse += 0.04f; //增加脉冲频率
-            circlespeed = MathHelper.Lerp(circlespeed, 1.8f, 0.015f); //增加旋转速度
-            circleCounter += circlespeed * 0.1f;
+            spiralPulse += 0.035f; //稍微降低脉冲频率
+            circlespeed = MathHelper.Lerp(circlespeed, 1.5f, 0.012f); //降低旋转速度从1.8到1.5
+            circleCounter += circlespeed * 0.08f; //降低旋转频率
 
-            float radius = 1200 + MathF.Sin(spiralPulse * 2.5f) * 120f * ACMUtils.SineInOut(MathF.Sin(spiralPulse)); //更动态的半径变化
+            float radius = 1300 + MathF.Sin(spiralPulse * 2.2f) * 100f * ACMUtils.SineInOut(MathF.Sin(spiralPulse)); //增加半径并降低波动
             Vector2 dest = target.Center + (circleCounter * swordDir).ToRotationVector2() * radius;
-            NPC.Center += (dest - NPC.Center) * 0.12f; //更快的移动响应
-            NPC.velocity *= 0.75f;
+            NPC.Center += (dest - NPC.Center) * 0.09f; //降低移动响应速度从0.12到0.09
+            NPC.velocity *= 0.8f; //增加阻力
 
-            //更频繁的旋转攻击
-            if (PhaseTimer % 60 == 8 && AreBothHandsReady() && actionCooldown <= 0) {
+            //降低旋转攻击频率
+            if (PhaseTimer % 80 == 8 && AreBothHandsReady() && actionCooldown <= 0) { //从60改为80tick
                 //双手交替旋转施法，营造华丽的视觉效果
-                if ((PhaseTimer / 60) % 2 == 0)
+                if ((PhaseTimer / 80) % 2 == 0)
                     CommandLeftHand(YingouHand.ActionCommand.SpinCast);
                 else
                     CommandRightHand(YingouHand.ActionCommand.SpinCast);
             }
 
-            //更频繁的横扫攻击
-            if (PhaseTimer % 90 == 40 && AreBothHandsReady() && actionCooldown <= 0) {
+            //降低横扫攻击频率
+            if (PhaseTimer % 110 == 40 && AreBothHandsReady() && actionCooldown <= 0) { //从90改为110tick
                 Vector2 targetDir = NPC.DirectionTo(target.Center);
                 CommandBothHands(
                     YingouHand.ActionCommand.SweepSlash,
@@ -490,18 +490,18 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 );
             }
 
-            //大幅增加的连续突刺频率
-            if (PhaseTimer % 20 == 0 && AreBothHandsReady()) {
+            //适当降低连续突刺频率
+            if (PhaseTimer % 25 == 0 && AreBothHandsReady()) { //从20改为25tick
                 Vector2 strikeDir = NPC.Center.To(target.Center).UnitVector();
                 //交替使用双手进行连续突刺
-                if (PhaseTimer % 40 == 0)
+                if (PhaseTimer % 50 == 0) //从40改为50tick
                     CommandLeftHand(YingouHand.ActionCommand.QuickStrike, target.Center, strikeDir.ToRotation());
-                else
+                else if (PhaseTimer % 50 == 25)
                     CommandRightHand(YingouHand.ActionCommand.QuickStrike, target.Center, strikeDir.ToRotation());
             }
 
-            //增加随机的华丽动作
-            if (PhaseTimer % 120 == 80 && AreBothHandsReady())
+            //适当降低随机华丽动作频率
+            if (PhaseTimer % 140 == 90 && AreBothHandsReady()) //从120改为140tick
             {
                 int flashyAction = Main.rand.Next(0, 3);
                 switch (flashyAction)
@@ -529,33 +529,33 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
 
         private void RunSaberHell(Player target) {
             //蓄力 -> 连续多段释放
-            saberCharge = MathHelper.Clamp(saberCharge + 0.018f, 0, 1); //更快的蓄力
-            NPC.velocity *= 0.85f; //允许一定移动保持侵略性
-            
-            //更动态的悬浮位置 - 不完全静止
-            Vector2 hover = target.Center + new Vector2(0, -350 + MathF.Sin(PhaseTimer * 0.08f) * 50);
-            Vector2 lateralDrift = new Vector2(MathF.Sin(PhaseTimer * 0.04f) * 80, 0); //增加侧向漂移
-            NPC.Center += ((hover + lateralDrift) - NPC.Center) * 0.08f;
+            saberCharge = MathHelper.Clamp(saberCharge + 0.015f, 0, 1); //稍微降低蓄力速度
+            NPC.velocity *= 0.88f; //稍微增加阻力
+
+            //稍微调整悬浮位置 - 降低侵略性
+            Vector2 hover = target.Center + new Vector2(0, -380 + MathF.Sin(PhaseTimer * 0.06f) * 40); //增加高度，降低波动
+            Vector2 lateralDrift = new Vector2(MathF.Sin(PhaseTimer * 0.035f) * 60, 0); //降低侧向漂移
+            NPC.Center += ((hover + lateralDrift) - NPC.Center) * 0.06f; //降低移动速度
 
             //充能粒子 - 更华丽
             if (!VaultUtils.isServer) {
-                for (int i = 0; i < 6; i++) {
-                    Vector2 off = Main.rand.NextVector2CircularEdge(180, 180) * saberCharge;
-                    int dust = Dust.NewDust(NPC.Center + off, 0, 0, DustID.PurpleTorch, 0, 0, 120, default, Main.rand.NextFloat(1.8f, 3.2f));
-                    Main.dust[dust].velocity = -off.SafeNormalize(Vector2.Zero) * 5f * Main.rand.NextFloat(0.6f, 1.2f);
+                for (int i = 0; i < 5; i++) { //稍微减少粒子数量
+                    Vector2 off = Main.rand.NextVector2CircularEdge(160, 160) * saberCharge; //稍微减小范围
+                    int dust = Dust.NewDust(NPC.Center + off, 0, 0, DustID.PurpleTorch, 0, 0, 120, default, Main.rand.NextFloat(1.6f, 2.8f));
+                    Main.dust[dust].velocity = -off.SafeNormalize(Vector2.Zero) * 4f * Main.rand.NextFloat(0.6f, 1.2f);
                     Main.dust[dust].noGravity = true;
                 }
             }
 
-            if (PhaseTimer == 90) { //提前蓄力完成
-                SoundEngine.PlaySound(SoundID.ForceRoar with { Pitch = -0.3f, Volume = 1.4f }, NPC.Center);
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(15, 45);
+            if (PhaseTimer == 100) { //稍微延后蓄力完成时间，给玩家更多准备时间
+                SoundEngine.PlaySound(SoundID.ForceRoar with { Pitch = -0.3f, Volume = 1.2f }, NPC.Center); //降低音量
+                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(12, 35); //降低震动强度
             }
 
-            //更频繁的威慑性动作展示
-            if (PhaseTimer % 30 == 0 && PhaseTimer < 120 && AreBothHandsReady())
+            //适当降低威慑性动作展示频率
+            if (PhaseTimer % 35 == 0 && PhaseTimer < 130 && AreBothHandsReady()) //从30改为35tick，从120改为130
             {
-                int intimidationAction = (int)((PhaseTimer / 30) % 4);
+                int intimidationAction = (int)((PhaseTimer / 35) % 4);
                 switch (intimidationAction)
                 {
                     case 0:
@@ -573,17 +573,17 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 }
             }
 
-            //多图案轮换：更快的节奏 - 每 50 tick 触发
-            if (PhaseTimer > 120 && PhaseTimer - lastSaberPatternTime >= 50 && saberPatternIndex < saberPatternsPerPhase) {
+            //多图案轮换：稍微放慢节奏 - 每 60 tick 触发
+            if (PhaseTimer > 130 && PhaseTimer - lastSaberPatternTime >= 60 && saberPatternIndex < saberPatternsPerPhase) { //从50改为60tick
                 PrepareSaberPattern(target, saberPatternIndex % 5);
             }
 
             //检查是否到了实际发射的时机
-            if (PhaseTimer > 120 && PhaseTimer - lastSaberPatternTime >= 50) {
+            if (PhaseTimer > 130 && PhaseTimer - lastSaberPatternTime >= 60) {
                 PerformNextSaberPattern(target);
             }
 
-            if (PhaseTimer > 350) TransitionTo(BossPhase.FrenzyDash); //缩短时长增加节奏感
+            if (PhaseTimer > 380) TransitionTo(BossPhase.FrenzyDash); //稍微延长阶段时间
         }
 
         private void PrepareSaberPattern(Player target, int patternIndex)
@@ -629,27 +629,27 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
         }
 
         private void RunBladeScatter(Player target) {
-            bladeScatterCharge = MathHelper.Clamp(bladeScatterCharge + 0.015f, 0, 1); //更快的蓄力
-            Vector2 focus = target.Center + new Vector2(0, -220 + (float)Math.Sin(PhaseTimer * 0.07f) * 35f); //更接近和动态
-            NPC.Center += (focus - NPC.Center) * 0.15f; //更快的移动
-            NPC.velocity *= 0.8f;
+            bladeScatterCharge = MathHelper.Clamp(bladeScatterCharge + 0.012f, 0, 1); //降低蓄力速度
+            Vector2 focus = target.Center + new Vector2(0, -250 + (float)Math.Sin(PhaseTimer * 0.06f) * 30f); //稍微增加距离和降低波动
+            NPC.Center += (focus - NPC.Center) * 0.12f; //稍微降低移动速度
+            NPC.velocity *= 0.82f; //增加阻力
 
             //Telegraph 环光 - 更华丽
-            if (!VaultUtils.isServer && PhaseTimer % 3 == 0) { //更频繁的粒子
-                for (int i = 0; i < 12; i++) {
-                    Vector2 off = Main.rand.NextVector2CircularEdge(200, 200) * bladeScatterCharge;
-                    int dust = Dust.NewDust(NPC.Center + off, 0, 0, DustID.GoldFlame, 0, 0, 140, default, 1.6f);
-                    Main.dust[dust].velocity = -off.SafeNormalize(Vector2.Zero) * 4f;
+            if (!VaultUtils.isServer && PhaseTimer % 4 == 0) { //降低粒子频率
+                for (int i = 0; i < 10; i++) { //稍微减少粒子数量
+                    Vector2 off = Main.rand.NextVector2CircularEdge(180, 180) * bladeScatterCharge; //稍微减小范围
+                    int dust = Dust.NewDust(NPC.Center + off, 0, 0, DustID.GoldFlame, 0, 0, 140, default, 1.4f);
+                    Main.dust[dust].velocity = -off.SafeNormalize(Vector2.Zero) * 3.5f;
                     Main.dust[dust].noGravity = true;
                 }
             }
 
-            if (PhaseTimer == 1) SoundEngine.PlaySound(SoundID.Item71 with { Pitch = -0.2f, Volume = 1.1f }, NPC.Center);
+            if (PhaseTimer == 1) SoundEngine.PlaySound(SoundID.Item71 with { Pitch = -0.2f, Volume = 1.0f }, NPC.Center); //降低音量
 
             //蓄力过程中的威慑动作
-            if (PhaseTimer % 25 == 0 && PhaseTimer < 70 && AreBothHandsReady())
+            if (PhaseTimer % 30 == 0 && PhaseTimer < 80 && AreBothHandsReady()) //稍微延长间隔
             {
-                int chargeAction = (int)((PhaseTimer / 25) % 3);
+                int chargeAction = (int)((PhaseTimer / 30) % 3);
                 switch (chargeAction)
                 {
                     case 0:
@@ -665,27 +665,27 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             }
 
             //为每次散射准备更华丽的动作 - 提前更多时间
-            if ((PhaseTimer == 60 || PhaseTimer == 75 || PhaseTimer == 90) && AreBothHandsReady()) {
+            if ((PhaseTimer == 70 || PhaseTimer == 85 || PhaseTimer == 100) && AreBothHandsReady()) { //稍微延后时机
                 CommandBothHands(
                     YingouHand.ActionCommand.ChargeStab,
-                    target.Center + VaultUtils.RandVr(350, 550), //调整距离
-                    target.Center + VaultUtils.RandVr(350, 550),
+                    target.Center + VaultUtils.RandVr(300, 500), //稍微调整距离
+                    target.Center + VaultUtils.RandVr(300, 500),
                     -MathHelper.PiOver2,
                     -MathHelper.PiOver2
                 );
             }
 
-            if ((PhaseTimer == 75 || PhaseTimer == 90 || PhaseTimer == 105) && ShouldTriggerProjectilesFromHands()) {
-                //3 轮环形散射，角度错列 - 增加密度
-                float startRot = (PhaseTimer == 75 ? 0f : (PhaseTimer == 90 ? 0.15f : 0.3f));
-                int count = 26 + (Main.expertMode ? 6 : 0) + (Main.masterMode ? 4 : 0); //增加弹幕数量
-                float speed = 20f + (PhaseTimer - 75) * 0.3f; //增加速度
-                ShootScatterRing(target.Center + VaultUtils.RandVr(600, 750), count, speed, startRot);
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(9, 22);
-                SoundEngine.PlaySound(SoundID.Item74 with { Pitch = 0.4f - (PhaseTimer - 75) * 0.015f, Volume = 1.3f }, NPC.Center);
+            if ((PhaseTimer == 85 || PhaseTimer == 100 || PhaseTimer == 115) && ShouldTriggerProjectilesFromHands()) { //稍微延后时机
+                //3 轮环形散射，角度错列 - 稍微降低密度
+                float startRot = (PhaseTimer == 85 ? 0f : (PhaseTimer == 100 ? 0.15f : 0.3f));
+                int count = 22 + (Main.expertMode ? 4 : 0) + (Main.masterMode ? 3 : 0); //降低弹幕数量
+                float speed = 18f + (PhaseTimer - 85) * 0.25f; //降低速度
+                ShootScatterRing(target.Center + VaultUtils.RandVr(550, 700), count, speed, startRot);
+                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(8, 20); //降低震动强度
+                SoundEngine.PlaySound(SoundID.Item74 with { Pitch = 0.3f - (PhaseTimer - 85) * 0.012f, Volume = 1.2f }, NPC.Center); //降低音量
             }
 
-            if (PhaseTimer > 130) TransitionTo(BossPhase.RecoverDash); //缩短时长
+            if (PhaseTimer > 140) TransitionTo(BossPhase.RecoverDash); //稍微延长阶段时间
         }
 
         private void ShootScatterRing(Vector2 center, int count, float speed, float startRotation) {
@@ -868,31 +868,31 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             frenzyDashStateTimer++;
             switch (frenzyDashState) {
                 case 0: //telegraph
-                    NPC.velocity *= 0.85f;
-                    Vector2 hover = target.Center + new Vector2(0, -680).RotatedBy(frenzyDashTelegraphAngle);
-                    NPC.Center += (hover - NPC.Center) * 0.16f;
-                    if (!VaultUtils.isServer && frenzyDashStateTimer % 6 == 0) {
-                        int dust = Dust.NewDust(NPC.Center, 0, 0, DustID.GoldFlame, 0, 0, 150, default, 2f);
-                        Main.dust[dust].noGravity = true; Main.dust[dust].velocity = Main.rand.NextVector2Circular(3, 3);
+                    NPC.velocity *= 0.88f; //稍微增加阻力
+                    Vector2 hover = target.Center + new Vector2(0, -720).RotatedBy(frenzyDashTelegraphAngle); //稍微增加距离
+                    NPC.Center += (hover - NPC.Center) * 0.14f; //稍微降低移动速度
+                    if (!VaultUtils.isServer && frenzyDashStateTimer % 7 == 0) { //降低粒子频率
+                        int dust = Dust.NewDust(NPC.Center, 0, 0, DustID.GoldFlame, 0, 0, 150, default, 1.8f);
+                        Main.dust[dust].noGravity = true; Main.dust[dust].velocity = Main.rand.NextVector2Circular(2.5f, 2.5f);
                     }
-                    if (frenzyDashStateTimer == 36) {
-                        frenzyDashDir = NPC.DirectionTo(target.Center).RotatedBy(Main.rand.NextFloat(-0.25f, 0.25f));
-                        NPC.velocity = frenzyDashDir * 36f;
-                        SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.2f, Volume = 0.9f, MaxInstances = 6 }, NPC.Center);
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(8, 18);
+                    if (frenzyDashStateTimer == 40) { //稍微延长预告时间
+                        frenzyDashDir = NPC.DirectionTo(target.Center).RotatedBy(Main.rand.NextFloat(-0.2f, 0.2f));
+                        NPC.velocity = frenzyDashDir * 32f; //稍微降低冲刺速度
+                        SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.15f, Volume = 0.8f, MaxInstances = 6 }, NPC.Center); //降低音量
+                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(7, 16); //降低震动强度
                         frenzyDashState = 1; frenzyDashStateTimer = 0;
-                        DoFanFire(target, 6 + (Main.expertMode ? 2 : 0) + (Main.masterMode ? 2 : 0), 70, 18f, 22f);
+                        DoFanFire(target, 5 + (Main.expertMode ? 2 : 0) + (Main.masterMode ? 1 : 0), 60, 16f, 20f); //降低弹幕数量和速度
                     }
                     break;
                 case 1: //dash
-                    NPC.velocity *= 0.985f;
-                    if (frenzyDashStateTimer > 42 || NPC.collideX || NPC.collideY) {
-                        frenzyDashState = 2; frenzyDashStateTimer = 0; NPC.velocity *= 0.4f;
+                    NPC.velocity *= 0.987f; //稍微增加阻力
+                    if (frenzyDashStateTimer > 45 || NPC.collideX || NPC.collideY) { //稍微延长冲刺时间
+                        frenzyDashState = 2; frenzyDashStateTimer = 0; NPC.velocity *= 0.35f;
                     }
                     break;
                 case 2: //recover
-                    NPC.velocity *= 0.9f;
-                    if (frenzyDashStateTimer > 18) {
+                    NPC.velocity *= 0.92f; //稍微增加阻力
+                    if (frenzyDashStateTimer > 20) { //稍微延长恢复时间
                         frenzyDashCount++;
                         if (frenzyDashCount >= frenzyDashTotal) {
                             TransitionTo(BossPhase.BladeScatter);
@@ -915,11 +915,11 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
 
             //根据距离和阶段调整侵略性
             float distToPlayer = Vector2.Distance(NPC.Center, target.Center);
-            bool closeRange = distToPlayer < 400f;
-            bool mediumRange = distToPlayer < 800f;
+            bool closeRange = distToPlayer < 350f; //稍微减小近距离判定范围
+            bool mediumRange = distToPlayer < 750f; //稍微减小中距离判定范围
 
-            //更频繁的动作触发 - 每15-25tick检查一次
-            int actionInterval = closeRange ? 15 : (mediumRange ? 20 : 25);
+            //降低动作触发频率 - 每20-35tick检查一次
+            int actionInterval = closeRange ? 20 : (mediumRange ? 25 : 35); //增加间隔时间
             
             if (aggressiveActionTimer >= actionInterval && AreBothHandsReady())
             {
@@ -941,10 +941,31 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 lastAggressiveAction = (int)PhaseTimer;
             }
 
-            //处理连击状态
-            if (isInAggressiveCombo && PhaseTimer - lastAggressiveAction > 30)
+            //处理连击状态 - 延长连击间隔
+            if (isInAggressiveCombo && PhaseTimer - lastAggressiveAction > 40) //从30增加到40
             {
                 ContinueAggressiveCombo(target);
+            }
+        }
+
+        private void ExecuteLongRangeAggression(Player target) {
+            //远距离威慑性动作
+            int actionType = Main.rand.Next(0, 3);
+            switch (actionType) {
+                case 0: //远程施法姿态
+                    CommandBothHands(YingouHand.ActionCommand.SaberCast);
+                    break;
+
+                case 1: //环形施法威慑
+                    CommandBothHands(YingouHand.ActionCommand.RingCast);
+                    break;
+
+                case 2: //旋转展示
+                    if (Main.rand.NextBool())
+                        CommandLeftHand(YingouHand.ActionCommand.SpinCast);
+                    else
+                        CommandRightHand(YingouHand.ActionCommand.SpinCast);
+                    break;
             }
         }
 
@@ -959,19 +980,19 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             
             CommandBothHands(
                 YingouHand.ActionCommand.CrossSlash,
-                target.Center + playerDir * 50,
-                target.Center + playerDir * 50,
+                target.Center + playerDir * 60, //稍微增加距离
+                target.Center + playerDir * 60,
                 baseAngle,
                 baseAngle
             );
             
-            SoundEngine.PlaySound(SoundID.Item71 with { Volume = 1.2f, Pitch = 0.4f }, NPC.Center);
+            SoundEngine.PlaySound(SoundID.Item71 with { Volume = 1.0f, Pitch = 0.3f }, NPC.Center); //降低音量
             aggressiveComboCount++;
         }
 
         private void ContinueAggressiveCombo(Player target)
         {
-            if (aggressiveComboCount >= 4) //限制连击长度
+            if (aggressiveComboCount >= 3) //降低连击长度从4到3
             {
                 isInAggressiveCombo = false;
                 aggressiveComboCount = 0;
@@ -985,18 +1006,14 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             {
                 case 1: //左手快刺
                     CommandLeftHand(YingouHand.ActionCommand.QuickStrike, 
-                        target.Center + playerDir.RotatedBy(-0.3f) * 80, 
-                        baseAngle - 0.3f);
+                        target.Center + playerDir.RotatedBy(-0.25f) * 90, //稍微增加距离和降低角度
+                        baseAngle - 0.25f);
                     break;
                     
                 case 2: //右手横扫
                     CommandRightHand(YingouHand.ActionCommand.SweepSlash, 
-                        target.Center + playerDir.RotatedBy(0.4f) * 100, 
-                        baseAngle + 0.4f);
-                    break;
-                    
-                case 3: //双刀花式旋转
-                    CommandBothHands(YingouHand.ActionCommand.SpinCast);
+                        target.Center + playerDir.RotatedBy(0.35f) * 110, //稍微增加距离和降低角度
+                        baseAngle + 0.35f);
                     break;
             }
             
@@ -1016,8 +1033,8 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 case 0: //双刀蓄力突刺
                     CommandBothHands(
                         YingouHand.ActionCommand.ChargeStab,
-                        target.Center + playerDir * 150,
-                        target.Center + playerDir * 150,
+                        target.Center + playerDir * 170, //稍微增加距离
+                        target.Center + playerDir * 170,
                         baseAngle,
                         baseAngle
                     );
@@ -1026,45 +1043,22 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 case 1: //交替快刺
                     if (Main.rand.NextBool())
                     {
-                        CommandLeftHand(YingouHand.ActionCommand.QuickStrike, target.Center, baseAngle);
+                        CommandLeftHand(YingouHand.ActionCommand.QuickStrike, target.Center + playerDir * 30, baseAngle); //增加缓冲距离
                     }
                     else
                     {
-                        CommandRightHand(YingouHand.ActionCommand.QuickStrike, target.Center, baseAngle);
+                        CommandRightHand(YingouHand.ActionCommand.QuickStrike, target.Center + playerDir * 30, baseAngle);
                     }
                     break;
                     
                 case 2: //扇形斩击
                     CommandBothHands(
                         YingouHand.ActionCommand.FanFireSlash,
-                        target.Center + playerDir.RotatedBy(-0.2f) * 200,
-                        target.Center + playerDir.RotatedBy(0.2f) * 200,
-                        baseAngle - 0.2f,
-                        baseAngle + 0.2f
+                        target.Center + playerDir.RotatedBy(-0.15f) * 220, //稍微增加距离和降低角度
+                        target.Center + playerDir.RotatedBy(0.15f) * 220,
+                        baseAngle - 0.15f,
+                        baseAngle + 0.15f
                     );
-                    break;
-            }
-        }
-
-        private void ExecuteLongRangeAggression(Player target)
-        {
-            //远距离威慑性动作
-            int actionType = Main.rand.Next(0, 3);
-            switch (actionType)
-            {
-                case 0: //远程施法姿态
-                    CommandBothHands(YingouHand.ActionCommand.SaberCast);
-                    break;
-                    
-                case 1: //环形施法威慑
-                    CommandBothHands(YingouHand.ActionCommand.RingCast);
-                    break;
-                    
-                case 2: //旋转展示
-                    if (Main.rand.NextBool())
-                        CommandLeftHand(YingouHand.ActionCommand.SpinCast);
-                    else
-                        CommandRightHand(YingouHand.ActionCommand.SpinCast);
                     break;
             }
         }
