@@ -204,6 +204,8 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 }
             }
 
+            Main.dayTime = false;
+
             //初始化双手引用
             if (!handsInitialized)
             {
@@ -428,12 +430,6 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             if (PhaseTimer % 30 == 0 && AreBothHandsReady()) {
                 Vector2 strikeDir = NPC.Center.To(target.Center).UnitVector();
                 CommandRightHand(YingouHand.ActionCommand.QuickStrike, target.Center, strikeDir.ToRotation());
-            }
-            if (PhaseTimer % 15 == 0) {
-                Projectile.NewProjectile(NPC.GetSource_FromAI()
-                    , target.Center + target.velocity.UnitVector() * 1160
-                    , NPC.Center.To(target.Center).UnitVector() * 24,
-                    ModContent.ProjectileType<SaberHell>(), GetBossDamage(0.9f), 2);
             }
 
             if (PhaseTimer > 540) {
@@ -715,7 +711,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             float sengs = 0.25f;
             for (int i = 0; i < NPC.oldPos.Length; i++) {
                 Vector2 drawOldPos = NPC.oldPos[i] + NPC.Size / 2 - Main.screenPosition;
-                spriteBatch.Draw(mainValue, drawOldPos, null, drawColor * sengs, 0, mainValue.Size() / 2, NPC.scale * (0.9f + 0.1f * sengs), SpriteEffects.None, 0);
+                spriteBatch.Draw(mainValue, drawOldPos, null, Color.White * sengs, 0, mainValue.Size() / 2, NPC.scale * (0.9f + 0.1f * sengs), SpriteEffects.None, 0);
                 sengs *= 0.75f;
             }
             float scale = NPC.scale;
@@ -734,7 +730,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 }
             }
             float introScale = Phase == BossPhase.Intro ? MathHelper.Lerp(0.6f, 1f, ACMUtils.BackOut(introAppear)) : scale;
-            Main.EntitySpriteDraw(mainValue, NPC.Center - Main.screenPosition, null, drawColor, NPC.rotation, mainValue.Size() / 2, introScale, SpriteEffects.None);
+            Main.EntitySpriteDraw(mainValue, NPC.Center - Main.screenPosition, null, Color.White, NPC.rotation, mainValue.Size() / 2, introScale, SpriteEffects.None);
             return false;
         }
 

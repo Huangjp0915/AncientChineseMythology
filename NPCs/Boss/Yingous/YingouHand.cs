@@ -702,7 +702,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
 
             //斩击冲击高亮 + FrenzyDash特殊效果
             float totalFlash = Math.Max(impactFlash, frenzySlashFlash);
-            Color bodyColor = drawColor * (totalFlash > 0 ? (1.3f + totalFlash * 0.4f) : 1f);
+            Color bodyColor = Color.White * (totalFlash > 0 ? (1.3f + totalFlash * 0.4f) : 1f);
             if (frenzySlashFlash > 0) {
                 bodyColor = Color.Lerp(bodyColor, Color.Gold, frenzySlashFlash * 0.7f);
             }
