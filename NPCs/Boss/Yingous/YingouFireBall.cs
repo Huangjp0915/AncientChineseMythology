@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
+using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -8,7 +9,6 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
 {
     internal class YingouFireBall : ModProjectile
     {
-        public override string Texture => "AncientChineseMythology/Textures/SoftGlow";//基础核芯贴图
         private float coreRot;
         private float auraRot;
         public override void SetStaticDefaults() {
@@ -72,6 +72,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                     Projectile.velocity = Vector2.Lerp(Projectile.velocity, targetSpeed, 0.06f);
                 }
             }
+            VaultUtils.ClockFrame(ref Projectile.frame, 6, 6);
         }
 
         public override bool PreDraw(ref Color lightColor) {
@@ -93,12 +94,18 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             // 外层双层光圈
             for (int layer = 0; layer < 2; layer++) {
                 float scale = (1.7f + layer * 0.4f) * pulse;
-                Color aura = (layer == 0 ? Color.Crimson : Color.White) * 0.35f;
+                Color aura = (layer == 0 ? Color.Crimson : Color.Red) * 0.35f;
                 aura.A = 0;
                 Main.spriteBatch.Draw(tex, drawPos, null, aura, auraRot * (1 + layer), tex.Size() / 2, scale, SpriteEffects.None, 0f);
             }
             // 核心
             Main.spriteBatch.Draw(tex, drawPos, null, coreColor, coreRot, tex.Size() / 2, 1.15f * pulse, SpriteEffects.None, 0f);
+
+            tex = TextureAssets.Projectile[Type].Value;
+            Rectangle rectangle = tex.GetRectangle(Projectile.frame, 7);
+            SpriteEffects spriteEffects = Projectile.velocity.X > 0 ? SpriteEffects.None : SpriteEffects.FlipVertically;
+            Main.spriteBatch.Draw(tex, drawPos, rectangle, Color.White, Projectile.velocity.ToRotation()
+                , rectangle.Size() / 2, Projectile.scale * 1.25f, spriteEffects, 0f);
             return false;
         }
     }

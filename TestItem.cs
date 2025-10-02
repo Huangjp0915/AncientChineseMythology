@@ -45,7 +45,7 @@ namespace AncientChineseMythology
             //new Point16(3973, 171).GetRectangleFromPoints(new Point16(4426, 414)).LoggerDomp();
             //AsgardStructure.DoLoad<AsgardStructure>();
             //Main.MouseWorld.ToTileCoordinates16().LoggerDomp();
-            Projectile.NewProjectile(player.FromObjectGetParent(), player.Center, player.Center.To(Main.MouseWorld).UnitVector() * 8, ModContent.ProjectileType<SaberHell>(), 20, 2);
+            Projectile.NewProjectile(player.FromObjectGetParent(), player.Center, player.Center.To(Main.MouseWorld).UnitVector() * 8, ModContent.ProjectileType<YingouFireBall>(), 20, 2);
             return true;
         }
     }
