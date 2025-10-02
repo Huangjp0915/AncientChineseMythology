@@ -410,27 +410,10 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                         SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.2f, Volume = 0.9f, MaxInstances = 6 }, NPC.Center);
                         Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(8, 18);
                         frenzyDashState = 1; frenzyDashStateTimer = 0;
-                        //if (!VaultUtils.isClient) {
-                        //    // dash 起手散出少量火球
-                        //    for (int i = 0; i < 5; i++) {
-                        //        Vector2 vel = frenzyDashDir.RotatedBy(MathHelper.Lerp(-0.4f, 0.4f, i / 4f)) * Main.rand.NextFloat(18, 26);
-                        //        Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                        //            ModContent.ProjectileType<YingouFireBall>(), GetBossDamage(0.75f), 2f);
-                        //    }
-                        //}
                     }
                     break;
                 case 1: // dash
                     NPC.velocity *= 0.985f;
-                    //if (frenzyDashStateTimer % 6 == 0 && !VaultUtils.isClient) {
-                    //    Vector2 side = frenzyDashDir.RotatedBy(MathHelper.PiOver2);
-                    //    Vector2 posL = NPC.Center + side * 40;
-                    //    Vector2 posR = NPC.Center - side * 40;
-                    //    Projectile.NewProjectile(NPC.GetSource_FromAI(), posL, frenzyDashDir * 14f,
-                    //        ModContent.ProjectileType<YingouFireBall>(), GetBossDamage(0.6f), 2f, Main.myPlayer, 0, 1, Main.rand.NextFloat(0.5f));
-                    //    Projectile.NewProjectile(NPC.GetSource_FromAI(), posR, frenzyDashDir * 14f,
-                    //        ModContent.ProjectileType<YingouFireBall>(), GetBossDamage(0.6f), 2f, Main.myPlayer, 0, 1, Main.rand.NextFloat(0.5f));
-                    //}
                     if (frenzyDashStateTimer > 42 || NPC.collideX || NPC.collideY) {
                         frenzyDashState = 2; frenzyDashStateTimer = 0; NPC.velocity *= 0.4f;
                     }

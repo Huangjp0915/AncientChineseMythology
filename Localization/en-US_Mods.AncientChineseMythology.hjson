@@ -469,6 +469,11 @@ Items: {
 		DisplayName: Yingou Knife
 		Tooltip: ""
 	}
+
+	CoffinNail: {
+		DisplayName: Coffin Nail
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -593,6 +598,7 @@ Projectiles: {
 	HoqingFireSummonProj.DisplayName: Hoqing Fire Summon Proj
 	JiangcenHammerProj.DisplayName: Jiangcen Hammer Proj
 	SaberHellFriendly.DisplayName: Saber Hell Friendly
+	CoffinNailProjectile.DisplayName: Coffin Nail Projectile
 }
 
 HeavenBiome.DisplayName: Heaven
