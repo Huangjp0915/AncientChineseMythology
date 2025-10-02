@@ -18,7 +18,7 @@ namespace AncientChineseMythology.Items.Weapons
         public override void SetDefaults()
         {
             //基础属性设置
-            Item.damage = 688; //高伤害，符合棺材钉的威力
+            Item.damage = 1688; //高伤害，符合棺材钉的威力
             Item.DamageType = DamageClass.Melee; //远程武器类型
             Item.width = 34;
             Item.height = 34;

@@ -474,6 +474,11 @@ Items: {
 		DisplayName: Coffin Nail
 		Tooltip: ""
 	}
+
+	YingouSummon: {
+		DisplayName: Yingou Summon
+		Tooltip: ""
+	}
 }
 
 NPCs: {

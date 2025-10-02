@@ -523,6 +523,11 @@
 		DisplayName: 棺材钉
 		Tooltip: ""
 	}
+
+	YingouSummon: {
+		DisplayName: 鬼面具
+		Tooltip: ""
+	}
 }
 
 NPCs: {
