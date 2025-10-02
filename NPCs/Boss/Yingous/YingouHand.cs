@@ -52,7 +52,11 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             ChargeStab,     // 蓄力突刺
             SpinCast,       // 旋转施法
             CrossSlash,     // 十字斩击
-            RingCast        // 环形施法
+            RingCast,       // 环形施法
+            FlowerySlash,   // 花刀展示
+            ThrustCombo,    // 连续突刺
+            DefensiveSwirl, // 防御性旋转
+            AggressiveLunge // 侵略性突进
         }
 
         private ActionCommand currentAction = ActionCommand.None;
@@ -167,6 +171,24 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                     actionTargetPos = NPC.Center + new Vector2(0, -150);
                     actionTargetAngle = -MathHelper.PiOver2;
                     break;
+                case ActionCommand.FlowerySlash:
+                    actionDuration = 90;
+                    actionTargetAngle = actionStartAngle + Direction * MathHelper.Pi * 1.5f;
+                    break;
+                case ActionCommand.ThrustCombo:
+                    actionDuration = 75;
+                    actionTargetPos = targetPos ?? NPC.Center;
+                    actionTargetAngle = targetAngle;
+                    break;
+                case ActionCommand.DefensiveSwirl:
+                    actionDuration = 85;
+                    actionTargetAngle = actionStartAngle + MathHelper.TwoPi * Direction * 1.5f;
+                    break;
+                case ActionCommand.AggressiveLunge:
+                    actionDuration = 60;
+                    actionTargetPos = targetPos ?? NPC.Center;
+                    actionTargetAngle = targetAngle;
+                    break;
             }
         }
 
@@ -179,7 +201,8 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
         public bool ShouldTriggerProjectiles() {
             if (actionTriggered || currentAction == ActionCommand.None) return false;
 
-            float triggerProgress = currentAction switch {
+            float triggerProgress = currentAction switch
+            {
                 ActionCommand.FanFireSlash => 0.6f,
                 ActionCommand.SaberCast => 0.7f,
                 ActionCommand.QuickStrike => 0.5f,
@@ -188,6 +211,10 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 ActionCommand.SpinCast => 0.5f,
                 ActionCommand.CrossSlash => 0.6f,
                 ActionCommand.RingCast => 0.65f,
+                ActionCommand.FlowerySlash => 0.7f,
+                ActionCommand.ThrustCombo => 0.4f,
+                ActionCommand.DefensiveSwirl => 0.6f,
+                ActionCommand.AggressiveLunge => 0.5f,
                 _ => 0.5f
             };
 
@@ -294,6 +321,18 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                     break;
                 case ActionCommand.RingCast:
                     ProcessRingCast(boss, target, progress);
+                    break;
+                case ActionCommand.FlowerySlash:
+                    ProcessFlowerySlash(boss, target, progress);
+                    break;
+                case ActionCommand.ThrustCombo:
+                    ProcessThrustCombo(boss, target, progress);
+                    break;
+                case ActionCommand.DefensiveSwirl:
+                    ProcessDefensiveSwirl(boss, target, progress);
+                    break;
+                case ActionCommand.AggressiveLunge:
+                    ProcessAggressiveLunge(boss, target, progress);
                     break;
             }
 
@@ -920,6 +959,124 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             if (progress > 0.65f && !actionTriggered) {
                 actionTriggered = true;
                 SoundEngine.PlaySound(SoundID.Item29 with { Volume = 0.9f, Pitch = 0.1f }, NPC.Center);
+            }
+        }
+
+        private void ProcessFlowerySlash(NPC boss, Player target, float progress) {
+            // 花刀展示：旋转挥舞刀刃，留下华丽的刀光
+            float rotateSpeed = 0.1f; // 旋转速度
+            float maxRadius = 160f; // 最大半径
+            float minRadius = 80f;  // 最小半径
+            float radius = MathHelper.Lerp(maxRadius, minRadius, progress); // 半径随时间变化
+
+            // 计算当前位置
+            float angle = Main.GameUpdateCount * rotateSpeed * (Direction > 0 ? 1 : -1);
+            Vector2 flowerPos = boss.Center + angle.ToRotationVector2() * radius;
+            NPC.Center += (flowerPos - NPC.Center) * 0.15f;
+
+            // 计算刀光效果
+            if (Main.netMode != NetmodeID.Server && progress > 0.2f) {
+                for (int i = 0; i < 3; i++) {
+                    float sparkAngle = angle + MathHelper.PiOver2 * i;
+                    Vector2 sparkPos = flowerPos + sparkAngle.ToRotationVector2() * 10f;
+                    int dust = Dust.NewDust(sparkPos, 0, 0, DustID.GoldFlame, 0, 0, 140, default, 1.4f);
+                    Main.dust[dust].noGravity = true;
+                    Main.dust[dust].velocity = sparkAngle.ToRotationVector2() * 4f;
+                }
+            }
+
+            // 控制旋转角度
+            NPC.rotation = angle;
+
+            if (progress >= 1f) {
+                currentAction = ActionCommand.None;
+                actionTimer = 0;
+            }
+        }
+
+        private void ProcessThrustCombo(NPC boss, Player target, float progress) {
+            // 连续突刺：快速进行多次突刺
+            float thrustSpeed = 0.8f; // 突刺速度
+            float cooldownTime = 5f;  // 每次突刺后的冷却时间
+            int totalThrusts = 3;     // 总突刺次数
+
+            // 计算当前突刺阶段
+            int thrustStage = (int)(progress / (1f / totalThrusts));
+            float stageProgress = progress % (1f / totalThrusts) * totalThrusts;
+
+            // 计算突刺目标位置
+            Vector2 thrustTarget = target.Center + target.velocity * 10f;
+            thrustTarget.Y -= 40f; // 稍微抬高突刺目标位置
+
+            // 根据阶段调整NPC位置和旋转
+            if (thrustStage < totalThrusts) {
+                Vector2.Lerp(NPC.Center, thrustTarget, stageProgress / thrustSpeed);
+                NPC.rotation = NPC.DirectionTo(thrustTarget).ToRotation();
+            }
+
+            if (progress >= 1f) {
+                currentAction = ActionCommand.None;
+                actionTimer = 0;
+            }
+        }
+
+        private void ProcessDefensiveSwirl(NPC boss, Player target, float progress) {
+            // 防御性旋转：快速旋转并挥动刀刃，形成防御圈
+            float swirlSpeed = 0.2f; // 旋转速度
+            float maxRadius = 160f;  // 最小半径
+            float minRadius = 60f;   // 最大半径
+            float radius = MathHelper.Lerp(minRadius, maxRadius, progress); // 半径随时间变化
+
+            // 计算当前位置
+            float angle = Main.GameUpdateCount * swirlSpeed * (Direction > 0 ? 1 : -1);
+            Vector2 swirlPos = boss.Center + angle.ToRotationVector2() * radius;
+            NPC.Center += (swirlPos - NPC.Center) * 0.1f;
+
+            // 计算刀刃轨迹并产生粒子效果
+            if (Main.netMode != NetmodeID.Server) {
+                for (int i = 0; i < 3; i++) {
+                    float trailAngle = angle + MathHelper.PiOver2 * i;
+                    Vector2 trailPos = swirlPos + trailAngle.ToRotationVector2() * 10f;
+                    int dust = Dust.NewDust(trailPos, 0, 0, DustID.Torch, 0, 0, 140, default, 1.6f);
+                    Main.dust[dust].noGravity = true;
+                    Main.dust[dust].velocity = trailAngle.ToRotationVector2() * 3f;
+                }
+            }
+
+            // 控制旋转角度
+            NPC.rotation = angle;
+
+            if (progress >= 1f) {
+                currentAction = ActionCommand.None;
+                actionTimer = 0;
+            }
+        }
+
+        private void ProcessAggressiveLunge(NPC boss, Player target, float progress) {
+            // 侵略性突进：快速向前突进并进行斩击
+            float lungeSpeed = 1.2f; // 突进速度
+            float maxDistance = 300f; // 最远突进距离
+
+            // 计算突进比例
+            float t = MathHelper.Clamp(progress * lungeSpeed, 0, 1);
+
+            // 计算目标位置
+            Vector2 lungeTarget = Vector2.Lerp(NPC.Center, target.Center, t);
+            lungeTarget.Y -= 40f; // 稍微抬高目标位置
+
+            // 移动NPC并朝向目标
+            NPC.Center = lungeTarget;
+            NPC.rotation = NPC.DirectionTo(target.Center).ToRotation();
+
+            // 斩击粒子效果
+            if (progress > 0.5f && progress < 0.8f) {
+                int dust = Dust.NewDust(NPC.Center, 0, 0, DustID.GoldFlame, 0, 0, 140, default, 1.4f);
+                Main.dust[dust].noGravity = true;
+            }
+
+            if (progress >= 1f) {
+                currentAction = ActionCommand.None;
+                actionTimer = 0;
             }
         }
     }
