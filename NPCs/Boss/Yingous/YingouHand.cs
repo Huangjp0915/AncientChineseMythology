@@ -64,6 +64,8 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
         private float actionTargetAngle;
         private bool actionTriggered = false; // 是否已触发弹幕发射
 
+        private Yingou Yingou;
+
         public float swingAngle; //保留（旧）
         public float swingPhase; //保留（旧）
 
@@ -207,6 +209,8 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             }
             Player target = Main.player[boss.target];
 
+            Yingou = yBoss;
+
             NPC.realLife = boss.whoAmI;
             NPC.target = boss.target;
 
@@ -220,7 +224,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
 
                 switch (phase) {
                     case Yingou.BossPhase.Intro:
-                        DoIntroOrbit(boss, target, yBoss);
+                        DoIntroOrbit(boss);
                         break;
                     case Yingou.BossPhase.PatternSetA:
                         DoMeleeSwingSystem(boss, target, yBoss);
@@ -299,13 +303,29 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             }
         }
 
-        private void DoIntroOrbit(NPC boss, Player target, Yingou yBoss) {
+        private void DoIntroOrbit(NPC boss) {
             float t = MathHelper.Clamp(boss.ai[1] / 120f, 0, 1);
             float radius = MathHelper.Lerp(420, 140, ACMUtils.SineInOut(t));
             float ang = (boss.ai[1] * 0.05f + (Direction > 0 ? 0 : MathHelper.Pi)) * (Direction > 0 ? 1 : -1);
             Vector2 desired = boss.Center + ang.ToRotationVector2() * radius;
             NPC.Center += (desired - NPC.Center) * 0.18f;
             NPC.rotation = (NPC.Center - boss.Center).ToRotation();
+        }
+
+        private void DoFanFire(Player target, int fireballCount, float totalSpreadDeg, float minSpeed, float maxSpeed) {
+            if (VaultUtils.isClient || NPC.ai[0] == -1) {
+                return;
+            }
+            float spread = MathHelper.ToRadians(totalSpreadDeg);
+            float baseAngle = Yingou.NPC.DirectionTo(target.Center).ToRotation();
+            for (int i = 0; i < fireballCount; i++) {
+                float angleOffset = MathHelper.Lerp(-spread / 2, spread / 2, i / (float)(fireballCount - 1));
+                float speed = Main.rand.NextFloat(minSpeed, maxSpeed);
+                Vector2 velocity = baseAngle.ToRotationVector2().RotatedBy(angleOffset) * speed;
+                float power = i * 0.15f;
+                Projectile.NewProjectile(Yingou.NPC.GetSource_FromAI(), Yingou.NPC.Center, velocity,
+                    ModContent.ProjectileType<YingouFireBall>(), Yingou.GetBossDamage(), 2f, Main.myPlayer, 0, 0, power);
+            }
         }
 
         private void DoMeleeSwingSystem(NPC boss, Player target, Yingou yBoss) {
@@ -344,7 +364,6 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 if (t >= 1f) {
                     swingState = 2;
                     swingProgress = 0;
-                    SoundEngine.PlaySound(SoundID.Item74 with { Pitch = 0.1f, Volume = 1.1f }, NPC.Center);
                 }
             }
             else if (swingState == 2) //挥舞主体

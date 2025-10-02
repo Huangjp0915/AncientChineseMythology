@@ -18,7 +18,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
         public override void SetDefaults() {
             Projectile.width = Projectile.height = 32;
             Projectile.friendly = false;
-            Projectile.timeLeft = 220;
+            Projectile.timeLeft = 120;
             Projectile.tileCollide = false;
             Projectile.penetrate = -1;
             Projectile.hostile = true;
@@ -78,7 +78,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             Texture2D tex = Yingou.SoftGlow;
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
             float pulse = 1f + 0.25f * (float)Math.Sin(Main.GlobalTimeWrappedHourly * 6 + Projectile.whoAmI);
-            Color coreColor = Color.Lerp(Color.Gold, Color.OrangeRed, 0.5f + 0.5f * (float)Math.Sin(Projectile.ai[0] * 0.1f));
+            Color coreColor = Color.Lerp(Color.DarkRed, Color.OrangeRed, 0.5f + 0.5f * (float)Math.Sin(Projectile.ai[0] * 0.1f));
             coreColor.A = 0;
             // 画拖尾
             float trailAlpha = 0.5f;

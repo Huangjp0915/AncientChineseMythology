@@ -28,8 +28,8 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             PatternSetA,   //基础挥砍 + 火球散射
             SpiralDread,   //螺旋+环绕压迫
             SaberHell,     //大刀地狱(扩展演出)
-            FrenzyDash,    // 新：多段连续追击冲刺
-            BladeScatter,  // 新：蓄力大斩 + 环形散射
+            FrenzyDash,    //新：多段连续追击冲刺
+            BladeScatter,  //新：蓄力大斩 + 环形散射
             RecoverDash,   //回收冲刺（过渡）
         }
 
@@ -61,33 +61,33 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
         private float saberCharge; //大刀地狱充能
         private bool didIntroShock;
 
-        // SaberHell 扩展图案控制
-        private int saberPatternIndex; // 当前图案序号
-        private int lastSaberPatternTime; // 上一次释放图案的时间戳
-        private int saberPatternsPerPhase = 5; // 每次 SaberHell 阶段释放几种图案
+        //SaberHell 扩展图案控制
+        private int saberPatternIndex; //当前图案序号
+        private int lastSaberPatternTime; //上一次释放图案的时间戳
+        private int saberPatternsPerPhase = 5; //每次 SaberHell 阶段释放几种图案
 
-        // FrenzyDash 状态
+        //FrenzyDash 状态
         private int frenzyDashCount;
         private int frenzyDashTotal;
-        private int frenzyDashState; // 0 telegraph,1 dash,2 recover
+        private int frenzyDashState; //0 telegraph,1 dash,2 recover
         private int frenzyDashStateTimer;
         private Vector2 frenzyDashDir;
         private float frenzyDashTelegraphAngle = 0f;
 
-        // BladeScatter 状态
+        //BladeScatter 状态
         private float bladeScatterCharge;
         private int bladeScatterRingCount;
 
-        // 公开访问器，供手部获取冲刺状态
+        //公开访问器，供手部获取冲刺状态
         public int FrenzyDashState => frenzyDashState;
         public int FrenzyDashStateTimer => frenzyDashStateTimer;
 
-        // 双手引用，用于动作指挥
+        //双手引用，用于动作指挥
         private YingouHand leftHand;
         private YingouHand rightHand;
         private bool handsInitialized = false;
 
-        // 动作编排系统
+        //动作编排系统
         private bool isPerformingAction = false;
         private int actionCooldown = 0;
 
@@ -204,7 +204,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 }
             }
 
-            // 初始化双手引用
+            //初始化双手引用
             if (!handsInitialized)
             {
                 InitializeHandReferences();
@@ -230,9 +230,9 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             PhaseTimer++;
             LocalTimer++;
 
-            // 更新动作冷却
+            //更新动作冷却
             if (actionCooldown > 0) actionCooldown--;
-            Phase = BossPhase.PatternSetA;
+
             switch (Phase) {
                 case BossPhase.Intro:
                     RunIntro(target);
@@ -264,9 +264,9 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             {
                 if (npc.active && npc.ModNPC is YingouHand hand && npc.ai[0] == NPC.whoAmI)
                 {
-                    if (npc.ai[1] > 0) // 右手
+                    if (npc.ai[1] > 0) //右手
                         rightHand = hand;
-                    else if (npc.ai[1] < 0) // 左手
+                    else if (npc.ai[1] < 0) //左手
                         leftHand = hand;
                 }
             }
@@ -275,7 +275,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 handsInitialized = true;
         }
 
-        // 双手动作指挥方法
+        //双手动作指挥方法
         private void CommandBothHands(YingouHand.ActionCommand action, Vector2? leftTarget = null, Vector2? rightTarget = null, float leftAngle = 0f, float rightAngle = 0f)
         {
             if (leftHand != null && leftHand.IsActionComplete())
@@ -284,7 +284,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 rightHand.ExecuteAction(action, rightTarget, rightAngle);
             
             isPerformingAction = true;
-            actionCooldown = 20; // 防止过于频繁的动作
+            actionCooldown = 20; //防止过于频繁的动作
         }
 
         private void CommandLeftHand(YingouHand.ActionCommand action, Vector2? target = null, float angle = 0f)
@@ -306,7 +306,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
 
         private bool ShouldTriggerProjectilesFromHands()
         {
-            return (leftHand?.ShouldTriggerProjectiles() ?? false) || (rightHand?.ShouldTriggerProjectiles() ?? false);
+            return true;
         }
 
         private void RunIntro(Player target) {
@@ -354,23 +354,24 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
 
             //每段循环内放出一次扇形火球 - 现在配合双手动作
             if (PhaseTimer % 120 == 50 && AreBothHandsReady() && actionCooldown <= 0) {
-                // 指挥双手执行扇形斩击动作
+                //指挥双手执行扇形斩击动作
                 Vector2 fanDirection = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
                 float fanAngle = fanDirection.ToRotation();
                 
                 CommandBothHands(
                     YingouHand.ActionCommand.FanFireSlash,
-                    target.Center + fanDirection.RotatedBy(-0.3f) * 200, // 左手目标位置
-                    target.Center + fanDirection.RotatedBy(0.3f) * 200,  // 右手目标位置
-                    fanAngle - 0.3f, // 左手角度
-                    fanAngle + 0.3f  // 右手角度
+                    target.Center + fanDirection.RotatedBy(-0.3f) * 200, //左手目标位置
+                    target.Center + fanDirection.RotatedBy(0.3f) * 200,  //右手目标位置
+                    fanAngle - 0.3f, //左手角度
+                    fanAngle + 0.3f  //右手角度
                 );
             }
 
-            // 检查是否到了发射火球的时机
-            if (PhaseTimer % 120 == 60 && ShouldTriggerProjectilesFromHands()) {
-                DoFanFire(target, 9 + (Main.expertMode ? 3 : 0) + (Main.masterMode ? 4 : 0), 70, 18f, 22f);
+            //检查是否到了发射火球的时机
+            if (PhaseTimer % 120 == 60) {
+                DoFanFire(target, 6 + (Main.expertMode ? 2 : 0) + (Main.masterMode ? 2 : 0), 70, 18f, 22f);
                 Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(6, 18);
+                SoundEngine.PlaySound(SoundID.Item74 with { Pitch = 0.1f, Volume = 1.1f }, NPC.Center);
             }
 
             //经过时间转向螺旋阶段
@@ -408,16 +409,12 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             NPC.velocity *= 0.8f;
 
             if (PhaseTimer % 90 == 10 && AreBothHandsReady() && actionCooldown <= 0) {
-                // 双手准备释放径向脉冲
+                //双手准备释放径向脉冲
                 CommandBothHands(YingouHand.ActionCommand.SpinCast);
             }
 
-            if (PhaseTimer % 90 == 20 && ShouldTriggerProjectilesFromHands()) {
-                DoRadialPulseProjectiles(6 + (Main.expertMode ? 2 : 0));
-            }
-
             if (PhaseTimer % 150 == 70 && AreBothHandsReady() && actionCooldown <= 0) {
-                // 追踪弧形火球准备
+                //追踪弧形火球准备
                 Vector2 targetDir = NPC.DirectionTo(target.Center);
                 CommandBothHands(
                     YingouHand.ActionCommand.SweepSlash,
@@ -427,20 +424,16 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 );
             }
 
-            if (PhaseTimer % 150 == 80 && ShouldTriggerProjectilesFromHands()) {
-                DoTrackingArcFire(target, 3, 46f);
+            //持续的单发攻击配合快速突刺
+            if (PhaseTimer % 30 == 0 && AreBothHandsReady()) {
+                Vector2 strikeDir = NPC.Center.To(target.Center).UnitVector();
+                CommandRightHand(YingouHand.ActionCommand.QuickStrike, target.Center, strikeDir.ToRotation());
             }
-
-            // 持续的单发攻击配合快速突刺
-            if (PhaseTimer % 10 == 0) {
-                if (PhaseTimer % 30 == 0 && AreBothHandsReady()) {
-                    Vector2 strikeDir = NPC.Center.To(target.Center).UnitVector();
-                    CommandRightHand(YingouHand.ActionCommand.QuickStrike, target.Center, strikeDir.ToRotation());
-                }
-                if (PhaseTimer % 10 == 5 && rightHand?.ShouldTriggerProjectiles() == true) {
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, NPC.Center.To(target.Center).UnitVector() * 24,
-                        ModContent.ProjectileType<SaberHell>(), GetBossDamage(0.9f), 2);
-                }
+            if (PhaseTimer % 15 == 0) {
+                Projectile.NewProjectile(NPC.GetSource_FromAI()
+                    , target.Center + target.velocity.UnitVector() * 1160
+                    , NPC.Center.To(target.Center).UnitVector() * 24,
+                    ModContent.ProjectileType<SaberHell>(), GetBossDamage(0.9f), 2);
             }
 
             if (PhaseTimer > 540) {
@@ -472,18 +465,18 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(12, 36);
             }
 
-            // 多图案轮换：每 70 tick 尝试触发一次（首段延迟 140）
-            // 现在每个图案都有对应的动作预演
+            //多图案轮换：每 70 tick 尝试触发一次（首段延迟 140）
+            //现在每个图案都有对应的动作预演
             if (PhaseTimer > 140 && PhaseTimer - lastSaberPatternTime >= 70 && saberPatternIndex < saberPatternsPerPhase) {
                 PrepareSaberPattern(target, saberPatternIndex % 5);
             }
 
-            // 检查是否到了实际发射的时机
-            if (PhaseTimer > 140 && PhaseTimer - lastSaberPatternTime >= 70 && ShouldTriggerProjectilesFromHands()) {
+            //检查是否到了实际发射的时机
+            if (PhaseTimer > 140 && PhaseTimer - lastSaberPatternTime >= 70) {
                 PerformNextSaberPattern(target);
             }
 
-            if (PhaseTimer > 420) TransitionTo(BossPhase.FrenzyDash); // 接入新冲刺阶段
+            if (PhaseTimer > 420) TransitionTo(BossPhase.FrenzyDash); //接入新冲刺阶段
         }
 
         private void PrepareSaberPattern(Player target, int patternIndex)
@@ -492,10 +485,10 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
 
             switch (patternIndex)
             {
-                case 0: // RingDouble - 环形施法
+                case 0: //RingDouble - 环形施法
                     CommandBothHands(YingouHand.ActionCommand.RingCast);
                     break;
-                case 1: // CrossSweep - 十字斩击
+                case 1: //CrossSweep - 十字斩击
                     Vector2 crossDir = NPC.DirectionTo(target.Center);
                     CommandBothHands(
                         YingouHand.ActionCommand.CrossSlash,
@@ -504,10 +497,10 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                         crossDir.ToRotation()
                     );
                     break;
-                case 2: // RotatingBlades - 旋转施法
+                case 2: //RotatingBlades - 旋转施法
                     CommandBothHands(YingouHand.ActionCommand.SpinCast);
                     break;
-                case 3: // ConvergingSpokes - 蓄力突刺
+                case 3: //ConvergingSpokes - 蓄力突刺
                     CommandBothHands(
                         YingouHand.ActionCommand.ChargeStab,
                         target.Center + new Vector2(-100, 0),
@@ -516,7 +509,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                         NPC.DirectionTo(target.Center).ToRotation()
                     );
                     break;
-                case 4: // AimedWaveBursts - 扇形连斩
+                case 4: //AimedWaveBursts - 扇形连斩
                     Vector2 waveDir = NPC.DirectionTo(target.Center);
                     CommandBothHands(
                         YingouHand.ActionCommand.SweepSlash,
@@ -534,7 +527,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             NPC.Center += (focus - NPC.Center) * 0.12f;
             NPC.velocity *= 0.85f;
 
-            // Telegraph 环光
+            //Telegraph 环光
             if (!VaultUtils.isServer && PhaseTimer % 5 == 0) {
                 for (int i = 0; i < 8; i++) {
                     Vector2 off = Main.rand.NextVector2CircularEdge(180, 180) * bladeScatterCharge;
@@ -546,7 +539,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
 
             if (PhaseTimer == 1) SoundEngine.PlaySound(SoundID.Item71 with { Pitch = -0.4f, Volume = 0.9f }, NPC.Center);
 
-            // 为每次散射准备动作
+            //为每次散射准备动作
             if ((PhaseTimer == 80 || PhaseTimer == 100 || PhaseTimer == 120) && AreBothHandsReady()) {
                 CommandBothHands(
                     YingouHand.ActionCommand.ChargeStab,
@@ -558,7 +551,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             }
 
             if ((PhaseTimer == 90 || PhaseTimer == 110 || PhaseTimer == 130) && ShouldTriggerProjectilesFromHands()) {
-                // 3 轮环形散射，角度错列
+                //3 轮环形散射，角度错列
                 float startRot = (PhaseTimer == 90 ? 0f : (PhaseTimer == 110 ? 0.12f : 0.26f));
                 int count = 22 + (Main.expertMode ? 4 : 0);
                 float speed = 18f + (PhaseTimer - 90) * 0.2f;
@@ -603,7 +596,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             NPC.netUpdate = true;
         }
 
-        // 原始环形 + 内环
+        //原始环形 + 内环
         private void Pattern_RingDouble(Player target) {
             if (VaultUtils.isClient) return;
             Vector2 basePos = target.Center;
@@ -621,12 +614,12 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             SoundEngine.PlaySound(SoundID.Item71 with { PitchVariance = 0.2f, Volume = 1f }, target.Center);
         }
 
-        // 十字+斜十字扫线（延迟出现的刀幕）
+        //十字+斜十字扫线（延迟出现的刀幕）
         private void Pattern_CrossSweep(Player target) {
             if (VaultUtils.isClient) return;
-            int lines = 8; // 4 条正交 + 4 条斜线
+            int lines = 8; //4 条正交 + 4 条斜线
             for (int i = 0; i < lines; i++) {
-                float ang = MathHelper.PiOver4 * i; // 45° 递增
+                float ang = MathHelper.PiOver4 * i; //45° 递增
                 Vector2 dir = ang.ToRotationVector2();
                 Vector2 spawn = target.Center + dir * 600;
                 Projectile.NewProjectile(NPC.GetSource_FromAI(), spawn, -dir * 24,
@@ -636,7 +629,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             SoundEngine.PlaySound(SoundID.Item71 with { Pitch = -0.3f, Volume = 1.1f }, target.Center);
         }
 
-        // 旋转刀阵（外圈绕玩家旋转后内收）
+        //旋转刀阵（外圈绕玩家旋转后内收）
         private void Pattern_RotatingBlades(Player target) {
             if (VaultUtils.isClient) return;
             int bladeCount = 10;
@@ -644,11 +637,11 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             for (int i = 0; i < bladeCount; i++) {
                 float ang = baseRot + MathHelper.TwoPi * i / bladeCount;
                 Vector2 spawn = target.Center + ang.ToRotationVector2() * 480f;
-                Vector2 vel = ang.ToRotationVector2().RotatedBy(MathHelper.PiOver2) * -20f; // 先切向旋转
+                Vector2 vel = ang.ToRotationVector2().RotatedBy(MathHelper.PiOver2) * -20f; //先切向旋转
                 int p = Projectile.NewProjectile(NPC.GetSource_FromAI(), spawn, vel,
                     ModContent.ProjectileType<SaberHell>(), GetBossDamage(0.85f), 2);
                 if (p >= 0 && p < Main.maxProjectiles) {
-                    Main.projectile[p].localAI[0] = -60; // 利用负计时表示旋转阶段
+                    Main.projectile[p].localAI[0] = -60; //利用负计时表示旋转阶段
                     Main.projectile[p].ai[0] = target.Center.X;
                     Main.projectile[p].ai[1] = target.Center.Y;
                 }
@@ -656,7 +649,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             SoundEngine.PlaySound(SoundID.Item71 with { Pitch = 0.25f, Volume = 0.9f }, target.Center);
         }
 
-        // 辐射收束：多条外向->停顿->反向回扑
+        //辐射收束：多条外向->停顿->反向回扑
         private void Pattern_ConvergingSpokes(Player target) {
             if (VaultUtils.isClient) return;
             int spokes = 12;
@@ -666,12 +659,12 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 Vector2 spawn = target.Center + dir * 140;
                 int p = Projectile.NewProjectile(NPC.GetSource_FromAI(), spawn, dir * 28,
                     ModContent.ProjectileType<SaberHell>(), GetBossDamage(0.75f), 2);
-                if (p >= 0 && p < Main.maxProjectiles) Main.projectile[p].localAI[0] = -30; // 先向外延伸再回收
+                if (p >= 0 && p < Main.maxProjectiles) Main.projectile[p].localAI[0] = -30; //先向外延伸再回收
             }
             SoundEngine.PlaySound(SoundID.Item71 with { Pitch = -0.1f, Volume = 1.05f }, target.Center);
         }
 
-        // 多段朝向玩家的波状 burst
+        //多段朝向玩家的波状 burst
         private void Pattern_AimedWaveBursts(Player target) {
             if (VaultUtils.isClient) return;
             int waves = 3;
@@ -699,7 +692,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             NPC.velocity *= 0.985f;
             if (PhaseTimer > 40) {
                 PhaseLoopCounter++;
-                // 循环选择下一个阶段交错
+                //循环选择下一个阶段交错
                 if (PhaseLoopCounter % 3 == 0) {
                     TransitionTo(BossPhase.FrenzyDash);
                 }
@@ -712,7 +705,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             }
         }
 
-        private int GetBossDamage(float scaling = 1f, bool getOrigDamage = false) {
+        internal int GetBossDamage(float scaling = 1f, bool getOrigDamage = false) {
             int num = getOrigDamage ? NPC.defDamage : NPC.damage;
             return (int)(num * scaling);
         }
@@ -730,7 +723,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 float chargeT = MathHelper.Clamp(PhaseTimer / 90f, 0, 1);
                 float pulse = 1f + 0.15f * (float)Math.Sin(Main.GlobalTimeWrappedHourly * 8);
                 scale *= MathHelper.Lerp(1f, 1.15f, ACMUtils.SineInOut(chargeT)) * pulse;
-                // 绘制发光圆
+                //绘制发光圆
                 if (SoftGlow != null) {
                     for (int i = 0; i < 3; i++) {
                         float gScale = 2.2f + i * 0.3f * chargeT;
@@ -746,10 +739,10 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
         }
 
         private void RunFrenzyDash(Player target) {
-            // Telegraph -> Dash -> Recover，重复 frenzyDashTotal 次
+            //Telegraph -> Dash -> Recover，重复 frenzyDashTotal 次
             frenzyDashStateTimer++;
             switch (frenzyDashState) {
-                case 0: // telegraph
+                case 0: //telegraph
                     NPC.velocity *= 0.85f;
                     Vector2 hover = target.Center + new Vector2(0, -680).RotatedBy(frenzyDashTelegraphAngle);
                     NPC.Center += (hover - NPC.Center) * 0.16f;
@@ -763,15 +756,16 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                         SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.2f, Volume = 0.9f, MaxInstances = 6 }, NPC.Center);
                         Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(8, 18);
                         frenzyDashState = 1; frenzyDashStateTimer = 0;
+                        DoFanFire(target, 6 + (Main.expertMode ? 2 : 0) + (Main.masterMode ? 2 : 0), 70, 18f, 22f);
                     }
                     break;
-                case 1: // dash
+                case 1: //dash
                     NPC.velocity *= 0.985f;
                     if (frenzyDashStateTimer > 42 || NPC.collideX || NPC.collideY) {
                         frenzyDashState = 2; frenzyDashStateTimer = 0; NPC.velocity *= 0.4f;
                     }
                     break;
-                case 2: // recover
+                case 2: //recover
                     NPC.velocity *= 0.9f;
                     if (frenzyDashStateTimer > 18) {
                         frenzyDashCount++;
@@ -785,28 +779,6 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                         }
                     }
                     break;
-            }
-        }
-
-        private void DoRadialPulseProjectiles(int count) {
-            if (VaultUtils.isClient) return;
-            for (int i = 0; i < count; i++) {
-                float ang = MathHelper.TwoPi * i / count;
-                Vector2 vel = ang.ToRotationVector2() * 14f;
-                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                    ModContent.ProjectileType<YingouFireBall>(), GetBossDamage(0.7f), 2f, Main.myPlayer, 0, 1, Main.rand.NextFloat(1f));
-            }
-        }
-
-        private void DoTrackingArcFire(Player target, int arcCount, float arcRadius) {
-            if (VaultUtils.isClient) return;
-            Vector2 baseDir = NPC.DirectionTo(target.Center);
-            for (int a = 0; a < arcCount; a++) {
-                float t = a / (float)(arcCount - 1);
-                float ang = MathHelper.Lerp(-0.8f, 0.8f, t);
-                Vector2 offset = baseDir.RotatedBy(ang) * arcRadius;
-                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center + offset, (target.Center - (NPC.Center + offset)).SafeNormalize(Vector2.Zero) * 16f,
-                    ModContent.ProjectileType<YingouFireBall>(), GetBossDamage(0.8f), 2f, Main.myPlayer, 0, 0, t);
             }
         }
     }
