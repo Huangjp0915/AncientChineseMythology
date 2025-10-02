@@ -1010,7 +1010,6 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
         private void ProcessThrustCombo(NPC boss, Player target, float progress) {
             // 连续突刺：快速进行多次突刺
             float thrustSpeed = 0.8f; // 突刺速度
-            float cooldownTime = 5f;  // 每次突刺后的冷却时间
             int totalThrusts = 3;     // 总突刺次数
 
             // 计算当前突刺阶段
