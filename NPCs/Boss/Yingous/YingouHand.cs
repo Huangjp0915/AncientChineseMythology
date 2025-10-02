@@ -41,6 +41,29 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
         private float frenzyDashCurrentAngle; // 当前角度
         private float frenzySlashFlash; // 斩击闪光
 
+        // ===== 动作指令系统 =====
+        public enum ActionCommand
+        {
+            None,           // 无指令
+            FanFireSlash,   // 扇形火球斩击
+            SaberCast,      // 大刀地狱施法
+            QuickStrike,    // 快速突刺
+            SweepSlash,     // 横扫斩击
+            ChargeStab,     // 蓄力突刺
+            SpinCast,       // 旋转施法
+            CrossSlash,     // 十字斩击
+            RingCast        // 环形施法
+        }
+
+        private ActionCommand currentAction = ActionCommand.None;
+        private int actionTimer = 0;
+        private int actionDuration = 0;
+        private Vector2 actionStartPos;
+        private Vector2 actionTargetPos;
+        private float actionStartAngle;
+        private float actionTargetAngle;
+        private bool actionTriggered = false; // 是否已触发弹幕发射
+
         public float swingAngle; //保留（旧）
         public float swingPhase; //保留（旧）
 
@@ -93,6 +116,86 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             }
         }
 
+        // 动作指令接口，供Boss调用
+        public void ExecuteAction(ActionCommand action, Vector2? targetPos = null, float targetAngle = 0f) {
+            if (currentAction != ActionCommand.None && currentAction != action) return; // 动作进行中不接受新指令
+
+            currentAction = action;
+            actionTimer = 0;
+            actionTriggered = false;
+            actionStartPos = NPC.Center;
+            actionStartAngle = NPC.rotation;
+
+            // 根据动作类型设置参数
+            switch (action) {
+                case ActionCommand.FanFireSlash:
+                    actionDuration = 45;
+                    actionTargetPos = targetPos ?? (NPC.Center + (targetAngle.ToRotationVector2() * 180));
+                    actionTargetAngle = targetAngle;
+                    break;
+                case ActionCommand.SaberCast:
+                    actionDuration = 60;
+                    actionTargetPos = NPC.Center + new Vector2(Direction * 200, -100);
+                    actionTargetAngle = -MathHelper.PiOver2 + Direction * 0.3f;
+                    break;
+                case ActionCommand.QuickStrike:
+                    actionDuration = 30;
+                    actionTargetPos = targetPos ?? NPC.Center;
+                    actionTargetAngle = targetAngle;
+                    break;
+                case ActionCommand.SweepSlash:
+                    actionDuration = 50;
+                    actionTargetAngle = actionStartAngle + Direction * MathHelper.Pi * 0.8f;
+                    break;
+                case ActionCommand.ChargeStab:
+                    actionDuration = 70;
+                    actionTargetPos = targetPos ?? NPC.Center;
+                    actionTargetAngle = targetAngle;
+                    break;
+                case ActionCommand.SpinCast:
+                    actionDuration = 80;
+                    actionTargetAngle = actionStartAngle + MathHelper.TwoPi * Direction;
+                    break;
+                case ActionCommand.CrossSlash:
+                    actionDuration = 55;
+                    actionTargetAngle = targetAngle;
+                    break;
+                case ActionCommand.RingCast:
+                    actionDuration = 65;
+                    actionTargetPos = NPC.Center + new Vector2(0, -150);
+                    actionTargetAngle = -MathHelper.PiOver2;
+                    break;
+            }
+        }
+
+        // 检查动作是否完成
+        public bool IsActionComplete() {
+            return currentAction == ActionCommand.None;
+        }
+
+        // 检查是否到了触发弹幕的时机
+        public bool ShouldTriggerProjectiles() {
+            if (actionTriggered || currentAction == ActionCommand.None) return false;
+
+            float triggerProgress = currentAction switch {
+                ActionCommand.FanFireSlash => 0.6f,
+                ActionCommand.SaberCast => 0.7f,
+                ActionCommand.QuickStrike => 0.5f,
+                ActionCommand.SweepSlash => 0.4f,
+                ActionCommand.ChargeStab => 0.8f,
+                ActionCommand.SpinCast => 0.5f,
+                ActionCommand.CrossSlash => 0.6f,
+                ActionCommand.RingCast => 0.65f,
+                _ => 0.5f
+            };
+
+            if (actionTimer >= actionDuration * triggerProgress) {
+                actionTriggered = true;
+                return true;
+            }
+            return false;
+        }
+
         public override void AI() {
             if (counter1-- > 0) return;
 
@@ -107,31 +210,37 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             NPC.realLife = boss.whoAmI;
             NPC.target = boss.target;
 
-            //根据 Boss 当前模式决定手部逻辑
-            var phase = (Yingou.BossPhase)(int)boss.ai[0];
+            // 优先处理动作指令
+            if (currentAction != ActionCommand.None) {
+                ProcessAction(boss, target);
+            }
+            else {
+                //根据 Boss 当前模式决定手部逻辑
+                var phase = (Yingou.BossPhase)(int)boss.ai[0];
 
-            switch (phase) {
-                case Yingou.BossPhase.Intro:
-                    DoIntroOrbit(boss, target, yBoss);
-                    break;
-                case Yingou.BossPhase.PatternSetA:
-                    DoMeleeSwingSystem(boss, target, yBoss);
-                    break;
-                case Yingou.BossPhase.SpiralDread:
-                    DoSpiralAssist(boss, target, yBoss);
-                    break;
-                case Yingou.BossPhase.SaberHell:
-                    DoSaberChargePose(boss, target, yBoss);
-                    break;
-                case Yingou.BossPhase.FrenzyDash:
-                    DoFrenzyDashBlades(boss, target, yBoss);
-                    break;
-                case Yingou.BossPhase.BladeScatter:
-                    DoBladeScatterPose(boss, target, yBoss);
-                    break;
-                case Yingou.BossPhase.RecoverDash:
-                    DoRecoverFollow(boss, target, yBoss);
-                    break;
+                switch (phase) {
+                    case Yingou.BossPhase.Intro:
+                        DoIntroOrbit(boss, target, yBoss);
+                        break;
+                    case Yingou.BossPhase.PatternSetA:
+                        DoMeleeSwingSystem(boss, target, yBoss);
+                        break;
+                    case Yingou.BossPhase.SpiralDread:
+                        DoSpiralAssist(boss, target, yBoss);
+                        break;
+                    case Yingou.BossPhase.SaberHell:
+                        DoSaberChargePose(boss, target, yBoss);
+                        break;
+                    case Yingou.BossPhase.FrenzyDash:
+                        DoFrenzyDashBlades(boss, target, yBoss);
+                        break;
+                    case Yingou.BossPhase.BladeScatter:
+                        DoBladeScatterPose(boss, target, yBoss);
+                        break;
+                    case Yingou.BossPhase.RecoverDash:
+                        DoRecoverFollow(boss, target, yBoss);
+                        break;
+                }
             }
 
             //绑住玩家逻辑
@@ -151,6 +260,43 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             oldPos.Add(NPC.Center);
             oldRots.Add(NPC.rotation);
             if (oldPos.Count > 30) { oldPos.RemoveAt(0); oldRots.RemoveAt(0); }
+        }
+
+        private void ProcessAction(NPC boss, Player target) {
+            actionTimer++;
+            float progress = MathHelper.Clamp(actionTimer / (float)actionDuration, 0, 1);
+
+            switch (currentAction) {
+                case ActionCommand.FanFireSlash:
+                    ProcessFanFireSlash(boss, target, progress);
+                    break;
+                case ActionCommand.SaberCast:
+                    ProcessSaberCast(boss, target, progress);
+                    break;
+                case ActionCommand.QuickStrike:
+                    ProcessQuickStrike(boss, target, progress);
+                    break;
+                case ActionCommand.SweepSlash:
+                    ProcessSweepSlash(boss, target, progress);
+                    break;
+                case ActionCommand.ChargeStab:
+                    ProcessChargeStab(boss, target, progress);
+                    break;
+                case ActionCommand.SpinCast:
+                    ProcessSpinCast(boss, target, progress);
+                    break;
+                case ActionCommand.CrossSlash:
+                    ProcessCrossSlash(boss, target, progress);
+                    break;
+                case ActionCommand.RingCast:
+                    ProcessRingCast(boss, target, progress);
+                    break;
+            }
+
+            if (progress >= 1f) {
+                currentAction = ActionCommand.None;
+                actionTimer = 0;
+            }
         }
 
         private void DoIntroOrbit(NPC boss, Player target, Yingou yBoss) {
@@ -326,14 +472,14 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             // 展开动画：使用ElasticOut缓动，营造刀刃张力感
             frenzyDashProgress = MathHelper.Clamp(stateTimer / 32f, 0, 1);
             float easeT = ACMUtils.ElasticOut(frenzyDashProgress);
-            
+
             // 角度插值
             float targetAngle = LerpAngle(frenzyDashCurrentAngle, frenzyDashTargetAngle, easeT);
-            
+
             // 距离随展开程度变化：向外扩展
             float expandRadius = MathHelper.Lerp(120, 200, ACMUtils.SineInOut(frenzyDashProgress));
             Vector2 desiredPos = boss.Center + targetAngle.ToRotationVector2() * expandRadius;
-            
+
             NPC.Center += (desiredPos - NPC.Center) * 0.25f;
             NPC.rotation = targetAngle;
 
@@ -359,16 +505,16 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             // 快速收束斩击：使用QuadIn突然加速
             frenzyDashProgress = MathHelper.Clamp(stateTimer / 20f, 0, 1);
             float slashEase = ACMUtils.QuadIn(frenzyDashProgress);
-            
+
             // 角度快速插值到目标
             float currentAngle = LerpAngle(frenzyDashCurrentAngle, frenzyDashTargetAngle, slashEase);
-            
+
             // 距离在斩击中先突进再稍微回拉
             float dashRadius = MathHelper.Lerp(200, 140, ACMUtils.SineInOut(frenzyDashProgress));
             if (frenzyDashProgress > 0.7f) {
                 dashRadius += 30f * (float)Math.Sin((frenzyDashProgress - 0.7f) * MathHelper.Pi / 0.3f); // 斩击突进
             }
-            
+
             Vector2 desiredPos = boss.Center + currentAngle.ToRotationVector2() * dashRadius;
             NPC.Center += (desiredPos - NPC.Center) * 0.65f;
             NPC.rotation = currentAngle;
@@ -378,7 +524,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 frenzySlashFlash = 1f;
                 Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(5, 12);
                 SoundEngine.PlaySound(SoundID.Item89 with { Volume = 1f, Pitch = -0.2f }, NPC.Center);
-                
+
                 // 斩击光效与粒子爆发
                 if (!VaultUtils.isServer) {
                     for (int i = 0; i < 25; i++) {
@@ -386,7 +532,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                         int dust = Dust.NewDust(NPC.Center, 0, 0, DustID.Torch, vel.X, vel.Y, 120, default, Main.rand.NextFloat(1.8f, 2.8f));
                         Main.dust[dust].noGravity = true;
                     }
-                    
+
                     // 发射几个斩击波
                     if (!VaultUtils.isClient && Direction > 0) { // 只让右手发射避免重复
                         for (int w = 0; w < 3; w++) {
@@ -410,11 +556,11 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             // 收招：回到休息位置，使用BackOut缓动
             frenzyDashProgress = MathHelper.Clamp(stateTimer / 18f, 0, 1);
             float recoverEase = ACMUtils.BackOut(frenzyDashProgress);
-            
+
             Vector2 restOffset = new Vector2(Direction * 120, -40);
             Vector2 restPos = boss.Center + restOffset;
             float restAngle = (restPos - boss.Center).ToRotation();
-            
+
             float currentAngle = LerpAngle(frenzyDashCurrentAngle, restAngle, recoverEase);
             NPC.Center += (restPos - NPC.Center) * (0.15f + recoverEase * 0.2f);
             NPC.rotation = currentAngle;
@@ -454,14 +600,14 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
         // ====== BladeScatter 蓄力姿态 ======
         private void DoBladeScatterPose(NPC boss, Player target, Yingou yBoss) {
             float chargeProgress = MathHelper.Clamp(boss.ai[1] / 90f, 0, 1);
-            
+
             // 蓄力时双刀向上举起并向外张开
             float chargeAngle = MathHelper.Lerp(-MathHelper.PiOver4, -MathHelper.PiOver2 - 0.3f, ACMUtils.SineInOut(chargeProgress));
             chargeAngle += Direction * 0.4f; // 左右手差异
-            
+
             float chargeRadius = MathHelper.Lerp(140, 180, chargeProgress);
             Vector2 chargePos = boss.Center + chargeAngle.ToRotationVector2() * chargeRadius;
-            
+
             NPC.Center += (chargePos - NPC.Center) * 0.2f;
             NPC.rotation = chargeAngle;
 
@@ -549,6 +695,213 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             }
 
             return false;
+        }
+
+        private void ProcessFanFireSlash(NPC boss, Player target, float progress) {
+            // 扇形斩击：先后拉蓄力，然后快速前斩
+            if (progress < 0.4f) {
+                // 蓄力阶段：后拉
+                float pullProgress = progress / 0.4f;
+                float pullEase = ACMUtils.QuadOut(pullProgress);
+                Vector2 pullPos = boss.Center + new Vector2(Direction * -80, -20) * pullEase;
+                NPC.Center += (pullPos - NPC.Center) * 0.3f;
+                NPC.rotation = (actionTargetAngle - MathHelper.PiOver4 * Direction) * pullEase + actionStartAngle * (1 - pullEase);
+
+                // 蓄力粒子
+                if (!VaultUtils.isServer && Main.rand.NextBool(3)) {
+                    int dust = Dust.NewDust(NPC.Center, 0, 0, DustID.GoldFlame, 0, 0, 140, default, 1.2f);
+                    Main.dust[dust].noGravity = true;
+                    Main.dust[dust].velocity = NPC.rotation.ToRotationVector2() * -2f;
+                }
+            }
+            else {
+                // 斩击阶段：快速前冲
+                float slashProgress = (progress - 0.4f) / 0.6f;
+                float slashEase = ACMUtils.QuadIn(slashProgress);
+                Vector2 slashPos = Vector2.Lerp(actionStartPos, actionTargetPos, slashEase);
+                NPC.Center += (slashPos - NPC.Center) * 0.6f;
+                NPC.rotation = MathHelper.Lerp(actionStartAngle, actionTargetAngle, slashEase);
+
+                // 斩击风效
+                SpawnSlashWind(0.6f + slashProgress * 0.4f);
+
+                if (slashProgress > 0.3f && !actionTriggered) {
+                    actionTriggered = true;
+                    impactFlash = 1f;
+                    SoundEngine.PlaySound(SoundID.Item71 with { Volume = 1.1f, Pitch = 0.2f }, NPC.Center);
+                }
+            }
+        }
+
+        private void ProcessSaberCast(NPC boss, Player target, float progress) {
+            // 大刀地狱施法：高举双刀，能量汇聚
+            float raiseEase = ACMUtils.ElasticOut(MathHelper.Clamp(progress / 0.6f, 0, 1));
+            Vector2 raisePos = Vector2.Lerp(actionStartPos, actionTargetPos, raiseEase);
+            NPC.Center += (raisePos - NPC.Center) * 0.25f;
+            NPC.rotation = MathHelper.Lerp(actionStartAngle, actionTargetAngle, raiseEase);
+
+            // 施法能量效果
+            if (!VaultUtils.isServer && progress > 0.3f) {
+                for (int i = 0; i < 2; i++) {
+                    Vector2 sparkPos = NPC.Center + NPC.rotation.ToRotationVector2() * Main.rand.NextFloat(60, 120);
+                    int dust = Dust.NewDust(sparkPos, 0, 0, DustID.PurpleTorch, 0, 0, 140, default, 1.5f + progress);
+                    Main.dust[dust].noGravity = true;
+                    Main.dust[dust].velocity = (NPC.Center - sparkPos).SafeNormalize(Vector2.Zero) * 3f;
+                }
+            }
+
+            if (progress > 0.7f && !actionTriggered) {
+                actionTriggered = true;
+                SoundEngine.PlaySound(SoundID.Item20 with { Volume = 0.8f, Pitch = -0.3f }, NPC.Center);
+            }
+        }
+
+        private void ProcessQuickStrike(NPC boss, Player target, float progress) {
+            // 快速突刺：瞬间突进
+            if (progress < 0.2f) {
+                // 短暂蓄力
+                float chargeT = progress / 0.2f;
+                Vector2 chargePos = actionStartPos + new Vector2(Direction * -30, 0) * chargeT;
+                NPC.Center += (chargePos - NPC.Center) * 0.5f;
+            }
+            else {
+                // 突刺
+                float strikeT = (progress - 0.2f) / 0.8f;
+                float strikeEase = ACMUtils.QuadOut(strikeT);
+                Vector2 strikePos = Vector2.Lerp(actionStartPos, actionTargetPos, strikeEase);
+                NPC.Center += (strikePos - NPC.Center) * 0.8f;
+                NPC.rotation = MathHelper.Lerp(actionStartAngle, actionTargetAngle, strikeEase);
+
+                if (strikeT > 0.4f && !actionTriggered) {
+                    actionTriggered = true;
+                    SoundEngine.PlaySound(SoundID.Item1 with { Volume = 1f, Pitch = 0.5f }, NPC.Center);
+                }
+            }
+        }
+
+        private void ProcessSweepSlash(NPC boss, Player target, float progress) {
+            // 横扫斩击：大幅度挥砍
+            float sweepEase = ACMUtils.SineInOut(progress);
+            NPC.rotation = MathHelper.Lerp(actionStartAngle, actionTargetAngle, sweepEase);
+
+            // 保持在boss附近做弧形运动
+            float radius = 140 + 40 * MathF.Sin(progress * MathHelper.Pi);
+            Vector2 sweepPos = boss.Center + NPC.rotation.ToRotationVector2() * radius;
+            NPC.Center += (sweepPos - NPC.Center) * 0.4f;
+
+            // 持续的斩击效果
+            if (progress > 0.2f && progress < 0.8f) {
+                SpawnSlashWind(0.8f);
+            }
+
+            if (progress > 0.4f && !actionTriggered) {
+                actionTriggered = true;
+                SoundEngine.PlaySound(SoundID.Item71 with { Volume = 1f, Pitch = 0f }, NPC.Center);
+            }
+        }
+
+        private void ProcessChargeStab(NPC boss, Player target, float progress) {
+            // 蓄力突刺：长时间蓄力后爆发
+            if (progress < 0.7f) {
+                // 蓄力阶段
+                float chargeProgress = progress / 0.7f;
+                float chargePulse = 1f + 0.3f * MathF.Sin(chargeProgress * MathHelper.Pi * 6);
+                Vector2 chargePos = boss.Center + new Vector2(Direction * 100, -60) * chargePulse;
+                NPC.Center += (chargePos - NPC.Center) * 0.2f;
+                NPC.rotation = actionTargetAngle + MathF.Sin(chargeProgress * MathHelper.Pi * 4) * 0.1f;
+
+                // 蓄力能量
+                if (!VaultUtils.isServer && Main.rand.NextBool(2)) {
+                    int dust = Dust.NewDust(NPC.Center, 0, 0, DustID.Torch, 0, 0, 140, default, 1.5f);
+                    Main.dust[dust].noGravity = true;
+                }
+            }
+            else {
+                // 爆发阶段
+                float burstT = (progress - 0.7f) / 0.3f;
+                float burstEase = ACMUtils.QuadIn(burstT);
+                Vector2 burstPos = Vector2.Lerp(NPC.Center, actionTargetPos, burstEase);
+                NPC.Center += (burstPos - NPC.Center) * 0.9f;
+
+                if (!actionTriggered) {
+                    actionTriggered = true;
+                    impactFlash = 1.5f;
+                    Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(8, 15);
+                    SoundEngine.PlaySound(SoundID.Item89 with { Volume = 1.2f, Pitch = -0.1f }, NPC.Center);
+                }
+            }
+        }
+
+        private void ProcessSpinCast(NPC boss, Player target, float progress) {
+            // 旋转施法：围绕boss旋转施法
+            float spinEase = ACMUtils.SineInOut(progress);
+            NPC.rotation = MathHelper.Lerp(actionStartAngle, actionTargetAngle, spinEase);
+
+            float radius = 180 + 60 * MathF.Sin(progress * MathHelper.Pi);
+            Vector2 spinPos = boss.Center + NPC.rotation.ToRotationVector2() * radius;
+            NPC.Center += (spinPos - NPC.Center) * 0.3f;
+
+            // 旋转粒子轨迹
+            if (!VaultUtils.isServer && progress > 0.2f) {
+                Vector2 trailPos = NPC.Center + Main.rand.NextVector2Circular(20, 20);
+                int dust = Dust.NewDust(trailPos, 0, 0, DustID.GoldFlame, 0, 0, 140, default, 1.3f);
+                Main.dust[dust].noGravity = true;
+                Main.dust[dust].velocity = NPC.rotation.ToRotationVector2().RotatedBy(MathHelper.PiOver2) * 2f;
+            }
+
+            if (progress > 0.5f && !actionTriggered) {
+                actionTriggered = true;
+                SoundEngine.PlaySound(SoundID.Item8 with { Volume = 1f, Pitch = 0.2f }, NPC.Center);
+            }
+        }
+
+        private void ProcessCrossSlash(NPC boss, Player target, float progress) {
+            // 十字斩击：快速的十字挥砍
+            float slashPhase = progress * 4f; // 分成4个阶段
+            int currentSlash = (int)slashPhase;
+            float slashProgress = slashPhase - currentSlash;
+
+            float baseAngle = actionTargetAngle;
+            float[] slashAngles = { 0, MathHelper.PiOver2, MathHelper.Pi, -MathHelper.PiOver2 };
+
+            if (currentSlash < 4) {
+                float targetAngle = baseAngle + slashAngles[currentSlash];
+                float startAngle = currentSlash == 0 ? actionStartAngle : (baseAngle + slashAngles[currentSlash - 1]);
+                NPC.rotation = MathHelper.Lerp(startAngle, targetAngle, ACMUtils.QuadInOut(slashProgress));
+
+                Vector2 slashPos = boss.Center + NPC.rotation.ToRotationVector2() * (130 + 30 * slashProgress);
+                NPC.Center += (slashPos - NPC.Center) * 0.5f;
+
+                if (slashProgress > 0.5f && !actionTriggered && currentSlash == 1) {
+                    actionTriggered = true;
+                    SoundEngine.PlaySound(SoundID.Item71 with { Volume = 1f, Pitch = 0.3f }, NPC.Center);
+                }
+            }
+        }
+
+        private void ProcessRingCast(NPC boss, Player target, float progress) {
+            // 环形施法：举刀向上，形成法阵
+            float raiseEase = ACMUtils.BackOut(MathHelper.Clamp(progress / 0.5f, 0, 1));
+            Vector2 raisePos = Vector2.Lerp(actionStartPos, actionTargetPos, raiseEase);
+            NPC.Center += (raisePos - NPC.Center) * 0.2f;
+            NPC.rotation = MathHelper.Lerp(actionStartAngle, actionTargetAngle, raiseEase);
+
+            // 环形能量效果
+            if (!VaultUtils.isServer && progress > 0.4f) {
+                float ringRadius = 60 + progress * 40;
+                for (int i = 0; i < 3; i++) {
+                    float angle = Main.GameUpdateCount * 0.05f + i * MathHelper.TwoPi / 3;
+                    Vector2 ringPos = NPC.Center + angle.ToRotationVector2() * ringRadius;
+                    int dust = Dust.NewDust(ringPos, 0, 0, DustID.GoldFlame, 0, 0, 140, default, 1.2f);
+                    Main.dust[dust].noGravity = true;
+                    Main.dust[dust].velocity = Vector2.Zero;
+                }
+            }
+
+            if (progress > 0.65f && !actionTriggered) {
+                actionTriggered = true;
+                SoundEngine.PlaySound(SoundID.Item29 with { Volume = 0.9f, Pitch = 0.1f }, NPC.Center);
+            }
         }
     }
 }
