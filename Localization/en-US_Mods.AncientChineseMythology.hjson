@@ -535,6 +535,8 @@ NPCs: {
 	YingouHand.DisplayName: Yingou Hand
 	Jiangcen.DisplayName: Jiangcen
 	JiangcenHammer.DisplayName: Jiangcen Hammer
+	MaMian.DisplayName: Ma Mian
+	NiuTou.DisplayName: Niu Tou
 }
 
 Projectiles: {
@@ -604,6 +606,12 @@ Projectiles: {
 	JiangcenHammerProj.DisplayName: Jiangcen Hammer Proj
 	SaberHellFriendly.DisplayName: Saber Hell Friendly
 	CoffinNailProjectile.DisplayName: Coffin Nail Projectile
+	ChainProj.DisplayName: Chain Proj
+	DarkGreenBoomProj.DisplayName: Dark Green Boom Proj
+	DarkGreenProj.DisplayName: Dark Green Proj
+	EyeProj.DisplayName: Eye Proj
+	Proj_756_Adjust.DisplayName: Proj_756_ Adjust
+	SpoawnProj.DisplayName: Spoawn Proj
 }
 
 HeavenBiome.DisplayName: Heaven
@@ -746,6 +754,26 @@ Buffs: {
 	BaGuaBuff: {
 		DisplayName: Ba Gua Buff
 		Description: Mods.AncientChineseMythology.Buffs.BaGuaBuff.Description
+	}
+
+	ChainProj_Buff_1: {
+		DisplayName: Chain Proj_ Buff_1
+		Description: Mods.AncientChineseMythology.Buffs.ChainProj_Buff_1.Description
+	}
+
+	DeclineSpeedBuff_1: {
+		DisplayName: Decline Speed Buff_1
+		Description: Mods.AncientChineseMythology.Buffs.DeclineSpeedBuff_1.Description
+	}
+
+	DeclineSpeedBuff_2: {
+		DisplayName: Decline Speed Buff_2
+		Description: Mods.AncientChineseMythology.Buffs.DeclineSpeedBuff_2.Description
+	}
+
+	EyeProj_Buff_1: {
+		DisplayName: Eye Proj_ Buff_1
+		Description: Mods.AncientChineseMythology.Buffs.EyeProj_Buff_1.Description
 	}
 }
 
