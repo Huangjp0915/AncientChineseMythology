@@ -1,12 +1,11 @@
-using Terraria.ID;
-using Terraria;
-using Terraria.ModLoader;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using Terraria.GameContent;
+﻿using Microsoft.Xna.Framework.Graphics;
 using System;
-using System.Net;
+using Terraria;
 using Terraria.DataStructures;
+using Terraria.GameContent;
+using Terraria.ID;
+using Terraria.ModLoader;
+using Terraria.Audio;
 
 namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
 {
@@ -42,7 +41,7 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
             if (!Start_SetScrPos)
             {
                 Timer_SetScrPos = 1;
-                    ScrPos = Main.screenPosition;
+                ScrPos = Main.screenPosition;
             }
             else
             {
@@ -108,7 +107,7 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
                     }
             }
             if (Niu_B && Ma_B) modifiers.FinalDamage *= 1.3f;
-                base.ModifyHitByNPC(npc, ref modifiers);
+            base.ModifyHitByNPC(npc, ref modifiers);
         }
         public override void ModifyHitByProjectile(Projectile proj, ref Player.HurtModifiers modifiers)
         {
@@ -139,6 +138,13 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
     }
     public class NiuTou : ModNPC
     {
+        //声音资源引用
+        private static readonly SoundStyle RoarSound = SoundID.Roar with { PitchVariance = .2f };
+        private static readonly SoundStyle ChargeWindupSound = SoundID.ForceRoar with { Volume = .8f, PitchVariance = .3f };
+        private static readonly SoundStyle ChainLaunchSound = SoundID.Item20 with { Volume = .7f };
+        private static readonly SoundStyle EyeBlastSound = SoundID.Item74 with { Volume = 1f };
+        private static readonly SoundStyle ComboDashSound = SoundID.DD2_EtherianPortalDryadTouch with { Volume = .9f };
+
         public override void SetDefaults()
         {
             NPC.width = 70;
@@ -172,6 +178,7 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
         private bool Draw_Tail = false;
         public override bool PreDraw(SpriteBatch sb, Vector2 scrPos, Color col)
         {
+            //强化视觉表现: 添加渐隐尾焰与发光
             var tex = TextureAssets.Npc[Type].Value;
             var rec = NPC.frame;
             var spe = NPC.direction == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
@@ -181,10 +188,13 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
                 Tailcol.A = 0;
                 for (int i = 0; i < NPC.oldPos.Length; i++)
                 {
-                    sb.Draw(tex, NPC.oldPos[i] + rec.Size() * .5f * NPC.scale - scrPos, rec, Tailcol * Draw_Alpha, NPC.rotation, rec.Size() * .5f, NPC.scale, spe, 0);
+                    sb.Draw(tex, NPC.oldPos[i] + rec.Size() * .5f * NPC.scale - scrPos, rec, Tailcol * Draw_Alpha, NPC.rotation, rec.Size() * .5f, NPC.scale * (1f - i / (float)NPC.oldPos.Length * .3f), spe, 0);
                 }
             }
             sb.Draw(tex, NPC.Center - scrPos, rec, col * Draw_Alpha, NPC.rotation, rec.Size() * .5f, NPC.scale, spe, 0);
+            //外发光
+            var glowCol = Color.DarkRed; glowCol.A = 0;
+            sb.Draw(tex, NPC.Center - scrPos, rec, glowCol * .4f * Draw_Alpha, NPC.rotation, rec.Size() * .5f, NPC.scale * 1.08f, spe, 0);
             return false;
         }
         public void ReSet()
@@ -205,12 +215,14 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
         }
         private void Ai_0(float timeLeft, int dam)
         {
+            //冲锋阶段+抛出血雾
             NPC.ai[0]++;
             var Proj_t = ModContent.ProjectileType<Proj_756_Adjust>();
 
             if (NPCai(0) < 50)
             {
                 NPC.rotation = 0;
+                if (NPCai(0) == 1) SoundEngine.PlaySound(ChargeWindupSound, NPC.Center);//预备声音
             }
             else if (NPCai(0) < 110)
             {
@@ -222,6 +234,8 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
                 {
                     NPC.direction = NiuMaHelper.Rand_Int(-1, 1, 0);
                     NPC.Center = player.Center + new Vector2(600, 0) * -NPC.direction;
+                    SoundEngine.PlaySound(RoarSound, NPC.Center);//出现轰鸣
+                    ScreenPla?.SetZoom(1.8f);
                 }
                 Draw_Alpha = MathHelper.Lerp(Draw_Alpha, 1, .1f);
             }
@@ -240,12 +254,12 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
                         d.velocity = new Vector2(NiuMaHelper.Rand_Float(2, 6)).RotatedByRandom(8);
                     }
                     NPC.velocity = (player.Center - NPC.Center).NormalizeVector() * 2;
+                    ScreenPla?.SetScreenShake(5, 15);
                 }
                 if (NPCai(0) % 3 == 0 && NPC.velocity.Length() > 9)
                 {
                     for (int i = 0; i < 3; i++)
                     {
-                        //var vel = new Vector2(NiuMaHelper.Rand_Int(1, -1, 0), -1).RotatedByRandom(1);
                         var vel = new Vector2(NPC.direction, -1).RotatedByRandom(1);
                         var pos = Vector2.Lerp(NPC.oldPos[4] + new Vector2(35) * NPC.scale, NPC.Center, NiuMaHelper.Rand_Float(1));
                         var p = Projectile.NewProjectileDirect(NPC.GetSource_FromThis(), pos, vel, Proj_t, dam, 1);
@@ -263,7 +277,6 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
                 {
                     for (int i = 0; i < 3; i++)
                     {
-                        //var vel = new Vector2(NiuMaHelper.Rand_Int(1, -1, 0), -1).RotatedByRandom(1);
                         var vel = new Vector2(NPC.direction, -1).RotatedByRandom(1);
                         var pos = Vector2.Lerp(NPC.oldPos[4] + new Vector2(35) * NPC.scale, NPC.Center, NiuMaHelper.Rand_Float(1));
                         var p = Projectile.NewProjectileDirect(NPC.GetSource_FromThis(), pos, vel, Proj_t, dam, 1);
@@ -288,12 +301,14 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
         private Vector2 Ai1_ToCreatChainProj;
         private void Ai_1(int next, int ChainNum = 3)
         {
+            //锁链牵引阶段
             NPC.ai[0]++;
             var dis = Vector2.Distance(NPC.Center, player.Center);
             var ForStep = ((ChainNum - 1) / 2);
             if (NPCai(0) < 70)
             {
                 NPC.velocity = Vector2.Lerp(NPC.velocity, (player.Center + new Vector2(-500 * NPC.direction, -100) - NPC.Center).NormalizeVector() * 10 * Math.Clamp(dis * .03f, 0, 1), .07f);
+                if (NPCai(0) == 1) SoundEngine.PlaySound(ChargeWindupSound, NPC.Center);//蓄力提示
             }
             else
             {
@@ -335,6 +350,8 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
                     var p = Projectile.NewProjectileDirect(NPC.GetSource_FromThis(), NPC.Center, v.RotatedBy(i * .5f), ModContent.ProjectileType<ChainProj>(), 1, 0);
                     p.ai[2] = NPC.whoAmI;
                 }
+                SoundEngine.PlaySound(ChainLaunchSound, NPC.Center);//发射锁链音效
+                ScreenPla?.SetScreenShake(6, 12);
             }
             if (NPCai(0) > 116)
             {
@@ -346,12 +363,9 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
         private Vector2 Ai3_ToVector;
         private void Ai_2()
         {
+            //高空凝视蓄能阶段
             var ty = ModContent.DustType<Dust_1>();
-
-            //if (NPC.ai[0] == 0)
-            {
-                Ai3_ToVector = player.Center + new Vector2(0, -340);
-            }
+            Ai3_ToVector = player.Center + new Vector2(0, -340);
             NPC.ai[0]++;
 
             if (NPCai(0) < 240)
@@ -362,7 +376,8 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
             else
             {
                 ReSet();
-                NPC.ai[3] = 0;
+                //若两者均进入半血则进入组合阶段
+                if (NPC.life < NPC.lifeMax * .5f && NPC_MaMian.active && NPC_MaMian.life < NPC_MaMian.lifeMax * .5f) NPC.ai[3] = 3; else NPC.ai[3] = 0;
             }
             if(NPCai(0) <= 155 && NPCai(0) >= 50)
             {
@@ -397,10 +412,64 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
                         d.velocity = v;
                     }
                 }
-
+                SoundEngine.PlaySound(EyeBlastSound, NPC.Center);//眼束释放
                 Projectile.NewProjectileDirect(NPC.GetSource_FromAI(), NPC.Center, new Vector2(6).RotatedByRandom(8), ModContent.ProjectileType<EyeProj>(), 1, 0, player.whoAmI);
                 ScreenPla.SetScreenShake(8, 10);
             }
+        }
+        private void Ai_3()
+        {
+            //组合阶段: 多段高速冲撞+锁链再牵引
+            NPC.ai[0]++;
+            if (NPC.ai[0] < 50)
+            {
+                NPC.velocity *= .9f;
+                if (NPC.ai[0] == 1) { SoundEngine.PlaySound(RoarSound, NPC.Center); ScreenPla?.SetZoom(2.2f); }
+                if (NPC.ai[0] % 5 == 0)
+                {
+                    var d = Dust.NewDustPerfect(NPC.Center + new Vector2(120).RotatedByRandom(8), ModContent.DustType<Dust_1>());
+                    d.color = Color.DarkRed; d.scale *= 2.2f; d.velocity = (player.Center - d.position).NormalizeVector() * 5;
+                }
+            }
+            else if (NPC.ai[0] < 160)
+            {
+                Draw_Tail = true;
+                if (NPC.ai[0] % 12 == 0)
+                {
+                    SoundEngine.PlaySound(ComboDashSound, NPC.Center);
+                    ScreenPla?.SetScreenShake(4, 8);
+                    NPC.direction = player.Center.X > NPC.Center.X ? 1 : -1;
+                    NPC.velocity = (player.Center + new Vector2(NiuMaHelper.Rand_Float(-120,120), NiuMaHelper.Rand_Float(-60,60)) - NPC.Center).NormalizeVector() * 32;
+                    for (int i = 0; i < 6; i++)
+                    {
+                        var dust = Dust.NewDustPerfect(NPC.Center, ModContent.DustType<Dust_1>());
+                        dust.color = Color.DarkRed; dust.scale *= 2f; dust.velocity = new Vector2(NiuMaHelper.Rand_Float(3,9)).RotatedByRandom(8);
+                    }
+                }
+                NPC.velocity *= 1.02f;
+            }
+            else if (NPC.ai[0] < 220)
+            {
+                //短暂停顿再次释放锁链
+                NPC.velocity *= .92f;
+                if (NPC.ai[0] == 170)
+                {
+                    var v = (player.Center - NPC.Center).NormalizeVector() * 40;
+                    for (int i = -2; i <= 2; i++)
+                    {
+                        var p = Projectile.NewProjectileDirect(NPC.GetSource_FromThis(), NPC.Center, v.RotatedBy(i * .3f), ModContent.ProjectileType<ChainProj>(), 1, 0);
+                        p.ai[2] = NPC.whoAmI;
+                    }
+                    SoundEngine.PlaySound(ChainLaunchSound, NPC.Center);
+                }
+            }
+            else
+            {
+                ReSet();
+                NPC.ai[3] = 0;//循环回常规
+                ScreenPla?.SetZoom(1.4f);
+            }
+            NPC.rotation = NPC.rotation.AngleLerp(Math.Clamp(NPC.velocity.X * .08f, -.6f, .6f), .1f);
         }
         public override void AI()
         {
@@ -440,7 +509,7 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
                     }
                     Draw_Alpha = MathHelper.Lerp(Draw_Alpha, 1, .09f);
                 }
-                else if (NPC.ai[3] == -2)//�Լ�����
+                else if (NPC.ai[3] == -2)//复活演出
                 {
                     NPC.Center = NPC_MaMian.Center + new Vector2(0, -250);
                     if (NPC_MaMian.ai[0] > 60)
@@ -484,6 +553,10 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
                         {
                             Ai_2();
                         }
+                        else if (NPC.ai[3] == 3)
+                        {
+                            Ai_3();
+                        }
                     }
                 }
                 else
@@ -510,6 +583,7 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
                 ReSet();
                 (NPC_MaMian.ModNPC as MaMian ).ReSet();
                 NPC.life = (int)(NPC.lifeMax * .5f);
+                SoundEngine.PlaySound(RoarSound, NPC.Center);//复活提示
                 return false;
             }
             return base.CheckDead();
@@ -518,6 +592,11 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
     }
     public class MaMian : ModNPC
     {
+        //声音资源
+        private static readonly SoundStyle VolleySound = SoundID.Item73 with { Volume = .8f };
+        private static readonly SoundStyle SoulPullSound = SoundID.DD2_MonkStaffGroundImpact with { Volume = .9f };
+        private static readonly SoundStyle BoomChargeSound = SoundID.Item74 with { Volume = 1f };
+
         public override void SetDefaults()
         {
             NPC.width = 70;
@@ -542,6 +621,7 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
 
         public override bool PreDraw(SpriteBatch sb, Vector2 scrPos, Color col)
         {
+            //强化视觉表现: 紫色尾焰+发光
             var tex = TextureAssets.Npc[Type].Value;
             var rec = NPC.frame;
             var spe = NPC.direction == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
@@ -556,6 +636,8 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
                 }
             }
             sb.Draw(tex, NPC.Center - scrPos, rec, col * Draw_Alpha, NPC.rotation, rec.Size() * .5f, NPC.scale, spe, 0);
+            var glowCol = Color.Purple; glowCol.A = 0;
+            sb.Draw(tex, NPC.Center - scrPos, rec, glowCol * .45f * Draw_Alpha, NPC.rotation, rec.Size() * .5f, NPC.scale * 1.08f, spe, 0);
             return false;
         }
         public override void SetStaticDefaults()
@@ -582,6 +664,7 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
                 ReSet();
                 (NPC_NiuTou.ModNPC as NiuTou).ReSet();
                 NPC.life = (int)(NPC.lifeMax * .5f);
+                SoundEngine.PlaySound(SoulPullSound, NPC.Center);//复活音效
                 return false;
             }
             return base.CheckDead();
@@ -602,6 +685,7 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
         }
         private void Ai0(int num, int dam, int Diverge = 1, int next = 0)
         {
+            //多次弹幕齐射阶段
             NPC.ai[0]++;
             if (NPC.ai[1] < num)
             {
@@ -615,6 +699,7 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
                             var p = Projectile.NewProjectileDirect(NPC.GetSource_FromThis(), NPC.Center, (player.Center - NPC.Center).NormalizeVector().RotatedByRandom(2) * 5, ModContent.ProjectileType<DarkGreenProj>(), dam, 2);
                             p.ai[2] = NPC.whoAmI;
                         }
+                        SoundEngine.PlaySound(VolleySound, NPC.Center);//齐射音效
                     }
                 }
             }
@@ -631,6 +716,7 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
         }
         private void Ai_Const_0(double TimeDis, int timeLength, double R)
         {
+            //持续领域减速/半血加强
             if (++NPC.localAI[0] > TimeDis)
             {
                 NPC.localAI[1] = MathHelper.Lerp(NPC.localAI[1], 1, .05f);
@@ -649,11 +735,12 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
                             {
                                 if (NPC.life > NPC.lifeMax * .5f)
                                 {
-                                    player.AddBuff(ModContent.BuffType<DeclineSpeedBuff_1>(), 6);
+                                    p.AddBuff(ModContent.BuffType<DeclineSpeedBuff_1>(), 6);
                                 }
                                 else
                                 {
-                                    player.AddBuff(ModContent.BuffType<DeclineSpeedBuff_2>(), 6);
+                                    p.AddBuff(ModContent.BuffType<DeclineSpeedBuff_2>(), 6);
+                                    if (NPC.localAI[1] > .6f && NPC.ai[0] % 30 == 0) SoundEngine.PlaySound(SoulPullSound, NPC.Center);//半血灵魂牵引脉冲
                                 }
                             }
                         }
@@ -668,26 +755,59 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
                 {
                     for (float i = 0; i < 1;i += .2f)
                     {
-                        Dust.NewDustPerfect(NPC.Center + new Vector2(0, (float)R * NPC.localAI[1]).RotatedBy(j * MathHelper.TwoPi + i * .2f + Main.timeForVisualEffects * .09), 295).noGravity = true;
+                        var dust = Dust.NewDustPerfect(NPC.Center + new Vector2(0, (float)R * NPC.localAI[1]).RotatedBy(j * MathHelper.TwoPi + i * .2f + Main.timeForVisualEffects * .09), 295);
+                        dust.noGravity = true;
                     }
                 }
         }
         private void Ai2()
         {
+            //大范围爆裂蓄能
             NPC.ai[0]++;
             if (NPC.ai[0] < 120)
             {
                 var v = NPC.ai[0] / 120f;
                 var p = new Vector2(0, -100).RotatedBy(v * MathHelper.TwoPi * 2) * (1f - v);
-                var d = Dust.NewDustPerfect(p, 65).noGravity = true;
+                Dust.NewDustPerfect(p, 65).noGravity = true;
             }
             if (NPC.ai[0] == 140)
             {
+                SoundEngine.PlaySound(BoomChargeSound, NPC.Center);//爆裂蓄能音效
                 for(int i = -1; i <= 1; i++)
-                Projectile.NewProjectile(NPC.GetSource_FromThis(), NPC.Center, new Vector2(0, -5).RotatedBy(i), ModContent.ProjectileType<DarkGreenBoomProj>(), 1500, 2, player.whoAmI);
+                    Projectile.NewProjectile(NPC.GetSource_FromThis(), NPC.Center, new Vector2(0, -5).RotatedBy(i), ModContent.ProjectileType<DarkGreenBoomProj>(), 1500, 2, player.whoAmI);
             }
             if (NPC.ai[0] > 200)
+            {
+                ReSet();
+                NPC.ai[3] = 0;
+            }
+        }
+        private void Ai3_Synergy()
+        {
+            //双方半血协同阶段: 快速位移+齐射强化
+            NPC.ai[0]++;
+            Draw_Tail = true;
+            if (NPC.ai[0] < 80)
+            {
+                if (NPC.ai[0] == 1) SoundEngine.PlaySound(SoulPullSound, NPC.Center);
+                NPC.velocity = Vector2.Lerp(NPC.velocity, (player.Center + new Vector2(0,-220) - NPC.Center).NormalizeVector() * 18, .08f);
+            }
+            else if (NPC.ai[0] < 200)
+            {
+                if (NPC.ai[0] % 24 == 0)
                 {
+                    SoundEngine.PlaySound(VolleySound, NPC.Center);
+                    for (int i = -2; i <= 2; i++)
+                    {
+                        var vel = (player.Center - NPC.Center).NormalizeVector().RotatedBy(i * .25f) * 6f;
+                        var p = Projectile.NewProjectileDirect(NPC.GetSource_FromThis(), NPC.Center, vel, ModContent.ProjectileType<DarkGreenProj>(), 400, 2);
+                        p.ai[2] = NPC.whoAmI;
+                    }
+                }
+                NPC.velocity = Vector2.Lerp(NPC.velocity, (player.Center + new Vector2(0,-260) - NPC.Center).NormalizeVector() * 6, .05f);
+            }
+            else
+            {
                 ReSet();
                 NPC.ai[3] = 0;
             }
@@ -729,7 +849,7 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
                     }
                     Draw_Alpha = MathHelper.Lerp(Draw_Alpha, 1, .09f);
                 }
-                else if (NPC.ai[3] == -2)//�Լ�����
+                else if (NPC.ai[3] == -2)//复活演出
                 {
                     NPC.Center = NPC_NiuTou.Center + new Vector2(0, -250);
                     if (NPC_NiuTou.ai[0] > 60)
@@ -770,7 +890,16 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
                         {
                             Ai2();
                         }
-
+                        else if (NPC.ai[3] == 3)
+                        {
+                            Ai3_Synergy();
+                        }
+                        //若牛头也半血则进入协同阶段
+                        if (NPC_NiuTou.active && NPC_NiuTou.life < NPC_NiuTou.lifeMax * .5f && NPC.ai[3] == 0 && NPC.ai[0] % 240 == 0)
+                        {
+                            NPC.ai[3] = 3;
+                            ReSet();
+                        }
                     }
                     if (StartMove)
                     {
