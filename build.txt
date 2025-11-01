@@ -1,5 +1,5 @@
 ﻿displayName = 洪荒【Primordial】
-author = 子酥, Yui, 原力, 君倾, 晴雨, 奥义, 月海鱼鱼猫
-version = 3.2.4
+author = 子酥, Yui, 原力, 君倾, 晴雨, 奥义, 月海鱼鱼猫，红莲Object
+version = 3.3.0
 modReferences = InnoVault
 sortAfter = InnoVault
