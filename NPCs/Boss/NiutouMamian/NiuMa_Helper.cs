@@ -1,10 +1,7 @@
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
-using Terraria.ID;
 using Terraria.ModLoader;
-using static Terraria.NPC;
 
 namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
 {
@@ -13,33 +10,29 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
         public static string Path = typeof(NiuMaHelper).Namespace.Replace(".", "/") + "/";
         public static string NothingTex_Path = Path + "NothingTex";
 
-        public static float Rand_Float(double a, double b = 0)
-        {
+        public static float Rand_Float(double a, double b = 0) {
             var max = (float)Math.Max(a, b);
             var min = (float)Math.Min(a, b);
             return Main.rand.NextFloat(min, max);
         }
-        public static int Rand_Int(double a, double b = 0, int? withOut = null)
-        {
+        public static int Rand_Int(double a, double b = 0, int? withOut = null) {
             var max = (int)Math.Max(a, b);
             var min = (int)Math.Min(a, b);
 
             var f = Main.rand.Next(min, max + 1);
-            if(withOut.HasValue) 
-                if(f == withOut.Value)
+            if (withOut.HasValue)
+                if (f == withOut.Value)
                     return Rand_Int(min, max, withOut);
             return f;
         }
-        public static Vector2 NormalizeVector(this Vector2 v, Vector2 safe = default)
-        {
-           return v.SafeNormalize(safe);
+        public static Vector2 NormalizeVector(this Vector2 v, Vector2 safe = default) {
+            return v.SafeNormalize(safe);
         }
     }
     public class Dust_1 : ModDust
     {
         public override string Texture => GetType().Namespace.Replace(".", "/") + "/Dust_5";
-        public override void OnSpawn(Dust dust)
-        {
+        public override void OnSpawn(Dust dust) {
             dust.noLight = true;//�����޹�
             dust.noGravity = true;//����������
             dust.alpha = 240;
@@ -67,27 +60,23 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
         public static Texture2D tx;
         public static Texture2D tx_Black;
 
-        public override void Load()
-        {
+        public override void Load() {
             tx = ModContent.Request<Texture2D>(GetType().Namespace.Replace(".", "/") + "/Dust_5", ReLogic.Content.AssetRequestMode.ImmediateLoad).Value;
-            tx_Black = ModContent.Request<Texture2D>(GetType().Namespace.Replace(".", "/") +"/Dust_1", ReLogic.Content.AssetRequestMode.ImmediateLoad).Value;
+            tx_Black = ModContent.Request<Texture2D>(GetType().Namespace.Replace(".", "/") + "/Dust_1", ReLogic.Content.AssetRequestMode.ImmediateLoad).Value;
             base.Load();
         }
-        public override bool PreDraw(Dust dust)
-        {
+        public override bool PreDraw(Dust dust) {
             var c = dust.color;
-            if (dust.color.ToVector3().Length() == 0)
-            {
+            if (dust.color.ToVector3().Length() == 0) {
                 //Main.NewText(dust.color);
 
-                Main.spriteBatch.Draw( tx_Black, (dust.position - Main.screenPosition)/* + tx.Size() / 2*/, null, Color.Black * 0.4f * (dust.alpha / 255f), 0, new Vector2(24, 24), 1f * dust.scale * 0.2f, SpriteEffects.None, 0);
-                Main.spriteBatch.Draw( tx_Black, (dust.position - Main.screenPosition)/* + tx.Size() / 2*/, null, dust.color * (dust.alpha / 255f), 0, new Vector2(24, 24), 1.7f * dust.scale * 0.15f, SpriteEffects.None, 0);
+                Main.spriteBatch.Draw(tx_Black, (dust.position - Main.screenPosition)/* + tx.Size() / 2*/, null, Color.Black * 0.4f * (dust.alpha / 255f), 0, new Vector2(24, 24), 1f * dust.scale * 0.2f, SpriteEffects.None, 0);
+                Main.spriteBatch.Draw(tx_Black, (dust.position - Main.screenPosition)/* + tx.Size() / 2*/, null, dust.color * (dust.alpha / 255f), 0, new Vector2(24, 24), 1.7f * dust.scale * 0.15f, SpriteEffects.None, 0);
             }
-            else
-            {
+            else {
                 c.A = 0;
-                Main.spriteBatch.Draw( tx, (dust.position - Main.screenPosition)/* + tx.Size() / 2*/, null, c * (dust.alpha / 255f), 0, new Vector2(24, 24), 1.7f * dust.scale * 0.2f, SpriteEffects.None, 0);
-                Main.spriteBatch.Draw( tx, (dust.position - Main.screenPosition)/* + tx.Size() / 2*/, null, new Color(1, 1, 1f, 0f) * 0.4f * (dust.alpha / 255f), 0, new Vector2(24, 24), 0.7f * dust.scale * 0.15f, SpriteEffects.None, 0);
+                Main.spriteBatch.Draw(tx, (dust.position - Main.screenPosition)/* + tx.Size() / 2*/, null, c * (dust.alpha / 255f), 0, new Vector2(24, 24), 1.7f * dust.scale * 0.2f, SpriteEffects.None, 0);
+                Main.spriteBatch.Draw(tx, (dust.position - Main.screenPosition)/* + tx.Size() / 2*/, null, new Color(1, 1, 1f, 0f) * 0.4f * (dust.alpha / 255f), 0, new Vector2(24, 24), 0.7f * dust.scale * 0.15f, SpriteEffects.None, 0);
 
 
             }
@@ -98,8 +87,7 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
     public class Dust_2 : ModDust
     {
         public override string Texture => GetType().Namespace.Replace(".", "/") + "/Dust_5";
-        public override void OnSpawn(Dust dust)
-        {
+        public override void OnSpawn(Dust dust) {
             dust.noLight = true;//�����޹�
             dust.noGravity = true;//����������
             dust.noLight = true;
@@ -124,18 +112,15 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
 
             return false;
         }
-        public override bool PreDraw(Dust dust)
-        {
+        public override bool PreDraw(Dust dust) {
             var c = dust.color;
-            if (dust.color.ToVector3().Length() == 0)
-            {
+            if (dust.color.ToVector3().Length() == 0) {
                 //Main.NewText(dust.color);
 
                 Main.spriteBatch.Draw(Dust_1.tx_Black, (dust.position - Main.screenPosition)/* + tx.Size() / 2*/, null, Color.Black * 0.4f * (dust.alpha / 255f), 0, new Vector2(24, 24), 1f * dust.scale * 0.2f, SpriteEffects.None, 0);
                 Main.spriteBatch.Draw(Dust_1.tx_Black, (dust.position - Main.screenPosition)/* + tx.Size() / 2*/, null, dust.color * (dust.alpha / 255f), 0, new Vector2(24, 24), 1.7f * dust.scale * 0.15f, SpriteEffects.None, 0);
             }
-            else
-            {
+            else {
                 c.A = 0;
                 Main.spriteBatch.Draw(Dust_1.tx, (dust.position - Main.screenPosition)/* + tx.Size() / 2*/, null, c * (dust.alpha / 255f), 0, new Vector2(24, 24), 1.7f * dust.scale * 0.2f, SpriteEffects.None, 0);
                 Main.spriteBatch.Draw(Dust_1.tx, (dust.position - Main.screenPosition)/* + tx.Size() / 2*/, null, new Color(1, 1, 1f, 0f) * 0.4f * (dust.alpha / 255f), 0, new Vector2(24, 24), 0.7f * dust.scale * 0.15f, SpriteEffects.None, 0);

@@ -1,5 +1,4 @@
 ﻿using AncientChineseMythology.Items.Materials;
-using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,7 +34,7 @@ namespace AncientChineseMythology.Players
             ProjectileID.IceBoomerang,
             ProjectileID.Shroomerang
         };
-        
+
         // 高级剑列表（用于万剑归宗阵）
         private static readonly int[] AdvancedSwords = [
             ItemID.Excalibur,
@@ -51,7 +50,7 @@ namespace AncientChineseMythology.Players
             ItemID.ChlorophyteSaber,
             ItemID.CrystalVileShard
         ];
-        
+
         // 精金/钛金盔甲部件列表（用于防御类阵法）
         private static readonly int[] AdamantiteTitaniumArmor = [
             ItemID.AdamantiteHeadgear,
@@ -65,14 +64,14 @@ namespace AncientChineseMythology.Players
             ItemID.TitaniumBreastplate,
             ItemID.TitaniumLeggings
         ];
-        
+
         // 忍者大师装备列表（用于移动速度类阵法）
         private static readonly int[] NinjaGearItems = [
             ItemID.NinjaHood,
             ItemID.NinjaShirt,
             ItemID.NinjaPants
         ];
-        
+
         // 翅膀列表（用于移动速度类阵法）
         // 注意：使用更通用的方法检测翅膀，通过检查物品是否为翅膀类型
         private static bool IsWings(int itemType) {
@@ -82,7 +81,7 @@ namespace AncientChineseMythology.Players
             // 检查物品是否为翅膀（通过accessory和wingSlot属性）
             return item.accessory && item.wingSlot > 0;
         }
-        
+
         // 高级翅膀列表（用于咫尺天涯阵）
         // 高级翅膀：血肉之墙（困难模式）后的翅膀
         private static bool IsAdvancedWings(int itemType) {
@@ -94,116 +93,115 @@ namespace AncientChineseMythology.Players
                 // 困难模式前的翅膀（天使翅膀、恶魔翅膀）稀有度通常是蓝色或白色
                 // 所以判断稀有度 >= 橙色（ItemRarityID.Orange = 5）即为困难模式后的翅膀
                 return item.rare >= ItemRarityID.Orange;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         private int FallingStarTimer;
         private const int FallingStarCD = 15;   //每 15 tick ≈ 0.25 s 召唤 1 颗
-        
+
         // 甘露阵：每15秒回复最大生命值的1%
         private int GanLuTimer;
         private const int GanLuCD = 60 * 15; // 15秒 = 900 ticks
-        
+
         // 长生阵：每12秒回复最大生命值的2%
         private int ChangShengTimer;
         private const int ChangShengCD = 60 * 12; // 12秒 = 720 ticks
-        
+
         // 回春阵：每10秒回复最大生命值的3%
         private int HuiChunTimer;
         private const int HuiChunCD = 60 * 10; // 10秒 = 600 ticks
-        
+
         // 太乙还魂阵：每8秒回复最大生命值的5%
         private int TaiYiHuanHunTimer;
         private const int TaiYiHuanHunCD = 60 * 8; // 8秒 = 480 ticks
-        
+
         // 生生不息阵：每10秒回复最大生命值的1% + 固定回复2点
         private int ShengShengBuXiTimer;
         private const int ShengShengBuXiCD = 60 * 10; // 10秒 = 600 ticks
-        
+
         // 九转金丹阵：每8秒回复最大生命值的6%
         private int JiuZhuanJinDanTimer;
         private const int JiuZhuanJinDanCD = 60 * 8; // 8秒 = 480 ticks
-        
+
         // 阴阳调和阵：每6秒回复最大生命值的8%
         private int YinYangTiaoHeTimer;
         private const int YinYangTiaoHeCD = 60 * 6; // 6秒 = 360 ticks
-        
+
         // 万象回春阵：每10秒回复最大生命值的2%，生命值低于50%时提升至每6秒回复5%
         private int WanXiangHuiChunTimer;
         private const int WanXiangHuiChunCDNormal = 60 * 10; // 10秒 = 600 ticks（正常状态）
         private const int WanXiangHuiChunCDLow = 60 * 6; // 6秒 = 360 ticks（低血量状态）
-        
+
         // 神农护体阵：每10秒回复最大生命值的4%，并免疫中毒、流血、着火状态
         private int ShenNongHuTiTimer;
         private const int ShenNongHuTiCD = 60 * 10; // 10秒 = 600 ticks
-        
+
         // 聚灵阵：每15秒回复最大魔力值的2%
         private int JuLingTimer;
         private const int JuLingCD = 60 * 15; // 15秒 = 900 ticks
-        
+
         // 灵泉阵：每12秒回复最大魔力值的4%
         private int LingQuanTimer;
         private const int LingQuanCD = 60 * 12; // 12秒 = 720 ticks
-        
+
         // 星辰聚灵阵：每10秒回复最大魔力值的6%
         private int XingChenJuLingTimer;
         private const int XingChenJuLingCD = 60 * 10; // 10秒 = 600 ticks
-        
+
         // 太乙聚灵阵：每8秒回复最大魔力值的8%
         private int TaiYiJuLingTimer;
         private const int TaiYiJuLingCD = 60 * 8; // 8秒 = 480 ticks
-        
+
         // 法力潮汐阵：每10秒回复最大魔力值的4%，使用魔法武器时额外回复每15秒1%
         private int FaLiChaoXiTimer;
         private int FaLiChaoXiExtraTimer; // 额外回复计时器（使用魔法武器时）
         private const int FaLiChaoXiCD = 60 * 10; // 10秒 = 600 ticks
         private const int FaLiChaoXiExtraCD = 60 * 15; // 15秒 = 900 ticks（额外回复）
-        
+
         // 鸿蒙灵源阵：每6秒回复最大魔力值的10%
         private int HongMengLingYuanTimer;
         private const int HongMengLingYuanCD = 60 * 6; // 6秒 = 360 ticks
-        
+
         // 先天不败阵：致命伤害保护冷却（10分钟）
         private int XianTianBuBaiCD;
         private const int XianTianBuBaiCDMax = 60 * 60 * 10; // 10分钟 = 36000 ticks
         private bool XianTianBuBaiActive;
-        
+
         // 混元无极阵：每10秒回复3点生命值
         private int HunYuanWuJiTimer;
         private const int HunYuanWuJiCD = 60 * 10; // 10秒 = 600 ticks
-        
+
         // 缩地成寸阵：冲刺冷却
         private int SuoDiChengCunDashCD;
         private const int SuoDiChengCunDashCDMax = 60 * 15; // 15秒 = 900 ticks
         private bool SuoDiChengCunDashActive;
         private int SuoDiChengCunDashDuration;
         private const int SuoDiChengCunDashDurationMax = 60; // 1秒冲刺持续时间
-        
+
         // 腾云驾雾阵：空中停留
         private int TengYunJiaWuHoverTimer;
         private const int TengYunJiaWuHoverMax = 60 * 2; // 2秒 = 120 ticks
-        
+
         // 咫尺天涯阵：连续冲刺
         private int ChiZhiTianYaDashCD;
         private const int ChiZhiTianYaDashCDMax = 60 * 2; // 2秒冷却
         private bool ChiZhiTianYaDashActive;
         private int ChiZhiTianYaDashDuration;
         private const int ChiZhiTianYaDashDurationMax = 60; // 1秒冲刺持续时间
-        
+
         // 万兽朝宗阵：召唤物持续伤害计时器
         private int WanShouChaoZongTimer;
         private const int WanShouChaoZongCD = 60; // 1秒 = 60 ticks
-        
+
         // 神魔降世阵：特殊攻击概率
         private const float ShenMoJiangShiSpecialChance = 0.15f; // 15%概率触发特殊攻击
-        
+
         // 混沌万灵阵：范围伤害计时器
         private int HunDunWanLingTimer;
         private const int HunDunWanLingCD = 60 * 2; // 2秒 = 120 ticks
-        
+
         // ───────── 特殊效果类阵法计时器和变量 ─────────
         // 隐身遁形阵：隐身状态和冷却
         private int YinShenDunXingTimer;
@@ -211,37 +209,37 @@ namespace AncientChineseMythology.Players
         private const int YinShenDunXingDuration = 60 * 8; // 8秒 = 480 ticks
         private const int YinShenDunXingCDMax = 60 * 45; // 45秒 = 2700 ticks
         private bool YinShenDunXingActive;
-        
+
         // 烈焰焚天阵：持续火焰伤害计时器
         private int LieYanFenTianTimer;
         private const int LieYanFenTianCD = 60; // 1秒 = 60 ticks
-        
+
         // 寒冰封天阵：冰冻效果在OnHitNPCWithItem中处理
-        
+
         // 雷霆万钧阵：连锁闪电效果在OnHitNPCWithItem中处理
-        
+
         // 八卦推演阵：地图显示效果（需要持续激活）
-        
+
         // 时空扭曲阵：使用时间缩短和魔力消耗减少在GlobalItem中处理
-        
+
         // 吞噬万物阵：击败敌人回复（在OnKillNPC中处理）
-        
+
         // ───────── 综合强化类阵法计时器 ─────────
         // 三才合一阵：无计时器，在ResetEffects中处理
-        
+
         // 五行相生阵：回复计时器
         private int WuXingXiangShengTimer;
         private const int WuXingXiangShengCD = 60 * 15; // 15秒 = 900 ticks
-        
+
         // 六合归一阵：回复计时器
         private int LiuHeGuiYiTimer;
         private const int LiuHeGuiYiCD = 60 * 12; // 12秒 = 720 ticks
-        
+
         // 太极混元阵：回复计时器
         private int TaiJiHunYuanTimer;
         private const int TaiJiHunYuanCD = 60 * 10; // 10秒 = 600 ticks
 
-        
+
         public override void PostUpdateEquips() {
             //若拥有八卦 Buff，则缩放最终生命 / 魔力
             if (Player.HasBuff(ModContent.BuffType<Buffs.BaGuaBuff>())) {
@@ -261,10 +259,10 @@ namespace AncientChineseMythology.Players
         // ───────── 攻击类阵法效果 ─────────
         public override void ModifyWeaponDamage(Item item, ref StatModifier damage) {
             if (!Player.HasBuff(ModContent.BuffType<Buffs.BaGuaBuff>())) return;
-            
+
             int[] cur = BaGuaItems?.Where(it => it != null && !it.IsAir).Select(it => it.type).ToArray();
             if (cur == null) return;
-            
+
             // ───────── 召唤类阵法效果：召唤伤害加成 ─────────
             if (item.DamageType == DamageClass.Summon) {
                 // 百兽召唤阵：召唤伤害+8%
@@ -293,7 +291,7 @@ namespace AncientChineseMythology.Players
                     return;
                 }
             }
-            
+
             // ───────── 攻击类阵法效果（非召唤类） ─────────
             // 锋芒阵：近战伤害+3%
             if (CheckFengMangFormation(cur)) {
@@ -350,30 +348,30 @@ namespace AncientChineseMythology.Players
                 damage *= 1.20f;
             }
         }
-        
+
         // ───────── 召唤类阵法效果：召唤物上限增加（在ResetEffects中处理） ─────────
 
         // ───────── 时空扭曲阵：使用时间缩短15% ─────────
         public override float UseTimeMultiplier(Item item) {
             if (!Player.HasBuff(ModContent.BuffType<Buffs.BaGuaBuff>())) return 1f;
-            
+
             int[] cur = BaGuaItems?.Where(it => it != null && !it.IsAir).Select(it => it.type).ToArray();
             if (cur == null) return 1f;
-            
+
             // 时空扭曲阵：使用时间缩短15%（乘以0.85）
             if (CheckShiKongNiuQuFormation(cur)) {
                 return 0.85f;
             }
-            
+
             return 1f;
         }
 
         public override void ModifyWeaponCrit(Item item, ref float crit) {
             if (!Player.HasBuff(ModContent.BuffType<Buffs.BaGuaBuff>())) return;
-            
+
             int[] cur = BaGuaItems?.Where(it => it != null && !it.IsAir).Select(it => it.type).ToArray();
             if (cur == null) return;
-            
+
             // 诛邪阵：暴击率+3%
             if (CheckZhuXieFormation(cur)) {
                 crit += 3f;
@@ -401,19 +399,19 @@ namespace AncientChineseMythology.Players
         // 混沌灭世阵的效果在OnHitNPCWithItem中处理
         public override void OnHitNPCWithItem(Item item, NPC target, NPC.HitInfo hit, int damageDone) {
             if (!Player.HasBuff(ModContent.BuffType<Buffs.BaGuaBuff>())) return;
-            
+
             int[] cur = BaGuaItems?.Where(it => it != null && !it.IsAir).Select(it => it.type).ToArray();
             if (cur == null) return;
-            
+
             // 弑神诛魔阵的对boss额外伤害在ModifyHitNPCWithProj中处理
-            
+
             // 寒冰封天阵：攻击有15%概率冰冻敌人
             if (CheckHanBingFengTianFormation(cur)) {
                 if (Main.rand.NextFloat() < 0.15f) {
                     target.AddBuff(BuffID.Frozen, 60 * 3); // 冰冻3秒
                 }
             }
-            
+
             // 雷霆万钧阵：攻击有12%概率触发连锁闪电
             if (CheckLeiTingWanJunFormation(cur)) {
                 if (Main.rand.NextFloat() < 0.12f) {
@@ -422,7 +420,7 @@ namespace AncientChineseMythology.Players
                     float chainDistance = 200f;
                     NPC chainTarget = null;
                     float closestDistance = chainDistance;
-                    
+
                     for (int i = 0; i < Main.maxNPCs; i++) {
                         NPC npc = Main.npc[i];
                         if (npc != null && npc.active && !npc.friendly && npc != target) {
@@ -433,7 +431,7 @@ namespace AncientChineseMythology.Players
                             }
                         }
                     }
-                    
+
                     if (chainTarget != null) {
                         // 创建闪电伤害
                         int lightningDamage = (int)(damageDone * 0.5f); // 连锁闪电造成50%原伤害
@@ -448,7 +446,7 @@ namespace AncientChineseMythology.Players
             if (CheckHunDunMieShiFormation(cur)) {
                 if (Main.rand.NextFloat() < 0.08f) {
                     // 创建爆炸效果（使用爆炸弹幕）
-                    Projectile.NewProjectile(Player.GetSource_FromThis(), target.Center, Vector2.Zero, 
+                    Projectile.NewProjectile(Player.GetSource_FromThis(), target.Center, Vector2.Zero,
                         ProjectileID.Grenade, (int)(damageDone * 0.5f), 0f, Player.whoAmI);
                     // 添加视觉效果
                     if (Main.netMode != NetmodeID.Server && Main.myPlayer == Player.whoAmI) {
@@ -458,16 +456,16 @@ namespace AncientChineseMythology.Players
                     }
                 }
             }
-            
+
             // 万剑归宗阵：效果只在伤害加成中处理（已移除剑气效果）
         }
 
         public override void ModifyHitNPCWithProj(Projectile proj, NPC target, ref NPC.HitModifiers modifiers) {
             if (!Player.HasBuff(ModContent.BuffType<Buffs.BaGuaBuff>())) return;
-            
+
             int[] cur = BaGuaItems?.Where(it => it != null && !it.IsAir).Select(it => it.type).ToArray();
             if (cur == null) return;
-            
+
             // 弑神诛魔阵：对boss伤害额外+15%
             if (CheckShiShenZhuMoFormation(cur)) {
                 if (target.boss || NPCID.Sets.ShouldBeCountedAsBoss[target.type]) {
@@ -475,14 +473,14 @@ namespace AncientChineseMythology.Players
                 }
             }
         }
-        
+
         // ───────── 防御类阵法效果：减少所受伤害 ─────────
         public override void ModifyHitByNPC(NPC npc, ref Player.HurtModifiers modifiers) {
             if (!Player.HasBuff(ModContent.BuffType<Buffs.BaGuaBuff>())) return;
-            
+
             int[] cur = BaGuaItems?.Where(it => it != null && !it.IsAir).Select(it => it.type).ToArray();
             if (cur == null) return;
-            
+
             // 玄武护体阵：减少8%所受伤害
             if (CheckXuanWuHuTiFormation(cur)) {
                 modifiers.FinalDamage *= 0.92f;
@@ -504,13 +502,13 @@ namespace AncientChineseMythology.Players
                 modifiers.FinalDamage *= 0.70f;
             }
         }
-        
+
         public override void ModifyHitByProjectile(Projectile proj, ref Player.HurtModifiers modifiers) {
             if (!Player.HasBuff(ModContent.BuffType<Buffs.BaGuaBuff>())) return;
-            
+
             int[] cur = BaGuaItems?.Where(it => it != null && !it.IsAir).Select(it => it.type).ToArray();
             if (cur == null) return;
-            
+
             // 玄武护体阵：减少8%所受伤害
             if (CheckXuanWuHuTiFormation(cur)) {
                 modifiers.FinalDamage *= 0.92f;
@@ -567,17 +565,17 @@ namespace AncientChineseMythology.Players
             // 安全检查：确保BaGuaItems有效
             if (BaGuaItems == null)
                 return;
-            
+
             // 获取当前阵法物品
             int[] cur = BaGuaItems.Where(it => it != null && !it.IsAir).Select(it => it.type).ToArray();
-            
+
             // 甘露阵效果更新：每15秒回复最大生命值的1%
             if (cur != null && cur.Length == 1 && cur[0] == ItemID.LifeFruit) {
                 try {
                     GanLuTimer++;
                     if (GanLuTimer >= GanLuCD) {
                         GanLuTimer = 0;
-                        if (Player != null && Player.active && !Player.dead && 
+                        if (Player != null && Player.active && !Player.dead &&
                             Player.statLifeMax2 > 0 && Player.statLifeMax2 >= Player.statLife) {
                             int healAmount = Math.Max(1, (int)(Player.statLifeMax2 * 0.01f)); // 回复最大生命值的1%，至少1点
                             if (healAmount > 0 && Player.statLife < Player.statLifeMax2) {
@@ -592,19 +590,18 @@ namespace AncientChineseMythology.Players
                             }
                         }
                     }
-                }
-                catch {
+                } catch {
                     // 忽略错误，避免崩溃
                 }
             }
-            
+
             // 长生阵效果更新：每12秒回复最大生命值的2%
             if (cur != null && CheckChangShengFormation(cur)) {
                 try {
                     ChangShengTimer++;
                     if (ChangShengTimer >= ChangShengCD) {
                         ChangShengTimer = 0;
-                        if (Player != null && Player.active && !Player.dead && 
+                        if (Player != null && Player.active && !Player.dead &&
                             Player.statLifeMax2 > 0 && Player.statLifeMax2 >= Player.statLife) {
                             int healAmount = Math.Max(1, (int)(Player.statLifeMax2 * 0.02f)); // 回复最大生命值的2%，至少1点
                             if (healAmount > 0 && Player.statLife < Player.statLifeMax2) {
@@ -619,19 +616,18 @@ namespace AncientChineseMythology.Players
                             }
                         }
                     }
-                }
-                catch {
+                } catch {
                     // 忽略错误，避免崩溃
                 }
             }
-            
+
             // 太乙还魂阵效果更新：每8秒回复最大生命值的5%
             if (cur != null && CheckTaiYiHuanHunFormation(cur)) {
                 try {
                     TaiYiHuanHunTimer++;
                     if (TaiYiHuanHunTimer >= TaiYiHuanHunCD) {
                         TaiYiHuanHunTimer = 0;
-                        if (Player != null && Player.active && !Player.dead && 
+                        if (Player != null && Player.active && !Player.dead &&
                             Player.statLifeMax2 > 0 && Player.statLifeMax2 >= Player.statLife) {
                             int healAmount = Math.Max(1, (int)(Player.statLifeMax2 * 0.05f)); // 回复最大生命值的5%，至少1点
                             if (healAmount > 0 && Player.statLife < Player.statLifeMax2) {
@@ -646,8 +642,7 @@ namespace AncientChineseMythology.Players
                             }
                         }
                     }
-                }
-                catch {
+                } catch {
                     // 忽略错误，避免崩溃
                 }
             }
@@ -667,12 +662,11 @@ namespace AncientChineseMythology.Players
                         if (Player.HasBuff(BuffID.BrokenArmor)) Player.DelBuff(Player.FindBuffIndex(BuffID.BrokenArmor));
                         if (Player.HasBuff(BuffID.Confused)) Player.DelBuff(Player.FindBuffIndex(BuffID.Confused));
                     }
-                }
-                catch {
+                } catch {
                     // 忽略错误，避免崩溃
                 }
             }
-            
+
             // 神农护体阵效果更新：每10秒回复最大生命值的4%，并免疫中毒、流血、着火状态
             if (cur != null && CheckShenNongHuTiFormation(cur)) {
                 try {
@@ -681,7 +675,7 @@ namespace AncientChineseMythology.Players
                         Player.buffImmune[BuffID.Poisoned] = true;
                         Player.buffImmune[BuffID.Bleeding] = true;
                         Player.buffImmune[BuffID.OnFire] = true;
-                        
+
                         // 如果已经中了这些debuff，立即移除
                         if (Player.HasBuff(BuffID.Poisoned)) {
                             Player.DelBuff(Player.FindBuffIndex(BuffID.Poisoned));
@@ -693,12 +687,12 @@ namespace AncientChineseMythology.Players
                             Player.DelBuff(Player.FindBuffIndex(BuffID.OnFire));
                         }
                     }
-                    
+
                     // 回血逻辑
                     ShenNongHuTiTimer++;
                     if (ShenNongHuTiTimer >= ShenNongHuTiCD) {
                         ShenNongHuTiTimer = 0;
-                        if (Player != null && Player.active && !Player.dead && 
+                        if (Player != null && Player.active && !Player.dead &&
                             Player.statLifeMax2 > 0 && Player.statLifeMax2 >= Player.statLife) {
                             int healAmount = Math.Max(1, (int)(Player.statLifeMax2 * 0.04f)); // 回复最大生命值的4%，至少1点
                             if (healAmount > 0 && Player.statLife < Player.statLifeMax2) {
@@ -713,25 +707,24 @@ namespace AncientChineseMythology.Players
                             }
                         }
                     }
-                }
-                catch {
+                } catch {
                     // 忽略错误，避免崩溃
                 }
             }
-            
+
             // 万象回春阵效果更新：每10秒回复最大生命值的2%，生命值低于50%时提升至每6秒回复5%
             if (cur != null && CheckWanXiangHuiChunFormation(cur)) {
                 try {
-                    bool isLowHealth = Player != null && Player.statLifeMax2 > 0 && 
+                    bool isLowHealth = Player != null && Player.statLifeMax2 > 0 &&
                                       (float)Player.statLife / Player.statLifeMax2 < 0.5f; // 生命值低于50%
-                    
+
                     int currentCD = isLowHealth ? WanXiangHuiChunCDLow : WanXiangHuiChunCDNormal;
                     int healPercent = isLowHealth ? 5 : 2; // 低血量时5%，正常时2%
-                    
+
                     WanXiangHuiChunTimer++;
                     if (WanXiangHuiChunTimer >= currentCD) {
                         WanXiangHuiChunTimer = 0;
-                        if (Player != null && Player.active && !Player.dead && 
+                        if (Player != null && Player.active && !Player.dead &&
                             Player.statLifeMax2 > 0 && Player.statLifeMax2 >= Player.statLife) {
                             int healAmount = Math.Max(1, (int)(Player.statLifeMax2 * (healPercent / 100f))); // 回复最大生命值的百分比
                             if (healAmount > 0 && Player.statLife < Player.statLifeMax2) {
@@ -746,19 +739,18 @@ namespace AncientChineseMythology.Players
                             }
                         }
                     }
-                }
-                catch {
+                } catch {
                     // 忽略错误，避免崩溃
                 }
             }
-            
+
             // 聚灵阵效果更新：每15秒回复最大魔力值的2%
             if (cur != null && CheckJuLingFormation(cur)) {
                 try {
                     JuLingTimer++;
                     if (JuLingTimer >= JuLingCD) {
                         JuLingTimer = 0;
-                        if (Player != null && Player.active && !Player.dead && 
+                        if (Player != null && Player.active && !Player.dead &&
                             Player.statManaMax2 > 0 && Player.statManaMax2 >= Player.statMana) {
                             int manaAmount = Math.Max(1, (int)(Player.statManaMax2 * 0.02f)); // 回复最大魔力值的2%，至少1点
                             if (manaAmount > 0 && Player.statMana < Player.statManaMax2) {
@@ -774,19 +766,18 @@ namespace AncientChineseMythology.Players
                             }
                         }
                     }
-                }
-                catch {
+                } catch {
                     // 忽略错误，避免崩溃
                 }
             }
-            
+
             // 灵泉阵效果更新：每12秒回复最大魔力值的4%
             if (cur != null && CheckLingQuanFormation(cur)) {
                 try {
                     LingQuanTimer++;
                     if (LingQuanTimer >= LingQuanCD) {
                         LingQuanTimer = 0;
-                        if (Player != null && Player.active && !Player.dead && 
+                        if (Player != null && Player.active && !Player.dead &&
                             Player.statManaMax2 > 0 && Player.statManaMax2 >= Player.statMana) {
                             int manaAmount = Math.Max(1, (int)(Player.statManaMax2 * 0.04f)); // 回复最大魔力值的4%，至少1点
                             if (manaAmount > 0 && Player.statMana < Player.statManaMax2) {
@@ -802,19 +793,18 @@ namespace AncientChineseMythology.Players
                             }
                         }
                     }
-                }
-                catch {
+                } catch {
                     // 忽略错误，避免崩溃
                 }
             }
-            
+
             // 星辰聚灵阵效果更新：每10秒回复最大魔力值的6%
             if (cur != null && CheckXingChenJuLingFormation(cur)) {
                 try {
                     XingChenJuLingTimer++;
                     if (XingChenJuLingTimer >= XingChenJuLingCD) {
                         XingChenJuLingTimer = 0;
-                        if (Player != null && Player.active && !Player.dead && 
+                        if (Player != null && Player.active && !Player.dead &&
                             Player.statManaMax2 > 0 && Player.statManaMax2 >= Player.statMana) {
                             int manaAmount = Math.Max(1, (int)(Player.statManaMax2 * 0.06f)); // 回复最大魔力值的6%，至少1点
                             if (manaAmount > 0 && Player.statMana < Player.statManaMax2) {
@@ -829,19 +819,18 @@ namespace AncientChineseMythology.Players
                             }
                         }
                     }
-                }
-                catch {
+                } catch {
                     // 忽略错误，避免崩溃
                 }
             }
-            
+
             // 太乙聚灵阵效果更新：每8秒回复最大魔力值的8%
             if (cur != null && CheckTaiYiJuLingFormation(cur)) {
                 try {
                     TaiYiJuLingTimer++;
                     if (TaiYiJuLingTimer >= TaiYiJuLingCD) {
                         TaiYiJuLingTimer = 0;
-                        if (Player != null && Player.active && !Player.dead && 
+                        if (Player != null && Player.active && !Player.dead &&
                             Player.statManaMax2 > 0 && Player.statManaMax2 >= Player.statMana) {
                             int manaAmount = Math.Max(1, (int)(Player.statManaMax2 * 0.08f)); // 回复最大魔力值的8%，至少1点
                             if (manaAmount > 0 && Player.statMana < Player.statManaMax2) {
@@ -856,12 +845,11 @@ namespace AncientChineseMythology.Players
                             }
                         }
                     }
-                }
-                catch {
+                } catch {
                     // 忽略错误，避免崩溃
                 }
             }
-            
+
             // 法力潮汐阵效果更新：每10秒回复最大魔力值的4%，使用魔法武器时额外回复每15秒1%
             if (cur != null && CheckFaLiChaoXiFormation(cur)) {
                 try {
@@ -869,7 +857,7 @@ namespace AncientChineseMythology.Players
                     FaLiChaoXiTimer++;
                     if (FaLiChaoXiTimer >= FaLiChaoXiCD) {
                         FaLiChaoXiTimer = 0;
-                        if (Player != null && Player.active && !Player.dead && 
+                        if (Player != null && Player.active && !Player.dead &&
                             Player.statManaMax2 > 0 && Player.statManaMax2 >= Player.statMana) {
                             int manaAmount = Math.Max(1, (int)(Player.statManaMax2 * 0.04f)); // 回复最大魔力值的4%
                             if (manaAmount > 0 && Player.statMana < Player.statManaMax2) {
@@ -884,7 +872,7 @@ namespace AncientChineseMythology.Players
                             }
                         }
                     }
-                    
+
                     // 额外回复：使用魔法武器时每15秒回复1%
                     if (Player != null && Player.active && Player.HeldItem != null && !Player.HeldItem.IsAir && Player.HeldItem.DamageType == DamageClass.Magic) {
                         FaLiChaoXiExtraTimer++;
@@ -909,19 +897,18 @@ namespace AncientChineseMythology.Players
                         // 不使用魔法武器时重置额外计时器
                         FaLiChaoXiExtraTimer = 0;
                     }
-                }
-                catch {
+                } catch {
                     // 忽略错误，避免崩溃
                 }
             }
-            
+
             // 鸿蒙灵源阵效果更新：每6秒回复最大魔力值的10%
             if (cur != null && CheckHongMengLingYuanFormation(cur)) {
                 try {
                     HongMengLingYuanTimer++;
                     if (HongMengLingYuanTimer >= HongMengLingYuanCD) {
                         HongMengLingYuanTimer = 0;
-                        if (Player != null && Player.active && !Player.dead && 
+                        if (Player != null && Player.active && !Player.dead &&
                             Player.statManaMax2 > 0 && Player.statManaMax2 >= Player.statMana) {
                             int manaAmount = Math.Max(1, (int)(Player.statManaMax2 * 0.10f)); // 回复最大魔力值的10%，至少1点
                             if (manaAmount > 0 && Player.statMana < Player.statManaMax2) {
@@ -936,19 +923,18 @@ namespace AncientChineseMythology.Players
                             }
                         }
                     }
-                }
-                catch {
+                } catch {
                     // 忽略错误，避免崩溃
                 }
             }
-            
+
             // 阴阳调和阵效果更新：每6秒回复最大生命值的8%
             if (cur != null && CheckYinYangTiaoHeFormation(cur)) {
                 try {
                     YinYangTiaoHeTimer++;
                     if (YinYangTiaoHeTimer >= YinYangTiaoHeCD) {
                         YinYangTiaoHeTimer = 0;
-                        if (Player != null && Player.active && !Player.dead && 
+                        if (Player != null && Player.active && !Player.dead &&
                             Player.statLifeMax2 > 0 && Player.statLifeMax2 >= Player.statLife) {
                             int healAmount = Math.Max(1, (int)(Player.statLifeMax2 * 0.08f)); // 回复最大生命值的8%，至少1点
                             if (healAmount > 0 && Player.statLife < Player.statLifeMax2) {
@@ -963,19 +949,18 @@ namespace AncientChineseMythology.Players
                             }
                         }
                     }
-                }
-                catch {
+                } catch {
                     // 忽略错误，避免崩溃
                 }
             }
-            
+
             // 九转金丹阵效果更新：每8秒回复最大生命值的6%
             if (cur != null && CheckJiuZhuanJinDanFormation(cur)) {
                 try {
                     JiuZhuanJinDanTimer++;
                     if (JiuZhuanJinDanTimer >= JiuZhuanJinDanCD) {
                         JiuZhuanJinDanTimer = 0;
-                        if (Player != null && Player.active && !Player.dead && 
+                        if (Player != null && Player.active && !Player.dead &&
                             Player.statLifeMax2 > 0 && Player.statLifeMax2 >= Player.statLife) {
                             int healAmount = Math.Max(1, (int)(Player.statLifeMax2 * 0.06f)); // 回复最大生命值的6%，至少1点
                             if (healAmount > 0 && Player.statLife < Player.statLifeMax2) {
@@ -990,24 +975,23 @@ namespace AncientChineseMythology.Players
                             }
                         }
                     }
-                }
-                catch {
+                } catch {
                     // 忽略错误，避免崩溃
                 }
             }
-            
+
             // 生生不息阵效果更新：每10秒回复最大生命值的1% + 固定回复2点
             if (cur != null && CheckShengShengBuXiFormation(cur)) {
                 try {
                     ShengShengBuXiTimer++;
                     if (ShengShengBuXiTimer >= ShengShengBuXiCD) {
                         ShengShengBuXiTimer = 0;
-                        if (Player != null && Player.active && !Player.dead && 
+                        if (Player != null && Player.active && !Player.dead &&
                             Player.statLifeMax2 > 0 && Player.statLifeMax2 >= Player.statLife) {
                             int percentHeal = Math.Max(1, (int)(Player.statLifeMax2 * 0.01f)); // 回复最大生命值的1%，至少1点
                             int fixedHeal = 2; // 固定回复2点
                             int totalHeal = percentHeal + fixedHeal; // 总回复量
-                            
+
                             if (totalHeal > 0 && Player.statLife < Player.statLifeMax2) {
                                 int newLife = Math.Min(Player.statLife + totalHeal, Player.statLifeMax2);
                                 if (newLife > Player.statLife) {
@@ -1020,19 +1004,18 @@ namespace AncientChineseMythology.Players
                             }
                         }
                     }
-                }
-                catch {
+                } catch {
                     // 忽略错误，避免崩溃
                 }
             }
-            
+
             // 回春阵效果更新：每10秒回复最大生命值的3%
             if (cur != null && CheckHuiChunFormation(cur)) {
                 try {
                     HuiChunTimer++;
                     if (HuiChunTimer >= HuiChunCD) {
                         HuiChunTimer = 0;
-                        if (Player != null && Player.active && !Player.dead && 
+                        if (Player != null && Player.active && !Player.dead &&
                             Player.statLifeMax2 > 0 && Player.statLifeMax2 >= Player.statLife) {
                             int healAmount = Math.Max(1, (int)(Player.statLifeMax2 * 0.03f)); // 回复最大生命值的3%，至少1点
                             if (healAmount > 0 && Player.statLife < Player.statLifeMax2) {
@@ -1047,8 +1030,7 @@ namespace AncientChineseMythology.Players
                             }
                         }
                     }
-                }
-                catch {
+                } catch {
                     // 忽略错误，避免崩溃
                 }
             }
@@ -1652,7 +1634,7 @@ namespace AncientChineseMythology.Players
             else {
                 foreach (var f in Formations) {
                     if (f.Name == "长生阵" || f.Name == "回春阵" || f.Name == "太乙还魂阵" || f.Name == "生生不息阵" || f.Name == "九转金丹阵" || f.Name == "阴阳调和阵" || f.Name == "万象回春阵" || f.Name == "神农护体阵" || f.Name == "聚灵阵" || f.Name == "灵泉阵" || f.Name == "星辰聚灵阵" || f.Name == "太乙聚灵阵" || f.Name == "法力潮汐阵" || f.Name == "鸿蒙灵源阵" || f.Name == "锋芒阵" || f.Name == "破军阵" || f.Name == "诛邪阵" || f.Name == "万剑归宗阵" || f.Name == "天罡破阵" || f.Name == "混沌灭世阵" || f.Name == "盘古开天阵" || f.Name == "弑神诛魔阵" || f.Name == "金刚阵" || f.Name == "玄武护体阵" || f.Name == "不灭金身阵" || f.Name == "九转玄功阵" || f.Name == "先天不败阵" || f.Name == "混元无极阵" || f.Name == "神行阵" || f.Name == "御风阵" || f.Name == "缩地成寸阵" || f.Name == "腾云驾雾阵" || f.Name == "咫尺天涯阵" || f.Name == "百兽召唤阵" || f.Name == "天兵天将阵" || f.Name == "万兽朝宗阵" || f.Name == "神魔降世阵" || f.Name == "混沌万灵阵" || f.Name == "隐身遁形阵" || f.Name == "烈焰焚天阵" || f.Name == "寒冰封天阵" || f.Name == "雷霆万钧阵" || f.Name == "八卦推演阵" || f.Name == "时空扭曲阵" || f.Name == "吞噬万物阵" || f.Name == "三才合一阵" || f.Name == "五行相生阵" || f.Name == "六合归一阵" || f.Name == "太极混元阵") continue; // 跳过已特殊处理的阵法
-                    
+
                     if (cur != null && cur.Length == f.RequiredTypes.Length &&
                         cur.All(t => f.RequiredTypes.Contains(t))) {
                         CurrentName = f.Name;
@@ -1662,7 +1644,7 @@ namespace AncientChineseMythology.Players
                     }
                 }
             }
-            
+
             // 如果当前激活的不是回血/回蓝/防御阵法，重置计时器
             if (CurrentName != "甘露阵" && CurrentName != "长生阵" && CurrentName != "回春阵" && CurrentName != "太乙还魂阵" && CurrentName != "生生不息阵" && CurrentName != "九转金丹阵" && CurrentName != "阴阳调和阵" && CurrentName != "万象回春阵" && CurrentName != "神农护体阵" && CurrentName != "聚灵阵" && CurrentName != "灵泉阵" && CurrentName != "星辰聚灵阵" && CurrentName != "太乙聚灵阵" && CurrentName != "法力潮汐阵" && CurrentName != "鸿蒙灵源阵" && CurrentName != "混元无极阵") {
                 GanLuTimer = 0;
@@ -1683,7 +1665,7 @@ namespace AncientChineseMythology.Players
                 HongMengLingYuanTimer = 0;
                 HunYuanWuJiTimer = 0;
             }
-            
+
             // ───────── 防御类阵法效果：防御加成 ─────────
             if (Player.HasBuff(ModContent.BuffType<Buffs.BaGuaBuff>())) {
                 int[] defenseCur = BaGuaItems?.Where(it => it != null && !it.IsAir).Select(it => it.type).ToArray();
@@ -1716,7 +1698,7 @@ namespace AncientChineseMythology.Players
                     }
                 }
             }
-            
+
             // ───────── 移动速度类阵法效果：移动速度和奔跑速度加成 ─────────
             if (Player.HasBuff(ModContent.BuffType<Buffs.BaGuaBuff>())) {
                 int[] speedCur = BaGuaItems?.Where(it => it != null && !it.IsAir).Select(it => it.type).ToArray();
@@ -1744,7 +1726,7 @@ namespace AncientChineseMythology.Players
                     }
                 }
             }
-            
+
             // ───────── 召唤类阵法效果：召唤物上限增加 ─────────
             if (Player.HasBuff(ModContent.BuffType<Buffs.BaGuaBuff>())) {
                 int[] summonCur = BaGuaItems?.Where(it => it != null && !it.IsAir).Select(it => it.type).ToArray();
@@ -1775,7 +1757,7 @@ namespace AncientChineseMythology.Players
                     }
                 }
             }
-            
+
             // ───────── 综合强化类阵法效果：综合属性加成 ─────────
             if (Player.HasBuff(ModContent.BuffType<Buffs.BaGuaBuff>())) {
                 int[] comboCur = BaGuaItems?.Where(it => it != null && !it.IsAir).Select(it => it.type).ToArray();
@@ -1795,7 +1777,7 @@ namespace AncientChineseMythology.Players
                     }
                 }
             }
-            
+
             // ───────── 特殊效果类阵法效果：隐身、免疫等 ─────────
             if (Player.HasBuff(ModContent.BuffType<Buffs.BaGuaBuff>())) {
                 int[] specialCur = BaGuaItems?.Where(it => it != null && !it.IsAir).Select(it => it.type).ToArray();
@@ -1828,7 +1810,7 @@ namespace AncientChineseMythology.Players
                     }
                 }
             }
-            
+
             // ───────── 综合强化类阵法效果：防御加成（与防御类合并） ─────────
             if (Player.HasBuff(ModContent.BuffType<Buffs.BaGuaBuff>())) {
                 int[] defenseComboCur = BaGuaItems?.Where(it => it != null && !it.IsAir).Select(it => it.type).ToArray();
@@ -1851,22 +1833,22 @@ namespace AncientChineseMythology.Players
                     }
                 }
             }
-            
+
             // 更新先天不败阵冷却
             if (XianTianBuBaiCD > 0) {
                 XianTianBuBaiCD--;
             }
-            
+
             // 更新缩地成寸阵冲刺冷却
             if (SuoDiChengCunDashCD > 0) {
                 SuoDiChengCunDashCD--;
             }
-            
+
             // 更新咫尺天涯阵冲刺冷却
             if (ChiZhiTianYaDashCD > 0) {
                 ChiZhiTianYaDashCD--;
             }
-            
+
             // 混元无极阵效果更新：每10秒回复3点生命值
             if (cur != null && CheckHunYuanWuJiFormation(cur)) {
                 try {
@@ -1889,12 +1871,11 @@ namespace AncientChineseMythology.Players
                             }
                         }
                     }
-                }
-                catch {
+                } catch {
                     // 忽略错误，避免崩溃
                 }
             }
-            
+
             // ───────── 移动速度类阵法效果更新 ─────────
             if (cur != null && Player != null && Player.active && !Player.dead) {
                 // 御风阵：飞行时间+30%，跳跃高度+12%
@@ -1904,8 +1885,7 @@ namespace AncientChineseMythology.Players
                             Player.wingTimeMax = (int)(Player.wingTimeMax * 1.30f);
                         }
                         Player.jumpSpeedBoost += 0.12f;
-                    }
-                    catch {
+                    } catch {
                         // 忽略错误
                     }
                 }
@@ -1917,22 +1897,22 @@ namespace AncientChineseMythology.Players
                         }
                         // 空中停留：如果玩家在空中且没有按方向键，保持悬浮
                         // 检测玩家是否在地面：通过检查垂直速度和碰撞
-                        bool isOnGround = Player.velocity.Y == 0f && 
+                        bool isOnGround = Player.velocity.Y == 0f &&
                                          Collision.SolidCollision(
                                              Player.position + new Microsoft.Xna.Framework.Vector2(0, Player.height),
                                              Player.width, 2);
-                        
-                        if (!isOnGround && Player.velocity.Y > -0.5f && Player.velocity.Y < 0.5f && 
+
+                        if (!isOnGround && Player.velocity.Y > -0.5f && Player.velocity.Y < 0.5f &&
                             !Player.controlLeft && !Player.controlRight && !Player.controlUp && !Player.controlDown) {
                             if (TengYunJiaWuHoverTimer < TengYunJiaWuHoverMax) {
                                 TengYunJiaWuHoverTimer++;
                                 Player.velocity.Y = 0f; // 悬浮
                             }
-                        } else {
+                        }
+                        else {
                             TengYunJiaWuHoverTimer = 0; // 重置计时器
                         }
-                    }
-                    catch {
+                    } catch {
                         // 忽略错误
                     }
                 }
@@ -1942,12 +1922,11 @@ namespace AncientChineseMythology.Players
                         if (Player.wingTimeMax > 0) {
                             Player.wingTimeMax = (int)(Player.wingTimeMax * 1.80f);
                         }
-                    }
-                    catch {
+                    } catch {
                         // 忽略错误
                     }
                 }
-                
+
                 // 缩地成寸阵：冲刺功能
                 if (CheckSuoDiChengCunFormation(cur)) {
                     try {
@@ -1962,28 +1941,28 @@ namespace AncientChineseMythology.Players
                                 }
                             }
                         }
-                        
+
                         // 执行冲刺
                         if (SuoDiChengCunDashActive && SuoDiChengCunDashDuration > 0) {
                             SuoDiChengCunDashDuration--;
                             if (Player.controlLeft || Player.controlRight) {
                                 float dashSpeed = 15f;
                                 Player.velocity.X = Player.controlLeft ? -dashSpeed : dashSpeed;
-                            } else {
+                            }
+                            else {
                                 SuoDiChengCunDashActive = false;
                             }
-                            
+
                             if (SuoDiChengCunDashDuration <= 0) {
                                 SuoDiChengCunDashActive = false;
                                 SuoDiChengCunDashCD = SuoDiChengCunDashCDMax;
                             }
                         }
-                    }
-                    catch {
+                    } catch {
                         // 忽略错误
                     }
                 }
-                
+
                 // 咫尺天涯阵：连续冲刺能力
                 if (CheckChiZhiTianYaFormation(cur)) {
                     try {
@@ -1996,28 +1975,28 @@ namespace AncientChineseMythology.Players
                                 }
                             }
                         }
-                        
+
                         if (ChiZhiTianYaDashActive && ChiZhiTianYaDashDuration > 0) {
                             ChiZhiTianYaDashDuration--;
                             if (Player.controlLeft || Player.controlRight) {
                                 float dashSpeed = 18f; // 更快的冲刺速度
                                 Player.velocity.X = Player.controlLeft ? -dashSpeed : dashSpeed;
-                            } else {
+                            }
+                            else {
                                 ChiZhiTianYaDashActive = false;
                             }
-                            
+
                             if (ChiZhiTianYaDashDuration <= 0) {
                                 ChiZhiTianYaDashActive = false;
                                 ChiZhiTianYaDashCD = ChiZhiTianYaDashCDMax;
                             }
                         }
-                    }
-                    catch {
+                    } catch {
                         // 忽略错误
                     }
                 }
             }
-            
+
             // ───────── 召唤类阵法效果更新 ─────────
             if (cur != null && Player != null && Player.active && !Player.dead) {
                 // 万兽朝宗阵：召唤物持续对周围敌人造成伤害
@@ -2046,12 +2025,11 @@ namespace AncientChineseMythology.Players
                                 }
                             }
                         }
-                    }
-                    catch {
+                    } catch {
                         // 忽略错误
                     }
                 }
-                
+
                 // 混沌万灵阵：召唤物自动追踪敌人并造成范围伤害
                 if (CheckHunDunWanLingFormation(cur)) {
                     try {
@@ -2080,12 +2058,11 @@ namespace AncientChineseMythology.Players
                                 }
                             }
                         }
-                    }
-                    catch {
+                    } catch {
                         // 忽略错误
                     }
                 }
-                
+
                 // ───────── 特殊效果类阵法持续效果 ─────────
                 // 隐身遁形阵：隐身状态和冷却管理
                 if (CheckYinShenDunXingFormation(cur)) {
@@ -2094,13 +2071,13 @@ namespace AncientChineseMythology.Players
                         if (YinShenDunXingCD > 0) {
                             YinShenDunXingCD--;
                         }
-                        
+
                         // 如果冷却完毕且未激活，自动激活（每45秒）
                         if (YinShenDunXingCD == 0 && !YinShenDunXingActive) {
                             YinShenDunXingActive = true;
                             YinShenDunXingTimer = 0;
                         }
-                        
+
                         // 如果激活，更新持续时间
                         if (YinShenDunXingActive) {
                             YinShenDunXingTimer++;
@@ -2109,12 +2086,11 @@ namespace AncientChineseMythology.Players
                                 YinShenDunXingCD = YinShenDunXingCDMax;
                             }
                         }
-                    }
-                    catch {
+                    } catch {
                         // 忽略错误
                     }
                 }
-                
+
                 // 烈焰焚天阵：对周围敌人持续造成火焰伤害
                 if (CheckLieYanFenTianFormation(cur)) {
                     try {
@@ -2142,12 +2118,11 @@ namespace AncientChineseMythology.Players
                                 }
                             }
                         }
-                    }
-                    catch {
+                    } catch {
                         // 忽略错误
                     }
                 }
-                
+
                 // ───────── 综合强化类阵法持续回复效果 ─────────
                 // 五行相生阵：每15秒回复生命值2%，每15秒回复魔力值3%
                 if (CheckWuXingXiangShengFormation(cur)) {
@@ -2156,7 +2131,7 @@ namespace AncientChineseMythology.Players
                         if (WuXingXiangShengTimer >= WuXingXiangShengCD) {
                             WuXingXiangShengTimer = 0;
                             // 回复生命值
-                            if (Player != null && Player.active && !Player.dead && 
+                            if (Player != null && Player.active && !Player.dead &&
                                 Player.statLifeMax2 > 0 && Player.statLife < Player.statLifeMax2) {
                                 int healAmount = Math.Max(1, (int)(Player.statLifeMax2 * 0.02f));
                                 if (healAmount > 0) {
@@ -2171,7 +2146,7 @@ namespace AncientChineseMythology.Players
                                 }
                             }
                             // 回复魔力值
-                            if (Player != null && Player.active && !Player.dead && 
+                            if (Player != null && Player.active && !Player.dead &&
                                 Player.statManaMax2 > 0 && Player.statMana < Player.statManaMax2) {
                                 int manaAmount = Math.Max(1, (int)(Player.statManaMax2 * 0.03f));
                                 if (manaAmount > 0) {
@@ -2186,12 +2161,11 @@ namespace AncientChineseMythology.Players
                                 }
                             }
                         }
-                    }
-                    catch {
+                    } catch {
                         // 忽略错误
                     }
                 }
-                
+
                 // 六合归一阵：每12秒回复生命值3%，每12秒回复魔力值4%
                 if (CheckLiuHeGuiYiFormation(cur)) {
                     try {
@@ -2199,7 +2173,7 @@ namespace AncientChineseMythology.Players
                         if (LiuHeGuiYiTimer >= LiuHeGuiYiCD) {
                             LiuHeGuiYiTimer = 0;
                             // 回复生命值
-                            if (Player != null && Player.active && !Player.dead && 
+                            if (Player != null && Player.active && !Player.dead &&
                                 Player.statLifeMax2 > 0 && Player.statLife < Player.statLifeMax2) {
                                 int healAmount = Math.Max(1, (int)(Player.statLifeMax2 * 0.03f));
                                 if (healAmount > 0) {
@@ -2214,7 +2188,7 @@ namespace AncientChineseMythology.Players
                                 }
                             }
                             // 回复魔力值
-                            if (Player != null && Player.active && !Player.dead && 
+                            if (Player != null && Player.active && !Player.dead &&
                                 Player.statManaMax2 > 0 && Player.statMana < Player.statManaMax2) {
                                 int manaAmount = Math.Max(1, (int)(Player.statManaMax2 * 0.04f));
                                 if (manaAmount > 0) {
@@ -2229,12 +2203,11 @@ namespace AncientChineseMythology.Players
                                 }
                             }
                         }
-                    }
-                    catch {
+                    } catch {
                         // 忽略错误
                     }
                 }
-                
+
                 // 太极混元阵：每10秒回复生命值5%，每10秒回复魔力值6%
                 if (CheckTaiJiHunYuanFormation(cur)) {
                     try {
@@ -2242,7 +2215,7 @@ namespace AncientChineseMythology.Players
                         if (TaiJiHunYuanTimer >= TaiJiHunYuanCD) {
                             TaiJiHunYuanTimer = 0;
                             // 回复生命值
-                            if (Player != null && Player.active && !Player.dead && 
+                            if (Player != null && Player.active && !Player.dead &&
                                 Player.statLifeMax2 > 0 && Player.statLife < Player.statLifeMax2) {
                                 int healAmount = Math.Max(1, (int)(Player.statLifeMax2 * 0.05f));
                                 if (healAmount > 0) {
@@ -2257,7 +2230,7 @@ namespace AncientChineseMythology.Players
                                 }
                             }
                             // 回复魔力值
-                            if (Player != null && Player.active && !Player.dead && 
+                            if (Player != null && Player.active && !Player.dead &&
                                 Player.statManaMax2 > 0 && Player.statMana < Player.statManaMax2) {
                                 int manaAmount = Math.Max(1, (int)(Player.statManaMax2 * 0.06f));
                                 if (manaAmount > 0) {
@@ -2272,8 +2245,7 @@ namespace AncientChineseMythology.Players
                                 }
                             }
                         }
-                    }
-                    catch {
+                    } catch {
                         // 忽略错误
                     }
                 }
@@ -2319,78 +2291,77 @@ namespace AncientChineseMythology.Players
             // 回血逻辑在PostUpdate中处理，这里只做初始化
             ChangShengTimer = 0;
         }
-        
+
         /* ───────── 回春阵：每10秒回复最大生命值的3% ───────── */
         private void DoHuiChun() {
             // 回血逻辑在PostUpdate中处理，这里只做初始化
             HuiChunTimer = 0;
         }
-        
+
         /* ───────── 太乙还魂阵：每8秒回复最大生命值的5% ───────── */
         private void DoTaiYiHuanHun() {
             // 回血逻辑在PostUpdate中处理，这里只做初始化
             TaiYiHuanHunTimer = 0;
         }
-        
+
         /* ───────── 生生不息阵：每10秒回复最大生命值的1% + 固定回复2点 ───────── */
         private void DoShengShengBuXi() {
             // 回血逻辑在PostUpdate中处理，这里只做初始化
             ShengShengBuXiTimer = 0;
         }
-        
+
         /* ───────── 九转金丹阵：每8秒回复最大生命值的6% ───────── */
         private void DoJiuZhuanJinDan() {
             // 回血逻辑在PostUpdate中处理，这里只做初始化
             JiuZhuanJinDanTimer = 0;
         }
-        
+
         /* ───────── 阴阳调和阵：每6秒回复最大生命值的8% ───────── */
         private void DoYinYangTiaoHe() {
             // 回血逻辑在PostUpdate中处理，这里只做初始化
             YinYangTiaoHeTimer = 0;
         }
-        
+
         /* ───────── 万象回春阵：每10秒回复最大生命值的2%，生命值低于50%时提升至每6秒回复5% ───────── */
         private void DoWanXiangHuiChun() {
             // 回血逻辑在PostUpdate中处理，这里只做初始化
             WanXiangHuiChunTimer = 0;
         }
-        
+
         /* ───────── 神农护体阵：每10秒回复最大生命值的4%，并免疫中毒、流血、着火状态 ───────── */
         private void DoShenNongHuTi() {
             // 回血和免疫逻辑在PostUpdate中处理，这里只做初始化
             ShenNongHuTiTimer = 0;
         }
-        
+
         /* ───────── 聚灵阵：每15秒回复最大魔力值的2% ───────── */
         private void DoJuLing() {
             // 回蓝逻辑在PostUpdate中处理，这里只做初始化
             JuLingTimer = 0;
         }
-        
+
         /* ───────── 检查聚灵阵配方（支持精金/钛金矿） ───────── */
         private bool CheckJuLingFormation(int[] cur) {
             if (cur == null || cur.Length != 1) return false;
-            
+
             try {
                 // 需要：精金/钛金矿 × 1
                 return cur[0] == ItemID.AdamantiteOre || cur[0] == ItemID.TitaniumOre;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 灵泉阵：每12秒回复最大魔力值的4% ───────── */
         private void DoLingQuan() {
             // 回蓝逻辑在PostUpdate中处理，这里只做初始化
             LingQuanTimer = 0;
         }
-        
+
         /* ───────── 检查灵泉阵配方（支持精金/钛金矿） ───────── */
         private bool CheckLingQuanFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
-            
+
             try {
                 // 需要：精金/钛金矿 × 2，神圣锭 × 2，光明之魂 × 2，暗影之魂 × 2
                 int adamantiteOreCount = cur.Count(t => t == ItemID.AdamantiteOre);
@@ -2398,31 +2369,30 @@ namespace AncientChineseMythology.Players
                 int hallowedBarCount = cur.Count(t => t == ItemID.HallowedBar);
                 int soulOfLightCount = cur.Count(t => t == ItemID.SoulofLight);
                 int soulOfNightCount = cur.Count(t => t == ItemID.SoulofNight);
-                
+
                 // 验证：精金或钛金矿只能有一种，且数量为2
-                bool oreValid = (adamantiteOreCount == 2 && titaniumOreCount == 0) || 
+                bool oreValid = (adamantiteOreCount == 2 && titaniumOreCount == 0) ||
                                 (adamantiteOreCount == 0 && titaniumOreCount == 2);
-                
+
                 return oreValid &&
                        hallowedBarCount == 2 &&
                        soulOfLightCount == 2 &&
                        soulOfNightCount == 2;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 星辰聚灵阵：每10秒回复最大魔力值的6% ───────── */
         private void DoXingChenJuLing() {
             // 回蓝逻辑在PostUpdate中处理，这里只做初始化
             XingChenJuLingTimer = 0;
         }
-        
+
         /* ───────── 检查星辰聚灵阵配方（支持精金/钛金锭） ───────── */
         private bool CheckXingChenJuLingFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
-            
+
             try {
                 // 需要：精金/钛金锭 × 2，神圣锭 × 2，光明之魂 × 2，暗影之魂 × 2
                 int adamantiteBarCount = cur.Count(t => t == ItemID.AdamantiteBar);
@@ -2430,31 +2400,30 @@ namespace AncientChineseMythology.Players
                 int hallowedBarCount = cur.Count(t => t == ItemID.HallowedBar);
                 int soulOfLightCount = cur.Count(t => t == ItemID.SoulofLight);
                 int soulOfNightCount = cur.Count(t => t == ItemID.SoulofNight);
-                
+
                 // 验证：精金或钛金锭只能有一种，且数量为2
-                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) || 
+                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) ||
                                 (adamantiteBarCount == 0 && titaniumBarCount == 2);
-                
+
                 return barValid &&
                        hallowedBarCount == 2 &&
                        soulOfLightCount == 2 &&
                        soulOfNightCount == 2;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 太乙聚灵阵：每8秒回复最大魔力值的8% ───────── */
         private void DoTaiYiJuLing() {
             // 回蓝逻辑在PostUpdate中处理，这里只做初始化
             TaiYiJuLingTimer = 0;
         }
-        
+
         /* ───────── 检查太乙聚灵阵配方（支持精金/钛金锭） ───────── */
         private bool CheckTaiYiJuLingFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
-            
+
             try {
                 // 需要：精金/钛金锭 × 2，神圣锭 × 2，夜明锭 × 2，光明之魂 × 1，暗影之魂 × 1
                 int adamantiteBarCount = cur.Count(t => t == ItemID.AdamantiteBar);
@@ -2463,33 +2432,32 @@ namespace AncientChineseMythology.Players
                 int lunarBarCount = cur.Count(t => t == ItemID.LunarBar);
                 int soulOfLightCount = cur.Count(t => t == ItemID.SoulofLight);
                 int soulOfNightCount = cur.Count(t => t == ItemID.SoulofNight);
-                
+
                 // 验证：精金或钛金锭只能有一种，且数量为2
-                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) || 
+                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) ||
                                 (adamantiteBarCount == 0 && titaniumBarCount == 2);
-                
+
                 return barValid &&
                        hallowedBarCount == 2 &&
                        lunarBarCount == 2 &&
                        soulOfLightCount == 1 &&
                        soulOfNightCount == 1;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 法力潮汐阵：每10秒回复最大魔力值的4%，使用魔法武器时额外回复每15秒1% ───────── */
         private void DoFaLiChaoXi() {
             // 回蓝逻辑在PostUpdate中处理，这里只做初始化
             FaLiChaoXiTimer = 0;
             FaLiChaoXiExtraTimer = 0;
         }
-        
+
         /* ───────── 检查法力潮汐阵配方（使用夜明锭和部分天柱碎片，支持精金/钛金锭） ───────── */
         private bool CheckFaLiChaoXiFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
-            
+
             try {
                 // 需要：夜明锭 × 2，日耀碎片 × 2，星尘碎片 × 2，精金/钛金锭 × 2
                 int lunarBarCount = cur.Count(t => t == ItemID.LunarBar);
@@ -2497,31 +2465,30 @@ namespace AncientChineseMythology.Players
                 int fragmentStardustCount = cur.Count(t => t == ItemID.FragmentStardust);
                 int adamantiteBarCount = cur.Count(t => t == ItemID.AdamantiteBar);
                 int titaniumBarCount = cur.Count(t => t == ItemID.TitaniumBar);
-                
+
                 // 验证：精金或钛金锭只能有一种，且数量为2
-                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) || 
+                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) ||
                                 (adamantiteBarCount == 0 && titaniumBarCount == 2);
-                
+
                 return lunarBarCount == 2 &&
                        fragmentSolarCount == 2 &&
                        fragmentStardustCount == 2 &&
                        barValid;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 鸿蒙灵源阵：每6秒回复最大魔力值的10% ───────── */
         private void DoHongMengLingYuan() {
             // 回蓝逻辑在PostUpdate中处理，这里只做初始化
             HongMengLingYuanTimer = 0;
         }
-        
+
         /* ───────── 检查鸿蒙灵源阵配方（使用夜明锭和天柱碎片） ───────── */
         private bool CheckHongMengLingYuanFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
-            
+
             try {
                 // 需要：夜明锭 × 2，日耀碎片 × 2，星尘碎片 × 2，星云碎片 × 1，星旋碎片 × 1
                 int lunarBarCount = cur.Count(t => t == ItemID.LunarBar);
@@ -2529,22 +2496,21 @@ namespace AncientChineseMythology.Players
                 int fragmentStardustCount = cur.Count(t => t == ItemID.FragmentStardust);
                 int fragmentNebulaCount = cur.Count(t => t == ItemID.FragmentNebula);
                 int fragmentVortexCount = cur.Count(t => t == ItemID.FragmentVortex);
-                
+
                 return lunarBarCount == 2 &&
                        fragmentSolarCount == 2 &&
                        fragmentStardustCount == 2 &&
                        fragmentNebulaCount == 1 &&
                        fragmentVortexCount == 1;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 检查神农护体阵配方（使用夜明锭和天柱碎片） ───────── */
         private bool CheckShenNongHuTiFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
-            
+
             try {
                 // 需要：生命果 × 2，十字章护盾 × 1，夜明锭 × 2，日耀碎片 × 1，星尘碎片 × 1，光明之魂 × 1
                 int lifeFruitCount = cur.Count(t => t == ItemID.LifeFruit);
@@ -2553,41 +2519,39 @@ namespace AncientChineseMythology.Players
                 int fragmentSolarCount = cur.Count(t => t == ItemID.FragmentSolar);
                 int fragmentStardustCount = cur.Count(t => t == ItemID.FragmentStardust);
                 int soulOfLightCount = cur.Count(t => t == ItemID.SoulofLight);
-                
-                return lifeFruitCount == 2 && 
+
+                return lifeFruitCount == 2 &&
                        ankhShieldCount == 1 &&
                        lunarBarCount == 2 &&
                        fragmentSolarCount == 1 &&
                        fragmentStardustCount == 1 &&
                        soulOfLightCount == 1;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         // ───────── 攻击类阵法检查和初始化方法 ─────────
-        
+
         /* ───────── 锋芒阵：近战伤害+3% ───────── */
         private void DoFengMang() {
             // 效果在ModifyWeaponDamage中处理
         }
-        
+
         private bool CheckFengMangFormation(int[] cur) {
             if (cur == null || cur.Length != 1) return false;
             try {
                 return cur[0] == ItemID.AdamantiteOre || cur[0] == ItemID.TitaniumOre;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 破军阵：近战伤害+8%，近战速度+5% ───────── */
         private void DoPoJun() {
             // 效果在ModifyWeaponDamage和GetWeaponAttackSpeed中处理
         }
-        
+
         private bool CheckPoJunFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -2596,25 +2560,24 @@ namespace AncientChineseMythology.Players
                 int hallowedBarCount = cur.Count(t => t == ItemID.HallowedBar);
                 int soulOfLightCount = cur.Count(t => t == ItemID.SoulofLight);
                 int soulOfNightCount = cur.Count(t => t == ItemID.SoulofNight);
-                
-                bool oreValid = (adamantiteOreCount == 2 && titaniumOreCount == 0) || 
+
+                bool oreValid = (adamantiteOreCount == 2 && titaniumOreCount == 0) ||
                                 (adamantiteOreCount == 0 && titaniumOreCount == 2);
-                
+
                 return oreValid &&
                        hallowedBarCount == 2 &&
                        soulOfLightCount == 2 &&
                        soulOfNightCount == 2;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 诛邪阵：所有伤害+8%，暴击率+3% ───────── */
         private void DoZhuXie() {
             // 效果在ModifyWeaponDamage和ModifyWeaponCrit中处理
         }
-        
+
         private bool CheckZhuXieFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -2623,25 +2586,24 @@ namespace AncientChineseMythology.Players
                 int hallowedBarCount = cur.Count(t => t == ItemID.HallowedBar);
                 int soulOfLightCount = cur.Count(t => t == ItemID.SoulofLight);
                 int soulOfNightCount = cur.Count(t => t == ItemID.SoulofNight);
-                
-                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) || 
+
+                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) ||
                                 (adamantiteBarCount == 0 && titaniumBarCount == 2);
-                
+
                 return barValid &&
                        hallowedBarCount == 2 &&
                        soulOfLightCount == 2 &&
                        soulOfNightCount == 2;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 万剑归宗阵：近战伤害+15% ───────── */
         private void DoWanJianGuiZong() {
             // 效果在ModifyWeaponDamage中处理
         }
-        
+
         private bool CheckWanJianGuiZongFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -2651,23 +2613,22 @@ namespace AncientChineseMythology.Players
                 int lunarBarCount = cur.Count(t => t == ItemID.LunarBar);
                 int soulOfLightCount = cur.Count(t => t == ItemID.SoulofLight);
                 int soulOfNightCount = cur.Count(t => t == ItemID.SoulofNight);
-                
+
                 return advancedSwordCount == 2 &&
                        hallowedBarCount == 2 &&
                        lunarBarCount == 2 &&
                        soulOfLightCount == 1 &&
                        soulOfNightCount == 1;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 天罡破阵：所有伤害+12%，暴击率+5%，攻击速度+8% ───────── */
         private void DoTianGangPo() {
             // 效果在ModifyWeaponDamage、ModifyWeaponCrit和GetWeaponAttackSpeed中处理
         }
-        
+
         private bool CheckTianGangPoFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -2677,26 +2638,25 @@ namespace AncientChineseMythology.Players
                 int lunarBarCount = cur.Count(t => t == ItemID.LunarBar);
                 int soulOfLightCount = cur.Count(t => t == ItemID.SoulofLight);
                 int soulOfNightCount = cur.Count(t => t == ItemID.SoulofNight);
-                
-                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) || 
+
+                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) ||
                                 (adamantiteBarCount == 0 && titaniumBarCount == 2);
-                
+
                 return barValid &&
                        hallowedBarCount == 2 &&
                        lunarBarCount == 2 &&
                        soulOfLightCount == 1 &&
                        soulOfNightCount == 1;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 混沌灭世阵：所有伤害+18%，暴击率+8%，攻击有8%概率触发范围爆炸 ───────── */
         private void DoHunDunMieShi() {
             // 效果在ModifyWeaponDamage、ModifyWeaponCrit和ModifyHitNPC中处理
         }
-        
+
         private bool CheckHunDunMieShiFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -2705,23 +2665,22 @@ namespace AncientChineseMythology.Players
                 int fragmentStardustCount = cur.Count(t => t == ItemID.FragmentStardust);
                 int soulOfLightCount = cur.Count(t => t == ItemID.SoulofLight);
                 int soulOfNightCount = cur.Count(t => t == ItemID.SoulofNight);
-                
+
                 return lunarBarCount == 2 &&
                        fragmentSolarCount == 2 &&
                        fragmentStardustCount == 2 &&
                        soulOfLightCount == 1 &&
                        soulOfNightCount == 1;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 盘古开天阵：所有伤害+22%，暴击率+12% ───────── */
         private void DoPanGuKaiTian() {
             // 效果在ModifyWeaponDamage和ModifyWeaponCrit中处理
         }
-        
+
         private bool CheckPanGuKaiTianFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -2729,22 +2688,21 @@ namespace AncientChineseMythology.Players
                 int fragmentStardustCount = cur.Count(t => t == ItemID.FragmentStardust);
                 int fragmentNebulaCount = cur.Count(t => t == ItemID.FragmentNebula);
                 int fragmentVortexCount = cur.Count(t => t == ItemID.FragmentVortex);
-                
+
                 return fragmentSolarCount == 3 &&
                        fragmentStardustCount == 2 &&
                        fragmentNebulaCount == 2 &&
                        fragmentVortexCount == 1;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 弑神诛魔阵：所有伤害+30%，暴击率+15%，对boss伤害额外+15% ───────── */
         private void DoShiShenZhuMo() {
             // 效果在ModifyWeaponDamage、ModifyWeaponCrit和ModifyHitNPCWithProj中处理
         }
-        
+
         private bool CheckShiShenZhuMoFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -2752,21 +2710,20 @@ namespace AncientChineseMythology.Players
                 int fragmentStardustCount = cur.Count(t => t == ItemID.FragmentStardust);
                 int fragmentNebulaCount = cur.Count(t => t == ItemID.FragmentNebula);
                 int fragmentVortexCount = cur.Count(t => t == ItemID.FragmentVortex);
-                
+
                 return fragmentSolarCount == 2 &&
                        fragmentStardustCount == 2 &&
                        fragmentNebulaCount == 2 &&
                        fragmentVortexCount == 2;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 检查万象回春阵配方（支持精金/钛金锭，需要十字章护盾） ───────── */
         private bool CheckWanXiangHuiChunFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
-            
+
             try {
                 // 需要：生命果 × 2，十字章护盾 × 1，精金/钛金锭 × 2，神圣锭 × 2，光明之魂 × 1
                 int lifeFruitCount = cur.Count(t => t == ItemID.LifeFruit);
@@ -2775,47 +2732,45 @@ namespace AncientChineseMythology.Players
                 int titaniumBarCount = cur.Count(t => t == ItemID.TitaniumBar);
                 int hallowedBarCount = cur.Count(t => t == ItemID.HallowedBar);
                 int soulOfLightCount = cur.Count(t => t == ItemID.SoulofLight);
-                
+
                 // 验证：精金或钛金锭只能有一种，且数量为2
-                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) || 
+                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) ||
                                 (adamantiteBarCount == 0 && titaniumBarCount == 2);
-                
-                return lifeFruitCount == 2 && 
+
+                return lifeFruitCount == 2 &&
                        ankhShieldCount == 1 &&
                        barValid &&
                        hallowedBarCount == 2 &&
                        soulOfLightCount == 1;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 检查阴阳调和阵配方（使用天柱碎片） ───────── */
         private bool CheckYinYangTiaoHeFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
-            
+
             try {
                 // 需要：生命果 × 2，夜明锭 × 2，日耀碎片 × 2，星云碎片 × 2
                 int lifeFruitCount = cur.Count(t => t == ItemID.LifeFruit);
                 int lunarBarCount = cur.Count(t => t == ItemID.LunarBar);
                 int fragmentSolarCount = cur.Count(t => t == ItemID.FragmentSolar);
                 int fragmentNebulaCount = cur.Count(t => t == ItemID.FragmentNebula);
-                
-                return lifeFruitCount == 2 && 
+
+                return lifeFruitCount == 2 &&
                        lunarBarCount == 2 &&
                        fragmentSolarCount == 2 &&
                        fragmentNebulaCount == 2;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 检查九转金丹阵配方（支持精金/钛金锭） ───────── */
         private bool CheckJiuZhuanJinDanFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
-            
+
             try {
                 // 需要：生命果 × 2，精金/钛金锭 × 2，神圣锭 × 2，夜明锭 × 2
                 int lifeFruitCount = cur.Count(t => t == ItemID.LifeFruit);
@@ -2823,25 +2778,24 @@ namespace AncientChineseMythology.Players
                 int titaniumBarCount = cur.Count(t => t == ItemID.TitaniumBar);
                 int hallowedBarCount = cur.Count(t => t == ItemID.HallowedBar);
                 int lunarBarCount = cur.Count(t => t == ItemID.LunarBar);
-                
+
                 // 验证：精金或钛金锭只能有一种，且数量为2
-                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) || 
+                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) ||
                                 (adamantiteBarCount == 0 && titaniumBarCount == 2);
-                
-                return lifeFruitCount == 2 && 
+
+                return lifeFruitCount == 2 &&
                        barValid &&
                        hallowedBarCount == 2 &&
                        lunarBarCount == 2;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 检查生生不息阵配方（支持精金/钛金矿） ───────── */
         private bool CheckShengShengBuXiFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
-            
+
             try {
                 // 需要：生命果 × 1，精金/钛金矿 × 2，神圣锭 × 3，光明之魂 × 1，暗影之魂 × 1
                 int lifeFruitCount = cur.Count(t => t == ItemID.LifeFruit);
@@ -2850,66 +2804,63 @@ namespace AncientChineseMythology.Players
                 int hallowedBarCount = cur.Count(t => t == ItemID.HallowedBar);
                 int soulOfLightCount = cur.Count(t => t == ItemID.SoulofLight);
                 int soulOfNightCount = cur.Count(t => t == ItemID.SoulofNight);
-                
+
                 // 验证：精金或钛金矿只能有一种，且数量为2
-                bool oreValid = (adamantiteOreCount == 2 && titaniumOreCount == 0) || 
+                bool oreValid = (adamantiteOreCount == 2 && titaniumOreCount == 0) ||
                                 (adamantiteOreCount == 0 && titaniumOreCount == 2);
-                
-                return lifeFruitCount == 1 && 
+
+                return lifeFruitCount == 1 &&
                        oreValid &&
                        hallowedBarCount == 3 &&
                        soulOfLightCount == 1 &&
                        soulOfNightCount == 1;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 检查太乙还魂阵配方（支持精金/钛金锭） ───────── */
         private bool CheckTaiYiHuanHunFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
-            
+
             try {
                 // 需要：生命果 × 3，精金/钛金锭 × 3，神圣锭 × 2
                 int lifeFruitCount = cur.Count(t => t == ItemID.LifeFruit);
                 int adamantiteBarCount = cur.Count(t => t == ItemID.AdamantiteBar);
                 int titaniumBarCount = cur.Count(t => t == ItemID.TitaniumBar);
                 int hallowedBarCount = cur.Count(t => t == ItemID.HallowedBar);
-                
-                return lifeFruitCount == 3 && 
+
+                return lifeFruitCount == 3 &&
                        (adamantiteBarCount == 3 || titaniumBarCount == 3) &&
                        hallowedBarCount == 2;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 检查长生阵配方（支持精金/钛金矿） ───────── */
         private bool CheckChangShengFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
-            
+
             try {
                 // 需要：生命果 × 2，精金/钛金矿 × 3，神圣锭 × 3
                 int lifeFruitCount = cur.Count(t => t == ItemID.LifeFruit);
                 int adamantiteCount = cur.Count(t => t == ItemID.AdamantiteOre);
                 int titaniumCount = cur.Count(t => t == ItemID.TitaniumOre);
                 int hallowedBarCount = cur.Count(t => t == ItemID.HallowedBar);
-                
-                return lifeFruitCount == 2 && 
+
+                return lifeFruitCount == 2 &&
                        (adamantiteCount == 3 || titaniumCount == 3) &&
                        hallowedBarCount == 3;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 检查回春阵配方（支持精金/钛金锭） ───────── */
         private bool CheckHuiChunFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
-            
+
             try {
                 // 需要：生命果 × 3，精金/钛金锭 × 2，神圣锭 × 2，光明之魂 × 1
                 int lifeFruitCount = cur.Count(t => t == ItemID.LifeFruit);
@@ -2917,13 +2868,12 @@ namespace AncientChineseMythology.Players
                 int titaniumBarCount = cur.Count(t => t == ItemID.TitaniumBar);
                 int hallowedBarCount = cur.Count(t => t == ItemID.HallowedBar);
                 int soulOfLightCount = cur.Count(t => t == ItemID.SoulofLight);
-                
-                return lifeFruitCount == 3 && 
+
+                return lifeFruitCount == 3 &&
                        (adamantiteBarCount == 2 || titaniumBarCount == 2) &&
                        hallowedBarCount == 2 &&
                        soulOfLightCount == 1;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
@@ -2954,7 +2904,7 @@ namespace AncientChineseMythology.Players
                 phoenixCD = PhoenixCDMax;
                 return false;   //阻止死亡
             }
-            
+
             // 先天不败阵：受到致命伤害时保留1点生命（冷却10分钟）
             if (XianTianBuBaiActive && XianTianBuBaiCD == 0 && Player.HasBuff(ModContent.BuffType<Buffs.BaGuaBuff>())) {
                 int[] cur = BaGuaItems?.Where(it => it != null && !it.IsAir).Select(it => it.type).ToArray();
@@ -2969,7 +2919,7 @@ namespace AncientChineseMythology.Players
                     return false; // 阻止死亡
                 }
             }
-            
+
             return true;        //允许死亡
         }
 
@@ -3048,30 +2998,29 @@ namespace AncientChineseMythology.Players
                 ProjectileID.Starfury, //原版星怒坠星弹道 & 贴图
                 dmg, kb, Player.whoAmI);
         }
-        
+
         // ───────── 防御类阵法 Do 和 Check 方法 ─────────
-        
+
         /* ───────── 金刚阵：防御+3 ───────── */
         private void DoJinGang() {
             // 效果在ResetEffects中处理（防御加成）
         }
-        
+
         private bool CheckJinGangFormation(int[] cur) {
             if (cur == null) return false;
             try {
                 // 需要：任意精金/钛金盔甲部件 × 1
                 return cur.Any(t => AdamantiteTitaniumArmor.Contains(t)) && cur.Length == 1;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 玄武护体阵：防御+8，减少8%所受伤害 ───────── */
         private void DoXuanWuHuTi() {
             // 效果在ResetEffects和ModifyHitByNPC/ModifyHitByProjectile中处理
         }
-        
+
         private bool CheckXuanWuHuTiFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -3081,23 +3030,22 @@ namespace AncientChineseMythology.Players
                 int soulOfLightCount = cur.Count(t => t == ItemID.SoulofLight);
                 int soulOfNightCount = cur.Count(t => t == ItemID.SoulofNight);
                 int lifeFruitCount = cur.Count(t => t == ItemID.LifeFruit);
-                
+
                 return hasArmor &&
                        hallowedBarCount == 2 &&
                        soulOfLightCount == 2 &&
                        soulOfNightCount == 2 &&
                        lifeFruitCount == 1;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 不灭金身阵：防御+15，减少12%所受伤害，免疫击退 ───────── */
         private void DoBuMieJinShen() {
             // 效果在ResetEffects和ModifyHitByNPC/ModifyHitByProjectile中处理
         }
-        
+
         private bool CheckBuMieJinShenFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -3107,23 +3055,22 @@ namespace AncientChineseMythology.Players
                 int lunarBarCount = cur.Count(t => t == ItemID.LunarBar);
                 int soulOfLightCount = cur.Count(t => t == ItemID.SoulofLight);
                 int lifeFruitCount = cur.Count(t => t == ItemID.LifeFruit);
-                
+
                 return hasArmor &&
                        hallowedBarCount == 2 &&
                        lunarBarCount == 2 &&
                        soulOfLightCount == 2 &&
                        lifeFruitCount == 1;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 九转玄功阵：防御+22，减少18%所受伤害，免疫大部分debuff ───────── */
         private void DoJiuZhuanXuanGong() {
             // 效果在ResetEffects、ModifyHitByNPC/ModifyHitByProjectile和PostUpdate中处理
         }
-        
+
         private bool CheckJiuZhuanXuanGongFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -3133,23 +3080,22 @@ namespace AncientChineseMythology.Players
                 int hallowedBarCount = cur.Count(t => t == ItemID.HallowedBar);
                 int lunarBarCount = cur.Count(t => t == ItemID.LunarBar);
                 int lifeFruitCount = cur.Count(t => t == ItemID.LifeFruit);
-                
+
                 return hasAnkhShield &&
                        hasArmor &&
                        hallowedBarCount == 2 &&
                        lunarBarCount == 2 &&
                        lifeFruitCount == 2;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 先天不败阵：防御+30，减少25%所受伤害，受到致命伤害时保留1点生命（冷却10分钟） ───────── */
         private void DoXianTianBuBai() {
             // 效果在ResetEffects、ModifyHitByNPC/ModifyHitByProjectile和PreKill中处理
         }
-        
+
         private bool CheckXianTianBuBaiFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -3159,23 +3105,22 @@ namespace AncientChineseMythology.Players
                 int fragmentSolarCount = cur.Count(t => t == ItemID.FragmentSolar);
                 int fragmentStardustCount = cur.Count(t => t == ItemID.FragmentStardust);
                 int lifeFruitCount = cur.Count(t => t == ItemID.LifeFruit);
-                
+
                 return hasAnkhShield &&
                        lunarBarCount == 2 &&
                        fragmentSolarCount == 2 &&
                        fragmentStardustCount == 2 &&
                        lifeFruitCount == 1;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 混元无极阵：防御+35，减少30%所受伤害，每10秒回复3点生命值 ───────── */
         private void DoHunYuanWuJi() {
             // 效果在ResetEffects、ModifyHitByNPC/ModifyHitByProjectile和PostUpdate中处理
         }
-        
+
         private bool CheckHunYuanWuJiFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -3185,41 +3130,39 @@ namespace AncientChineseMythology.Players
                 int fragmentStardustCount = cur.Count(t => t == ItemID.FragmentStardust);
                 int fragmentNebulaCount = cur.Count(t => t == ItemID.FragmentNebula);
                 int fragmentVortexCount = cur.Count(t => t == ItemID.FragmentVortex);
-                
+
                 return hasAnkhShield &&
                        fragmentSolarCount == 2 &&
                        fragmentStardustCount == 2 &&
                        fragmentNebulaCount == 2 &&
                        fragmentVortexCount == 1;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         // ───────── 移动速度类阵法 Do 和 Check 方法 ─────────
-        
+
         /* ───────── 神行阵：移动速度+12%，奔跑速度+8% ───────── */
         private void DoShenXing() {
             // 效果在ResetEffects中处理（移动速度和奔跑速度加成）
         }
-        
+
         private bool CheckShenXingFormation(int[] cur) {
             if (cur == null) return false;
             try {
                 // 需要：任意忍者大师装备 × 1
                 return cur.Any(t => NinjaGearItems.Contains(t)) && cur.Length == 1;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 御风阵：移动速度+20%，飞行时间+30%，跳跃高度+12% ───────── */
         private void DoYuFeng() {
             // 效果在ResetEffects和PostUpdate中处理
         }
-        
+
         private bool CheckYuFengFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -3229,25 +3172,24 @@ namespace AncientChineseMythology.Players
                 int titaniumOreCount = cur.Count(t => t == ItemID.TitaniumOre);
                 int hallowedBarCount = cur.Count(t => t == ItemID.HallowedBar);
                 int soulOfLightCount = cur.Count(t => t == ItemID.SoulofLight);
-                
-                bool oreValid = (adamantiteOreCount == 3 && titaniumOreCount == 0) || 
+
+                bool oreValid = (adamantiteOreCount == 3 && titaniumOreCount == 0) ||
                                 (adamantiteOreCount == 0 && titaniumOreCount == 3);
-                
+
                 return hasWings &&
                        oreValid &&
                        hallowedBarCount == 3 &&
                        soulOfLightCount == 1;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 缩地成寸阵：移动速度+28%，可在短时间内冲刺（冷却15秒） ───────── */
         private void DoSuoDiChengCun() {
             // 效果在ResetEffects和PostUpdate中处理
         }
-        
+
         private bool CheckSuoDiChengCunFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -3258,26 +3200,25 @@ namespace AncientChineseMythology.Players
                 int hallowedBarCount = cur.Count(t => t == ItemID.HallowedBar);
                 int soulOfLightCount = cur.Count(t => t == ItemID.SoulofLight);
                 int soulOfNightCount = cur.Count(t => t == ItemID.SoulofNight);
-                
-                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) || 
+
+                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) ||
                                 (adamantiteBarCount == 0 && titaniumBarCount == 2);
-                
+
                 return hasNinjaGear &&
                        barValid &&
                        hallowedBarCount == 2 &&
                        soulOfLightCount == 2 &&
                        soulOfNightCount == 1;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 腾云驾雾阵：移动速度+35%，飞行时间+60%，可在空中停留2秒 ───────── */
         private void DoTengYunJiaWu() {
             // 效果在ResetEffects和PostUpdate中处理
         }
-        
+
         private bool CheckTengYunJiaWuFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -3288,26 +3229,25 @@ namespace AncientChineseMythology.Players
                 int titaniumBarCount = cur.Count(t => t == ItemID.TitaniumBar);
                 int hallowedBarCount = cur.Count(t => t == ItemID.HallowedBar);
                 int lunarBarCount = cur.Count(t => t == ItemID.LunarBar);
-                
-                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) || 
+
+                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) ||
                                 (adamantiteBarCount == 0 && titaniumBarCount == 2);
-                
+
                 return hasWings &&
                        hasNinjaGear &&
                        barValid &&
                        hallowedBarCount == 2 &&
                        lunarBarCount == 2;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 咫尺天涯阵：移动速度+45%，飞行时间+80%，连续冲刺能力 ───────── */
         private void DoChiZhiTianYa() {
             // 效果在ResetEffects和PostUpdate中处理
         }
-        
+
         private bool CheckChiZhiTianYaFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -3317,25 +3257,24 @@ namespace AncientChineseMythology.Players
                 bool hasAdvancedWings = cur.Any(t => IsAdvancedWings(t));
                 bool hasNinjaGear = cur.Any(t => NinjaGearItems.Contains(t));
                 int lunarBarCount = cur.Count(t => t == ItemID.LunarBar);
-                
+
                 return fragmentVortexCount == 2 &&
                        fragmentSolarCount == 2 &&
                        hasAdvancedWings &&
                        hasNinjaGear &&
                        lunarBarCount == 2;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         // ───────── 召唤类阵法 Do 和 Check 方法 ─────────
-        
+
         /* ───────── 百兽召唤阵：召唤物上限+1，召唤伤害+8% ───────── */
         private void DoBaiShouZhaoHuan() {
             // 效果在ResetEffects和ModifyWeaponDamage中处理
         }
-        
+
         private bool CheckBaiShouZhaoHuanFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -3344,24 +3283,23 @@ namespace AncientChineseMythology.Players
                 int titaniumOreCount = cur.Count(t => t == ItemID.TitaniumOre);
                 int hallowedBarCount = cur.Count(t => t == ItemID.HallowedBar);
                 int soulOfLightCount = cur.Count(t => t == ItemID.SoulofLight);
-                
-                bool oreValid = (adamantiteOreCount == 4 && titaniumOreCount == 0) || 
+
+                bool oreValid = (adamantiteOreCount == 4 && titaniumOreCount == 0) ||
                                 (adamantiteOreCount == 0 && titaniumOreCount == 4);
-                
+
                 return oreValid &&
                        hallowedBarCount == 3 &&
                        soulOfLightCount == 1;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 天兵天将阵：召唤物上限+2，召唤伤害+15%，召唤物移动速度+10% ───────── */
         private void DoTianBingTianJiang() {
             // 效果在ResetEffects和ModifyWeaponDamage中处理（移动速度需要在Projectile AI中处理）
         }
-        
+
         private bool CheckTianBingTianJiangFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -3371,26 +3309,25 @@ namespace AncientChineseMythology.Players
                 int hallowedBarCount = cur.Count(t => t == ItemID.HallowedBar);
                 int soulOfLightCount = cur.Count(t => t == ItemID.SoulofLight);
                 int soulOfNightCount = cur.Count(t => t == ItemID.SoulofNight);
-                
-                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) || 
+
+                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) ||
                                 (adamantiteBarCount == 0 && titaniumBarCount == 2);
-                
+
                 return barValid &&
                        hallowedBarCount == 2 &&
                        soulOfLightCount == 2 &&
                        soulOfNightCount == 2;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 万兽朝宗阵：召唤物上限+3，召唤伤害+22%，召唤物持续对周围敌人造成伤害 ───────── */
         private void DoWanShouChaoZong() {
             // 效果在ResetEffects、ModifyWeaponDamage和PostUpdate中处理
             WanShouChaoZongTimer = 0;
         }
-        
+
         private bool CheckWanShouChaoZongFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -3401,26 +3338,25 @@ namespace AncientChineseMythology.Players
                 int lunarBarCount = cur.Count(t => t == ItemID.LunarBar);
                 int soulOfLightCount = cur.Count(t => t == ItemID.SoulofLight);
                 int soulOfNightCount = cur.Count(t => t == ItemID.SoulofNight);
-                
-                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) || 
+
+                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) ||
                                 (adamantiteBarCount == 0 && titaniumBarCount == 2);
-                
+
                 return barValid &&
                        hallowedBarCount == 2 &&
                        lunarBarCount == 2 &&
                        soulOfLightCount == 1 &&
                        soulOfNightCount == 1;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 神魔降世阵：召唤物上限+4，召唤伤害+35%，召唤物有概率触发特殊攻击 ───────── */
         private void DoShenMoJiangShi() {
             // 效果在ResetEffects和ModifyWeaponDamage中处理（特殊攻击需要在Projectile AI中处理）
         }
-        
+
         private bool CheckShenMoJiangShiFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -3429,23 +3365,22 @@ namespace AncientChineseMythology.Players
                 int lunarBarCount = cur.Count(t => t == ItemID.LunarBar);
                 int fragmentSolarCount = cur.Count(t => t == ItemID.FragmentSolar);
                 int hallowedBarCount = cur.Count(t => t == ItemID.HallowedBar);
-                
+
                 return fragmentStardustCount == 3 &&
                        lunarBarCount == 2 &&
                        fragmentSolarCount == 2 &&
                        hallowedBarCount == 1;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 混沌万灵阵：召唤物上限+5，召唤伤害+50%，召唤物自动追踪敌人并造成范围伤害 ───────── */
         private void DoHunDunWanLing() {
             // 效果在ResetEffects、ModifyWeaponDamage和PostUpdate中处理
             HunDunWanLingTimer = 0;
         }
-        
+
         private bool CheckHunDunWanLingFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -3455,25 +3390,24 @@ namespace AncientChineseMythology.Players
                 int fragmentVortexCount = cur.Count(t => t == ItemID.FragmentVortex);
                 bool hasTrophy = cur.Any(t => t == ItemID.MoonLordTrophy);
                 int lunarBarCount = cur.Count(t => t == ItemID.LunarBar);
-                
+
                 return fragmentStardustCount == 2 &&
                        fragmentNebulaCount == 2 &&
                        fragmentVortexCount == 2 &&
                        hasTrophy &&
                        lunarBarCount == 1;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         // ───────── 特殊效果类阵法 Do 和 Check 方法 ─────────
-        
+
         /* ───────── 隐身遁形阵：进入隐身状态（移动速度-30%，但完全隐身），持续8秒（冷却45秒） ───────── */
         private void DoYinShenDunXing() {
             // 效果在ResetEffects和PostUpdate中处理
         }
-        
+
         private bool CheckYinShenDunXingFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -3483,26 +3417,25 @@ namespace AncientChineseMythology.Players
                 int hallowedBarCount = cur.Count(t => t == ItemID.HallowedBar);
                 int soulOfLightCount = cur.Count(t => t == ItemID.SoulofLight);
                 int soulOfNightCount = cur.Count(t => t == ItemID.SoulofNight);
-                
-                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) || 
+
+                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) ||
                                 (adamantiteBarCount == 0 && titaniumBarCount == 2);
-                
+
                 return barValid &&
                        hallowedBarCount == 2 &&
                        soulOfLightCount == 2 &&
                        soulOfNightCount == 2;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 烈焰焚天阵：对周围敌人持续造成火焰伤害（每秒5点），免疫火焰debuff ───────── */
         private void DoLieYanFenTian() {
             // 效果在ResetEffects和PostUpdate中处理
             LieYanFenTianTimer = 0;
         }
-        
+
         private bool CheckLieYanFenTianFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -3512,25 +3445,24 @@ namespace AncientChineseMythology.Players
                 int hallowedBarCount = cur.Count(t => t == ItemID.HallowedBar);
                 int soulOfLightCount = cur.Count(t => t == ItemID.SoulofLight);
                 int soulOfNightCount = cur.Count(t => t == ItemID.SoulofNight);
-                
-                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) || 
+
+                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) ||
                                 (adamantiteBarCount == 0 && titaniumBarCount == 2);
-                
+
                 return barValid &&
                        hallowedBarCount == 2 &&
                        soulOfLightCount == 2 &&
                        soulOfNightCount == 2;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 寒冰封天阵：攻击有15%概率冰冻敌人，免疫冰冻debuff ───────── */
         private void DoHanBingFengTian() {
             // 效果在ResetEffects和OnHitNPCWithItem中处理
         }
-        
+
         private bool CheckHanBingFengTianFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -3541,26 +3473,25 @@ namespace AncientChineseMythology.Players
                 int lunarBarCount = cur.Count(t => t == ItemID.LunarBar);
                 int soulOfLightCount = cur.Count(t => t == ItemID.SoulofLight);
                 int soulOfNightCount = cur.Count(t => t == ItemID.SoulofNight);
-                
-                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) || 
+
+                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) ||
                                 (adamantiteBarCount == 0 && titaniumBarCount == 2);
-                
+
                 return barValid &&
                        hallowedBarCount == 2 &&
                        lunarBarCount == 2 &&
                        soulOfLightCount == 1 &&
                        soulOfNightCount == 1;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 雷霆万钧阵：攻击有12%概率触发连锁闪电，对多个敌人造成伤害 ───────── */
         private void DoLeiTingWanJun() {
             // 效果在OnHitNPCWithItem中处理
         }
-        
+
         private bool CheckLeiTingWanJunFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -3569,22 +3500,21 @@ namespace AncientChineseMythology.Players
                 int fragmentSolarCount = cur.Count(t => t == ItemID.FragmentSolar);
                 int fragmentStardustCount = cur.Count(t => t == ItemID.FragmentStardust);
                 int hallowedBarCount = cur.Count(t => t == ItemID.HallowedBar);
-                
+
                 return lunarBarCount == 2 &&
                        fragmentSolarCount == 2 &&
                        fragmentStardustCount == 2 &&
                        hallowedBarCount == 2;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 八卦推演阵：显示地图上的敌人、宝箱、矿石位置 ───────── */
         private void DoBaGuaTuiYan() {
             // 效果在ResetEffects中处理（通过Player属性）
         }
-        
+
         private bool CheckBaGuaTuiYanFormation(int[] cur) {
             if (cur == null || cur.Length != 4) return false;
             try {
@@ -3593,19 +3523,18 @@ namespace AncientChineseMythology.Players
                 bool hasGPS = cur.Any(t => t == ItemID.GPS);
                 bool hasLifeformAnalyzer = cur.Any(t => t == ItemID.LifeformAnalyzer);
                 bool hasRadar = cur.Any(t => t == ItemID.Radar);
-                
+
                 return hasCompass && hasGPS && hasLifeformAnalyzer && hasRadar;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 时空扭曲阵：使用时间缩短15%，魔力消耗减少10% ───────── */
         private void DoShiKongNiuQu() {
             // 效果在GlobalItem中处理（需要在Global/BaGuaTimeAndManaGlobalItem.cs中实现）
         }
-        
+
         internal bool CheckShiKongNiuQuFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -3616,21 +3545,20 @@ namespace AncientChineseMythology.Players
                 bool hasMagicCuffs = cur.Any(t => t == ItemID.MagicCuffs);
                 int lunarBarCount = cur.Count(t => t == ItemID.LunarBar);
                 int fragmentSolarCount = cur.Count(t => t == ItemID.FragmentSolar);
-                
+
                 return hasManaFlower && hasMagnetFlower && hasCelestialMagnet && hasMagicCuffs &&
                        lunarBarCount == 2 &&
                        fragmentSolarCount == 2;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 吞噬万物阵：击败敌人时回复3点生命值和2点魔力值 ───────── */
         private void DoTunShiWanWu() {
             // 效果在GlobalNPC中处理（需要在Global/BaGuaKillRewardGlobalNPC.cs中实现）
         }
-        
+
         internal bool CheckTunShiWanWuFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -3642,27 +3570,26 @@ namespace AncientChineseMythology.Players
                 int titaniumBarCount = cur.Count(t => t == ItemID.TitaniumBar);
                 int hallowedBarCount = cur.Count(t => t == ItemID.HallowedBar);
                 int soulOfLightCount = cur.Count(t => t == ItemID.SoulofLight);
-                
-                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) || 
+
+                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) ||
                                 (adamantiteBarCount == 0 && titaniumBarCount == 2);
-                
+
                 return hasFleshKnuckles && hasMagicCuffs && hasStarVeil &&
                        barValid &&
                        hallowedBarCount == 2 &&
                        soulOfLightCount == 1;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         // ───────── 综合强化类阵法 Do 和 Check 方法 ─────────
-        
+
         /* ───────── 三才合一阵：所有伤害+10%，防御+6，移动速度+12% ───────── */
         private void DoSanCaiHeYi() {
             // 效果在ResetEffects和ModifyWeaponDamage中处理
         }
-        
+
         private bool CheckSanCaiHeYiFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -3672,26 +3599,25 @@ namespace AncientChineseMythology.Players
                 int hallowedBarCount = cur.Count(t => t == ItemID.HallowedBar);
                 int soulOfLightCount = cur.Count(t => t == ItemID.SoulofLight);
                 int soulOfNightCount = cur.Count(t => t == ItemID.SoulofNight);
-                
-                bool oreValid = (adamantiteOreCount == 2 && titaniumOreCount == 0) || 
+
+                bool oreValid = (adamantiteOreCount == 2 && titaniumOreCount == 0) ||
                                 (adamantiteOreCount == 0 && titaniumOreCount == 2);
-                
+
                 return oreValid &&
                        hallowedBarCount == 2 &&
                        soulOfLightCount == 2 &&
                        soulOfNightCount == 2;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 五行相生阵：所有伤害+12%，防御+10，每15秒回复生命值2%，每15秒回复魔力值3% ───────── */
         private void DoWuXingXiangSheng() {
             // 效果在ResetEffects、ModifyWeaponDamage和PostUpdate中处理
             WuXingXiangShengTimer = 0;
         }
-        
+
         private bool CheckWuXingXiangShengFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -3702,27 +3628,26 @@ namespace AncientChineseMythology.Players
                 int hallowedBarCount = cur.Count(t => t == ItemID.HallowedBar);
                 int soulOfLightCount = cur.Count(t => t == ItemID.SoulofLight);
                 int soulOfNightCount = cur.Count(t => t == ItemID.SoulofNight);
-                
-                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) || 
+
+                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) ||
                                 (adamantiteBarCount == 0 && titaniumBarCount == 2);
-                
+
                 return lifeFruitCount == 2 &&
                        barValid &&
                        hallowedBarCount == 2 &&
                        soulOfLightCount == 1 &&
                        soulOfNightCount == 1;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 六合归一阵：所有伤害+15%，防御+12，每12秒回复生命值3%，每12秒回复魔力值4%，移动速度+18% ───────── */
         private void DoLiuHeGuiYi() {
             // 效果在ResetEffects、ModifyWeaponDamage和PostUpdate中处理
             LiuHeGuiYiTimer = 0;
         }
-        
+
         private bool CheckLiuHeGuiYiFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -3732,26 +3657,25 @@ namespace AncientChineseMythology.Players
                 int titaniumBarCount = cur.Count(t => t == ItemID.TitaniumBar);
                 int hallowedBarCount = cur.Count(t => t == ItemID.HallowedBar);
                 int lunarBarCount = cur.Count(t => t == ItemID.LunarBar);
-                
-                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) || 
+
+                bool barValid = (adamantiteBarCount == 2 && titaniumBarCount == 0) ||
                                 (adamantiteBarCount == 0 && titaniumBarCount == 2);
-                
+
                 return lifeFruitCount == 2 &&
                        barValid &&
                        hallowedBarCount == 2 &&
                        lunarBarCount == 2;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }
-        
+
         /* ───────── 太极混元阵：所有伤害+20%，防御+18，每10秒回复生命值5%，每10秒回复魔力值6%，移动速度+25%，召唤物上限+1 ───────── */
         private void DoTaiJiHunYuan() {
             // 效果在ResetEffects、ModifyWeaponDamage和PostUpdate中处理
             TaiJiHunYuanTimer = 0;
         }
-        
+
         private bool CheckTaiJiHunYuanFormation(int[] cur) {
             if (cur == null || cur.Length != 8) return false;
             try {
@@ -3763,7 +3687,7 @@ namespace AncientChineseMythology.Players
                 int fragmentVortexCount = cur.Count(t => t == ItemID.FragmentVortex);
                 bool hasTrophy = cur.Any(t => t == ItemID.MoonLordTrophy);
                 int lunarBarCount = cur.Count(t => t == ItemID.LunarBar);
-                
+
                 return lifeFruitCount == 2 &&
                        fragmentSolarCount == 1 &&
                        fragmentStardustCount == 1 &&
@@ -3771,8 +3695,7 @@ namespace AncientChineseMythology.Players
                        fragmentVortexCount == 1 &&
                        hasTrophy &&
                        lunarBarCount == 1;
-            }
-            catch {
+            } catch {
                 return false;
             }
         }

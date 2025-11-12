@@ -1,5 +1,4 @@
-﻿using AncientChineseMythology.NPCs.Boss.NiutouMamian;
-using AncientChineseMythology.Underworlds;
+﻿using AncientChineseMythology.Underworlds;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.ID;

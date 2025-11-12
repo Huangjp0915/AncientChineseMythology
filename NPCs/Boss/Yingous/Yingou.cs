@@ -231,8 +231,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             Main.dayTime = false;
 
             //初始化双手引用
-            if (!handsInitialized)
-            {
+            if (!handsInitialized) {
                 InitializeHandReferences();
             }
 
@@ -288,54 +287,46 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             }
         }
 
-        private void InitializeHandReferences()
-        {
-            foreach (NPC npc in Main.npc)
-            {
-                if (npc.active && npc.ModNPC is YingouHand hand && npc.ai[0] == NPC.whoAmI)
-                {
+        private void InitializeHandReferences() {
+            foreach (NPC npc in Main.npc) {
+                if (npc.active && npc.ModNPC is YingouHand hand && npc.ai[0] == NPC.whoAmI) {
                     if (npc.ai[1] > 0) //右手
                         rightHand = hand;
                     else if (npc.ai[1] < 0) //左手
                         leftHand = hand;
                 }
             }
-            
+
             if (leftHand != null && rightHand != null)
                 handsInitialized = true;
         }
 
         //双手动作指挥方法
-        private void CommandBothHands(YingouHand.ActionCommand action, Vector2? leftTarget = null, Vector2? rightTarget = null, float leftAngle = 0f, float rightAngle = 0f)
-        {
+        private void CommandBothHands(YingouHand.ActionCommand action, Vector2? leftTarget = null, Vector2? rightTarget = null, float leftAngle = 0f, float rightAngle = 0f) {
             if (leftHand != null && leftHand.IsActionComplete())
                 leftHand.ExecuteAction(action, leftTarget, leftAngle);
             if (rightHand != null && rightHand.IsActionComplete())
                 rightHand.ExecuteAction(action, rightTarget, rightAngle);
-            
+
             isPerformingAction = true;
             actionCooldown = 20; //防止过于频繁的动作
         }
 
-        private void CommandLeftHand(YingouHand.ActionCommand action, Vector2? target = null, float angle = 0f)
-        {
+        private void CommandLeftHand(YingouHand.ActionCommand action, Vector2? target = null, float angle = 0f) {
             if (leftHand != null && leftHand.IsActionComplete())
                 leftHand.ExecuteAction(action, target, angle);
         }
 
-        private void CommandRightHand(YingouHand.ActionCommand action, Vector2? target = null, float angle = 0f)
-        {
+        private void CommandRightHand(YingouHand.ActionCommand action, Vector2? target = null, float angle = 0f) {
             if (rightHand != null && rightHand.IsActionComplete())
                 rightHand.ExecuteAction(action, target, angle);
         }
 
-        private bool AreBothHandsReady()
-        {
+        private bool AreBothHandsReady() {
             return (leftHand?.IsActionComplete() ?? true) && (rightHand?.IsActionComplete() ?? true);
         }
 
-        private bool ShouldTriggerProjectilesFromHands()
-        {
+        private bool ShouldTriggerProjectilesFromHands() {
             return true;
         }
 
@@ -387,11 +378,10 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 //指挥双手执行更华丽的斩击动作
                 Vector2 fanDirection = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
                 float fanAngle = fanDirection.ToRotation();
-                
+
                 //随机选择华丽的攻击模式
                 int attackPattern = Main.rand.Next(0, 3);
-                switch (attackPattern)
-                {
+                switch (attackPattern) {
                     case 0: //经典扇形斩击
                         CommandBothHands(
                             YingouHand.ActionCommand.FanFireSlash,
@@ -401,7 +391,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                             fanAngle + 0.4f
                         );
                         break;
-                        
+
                     case 1: //交叉突刺
                         CommandBothHands(
                             YingouHand.ActionCommand.ChargeStab,
@@ -411,7 +401,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                             fanAngle + 0.3f
                         );
                         break;
-                        
+
                     case 2: //花式旋转攻击
                         CommandBothHands(YingouHand.ActionCommand.SpinCast);
                         break;
@@ -431,7 +421,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 Vector2 strikeDir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
                 if (Main.rand.NextBool(3)) //降低概率从50%到33%
                 {
-                    CommandRightHand(YingouHand.ActionCommand.QuickStrike, 
+                    CommandRightHand(YingouHand.ActionCommand.QuickStrike,
                         target.Center + strikeDir * 120, strikeDir.ToRotation());
                 }
             }
@@ -504,8 +494,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             if (PhaseTimer % 140 == 90 && AreBothHandsReady()) //从120改为140tick
             {
                 int flashyAction = Main.rand.Next(0, 3);
-                switch (flashyAction)
-                {
+                switch (flashyAction) {
                     case 0: //十字斩击
                         Vector2 crossDir = NPC.DirectionTo(target.Center);
                         CommandBothHands(YingouHand.ActionCommand.CrossSlash, null, null, crossDir.ToRotation(), crossDir.ToRotation());
@@ -556,8 +545,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             if (PhaseTimer % 35 == 0 && PhaseTimer < 130 && AreBothHandsReady()) //从30改为35tick，从120改为130
             {
                 int intimidationAction = (int)((PhaseTimer / 35) % 4);
-                switch (intimidationAction)
-                {
+                switch (intimidationAction) {
                     case 0:
                         CommandLeftHand(YingouHand.ActionCommand.SaberCast);
                         break;
@@ -586,12 +574,10 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             if (PhaseTimer > 380) TransitionTo(BossPhase.FrenzyDash); //稍微延长阶段时间
         }
 
-        private void PrepareSaberPattern(Player target, int patternIndex)
-        {
+        private void PrepareSaberPattern(Player target, int patternIndex) {
             if (!AreBothHandsReady() || actionCooldown > 0) return;
 
-            switch (patternIndex)
-            {
+            switch (patternIndex) {
                 case 0: //RingDouble - 环形施法
                     CommandBothHands(YingouHand.ActionCommand.RingCast);
                     break;
@@ -650,8 +636,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             if (PhaseTimer % 30 == 0 && PhaseTimer < 80 && AreBothHandsReady()) //稍微延长间隔
             {
                 int chargeAction = (int)((PhaseTimer / 30) % 3);
-                switch (chargeAction)
-                {
+                switch (chargeAction) {
                     case 0:
                         CommandLeftHand(YingouHand.ActionCommand.RingCast);
                         break;
@@ -896,7 +881,8 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                         frenzyDashCount++;
                         if (frenzyDashCount >= frenzyDashTotal) {
                             TransitionTo(BossPhase.BladeScatter);
-                        } else {
+                        }
+                        else {
                             frenzyDashState = 0; frenzyDashStateTimer = 0; swordDir *= -1; NPC.netUpdate = true;
                             if (!VaultUtils.isClient) {
                                 frenzyDashTelegraphAngle = Main.rand.NextFloat(MathHelper.TwoPi);
@@ -908,8 +894,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
         }
 
         //===== 侵略性动作系统 =====
-        private void ProcessAggressiveActions(Player target)
-        {
+        private void ProcessAggressiveActions(Player target) {
             //跳过intro阶段的侵略动作
             if (Phase == BossPhase.Intro) return;
 
@@ -920,23 +905,19 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
 
             //降低动作触发频率 - 每20-35tick检查一次
             int actionInterval = closeRange ? 20 : (mediumRange ? 25 : 35); //增加间隔时间
-            
-            if (aggressiveActionTimer >= actionInterval && AreBothHandsReady())
-            {
+
+            if (aggressiveActionTimer >= actionInterval && AreBothHandsReady()) {
                 //根据情况选择侵略动作
-                if (closeRange && !isInAggressiveCombo)
-                {
+                if (closeRange && !isInAggressiveCombo) {
                     StartAggressiveCombo(target);
                 }
-                else if (mediumRange)
-                {
+                else if (mediumRange) {
                     ExecuteMediumRangeAggression(target);
                 }
-                else
-                {
+                else {
                     ExecuteLongRangeAggression(target);
                 }
-                
+
                 aggressiveActionTimer = 0;
                 lastAggressiveAction = (int)PhaseTimer;
             }
@@ -969,15 +950,14 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             }
         }
 
-        private void StartAggressiveCombo(Player target)
-        {
+        private void StartAggressiveCombo(Player target) {
             isInAggressiveCombo = true;
             aggressiveComboCount = 0;
-            
+
             //开场强势双刀交叉斩
             Vector2 playerDir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
             float baseAngle = playerDir.ToRotation();
-            
+
             CommandBothHands(
                 YingouHand.ActionCommand.CrossSlash,
                 target.Center + playerDir * 60, //稍微增加距离
@@ -985,13 +965,12 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 baseAngle,
                 baseAngle
             );
-            
+
             SoundEngine.PlaySound(SoundID.Item71 with { Volume = 1.0f, Pitch = 0.3f }, NPC.Center); //降低音量
             aggressiveComboCount++;
         }
 
-        private void ContinueAggressiveCombo(Player target)
-        {
+        private void ContinueAggressiveCombo(Player target) {
             if (aggressiveComboCount >= 3) //降低连击长度从4到3
             {
                 isInAggressiveCombo = false;
@@ -1001,35 +980,32 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
 
             Vector2 playerDir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
             float baseAngle = playerDir.ToRotation();
-            
-            switch (aggressiveComboCount)
-            {
+
+            switch (aggressiveComboCount) {
                 case 1: //左手快刺
-                    CommandLeftHand(YingouHand.ActionCommand.QuickStrike, 
+                    CommandLeftHand(YingouHand.ActionCommand.QuickStrike,
                         target.Center + playerDir.RotatedBy(-0.25f) * 90, //稍微增加距离和降低角度
                         baseAngle - 0.25f);
                     break;
-                    
+
                 case 2: //右手横扫
-                    CommandRightHand(YingouHand.ActionCommand.SweepSlash, 
+                    CommandRightHand(YingouHand.ActionCommand.SweepSlash,
                         target.Center + playerDir.RotatedBy(0.35f) * 110, //稍微增加距离和降低角度
                         baseAngle + 0.35f);
                     break;
             }
-            
+
             aggressiveComboCount++;
             lastAggressiveAction = (int)PhaseTimer;
         }
 
-        private void ExecuteMediumRangeAggression(Player target)
-        {
+        private void ExecuteMediumRangeAggression(Player target) {
             Vector2 playerDir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
             float baseAngle = playerDir.ToRotation();
-            
+
             //中距离快速突进斩击
             int actionType = Main.rand.Next(0, 3);
-            switch (actionType)
-            {
+            switch (actionType) {
                 case 0: //双刀蓄力突刺
                     CommandBothHands(
                         YingouHand.ActionCommand.ChargeStab,
@@ -1039,18 +1015,16 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                         baseAngle
                     );
                     break;
-                    
+
                 case 1: //交替快刺
-                    if (Main.rand.NextBool())
-                    {
+                    if (Main.rand.NextBool()) {
                         CommandLeftHand(YingouHand.ActionCommand.QuickStrike, target.Center + playerDir * 30, baseAngle); //增加缓冲距离
                     }
-                    else
-                    {
+                    else {
                         CommandRightHand(YingouHand.ActionCommand.QuickStrike, target.Center + playerDir * 30, baseAngle);
                     }
                     break;
-                    
+
                 case 2: //扇形斩击
                     CommandBothHands(
                         YingouHand.ActionCommand.FanFireSlash,

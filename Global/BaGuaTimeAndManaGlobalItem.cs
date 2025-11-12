@@ -1,5 +1,5 @@
-using System.Linq;
 using AncientChineseMythology.Players;
+using System.Linq;
 using Terraria;
 using Terraria.ModLoader;
 

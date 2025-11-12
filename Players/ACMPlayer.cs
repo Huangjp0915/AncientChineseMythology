@@ -1,6 +1,5 @@
-﻿using Terraria.ModLoader;
-using Microsoft.Xna.Framework;
-using Terraria;
+﻿using Terraria;
+using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Players
 {
@@ -17,11 +16,9 @@ namespace AncientChineseMythology.Players
             shenxianLightPet = false;
         }
 
-        public override void PostUpdate()
-        {
+        public override void PostUpdate() {
             // 更新屏幕震动
-            if (screenShakeTimer > 0)
-            {
+            if (screenShakeTimer > 0) {
                 screenShakeTimer--;
                 screenShakeIntensity *= 0.9f; // 逐渐减弱
             }
@@ -32,20 +29,16 @@ namespace AncientChineseMythology.Players
         /// </summary>
         /// <param name="intensity">震动强度</param>
         /// <param name="duration">持续时间（帧）</param>
-        public void ScreenShake(float intensity, int duration)
-        {
-            if (intensity > screenShakeIntensity)
-            {
+        public void ScreenShake(float intensity, int duration) {
+            if (intensity > screenShakeIntensity) {
                 screenShakeIntensity = intensity;
                 screenShakeTimer = duration;
             }
         }
 
-        public override void ModifyScreenPosition()
-        {
+        public override void ModifyScreenPosition() {
             // 应用屏幕震动
-            if (screenShakeTimer > 0 && screenShakeIntensity > 0)
-            {
+            if (screenShakeTimer > 0 && screenShakeIntensity > 0) {
                 Vector2 shake = Main.rand.NextVector2Circular(screenShakeIntensity, screenShakeIntensity);
                 Main.screenPosition += shake;
             }

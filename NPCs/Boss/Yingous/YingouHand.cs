@@ -201,8 +201,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
         public bool ShouldTriggerProjectiles() {
             if (actionTriggered || currentAction == ActionCommand.None) return false;
 
-            float triggerProgress = currentAction switch
-            {
+            float triggerProgress = currentAction switch {
                 ActionCommand.FanFireSlash => 0.6f,
                 ActionCommand.SaberCast => 0.7f,
                 ActionCommand.QuickStrike => 0.5f,

@@ -3,7 +3,6 @@ using System;
 using Terraria;
 using Terraria.Graphics.Effects;
 using Terraria.Graphics.Shaders;
-using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Underworlds
@@ -71,45 +70,39 @@ namespace AncientChineseMythology.Underworlds
             }
         }
 
-        public override void Activate(Vector2 position, params object[] args)
-        {
+        public override void Activate(Vector2 position, params object[] args) {
             active = true;
             intensity = 0f;
             fogPulseTimer = 0f;
             soulDriftTimer = 0f;
 
             // 重置迷雾
-            for (int i = 0; i < fogs.Length; i++)
-            {
+            for (int i = 0; i < fogs.Length; i++) {
                 fogs[i].Reset();
             }
 
             // 重置幽魂
-            for (int i = 0; i < souls.Length; i++)
-            {
+            for (int i = 0; i < souls.Length; i++) {
                 souls[i].Reset();
             }
         }
 
-        public override void Deactivate(params object[] args)
-        {
+        public override void Deactivate(params object[] args) {
             active = false;
         }
 
-        public override void Draw(SpriteBatch spriteBatch, float minDepth, float maxDepth)
-        {
-            if (intensity <= 0.01f || Underworld.Fog == null)
-            {
+        public override void Draw(SpriteBatch spriteBatch, float minDepth, float maxDepth) {
+            if (intensity <= 0.01f || Underworld.Fog == null) {
                 return;
             }
 
             // 阴暗的背景色
             Color bgColor = new Color(20, 25, 30);
             Rectangle screenRect = new Rectangle(0, 0, Main.screenWidth, Main.screenHeight);
-            
+
             // 使用MagicPixel作为纯色纹理
             Texture2D pixel = Terraria.GameContent.TextureAssets.MagicPixel.Value;
-            
+
             spriteBatch.Draw(
                 pixel,
                 screenRect,
@@ -129,79 +122,64 @@ namespace AncientChineseMythology.Underworlds
 
         public override bool IsActive() => active || intensity > 0;
 
-        public override void Reset()
-        {
+        public override void Reset() {
             active = false;
             intensity = 0f;
         }
 
-        public override void Update(GameTime gameTime)
-        {
+        public override void Update(GameTime gameTime) {
             // 检查玩家是否在地府区域
             bool shouldBeActive = false;
-            foreach (Player player in Main.ActivePlayers)
-            {
-                if (UnderworldFogEffect.IsInUnderworldZone(player))
-                {
+            foreach (Player player in Main.ActivePlayers) {
+                if (UnderworldFogEffect.IsInUnderworldZone(player)) {
                     shouldBeActive = true;
                     break;
                 }
             }
 
             // 强度变化
-            if (shouldBeActive)
-            {
-                if (intensity < 1f)
-                {
+            if (shouldBeActive) {
+                if (intensity < 1f) {
                     intensity += 0.01f;
                 }
-                if (!active)
-                {
+                if (!active) {
                     Activate(Vector2.Zero);
                 }
             }
-            else
-            {
+            else {
                 intensity -= 0.008f;
-                if (intensity <= 0)
-                {
+                if (intensity <= 0) {
                     Deactivate();
                 }
             }
 
             // 更新雾气脉动
             fogPulseTimer += 0.015f;
-            if (fogPulseTimer > MathHelper.TwoPi)
-            {
+            if (fogPulseTimer > MathHelper.TwoPi) {
                 fogPulseTimer -= MathHelper.TwoPi;
             }
 
             // 更新幽魂漂移
             soulDriftTimer += 0.01f;
-            if (soulDriftTimer > MathHelper.TwoPi * 2)
-            {
+            if (soulDriftTimer > MathHelper.TwoPi * 2) {
                 soulDriftTimer -= MathHelper.TwoPi * 2;
             }
 
             // 更新迷雾
-            for (int i = 0; i < fogs.Length; i++)
-            {
+            for (int i = 0; i < fogs.Length; i++) {
                 fogs[i].Update();
             }
 
             // 更新幽魂
-            for (int i = 0; i < souls.Length; i++)
-            {
+            for (int i = 0; i < souls.Length; i++) {
 
                 souls[i].Update();
             }
         }
 
-        public override Color OnTileColor(Color inColor)
-        {
+        public override Color OnTileColor(Color inColor) {
             // 应用阴冷的青灰色调
-            if (intensity > 0.1f)
-            {
+            if (intensity > 0.1f) {
                 float coldR = 0.85f;
                 float coldG = 0.90f;
                 float coldB = 0.95f;
@@ -219,20 +197,16 @@ namespace AncientChineseMythology.Underworlds
         }
 
         #region 绘制特效方法
-        private void DrawGhostlyFogsSky(SpriteBatch sb)
-        {
-            if (Underworld.Fog == null)
-            {
+        private void DrawGhostlyFogsSky(SpriteBatch sb) {
+            if (Underworld.Fog == null) {
                 return;
             }
 
             Texture2D fogTex = Underworld.Fog;
 
-            for (int i = 0; i < fogs.Length; i++)
-            {
+            for (int i = 0; i < fogs.Length; i++) {
                 GhostlyFog fog = fogs[i];
-                if (!fog.IsActive)
-                {
+                if (!fog.IsActive) {
                     continue;
                 }
 
@@ -276,20 +250,16 @@ namespace AncientChineseMythology.Underworlds
             }
         }
 
-        private void DrawWanderingSoulsSky(SpriteBatch sb)
-        {
-            if (Underworld.Fog == null)
-            {
+        private void DrawWanderingSoulsSky(SpriteBatch sb) {
+            if (Underworld.Fog == null) {
                 return;
             }
 
             Texture2D soulTex = Underworld.Fog;
 
-            for (int i = 0; i < souls.Length; i++)
-            {
+            for (int i = 0; i < souls.Length; i++) {
                 WanderingSoul soul = souls[i];
-                if (!soul.IsActive)
-                {
+                if (!soul.IsActive) {
                     continue;
                 }
 
@@ -313,8 +283,7 @@ namespace AncientChineseMythology.Underworlds
                 );
 
                 // 幽光
-                for (int j = 0; j < 3; j++)
-                {
+                for (int j = 0; j < 3; j++) {
                     float offset = j * 0.3f;
                     sb.Draw(
                         soulTex,
@@ -331,12 +300,10 @@ namespace AncientChineseMythology.Underworlds
             }
         }
 
-        private void DrawFogRipplesSky(SpriteBatch sb, Texture2D pixel)
-        {
+        private void DrawFogRipplesSky(SpriteBatch sb, Texture2D pixel) {
             // 绘制雾气涟漪效果
             int rippleCount = 2;
-            for (int i = 0; i < rippleCount; i++)
-            {
+            for (int i = 0; i < rippleCount; i++) {
                 float phase = (fogPulseTimer + i * MathHelper.Pi) % MathHelper.TwoPi;
                 float rippleAlpha = (float)Math.Sin(phase) * 0.5f + 0.5f;
 
@@ -368,25 +335,20 @@ namespace AncientChineseMythology.Underworlds
 
             private int cooldown;
 
-            public GhostlyFog()
-            {
+            public GhostlyFog() {
                 Reset();
             }
 
-            public void Reset()
-            {
+            public void Reset() {
                 IsActive = false;
                 AnimProgress = 0f;
                 cooldown = Main.rand.Next(20, 100);
             }
 
-            public void Update()
-            {
-                if (!IsActive)
-                {
+            public void Update() {
+                if (!IsActive) {
                     cooldown--;
-                    if (cooldown <= 0)
-                    {
+                    if (cooldown <= 0) {
                         Activate();
                     }
                     return;
@@ -396,14 +358,12 @@ namespace AncientChineseMythology.Underworlds
                 Position += Velocity;
                 Rotation += 0.001f;
 
-                if (AnimProgress >= 1f)
-                {
+                if (AnimProgress >= 1f) {
                     Reset();
                 }
             }
 
-            private void Activate()
-            {
+            private void Activate() {
                 IsActive = true;
                 AnimProgress = 0f;
                 AnimSpeed = Main.rand.NextFloat(0.002f, 0.006f);
@@ -433,25 +393,20 @@ namespace AncientChineseMythology.Underworlds
 
             private int cooldown;
 
-            public WanderingSoul()
-            {
+            public WanderingSoul() {
                 Reset();
             }
 
-            public void Reset()
-            {
+            public void Reset() {
                 IsActive = false;
                 AnimProgress = 0f;
                 cooldown = Main.rand.Next(100, 300);
             }
 
-            public void Update()
-            {
-                if (!IsActive)
-                {
+            public void Update() {
+                if (!IsActive) {
                     cooldown--;
-                    if (cooldown <= 0)
-                    {
+                    if (cooldown <= 0) {
                         Activate();
                     }
                     return;
@@ -467,14 +422,12 @@ namespace AncientChineseMythology.Underworlds
                 Position += Velocity;
                 Rotation += 0.005f;
 
-                if (AnimProgress >= 1f)
-                {
+                if (AnimProgress >= 1f) {
                     Reset();
                 }
             }
 
-            private void Activate()
-            {
+            private void Activate() {
                 IsActive = true;
                 AnimProgress = 0f;
                 AnimSpeed = Main.rand.NextFloat(0.003f, 0.007f);
@@ -516,47 +469,37 @@ namespace AncientChineseMythology.Underworlds
             new Color(55, 65, 75),      // 冷灰
         };
 
-        public override void OnModLoad()
-        {
+        public override void OnModLoad() {
             // 初始化迷雾
-            for (int i = 0; i < fogs.Length; i++)
-            {
+            for (int i = 0; i < fogs.Length; i++) {
                 fogs[i] = new GhostlyFog();
             }
 
             // 初始化幽魂
-            for (int i = 0; i < souls.Length; i++)
-            {
+            for (int i = 0; i < souls.Length; i++) {
                 souls[i] = new WanderingSoul();
             }
         }
 
-        public override void PostUpdateEverything()
-        {
+        public override void PostUpdateEverything() {
             // 检查玩家是否在地府区域
             bool shouldBeActive = false;
-            foreach (Player player in Main.ActivePlayers)
-            {
-                if (UnderworldFogEffect.IsInUnderworldZone(player))
-                {
+            foreach (Player player in Main.ActivePlayers) {
+                if (UnderworldFogEffect.IsInUnderworldZone(player)) {
                     shouldBeActive = true;
                     break;
                 }
             }
 
             // 强度变化
-            if (shouldBeActive)
-            {
-                if (intensity < 1f)
-                {
+            if (shouldBeActive) {
+                if (intensity < 1f) {
                     intensity += 0.01f;
                 }
             }
-            else
-            {
+            else {
                 intensity -= 0.008f;
-                if (intensity < 0f)
-                {
+                if (intensity < 0f) {
                     intensity = 0f;
                 }
             }
@@ -566,33 +509,28 @@ namespace AncientChineseMythology.Underworlds
 
             // 更新雾气脉动
             fogPulseTimer += 0.015f;
-            if (fogPulseTimer > MathHelper.TwoPi)
-            {
+            if (fogPulseTimer > MathHelper.TwoPi) {
                 fogPulseTimer -= MathHelper.TwoPi;
             }
 
             // 更新幽魂漂移
             soulDriftTimer += 0.01f;
-            if (soulDriftTimer > MathHelper.TwoPi * 2)
-            {
+            if (soulDriftTimer > MathHelper.TwoPi * 2) {
                 soulDriftTimer -= MathHelper.TwoPi * 2;
             }
 
             // 更新迷雾
-            for (int i = 0; i < fogs.Length; i++)
-            {
+            for (int i = 0; i < fogs.Length; i++) {
                 fogs[i].Update();
             }
 
             // 更新幽魂
-            for (int i = 0; i < souls.Length; i++)
-            {
+            for (int i = 0; i < souls.Length; i++) {
                 souls[i].Update();
             }
         }
 
-        public override void PostDrawTiles()
-        {
+        public override void PostDrawTiles() {
             if (Main.gameMenu || intensity <= 0.01f || Underworld.Fog == null)
                 return;
 
@@ -601,8 +539,8 @@ namespace AncientChineseMythology.Underworlds
                 return;
 
             SpriteBatch spriteBatch = Main.spriteBatch;
-            
-            spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, 
+
+            spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp,
                 DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
 
             // 绘制阴暗背景层
@@ -614,22 +552,18 @@ namespace AncientChineseMythology.Underworlds
             // 绘制游荡幽魂
             DrawWanderingSouls(spriteBatch);
 
-            // 绘制雾气涟漪
-            DrawFogRipples(spriteBatch);
-
             spriteBatch.End();
         }
 
         #region 绘制方法
 
-        private void DrawDarkOverlay(SpriteBatch sb)
-        {
+        private void DrawDarkOverlay(SpriteBatch sb) {
             Texture2D pixel = Terraria.GameContent.TextureAssets.MagicPixel.Value;
             Color bgColor = new Color(15, 20, 25);
             Rectangle screenRect = new Rectangle(
-                (int)Main.screenPosition.X, 
-                (int)Main.screenPosition.Y, 
-                Main.screenWidth, 
+                (int)Main.screenPosition.X,
+                (int)Main.screenPosition.Y,
+                Main.screenWidth,
                 Main.screenHeight
             );
 
@@ -641,15 +575,13 @@ namespace AncientChineseMythology.Underworlds
             );
         }
 
-        private void DrawGhostlyFogs(SpriteBatch sb)
-        {
+        private void DrawGhostlyFogs(SpriteBatch sb) {
             if (Underworld.Fog == null)
                 return;
 
             Texture2D fogTex = Underworld.Fog;
 
-            for (int i = 0; i < fogs.Length; i++)
-            {
+            for (int i = 0; i < fogs.Length; i++) {
                 GhostlyFog fog = fogs[i];
                 if (!fog.IsActive)
                     continue;
@@ -699,15 +631,13 @@ namespace AncientChineseMythology.Underworlds
             }
         }
 
-        private void DrawWanderingSouls(SpriteBatch sb)
-        {
+        private void DrawWanderingSouls(SpriteBatch sb) {
             if (Underworld.Fog == null)
                 return;
 
             Texture2D soulTex = Underworld.Fog;
 
-            for (int i = 0; i < souls.Length; i++)
-            {
+            for (int i = 0; i < souls.Length; i++) {
                 WanderingSoul soul = souls[i];
                 if (!soul.IsActive)
                     continue;
@@ -737,8 +667,7 @@ namespace AncientChineseMythology.Underworlds
                 );
 
                 // 幽光
-                for (int j = 0; j < 3; j++)
-                {
+                for (int j = 0; j < 3; j++) {
                     float offset = j * 0.3f;
                     sb.Draw(
                         soulTex,
@@ -752,37 +681,6 @@ namespace AncientChineseMythology.Underworlds
                         0f
                     );
                 }
-            }
-        }
-
-        private void DrawFogRipples(SpriteBatch sb)
-        {
-            Texture2D pixel = Terraria.GameContent.TextureAssets.MagicPixel.Value;
-
-            int rippleCount = 3;
-            for (int i = 0; i < rippleCount; i++)
-            {
-                float phase = (fogPulseTimer + i * MathHelper.TwoPi / rippleCount) % MathHelper.TwoPi;
-                float rippleAlpha = (float)Math.Sin(phase) * 0.5f + 0.5f;
-
-                int colorIndex = (int)(phase * 2f) % underworldColors.Length;
-                Color rippleColor = underworldColors[colorIndex];
-
-                // 水平雾带 - 相对于屏幕位置
-                int y = (int)(Main.screenHeight * (0.2f + i * 0.25f));
-                int worldY = (int)(Main.screenPosition.Y + y);
-                
-                sb.Draw(
-                    pixel,
-                    new Vector2(Main.screenPosition.X, worldY) - Main.screenPosition,
-                    new Rectangle(0, 0, 1, 1),
-                    rippleColor * (rippleAlpha * intensity * 0.15f),
-                    0f,
-                    Vector2.Zero,
-                    new Vector2(Main.screenWidth, 4),
-                    SpriteEffects.None,
-                    0f
-                );
             }
         }
 
@@ -801,25 +699,20 @@ namespace AncientChineseMythology.Underworlds
 
             private int cooldown;
 
-            public GhostlyFog()
-            {
+            public GhostlyFog() {
                 Reset();
             }
 
-            public void Reset()
-            {
+            public void Reset() {
                 IsActive = false;
                 AnimProgress = 0f;
                 cooldown = Main.rand.Next(20, 100);
             }
 
-            public void Update()
-            {
-                if (!IsActive)
-                {
+            public void Update() {
+                if (!IsActive) {
                     cooldown--;
-                    if (cooldown <= 0)
-                    {
+                    if (cooldown <= 0) {
                         Activate();
                     }
                     return;
@@ -829,14 +722,12 @@ namespace AncientChineseMythology.Underworlds
                 Position += Velocity;
                 Rotation += 0.001f;
 
-                if (AnimProgress >= 1f)
-                {
+                if (AnimProgress >= 1f) {
                     Reset();
                 }
             }
 
-            private void Activate()
-            {
+            private void Activate() {
                 IsActive = true;
                 AnimProgress = 0f;
                 AnimSpeed = Main.rand.NextFloat(0.002f, 0.006f);
@@ -866,25 +757,20 @@ namespace AncientChineseMythology.Underworlds
 
             private int cooldown;
 
-            public WanderingSoul()
-            {
+            public WanderingSoul() {
                 Reset();
             }
 
-            public void Reset()
-            {
+            public void Reset() {
                 IsActive = false;
                 AnimProgress = 0f;
                 cooldown = Main.rand.Next(100, 300);
             }
 
-            public void Update()
-            {
-                if (!IsActive)
-                {
+            public void Update() {
+                if (!IsActive) {
                     cooldown--;
-                    if (cooldown <= 0)
-                    {
+                    if (cooldown <= 0) {
                         Activate();
                     }
                     return;
@@ -900,14 +786,12 @@ namespace AncientChineseMythology.Underworlds
                 Position += Velocity;
                 Rotation += 0.005f;
 
-                if (AnimProgress >= 1f)
-                {
+                if (AnimProgress >= 1f) {
                     Reset();
                 }
             }
 
-            private void Activate()
-            {
+            private void Activate() {
                 IsActive = true;
                 AnimProgress = 0f;
                 AnimSpeed = Main.rand.NextFloat(0.003f, 0.007f);
@@ -933,8 +817,7 @@ namespace AncientChineseMythology.Underworlds
         /// <summary>
         /// 检查玩家是否在地府区域
         /// </summary>
-        public static bool IsInUnderworldZone(Player player)
-        {
+        public static bool IsInUnderworldZone(Player player) {
             // 检查是否在地狱层或岩石层（地府范围）
             int tileX = (int)(player.Center.X / 16f);
             int tileY = (int)(player.Center.Y / 16f);
@@ -948,22 +831,18 @@ namespace AncientChineseMythology.Underworlds
             // 检查周围是否有幽冥石或灵魂沙
             bool hasUnderworldTiles = false;
             int checkRadius = 20;
-            
-            for (int i = -checkRadius; i <= checkRadius; i += 5)
-            {
-                for (int j = -checkRadius; j <= checkRadius; j += 5)
-                {
+
+            for (int i = -checkRadius; i <= checkRadius; i += 5) {
+                for (int j = -checkRadius; j <= checkRadius; j += 5) {
                     int checkX = tileX + i;
                     int checkY = tileY + j;
 
-                    if (checkX >= 0 && checkX < Main.maxTilesX && 
-                        checkY >= 0 && checkY < Main.maxTilesY)
-                    {
+                    if (checkX >= 0 && checkX < Main.maxTilesX &&
+                        checkY >= 0 && checkY < Main.maxTilesY) {
                         Tile tile = Main.tile[checkX, checkY];
-                        if (tile.HasTile && 
+                        if (tile.HasTile &&
                             (tile.TileType == ModContent.TileType<Tiles.UmbralStone>() ||
-                             tile.TileType == ModContent.TileType<Tiles.NetherSand>()))
-                        {
+                             tile.TileType == ModContent.TileType<Tiles.NetherSand>())) {
                             hasUnderworldTiles = true;
                             break;
                         }
@@ -978,8 +857,7 @@ namespace AncientChineseMythology.Underworlds
         /// <summary>
         /// 检查效果是否应该激活
         /// </summary>
-        public static bool IsActive(Player player)
-        {
+        public static bool IsActive(Player player) {
             if (Main.gameMenu)
                 return false;
 

@@ -15,8 +15,7 @@ namespace AncientChineseMythology.Items.Weapons
     {
         public override string Texture => "AncientChineseMythology/Items/Weapons/CoffinNail";
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             //基础属性设置
             Item.damage = 1688; //高伤害，符合棺材钉的威力
             Item.DamageType = DamageClass.Melee; //远程武器类型
@@ -39,14 +38,13 @@ namespace AncientChineseMythology.Items.Weapons
             Item.consumable = false; //不消耗，可以无限使用
         }
 
-        public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback)
-        {
+        public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
             //计算投掷方向
             Vector2 direction = Vector2.Normalize(Main.MouseWorld - player.Center);
-            
+
             //添加一些随机偏移，让投掷更真实
             direction = direction.RotatedByRandom(MathHelper.ToRadians(2f));
-            
+
             //创建棺材钉投射物
             var projectile = Projectile.NewProjectileDirect(
                 source,
@@ -59,8 +57,7 @@ namespace AncientChineseMythology.Items.Weapons
             );
 
             //播放投掷音效
-            SoundEngine.PlaySound(SoundID.Item1 with
-            {
+            SoundEngine.PlaySound(SoundID.Item1 with {
                 Volume = 0.8f,
                 Pitch = Main.rand.NextFloat(-0.2f, 0.2f)
             }, player.Center);
@@ -68,8 +65,7 @@ namespace AncientChineseMythology.Items.Weapons
             return false; //阻止默认投射物生成
         }
 
-        public override void AddRecipes()
-        {
+        public override void AddRecipes() {
             Recipe recipe = CreateRecipe();
             recipe.AddIngredient(ItemID.IronBar, 15); //铁锭
             recipe.AddIngredient(ItemID.Bone, 10); //骨头
@@ -79,8 +75,7 @@ namespace AncientChineseMythology.Items.Weapons
             recipe.Register();
         }
 
-        public override void ModifyTooltips(List<TooltipLine> tooltips)
-        {
+        public override void ModifyTooltips(List<TooltipLine> tooltips) {
             //添加自定义描述
             tooltips.Add(new TooltipLine(Mod, "CoffinNailDesc1", "[c/8B0000:来自神秘世界的诡异武器]"));
             tooltips.Add(new TooltipLine(Mod, "CoffinNailDesc2", "[c/DC143C:投掷时会产生恐怖的红色轨迹]"));
@@ -88,8 +83,7 @@ namespace AncientChineseMythology.Items.Weapons
             tooltips.Add(new TooltipLine(Mod, "CoffinNailDesc4", "[c/696969:'就算是鬼，也要被钉死在这里' - 杨间]"));
         }
 
-        public override Color? GetAlpha(Color lightColor)
-        {
+        public override Color? GetAlpha(Color lightColor) {
             //让物品始终保持可见，带有微弱的红色光芒
             return Color.Lerp(lightColor, Color.DarkRed, 0.3f);
         }

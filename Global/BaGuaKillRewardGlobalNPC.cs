@@ -1,5 +1,5 @@
-using System.Linq;
 using AncientChineseMythology.Players;
+using System.Linq;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -11,14 +11,14 @@ namespace AncientChineseMythology.Global
         public override void OnKill(NPC npc) {
             // 只对非友好NPC生效
             if (npc.friendly || npc.boss) return;
-            
+
             // 获取击杀者
             int killerIndex = npc.lastInteraction;
             if (killerIndex < 0 || killerIndex >= Main.maxPlayers || !Main.player[killerIndex].active) return;
-            
+
             Player killer = Main.player[killerIndex];
             var baGuaPlayer = killer.GetModPlayer<BaGuaPlayer>();
-            
+
             // 检查是否有吞噬万物阵
             if (killer.HasBuff(ModContent.BuffType<Buffs.BaGuaBuff>())) {
                 var cur = baGuaPlayer.BaGuaItems?.Where(it => it != null && !it.IsAir).Select(it => it.type).ToArray();
@@ -34,7 +34,7 @@ namespace AncientChineseMythology.Global
                             }
                         }
                     }
-                    
+
                     // 回复2点魔力值
                     if (killer.statMana < killer.statManaMax2) {
                         int manaAmount = 2;
