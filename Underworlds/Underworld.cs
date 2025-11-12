@@ -7,7 +7,7 @@ namespace AncientChineseMythology.Underworlds
     internal class Underworld : ModSystem
     {
         public static int UmbralStoneTileID => ModContent.TileType<UmbralStone>();
-        [VaultLoaden("{@namespace/}")]
+        [VaultLoaden("{@namespace}/")]
         public static Texture2D Fog;//反射加载雾气灰度纹理
         /// <summary>
         /// 生成地府地形的接口方法

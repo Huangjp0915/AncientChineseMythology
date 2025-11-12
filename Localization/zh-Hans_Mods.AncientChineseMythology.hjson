@@ -685,6 +685,11 @@ Biomes: {
 		DisplayName: 血海
 		// TownNPCDialogueName: the Blood Sea Biome
 	}
+
+	UnderworldBiome: {
+		// DisplayName: Underworld Biome
+		// TownNPCDialogueName: the Underworld Biome
+	}
 }
 
 Tiles: {
