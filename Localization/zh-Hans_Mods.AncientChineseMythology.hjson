@@ -528,6 +528,11 @@ Items: {
 		DisplayName: 鬼面具
 		Tooltip: ""
 	}
+
+	UmbralStoneItem: {
+		// DisplayName: Umbral Stone Item
+		// Tooltip: ""
+	}
 }
 
 NPCs: {

@@ -479,6 +479,11 @@ Items: {
 		DisplayName: Yingou Summon
 		Tooltip: ""
 	}
+
+	UmbralStoneItem: {
+		DisplayName: Umbral Stone Item
+		Tooltip: ""
+	}
 }
 
 NPCs: {
