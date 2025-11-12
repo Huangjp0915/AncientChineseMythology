@@ -27,7 +27,7 @@ namespace AncientChineseMythology.Underworlds
             int underworldStartX = Main.maxTilesX / 2;
             int underworldEndX = Main.maxTilesX - 200;
             int underworldStartY = Main.UnderworldLayer;
-            int underworldEndY = Main.maxTilesY;
+            int underworldEndY = Main.maxTilesY - 10; // 保留最底部几层基岩
 
             // 验证范围有效性
             if (underworldEndX <= underworldStartX) {
@@ -45,62 +45,80 @@ namespace AncientChineseMythology.Underworlds
                 Main.NewText("警告：可用区域较小，地府地形可能不完整", Color.Yellow);
             }
 
-            // 第一步：清除原有地形
+            Main.NewText($"地府区域：X({underworldStartX}-{underworldEndX}) Y({underworldStartY}-{underworldEndY})", Color.Cyan);
+
+            // 第一步：彻底清除原有地形
             ClearHellTerrain(underworldStartX, underworldEndX, underworldStartY, underworldEndY);
 
             // 第二步：生成基础地形层
+            Main.NewText("生成基础地形...", Color.Yellow);
             GenerateBaseTerrain(underworldStartX, underworldEndX, underworldStartY, underworldEndY, rand);
 
             // 第三步：生成起伏的地表
+            Main.NewText("生成六道轮回层...", Color.Yellow);
             GenerateUndulatingTerrain(underworldStartX, underworldEndX, underworldStartY, underworldEndY, rand);
 
             // 第四步：生成洞穴和空间
+            Main.NewText("生成洞穴殿堂...", Color.Yellow);
             GenerateCaverns(underworldStartX, underworldEndX, underworldStartY, underworldEndY, rand);
 
             // 第五步：添加地府特色结构
+            Main.NewText("生成地府建筑...", Color.Yellow);
             GenerateUnderworldStructures(underworldStartX, underworldEndX, underworldStartY, underworldEndY, rand);
 
             // 第六步：生成黄泉之路（贯穿的主通道）
+            Main.NewText("铺设黄泉之路...", Color.Yellow);
             GenerateYellowSpringsPath(underworldStartX, underworldEndX, underworldStartY, underworldEndY, rand);
 
             // 第七步：平滑地形
+            Main.NewText("平滑地形...", Color.Yellow);
             SmoothTerrain(underworldStartX, underworldEndX, underworldStartY, underworldEndY);
 
             // 第八步：添加细节装饰
+            Main.NewText("添加细节装饰...", Color.Yellow);
             AddDetails(underworldStartX, underworldEndX, underworldStartY, underworldEndY, rand);
 
-            Main.NewText("地府地形生成完成!", Color.LightBlue);
+            Main.NewText("地府地形生成完成！", Color.LightBlue);
+            Main.NewText("使用地图查看完整的地府结构", Color.Cyan);
         }
 
         /// <summary>
         /// 清除地狱右半边的原有地形
         /// </summary>
         private static void ClearHellTerrain(int startX, int endX, int startY, int endY) {
+            Main.NewText("清理原有地形中...", Color.Yellow);
+            
             for (int i = startX; i < endX; i++) {
                 for (int j = startY; j < endY; j++) {
                     Tile tile = Main.tile[i, j];
                     
-                    // 保留基岩（底部边界）
-                    if (j >= Main.maxTilesY - 220) {
+                    // 保留基岩（底部边界）- 保留最底部的方块
+                    if (j >= Main.maxTilesY - 5) {
                         continue;
                     }
 
-                    // 清除地狱砖、灰烬等地狱方块
-                    if (tile.TileType == TileID.Hellstone ||
-                        tile.TileType == TileID.HellstoneBrick ||
-                        tile.TileType == TileID.Ash ||
-                        tile.TileType == TileID.Obsidian ||
-                        tile.TileType == TileID.ObsidianBrick) {
-                        
-                        tile.ClearEverything();
+                    // 清除所有方块（不仅仅是地狱方块）
+                    if (tile.HasTile) {
+                        tile.ClearTile();
                     }
 
-                    // 清除熔岩
-                    if (tile.LiquidAmount > 0 && tile.LiquidType == LiquidID.Lava) {
+                    // 清除所有液体（熔岩、水等）
+                    if (tile.LiquidAmount > 0) {
                         tile.LiquidAmount = 0;
+                        tile.LiquidType = 0;
                     }
+
+                    // 清除所有墙壁
+                    if (tile.WallType > 0) {
+                        tile.WallType = 0;
+                    }
+
+                    // 清除其他属性
+                    tile.ClearEverything();
                 }
             }
+            
+            Main.NewText("原有地形清理完成", Color.LightGreen);
         }
 
         /// <summary>
@@ -111,8 +129,8 @@ namespace AncientChineseMythology.Underworlds
 
             for (int i = startX; i < endX; i++) {
                 for (int j = startY; j < endY; j++) {
-                    // 底部完全填充
-                    if (j >= endY - 50) {
+                    // 底部完全填充（最底部100格）
+                    if (j >= endY - 100) {
                         WorldGen.PlaceTile(i, j, umbralStoneType, forced: true, mute: true);
                         continue;
                     }
@@ -120,9 +138,9 @@ namespace AncientChineseMythology.Underworlds
                     // 使用柏林噪声创建自然分布
                     float noise = GetPerlinNoise(i * 0.02f, j * 0.02f, rand);
                     
-                    // 根据深度调整密度
+                    // 根据深度调整密度 - 使整体更密集
                     float depth = (j - startY) / (float)(endY - startY);
-                    float density = 0.3f + depth * 0.5f; // 越深越密集
+                    float density = 0.4f + depth * 0.5f; // 提高基础密度
 
                     if (noise > 1f - density) {
                         WorldGen.PlaceTile(i, j, umbralStoneType, forced: true, mute: true);
@@ -278,14 +296,20 @@ namespace AncientChineseMythology.Underworlds
                     if (j >= startY && j < endY - 60) {
                         Tile tile = Main.tile[i, j];
                         tile.ClearTile();
+                        tile.LiquidAmount = 0;
                     }
                 }
                 
-                // 在路径底部铺设幽冥石地板
-                for (int floorWidth = -pathWidth; floorWidth <= pathWidth; floorWidth++) {
+                // 在路径底部和上方铺设幽冥石边界，形成明显的通道
+                // 底部地板
+                for (int floorWidth = -pathWidth - 2; floorWidth <= pathWidth + 2; floorWidth++) {
                     int floorJ = currentY + pathWidth + 1;
-                    if (floorJ < endY - 60) {
+                    if (floorJ >= startY && floorJ < endY - 60) {
                         WorldGen.PlaceTile(i, floorJ, ModContent.TileType<UmbralStone>(), forced: true, mute: true);
+                        // 加厚地板
+                        if (floorJ + 1 < endY - 60) {
+                            WorldGen.PlaceTile(i, floorJ + 1, ModContent.TileType<UmbralStone>(), forced: true, mute: true);
+                        }
                     }
                 }
             }
