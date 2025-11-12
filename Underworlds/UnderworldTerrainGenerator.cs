@@ -511,43 +511,65 @@ namespace AncientChineseMythology.Underworlds
         private static void GenerateUnderworldSurface(int startX, int endX, int startY, int endY, UnifiedRandom rand) {
             int umbralStoneType = ModContent.TileType<UmbralStone>();
 
-            // 清除该区域的原有地形
+            // 不再完全清空，而是选择性地清除和替换
+            // 第一步：生成地府的"侵蚀"范围 - 不规则的清理区域
             for (int i = startX; i < endX; i++) {
                 for (int j = startY; j < endY; j++) {
                     Tile tile = Main.tile[i, j];
                     
-                    // 清除方块
-                    if (tile.HasTile) {
-                        tile.ClearTile();
-                    }
+                    // 使用噪声决定是否清除该位置
+                    float erosionNoise = GetPerlinNoise(i * 0.015f, j * 0.015f, rand);
                     
-                    // 清除液体
-                    if (tile.LiquidAmount > 0) {
-                        tile.LiquidAmount = 0;
-                        tile.LiquidType = 0;
-                    }
+                    // 距离地狱层越近，清除概率越高
+                    float depthFactor = (j - startY) / (float)(endY - startY);
+                    float clearChance = depthFactor * 0.7f + 0.2f; // 20%-90%的清除概率
                     
-                    // 清除墙壁
-                    if (tile.WallType > 0) {
-                        tile.WallType = 0;
+                    // 添加边缘渐变效果
+                    float edgeDistanceX = Math.Min(i - startX, endX - i) / 100f;
+                    edgeDistanceX = Math.Clamp(edgeDistanceX, 0f, 1f);
+                    clearChance *= edgeDistanceX;
+                    
+                    if (erosionNoise > 1f - clearChance) {
+                        // 清除方块
+                        if (tile.HasTile) {
+                            tile.ClearTile();
+                        }
+                        
+                        // 清除液体
+                        if (tile.LiquidAmount > 0) {
+                            tile.LiquidAmount = 0;
+                            tile.LiquidType = 0;
+                        }
+                        
+                        // 部分清除墙壁（不是全部）
+                        if (tile.WallType > 0 && rand.NextBool(2)) {
+                            tile.WallType = 0;
+                        }
                     }
                 }
             }
 
-            // 生成不规则的地府地表基础地形
+            // 第二步：在清空的区域中生成不规则的幽冥石地形
             for (int i = startX; i < endX; i++) {
-                // 创建起伏的地表高度
-                float surfaceNoise = GetPerlinNoise(i * 0.03f, 0, rand);
-                int surfaceHeight = startY + (int)((endY - startY) * 0.3f + surfaceNoise * (endY - startY) * 0.4f);
+                // 创建起伏的地府地表轮廓
+                float surfaceNoise = GetPerlinNoise(i * 0.02f, 0, rand);
+                int baseSurfaceHeight = startY + (int)((endY - startY) * 0.5f + surfaceNoise * (endY - startY) * 0.3f);
 
-                // 从地表向下填充幽冥石
-                for (int j = surfaceHeight; j < endY; j++) {
-                    // 使用噪声创建不规则的密度
-                    float noise = GetPerlinNoise(i * 0.04f, j * 0.04f, rand);
+                // 从地表向下填充幽冥石，但密度逐渐降低
+                for (int j = baseSurfaceHeight; j < endY; j++) {
+                    // 只在已清空的位置放置
+                    if (Main.tile[i, j].HasTile) continue;
                     
-                    // 根据深度调整密度
-                    float depth = (j - surfaceHeight) / (float)(endY - surfaceHeight);
-                    float density = 0.3f + depth * 0.6f;
+                    // 使用噪声创建不规则的填充
+                    float noise = GetPerlinNoise(i * 0.05f, j * 0.05f, rand);
+                    
+                    // 根据深度调整密度 - 越接近地狱层越密集
+                    float depth = (j - baseSurfaceHeight) / (float)(endY - baseSurfaceHeight);
+                    float density = 0.2f + depth * 0.5f; // 20%-70%的密度
+                    
+                    // 添加垂直方向的变化
+                    float verticalNoise = GetPerlinNoise(i * 0.08f, j * 0.08f, rand);
+                    density += verticalNoise * 0.2f;
 
                     if (noise > 1f - density) {
                         WorldGen.PlaceTile(i, j, umbralStoneType, forced: true, mute: true);
@@ -560,26 +582,30 @@ namespace AncientChineseMythology.Underworlds
         /// 生成地表峡谷和大型洞穴
         /// </summary>
         private static void GenerateSurfaceCanyons(int startX, int endX, int startY, int endY, UnifiedRandom rand) {
-            // 生成垂直峡谷
-            int canyonCount = rand.Next(8, 15);
+            // 减少垂直峡谷数量，使其更稀疏
+            int canyonCount = rand.Next(3, 7);
             
             for (int n = 0; n < canyonCount; n++) {
-                int safeStartX = Math.Max(startX + 40, startX);
-                int safeEndX = Math.Max(endX - 40, safeStartX + 80);
+                int safeStartX = Math.Max(startX + 100, startX);
+                int safeEndX = Math.Max(endX - 100, safeStartX + 200);
                 
                 if (safeEndX <= safeStartX) continue;
                 
                 int canyonX = rand.Next(safeStartX, safeEndX);
-                int canyonWidth = rand.Next(5, 15);
-                int canyonDepth = rand.Next((endY - startY) / 2, (endY - startY) * 3 / 4);
+                int canyonWidth = rand.Next(8, 20);
+                int canyonDepth = rand.Next((endY - startY) / 3, (endY - startY) / 2);
                 
-                // 挖掘峡谷
+                // 挖掘峡谷 - 使用更柔和的曲线
                 for (int i = canyonX - canyonWidth; i <= canyonX + canyonWidth; i++) {
                     for (int j = startY; j < startY + canyonDepth; j++) {
                         if (i >= startX && i < endX && j >= startY && j < endY) {
-                            // 使用抛物线创建峡谷形状
+                            // 使用更平滑的抛物线
                             float distFromCenter = Math.Abs(i - canyonX) / (float)canyonWidth;
-                            float depthFactor = 1f - distFromCenter * distFromCenter;
+                            float depthFactor = (1f - distFromCenter * distFromCenter);
+                            
+                            // 添加噪声使边缘不规则
+                            float edgeNoise = GetPerlinNoise(i * 0.1f, j * 0.1f, rand);
+                            depthFactor *= (0.8f + edgeNoise * 0.4f);
                             
                             if (j < startY + canyonDepth * depthFactor) {
                                 Tile tile = Main.tile[i, j];
@@ -591,22 +617,23 @@ namespace AncientChineseMythology.Underworlds
                 }
             }
 
-            // 生成大型洞穴
-            int cavernCount = rand.Next(15, 25);
+            // 减少洞穴数量
+            int cavernCount = rand.Next(8, 15);
             
             for (int n = 0; n < cavernCount; n++) {
-                int safeStartX = Math.Max(startX + 30, startX);
-                int safeEndX = Math.Max(endX - 30, safeStartX + 60);
-                int safeStartY = Math.Max(startY + 20, startY);
-                int safeEndY = Math.Max(endY - 20, safeStartY + 40);
+                int safeStartX = Math.Max(startX + 50, startX);
+                int safeEndX = Math.Max(endX - 50, safeStartX + 100);
+                int safeStartY = Math.Max(startY + 30, startY);
+                int safeEndY = Math.Max(endY - 30, safeStartY + 60);
                 
                 if (safeEndX <= safeStartX || safeEndY <= safeStartY) continue;
                 
                 int centerX = rand.Next(safeStartX, safeEndX);
                 int centerY = rand.Next(safeStartY, safeEndY);
                 
-                int radiusX = rand.Next(10, 30);
-                int radiusY = rand.Next(8, 25);
+                // 减小洞穴大小
+                int radiusX = rand.Next(8, 20);
+                int radiusY = rand.Next(6, 15);
                 
                 // 挖掘椭圆形洞穴
                 for (int i = centerX - radiusX; i <= centerX + radiusX; i++) {
@@ -616,8 +643,11 @@ namespace AncientChineseMythology.Underworlds
                             float dy = (j - centerY) / (float)radiusY;
                             
                             if (dx * dx + dy * dy <= 1f) {
+                                // 更柔和的边缘
                                 float edge = dx * dx + dy * dy;
-                                if (edge < 0.85f || rand.NextFloat() > edge) {
+                                float edgeNoise = GetPerlinNoise(i * 0.15f, j * 0.15f, rand);
+                                
+                                if (edge < 0.7f || (edge < 0.9f && edgeNoise > 0.3f)) {
                                     Tile tile = Main.tile[i, j];
                                     tile.ClearTile();
                                     tile.LiquidAmount = 0;
@@ -628,30 +658,32 @@ namespace AncientChineseMythology.Underworlds
                 }
             }
 
-            // 生成蜿蜒通道连接洞穴
-            int tunnelCount = rand.Next(20, 30);
+            // 减少通道数量
+            int tunnelCount = rand.Next(10, 18);
             
             for (int n = 0; n < tunnelCount; n++) {
-                int safeStartX = Math.Max(startX + 10, startX);
-                int safeEndX = Math.Max(endX - 10, safeStartX + 20);
-                int safeStartY = Math.Max(startY + 10, startY);
-                int safeEndY = Math.Max(endY - 10, safeStartY + 20);
+                int safeStartX = Math.Max(startX + 30, startX);
+                int safeEndX = Math.Max(endX - 30, safeStartX + 60);
+                int safeStartY = Math.Max(startY + 20, startY);
+                int safeEndY = Math.Max(endY - 20, safeStartY + 40);
                 
                 if (safeEndX <= safeStartX || safeEndY <= safeStartY) continue;
                 
                 int x = rand.Next(safeStartX, safeEndX);
                 int y = rand.Next(safeStartY, safeEndY);
                 
-                int length = rand.Next(30, 80);
-                int width = rand.Next(2, 6);
+                // 缩短通道长度
+                int length = rand.Next(20, 50);
+                int width = rand.Next(2, 5);
                 
                 float angle = rand.NextFloat() * MathHelper.TwoPi;
                 
                 for (int step = 0; step < length; step++) {
-                    angle += (rand.NextFloat() - 0.5f) * 0.4f;
+                    // 更温和的方向变化
+                    angle += (rand.NextFloat() - 0.5f) * 0.2f;
                     
-                    x += (int)(Math.Cos(angle) * 2);
-                    y += (int)(Math.Sin(angle) * 2);
+                    x += (int)(Math.Cos(angle) * 1.5f);
+                    y += (int)(Math.Sin(angle) * 1.5f);
                     
                     x = Math.Clamp(x, startX, endX - 1);
                     y = Math.Clamp(y, startY, endY - 1);
@@ -662,7 +694,8 @@ namespace AncientChineseMythology.Underworlds
                             int tj = y + dy;
                             
                             if (ti >= startX && ti < endX && tj >= startY && tj < endY) {
-                                if (dx * dx + dy * dy <= width * width) {
+                                float dist = (float)Math.Sqrt(dx * dx + dy * dy);
+                                if (dist <= width) {
                                     Tile tile = Main.tile[ti, tj];
                                     tile.ClearTile();
                                     tile.LiquidAmount = 0;
@@ -680,12 +713,12 @@ namespace AncientChineseMythology.Underworlds
         private static void GenerateSurfacePillars(int startX, int endX, int startY, int endY, UnifiedRandom rand) {
             int umbralStoneType = ModContent.TileType<UmbralStone>();
             
-            // 生成向上的石柱（钟乳石倒置）
-            int pillarCountUp = rand.Next(30, 50);
+            // 减少向上石柱的数量
+            int pillarCountUp = rand.Next(15, 25);
             
             for (int n = 0; n < pillarCountUp; n++) {
-                int safeStartX = Math.Max(startX + 10, startX);
-                int safeEndX = Math.Max(endX - 10, safeStartX + 20);
+                int safeStartX = Math.Max(startX + 30, startX);
+                int safeEndX = Math.Max(endX - 30, safeStartX + 60);
                 
                 if (safeEndX <= safeStartX) continue;
                 
@@ -695,7 +728,10 @@ namespace AncientChineseMythology.Underworlds
                 int groundY = -1;
                 for (int checkY = endY - 1; checkY >= startY; checkY--) {
                     if (Main.tile[x, checkY].HasTile && Main.tileSolid[Main.tile[x, checkY].TileType]) {
-                        if (checkY > startY && !Main.tile[x, checkY - 1].HasTile) {
+                        // 确保是幽冥石或合适的地府方块
+                        if ((Main.tile[x, checkY].TileType == umbralStoneType || 
+                             Main.tile[x, checkY].TileType == ModContent.TileType<NetherSand>()) &&
+                            checkY > startY && !Main.tile[x, checkY - 1].HasTile) {
                             groundY = checkY;
                             break;
                         }
@@ -704,12 +740,13 @@ namespace AncientChineseMythology.Underworlds
                 
                 if (groundY == -1) continue;
                 
-                int height = rand.Next(5, 20);
-                int baseWidth = rand.Next(2, 5);
+                // 减小石柱高度
+                int height = rand.Next(3, 12);
+                int baseWidth = rand.Next(1, 3);
                 
                 // 生成向上的锥形柱子
                 for (int h = 0; h < height; h++) {
-                    int currentWidth = (int)(baseWidth * (1f - h / (float)height));
+                    int currentWidth = (int)(baseWidth * (1f - h / (float)height * 0.7f));
                     if (currentWidth < 1) currentWidth = 1;
                     
                     for (int w = -currentWidth; w <= currentWidth; w++) {
@@ -717,18 +754,20 @@ namespace AncientChineseMythology.Underworlds
                         int pj = groundY - h;
                         
                         if (pi >= startX && pi < endX && pj >= startY && pj < endY) {
-                            WorldGen.PlaceTile(pi, pj, umbralStoneType, forced: true, mute: true);
+                            if (!Main.tile[pi, pj].HasTile) {
+                                WorldGen.PlaceTile(pi, pj, umbralStoneType, forced: true, mute: true);
+                            }
                         }
                     }
                 }
             }
 
-            // 生成向下的石柱（钟乳石）
-            int pillarCountDown = rand.Next(30, 50);
+            // 减少向下石柱的数量
+            int pillarCountDown = rand.Next(15, 25);
             
             for (int n = 0; n < pillarCountDown; n++) {
-                int safeStartX = Math.Max(startX + 10, startX);
-                int safeEndX = Math.Max(endX - 10, safeStartX + 20);
+                int safeStartX = Math.Max(startX + 30, startX);
+                int safeEndX = Math.Max(endX - 30, safeStartX + 60);
                 
                 if (safeEndX <= safeStartX) continue;
                 
@@ -738,7 +777,9 @@ namespace AncientChineseMythology.Underworlds
                 int ceilingY = -1;
                 for (int checkY = startY; checkY < endY; checkY++) {
                     if (Main.tile[x, checkY].HasTile && Main.tileSolid[Main.tile[x, checkY].TileType]) {
-                        if (checkY < endY - 1 && !Main.tile[x, checkY + 1].HasTile) {
+                        // 确保是幽冥石
+                        if (Main.tile[x, checkY].TileType == umbralStoneType &&
+                            checkY < endY - 1 && !Main.tile[x, checkY + 1].HasTile) {
                             ceilingY = checkY;
                             break;
                         }
@@ -747,12 +788,13 @@ namespace AncientChineseMythology.Underworlds
                 
                 if (ceilingY == -1) continue;
                 
-                int height = rand.Next(5, 20);
-                int baseWidth = rand.Next(2, 5);
+                // 减小石柱高度
+                int height = rand.Next(3, 12);
+                int baseWidth = rand.Next(1, 3);
                 
                 // 生成向下的锥形柱子
                 for (int h = 0; h < height; h++) {
-                    int currentWidth = (int)(baseWidth * (1f - h / (float)height));
+                    int currentWidth = (int)(baseWidth * (1f - h / (float)height * 0.7f));
                     if (currentWidth < 1) currentWidth = 1;
                     
                     for (int w = -currentWidth; w <= currentWidth; w++) {
@@ -776,7 +818,7 @@ namespace AncientChineseMythology.Underworlds
             int netherSandType = ModContent.TileType<NetherSand>();
             int umbralStoneType = ModContent.TileType<UmbralStone>();
             
-            // 在幽冥石表面铺设灵魂沙
+            // 在幽冥石表面铺设灵魂沙 - 更稀疏的覆盖
             for (int i = startX; i < endX; i++) {
                 for (int j = startY; j < endY; j++) {
                     Tile tile = Main.tile[i, j];
@@ -784,15 +826,20 @@ namespace AncientChineseMythology.Underworlds
                     // 检查是否是幽冥石且上方是空气
                     if (tile.HasTile && tile.TileType == umbralStoneType) {
                         if (j > startY && !Main.tile[i, j - 1].HasTile) {
-                            // 在表面上方放置灵魂沙
-                            int sandDepth = rand.Next(1, 5); // 1-4层灵魂沙
+                            // 使用噪声决定是否在此处放置灵魂沙
+                            float sandNoise = GetPerlinNoise(i * 0.08f, j * 0.08f, rand);
                             
-                            for (int depth = 0; depth < sandDepth; depth++) {
-                                int sandJ = j - 1 - depth;
-                                if (sandJ >= startY && sandJ < endY && !Main.tile[i, sandJ].HasTile) {
-                                    WorldGen.PlaceTile(i, sandJ, netherSandType, forced: true, mute: true);
-                                } else {
-                                    break;
+                            if (sandNoise > 0.4f) { // 只在60%的表面放置灵魂沙
+                                // 在表面上方放置灵魂沙，深度较浅
+                                int sandDepth = rand.Next(1, 4); // 1-3层灵魂沙
+                                
+                                for (int depth = 0; depth < sandDepth; depth++) {
+                                    int sandJ = j - 1 - depth;
+                                    if (sandJ >= startY && sandJ < endY && !Main.tile[i, sandJ].HasTile) {
+                                        WorldGen.PlaceTile(i, sandJ, netherSandType, forced: true, mute: true);
+                                    } else {
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -800,12 +847,12 @@ namespace AncientChineseMythology.Underworlds
                 }
             }
 
-            // 添加一些灵魂沙堆和丘陵
-            int sandPileCount = rand.Next(20, 35);
+            // 减少灵魂沙堆的数量
+            int sandPileCount = rand.Next(10, 20);
             
             for (int n = 0; n < sandPileCount; n++) {
-                int safeStartX = Math.Max(startX + 20, startX);
-                int safeEndX = Math.Max(endX - 20, safeStartX + 40);
+                int safeStartX = Math.Max(startX + 50, startX);
+                int safeEndX = Math.Max(endX - 50, safeStartX + 100);
                 
                 if (safeEndX <= safeStartX) continue;
                 
@@ -820,17 +867,17 @@ namespace AncientChineseMythology.Underworlds
                     }
                 }
                 
-                if (groundY == -1 || groundY <= startY) continue;
+                if (groundY == -1 || groundY <= startY + 5) continue;
                 
-                // 生成沙堆
-                int pileWidth = rand.Next(5, 12);
-                int pileHeight = rand.Next(3, 8);
+                // 生成较小的沙堆
+                int pileWidth = rand.Next(4, 8);
+                int pileHeight = rand.Next(2, 5);
                 
                 for (int i = centerX - pileWidth; i <= centerX + pileWidth; i++) {
                     if (i < startX || i >= endX) continue;
                     
                     float distFromCenter = Math.Abs(i - centerX) / (float)pileWidth;
-                    int heightAtPos = (int)(pileHeight * (1f - distFromCenter));
+                    int heightAtPos = (int)(pileHeight * (1f - distFromCenter * distFromCenter));
                     
                     for (int h = 0; h < heightAtPos; h++) {
                         int pileJ = groundY - 1 - h;
@@ -843,18 +890,18 @@ namespace AncientChineseMythology.Underworlds
                 }
             }
 
-            // 在一些洞穴底部也放置灵魂沙
-            for (int i = startX; i < endX; i += 3) {
-                for (int j = startY + 10; j < endY - 10; j += 3) {
+            // 在洞穴底部放置少量灵魂沙 - 更稀疏
+            for (int i = startX; i < endX; i += 5) {
+                for (int j = startY + 20; j < endY - 20; j += 5) {
                     Tile tile = Main.tile[i, j];
                     
                     // 如果是空气且下方有固体方块
                     if (!tile.HasTile && j + 1 < endY) {
                         Tile below = Main.tile[i, j + 1];
                         if (below.HasTile && Main.tileSolid[below.TileType]) {
-                            // 有概率放置灵魂沙
-                            if (rand.NextBool(4)) {
-                                int sandLayers = rand.Next(1, 3);
+                            // 降低概率
+                            if (rand.NextBool(6)) { // 约16%的概率
+                                int sandLayers = rand.Next(1, 2);
                                 for (int layer = 0; layer < sandLayers; layer++) {
                                     int sandJ = j - layer;
                                     if (sandJ >= startY && !Main.tile[i, sandJ].HasTile) {
