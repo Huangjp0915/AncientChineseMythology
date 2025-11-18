@@ -533,6 +533,11 @@ Items: {
 		// DisplayName: Umbral Stone Item
 		// Tooltip: ""
 	}
+
+	NetherDragonSummonItem: {
+		// DisplayName: Nether Dragon Summon Item
+		// Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -591,6 +596,9 @@ NPCs: {
 	// JiangcenHammer.DisplayName: Jiangcen Hammer
 	// MaMian.DisplayName: Ma Mian
 	// NiuTou.DisplayName: Niu Tou
+	// NetherDragonBody.DisplayName: Nether Dragon Body
+	// NetherDragonHead.DisplayName: Nether Dragon Head
+	// NetherDragonTail.DisplayName: Nether Dragon Tail
 }
 
 Projectiles: {
@@ -666,6 +674,7 @@ Projectiles: {
 	// EyeProj.DisplayName: Eye Proj
 	// Proj_756_Adjust.DisplayName: Proj_756_ Adjust
 	// SpoawnProj.DisplayName: Spoawn Proj
+	// NetherFlameProjectile.DisplayName: Nether Flame Projectile
 }
 
 // HeavenBiome.DisplayName: Heaven

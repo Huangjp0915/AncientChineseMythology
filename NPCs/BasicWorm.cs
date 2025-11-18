@@ -132,8 +132,49 @@ namespace AncientChineseMythology.NPCs
         ///可以重写这个方法来改变位置算法
         ///</summary>
         public virtual void ChangePos() {
-            NPC.velocity = Vector2.Lerp(NPC.rotation.ToRotationVector2() * NPC.spriteDirection, FatherNPC.rotation.ToRotationVector2() * FatherNPC.spriteDirection, 0.5f);
-            NPC.Center = FatherNPC.Center - NPC.velocity * (NPC.width + FatherNPC.width) / 2;
+            // 计算到父节点的向量
+            Vector2 directionToParent = FatherNPC.Center - NPC.Center;
+            float distanceToParent = directionToParent.Length();
+            
+            // 目标距离（父节点宽度 + 自身宽度）/ 2
+            float targetDistance = (FatherNPC.width + NPC.width) / 2f;
+            
+            // 如果距离不为0，归一化方向向量
+            if (distanceToParent > 0.1f)
+            {
+                directionToParent.Normalize();
+                
+                // 计算目标位置
+                Vector2 targetPosition = FatherNPC.Center - directionToParent * targetDistance;
+                
+                // 平滑移动到目标位置（使用更强的插值来减少延迟）
+                float smoothFactor = 0.5f; // 可调整，越大越紧密跟随
+                NPC.Center = Vector2.Lerp(NPC.Center, targetPosition, smoothFactor);
+                
+                // 更新速度向量（指向移动方向）
+                NPC.velocity = targetPosition - NPC.Center;
+                
+                // 如果速度太小，使用父节点的方向
+                if (NPC.velocity.LengthSquared() < 0.01f)
+                {
+                    NPC.velocity = -directionToParent * 0.1f;
+                }
+            }
+            else
+            {
+                // 距离太近，直接使用父节点的速度方向
+                NPC.velocity = FatherNPC.velocity;
+            }
+            
+            // 限制速度，避免过快移动
+            float maxSpeed = 30f;
+            if (NPC.velocity.LengthSquared() > maxSpeed * maxSpeed)
+            {
+                NPC.velocity.Normalize();
+                NPC.velocity *= maxSpeed;
+            }
+            
+            // 取整坐标以减少抖动
             NPC.Center = new Vector2((int)NPC.Center.X, (int)NPC.Center.Y);
         }
         ///<summary>
