@@ -37,6 +37,18 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             SummonMax = 60;
         }
 
+        public override void BossHeadRotation(ref float rotation) {
+            rotation = NPC.rotation + MathHelper.PiOver2 * NPC.spriteDirection;
+        }
+
+        public override bool? DrawHealthBar(byte hbPosition, ref float scale, ref Vector2 position) {
+            scale = 1.5f;
+            if (NPCWormType != WormType.Head) {
+                return false;
+            }
+            return null;
+        }
+
         public override void AI() {
             base.AI();
             if (NPC.realLife >= 0 && Main.npc[NPC.realLife].active) {
@@ -50,8 +62,19 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                     Main.dust[dust].noGravity = true;
                     Main.dust[dust].velocity = NPC.velocity.RotatedByRandom(0.6f);
                 }
-            }
 
+                // 身体段在雾气中移动时产生少量粒子（降低频率）
+                if (Main.netMode != NetmodeID.Server && NetherDragonFogSystem.IsActive) {
+                    float fogDensity = NetherDragonFogSystem.GetFogDensityAt(NPC.Center);
+                    if (fogDensity > 0.7f && Main.rand.NextBool(8)) {
+                        Vector2 dustPos = NPC.Center + Main.rand.NextVector2Circular(30f, 30f);
+                        int fogDust = Dust.NewDust(dustPos, 1, 1, DustID.BlueTorch, 0, 0, 100, Color.Cyan, 0.6f);
+                        Main.dust[fogDust].noGravity = true;
+                        Main.dust[fogDust].velocity = Main.rand.NextVector2Circular(1f, 1f);
+                        Main.dust[fogDust].alpha = 200;
+                    }
+                }
+            }
 
             // 发光效果
             Lighting.AddLight(NPC.Center, 0.1f, 0.3f, 0.5f);
@@ -67,6 +90,14 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 
             // 蓝色幽冥色调
             Color netherColor = Color.Lerp(drawColor, new Color(100, 150, 255), 0.4f);
+
+            // 根据雾气密度轻微调整颜色
+            if (Main.netMode != NetmodeID.Server && NetherDragonFogSystem.IsActive) {
+                float fogDensity = NetherDragonFogSystem.GetFogDensityAt(NPC.Center);
+                if (fogDensity > 0.7f) {
+                    netherColor = Color.Lerp(netherColor, new Color(80, 120, 200), fogDensity * 0.15f);
+                }
+            }
 
             spriteBatch.Draw(tex, NPC.Center - screenPos, null, netherColor, NPC.rotation + MathHelper.PiOver2,
                 origin, NPC.scale, NPC.spriteDirection == -1 ? SpriteEffects.FlipVertically : SpriteEffects.None, 0);

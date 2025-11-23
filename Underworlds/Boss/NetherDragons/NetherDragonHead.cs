@@ -24,8 +24,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             Charge          // 冲刺
         }
 
-        private AIState CurrentState
-        {
+        private AIState CurrentState {
             get => (AIState)NPC.ai[0];
             set => NPC.ai[0] = (float)value;
         }
@@ -37,21 +36,21 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         // 状态计时器
         private int stateTimer = 0;
 
-        public override void ChangeSummonType()
-        {
+        // 上一帧位置（用于绘制时的雾气效果）
+        private Vector2 lastPosition = Vector2.Zero;
+
+        public override void ChangeSummonType() {
             SummonNPCType = ModContent.NPCType<NetherDragonBody>();
         }
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             NPCID.Sets.TrailingMode[Type] = 1;
             NPCID.Sets.TrailCacheLength[Type] = 10;
             NPCID.Sets.ShouldBeCountedAsBoss[Type] = true;
             NPCID.Sets.BossBestiaryPriority.Add(Type);
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             base.SetDefaults();
             NPC.boss = true;
             NPC.width = 50;
@@ -61,37 +60,47 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             NPC.defense = 40;
         }
 
-        public override void AI()
-        {
+        public override void OnSpawn(Terraria.DataStructures.IEntitySource source) {
+            base.OnSpawn(source);
+
+            // 激活雾气系统
+            if (Main.netMode != NetmodeID.Server) {
+                NetherDragonFogSystem.Activate(NPC.whoAmI);
+            }
+        }
+
+        public override void AI() {
             base.AI();
 
             if (!NPC.HasValidTarget)
                 NPC.TargetClosest(true);
 
             // 初始化
-            if (NPC.localAI[0] == 0f)
-            {
+            if (NPC.localAI[0] == 0f) {
                 CurrentState = AIState.CircleAround;
                 stateTimer = 300;
                 flameTimer = FlameInterval;
                 NPC.localAI[0] = 1f;
+                lastPosition = NPC.Center;
             }
 
             // 幽冥火喷射
-            if (--flameTimer <= 0)
-            {
+            if (--flameTimer <= 0) {
                 flameTimer = FlameInterval;
                 ShootNetherFlames();
+
+                // 喷火时创建涟漪（表示能量爆发）
+                if (Main.netMode != NetmodeID.Server) {
+                    NetherDragonFogSystem.CreateRipple(NPC.Center, 1.2f);
+                }
             }
 
             // AI状态机
             stateTimer--;
-            switch (CurrentState)
-            {
+            switch (CurrentState) {
                 case AIState.CircleAround:
                     CircleAroundMovement();
-                    if (stateTimer <= 0)
-                    {
+                    if (stateTimer <= 0) {
                         CurrentState = AIState.Hover;
                         stateTimer = 240;
                     }
@@ -99,8 +108,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 
                 case AIState.Hover:
                     HoverMovement();
-                    if (stateTimer <= 0)
-                    {
+                    if (stateTimer <= 0) {
                         CurrentState = AIState.Charge;
                         stateTimer = 60;
                     }
@@ -108,8 +116,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 
                 case AIState.Charge:
                     ChargeMovement();
-                    if (stateTimer <= 0)
-                    {
+                    if (stateTimer <= 0) {
                         CurrentState = AIState.CircleAround;
                         stateTimer = 300;
                     }
@@ -121,13 +128,14 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             NPC.spriteDirection = NPC.velocity.X >= 0 ? 1 : -1;
             if (NPC.spriteDirection == -1)
                 NPC.rotation += MathHelper.Pi;
+
+            lastPosition = NPC.Center;
         }
 
         /// <summary>
         /// 环绕玩家移动
         /// </summary>
-        private void CircleAroundMovement()
-        {
+        private void CircleAroundMovement() {
             const float radius = 400f;
             const float speed = 0.05f;
 
@@ -148,8 +156,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         /// <summary>
         /// 巡空移动
         /// </summary>
-        private void HoverMovement()
-        {
+        private void HoverMovement() {
             const float hoverHeight = 350f;
             Vector2 targetPos = Target.Center - new Vector2(0, hoverHeight);
 
@@ -165,16 +172,18 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         /// <summary>
         /// 冲刺攻击
         /// </summary>
-        private void ChargeMovement()
-        {
-            if (stateTimer == 60)
-            {
+        private void ChargeMovement() {
+            if (stateTimer == 60) {
                 // 冲刺开始，计算方向
                 Vector2 toPlayer = (Target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
                 NPC.velocity = toPlayer * 18f;
+
+                // 冲刺开始时创建冲击涟漪（表示蓄力爆发）
+                if (Main.netMode != NetmodeID.Server) {
+                    NetherDragonFogSystem.CreateRipple(NPC.Center, 1.8f);
+                }
             }
-            else if (stateTimer < 30)
-            {
+            else if (stateTimer < 30) {
                 // 减速
                 NPC.velocity *= 0.95f;
             }
@@ -183,8 +192,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         /// <summary>
         /// 喷射幽冥火
         /// </summary>
-        private void ShootNetherFlames()
-        {
+        private void ShootNetherFlames() {
             if (!NPC.HasValidTarget)
                 return;
 
@@ -197,8 +205,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             int count = 23;
             Vector2 toPlayer = (Target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
 
-            for (int i = 0; i < count; i++)
-            {
+            for (int i = 0; i < count; i++) {
                 float angleOffset = MathHelper.ToRadians(Main.rand.NextFloat(-5f, 5f));
                 Vector2 direction = toPlayer.RotatedBy(angleOffset);
                 float speed = 10f + Main.rand.NextFloat(-3f, 3f);
@@ -216,18 +223,43 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             SoundEngine.PlaySound(SoundID.Item20, NPC.Center);
         }
 
-        public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
-        {
+        public override void OnKill() {
+            base.OnKill();
+
+            // 死亡时停用雾气系统，创建爆炸涟漪
+            if (Main.netMode != NetmodeID.Server) {
+                // 死亡大爆炸涟漪
+                for (int i = 0; i < 3; i++) {
+                    float delay = i * 0.1f;
+                    Vector2 ripplePos = NPC.Center + Main.rand.NextVector2Circular(50f, 50f);
+                    NetherDragonFogSystem.CreateRipple(ripplePos, 2.5f - delay);
+                }
+
+                NetherDragonFogSystem.Deactivate();
+            }
+        }
+
+        public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
             Texture2D tex = TextureAssets.Npc[Type].Value;
             Vector2 origin = new Vector2(tex.Width / 2, tex.Height / 2);
+
+            // 根据雾气密度微调颜色（轻微效果）
+            float fogDensity = 0f;
+            if (Main.netMode != NetmodeID.Server && NetherDragonFogSystem.IsActive) {
+                fogDensity = NetherDragonFogSystem.GetFogDensityAt(NPC.Center);
+            }
+
             Color netherColor = Color.Lerp(drawColor, new Color(100, 150, 255), 0.5f);
+            // 在浓雾中时颜色略微加深
+            if (fogDensity > 0.6f) {
+                netherColor = Color.Lerp(netherColor, new Color(80, 120, 200), fogDensity * 0.2f);
+            }
 
             // 绘制拖尾
-            for (int i = 0; i < NPC.oldPos.Length; i++)
-            {
+            for (int i = 0; i < NPC.oldPos.Length; i++) {
                 Vector2 pos = NPC.oldPos[i] + NPC.Size / 2 - screenPos;
                 float fade = 0.3f * (1f - i / (float)NPC.oldPos.Length);
-                spriteBatch.Draw(tex, pos, null, netherColor * fade, NPC.rotation + MathHelper.PiOver2, origin, NPC.scale, 
+                spriteBatch.Draw(tex, pos, null, netherColor * fade, NPC.rotation + MathHelper.PiOver2, origin, NPC.scale,
                     NPC.spriteDirection == -1 ? SpriteEffects.FlipVertically : SpriteEffects.None, 0);
             }
 

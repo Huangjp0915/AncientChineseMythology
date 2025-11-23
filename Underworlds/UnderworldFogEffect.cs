@@ -1,3 +1,4 @@
+using AncientChineseMythology.Underworlds.Boss.NetherDragons;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -818,6 +819,9 @@ namespace AncientChineseMythology.Underworlds
         /// 检查玩家是否在地府区域
         /// </summary>
         public static bool IsInUnderworldZone(Player player) {
+            if (NPC.AnyNPCs(ModContent.NPCType<NetherDragonHead>())) {
+                return true;
+            }
             // 检查是否在地狱层或岩石层（地府范围）
             int tileX = (int)(player.Center.X / 16f);
             int tileY = (int)(player.Center.Y / 16f);
@@ -826,7 +830,7 @@ namespace AncientChineseMythology.Underworlds
             bool isRightSide = tileX > Main.maxTilesX / 2;
 
             // 检查是否在地府高度范围（岩石层到地图底部）
-            bool isInDepth = tileY > Main.rockLayer && tileY < Main.maxTilesY - 200;
+            bool isInDepth = tileY > Main.rockLayer && tileY < Main.maxTilesY;
 
             // 检查周围是否有幽冥石或灵魂沙
             bool hasUnderworldTiles = false;
