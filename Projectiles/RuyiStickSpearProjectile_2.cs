@@ -565,24 +565,6 @@ namespace AncientChineseMythology.Projectiles
             }
 
         }
-        //屏幕震动效果的 ModPlayer
-        public class ScreenShakePlayer : ModPlayer
-        {
-            private int shakeTimer = 0;
-            private int shakeIntensity = 0;
-
-            public override void ModifyScreenPosition() {
-                if (shakeTimer > 0) {
-                    shakeTimer--;
-                    Main.screenPosition += new Vector2(Main.rand.Next(-shakeIntensity, shakeIntensity + 1), Main.rand.Next(-shakeIntensity, shakeIntensity + 1));
-                }
-            }
-
-            public void ShakeScreen(int intensity, int duration) {
-                shakeIntensity = intensity;
-                shakeTimer = duration;
-            }
-        }
     }
 }
 

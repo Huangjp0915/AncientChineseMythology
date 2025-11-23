@@ -235,11 +235,12 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         /// </summary>
         private void PortalTeleportAttack() {
             if (stateTimer == 180) {
-                // 创建入口传送门
+                // 创建入口传送门在Boss面前
+                Vector2 portalOffset = NPC.velocity.SafeNormalize(Vector2.UnitY) * 150f;
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
                     entrancePortalIndex = Projectile.NewProjectile(
                         NPC.GetSource_FromAI(),
-                        NPC.Center,
+                        NPC.Center + portalOffset,
                         Vector2.Zero,
                         ModContent.ProjectileType<NetherPortal>(),
                         0,
@@ -248,17 +249,64 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                 }
                 
                 SoundEngine.PlaySound(SoundID.Item8, NPC.Center);
-                isTeleporting = false;
+                
+                // 开始减速准备进入传送门
+                NPC.velocity *= 0.8f;
+            }
+
+            if (stateTimer < 180 && stateTimer > 150) {
+                // 持续减速，产生蓄力感
+                NPC.velocity *= 0.92f;
+                
+                // 蓄力粒子特效 - 被传送门吸引
+                if (Main.rand.NextBool(2) && Main.netMode != NetmodeID.Server) {
+                    Vector2 dustPos = NPC.Center + Main.rand.NextVector2Circular(100f, 100f);
+                    Vector2 toPortal = Vector2.Zero;
+                    
+                    if (entrancePortalIndex >= 0 && entrancePortalIndex < Main.maxProjectiles) {
+                        Projectile portal = Main.projectile[entrancePortalIndex];
+                        if (portal.active) {
+                            toPortal = (portal.Center - dustPos).SafeNormalize(Vector2.Zero) * 3f;
+                        }
+                    }
+                    
+                    int dust = Dust.NewDust(dustPos, 1, 1, DustID.BlueTorch, 0, 0, 100, Color.Cyan, 1.8f);
+                    Main.dust[dust].noGravity = true;
+                    Main.dust[dust].velocity = toPortal;
+                }
             }
 
             if (stateTimer == 150) {
-                // Boss开始进入传送门（减速）
-                NPC.velocity *= 0.9f;
+                // 创建强烈的吸入音效
+                SoundEngine.PlaySound(SoundID.DD2_EtherianPortalOpen, NPC.Center);
+            }
+
+            if (stateTimer < 150 && stateTimer > 120) {
+                // 加速冲向传送门
+                if (entrancePortalIndex >= 0 && entrancePortalIndex < Main.maxProjectiles) {
+                    Projectile portal = Main.projectile[entrancePortalIndex];
+                    if (portal.active) {
+                        Vector2 toPortal = (portal.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
+                        NPC.velocity = Vector2.Lerp(NPC.velocity, toPortal * 15f, 0.15f);
+                    }
+                }
+                
+                // 身体段跟随加速
+                NPC current = NPC;
+                while (current.ai[2] > 0 && current.ai[2] < Main.maxNPCs) {
+                    NPC segment = Main.npc[(int)current.ai[2]];
+                    if (segment.active && segment.ModNPC is NetherDragon) {
+                        segment.velocity = Vector2.Lerp(segment.velocity, current.velocity, 0.1f);
+                    }
+                    current = segment;
+                }
             }
 
             if (stateTimer == 120) {
-                // 传送到玩家附近的随机位置
-                Vector2 teleportOffset = Main.rand.NextVector2Unit() * Main.rand.Next(400, 600);
+                // 确定出口位置 - 在玩家后方或侧方
+                Vector2 playerDirection = Target.velocity.SafeNormalize(Vector2.UnitX * Target.direction);
+                float angle = Main.rand.NextFloat(-MathHelper.PiOver2, MathHelper.PiOver2);
+                Vector2 teleportOffset = playerDirection.RotatedBy(angle + MathHelper.Pi) * Main.rand.Next(500, 700);
                 Vector2 exitPosition = Target.Center + teleportOffset;
 
                 // 创建出口传送门
@@ -273,54 +321,133 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                     );
                 }
 
-                // Boss瞬移
-                NPC.Center = exitPosition;
-                NPC.netUpdate = true;
-                isTeleporting = true;
+                // Boss和所有身体段一起传送
+                TeleportWholeBody(exitPosition);
 
-                // 传送特效
-                for (int i = 0; i < 40; i++) {
-                    Vector2 dustVel = Main.rand.NextVector2Circular(5f, 5f);
-                    int dust = Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.BlueTorch, 0, 0, 100, Color.Cyan, 2f);
+                // 震撼的传送音效
+                SoundEngine.PlaySound(SoundID.Item8 with { 
+                    Pitch = 0.3f, 
+                    Volume = 1.2f,
+                    MaxInstances = 3
+                }, exitPosition);
+
+                // 创建大范围涟漪
+                if (Main.netMode != NetmodeID.Server) {
+                    NetherDragonFogSystem.CreateRipple(exitPosition, 3f);
+                    
+                    // 屏幕震动效果（如果玩家在附近）
+                    if (Vector2.Distance(Target.Center, exitPosition) < 800f) {
+                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>()?.ShakeScreen(8f, 20);
+                    }
+                }
+            }
+
+            if (stateTimer == 119) {
+                // 传送完成后的爆发特效
+                for (int i = 0; i < 60; i++) {
+                    Vector2 velocity = Main.rand.NextVector2CircularEdge(8f, 8f);
+                    int dust = Dust.NewDust(NPC.Center, NPC.width, NPC.height, DustID.BlueTorch, 0, 0, 100, Color.Cyan, 2.5f);
                     Main.dust[dust].noGravity = true;
-                    Main.dust[dust].velocity = dustVel;
+                    Main.dust[dust].velocity = velocity;
                 }
 
-                SoundEngine.PlaySound(SoundID.Item8 with { Pitch = 0.3f }, NPC.Center);
-
-                // 创建涟漪
-                if (Main.netMode != NetmodeID.Server) {
-                    NetherDragonFogSystem.CreateRipple(NPC.Center, 2f);
+                // 沿着身体创建传送痕迹
+                NPC current = NPC;
+                int segmentCount = 0;
+                while (current.ai[2] > 0 && current.ai[2] < Main.maxNPCs && segmentCount < 20) {
+                    NPC segment = Main.npc[(int)current.ai[2]];
+                    if (segment.active && segment.ModNPC is NetherDragon) {
+                        for (int i = 0; i < 8; i++) {
+                            Vector2 velocity = Main.rand.NextVector2Circular(4f, 4f);
+                            int dust = Dust.NewDust(segment.Center, segment.width, segment.height, 
+                                DustID.BlueTorch, 0, 0, 100, Color.Cyan, 1.5f);
+                            Main.dust[dust].noGravity = true;
+                            Main.dust[dust].velocity = velocity;
+                        }
+                        current = segment;
+                        segmentCount++;
+                    }
+                    else break;
                 }
             }
 
             if (stateTimer == 110) {
-                // 从传送门冲出，直冲玩家
+                // 从传送门猛烈冲出
                 Vector2 chargeDirection = (Target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
-                NPC.velocity = chargeDirection * 22f;
+                NPC.velocity = chargeDirection * 25f;
                 
-                SoundEngine.PlaySound(SoundID.DD2_WyvernDiveDown, NPC.Center);
+                // 冲刺音效
+                SoundEngine.PlaySound(SoundID.DD2_WyvernDiveDown with { Pitch = -0.2f }, NPC.Center);
+                
+                // 冲刺涟漪
+                if (Main.netMode != NetmodeID.Server) {
+                    NetherDragonFogSystem.CreateRipple(NPC.Center, 2.5f);
+                }
             }
 
             if (stateTimer < 110 && stateTimer > 80) {
-                // 保持高速冲刺
+                // 保持高速追击，拖尾效果
                 NPC.velocity *= 0.98f;
+                
+                // 强化拖尾粒子
+                if (Main.rand.NextBool()) {
+                    int dust = Dust.NewDust(NPC.position, NPC.width, NPC.height, 
+                        DustID.BlueTorch, 0, 0, 100, Color.Cyan, 1.5f);
+                    Main.dust[dust].noGravity = true;
+                    Main.dust[dust].velocity = -NPC.velocity * 0.3f;
+                }
             }
 
             if (stateTimer == 80) {
-                // 减速
-                NPC.velocity *= 0.7f;
+                // 冲刺结束，急刹车
+                NPC.velocity *= 0.6f;
+                SoundEngine.PlaySound(SoundID.Item14, NPC.Center);
             }
 
-            if (stateTimer < 80) {
-                // 慢慢移向玩家上方
+            if (stateTimer < 80 && stateTimer > 40) {
+                // 平稳悬停
                 Vector2 hoverTarget = Target.Center - new Vector2(0, 350f);
-                NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverTarget - NPC.Center) * 0.05f, 0.1f);
+                Vector2 toTarget = hoverTarget - NPC.Center;
+                NPC.velocity = Vector2.Lerp(NPC.velocity, toTarget * 0.06f, 0.12f);
             }
 
             if (stateTimer == 40) {
                 // 关闭传送门
                 ClosePortals();
+            }
+        }
+
+        /// <summary>
+        /// 传送整个虫子身体
+        /// </summary>
+        private void TeleportWholeBody(Vector2 exitPosition) {
+            // 计算整个虫子的长度和方向
+            Vector2 bodyDirection = NPC.velocity.SafeNormalize(Vector2.UnitY);
+            
+            // 传送头部
+            Vector2 headOffset = NPC.Center - exitPosition;
+            NPC.Center = exitPosition;
+            NPC.netUpdate = true;
+
+            // 传送所有身体段，保持相对位置
+            NPC current = NPC;
+            int segmentIndex = 0;
+            const int maxSegments = 100; // 防止无限循环
+
+            while (current.ai[2] > 0 && current.ai[2] < Main.maxNPCs && segmentIndex < maxSegments) {
+                NPC segment = Main.npc[(int)current.ai[2]];
+                
+                if (!segment.active || segment.ModNPC is not NetherDragon) {
+                    break;
+                }
+
+                // 保持段之间的相对位置
+                Vector2 oldOffset = segment.Center - (current.Center + headOffset);
+                segment.Center = current.Center + oldOffset;
+                segment.netUpdate = true;
+
+                current = segment;
+                segmentIndex++;
             }
         }
 
