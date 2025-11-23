@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.GameContent;
 using Terraria.ID;
+using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 {
@@ -34,6 +35,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             NPC.knockBackResist = 0f;
             NPC.HitSound = SoundID.NPCHit1;
             NPC.DeathSound = SoundID.NPCDeath1;
+            Music = MusicLoader.GetMusicSlot("AncientChineseMythology/Sounds/Music/Underworld");
             SummonMax = 60;
         }
 

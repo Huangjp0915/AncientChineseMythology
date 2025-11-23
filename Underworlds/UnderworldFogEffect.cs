@@ -13,7 +13,7 @@ namespace AncientChineseMythology.Underworlds
     /// </summary>
     internal class UnderworldSceneEffect : ModSceneEffect
     {
-        public override int Music => -1;
+        public override int Music => MusicLoader.GetMusicSlot("AncientChineseMythology/Sounds/Music/Underworld");
         public override SceneEffectPriority Priority => SceneEffectPriority.BiomeMedium;
         public override bool IsSceneEffectActive(Player player) => UnderworldFogEffect.IsActive(player);
         public override void SpecialVisuals(Player player, bool isActive) {
