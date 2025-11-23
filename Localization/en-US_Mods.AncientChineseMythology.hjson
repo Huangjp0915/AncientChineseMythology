@@ -626,6 +626,8 @@ Projectiles: {
 	Proj_756_Adjust.DisplayName: Proj_756_ Adjust
 	SpoawnProj.DisplayName: Spoawn Proj
 	NetherFlameProjectile.DisplayName: Nether Flame Projectile
+	NetherLaserBeam.DisplayName: Nether Laser Beam
+	NetherPortal.DisplayName: Nether Portal
 }
 
 HeavenBiome.DisplayName: Heaven

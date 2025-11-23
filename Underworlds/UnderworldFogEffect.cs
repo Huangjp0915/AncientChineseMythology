@@ -14,7 +14,7 @@ namespace AncientChineseMythology.Underworlds
     internal class UnderworldSceneEffect : ModSceneEffect
     {
         public override int Music => MusicLoader.GetMusicSlot("AncientChineseMythology/Sounds/Music/Underworld");
-        public override SceneEffectPriority Priority => SceneEffectPriority.BiomeMedium;
+        public override SceneEffectPriority Priority => SceneEffectPriority.BossLow;
         public override bool IsSceneEffectActive(Player player) => UnderworldFogEffect.IsActive(player);
         public override void SpecialVisuals(Player player, bool isActive) {
             if (player.Alives()) {

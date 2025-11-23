@@ -21,7 +21,9 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         {
             CircleAround,   // 环绕玩家
             Hover,          // 巡空
-            Charge          // 冲刺
+            Charge,         // 冲刺
+            PortalTeleport, // 幽冥传送
+            LaserSweep      // 激光横扫
         }
 
         private AIState CurrentState {
@@ -38,6 +40,15 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 
         // 上一帧位置（用于绘制时的雾气效果）
         private Vector2 lastPosition = Vector2.Zero;
+
+        // 传送门相关
+        private int entrancePortalIndex = -1;
+        private int exitPortalIndex = -1;
+        private bool isTeleporting = false;
+
+        // 激光相关
+        private int[] laserProjectiles = new int[2]; // 存储激光弹幕索引
+        private float laserSweepAngle = 0f;
 
         public override void ChangeSummonType() {
             SummonNPCType = ModContent.NPCType<NetherDragonBody>();
@@ -101,8 +112,22 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                 case AIState.CircleAround:
                     CircleAroundMovement();
                     if (stateTimer <= 0) {
-                        CurrentState = AIState.Hover;
-                        stateTimer = 240;
+                        // 随机选择下一个状态
+                        int nextState = Main.rand.Next(3);
+                        switch (nextState) {
+                            case 0:
+                                CurrentState = AIState.Hover;
+                                stateTimer = 240;
+                                break;
+                            case 1:
+                                CurrentState = AIState.PortalTeleport;
+                                stateTimer = 180;
+                                break;
+                            case 2:
+                                CurrentState = AIState.LaserSweep;
+                                stateTimer = 300;
+                                break;
+                        }
                     }
                     break;
 
@@ -119,6 +144,22 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                     if (stateTimer <= 0) {
                         CurrentState = AIState.CircleAround;
                         stateTimer = 300;
+                    }
+                    break;
+
+                case AIState.PortalTeleport:
+                    PortalTeleportAttack();
+                    if (stateTimer <= 0) {
+                        CurrentState = AIState.CircleAround;
+                        stateTimer = 240;
+                    }
+                    break;
+
+                case AIState.LaserSweep:
+                    LaserSweepAttack();
+                    if (stateTimer <= 0) {
+                        CurrentState = AIState.CircleAround;
+                        stateTimer = 280;
                     }
                     break;
             }
@@ -190,6 +231,208 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         }
 
         /// <summary>
+        /// 幽冥传送
+        /// </summary>
+        private void PortalTeleportAttack() {
+            if (stateTimer == 180) {
+                // 创建入口传送门
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    entrancePortalIndex = Projectile.NewProjectile(
+                        NPC.GetSource_FromAI(),
+                        NPC.Center,
+                        Vector2.Zero,
+                        ModContent.ProjectileType<NetherPortal>(),
+                        0,
+                        0f
+                    );
+                }
+                
+                SoundEngine.PlaySound(SoundID.Item8, NPC.Center);
+                isTeleporting = false;
+            }
+
+            if (stateTimer == 150) {
+                // Boss开始进入传送门（减速）
+                NPC.velocity *= 0.9f;
+            }
+
+            if (stateTimer == 120) {
+                // 传送到玩家附近的随机位置
+                Vector2 teleportOffset = Main.rand.NextVector2Unit() * Main.rand.Next(400, 600);
+                Vector2 exitPosition = Target.Center + teleportOffset;
+
+                // 创建出口传送门
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    exitPortalIndex = Projectile.NewProjectile(
+                        NPC.GetSource_FromAI(),
+                        exitPosition,
+                        Vector2.Zero,
+                        ModContent.ProjectileType<NetherPortal>(),
+                        0,
+                        0f
+                    );
+                }
+
+                // Boss瞬移
+                NPC.Center = exitPosition;
+                NPC.netUpdate = true;
+                isTeleporting = true;
+
+                // 传送特效
+                for (int i = 0; i < 40; i++) {
+                    Vector2 dustVel = Main.rand.NextVector2Circular(5f, 5f);
+                    int dust = Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.BlueTorch, 0, 0, 100, Color.Cyan, 2f);
+                    Main.dust[dust].noGravity = true;
+                    Main.dust[dust].velocity = dustVel;
+                }
+
+                SoundEngine.PlaySound(SoundID.Item8 with { Pitch = 0.3f }, NPC.Center);
+
+                // 创建涟漪
+                if (Main.netMode != NetmodeID.Server) {
+                    NetherDragonFogSystem.CreateRipple(NPC.Center, 2f);
+                }
+            }
+
+            if (stateTimer == 110) {
+                // 从传送门冲出，直冲玩家
+                Vector2 chargeDirection = (Target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
+                NPC.velocity = chargeDirection * 22f;
+                
+                SoundEngine.PlaySound(SoundID.DD2_WyvernDiveDown, NPC.Center);
+            }
+
+            if (stateTimer < 110 && stateTimer > 80) {
+                // 保持高速冲刺
+                NPC.velocity *= 0.98f;
+            }
+
+            if (stateTimer == 80) {
+                // 减速
+                NPC.velocity *= 0.7f;
+            }
+
+            if (stateTimer < 80) {
+                // 慢慢移向玩家上方
+                Vector2 hoverTarget = Target.Center - new Vector2(0, 350f);
+                NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverTarget - NPC.Center) * 0.05f, 0.1f);
+            }
+
+            if (stateTimer == 40) {
+                // 关闭传送门
+                ClosePortals();
+            }
+        }
+
+        /// <summary>
+        /// 激光横扫攻击 - 上下游动发射横向激光
+        /// </summary>
+        private void LaserSweepAttack() {
+            if (stateTimer == 300) {
+                // 初始化激光扫射
+                laserSweepAngle = 0f;
+                SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.4f }, NPC.Center);
+            }
+
+            // Boss做上下波浪移动
+            float waveFrequency = 0.03f;
+            float waveAmplitude = 3f;
+            
+            if (stateTimer > 200) {
+                // 移动到玩家侧面
+                Vector2 targetPos = Target.Center + new Vector2(
+                    Target.direction == 1 ? -500f : 500f,
+                    MathF.Sin((300 - stateTimer) * waveFrequency) * 200f
+                );
+
+                Vector2 toTarget = targetPos - NPC.Center;
+                NPC.velocity = Vector2.Lerp(NPC.velocity, toTarget * 0.08f, 0.1f);
+            }
+            else {
+                // 波浪游动
+                float targetY = Target.Center.Y + MathF.Sin((300 - stateTimer) * waveFrequency * 2f) * 300f;
+                Vector2 waveTarget = new Vector2(NPC.Center.X, targetY);
+                
+                NPC.velocity.Y = (waveTarget.Y - NPC.Center.Y) * 0.08f;
+                NPC.velocity.X *= 0.95f;
+
+                // 发射激光
+                if ((stateTimer - 200) % 40 == 0 && stateTimer < 200) {
+                    ShootLaser();
+                }
+            }
+
+            // 旋转朝向
+            if (NPC.velocity.Length() > 1f) {
+                NPC.rotation = NPC.velocity.ToRotation();
+                NPC.spriteDirection = NPC.velocity.X >= 0 ? 1 : -1;
+                if (NPC.spriteDirection == -1)
+                    NPC.rotation += MathHelper.Pi;
+            }
+        }
+
+        /// <summary>
+        /// 发射横向激光束
+        /// </summary>
+        private void ShootLaser() {
+            if (!NPC.HasValidTarget || Main.netMode == NetmodeID.MultiplayerClient)
+                return;
+
+            int damage = 50;
+            if (Main.expertMode)
+                damage = 75;
+            if (Main.masterMode)
+                damage = 95;
+
+            // 向左右两侧发射激光
+            float baseAngle = MathF.Sign(Target.Center.X - NPC.Center.X) > 0 ? 0f : MathHelper.Pi;
+            
+            for (int i = 0; i < 2; i++) {
+                float angleOffset = (i == 0 ? -0.2f : 0.2f);
+                float laserAngle = baseAngle + angleOffset;
+
+                Projectile.NewProjectile(
+                    NPC.GetSource_FromAI(),
+                    NPC.Center,
+                    Vector2.Zero,
+                    ModContent.ProjectileType<NetherLaserBeam>(),
+                    damage,
+                    0f,
+                    ai0: laserAngle
+                );
+            }
+
+            SoundEngine.PlaySound(SoundID.Item33, NPC.Center);
+
+            // 发射时创建涟漪
+            if (Main.netMode != NetmodeID.Server) {
+                NetherDragonFogSystem.CreateRipple(NPC.Center, 1f);
+            }
+        }
+
+        /// <summary>
+        /// 关闭传送门
+        /// </summary>
+        private void ClosePortals() {
+            if (entrancePortalIndex >= 0 && entrancePortalIndex < Main.maxProjectiles) {
+                Projectile portal = Main.projectile[entrancePortalIndex];
+                if (portal.active && portal.type == ModContent.ProjectileType<NetherPortal>()) {
+                    (portal.ModProjectile as NetherPortal)?.StartClosing();
+                }
+            }
+
+            if (exitPortalIndex >= 0 && exitPortalIndex < Main.maxProjectiles) {
+                Projectile portal = Main.projectile[exitPortalIndex];
+                if (portal.active && portal.type == ModContent.ProjectileType<NetherPortal>()) {
+                    (portal.ModProjectile as NetherPortal)?.StartClosing();
+                }
+            }
+
+            entrancePortalIndex = -1;
+            exitPortalIndex = -1;
+        }
+
+        /// <summary>
         /// 喷射幽冥火
         /// </summary>
         private void ShootNetherFlames() {
@@ -225,6 +468,9 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 
         public override void OnKill() {
             base.OnKill();
+            
+            // 关闭所有传送门
+            ClosePortals();
 
             // 死亡时停用雾气系统，创建爆炸涟漪
             if (Main.netMode != NetmodeID.Server) {
@@ -234,7 +480,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                     Vector2 ripplePos = NPC.Center + Main.rand.NextVector2Circular(50f, 50f);
                     NetherDragonFogSystem.CreateRipple(ripplePos, 2.5f - delay);
                 }
-
+                
                 NetherDragonFogSystem.Deactivate();
             }
         }
