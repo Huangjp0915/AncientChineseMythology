@@ -46,10 +46,6 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         private int exitPortalIndex = -1;
         private bool isTeleporting = false;
 
-        // 激光相关
-        private int[] laserProjectiles = new int[2]; // 存储激光弹幕索引
-        private float laserSweepAngle = 0f;
-
         public override void ChangeSummonType() {
             SummonNPCType = ModContent.NPCType<NetherDragonBody>();
         }
@@ -456,15 +452,12 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         /// </summary>
         private void LaserSweepAttack() {
             if (stateTimer == 300) {
-                // 初始化激光扫射
-                laserSweepAngle = 0f;
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.4f }, NPC.Center);
             }
 
             // Boss做上下波浪移动
             float waveFrequency = 0.03f;
-            float waveAmplitude = 3f;
-            
+
             if (stateTimer > 200) {
                 // 移动到玩家侧面
                 Vector2 targetPos = Target.Center + new Vector2(
