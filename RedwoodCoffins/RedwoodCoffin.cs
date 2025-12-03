@@ -8,7 +8,7 @@ using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ObjectData;
 
-namespace AncientChineseMythology.Items.Placable
+namespace AncientChineseMythology.RedwoodCoffins
 {
     internal class RedwoodCoffin : ModItem
     {
