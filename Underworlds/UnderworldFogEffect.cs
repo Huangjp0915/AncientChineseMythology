@@ -1,3 +1,4 @@
+using AncientChineseMythology.Underworlds.Boss.Corpseses;
 using AncientChineseMythology.Underworlds.Boss.NetherDragons;
 using Microsoft.Xna.Framework.Graphics;
 using System;
@@ -819,7 +820,7 @@ namespace AncientChineseMythology.Underworlds
         /// 检查玩家是否在地府区域
         /// </summary>
         public static bool IsInUnderworldZone(Player player) {
-            if (NPC.AnyNPCs(ModContent.NPCType<NetherDragonHead>())) {
+            if (NPC.AnyNPCs(ModContent.NPCType<NetherDragonHead>()) || NPC.AnyNPCs(ModContent.NPCType<Corpses>())) {
                 return true;
             }
             // 检查是否在地狱层或岩石层（地府范围）

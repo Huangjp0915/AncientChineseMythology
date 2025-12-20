@@ -292,10 +292,10 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
 
             NPC.velocity = Vector2.Lerp(NPC.velocity, desiredVel, 0.08f);
 
-            // 指挥手臂进行基础攻击
-            if (PhaseTimer % 120 == 60 && handsInitialized)
+            // 近战攻击 - 更频繁
+            if (PhaseTimer % 80 == 20 && handsInitialized)
             {
-                // 交替让左右手攻击
+                // 交替让左右手挥砍
                 if (Main.rand.NextBool())
                 {
                     CommandHandAttack(leftHand, target, CorpsesHand.HandState.Slashing);
@@ -306,11 +306,59 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
                 }
             }
 
-            // 偶尔双手齐攻
-            if (PhaseTimer % 180 == 90 && handsInitialized)
+            // 近战突刺攻击
+            if (PhaseTimer % 80 == 50 && handsInitialized)
             {
-                CommandHandAttack(leftHand, target, CorpsesHand.HandState.Reaching);
-                CommandHandAttack(rightHand, target, CorpsesHand.HandState.Reaching);
+                CorpsesHand attackHand = Main.rand.NextBool() ? leftHand : rightHand;
+                if (attackHand != null && attackHand.NPC.active)
+                {
+                    CommandHandAttack(attackHand, target, CorpsesHand.HandState.Reaching);
+                }
+            }
+
+            // 骨头泼洒攻击 - 降低频率
+            if (PhaseTimer % 200 == 100 && handsInitialized)
+            {
+                CorpsesHand tossHand = Main.rand.NextBool() ? leftHand : rightHand;
+                if (tossHand != null && tossHand.NPC.active)
+                {
+                    CommandHandAttack(tossHand, target, CorpsesHand.HandState.BoneToss);
+                }
+            }
+
+            // 发射追踪暗影球 - 降低频率
+            if (PhaseTimer % 120 == 60 && Main.netMode != NetmodeID.MultiplayerClient)
+            {
+                Vector2 spawnPos = NPC.Center + Main.rand.NextVector2Circular(50, 50);
+                Vector2 velocity = (target.Center - spawnPos).SafeNormalize(Vector2.Zero) * 6f;
+                Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, velocity,
+                    ModContent.ProjectileType<CorpsesShadowOrb>(), GetBossDamage(0.7f), 2f);
+            }
+
+            // 双手拍掌攻击 - 降低频率，作为特殊技能
+            if (PhaseTimer % 300 == 150 && handsInitialized && leftHand != null && rightHand != null)
+            {
+                // 确保两只手都处于空闲状态才发起拍掌
+                if (leftHand.IsIdle() && rightHand.IsIdle())
+                {
+                    Vector2 clapCenter = target.Center + target.velocity * 20f;
+                    // 增加蓄力距离 (80 -> 180)
+                    Vector2 leftTarget = clapCenter + new Vector2(-180, 0);
+                    Vector2 rightTarget = clapCenter + new Vector2(180, 0);
+                    
+                    CommandHandAttack(leftHand, target, CorpsesHand.HandState.ClapCharging, leftTarget);
+                    CommandHandAttack(rightHand, target, CorpsesHand.HandState.ClapCharging, rightTarget);
+                }
+            }
+
+            // 抓取攻击
+            if (PhaseTimer % 150 == 75 && handsInitialized && distance < 300f)
+            {
+                CorpsesHand grabHand = Main.rand.NextBool() ? leftHand : rightHand;
+                if (grabHand != null && grabHand.NPC.active)
+                {
+                    CommandHandAttack(grabHand, target, CorpsesHand.HandState.Grabbing);
+                }
             }
 
             // 生命值低于70%时转换阶段
@@ -325,22 +373,29 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
         }
 
         // 指挥手臂攻击的辅助方法
-        private void CommandHandAttack(CorpsesHand hand, Player target, CorpsesHand.HandState attackType)
+        private void CommandHandAttack(CorpsesHand hand, Player target, CorpsesHand.HandState attackType, Vector2? customTarget = null)
         {
             if (hand == null || hand.NPC == null || !hand.NPC.active)
                 return;
 
             // 调用手臂的公开攻击触发方法
-            Vector2 targetPos = target.Center;
+            Vector2 targetPos = customTarget ?? target.Center;
             
             // 根据攻击类型预测玩家位置
-            if (attackType == CorpsesHand.HandState.Slashing)
+            if (!customTarget.HasValue)
             {
-                targetPos = target.Center + target.velocity * 10f;
-            }
-            else if (attackType == CorpsesHand.HandState.Reaching)
-            {
-                targetPos = target.Center + target.velocity * 15f;
+                if (attackType == CorpsesHand.HandState.Slashing)
+                {
+                    targetPos = target.Center + target.velocity * 10f;
+                }
+                else if (attackType == CorpsesHand.HandState.Reaching)
+                {
+                    targetPos = target.Center + target.velocity * 15f;
+                }
+                else if (attackType == CorpsesHand.HandState.BoneToss)
+                {
+                    targetPos = target.Center + target.velocity * 12f;
+                }
             }
 
             hand.TriggerAttack(attackType, targetPos);
@@ -354,42 +409,81 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
 
         private void RunSpiralHunt(Player target)
         {
-            // 螺旋环绕玩家
-            spiralSpeed = MathHelper.Lerp(spiralSpeed, 0.06f, 0.02f);
-            spiralAngle += spiralSpeed;
-
-            float radius = 600 + MathF.Sin(PhaseTimer * 0.03f) * 150f;
-            Vector2 orbitPos = target.Center + new Vector2(MathF.Cos(spiralAngle), MathF.Sin(spiralAngle)) * radius;
-            
-            NPC.Center += (orbitPos - NPC.Center) * 0.12f;
+            // 改为固定在玩家上方悬停，不再环绕
+            Vector2 hoverPos = target.Center + new Vector2(0, -400 + MathF.Sin(PhaseTimer * 0.05f) * 50f);
+            NPC.Center += (hoverPos - NPC.Center) * 0.1f;
             NPC.velocity *= 0.9f;
 
-            // 在环绕时让手臂进行连续攻击
-            if (PhaseTimer % 80 == 0 && handsInitialized)
+            // 近战挥砍 - 更频繁
+            if (PhaseTimer % 70 == 10 && handsInitialized)
             {
-                // 左手从外侧攻击
                 if (leftHand != null && leftHand.NPC.active)
                 {
                     CommandHandAttack(leftHand, target, CorpsesHand.HandState.Slashing);
                 }
             }
 
-            if (PhaseTimer % 80 == 40 && handsInitialized)
+            if (PhaseTimer % 70 == 40 && handsInitialized)
             {
-                // 右手从另一侧攻击
                 if (rightHand != null && rightHand.NPC.active)
                 {
                     CommandHandAttack(rightHand, target, CorpsesHand.HandState.Slashing);
                 }
             }
 
-            // 偶尔发动抓取攻击
-            if (PhaseTimer % 200 == 100 && handsInitialized && Main.rand.NextBool())
+            // 骨头泼洒 - 偶尔使用
+            if (PhaseTimer % 140 == 70 && handsInitialized)
             {
-                CorpsesHand targetHand = Main.rand.NextBool() ? leftHand : rightHand;
-                if (targetHand != null && targetHand.NPC.active)
+                CorpsesHand tossHand = Main.rand.NextBool() ? leftHand : rightHand;
+                if (tossHand != null && tossHand.NPC.active)
                 {
-                    CommandHandAttack(targetHand, target, CorpsesHand.HandState.Grabbing);
+                    CommandHandAttack(tossHand, target, CorpsesHand.HandState.BoneToss);
+                }
+            }
+
+            // 发射暗影球弹幕 - 降低数量和频率
+            if (PhaseTimer % 100 == 50 && Main.netMode != NetmodeID.MultiplayerClient)
+            {
+                for (int i = 0; i < 2; i++)
+                {
+                    float angle = MathHelper.Pi * i + PhaseTimer * 0.05f;
+                    Vector2 spawnPos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 80f;
+                    Vector2 velocity = (target.Center - spawnPos).SafeNormalize(Vector2.Zero) * 7f;
+                    
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, velocity,
+                        ModContent.ProjectileType<CorpsesShadowOrb>(), GetBossDamage(0.75f), 2f);
+                }
+            }
+
+            // 拍掌攻击 - 作为大招使用
+            if (PhaseTimer % 250 == 125 && handsInitialized && leftHand != null && rightHand != null)
+            {
+                // 确保两只手都处于空闲状态才发起拍掌
+                if (leftHand.IsIdle() && rightHand.IsIdle())
+                {
+                    Vector2 clapCenter = target.Center + target.velocity * 25f;
+                    // 增加蓄力距离，使拍掌动作更大幅度 (80 -> 180)
+                    Vector2 leftTarget = clapCenter + new Vector2(-180, 0);
+                    Vector2 rightTarget = clapCenter + new Vector2(180, 0);
+                    
+                    CommandHandAttack(leftHand, target, CorpsesHand.HandState.ClapCharging, leftTarget);
+                    CommandHandAttack(rightHand, target, CorpsesHand.HandState.ClapCharging, rightTarget);
+                }
+            }
+
+            // 传送拍掌 - 新增的强力攻击
+            if (PhaseTimer % 320 == 280 && handsInitialized && leftHand != null && rightHand != null)
+            {
+                if (leftHand.IsIdle() && rightHand.IsIdle())
+                {
+                    // 预测玩家位置
+                    Vector2 predictPos = target.Center + target.velocity * 30f;
+                    // 传送到玩家两侧更远的位置
+                    Vector2 leftDest = predictPos + new Vector2(-250, -50);
+                    Vector2 rightDest = predictPos + new Vector2(250, -50);
+                    
+                    CommandHandAttack(leftHand, target, CorpsesHand.HandState.TeleportClap, leftDest);
+                    CommandHandAttack(rightHand, target, CorpsesHand.HandState.TeleportClap, rightDest);
                 }
             }
 
@@ -563,7 +657,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
                 scale *= MathHelper.Lerp(0.7f, 1f, introAppear);
             }
 
-            Color mainColor = Color.White;
+            Color mainColor = drawColor;
             if (Phase == BossPhase.FinalRage)
             {
                 mainColor = Color.Lerp(Color.White, Color.Red, 0.3f + 0.2f * MathF.Sin(Main.GlobalTimeWrappedHourly * 8f));
