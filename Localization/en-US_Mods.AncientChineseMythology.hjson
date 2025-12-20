@@ -550,6 +550,8 @@ NPCs: {
 	NetherDragonBody.DisplayName: Nether Dragon Body
 	NetherDragonHead.DisplayName: Nether Dragon Head
 	NetherDragonTail.DisplayName: Nether Dragon Tail
+	Corpses.DisplayName: Corpses
+	CorpsesHand.DisplayName: Corpses Hand
 }
 
 Projectiles: {
