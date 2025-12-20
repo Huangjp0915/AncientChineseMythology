@@ -553,6 +553,11 @@ Items: {
 		// DisplayName: Corpseses Repeater
 		// Tooltip: ""
 	}
+
+	CorpsesesStaff: {
+		// DisplayName: Corpseses Staff
+		// Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -702,6 +707,7 @@ Projectiles: {
 	// CorpsesesBookWave.DisplayName: Corpseses Book Wave
 	// CorpsesesGhostHand.DisplayName: Corpseses Ghost Hand
 	// CorpsesesLanceProj.DisplayName: Corpseses Lance Proj
+	// CorpsesesHandMinion.DisplayName: Corpseses Hand Minion
 }
 
 // HeavenBiome.DisplayName: Heaven
@@ -869,6 +875,11 @@ Buffs: {
 	EyeProj_Buff_1: {
 		// DisplayName: Eye Proj_ Buff_1
 		// Description: Mods.AncientChineseMythology.Buffs.EyeProj_Buff_1.Description
+	}
+
+	CorpsesesHandMinionBuff: {
+		// DisplayName: Corpseses Hand Minion Buff
+		// Description: Mods.AncientChineseMythology.Buffs.CorpsesesHandMinionBuff.Description
 	}
 }
 

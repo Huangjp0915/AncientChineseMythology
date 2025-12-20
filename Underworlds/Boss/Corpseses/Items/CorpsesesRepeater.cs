@@ -7,7 +7,7 @@ using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Underworlds.Items
+namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
 {
     /// <summary>
     /// 枉死千骸连弩 - 继承Boss的骨头泼洒攻击
@@ -16,7 +16,7 @@ namespace AncientChineseMythology.Underworlds.Items
     {
         public override void SetDefaults()
         {
-            Item.damage = 88;
+            Item.damage = 4288;
             Item.DamageType = DamageClass.Ranged;
             Item.width = 64;
             Item.height = 32;
@@ -185,7 +185,7 @@ namespace AncientChineseMythology.Underworlds.Items
             // 绘制拖尾
             for (int i = 0; i < Projectile.oldPos.Length; i++)
             {
-                float progress = 1f - (i / (float)Projectile.oldPos.Length);
+                float progress = 1f - i / (float)Projectile.oldPos.Length;
                 Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
                 Color trailColor = new Color(150, 50, 200) * progress * 0.4f;
                 

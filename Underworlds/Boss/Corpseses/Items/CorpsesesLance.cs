@@ -8,7 +8,7 @@ using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Underworlds.Items
+namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
 {
     /// <summary>
     /// 枉死千骸之枪 - 继承Boss的IK手臂追踪特性
@@ -17,12 +17,12 @@ namespace AncientChineseMythology.Underworlds.Items
     {
         public override void SetDefaults()
         {
-            Item.damage = 165;
+            Item.damage = 8165;
             Item.DamageType = DamageClass.Melee;
             Item.width = 72;
             Item.height = 72;
-            Item.useTime = 20;
-            Item.useAnimation = 20;
+            Item.useTime = 10;
+            Item.useAnimation = 10;
             Item.useStyle = ItemUseStyleID.Shoot;
             Item.knockBack = 7f;
             Item.value = Item.sellPrice(gold: 15);
@@ -53,7 +53,7 @@ namespace AncientChineseMythology.Underworlds.Items
     /// </summary>
     public class CorpsesesLanceProj : ModProjectile
     {
-        public override string Texture => "AncientChineseMythology/Underworlds/Items/CorpsesesLance";
+        public override string Texture => "AncientChineseMythology/Underworlds/Boss/Corpseses/Items/CorpsesesLance";
         private const float MaxReach = 400f; // 最大伸展距离
         private const float RetractSpeed = 25f; // 回收速度
         
@@ -231,7 +231,7 @@ namespace AncientChineseMythology.Underworlds.Items
             // 绘制拖尾
             for (int i = 0; i < Projectile.oldPos.Length; i++)
             {
-                float progress = 1f - (i / (float)Projectile.oldPos.Length);
+                float progress = 1f - i / (float)Projectile.oldPos.Length;
                 Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
                 Color trailColor = new Color(150, 50, 200) * progress * 0.5f;
                 
@@ -256,15 +256,45 @@ namespace AncientChineseMythology.Underworlds.Items
             float rotation = diff.ToRotation();
             float length = diff.Length();
 
-            Texture2D pixel = TextureAssets.MagicPixel.Value;
-            Rectangle rect = new Rectangle(0, 0, 1, 1);
-            Vector2 origin = new Vector2(0, 0.5f);
-            Vector2 scale = new Vector2(length, 6f);
-
-            Color lineColor = new Color(100, 50, 150, 100);
-            Main.EntitySpriteDraw(pixel, start - Main.screenPosition, rect, 
-                lineColor, rotation, origin, scale, SpriteEffects.None);
+            // 使用骨头纹理作为连接
+            Texture2D boneTexture = ModContent.Request<Texture2D>("Terraria/Images/Projectile_" + ProjectileID.BoneArrow).Value;
+            
+            // 计算需要多少个骨头来填充这段距离
+            float boneLength = 16f; // 每个骨头段的长度
+            int boneCount = (int)Math.Ceiling(length / boneLength);
+            
+            Vector2 origin = new Vector2(boneTexture.Width / 2f, boneTexture.Height / 2f);
+            
+            for (int i = 0; i < boneCount; i++)
+            {
+                float progress = i / (float)boneCount;
+                Vector2 position = Vector2.Lerp(start, end, progress);
+                
+                // 颜色渐变 + 半透明效果
+                float alpha = 0.7f - progress * 0.3f;
+                Color boneColor = new Color(100, 50, 150) * alpha;
+                
+                // 轻微的摆动效果，让骨头链看起来更有机
+                float wobble = MathF.Sin(Main.GlobalTimeWrappedHourly * 3f + i * 0.5f) * 0.1f;
+                float boneRotation = rotation + wobble + MathHelper.PiOver2;
+                
+                // 缩放变化，靠近枪尖的骨头更小
+                float scale = MathHelper.Lerp(0.8f, 0.5f, progress);
+                
+                Main.EntitySpriteDraw(boneTexture, position - Main.screenPosition, null,
+                    boneColor, boneRotation, origin, scale, SpriteEffects.None);
+            }
+            
+            // 添加幽灵粒子效果
+            if (Main.rand.NextBool(5))
+            {
+                Vector2 randomPos = Vector2.Lerp(start, end, Main.rand.NextFloat());
+                int dust = Dust.NewDust(randomPos, 0, 0, DustID.Shadowflame, 0, 0, 100, default, 0.8f);
+                Main.dust[dust].noGravity = true;
+                Main.dust[dust].velocity *= 0.3f;
+            }
         }
     }
 }
+
 
