@@ -530,33 +530,53 @@ Items: {
 	}
 
 	UmbralStoneItem: {
-		// DisplayName: Umbral Stone Item
-		// Tooltip: ""
+		DisplayName: 幽冥砾岩
+		Tooltip: ""
 	}
 
 	NetherDragonSummonItem: {
-		// DisplayName: Nether Dragon Summon Item
-		// Tooltip: ""
+		DisplayName: 幽冥龙召唤器
+		Tooltip: ""
 	}
 
 	CorpsesesBook: {
-		// DisplayName: Corpseses Book
-		// Tooltip: ""
+		DisplayName: 枉骸之书
+		Tooltip: ""
 	}
 
 	CorpsesesLance: {
-		// DisplayName: Corpseses Lance
-		// Tooltip: ""
+		DisplayName: 枉骸长枪
+		Tooltip: ""
 	}
 
 	CorpsesesRepeater: {
-		// DisplayName: Corpseses Repeater
-		// Tooltip: ""
+		DisplayName: 枉骸连弩
+		Tooltip: ""
 	}
 
 	CorpsesesStaff: {
-		// DisplayName: Corpseses Staff
-		// Tooltip: ""
+		DisplayName: 枉骸之杖
+		Tooltip: ""
+	}
+
+	Netherlayer: {
+		DisplayName: 幽冥雍刀
+		Tooltip: ""
+	}
+
+	NetherStaff: {
+		DisplayName: 幽冥之杖
+		Tooltip: ""
+	}
+
+	Netherthrower: {
+		DisplayName: 幽冥喷射器
+		Tooltip: ""
+	}
+
+	NetherSutom: {
+		DisplayName: 幽冥之头
+		Tooltip: ""
 	}
 }
 
@@ -708,6 +728,11 @@ Projectiles: {
 	// CorpsesesGhostHand.DisplayName: Corpseses Ghost Hand
 	// CorpsesesLanceProj.DisplayName: Corpseses Lance Proj
 	// CorpsesesHandMinion.DisplayName: Corpseses Hand Minion
+	// NetherBreathProjectile.DisplayName: Nether Breath Projectile
+	// NetherOrbProjectile.DisplayName: Nether Orb Projectile
+	// NetherSlashProjectile.DisplayName: Nether Slash Projectile
+	// NetherDragonFlame.DisplayName: Nether Dragon Flame
+	// NetherSutomMinon.DisplayName: Nether Sutom Minon
 }
 
 // HeavenBiome.DisplayName: Heaven
@@ -880,6 +905,11 @@ Buffs: {
 	CorpsesesHandMinionBuff: {
 		// DisplayName: Corpseses Hand Minion Buff
 		// Description: Mods.AncientChineseMythology.Buffs.CorpsesesHandMinionBuff.Description
+	}
+
+	NetherSutomBuff: {
+		// DisplayName: Nether Sutom Buff
+		// Description: Mods.AncientChineseMythology.Buffs.NetherSutomBuff.Description
 	}
 }
 

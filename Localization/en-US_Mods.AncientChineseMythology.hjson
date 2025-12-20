@@ -509,6 +509,26 @@ Items: {
 		DisplayName: Corpseses Staff
 		Tooltip: ""
 	}
+
+	Netherlayer: {
+		DisplayName: Netherlayer
+		Tooltip: ""
+	}
+
+	NetherStaff: {
+		DisplayName: Nether Staff
+		Tooltip: ""
+	}
+
+	Netherthrower: {
+		DisplayName: Netherthrower
+		Tooltip: ""
+	}
+
+	NetherSutom: {
+		DisplayName: Nether Sutom
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -659,6 +679,11 @@ Projectiles: {
 	CorpsesesGhostHand.DisplayName: Corpseses Ghost Hand
 	CorpsesesLanceProj.DisplayName: Corpseses Lance Proj
 	CorpsesesHandMinion.DisplayName: Corpseses Hand Minion
+	NetherBreathProjectile.DisplayName: Nether Breath Projectile
+	NetherOrbProjectile.DisplayName: Nether Orb Projectile
+	NetherSlashProjectile.DisplayName: Nether Slash Projectile
+	NetherDragonFlame.DisplayName: Nether Dragon Flame
+	NetherSutomMinon.DisplayName: Nether Sutom Minon
 }
 
 HeavenBiome.DisplayName: Heaven
@@ -831,6 +856,11 @@ Buffs: {
 	CorpsesesHandMinionBuff: {
 		DisplayName: Corpseses Hand Minion Buff
 		Description: Mods.AncientChineseMythology.Buffs.CorpsesesHandMinionBuff.Description
+	}
+
+	NetherSutomBuff: {
+		DisplayName: Nether Sutom Buff
+		Description: Mods.AncientChineseMythology.Buffs.NetherSutomBuff.Description
 	}
 }
 
