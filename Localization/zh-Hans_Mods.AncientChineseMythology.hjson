@@ -641,6 +641,7 @@ NPCs: {
 	// NetherDragonTail.DisplayName: Nether Dragon Tail
 	// Corpses.DisplayName: Corpses
 	// CorpsesHand.DisplayName: Corpses Hand
+	// KyuubiKitsune.DisplayName: Kyuubi Kitsune
 }
 
 Projectiles: {
