@@ -580,13 +580,18 @@ Items: {
 	}
 
 	KyuubiBook: {
-		// DisplayName: Kyuubi Book
-		// Tooltip: ""
+		DisplayName: 九尾天书
+		Tooltip: ""
 	}
 
 	NetherKyuubiBook: {
-		// DisplayName: Nether Kyuubi Book
-		// Tooltip: ""
+		DisplayName: 幽冥狐典
+		Tooltip: ""
+	}
+
+	DakkiBook: {
+		DisplayName: 妲己之书
+		Tooltip: ""
 	}
 }
 
@@ -750,6 +755,11 @@ Projectiles: {
 	// NetherBookTail.DisplayName: Nether Book Tail
 	// NetherBookTailController.DisplayName: Nether Book Tail Controller
 	// NetherSoulBolt.DisplayName: Nether Soul Bolt
+	// DakkiBookController.DisplayName: Dakki Book Controller
+	// DakkiBookTail.DisplayName: Dakki Book Tail
+	// DakkiCharmRing.DisplayName: Dakki Charm Ring
+	// DakkiFireBolt.DisplayName: Dakki Fire Bolt
+	// DakkiSoulBolt.DisplayName: Dakki Soul Bolt
 }
 
 // HeavenBiome.DisplayName: Heaven

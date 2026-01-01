@@ -539,6 +539,11 @@ Items: {
 		DisplayName: Nether Kyuubi Book
 		Tooltip: ""
 	}
+
+	DakkiBook: {
+		DisplayName: Dakki Book
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -701,6 +706,11 @@ Projectiles: {
 	NetherBookTail.DisplayName: Nether Book Tail
 	NetherBookTailController.DisplayName: Nether Book Tail Controller
 	NetherSoulBolt.DisplayName: Nether Soul Bolt
+	DakkiBookController.DisplayName: Dakki Book Controller
+	DakkiBookTail.DisplayName: Dakki Book Tail
+	DakkiCharmRing.DisplayName: Dakki Charm Ring
+	DakkiFireBolt.DisplayName: Dakki Fire Bolt
+	DakkiSoulBolt.DisplayName: Dakki Soul Bolt
 }
 
 HeavenBiome.DisplayName: Heaven
