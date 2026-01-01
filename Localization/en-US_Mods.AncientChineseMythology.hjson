@@ -529,6 +529,16 @@ Items: {
 		DisplayName: Nether Sutom
 		Tooltip: ""
 	}
+
+	KyuubiBook: {
+		DisplayName: Kyuubi Book
+		Tooltip: ""
+	}
+
+	NetherKyuubiBook: {
+		DisplayName: Nether Kyuubi Book
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -593,6 +603,7 @@ NPCs: {
 	Corpses.DisplayName: Corpses
 	CorpsesHand.DisplayName: Corpses Hand
 	KyuubiKitsune.DisplayName: Kyuubi Kitsune
+	NetherKitsune.DisplayName: Nether Kitsune
 }
 
 Projectiles: {
@@ -685,6 +696,11 @@ Projectiles: {
 	NetherSlashProjectile.DisplayName: Nether Slash Projectile
 	NetherDragonFlame.DisplayName: Nether Dragon Flame
 	NetherSutomMinon.DisplayName: Nether Sutom Minon
+	KyuubiBookTail.DisplayName: Kyuubi Book Tail
+	KyuubiBookTailController.DisplayName: Kyuubi Book Tail Controller
+	NetherBookTail.DisplayName: Nether Book Tail
+	NetherBookTailController.DisplayName: Nether Book Tail Controller
+	NetherSoulBolt.DisplayName: Nether Soul Bolt
 }
 
 HeavenBiome.DisplayName: Heaven
