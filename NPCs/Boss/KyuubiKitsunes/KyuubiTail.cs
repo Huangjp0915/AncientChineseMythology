@@ -14,11 +14,23 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         /// <summary>骨骼关节数量</summary>
         public const int JointCount = 12;
         
-        /// <summary>每个骨骼段的长度</summary>
-        public const float SegmentLength = 22f;
+        /// <summary>每个骨骼段的基础长度</summary>
+        public const float BaseSegmentLength = 24f;
         
-        /// <summary>尾巴总长度</summary>
-        public float TotalLength => JointCount * SegmentLength;
+        /// <summary>远距离刺击时的最大延展倍率</summary>
+        public const float MaxExtensionMultiplier = 4.0f;
+        
+        /// <summary>当前每个段的实际长度</summary>
+        private float[] currentSegmentLengths;
+        
+        /// <summary>当前延展倍率 (1.0 = 正常, >1.0 = 延展)</summary>
+        private float currentExtension = 1.0f;
+        
+        /// <summary>目标延展倍率</summary>
+        private float targetExtension = 1.0f;
+        
+        /// <summary>尾巴总长度（动态）</summary>
+        public float TotalLength => JointCount * BaseSegmentLength * currentExtension;
 
         /// <summary>尾巴索引（0-8）</summary>
         public int TailIndex { get; private set; }
@@ -77,8 +89,18 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             Whip,           // 鞭打 - S形甩动
             ProjectileFire, // 射弹 - 尾尖发射弹幕
             Coil,           // 缠绕 - 螺旋盘绕准备
-            Slam            // 下砸 - 高举后猛砸
+            Slam,           // 下砸 - 高举后猛砸
+            LongRangeStab   // 远距离刺击 - 大范围远距离突刺
         }
+        
+        /// <summary>是否显示预判线</summary>
+        public bool ShowTelegraph { get; set; }
+        
+        /// <summary>预判线目标方向</summary>
+        public Vector2 TelegraphDirection { get; set; }
+        
+        /// <summary>预判线长度</summary>
+        public float TelegraphLength { get; set; }
 
         public KyuubiTail(int tailIndex)
         {
@@ -86,6 +108,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             Joints = new Vector2[JointCount];
             Velocities = new Vector2[JointCount];
             segmentWidths = new float[JointCount];
+            currentSegmentLengths = new float[JointCount];
             attackKeyframes = new Vector2[4];
             
             // 初始化相位偏移，让每条尾巴的摆动有差异
@@ -97,6 +120,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
                 float t = i / (float)(JointCount - 1);
                 // 使用平滑曲线：根部较粗，中间缓慢变细，尖端快速收窄
                 segmentWidths[i] = MathHelper.Lerp(1.0f, 0.3f, EaseOutQuad(t));
+                currentSegmentLengths[i] = BaseSegmentLength;
             }
         }
 
@@ -107,12 +131,20 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         {
             RootPosition = rootPos;
             BaseAngle = baseAngle;
+            currentExtension = 1.0f;
+            targetExtension = 1.0f;
+            
+            // 初始化段长度
+            for (int i = 0; i < JointCount; i++)
+            {
+                currentSegmentLengths[i] = BaseSegmentLength;
+            }
             
             // 沿着基准角度排列所有关节
             for (int i = 0; i < JointCount; i++)
             {
                 float angle = baseAngle + MathF.Sin(i * 0.3f) * 0.2f; // 轻微弯曲
-                Joints[i] = rootPos + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * SegmentLength * i;
+                Joints[i] = rootPos + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * BaseSegmentLength * i;
                 Velocities[i] = Vector2.Zero;
             }
             
@@ -134,7 +166,15 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             else
             {
                 UpdateIdleMotion(ownerVelocity, globalTime);
+                // 非攻击时恢复正常长度
+                targetExtension = 1.0f;
             }
+            
+            // 平滑插值当前延展系数
+            currentExtension = MathHelper.Lerp(currentExtension, targetExtension, 0.15f);
+            
+            // 更新每个段的实际长度
+            UpdateSegmentLengths();
             
             // 应用FABRIK算法求解IK
             SolveFABRIK();
@@ -144,6 +184,19 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             
             // 更新发光效果
             UpdateGlow();
+        }
+        
+        /// <summary>
+        /// 更新每个段的实际长度
+        /// </summary>
+        private void UpdateSegmentLengths()
+        {
+            for (int i = 0; i < JointCount; i++)
+            {
+                // 末端段延展更多，根部段延展较少，产生自然的拉伸效果
+                float segmentExtensionFactor = MathHelper.Lerp(0.5f, 1.5f, (float)i / (JointCount - 1));
+                currentSegmentLengths[i] = BaseSegmentLength * (1.0f + (currentExtension - 1.0f) * segmentExtensionFactor);
+            }
         }
 
         /// <summary>
@@ -201,6 +254,9 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
                     break;
                 case TailAttackType.Slam:
                     UpdateSlamAttack();
+                    break;
+                case TailAttackType.LongRangeStab:
+                    UpdateLongRangeStabAttack();
                     break;
             }
         }
@@ -454,6 +510,89 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             }
         }
 
+        /// <summary>
+        /// 开始远距离刺击攻击 - 大范围远距离突刺，尾巴会动态延展
+        /// </summary>
+        public void StartLongRangeStabAttack(Vector2 direction, float telegraphTime = 0.5f, float stabTime = 0.15f, float recoverTime = 0.4f)
+        {
+            IsAttacking = true;
+            CurrentAttack = TailAttackType.LongRangeStab;
+            AttackTimer = 0f;
+            attackDuration = telegraphTime + stabTime + recoverTime;
+            
+            // 存储攻击方向
+            TelegraphDirection = direction.SafeNormalize(Vector2.UnitX);
+            attackStartPos = Joints[JointCount - 1];
+            
+            // 计算延展后的总长度
+            float extendedLength = JointCount * BaseSegmentLength * MaxExtensionMultiplier;
+            TelegraphLength = extendedLength;
+            
+            // 存储时间分配
+            longRangePhases[0] = telegraphTime;
+            longRangePhases[1] = stabTime;
+            longRangePhases[2] = recoverTime;
+            
+            ShowTelegraph = true;
+        }
+        
+        // 远距离刺击时间分配
+        private float[] longRangePhases = new float[3];
+        
+        private void UpdateLongRangeStabAttack()
+        {
+            float t = attackProgress;
+            float phase1End = longRangePhases[0] / attackDuration;
+            float phase2End = (longRangePhases[0] + longRangePhases[1]) / attackDuration;
+            
+            if (t < phase1End) // 预判阶段 - 显示预判线并蓄力
+            {
+                float localT = t / phase1End;
+                
+                // 尾巴缓慢收缩到根部附近，准备蓄力
+                float coilT = EaseOutQuad(localT);
+                TargetPosition = RootPosition + TelegraphDirection * BaseSegmentLength * JointCount * 0.3f * (1f - coilT * 0.5f);
+                
+                // 延展系数保持正常
+                targetExtension = 1.0f;
+                stiffness = MathHelper.Lerp(0.15f, 0.5f, localT);
+                glowIntensity = localT * 0.6f;
+                ShowTelegraph = true;
+            }
+            else if (t < phase2End) // 刺出阶段 - 极快速延展刺出
+            {
+                float localT = (t - phase1End) / (phase2End - phase1End);
+                
+                // 快速延展尾巴
+                float extensionT = EaseOutQuad(localT); // 快速加速然后减速
+                targetExtension = 1.0f + (MaxExtensionMultiplier - 1.0f) * extensionT;
+                
+                // 目标位置在延展后的最远点
+                float currentMaxLength = JointCount * BaseSegmentLength * targetExtension;
+                TargetPosition = RootPosition + TelegraphDirection * currentMaxLength * 0.95f;
+                
+                stiffness = 0.8f; // 最高刚度，表现力量感
+                glowIntensity = 0.6f + extensionT * 0.4f;
+                ShowTelegraph = false;
+            }
+            else // 回收阶段 - 缓慢收缩
+            {
+                float localT = (t - phase2End) / (1f - phase2End);
+                float recoverT = EaseOutQuad(localT);
+                
+                // 缓慢收缩尾巴
+                targetExtension = MathHelper.Lerp(MaxExtensionMultiplier, 1.0f, recoverT);
+                
+                // 目标位置回到正常状态
+                float currentMaxLength = JointCount * BaseSegmentLength * targetExtension;
+                TargetPosition = RootPosition + TelegraphDirection * currentMaxLength * 0.6f;
+                
+                stiffness = MathHelper.Lerp(0.8f, 0.15f, recoverT);
+                glowIntensity = 1f - recoverT;
+                ShowTelegraph = false;
+            }
+        }
+
         private void EndAttack()
         {
             IsAttacking = false;
@@ -461,6 +600,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             AttackTimer = 0f;
             stiffness = 0.15f;
             glowIntensity = 0f;
+            ShowTelegraph = false;
         }
 
         #endregion
@@ -491,7 +631,8 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
                 for (int i = JointCount - 2; i >= 0; i--)
                 {
                     Vector2 direction = (Joints[i] - Joints[i + 1]).SafeNormalize(Vector2.UnitY);
-                    Joints[i] = Joints[i + 1] + direction * SegmentLength;
+                    // 使用动态段长度
+                    Joints[i] = Joints[i + 1] + direction * currentSegmentLengths[i];
                 }
                 
                 // 向后传递 (Backward Reaching) - 从根部到末端
@@ -501,10 +642,12 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
                     Vector2 direction = (Joints[i] - Joints[i - 1]).SafeNormalize(Vector2.UnitY);
                     
                     // 应用角度约束（限制相邻骨骼之间的弯曲角度）
+                    // 延展时放宽角度约束，让尾巴能更直地刺出
+                    float maxBendAngle = MathHelper.ToRadians(35f / MathF.Max(1f, currentExtension * 0.5f));
+                    
                     if (i > 1)
                     {
                         Vector2 prevDirection = (Joints[i - 1] - Joints[i - 2]).SafeNormalize(Vector2.UnitY);
-                        float maxBendAngle = MathHelper.ToRadians(35f); // 最大弯曲角度
                         direction = ConstrainAngle(direction, prevDirection, maxBendAngle);
                     }
                     else
@@ -515,7 +658,8 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
                         direction = ConstrainAngle(direction, baseDirection, maxRootBendAngle);
                     }
                     
-                    Joints[i] = Joints[i - 1] + direction * SegmentLength;
+                    // 使用动态段长度
+                    Joints[i] = Joints[i - 1] + direction * currentSegmentLengths[i - 1];
                 }
             }
         }
@@ -553,7 +697,8 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
                 // 计算到理想位置的偏移
                 Vector2 prevJoint = Joints[i - 1];
                 Vector2 idealDirection = (Joints[i] - prevJoint).SafeNormalize(Vector2.UnitY);
-                Vector2 idealPos = prevJoint + idealDirection * SegmentLength;
+                float segLen = currentSegmentLengths[i - 1];
+                Vector2 idealPos = prevJoint + idealDirection * segLen;
                 
                 // 弹性力
                 Vector2 springForce = (idealPos - Joints[i]) * stiffness;
@@ -561,16 +706,16 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
                 // 惯性（考虑主体速度）
                 Vector2 inertiaForce = -ownerVelocity * (0.1f * i / JointCount);
                 
-                // 重力影响（末端受影响更大）
-                float gravityFactor = (float)i / JointCount * gravityInfluence;
+                // 重力影响（末端受影响更大）- 延展时减少重力影响
+                float gravityFactor = (float)i / JointCount * gravityInfluence / MathF.Max(1f, currentExtension * 0.5f);
                 Vector2 gravityForce = new Vector2(0, gravityFactor * 0.5f);
                 
                 // 更新速度
                 Velocities[i] += springForce + inertiaForce + gravityForce;
                 Velocities[i] *= damping; // 阻尼
                 
-                // 限制最大速度
-                float maxSpeed = 15f;
+                // 限制最大速度 - 延展时允许更快的速度
+                float maxSpeed = 15f * MathF.Max(1f, currentExtension * 0.5f);
                 if (Velocities[i].LengthSquared() > maxSpeed * maxSpeed)
                 {
                     Velocities[i] = Velocities[i].SafeNormalize(Vector2.Zero) * maxSpeed;
@@ -581,7 +726,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
                 
                 // 重新约束长度
                 Vector2 dir = (Joints[i] - prevJoint).SafeNormalize(Vector2.UnitY);
-                Joints[i] = prevJoint + dir * SegmentLength;
+                Joints[i] = prevJoint + dir * segLen;
             }
         }
 
@@ -624,6 +769,91 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             {
                 DrawGlow(spriteBatch, screenPos);
             }
+        }
+        
+        /// <summary>
+        /// 绘制预判线（在尾巴绘制之前调用）
+        /// </summary>
+        public void DrawTelegraph(SpriteBatch spriteBatch, Vector2 screenPos)
+        {
+            if (!ShowTelegraph || TelegraphLength <= 0)
+                return;
+            
+            // 预判线参数
+            float pulseTime = (float)Main.timeForVisualEffects * 0.1f;
+            float pulse = 0.5f + 0.5f * MathF.Sin(pulseTime * 8f);
+            Color telegraphColor = Color.Lerp(Color.OrangeRed, Color.Gold, pulse) * (0.3f + pulse * 0.3f);
+            telegraphColor.A = 0; // 加性混合
+            
+            Vector2 startPos = RootPosition;
+            Vector2 endPos = RootPosition + TelegraphDirection * TelegraphLength;
+            
+            // 绘制预判线（使用多个点连成线）
+            int segments = 30;
+            float lineWidth = 4f + pulse * 2f;
+            
+            for (int i = 0; i < segments; i++)
+            {
+                float t1 = (float)i / segments;
+                float t2 = (float)(i + 1) / segments;
+                
+                Vector2 p1 = Vector2.Lerp(startPos, endPos, t1);
+                Vector2 p2 = Vector2.Lerp(startPos, endPos, t2);
+                
+                // 虚线效果
+                if (i % 3 == 0) continue;
+                
+                // 渐变淡出
+                float alpha = 1f - t1 * 0.5f;
+                Color segColor = telegraphColor * alpha;
+                
+                // 绘制线段（简化为点）
+                Vector2 drawPos = (p1 + p2) * 0.5f - screenPos;
+                float segLength = Vector2.Distance(p1, p2);
+                float rotation = (p2 - p1).ToRotation();
+                
+                // 使用尾巴体节纹理绘制预判线
+                Texture2D bodyTex = KyuubiKitsune.MissesBody;
+                if (bodyTex != null)
+                {
+                    Vector2 scale = new Vector2(segLength / bodyTex.Width * 1.5f, lineWidth / bodyTex.Height);
+                    spriteBatch.Draw(
+                        bodyTex,
+                        drawPos,
+                        null,
+                        segColor,
+                        rotation,
+                        new Vector2(bodyTex.Width * 0.5f, bodyTex.Height * 0.5f),
+                        scale,
+                        SpriteEffects.None,
+                        0f
+                    );
+                }
+            }
+            
+            // 在终点绘制警告标记
+            float warningPulse = 1f + 0.3f * MathF.Sin(pulseTime * 12f);
+            Color warningColor = Color.Red * (0.5f + pulse * 0.3f);
+            warningColor.A = 0;
+            
+            Texture2D tipTex = KyuubiKitsune.MissesTop;
+            if (tipTex != null)
+            {
+                spriteBatch.Draw(
+                    tipTex,
+                    endPos - screenPos,
+                    null,
+                    warningColor,
+                    TelegraphDirection.ToRotation(),
+                    new Vector2(0, tipTex.Height * 0.5f),
+                    warningPulse * 0.8f,
+                    SpriteEffects.None,
+                    0f
+                );
+            }
+            
+            // 添加光照
+            Lighting.AddLight(endPos, new Vector3(1f, 0.3f, 0.1f) * pulse * 0.5f);
         }
 
         /// <summary>

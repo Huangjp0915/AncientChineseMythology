@@ -38,24 +38,27 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         
         public enum BossPhase
         {
-            Intro,           // 出场演出
-            Phase1_Idle,     // 一阶段：相对静止，尾巴攻击
-            Phase1_Slam,     // 一阶段：瞬移下砸
-            PhaseTransition, // 阶段转换演出
-            Phase2_Chase,    // 二阶段：追击移动
-            Phase2_Dash,     // 二阶段：高速冲刺
-            Phase2_Teleport, // 二阶段：瞬移攻击
-            Phase2_Illusion  // 二阶段：幻影分身
+            Intro,              // 出场演出
+            Phase1_Idle,        // 一阶段：相对静止，尾巴攻击
+            Phase1_Slam,        // 一阶段：瞬移下砸
+            Phase1_NineStab,    // 一阶段：九方向远距离刺击
+            PhaseTransition,    // 阶段转换演出
+            Phase2_Chase,       // 二阶段：追击移动
+            Phase2_Dash,        // 二阶段：高速冲刺
+            Phase2_Teleport,    // 二阶段：瞬移攻击
+            Phase2_Illusion,    // 二阶段：幻影分身
+            Phase2_NineStab     // 二阶段：加强版九方向刺击
         }
         
         public enum TailAttackPattern
         {
-            Sequential,    // 顺序刺击
-            Simultaneous,  // 同时刺击
-            Spiral,        // 螺旋刺击
-            Wave,          // 波浪刺击
+            Sequential,        // 顺序刺击
+            Simultaneous,      // 同时刺击
+            Spiral,            // 螺旋刺击
+            Wave,              // 波浪刺击
             ProjectileBarrage, // 射弹齐射
-            RandomStab     // 随机刺击
+            RandomStab,        // 随机刺击
+            NineDirectionStab  // 九方向远距离刺击
         }
         
         #endregion
@@ -108,6 +111,13 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         private Vector2 dashVelocity;
         private int dashCount;
         private int maxDashCount;
+        
+        // 九方向远距离刺击控制
+        private int nineStabRepeatCount;      // 当前重复次数
+        private int nineStabMaxRepeats;       // 最大重复次数
+        private float nineStabBaseAngle;      // 基准角度偏移
+        private float nineStabPhaseTimer;     // 阶段计时器
+        private int nineStabPhase;            // 0=预判, 1=刺出, 2=回收
         
         #endregion
 
@@ -165,8 +175,12 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             for (int i = 0; i < TailCount; i++)
             {
                 Tails[i] = new KyuubiTail(i);
-                // 计算每条尾巴的基准角度（扇形分布在背后）
-                float baseAngle = MathHelper.Pi + MathHelper.ToRadians(-60 + 15 * i);
+                // 计算每条尾巴的基准角度（均匀分布在背后180度半圆）
+                // 从左上方（-135度）到右上方（-45度），中间是正上方（-90度）
+                // 使用均匀分布：从-135度到-45度，共180度范围
+                float angleRange = MathHelper.Pi; // 180度
+                float startAngle = -MathHelper.Pi * 0.75f; // -135度 (左上)
+                float baseAngle = startAngle + angleRange * i / (TailCount - 1);
                 Tails[i].Initialize(GetTailRootPosition(i), baseAngle);
             }
             
@@ -269,6 +283,9 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
                 case BossPhase.Phase1_Slam:
                     RunPhase1Slam(target);
                     break;
+                case BossPhase.Phase1_NineStab:
+                    RunPhase1NineStab(target);
+                    break;
                 case BossPhase.PhaseTransition:
                     RunPhaseTransition(target);
                     break;
@@ -283,6 +300,9 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
                     break;
                 case BossPhase.Phase2_Illusion:
                     RunPhase2Illusion(target);
+                    break;
+                case BossPhase.Phase2_NineStab:
+                    RunPhase2NineStab(target);
                     break;
             }
             
@@ -299,17 +319,25 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             for (int i = 0; i < TailCount; i++)
             {
                 Tails[i] = new KyuubiTail(i);
-                float baseAngle = MathHelper.Pi + MathHelper.ToRadians(-60 + 15 * i);
+                // 均匀分布在背后180度半圆
+                float angleRange = MathHelper.Pi;
+                float startAngle = -MathHelper.Pi * 0.75f;
+                float baseAngle = startAngle + angleRange * i / (TailCount - 1);
                 Tails[i].Initialize(GetTailRootPosition(i), baseAngle);
             }
         }
 
         private Vector2 GetTailRootPosition(int tailIndex)
         {
-            // 尾巴根部位置：在本体背后，略微分散
-            float angleOffset = MathHelper.ToRadians(-40 + 10 * tailIndex);
-            float radius = 40f;
-            Vector2 offset = new Vector2(MathF.Cos(MathHelper.Pi + angleOffset), MathF.Sin(MathHelper.Pi + angleOffset)) * radius;
+            // 尾巴根部位置：均匀分布在本体背后的半圆弧上
+            // 从左上方到右上方，180度范围
+            float angleRange = MathHelper.Pi;
+            float startAngle = -MathHelper.Pi * 0.75f; // -135度
+            float angle = startAngle + angleRange * tailIndex / (TailCount - 1);
+            
+            // 根部在本体中心向外偏移
+            float radius = 35f;
+            Vector2 offset = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * radius;
             return NPC.Center + offset;
         }
 
@@ -320,14 +348,27 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
                 if (Tails[i] == null) continue;
                 
                 Vector2 rootPos = GetTailRootPosition(i);
-                float baseAngle = MathHelper.Pi + MathHelper.ToRadians(-60 + 15 * i);
                 
-                // 根据本体朝向调整尾巴基准角度
-                if (NPC.velocity.X != 0)
+                // 计算基准角度（均匀分布在180度半圆）
+                float angleRange = MathHelper.Pi;
+                float startAngle = -MathHelper.Pi * 0.75f;
+                float baseAngle = startAngle + angleRange * i / (TailCount - 1);
+                
+                // 根据本体速度动态调整尾巴方向
+                if (NPC.velocity.LengthSquared() > 1f)
                 {
-                    float velocityInfluence = MathF.Atan2(NPC.velocity.Y, NPC.velocity.X);
-                    baseAngle = MathHelper.Lerp(baseAngle, velocityInfluence + MathHelper.Pi, 0.3f);
+                    // 运动时尾巴向后拖曳
+                    float velocityAngle = NPC.velocity.ToRotation();
+                    float oppositeAngle = velocityAngle + MathHelper.Pi;
+                    
+                    // 尾巴向运动反方向偏移，但保持扇形分布
+                    float spreadOffset = (i - 4) / 4f * MathHelper.PiOver4; // 中间尾巴在中心，两侧展开
+                    baseAngle = MathHelper.Lerp(baseAngle, oppositeAngle + spreadOffset, 0.4f);
                 }
+                
+                // 添加微小的个体差异摆动
+                float swayOffset = MathF.Sin(globalTime * 2f + i * 0.7f) * 0.1f;
+                baseAngle += swayOffset;
                 
                 Tails[i].Update(rootPos, baseAngle, NPC.velocity, globalTime);
                 
@@ -424,10 +465,17 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
                 CurrentTailPattern = (TailAttackPattern)Main.rand.Next(0, 6);
             }
             
-            // 一定概率进入瞬移下砸
-            if (PhaseTimer > 400 && Main.rand.NextBool(200))
+            // 一定概率进入瞬移下砸或九方向刺击
+            if (PhaseTimer > 400)
             {
-                TransitionTo(BossPhase.Phase1_Slam);
+                if (Main.rand.NextBool(150))
+                {
+                    TransitionTo(BossPhase.Phase1_NineStab);
+                }
+                else if (Main.rand.NextBool(200))
+                {
+                    TransitionTo(BossPhase.Phase1_Slam);
+                }
             }
         }
 
@@ -669,7 +717,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             // 随机切换到其他二阶段行为
             if (PhaseTimer > 200)
             {
-                int nextAction = Main.rand.Next(3);
+                int nextAction = Main.rand.Next(4);
                 switch (nextAction)
                 {
                     case 0:
@@ -680,6 +728,9 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
                         break;
                     case 2:
                         TransitionTo(BossPhase.Phase2_Illusion);
+                        break;
+                    case 3:
+                        TransitionTo(BossPhase.Phase2_NineStab);
                         break;
                 }
             }
@@ -979,6 +1030,196 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
 
         #endregion
 
+        #region 九方向远距离刺击
+
+        /// <summary>
+        /// 一阶段九方向远距离刺击 - 九条尾巴向九个均匀角度方向刺出很远
+        /// </summary>
+        private void RunPhase1NineStab(Player target)
+        {
+            switch ((int)SubState)
+            {
+                case 0: // 初始化
+                    nineStabRepeatCount = 0;
+                    nineStabMaxRepeats = Main.expertMode ? 4 : 3;
+                    nineStabBaseAngle = Main.rand.NextFloat(MathHelper.TwoPi); // 随机起始角度
+                    SubState = 1;
+                    PhaseTimer = 0;
+                    
+                    // 本体悬停
+                    NPC.velocity *= 0.5f;
+                    break;
+                    
+                case 1: // 预判阶段 - 显示预判线
+                    NPC.velocity *= 0.95f;
+                    
+                    // 保持在玩家附近悬浮
+                    Vector2 hoverPos = target.Center + new Vector2(0, -300);
+                    NPC.Center = Vector2.Lerp(NPC.Center, hoverPos, 0.02f);
+                    
+                    // 启动所有尾巴的远距离刺击（带预判线）
+                    if (PhaseTimer == 1)
+                    {
+                        for (int i = 0; i < TailCount; i++)
+                        {
+                            // 九个均匀分布的角度 + 当前轮次的偏移
+                            float angle = nineStabBaseAngle + MathHelper.TwoPi * i / TailCount;
+                            Vector2 direction = angle.ToRotationVector2();
+                            
+                            // 启动远距离刺击，预判时间较长
+                            Tails[i].StartLongRangeStabAttack(direction, 0.8f, 0.12f, 0.5f);
+                        }
+                        
+                        SoundEngine.PlaySound(SoundID.Item15 with { Pitch = 0.5f }, NPC.Center);
+                    }
+                    
+                    // 预判阶段持续约48帧（0.8秒 * 60fps）
+                    if (PhaseTimer > 48)
+                    {
+                        SubState = 2;
+                        PhaseTimer = 0;
+                    }
+                    break;
+                    
+                case 2: // 刺出阶段 - 极快速刺出
+                    // 刺出时屏幕震动
+                    if (PhaseTimer == 1)
+                    {
+                        SoundEngine.PlaySound(SoundID.Item71 with { Pitch = -0.2f, Volume = 1.2f }, NPC.Center);
+                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(10, 15);
+                    }
+                    
+                    // 刺出阶段持续约8帧（0.12秒 * 60fps）
+                    if (PhaseTimer > 8)
+                    {
+                        SubState = 3;
+                        PhaseTimer = 0;
+                    }
+                    break;
+                    
+                case 3: // 回收阶段
+                    // 回收阶段持续约30帧（0.5秒 * 60fps）
+                    if (PhaseTimer > 30)
+                    {
+                        nineStabRepeatCount++;
+                        
+                        if (nineStabRepeatCount >= nineStabMaxRepeats)
+                        {
+                            // 完成所有轮次，返回idle
+                            TransitionTo(BossPhase.Phase1_Idle);
+                        }
+                        else
+                        {
+                            // 进入下一轮，角度偏移
+                            nineStabBaseAngle += MathHelper.ToRadians(20f); // 每轮偏移20度
+                            SubState = 1;
+                            PhaseTimer = 0;
+                        }
+                    }
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// 二阶段加强版九方向刺击 - 更快、更多轮次、更小偏移
+        /// </summary>
+        private void RunPhase2NineStab(Player target)
+        {
+            switch ((int)SubState)
+            {
+                case 0: // 初始化
+                    nineStabRepeatCount = 0;
+                    nineStabMaxRepeats = Main.expertMode ? 6 : 5;
+                    nineStabBaseAngle = Main.rand.NextFloat(MathHelper.TwoPi);
+                    SubState = 1;
+                    PhaseTimer = 0;
+                    NPC.velocity *= 0.3f;
+                    break;
+                    
+                case 1: // 预判阶段 - 更短的预判时间
+                    NPC.velocity *= 0.92f;
+                    
+                    // 追踪玩家位置
+                    Vector2 hoverPos = target.Center + new Vector2(0, -250);
+                    NPC.Center = Vector2.Lerp(NPC.Center, hoverPos, 0.03f);
+                    
+                    if (PhaseTimer == 1)
+                    {
+                        for (int i = 0; i < TailCount; i++)
+                        {
+                            float angle = nineStabBaseAngle + MathHelper.TwoPi * i / TailCount;
+                            Vector2 direction = angle.ToRotationVector2();
+                            
+                            // 二阶段：更短的预判时间，更快的刺出
+                            Tails[i].StartLongRangeStabAttack(direction, 0.5f, 0.1f, 0.35f);
+                        }
+                        
+                        SoundEngine.PlaySound(SoundID.Item15 with { Pitch = 0.7f }, NPC.Center);
+                    }
+                    
+                    if (PhaseTimer > 30) // 0.5秒
+                    {
+                        SubState = 2;
+                        PhaseTimer = 0;
+                    }
+                    break;
+                    
+                case 2: // 刺出阶段
+                    if (PhaseTimer == 1)
+                    {
+                        SoundEngine.PlaySound(SoundID.Item71 with { Pitch = 0f, Volume = 1.3f }, NPC.Center);
+                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(12, 12);
+                        
+                        // 二阶段刺出时发射额外弹幕
+                        if (Main.netMode != NetmodeID.MultiplayerClient)
+                        {
+                            for (int i = 0; i < TailCount; i++)
+                            {
+                                float angle = nineStabBaseAngle + MathHelper.TwoPi * i / TailCount;
+                                Vector2 projVel = angle.ToRotationVector2() * 8f;
+                                Projectile.NewProjectile(
+                                    NPC.GetSource_FromAI(),
+                                    NPC.Center,
+                                    projVel,
+                                    ProjectileID.CultistBossFireBall,
+                                    NPC.damage / 3,
+                                    2f,
+                                    Main.myPlayer
+                                );
+                            }
+                        }
+                    }
+                    
+                    if (PhaseTimer > 6) // 0.1秒
+                    {
+                        SubState = 3;
+                        PhaseTimer = 0;
+                    }
+                    break;
+                    
+                case 3: // 回收阶段
+                    if (PhaseTimer > 21) // 0.35秒
+                    {
+                        nineStabRepeatCount++;
+                        
+                        if (nineStabRepeatCount >= nineStabMaxRepeats)
+                        {
+                            TransitionTo(BossPhase.Phase2_Chase);
+                        }
+                        else
+                        {
+                            // 每轮偏移更小的角度，形成更密集的攻击
+                            nineStabBaseAngle += MathHelper.ToRadians(15f);
+                            SubState = 1;
+                            PhaseTimer = 0;
+                        }
+                    }
+                    break;
+            }
+        }
+
+        #endregion
+
         #region 绘制
 
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
@@ -1061,6 +1302,13 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             if (Tails == null)
                 return;
             
+            // 先绘制所有尾巴的预判线（在尾巴之前）
+            for (int i = 0; i < TailCount; i++)
+            {
+                Tails[i]?.DrawTelegraph(spriteBatch, screenPos);
+            }
+            
+            // 再绘制尾巴本体
             for (int i = 0; i < TailCount; i++)
             {
                 Tails[i]?.Draw(spriteBatch, screenPos, drawColor);
