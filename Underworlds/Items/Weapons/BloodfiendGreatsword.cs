@@ -11,13 +11,13 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons
     public class BloodfiendGreatsword : ModItem
     {
         public override void SetDefaults() {
-            Item.damage = 55; //基础伤害
+            Item.damage = 155; //基础伤害
             Item.crit = 8; //暴击率
             Item.DamageType = DamageClass.Melee; //近战伤害类型
             Item.width = 64; //物品宽度（大剑较大）
             Item.height = 64; //物品高度
-            Item.useTime = 32; //使用时间（大剑较慢）
-            Item.useAnimation = 32; //使用动画时间
+            Item.useTime = 12; //使用时间（大剑较慢）
+            Item.useAnimation = 12; //使用动画时间
             Item.useStyle = ItemUseStyleID.Swing; //挥舞风格
             Item.knockBack = 5.5f; //击退
             Item.value = Item.buyPrice(gold: 5, silver: 50); //物品价值

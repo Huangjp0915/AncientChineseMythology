@@ -824,6 +824,9 @@ Projectiles: {
 	SpectreSoulOrb.DisplayName: Spectre Soul Orb
 	SpectreWailingWave.DisplayName: Spectre Wailing Wave
 	SpectreWraithBolt.DisplayName: Spectre Wraith Bolt
+	SoulDevourerSpearProjectile.DisplayName: Soul Devourer Spear Projectile
+	YamasGavelProjectile.DisplayName: Yamas Gavel Projectile
+	SoulseekerDaggersProj.DisplayName: Soulseeker Daggers Proj
 }
 
 HeavenBiome.DisplayName: Heaven

@@ -42,7 +42,7 @@ namespace AncientChineseMythology
         }
 
         public override bool? UseItem(Player player) {
-            Underworld.GenerateTerrain();
+            Underworld.GenerateTerrainAsync();
             //SpoawnProj.CreatNPC(player.Center);
             //new Point16(3973, 171).GetRectangleFromPoints(new Point16(4426, 414)).LoggerDomp();
             //AsgardStructure.DoLoad<AsgardStructure>();
