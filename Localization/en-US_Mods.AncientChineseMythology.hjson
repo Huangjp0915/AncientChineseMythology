@@ -631,6 +631,9 @@ NPCs: {
 	NetherKitsune.DisplayName: Nether Kitsune
 	BlackImpermanence.DisplayName: Black Impermanence
 	WhiteImpermanence.DisplayName: White Impermanence
+	AwakeningNetherBody.DisplayName: Awakening Nether Body
+	AwakeningNetherHead.DisplayName: Awakening Nether Head
+	AwakeningNetherTail.DisplayName: Awakening Nether Tail
 }
 
 Projectiles: {
@@ -750,6 +753,10 @@ Projectiles: {
 	DemonicSlashWave.DisplayName: Demonic Slash Wave
 	NetherworldSickleProjectile.DisplayName: Netherworld Sickle Projectile
 	DemonicAnnihilationProj.DisplayName: Demonic Annihilation Proj
+	AwakeningNetherBreath.DisplayName: Awakening Nether Breath
+	AwakeningNetherRift.DisplayName: Awakening Nether Rift
+	AwakeningNetherSoulOrb.DisplayName: Awakening Nether Soul Orb
+	AwakeningNetherVoidBolt.DisplayName: Awakening Nether Void Bolt
 }
 
 HeavenBiome.DisplayName: Heaven
