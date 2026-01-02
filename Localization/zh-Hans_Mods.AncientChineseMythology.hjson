@@ -668,6 +668,16 @@ Items: {
 		DisplayName: 阎罗锤
 		Tooltip: ""
 	}
+
+	NetherBar: {
+		DisplayName: 幽冥锭
+		Tooltip: ""
+	}
+
+	NetherOre: {
+		DisplayName: 幽冥矿
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -675,19 +685,18 @@ NPCs: {
 		DisplayName: 唐僧
 
 		TownNPCMood: {
-			// Content: 我很满足。
-			// NoHome: 我讨厌没有家。
-			// FarFromHome: 我离家太远了。
-			// LoveSpace: 我非常喜欢有这么大的空间。
-			// DislikeCrowded: 我不喜欢这么拥挤。
-			// HateCrowded: 我讨厌这么拥挤。
-			// LikeNPC_Princess: 我喜欢 {NPCName}。
-			// Princess_LovesNPC: 我喜欢 {NPCName}。
+			Content: 我很满足。
+			NoHome: 我讨厌没有家。
+			FarFromHome: 我离家太远了。
+			LoveSpace: 我非常喜欢有这么大的空间。
+			DislikeCrowded: 我不喜欢这么拥挤。
+			HateCrowded: 我讨厌这么拥挤。
+			LikeNPC_Princess: 我喜欢 {NPCName}。
+			Princess_LovesNPC: 我喜欢 {NPCName}。
 		}
 	}
 
-	// Angry_gargoyle.DisplayName: Angry_gargoyle
-	angry_gargoyle.DisplayName: 愤怒的石像鬼
+	Angry_gargoyle.DisplayName: 愤怒的石像鬼
 	BlackBear.DisplayName: 黑熊金
 	TaiShangLaoJunNPC.DisplayName: 太上老君
 	BloodCrow.DisplayName: 血鸦
@@ -716,30 +725,30 @@ NPCs: {
 	CloneBossBody4.DisplayName: 祖龙残魂
 	CloneBossHead.DisplayName: 祖龙残魂
 	CloneBossTail.DisplayName: 祖龙残魂
-	// Hanba.DisplayName: Hanba
-	// Talisman.DisplayName: Talisman
-	// Hoqing.DisplayName: Hoqing
-	// GhostFire.DisplayName: Ghost Fire
-	// Yingou.DisplayName: Yingou
-	// YingouHand.DisplayName: Yingou Hand
-	// Jiangcen.DisplayName: Jiangcen
-	// JiangcenHammer.DisplayName: Jiangcen Hammer
-	// MaMian.DisplayName: Ma Mian
-	// NiuTou.DisplayName: Niu Tou
-	// NetherDragonBody.DisplayName: Nether Dragon Body
-	// NetherDragonHead.DisplayName: Nether Dragon Head
-	// NetherDragonTail.DisplayName: Nether Dragon Tail
-	// Corpses.DisplayName: Corpses
-	// CorpsesHand.DisplayName: Corpses Hand
-	// KyuubiKitsune.DisplayName: Kyuubi Kitsune
-	// NetherKitsune.DisplayName: Nether Kitsune
-	// BlackImpermanence.DisplayName: Black Impermanence
-	// WhiteImpermanence.DisplayName: White Impermanence
+	Hanba.DisplayName: 旱魃
+	Talisman.DisplayName: 符咒
+	Hoqing.DisplayName: 后卿
+	GhostFire.DisplayName: 鬼火
+	Yingou.DisplayName: 赢勾
+	YingouHand.DisplayName: 赢勾之手
+	Jiangcen.DisplayName: 将臣
+	JiangcenHammer.DisplayName: 将臣之锤
+	MaMian.DisplayName: 马面
+	NiuTou.DisplayName: 牛头
+	NetherDragonBody.DisplayName: 幽冥龙
+	NetherDragonHead.DisplayName: 幽冥龙
+	NetherDragonTail.DisplayName: 幽冥龙
+	Corpses.DisplayName: 尸骸
+	CorpsesHand.DisplayName: 尸骸之手
+	KyuubiKitsune.DisplayName: 九尾妖狐
+	NetherKitsune.DisplayName: 幽冥妖狐
+	BlackImpermanence.DisplayName: 黑无常
+	WhiteImpermanence.DisplayName: 白无常
 	AwakeningNetherBody.DisplayName: 觉醒-冥府尽头-幽冥龙
 	AwakeningNetherHead.DisplayName: 觉醒-冥府尽头-幽冥龙
 	AwakeningNetherTail.DisplayName: 觉醒-冥府尽头-幽冥龙
-	// Spectre.DisplayName: Spectre
-	// SpectreMinion.DisplayName: Spectre Minion
+	Spectre.DisplayName: 幽灵
+	SpectreMinion.DisplayName: 幽灵随从
 }
 
 Projectiles: {
@@ -917,6 +926,8 @@ Tiles: {
 	XuanTieOreTile.MapEntry: 玄铁
 	LingShiOreTile.MapEntry: 灵石
 	TaiguWeaponWorkshop.MapEntry: 太古武器工坊
+	// NetherBarTile.MapEntry: Nether Bar Tile
+	// NetherOreTile.MapEntry: Nether Ore Tile
 }
 
 Buffs: {

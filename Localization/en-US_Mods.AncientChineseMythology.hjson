@@ -619,6 +619,16 @@ Items: {
 		DisplayName: Yamas Gavel
 		Tooltip: ""
 	}
+
+	NetherBar: {
+		DisplayName: Nether Bar
+		Tooltip: ""
+	}
+
+	NetherOre: {
+		DisplayName: Nether Ore
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -868,6 +878,8 @@ Tiles: {
 	XuanTieOreTile.MapEntry: Xuan Tie Ore Tile
 	LingShiOreTile.MapEntry: Ling Shi Ore Tile
 	TaiguWeaponWorkshop.MapEntry: Taigu Weapon Workshop
+	NetherBarTile.MapEntry: Nether Bar Tile
+	NetherOreTile.MapEntry: Nether Ore Tile
 }
 
 Buffs: {

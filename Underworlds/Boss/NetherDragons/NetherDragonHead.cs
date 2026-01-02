@@ -603,6 +603,9 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 
                 NetherDragonFogSystem.Deactivate();
             }
+
+            // 触发幽冥矿生成
+            NetherDragonDownedSystem.OnNetherDragonKilled();
         }
 
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
