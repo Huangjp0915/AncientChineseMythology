@@ -962,7 +962,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 
         public bool ShouldFireProjectile() {
             return CurrentAttack == TailAttackType.SpiritDrain &&
-                   attackProgress >= 0.4f && attackProgress < 0.75f;
+                   attackProgress >= 0.4f && attackProgress < 0.45f;
         }
 
         public float GetWidthAtIndex(int index) {

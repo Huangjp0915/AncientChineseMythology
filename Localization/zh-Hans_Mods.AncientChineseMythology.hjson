@@ -628,6 +628,46 @@ Items: {
 		DisplayName: 蚀魂权杖
 		Tooltip: ""
 	}
+
+	AxeofXingTian: {
+		DisplayName: 刑天之斧
+		Tooltip: ""
+	}
+
+	BloodfiendGreatsword: {
+		DisplayName: 血魔剑
+		Tooltip: ""
+	}
+
+	BrushofJudgment: {
+		DisplayName: 判官笔
+		Tooltip: ""
+	}
+
+	NetherboneBow: {
+		DisplayName: 冥骨弓
+		Tooltip: ""
+	}
+
+	SoulDevourerSpear: {
+		DisplayName: 噬魂枪
+		Tooltip: ""
+	}
+
+	SoulLanternStaff: {
+		DisplayName: 魂灯杖
+		Tooltip: ""
+	}
+
+	SoulseekerDaggers: {
+		DisplayName: 索魂匕
+		Tooltip: ""
+	}
+
+	YamasGavel: {
+		DisplayName: 阎罗锤
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -698,6 +738,8 @@ NPCs: {
 	AwakeningNetherBody.DisplayName: 觉醒-冥府尽头-幽冥龙
 	AwakeningNetherHead.DisplayName: 觉醒-冥府尽头-幽冥龙
 	AwakeningNetherTail.DisplayName: 觉醒-冥府尽头-幽冥龙
+	// Spectre.DisplayName: Spectre
+	// SpectreMinion.DisplayName: Spectre Minion
 }
 
 Projectiles: {
@@ -827,6 +869,10 @@ Projectiles: {
 	// PhantomDevastation.DisplayName: Phantom Devastation
 	// PhantomSplitGhost.DisplayName: Phantom Split Ghost
 	// SoulErosionCircle.DisplayName: Soul Erosion Circle
+	// SpectreSoulChain.DisplayName: Spectre Soul Chain
+	// SpectreSoulOrb.DisplayName: Spectre Soul Orb
+	// SpectreWailingWave.DisplayName: Spectre Wailing Wave
+	// SpectreWraithBolt.DisplayName: Spectre Wraith Bolt
 }
 
 // HeavenBiome.DisplayName: Heaven
