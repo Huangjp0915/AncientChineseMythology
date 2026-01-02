@@ -564,6 +564,21 @@ Items: {
 		DisplayName: Netherworld Sickle
 		Tooltip: ""
 	}
+
+	AbyssalSpine: {
+		DisplayName: Abyssal Spine
+		Tooltip: ""
+	}
+
+	PhantomBreath: {
+		DisplayName: Phantom Breath
+		Tooltip: ""
+	}
+
+	SoulErosionScepter: {
+		DisplayName: Soul Erosion Scepter
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -757,6 +772,12 @@ Projectiles: {
 	AwakeningNetherRift.DisplayName: Awakening Nether Rift
 	AwakeningNetherSoulOrb.DisplayName: Awakening Nether Soul Orb
 	AwakeningNetherVoidBolt.DisplayName: Awakening Nether Void Bolt
+	AbyssalRiftSlash.DisplayName: Abyssal Rift Slash
+	AbyssalSpineSlash.DisplayName: Abyssal Spine Slash
+	PhantomBreathArrow.DisplayName: Phantom Breath Arrow
+	PhantomDevastation.DisplayName: Phantom Devastation
+	PhantomSplitGhost.DisplayName: Phantom Split Ghost
+	SoulErosionCircle.DisplayName: Soul Erosion Circle
 }
 
 HeavenBiome.DisplayName: Heaven

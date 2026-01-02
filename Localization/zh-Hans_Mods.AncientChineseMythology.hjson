@@ -613,6 +613,21 @@ Items: {
 		DisplayName: 黄泉镰刃
 		Tooltip: ""
 	}
+
+	AbyssalSpine: {
+		DisplayName: 冥渊龙脊
+		Tooltip: ""
+	}
+
+	PhantomBreath: {
+		DisplayName: 幻影龙息
+		Tooltip: ""
+	}
+
+	SoulErosionScepter: {
+		DisplayName: 蚀魂权杖
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -806,6 +821,12 @@ Projectiles: {
 	// AwakeningNetherRift.DisplayName: Awakening Nether Rift
 	// AwakeningNetherSoulOrb.DisplayName: Awakening Nether Soul Orb
 	// AwakeningNetherVoidBolt.DisplayName: Awakening Nether Void Bolt
+	// AbyssalRiftSlash.DisplayName: Abyssal Rift Slash
+	// AbyssalSpineSlash.DisplayName: Abyssal Spine Slash
+	// PhantomBreathArrow.DisplayName: Phantom Breath Arrow
+	// PhantomDevastation.DisplayName: Phantom Devastation
+	// PhantomSplitGhost.DisplayName: Phantom Split Ghost
+	// SoulErosionCircle.DisplayName: Soul Erosion Circle
 }
 
 // HeavenBiome.DisplayName: Heaven
