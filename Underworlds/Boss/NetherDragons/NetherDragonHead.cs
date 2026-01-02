@@ -78,7 +78,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 
         public override void AI() {
             base.AI();
-
+            UnderworldPlayer.UnderworldEffect = true;
             if (!NPC.HasValidTarget)
                 NPC.TargetClosest(true);
 
@@ -243,9 +243,9 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                         0f
                     );
                 }
-                
+
                 SoundEngine.PlaySound(SoundID.Item8, NPC.Center);
-                
+
                 // 开始减速准备进入传送门
                 NPC.velocity *= 0.8f;
             }
@@ -253,19 +253,19 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             if (stateTimer < 180 && stateTimer > 150) {
                 // 持续减速，产生蓄力感
                 NPC.velocity *= 0.92f;
-                
+
                 // 蓄力粒子特效 - 被传送门吸引
                 if (Main.rand.NextBool(2) && Main.netMode != NetmodeID.Server) {
                     Vector2 dustPos = NPC.Center + Main.rand.NextVector2Circular(100f, 100f);
                     Vector2 toPortal = Vector2.Zero;
-                    
+
                     if (entrancePortalIndex >= 0 && entrancePortalIndex < Main.maxProjectiles) {
                         Projectile portal = Main.projectile[entrancePortalIndex];
                         if (portal.active) {
                             toPortal = (portal.Center - dustPos).SafeNormalize(Vector2.Zero) * 3f;
                         }
                     }
-                    
+
                     int dust = Dust.NewDust(dustPos, 1, 1, DustID.BlueTorch, 0, 0, 100, Color.Cyan, 1.8f);
                     Main.dust[dust].noGravity = true;
                     Main.dust[dust].velocity = toPortal;
@@ -286,7 +286,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                         NPC.velocity = Vector2.Lerp(NPC.velocity, toPortal * 15f, 0.15f);
                     }
                 }
-                
+
                 // 身体段跟随加速
                 NPC current = NPC;
                 while (current.ai[2] > 0 && current.ai[2] < Main.maxNPCs) {
@@ -321,8 +321,8 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                 TeleportWholeBody(exitPosition);
 
                 // 震撼的传送音效
-                SoundEngine.PlaySound(SoundID.Item8 with { 
-                    Pitch = 0.3f, 
+                SoundEngine.PlaySound(SoundID.Item8 with {
+                    Pitch = 0.3f,
                     Volume = 1.2f,
                     MaxInstances = 3
                 }, exitPosition);
@@ -330,7 +330,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                 // 创建大范围涟漪
                 if (Main.netMode != NetmodeID.Server) {
                     NetherDragonFogSystem.CreateRipple(exitPosition, 3f);
-                    
+
                     // 屏幕震动效果（如果玩家在附近）
                     if (Vector2.Distance(Target.Center, exitPosition) < 800f) {
                         Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>()?.ShakeScreen(8f, 20);
@@ -355,7 +355,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                     if (segment.active && segment.ModNPC is NetherDragon) {
                         for (int i = 0; i < 8; i++) {
                             Vector2 velocity = Main.rand.NextVector2Circular(4f, 4f);
-                            int dust = Dust.NewDust(segment.Center, segment.width, segment.height, 
+                            int dust = Dust.NewDust(segment.Center, segment.width, segment.height,
                                 DustID.BlueTorch, 0, 0, 100, Color.Cyan, 1.5f);
                             Main.dust[dust].noGravity = true;
                             Main.dust[dust].velocity = velocity;
@@ -371,10 +371,10 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                 // 从传送门猛烈冲出
                 Vector2 chargeDirection = (Target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
                 NPC.velocity = chargeDirection * 25f;
-                
+
                 // 冲刺音效
                 SoundEngine.PlaySound(SoundID.DD2_WyvernDiveDown with { Pitch = -0.2f }, NPC.Center);
-                
+
                 // 冲刺涟漪
                 if (Main.netMode != NetmodeID.Server) {
                     NetherDragonFogSystem.CreateRipple(NPC.Center, 2.5f);
@@ -384,10 +384,10 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             if (stateTimer < 110 && stateTimer > 80) {
                 // 保持高速追击，拖尾效果
                 NPC.velocity *= 0.98f;
-                
+
                 // 强化拖尾粒子
                 if (Main.rand.NextBool()) {
-                    int dust = Dust.NewDust(NPC.position, NPC.width, NPC.height, 
+                    int dust = Dust.NewDust(NPC.position, NPC.width, NPC.height,
                         DustID.BlueTorch, 0, 0, 100, Color.Cyan, 1.5f);
                     Main.dust[dust].noGravity = true;
                     Main.dust[dust].velocity = -NPC.velocity * 0.3f;
@@ -419,7 +419,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         private void TeleportWholeBody(Vector2 exitPosition) {
             // 计算整个虫子的长度和方向
             Vector2 bodyDirection = NPC.velocity.SafeNormalize(Vector2.UnitY);
-            
+
             // 传送头部
             Vector2 headOffset = NPC.Center - exitPosition;
             NPC.Center = exitPosition;
@@ -432,7 +432,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 
             while (current.ai[2] > 0 && current.ai[2] < Main.maxNPCs && segmentIndex < maxSegments) {
                 NPC segment = Main.npc[(int)current.ai[2]];
-                
+
                 if (!segment.active || segment.ModNPC is not NetherDragon) {
                     break;
                 }
@@ -472,7 +472,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                 // 波浪游动
                 float targetY = Target.Center.Y + MathF.Sin((300 - stateTimer) * waveFrequency * 2f) * 300f;
                 Vector2 waveTarget = new Vector2(NPC.Center.X, targetY);
-                
+
                 NPC.velocity.Y = (waveTarget.Y - NPC.Center.Y) * 0.08f;
                 NPC.velocity.X *= 0.95f;
 
@@ -506,7 +506,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 
             // 向左右两侧发射激光
             float baseAngle = MathF.Sign(Target.Center.X - NPC.Center.X) > 0 ? 0f : MathHelper.Pi;
-            
+
             for (int i = 0; i < 2; i++) {
                 float angleOffset = (i == 0 ? -0.2f : 0.2f);
                 float laserAngle = baseAngle + angleOffset;
@@ -588,7 +588,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 
         public override void OnKill() {
             base.OnKill();
-            
+
             // 关闭所有传送门
             ClosePortals();
 
@@ -600,7 +600,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                     Vector2 ripplePos = NPC.Center + Main.rand.NextVector2Circular(50f, 50f);
                     NetherDragonFogSystem.CreateRipple(ripplePos, 2.5f - delay);
                 }
-                
+
                 NetherDragonFogSystem.Deactivate();
             }
         }

@@ -14,37 +14,30 @@ namespace AncientChineseMythology
         /// <summary>
         /// 触发屏幕震动
         /// </summary>
-        public void ShakeScreen(float intensity, int duration)
-        {
-            if (intensity > shakeIntensity)
-            {
+        public void ShakeScreen(float intensity, int duration) {
+            if (intensity > shakeIntensity) {
                 shakeIntensity = intensity;
                 shakeDuration = duration;
             }
         }
 
-        public override void ModifyScreenPosition()
-        {
-            if (shakeDuration > 0)
-            {
+        public override void ModifyScreenPosition() {
+            if (shakeDuration > 0) {
                 // 应用随机震动
                 float currentIntensity = shakeIntensity * (shakeDuration / 20f);
                 Main.screenPosition += Main.rand.NextVector2Circular(currentIntensity, currentIntensity);
-                
+
                 shakeDuration--;
-                
-                if (shakeDuration == 0)
-                {
+
+                if (shakeDuration == 0) {
                     shakeIntensity = 0f;
                 }
             }
         }
 
-        public override void ResetEffects()
-        {
+        public override void ResetEffects() {
             // 每帧逐渐减弱震动
-            if (shakeIntensity > 0f)
-            {
+            if (shakeIntensity > 0f) {
                 shakeIntensity *= 0.95f;
             }
         }

@@ -1,4 +1,3 @@
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -22,18 +21,16 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         private float rotation = 0f;
         private float innerRotation = 0f;
         private const float MaxScale = 3.5f;
-        
+
         // 能量环效果
         private float[] energyRings = new float[3];
         private float pulsePhase = 0f;
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             Main.projFrames[Type] = 1;
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Projectile.width = 150;
             Projectile.height = 150;
             Projectile.hostile = false;
@@ -43,69 +40,60 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             Projectile.alpha = 255;
             Projectile.ignoreWater = true;
             Projectile.tileCollide = false;
-            
+
             // 初始化能量环
-            for (int i = 0; i < energyRings.Length; i++)
-            {
+            for (int i = 0; i < energyRings.Length; i++) {
                 energyRings[i] = i * MathHelper.TwoPi / energyRings.Length;
             }
         }
 
-        public override void AI()
-        {
+        public override void AI() {
             PortalTimer++;
             pulsePhase += 0.08f;
 
             // 旋转效果 - 双层反向旋转
             rotation += 0.04f;
             innerRotation -= 0.06f;
-            
+
             // 更新能量环
-            for (int i = 0; i < energyRings.Length; i++)
-            {
+            for (int i = 0; i < energyRings.Length; i++) {
                 energyRings[i] += 0.05f;
             }
 
-            switch (PortalState)
-            {
+            switch (PortalState) {
                 case 0: // 展开中 - 快速展开
-                    if (scale < MaxScale)
-                    {
+                    if (scale < MaxScale) {
                         scale += 0.15f;
                         Projectile.alpha = Math.Max(0, 255 - (int)(scale / MaxScale * 255));
-                        
+
                         // 展开时的爆炸性粒子
-                        if (Main.rand.NextBool(2))
-                        {
+                        if (Main.rand.NextBool(2)) {
                             float angle = Main.rand.NextFloat(MathHelper.TwoPi);
                             Vector2 velocity = angle.ToRotationVector2() * Main.rand.NextFloat(3f, 8f);
-                            int dust = Dust.NewDust(Projectile.Center, 1, 1, DustID.BlueTorch, 
+                            int dust = Dust.NewDust(Projectile.Center, 1, 1, DustID.BlueTorch,
                                 velocity.X, velocity.Y, 100, Color.Cyan, 2f);
                             Main.dust[dust].noGravity = true;
                         }
-                        
+
                         // 展开音效
-                        if (PortalTimer % 3 == 0)
-                        {
-                            SoundEngine.PlaySound(SoundID.Item9 with { 
-                                Volume = 0.3f, 
-                                Pitch = scale / MaxScale 
+                        if (PortalTimer % 3 == 0) {
+                            SoundEngine.PlaySound(SoundID.Item9 with {
+                                Volume = 0.3f,
+                                Pitch = scale / MaxScale
                             }, Projectile.Center);
                         }
                     }
-                    else
-                    {
+                    else {
                         scale = MaxScale;
                         PortalState = 1;
                         Projectile.alpha = 0;
-                        
+
                         // 完全展开时的爆发
                         SoundEngine.PlaySound(SoundID.Item8 with { Volume = 0.8f }, Projectile.Center);
-                        for (int i = 0; i < 30; i++)
-                        {
+                        for (int i = 0; i < 30; i++) {
                             float angle = i * MathHelper.TwoPi / 30f;
                             Vector2 velocity = angle.ToRotationVector2() * 6f;
-                            int dust = Dust.NewDust(Projectile.Center, 1, 1, DustID.BlueTorch, 
+                            int dust = Dust.NewDust(Projectile.Center, 1, 1, DustID.BlueTorch,
                                 velocity.X, velocity.Y, 100, Color.Cyan, 2.5f);
                             Main.dust[dust].noGravity = true;
                         }
@@ -115,53 +103,46 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                 case 1: // 稳定状态 - 脉动效果
                     float pulse = MathF.Sin(pulsePhase) * 0.15f;
                     scale = MaxScale + pulse;
-                    
+
                     // 持续的能量粒子流
-                    if (Main.rand.NextBool(3))
-                    {
+                    if (Main.rand.NextBool(3)) {
                         Vector2 offset = Main.rand.NextVector2Circular(80f, 80f) * scale;
                         Vector2 velocity = -offset.SafeNormalize(Vector2.Zero) * 3f;
-                        
-                        int dust = Dust.NewDust(Projectile.Center + offset, 1, 1, DustID.BlueTorch, 
+
+                        int dust = Dust.NewDust(Projectile.Center + offset, 1, 1, DustID.BlueTorch,
                             velocity.X, velocity.Y, 100, Color.Cyan, 1.8f);
                         Main.dust[dust].noGravity = true;
                         Main.dust[dust].fadeIn = 1.5f;
                     }
-                    
+
                     // 稳定超过140帧后开始收缩
-                    if (PortalTimer > 140)
-                    {
+                    if (PortalTimer > 140) {
                         PortalState = 2;
                         PortalTimer = 0;
                     }
                     break;
 
                 case 2: // 收缩中 - 快速内爆
-                    if (scale > 0f)
-                    {
+                    if (scale > 0f) {
                         scale -= 0.18f;
                         Projectile.alpha = Math.Min(255, (int)((1f - scale / MaxScale) * 255));
-                        
+
                         // 收缩时向内吸引粒子
-                        if (Main.rand.NextBool())
-                        {
+                        if (Main.rand.NextBool()) {
                             Vector2 offset = Main.rand.NextVector2Circular(100f, 100f);
                             Vector2 velocity = -offset.SafeNormalize(Vector2.Zero) * 4f;
-                            
-                            int dust = Dust.NewDust(Projectile.Center + offset, 1, 1, DustID.BlueTorch, 
+
+                            int dust = Dust.NewDust(Projectile.Center + offset, 1, 1, DustID.BlueTorch,
                                 velocity.X, velocity.Y, 100, Color.Cyan, 1.5f);
                             Main.dust[dust].noGravity = true;
                         }
                     }
-                    else
-                    {
+                    else {
                         // 完全收缩，最后的内爆效果
-                        if (Main.netMode != NetmodeID.Server)
-                        {
-                            for (int i = 0; i < 20; i++)
-                            {
+                        if (Main.netMode != NetmodeID.Server) {
+                            for (int i = 0; i < 20; i++) {
                                 Vector2 velocity = Main.rand.NextVector2Circular(4f, 4f);
-                                int dust = Dust.NewDust(Projectile.Center, 1, 1, DustID.BlueTorch, 
+                                int dust = Dust.NewDust(Projectile.Center, 1, 1, DustID.BlueTorch,
                                     velocity.X, velocity.Y, 100, Color.Cyan, 1.2f);
                                 Main.dust[dust].noGravity = true;
                             }
@@ -177,8 +158,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             Lighting.AddLight(Projectile.Center, 0.4f * lightIntensity, 0.7f * lightIntensity, 1.2f * lightIntensity);
         }
 
-        public override bool PreDraw(ref Color lightColor)
-        {
+        public override bool PreDraw(ref Color lightColor) {
             if (Underworld.Fog == null)
                 return false;
 
@@ -190,11 +170,10 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             Color coreColor = new Color(150, 200, 255);
 
             // 绘制外层光环
-            for (int i = 0; i < 3; i++)
-            {
+            for (int i = 0; i < 3; i++) {
                 float ringScale = scale * (1.2f + i * 0.3f);
                 float ringAlpha = 0.15f - i * 0.04f;
-                
+
                 Main.spriteBatch.Draw(
                     fogTex,
                     drawPos,
@@ -209,11 +188,10 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             }
 
             // 绘制能量环
-            for (int i = 0; i < energyRings.Length; i++)
-            {
+            for (int i = 0; i < energyRings.Length; i++) {
                 float angle = energyRings[i];
                 float ringScale = scale * (0.8f + MathF.Sin(angle * 2f) * 0.2f);
-                
+
                 Main.spriteBatch.Draw(
                     fogTex,
                     drawPos,
@@ -228,8 +206,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             }
 
             // 绘制主传送门层 - 多层旋转效果
-            for (int i = 0; i < 5; i++)
-            {
+            for (int i = 0; i < 5; i++) {
                 float layerScale = scale * (1f - i * 0.12f);
                 float layerRotation = rotation * (1f + i * 0.2f);
                 float layerAlpha = 0.5f - i * 0.08f;
@@ -248,11 +225,10 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             }
 
             // 内层反向旋转
-            for (int i = 0; i < 3; i++)
-            {
+            for (int i = 0; i < 3; i++) {
                 float layerScale = scale * (0.6f - i * 0.15f);
                 float layerAlpha = 0.4f - i * 0.1f;
-                
+
                 Main.spriteBatch.Draw(
                     fogTex,
                     drawPos,
@@ -286,8 +262,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         /// <summary>
         /// 开始收缩传送门
         /// </summary>
-        public void StartClosing()
-        {
+        public void StartClosing() {
             PortalState = 2;
             PortalTimer = 0;
         }

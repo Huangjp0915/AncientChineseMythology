@@ -9,17 +9,15 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
     {
         public override WormType NPCWormType => WormType.Body;
 
-        public override void ChangeSummonType()
-        {
+        public override void ChangeSummonType() {
             SummonNPCType = ModContent.NPCType<NetherDragonBody>();
-            
+
             // 最后几节切换到尾巴
             if (SummonCount > SummonMax - 3)
                 SummonNPCType = ModContent.NPCType<NetherDragonTail>();
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             base.SetDefaults();
             NPC.width = 22;
             NPC.height = 22;

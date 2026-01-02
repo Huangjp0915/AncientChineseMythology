@@ -1,4 +1,3 @@
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
@@ -40,8 +39,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         /// <summary>
         /// 激活迷雾效果
         /// </summary>
-        public static void Activate(int bossIndex)
-        {
+        public static void Activate(int bossIndex) {
             if (bossIndex < 0 || bossIndex >= Main.maxNPCs)
                 return;
 
@@ -55,8 +53,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 
             // 初始化幽魂迷雾
             soulFogs.Clear();
-            for (int i = 0; i < MaxSoulFogs; i++)
-            {
+            for (int i = 0; i < MaxSoulFogs; i++) {
                 soulFogs.Add(new SoulFogLayer(battlefieldCenter, battlefieldRadius));
             }
 
@@ -67,8 +64,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         /// <summary>
         /// 停用迷雾效果
         /// </summary>
-        public static void Deactivate()
-        {
+        public static void Deactivate() {
             isActive = false;
             bossNPCIndex = -1;
         }
@@ -76,10 +72,8 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         /// <summary>
         /// 创建魂魄涟漪（Boss攻击时调用）
         /// </summary>
-        public static void CreateRipple(Vector2 position, float strength = 1f)
-        {
-            if (ripples.Count < MaxRipples)
-            {
+        public static void CreateRipple(Vector2 position, float strength = 1f) {
+            if (ripples.Count < MaxRipples) {
                 ripples.Add(new SoulRipple(position, strength));
             }
         }
@@ -87,23 +81,17 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         /// <summary>
         /// 创建狐火游离
         /// </summary>
-        private static void CreateWisp(Vector2 position, Vector2 velocity)
-        {
-            if (wisps.Count < MaxWisps)
-            {
+        private static void CreateWisp(Vector2 position, Vector2 velocity) {
+            if (wisps.Count < MaxWisps) {
                 wisps.Add(new FoxfireWisp(position, velocity));
             }
         }
 
-        public override void PostUpdateEverything()
-        {
-            if (!isActive)
-            {
-                if (intensity > 0f)
-                {
+        public override void PostUpdateEverything() {
+            if (!isActive) {
+                if (intensity > 0f) {
                     intensity -= 0.015f;
-                    if (intensity <= 0f)
-                    {
+                    if (intensity <= 0f) {
                         intensity = 0f;
                         soulFogs.Clear();
                         wisps.Clear();
@@ -115,8 +103,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 
             // 验证Boss是否存活
             if (bossNPCIndex < 0 || bossNPCIndex >= Main.maxNPCs ||
-                !Main.npc[bossNPCIndex].active || Main.npc[bossNPCIndex].type != ModContent.NPCType<NetherKitsune>())
-            {
+                !Main.npc[bossNPCIndex].active || Main.npc[bossNPCIndex].type != ModContent.NPCType<NetherKitsune>()) {
                 Deactivate();
                 return;
             }
@@ -124,14 +111,12 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             NPC boss = Main.npc[bossNPCIndex];
 
             // 强度渐入
-            if (intensity < 1f)
-            {
+            if (intensity < 1f) {
                 intensity = Math.Min(intensity + 0.006f, 1f);
             }
 
             globalTimer += 0.016f;
-            if (globalTimer > MathHelper.TwoPi * 10f)
-            {
+            if (globalTimer > MathHelper.TwoPi * 10f) {
                 globalTimer -= MathHelper.TwoPi * 10f;
             }
 
@@ -142,8 +127,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             Vector2 bossVelocity = boss.Center - bossLastPosition;
             float bossSpeed = bossVelocity.Length();
 
-            if (bossSpeed > 8f && Main.rand.NextBool(3))
-            {
+            if (bossSpeed > 8f && Main.rand.NextBool(3)) {
                 Vector2 wispPos = boss.Center - bossVelocity.SafeNormalize(Vector2.Zero) * 60f;
                 wispPos += Main.rand.NextVector2Circular(30f, 30f);
                 CreateWisp(wispPos, -bossVelocity * 0.1f + Main.rand.NextVector2Circular(2f, 2f));
@@ -152,34 +136,28 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             bossLastPosition = boss.Center;
 
             // 更新幽魂迷雾
-            foreach (var fog in soulFogs)
-            {
+            foreach (var fog in soulFogs) {
                 fog.Update(boss, battlefieldCenter, globalTimer);
             }
 
             // 更新狐火
-            for (int i = wisps.Count - 1; i >= 0; i--)
-            {
+            for (int i = wisps.Count - 1; i >= 0; i--) {
                 wisps[i].Update();
-                if (wisps[i].IsDead)
-                {
+                if (wisps[i].IsDead) {
                     wisps.RemoveAt(i);
                 }
             }
 
             // 更新涟漪
-            for (int i = ripples.Count - 1; i >= 0; i--)
-            {
+            for (int i = ripples.Count - 1; i >= 0; i--) {
                 ripples[i].Update();
-                if (ripples[i].IsDead)
-                {
+                if (ripples[i].IsDead) {
                     ripples.RemoveAt(i);
                 }
             }
         }
 
-        public override void PostDrawTiles()
-        {
+        public override void PostDrawTiles() {
             if (Main.gameMenu || intensity <= 0.01f || Underworld.Fog == null)
                 return;
 
@@ -203,12 +181,10 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             spriteBatch.End();
         }
 
-        private static void DrawSoulFogs(SpriteBatch sb)
-        {
+        private static void DrawSoulFogs(SpriteBatch sb) {
             Texture2D fogTex = Underworld.Fog;
 
-            foreach (var fog in soulFogs)
-            {
+            foreach (var fog in soulFogs) {
                 Vector2 drawPos = fog.Position - Main.screenPosition;
 
                 if (drawPos.X < -400 || drawPos.X > Main.screenWidth + 400 ||
@@ -248,12 +224,10 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             }
         }
 
-        private static void DrawWisps(SpriteBatch sb)
-        {
+        private static void DrawWisps(SpriteBatch sb) {
             Texture2D fogTex = Underworld.Fog;
 
-            foreach (var wisp in wisps)
-            {
+            foreach (var wisp in wisps) {
                 Vector2 drawPos = wisp.Position - Main.screenPosition;
 
                 // 狐火颜色 - 幽蓝带白
@@ -291,20 +265,17 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             }
         }
 
-        private static void DrawRipples(SpriteBatch sb)
-        {
+        private static void DrawRipples(SpriteBatch sb) {
             Texture2D fogTex = Underworld.Fog;
 
-            foreach (var ripple in ripples)
-            {
+            foreach (var ripple in ripples) {
                 Vector2 drawPos = ripple.Position - Main.screenPosition;
 
                 // 魂魄涟漪 - 幽蓝色
                 Color rippleColor = new Color(90, 170, 240);
                 float alpha = ripple.GetAlpha() * intensity;
 
-                for (int i = 0; i < 3; i++)
-                {
+                for (int i = 0; i < 3; i++) {
                     float scaleOffset = i * 0.5f;
                     float alphaOffset = 1f - i * 0.3f;
 
@@ -329,8 +300,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         /// <summary>
         /// 获取指定位置的迷雾密度
         /// </summary>
-        public static float GetFogDensityAt(Vector2 position)
-        {
+        public static float GetFogDensityAt(Vector2 position) {
             if (!isActive || intensity <= 0f)
                 return 0f;
 
@@ -340,11 +310,9 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             float layerDensity = 0f;
             int nearbyCount = 0;
 
-            foreach (var fog in soulFogs)
-            {
+            foreach (var fog in soulFogs) {
                 float distance = Vector2.Distance(fog.Position, position);
-                if (distance < 250f)
-                {
+                if (distance < 250f) {
                     nearbyCount++;
                     layerDensity += (1f - distance / 250f) * fog.GetAlpha();
                 }
@@ -376,8 +344,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 
         private const float BossInfluenceRadius = 200f;
 
-        public SoulFogLayer(Vector2 center, float radius)
-        {
+        public SoulFogLayer(Vector2 center, float radius) {
             battlefieldCenter = center;
             battlefieldRadius = radius;
 
@@ -402,8 +369,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             baseColor = colors[Main.rand.Next(colors.Length)];
         }
 
-        public void Update(NPC boss, Vector2 center, float timer)
-        {
+        public void Update(NPC boss, Vector2 center, float timer) {
             battlefieldCenter = center;
 
             Position += Velocity;
@@ -413,13 +379,11 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             // 保持在战场范围内
             Vector2 toCenter = battlefieldCenter - Position;
             float distanceFromCenter = toCenter.Length();
-            if (distanceFromCenter > battlefieldRadius * 0.75f)
-            {
+            if (distanceFromCenter > battlefieldRadius * 0.75f) {
                 Velocity += toCenter.SafeNormalize(Vector2.Zero) * 0.04f;
             }
 
-            if (Velocity.Length() > 0.6f)
-            {
+            if (Velocity.Length() > 0.6f) {
                 Velocity = Vector2.Normalize(Velocity) * 0.6f;
             }
 
@@ -429,8 +393,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 
             IsNearBoss = distanceToBoss < BossInfluenceRadius;
 
-            if (IsNearBoss)
-            {
+            if (IsNearBoss) {
                 // 被Boss吸引
                 float attractStrength = (1f - distanceToBoss / BossInfluenceRadius) * 0.8f;
                 Velocity += toBoss.SafeNormalize(Vector2.Zero) * attractStrength * 0.05f;
@@ -440,22 +403,18 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             }
         }
 
-        public Color GetColor()
-        {
-            if (IsNearBoss)
-            {
+        public Color GetColor() {
+            if (IsNearBoss) {
                 return Color.Lerp(baseColor, new Color(80, 140, 200), 0.5f);
             }
             return baseColor;
         }
 
-        public float GetAlpha()
-        {
+        public float GetAlpha() {
             float pulse = MathF.Sin(PulsePhase) * 0.2f + 0.8f;
             float baseAlpha = 0.55f;
 
-            if (IsNearBoss)
-            {
+            if (IsNearBoss) {
                 baseAlpha *= 1.2f;
             }
 
@@ -477,8 +436,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 
         private float pulsePhase;
 
-        public FoxfireWisp(Vector2 position, Vector2 velocity)
-        {
+        public FoxfireWisp(Vector2 position, Vector2 velocity) {
             Position = position;
             Velocity = velocity;
             Scale = Main.rand.NextFloat(0.3f, 0.6f);
@@ -487,8 +445,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             pulsePhase = Main.rand.NextFloat(MathHelper.TwoPi);
         }
 
-        public void Update()
-        {
+        public void Update() {
             Progress += 0.008f;
             Position += Velocity;
             Velocity *= 0.97f;
@@ -505,13 +462,11 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             Scale = MathHelper.Lerp(0.3f, 0.8f, MathF.Sin(Progress * MathF.PI));
         }
 
-        public float GetAlpha()
-        {
+        public float GetAlpha() {
             return MathF.Sin(Progress * MathF.PI) * 0.8f;
         }
 
-        public float GetPulse()
-        {
+        public float GetPulse() {
             return 0.5f + 0.5f * MathF.Sin(pulsePhase);
         }
     }
@@ -528,8 +483,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         public float Strength;
         public bool IsDead => Progress >= 1f;
 
-        public SoulRipple(Vector2 position, float strength)
-        {
+        public SoulRipple(Vector2 position, float strength) {
             Position = position;
             Scale = 0.3f;
             Rotation = Main.rand.NextFloat(MathHelper.TwoPi);
@@ -537,15 +491,13 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             Strength = Math.Clamp(strength, 0.5f, 2.5f);
         }
 
-        public void Update()
-        {
+        public void Update() {
             Progress += 0.01f * Strength;
             Scale = MathHelper.Lerp(0.3f, 6f, Progress);
             Rotation += 0.006f;
         }
 
-        public float GetAlpha()
-        {
+        public float GetAlpha() {
             return MathF.Sin(Progress * MathF.PI) * Strength * 0.6f;
         }
     }

@@ -10,8 +10,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
     /// </summary>
     public class NetherDragonSummonItem : ModItem
     {
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 32;
             Item.height = 32;
             Item.useTime = 30;
@@ -22,16 +21,13 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             Item.value = Item.buyPrice(0, 1, 0, 0);
         }
 
-        public override bool CanUseItem(Player player)
-        {
+        public override bool CanUseItem(Player player) {
             // 检查是否已经存在Boss
             return !NPC.AnyNPCs(ModContent.NPCType<NetherDragonHead>());
         }
 
-        public override bool? UseItem(Player player)
-        {
-            if (player.whoAmI == Main.myPlayer)
-            {
+        public override bool? UseItem(Player player) {
+            if (player.whoAmI == Main.myPlayer) {
                 // 播放召唤音效
                 SoundEngine.PlaySound(SoundID.Roar, player.position);
 
@@ -43,8 +39,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                     ModContent.NPCType<NetherDragonHead>()
                 );
 
-                if (Main.netMode == NetmodeID.Server && npcID < Main.maxNPCs)
-                {
+                if (Main.netMode == NetmodeID.Server && npcID < Main.maxNPCs) {
                     NetMessage.SendData(MessageID.SyncNPC, number: npcID);
                 }
 

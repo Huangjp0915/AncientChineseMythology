@@ -1,6 +1,3 @@
-using AncientChineseMythology.Underworlds.Boss.Corpseses;
-using AncientChineseMythology.Underworlds.Boss.NetherDragons;
-using AncientChineseMythology.Underworlds.Boss.NetherKitsunes;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -821,7 +818,7 @@ namespace AncientChineseMythology.Underworlds
         /// 检查玩家是否在地府区域
         /// </summary>
         public static bool IsInUnderworldZone(Player player) {
-            if (NPC.AnyNPCs(ModContent.NPCType<NetherDragonHead>()) || NPC.AnyNPCs(ModContent.NPCType<Corpses>()) || NPC.AnyNPCs(ModContent.NPCType<NetherKitsune>())) {
+            if (UnderworldPlayer.UnderworldEffect) {
                 return true;
             }
             // 检查是否在地狱层或岩石层（地府范围）

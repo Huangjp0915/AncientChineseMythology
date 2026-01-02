@@ -1,6 +1,4 @@
-﻿using Terraria.ModLoader;
-
-namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
+﻿namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 {
     /// <summary>
     /// 幽冥龙尾巴
@@ -9,8 +7,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
     {
         public override WormType NPCWormType => WormType.Tail;
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             base.SetDefaults();
             NPC.width = 22;
             NPC.height = 22;

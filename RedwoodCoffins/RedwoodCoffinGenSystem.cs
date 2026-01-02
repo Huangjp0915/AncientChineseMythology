@@ -76,13 +76,13 @@ namespace AncientChineseMythology.RedwoodCoffins
 
             // 在玩家周围寻找合适的生成位置
             Point playerTilePos = targetPlayer.Center.ToTileCoordinates();
-            
+
             // 尝试多次寻找合适位置
             for (int attempt = 0; attempt < 100; attempt++) {
                 // 在玩家周围随机一个位置（距离30-80格）
                 int offsetX = Main.rand.Next(-80, 80);
                 int offsetY = Main.rand.Next(-40, 40);
-                
+
                 if (Math.Abs(offsetX) < 30)
                     offsetX += Main.rand.NextBool() ? 30 : -30;
 
@@ -93,11 +93,11 @@ namespace AncientChineseMythology.RedwoodCoffins
                 if (IsValidSpawnLocation(spawnX, spawnY)) {
                     // 准备生成区域
                     PrepareSpawnArea(spawnX, spawnY);
-                    
+
                     // 放置棺材
                     if (PlaceCoffin(spawnX, spawnY)) {
                         coffinsGenerated++;
-                        
+
                         // 通知玩家
                         if (Main.netMode == NetmodeID.SinglePlayer) {
                             Main.NewText("你感觉到附近的地下有股诡异的气息...", 150, 150, 200);
@@ -108,7 +108,7 @@ namespace AncientChineseMythology.RedwoodCoffins
                                 new Color(150, 150, 200)
                             );
                         }
-                        
+
                         return;
                     }
                 }
@@ -135,7 +135,7 @@ namespace AncientChineseMythology.RedwoodCoffins
                         return false;
 
                     Tile tile = Main.tile[checkX, checkY];
-                    
+
                     // 底部需要有实心方块
                     if (checkY == y) {
                         if (!tile.HasTile || !Main.tileSolid[tile.TileType])
@@ -158,7 +158,7 @@ namespace AncientChineseMythology.RedwoodCoffins
                     if (WorldGen.InWorld(clearX, clearY)) {
                         WorldGen.KillTile(clearX, clearY, noItem: true);
                         WorldGen.KillWall(clearX, clearY);
-                        
+
                         // 清除液体
                         Tile tile = Main.tile[clearX, clearY];
                         tile.LiquidAmount = 0;
@@ -170,12 +170,12 @@ namespace AncientChineseMythology.RedwoodCoffins
             for (int baseX = x; baseX < x + 9; baseX++) {
                 if (WorldGen.InWorld(baseX, y)) {
                     Tile baseTile = Main.tile[baseX, y];
-                    
+
                     // 如果底部没有方块，放置石块
                     if (!baseTile.HasTile || !Main.tileSolid[baseTile.TileType]) {
                         WorldGen.PlaceTile(baseX, y, TileID.Stone, forced: true);
                     }
-                    
+
                     // 确保底部方块是平整的（没有斜坡）
                     baseTile.Slope = SlopeType.Solid;
                     baseTile.IsHalfBlock = false;
@@ -200,7 +200,7 @@ namespace AncientChineseMythology.RedwoodCoffins
             int placeY = y - 1;
 
             bool success = WorldGen.PlaceObject(placeX, placeY, ModContent.TileType<RedwoodCoffinTile>(), style: 0);
-            
+
             if (success) {
                 //获取箱子左上角位置并创建TP实体
                 if (TPUtils.TryGetTopLeft(placeX, placeY, out var point)) {
@@ -210,7 +210,7 @@ namespace AncientChineseMythology.RedwoodCoffins
                 if (Main.netMode == NetmodeID.Server) {
                     NetMessage.SendObjectPlacement(-1, placeX, placeY, ModContent.TileType<RedwoodCoffinTile>(), 0, 0, -1, -1);
                 }
-                
+
                 // 添加一些装饰效果（火把）
                 AddDecoration(x, y);
             }
@@ -223,7 +223,7 @@ namespace AncientChineseMythology.RedwoodCoffins
             if (Main.rand.NextBool(2)) {
                 WorldGen.PlaceTile(x - 2, y - 1, TileID.Torches, mute: true, style: 0);
             }
-            
+
             if (Main.rand.NextBool(2)) {
                 WorldGen.PlaceTile(x + 10, y - 1, TileID.Torches, mute: true, style: 0);
             }

@@ -69,7 +69,7 @@ namespace AncientChineseMythology.RedwoodCoffins
                 if (!coffinTP.open && !coffinTP.hasBeenOpened) {
                     coffinTP.open = true;
                     coffinTP.hasBeenOpened = true;
-                    
+
                     // 播放打开音效
                     SoundEngine.PlaySound(SoundID.DoorOpen, new Vector2(i * 16, j * 16));
                 }
@@ -117,7 +117,7 @@ namespace AncientChineseMythology.RedwoodCoffins
         private int frameCunter;
         public bool open;
         public bool hasBeenOpened; // 标记是否已经被打开过
-        
+
         public override void Update() {
             if (open) {
                 if (++frameCunter > 6) {

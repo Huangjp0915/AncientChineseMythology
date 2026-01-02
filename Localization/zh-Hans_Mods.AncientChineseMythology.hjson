@@ -593,6 +593,26 @@ Items: {
 		DisplayName: 妲己之书
 		Tooltip: ""
 	}
+
+	DemonSoulStaff: {
+		DisplayName: 勾魂者
+		Tooltip: ""
+	}
+
+	Ferryman: {
+		DisplayName: 摆渡人
+		Tooltip: ""
+	}
+
+	DemonicAnnihilation: {
+		DisplayName: 斩魂关刀
+		Tooltip: ""
+	}
+
+	NetherworldSickle: {
+		DisplayName: 黄泉镰刃
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -658,6 +678,8 @@ NPCs: {
 	// CorpsesHand.DisplayName: Corpses Hand
 	// KyuubiKitsune.DisplayName: Kyuubi Kitsune
 	// NetherKitsune.DisplayName: Nether Kitsune
+	// BlackImpermanence.DisplayName: Black Impermanence
+	// WhiteImpermanence.DisplayName: White Impermanence
 }
 
 Projectiles: {
@@ -760,6 +782,23 @@ Projectiles: {
 	// DakkiCharmRing.DisplayName: Dakki Charm Ring
 	// DakkiFireBolt.DisplayName: Dakki Fire Bolt
 	// DakkiSoulBolt.DisplayName: Dakki Soul Bolt
+	// ChainProjectile.DisplayName: Chain Projectile
+	// ChainPullProjectile.DisplayName: Chain Pull Projectile
+	// ChainSweepProjectile.DisplayName: Chain Sweep Projectile
+	// GhostProjectile.DisplayName: Ghost Projectile
+	// GhostWaveProjectile.DisplayName: Ghost Wave Projectile
+	// SoulChainProjectile.DisplayName: Soul Chain Projectile
+	// SoulDrainProjectile.DisplayName: Soul Drain Projectile
+	// SpiritCircleProjectile.DisplayName: Spirit Circle Projectile
+	// DemonSoulCircle.DisplayName: Demon Soul Circle
+	// DemonSoulSeeker.DisplayName: Demon Soul Seeker
+	// FerrymanArrow.DisplayName: Ferryman Arrow
+	// FerrymanGhost.DisplayName: Ferryman Ghost
+	// DemonicBurstWave.DisplayName: Demonic Burst Wave
+	// DemonicChainBind.DisplayName: Demonic Chain Bind
+	// DemonicSlashWave.DisplayName: Demonic Slash Wave
+	// NetherworldSickleProjectile.DisplayName: Netherworld Sickle Projectile
+	// DemonicAnnihilationProj.DisplayName: Demonic Annihilation Proj
 }
 
 // HeavenBiome.DisplayName: Heaven

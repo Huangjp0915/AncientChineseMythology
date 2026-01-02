@@ -1,4 +1,3 @@
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -23,8 +22,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         private const float TargetLength = 1500f;
         private const float BeamWidth = 30f;
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Projectile.width = 30;
             Projectile.height = 30;
             Projectile.hostile = true;
@@ -38,23 +36,19 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             Projectile.localNPCHitCooldown = 10;
         }
 
-        public override void AI()
-        {
+        public override void AI() {
             LaserTimer++;
 
             // 激光长度变化
-            if (LaserTimer < 10f)
-            {
+            if (LaserTimer < 10f) {
                 // 快速伸展
                 currentLength = MathHelper.Lerp(0f, TargetLength, LaserTimer / 10f);
             }
-            else if (Projectile.timeLeft < 20)
-            {
+            else if (Projectile.timeLeft < 20) {
                 // 收缩
                 currentLength = MathHelper.Lerp(TargetLength, 0f, 1f - Projectile.timeLeft / 20f);
             }
-            else
-            {
+            else {
                 currentLength = TargetLength;
             }
 
@@ -65,11 +59,10 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             LaserDirection += MathF.Sin(LaserTimer * 0.1f) * 0.002f;
 
             // 粒子效果
-            if (Main.rand.NextBool(2))
-            {
+            if (Main.rand.NextBool(2)) {
                 Vector2 laserEnd = Projectile.Center + new Vector2(MathF.Cos(LaserDirection), MathF.Sin(LaserDirection)) * MaxLength;
                 Vector2 dustPos = Vector2.Lerp(Projectile.Center, laserEnd, Main.rand.NextFloat(0.2f, 1f));
-                
+
                 int dust = Dust.NewDust(dustPos, 1, 1, DustID.BlueTorch, 0, 0, 100, Color.Cyan, 1.2f);
                 Main.dust[dust].noGravity = true;
                 Main.dust[dust].velocity = Main.rand.NextVector2Circular(2f, 2f);
@@ -79,44 +72,38 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             Lighting.AddLight(Projectile.Center, 0.4f, 0.6f, 1f);
 
             // 音效
-            if (LaserTimer == 1)
-            {
+            if (LaserTimer == 1) {
                 SoundEngine.PlaySound(SoundID.Item33, Projectile.Center);
             }
         }
 
-        private float GetLaserLength()
-        {
+        private float GetLaserLength() {
             float length = 50f;
             Vector2 direction = new Vector2(MathF.Cos(LaserDirection), MathF.Sin(LaserDirection));
 
-            while (length <= currentLength)
-            {
+            while (length <= currentLength) {
                 Vector2 testPoint = Projectile.Center + direction * length;
-                
-                if (!Collision.CanHit(Projectile.Center, 1, 1, testPoint, 1, 1))
-                {
+
+                if (!Collision.CanHit(Projectile.Center, 1, 1, testPoint, 1, 1)) {
                     return length - 20f;
                 }
-                
+
                 length += 20f;
             }
 
             return currentLength;
         }
 
-        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox)
-        {
+        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
             // 激光束碰撞检测
             Vector2 start = Projectile.Center;
             Vector2 end = start + new Vector2(MathF.Cos(LaserDirection), MathF.Sin(LaserDirection)) * MaxLength;
-            
+
             float point = 0f;
             return Collision.CheckAABBvLineCollision(targetHitbox.TopLeft(), targetHitbox.Size(), start, end, BeamWidth, ref point);
         }
 
-        public override bool PreDraw(ref Color lightColor)
-        {
+        public override bool PreDraw(ref Color lightColor) {
             if (Underworld.Fog == null)
                 return false;
 
@@ -124,23 +111,21 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             return false;
         }
 
-        private void DrawLaser()
-        {
+        private void DrawLaser() {
             Texture2D beamTexture = Underworld.Fog;
             Vector2 start = Projectile.Center - Main.screenPosition;
             Vector2 direction = new Vector2(MathF.Cos(LaserDirection), MathF.Sin(LaserDirection));
-            
+
             float drawLength = MaxLength;
             int segments = (int)(drawLength / 20f);
 
             Color beamColor = new Color(100, 150, 255);
 
             // 绘制激光段
-            for (int i = 0; i < segments; i++)
-            {
+            for (int i = 0; i < segments; i++) {
                 float progress = i / (float)segments;
                 Vector2 segmentPos = start + direction * (i * 20f);
-                
+
                 // 淡入淡出效果
                 float alpha = 0.6f;
                 if (progress < 0.1f)
@@ -149,7 +134,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                     alpha *= (1f - progress) / 0.1f;
 
                 float scale = BeamWidth / beamTexture.Width * 0.03f;
-                
+
                 // 主光束
                 Main.spriteBatch.Draw(
                     beamTexture,
@@ -185,11 +170,10 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             DrawLaserEnd(endPos);
         }
 
-        private void DrawLaserStart(Vector2 position)
-        {
+        private void DrawLaserStart(Vector2 position) {
             Texture2D texture = Underworld.Fog;
             Color color = new Color(150, 200, 255);
-            
+
             float pulseScale = 1f + MathF.Sin(LaserTimer * 0.2f) * 0.2f;
 
             Main.spriteBatch.Draw(
@@ -205,16 +189,14 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             );
         }
 
-        private void DrawLaserEnd(Vector2 position)
-        {
+        private void DrawLaserEnd(Vector2 position) {
             Texture2D texture = Underworld.Fog;
             Color color = new Color(120, 180, 255);
-            
+
             float pulseScale = 1f + MathF.Sin(LaserTimer * 0.15f) * 0.3f;
 
             // 爆裂效果
-            for (int i = 0; i < 3; i++)
-            {
+            for (int i = 0; i < 3; i++) {
                 float rotation = this.rotation + i * MathHelper.TwoPi / 3f;
                 Main.spriteBatch.Draw(
                     texture,

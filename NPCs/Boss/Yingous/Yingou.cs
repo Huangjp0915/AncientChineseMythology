@@ -10,7 +10,6 @@ using Terraria.GameContent.ItemDropRules;
 using Terraria.Graphics.Effects;
 using Terraria.ID;
 using Terraria.ModLoader;
-using static AncientChineseMythology.Projectiles.RuyiStickSpearProjectile_3;
 
 namespace AncientChineseMythology.NPCs.Boss.Yingous
 {

@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -14,8 +13,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
     /// </summary>
     internal class CorpsesesStaff : ModItem
     {
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.damage = 2685;
             Item.DamageType = DamageClass.Summon;
             Item.width = 48;
@@ -35,20 +33,18 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
             Item.buffType = ModContent.BuffType<CorpsesesHandMinionBuff>();
         }
 
-        public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback)
-        {
+        public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
             // 清除旧召唤物
             player.AddBuff(Item.buffType, 2);
-            
+
             // 召唤新的手掌
             var projectile = Projectile.NewProjectileDirect(source, player.Center, Vector2.Zero, type, damage, knockback, player.whoAmI);
             projectile.originalDamage = Item.damage;
-            
+
             return false;
         }
 
-        public override void AddRecipes()
-        {
+        public override void AddRecipes() {
             // TODO: 添加合成配方
         }
     }
@@ -58,20 +54,16 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
     /// </summary>
     public class CorpsesesHandMinionBuff : ModBuff
     {
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             Main.buffNoSave[Type] = true;
             Main.buffNoTimeDisplay[Type] = true;
         }
 
-        public override void Update(Player player, ref int buffIndex)
-        {
-            if (player.ownedProjectileCounts[ModContent.ProjectileType<CorpsesesHandMinion>()] > 0)
-            {
+        public override void Update(Player player, ref int buffIndex) {
+            if (player.ownedProjectileCounts[ModContent.ProjectileType<CorpsesesHandMinion>()] > 0) {
                 player.buffTime[buffIndex] = 18000;
             }
-            else
-            {
+            else {
                 player.DelBuff(buffIndex);
                 buffIndex--;
             }
@@ -93,23 +85,21 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
             Retracting  // 回收
         }
 
-        private MinionState State
-        {
+        private MinionState State {
             get => (MinionState)Projectile.ai[0];
             set => Projectile.ai[0] = (float)value;
         }
 
         private ref float StateTimer => ref Projectile.ai[1];
         private ref float AttackCooldown => ref Projectile.localAI[0];
-        
+
         private NPC targetNPC;
         private Vector2 idlePosition;
         private Vector2 slapStartPos;
         private Vector2 slapTargetPos;
         private float slapProgress;
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             Main.projFrames[Projectile.type] = 1;
             Main.projPet[Projectile.type] = true;
             ProjectileID.Sets.MinionSacrificable[Projectile.type] = true;
@@ -117,8 +107,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
             ProjectileID.Sets.MinionTargettingFeature[Projectile.type] = true;
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Projectile.width = 80;
             Projectile.height = 80;
             Projectile.friendly = true;
@@ -133,20 +122,17 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
             Projectile.localNPCHitCooldown = 10;
         }
 
-        public override void AI()
-        {
+        public override void AI() {
             Player player = Main.player[Projectile.owner];
 
             // 检查玩家状态
-            if (!player.active || player.dead)
-            {
+            if (!player.active || player.dead) {
                 player.ClearBuff(ModContent.BuffType<CorpsesesHandMinionBuff>());
                 return;
             }
 
             // 维持Buff
-            if (player.HasBuff(ModContent.BuffType<CorpsesesHandMinionBuff>()))
-            {
+            if (player.HasBuff(ModContent.BuffType<CorpsesesHandMinionBuff>())) {
                 Projectile.timeLeft = 2;
             }
 
@@ -154,8 +140,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
             if (AttackCooldown > 0) AttackCooldown--;
 
             // 根据状态执行AI
-            switch (State)
-            {
+            switch (State) {
                 case MinionState.Idle:
                     HandleIdleState(player);
                     break;
@@ -171,50 +156,43 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
             }
 
             // 产生暗影粒子
-            if (Main.rand.NextBool(10))
-            {
-                int dust = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height, 
+            if (Main.rand.NextBool(10)) {
+                int dust = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height,
                     DustID.Shadowflame, 0, 0, 100, default, 1f);
                 Main.dust[dust].noGravity = true;
                 Main.dust[dust].velocity *= 0.5f;
             }
         }
 
-        private void HandleIdleState(Player player)
-        {
+        private void HandleIdleState(Player player) {
             // 计算空闲位置（在玩家周围盘旋）
             float orbitAngle = Main.GlobalTimeWrappedHourly * 2f + Projectile.whoAmI * MathHelper.PiOver2;
             float orbitRadius = 100f + MathF.Sin(Main.GlobalTimeWrappedHourly * 3f) * 20f;
-            
+
             idlePosition = player.Center + new Vector2(MathF.Cos(orbitAngle), MathF.Sin(orbitAngle)) * orbitRadius;
-            
+
             // 平滑移动到空闲位置
             Vector2 toIdle = idlePosition - Projectile.Center;
             float speed = MathHelper.Clamp(toIdle.Length() * 0.15f, 2f, 20f);
-            
-            if (toIdle.Length() > 10f)
-            {
+
+            if (toIdle.Length() > 10f) {
                 Projectile.velocity = toIdle.SafeNormalize(Vector2.Zero) * speed;
             }
-            else
-            {
+            else {
                 Projectile.velocity *= 0.9f;
             }
 
             // 手掌旋转跟随速度方向
-            if (Projectile.velocity.Length() > 1f)
-            {
-                Projectile.rotation = MathHelper.Lerp(Projectile.rotation, 
+            if (Projectile.velocity.Length() > 1f) {
+                Projectile.rotation = MathHelper.Lerp(Projectile.rotation,
                     Projectile.velocity.ToRotation(), 0.2f);
             }
 
             // 寻找目标
-            if (AttackCooldown <= 0)
-            {
+            if (AttackCooldown <= 0) {
                 targetNPC = FindTarget(player, 600f);
-                
-                if (targetNPC != null)
-                {
+
+                if (targetNPC != null) {
                     State = MinionState.Targeting;
                     StateTimer = 0;
                     AttackCooldown = 0;
@@ -222,11 +200,9 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
             }
         }
 
-        private void HandleTargetingState(Player player)
-        {
+        private void HandleTargetingState(Player player) {
             // 检查目标有效性
-            if (targetNPC == null || !targetNPC.active || targetNPC.life <= 0)
-            {
+            if (targetNPC == null || !targetNPC.active || targetNPC.life <= 0) {
                 State = MinionState.Idle;
                 StateTimer = 0;
                 return;
@@ -235,14 +211,12 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
             // 快速移动到攻击位置（目标上方）
             Vector2 attackPos = targetNPC.Center + new Vector2(0, -150);
             Vector2 toAttackPos = attackPos - Projectile.Center;
-            
-            if (toAttackPos.Length() > 50f)
-            {
+
+            if (toAttackPos.Length() > 50f) {
                 Projectile.velocity = toAttackPos.SafeNormalize(Vector2.Zero) * 25f;
                 Projectile.rotation = Projectile.velocity.ToRotation();
             }
-            else
-            {
+            else {
                 // 到位，准备拍击
                 State = MinionState.Slapping;
                 StateTimer = 0;
@@ -250,66 +224,58 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
                 slapTargetPos = targetNPC.Center;
                 slapProgress = 0f;
                 Projectile.velocity = Vector2.Zero;
-                
+
                 SoundEngine.PlaySound(SoundID.Item71 with { Pitch = -0.3f }, Projectile.Center);
             }
 
             // 超时保护
-            if (StateTimer > 60)
-            {
+            if (StateTimer > 60) {
                 State = MinionState.Idle;
                 StateTimer = 0;
             }
         }
 
-        private void HandleSlappingState(Player player)
-        {
+        private void HandleSlappingState(Player player) {
             // 检查目标有效性
-            if (targetNPC == null || !targetNPC.active)
-            {
+            if (targetNPC == null || !targetNPC.active) {
                 State = MinionState.Retracting;
                 StateTimer = 0;
                 return;
             }
 
             // 更新拍击目标位置（追踪移动的敌人）
-            if (slapProgress < 0.5f)
-            {
+            if (slapProgress < 0.5f) {
                 slapTargetPos = targetNPC.Center;
             }
 
             // 快速下拍
             slapProgress += 0.12f;
             float easeProgress = ACMUtils.QuadInOut(slapProgress);
-            
+
             Projectile.Center = Vector2.Lerp(slapStartPos, slapTargetPos, easeProgress);
             Projectile.rotation = (slapTargetPos - slapStartPos).ToRotation();
 
             // 拍击产生粒子
-            if (slapProgress > 0.4f && slapProgress < 0.8f && Main.rand.NextBool(2))
-            {
-                int dust = Dust.NewDust(Projectile.Center, Projectile.width, Projectile.height, 
+            if (slapProgress > 0.4f && slapProgress < 0.8f && Main.rand.NextBool(2)) {
+                int dust = Dust.NewDust(Projectile.Center, Projectile.width, Projectile.height,
                     DustID.Shadowflame, 0, 0, 100, default, 2f);
                 Main.dust[dust].noGravity = true;
                 Main.dust[dust].velocity = Projectile.velocity * 0.5f;
             }
 
             // 拍击瞬间产生冲击效果
-            if (StateTimer == 8)
-            {
-                for (int i = 0; i < 15; i++)
-                {
+            if (StateTimer == 8) {
+                for (int i = 0; i < 15; i++) {
                     Vector2 vel = Main.rand.NextVector2Circular(8, 8);
-                    int dust = Dust.NewDust(Projectile.Center, Projectile.width, Projectile.height, 
+                    int dust = Dust.NewDust(Projectile.Center, Projectile.width, Projectile.height,
                         DustID.PurpleTorch, vel.X, vel.Y, 100, default, 2f);
                     Main.dust[dust].noGravity = true;
                 }
-                
+
                 SoundEngine.PlaySound(SoundID.Item14 with { Volume = 0.8f, Pitch = -0.2f }, Projectile.Center);
             }
 
-            if (slapProgress >= 1f)
-            {
+            if (slapProgress >= 1f) {
                 State = MinionState.Retracting;
                 StateTimer = 0;
                 AttackCooldown = 40;
@@ -317,42 +283,35 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
             }
         }
 
-        private void HandleRetractingState(Player player)
-        {
+        private void HandleRetractingState(Player player) {
             // 返回到玩家附近
             Vector2 returnPos = player.Center + new Vector2(0, -100);
             Vector2 toReturn = returnPos - Projectile.Center;
-            
-            if (toReturn.Length() > 50f)
-            {
+
+            if (toReturn.Length() > 50f) {
                 Projectile.velocity = toReturn.SafeNormalize(Vector2.Zero) * 20f;
                 Projectile.rotation = Projectile.velocity.ToRotation();
             }
-            else
-            {
+            else {
                 State = MinionState.Idle;
                 StateTimer = 0;
             }
 
             // 超时保护
-            if (StateTimer > 40)
-            {
+            if (StateTimer > 40) {
                 State = MinionState.Idle;
                 StateTimer = 0;
             }
         }
 
-        private NPC FindTarget(Player player, float maxDistance)
-        {
+        private NPC FindTarget(Player player, float maxDistance) {
             NPC closest = null;
             float closestDist = maxDistance;
 
             // 优先选择玩家的鼠标目标
-            if (player.HasMinionAttackTargetNPC)
-            {
+            if (player.HasMinionAttackTargetNPC) {
                 NPC targeted = Main.npc[player.MinionAttackTargetNPC];
-                if (targeted.active && targeted.CanBeChasedBy() && !targeted.friendly)
-                {
+                if (targeted.active && targeted.CanBeChasedBy() && !targeted.friendly) {
                     float dist = Vector2.Distance(targeted.Center, Projectile.Center);
                     if (dist < maxDistance * 1.5f) // 鼠标目标范围更大
                     {
@@ -362,13 +321,10 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
             }
 
             // 寻找最近的敌人
-            foreach (NPC npc in Main.ActiveNPCs)
-            {
-                if (npc.CanBeChasedBy() && !npc.friendly)
-                {
+            foreach (NPC npc in Main.ActiveNPCs) {
+                if (npc.CanBeChasedBy() && !npc.friendly) {
                     float dist = Vector2.Distance(npc.Center, Projectile.Center);
-                    if (dist < closestDist)
-                    {
+                    if (dist < closestDist) {
                         closestDist = dist;
                         closest = npc;
                     }
@@ -378,30 +334,27 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
             return closest;
         }
 
-        public override bool? CanDamage()
-        {
+        public override bool? CanDamage() {
             // 只在拍击阶段造成伤害
             return State == MinionState.Slapping && slapProgress > 0.5f && slapProgress < 0.9f;
         }
 
-        public override bool PreDraw(ref Color lightColor)
-        {
+        public override bool PreDraw(ref Color lightColor) {
             Texture2D texture = ModContent.Request<Texture2D>(Texture).Value;
             Vector2 origin = texture.Size() / 2f;
 
             // 根据速度方向决定翻转
             SpriteEffects effects = Projectile.velocity.X < 0 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
-            
+
             // 半透明幽灵效果
             Color drawColor = new Color(180, 80, 255, 180);
 
             // 发光层（3层叠加）
-            for (int i = 0; i < 3; i++)
-            {
+            for (int i = 0; i < 3; i++) {
                 Vector2 offset = new Vector2(
                     MathF.Cos(Main.GlobalTimeWrappedHourly * 3f + i * MathHelper.TwoPi / 3f),
                     MathF.Sin(Main.GlobalTimeWrappedHourly * 3f + i * MathHelper.TwoPi / 3f)) * 4f;
-                
+
                 Color glowColor = new Color(150, 50, 200, 0) * 0.5f;
                 Main.EntitySpriteDraw(texture, Projectile.Center + offset - Main.screenPosition, null,
                     glowColor, Projectile.rotation, origin, Projectile.scale * 1.1f, effects);
@@ -412,11 +365,10 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
                 drawColor, Projectile.rotation, origin, Projectile.scale, effects);
 
             // 攻击时的冲击波效果
-            if (State == MinionState.Slapping && slapProgress > 0.6f && slapProgress < 0.8f)
-            {
+            if (State == MinionState.Slapping && slapProgress > 0.6f && slapProgress < 0.8f) {
                 float shockwaveScale = MathHelper.Lerp(0.5f, 1.5f, (slapProgress - 0.6f) / 0.2f);
                 Color shockColor = new Color(180, 80, 255, 0) * (1f - (slapProgress - 0.6f) / 0.2f);
-                
+
                 Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null,
                     shockColor, Projectile.rotation, origin, Projectile.scale * shockwaveScale, effects);
             }
@@ -424,12 +376,10 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
             return false;
         }
 
-        public override void OnKill(int timeLeft)
-        {
+        public override void OnKill(int timeLeft) {
             // 消失时的粒子效果
-            for (int i = 0; i < 20; i++)
-            {
-                int dust = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height, 
+            for (int i = 0; i < 20; i++) {
+                int dust = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height,
                     DustID.Shadowflame, 0, 0, 100, default, 2f);
                 Main.dust[dust].velocity = Main.rand.NextVector2Circular(5, 5);
                 Main.dust[dust].noGravity = true;

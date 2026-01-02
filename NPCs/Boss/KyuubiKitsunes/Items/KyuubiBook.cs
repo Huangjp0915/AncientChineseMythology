@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -16,8 +15,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
     /// </summary>
     public class KyuubiBook : ModItem
     {
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.damage = 185;
             Item.DamageType = DamageClass.Magic;
             Item.width = 28;
@@ -37,16 +35,14 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
             Item.channel = false;
         }
 
-        public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback)
-        {
+        public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
             // 生成尾巴控制器弹幕
             Vector2 targetPos = Main.MouseWorld;
             Projectile.NewProjectile(source, player.Center, Vector2.Zero, type, damage, knockback, player.whoAmI, targetPos.X, targetPos.Y);
             return false;
         }
 
-        public override void AddRecipes()
-        {
+        public override void AddRecipes() {
             // TODO: 添加合成配方，使用九尾狐掉落物
         }
     }
@@ -61,8 +57,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
         private const int TailCount = 9;
         private bool tailsSpawned = false;
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Projectile.width = 1;
             Projectile.height = 1;
             Projectile.friendly = true;
@@ -74,18 +69,15 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
             Projectile.alpha = 255;
         }
 
-        public override void AI()
-        {
+        public override void AI() {
             Player owner = Main.player[Projectile.owner];
-            if (!owner.active || owner.dead)
-            {
+            if (!owner.active || owner.dead) {
                 Projectile.Kill();
                 return;
             }
 
             // 只在第一帧生成所有尾巴
-            if (!tailsSpawned)
-            {
+            if (!tailsSpawned) {
                 Vector2 targetPos = new Vector2(Projectile.ai[0], Projectile.ai[1]);
                 SpawnAllTails(owner, targetPos);
                 tailsSpawned = true;
@@ -96,26 +88,24 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
                 Projectile.timeLeft = 5;
         }
 
-        private void SpawnAllTails(Player owner, Vector2 targetPos)
-        {
+        private void SpawnAllTails(Player owner, Vector2 targetPos) {
             // 计算玩家到目标的方向
             Vector2 toTarget = (targetPos - owner.Center).SafeNormalize(Vector2.UnitX);
-            
+
             // 九条尾巴从玩家背后均匀分布
-            for (int i = 0; i < TailCount; i++)
-            {
+            for (int i = 0; i < TailCount; i++) {
                 // 计算每条尾巴的起始角度（背向目标方向，扇形分布）
                 float backAngle = toTarget.ToRotation() + MathHelper.Pi;
                 float spreadAngle = MathHelper.ToRadians(120f); // 120度扇形
                 float tailAngle = backAngle + MathHelper.Lerp(-spreadAngle / 2f, spreadAngle / 2f, i / (float)(TailCount - 1));
-                
+
                 // 尾巴起始位置在玩家背后
                 Vector2 spawnOffset = tailAngle.ToRotationVector2() * 60f;
                 Vector2 spawnPos = owner.Center + spawnOffset;
-                
+
                 // 延迟生成，产生波浪效果
                 float delay = i * 3f; // 每条尾巴延迟3帧
-                
+
                 Projectile.NewProjectile(
                     Projectile.GetSource_FromThis(),
                     spawnPos,
@@ -165,14 +155,12 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
         // 绘制参数
         private float glowIntensity = 0f;
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             ProjectileID.Sets.TrailCacheLength[Projectile.type] = 5;
             ProjectileID.Sets.TrailingMode[Projectile.type] = 2;
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Projectile.width = 20;
             Projectile.height = 20;
             Projectile.friendly = true;
@@ -185,18 +173,15 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
             Projectile.localNPCHitCooldown = 15;
         }
 
-        public override void AI()
-        {
+        public override void AI() {
             Player owner = Main.player[Projectile.owner];
-            if (!owner.active || owner.dead)
-            {
+            if (!owner.active || owner.dead) {
                 Projectile.Kill();
                 return;
             }
 
             // 初始化
-            if (joints == null)
-            {
+            if (joints == null) {
                 InitializeTail();
                 targetPos = new Vector2(Projectile.ai[0], Projectile.ai[1]);
                 delayTime = Projectile.ai[2];
@@ -206,8 +191,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
             phaseTimer++;
 
             // 阶段状态机
-            switch (phase)
-            {
+            switch (phase) {
                 case TailPhase.Delay:
                     UpdateDelay();
                     break;
@@ -242,67 +226,56 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
             Lighting.AddLight(Projectile.Center, new Vector3(1f, 0.5f, 0.2f) * glowIntensity * 0.5f);
         }
 
-        private void InitializeTail()
-        {
+        private void InitializeTail() {
             joints = new Vector2[JointCount];
             segmentLengths = new float[JointCount];
 
-            for (int i = 0; i < JointCount; i++)
-            {
+            for (int i = 0; i < JointCount; i++) {
                 joints[i] = Projectile.Center;
                 segmentLengths[i] = BaseSegmentLength;
             }
         }
 
-        private void UpdateSegmentLengths()
-        {
-            for (int i = 0; i < JointCount; i++)
-            {
+        private void UpdateSegmentLengths() {
+            for (int i = 0; i < JointCount; i++) {
                 float factor = MathHelper.Lerp(0.6f, 1.4f, (float)i / (JointCount - 1));
                 segmentLengths[i] = BaseSegmentLength * (1f + (currentExtension - 1f) * factor);
             }
         }
 
-        private void UpdateDelay()
-        {
-            if (phaseTimer >= delayTime)
-            {
+        private void UpdateDelay() {
+            if (phaseTimer >= delayTime) {
                 phase = TailPhase.Coil;
                 phaseTimer = 0;
             }
         }
 
-        private void UpdateCoil(Player owner)
-        {
+        private void UpdateCoil(Player owner) {
             // 尾巴蜷缩在玩家背后
             Vector2 backDir = -stabDirection;
             float coilRadius = 40f + 20f * MathF.Sin(phaseTimer * 0.2f);
             joints[0] = owner.Center + backDir * 30f;
 
-            for (int i = 1; i < JointCount; i++)
-            {
+            for (int i = 1; i < JointCount; i++) {
                 float angle = backDir.ToRotation() + MathF.Sin(phaseTimer * 0.15f + i * 0.5f) * 0.5f;
                 joints[i] = joints[i - 1] + angle.ToRotationVector2() * segmentLengths[i - 1] * 0.7f;
             }
 
             glowIntensity = MathHelper.Lerp(glowIntensity, 0.3f, 0.1f);
 
-            if (phaseTimer >= 15)
-            {
+            if (phaseTimer >= 15) {
                 phase = TailPhase.Telegraph;
                 phaseTimer = 0;
             }
         }
 
-        private void UpdateTelegraph(Player owner)
-        {
+        private void UpdateTelegraph(Player owner) {
             // 预判阶段 - 尾巴指向目标方向蓄力
             float progress = phaseTimer / 20f;
             joints[0] = owner.Center - stabDirection * 30f;
 
             // 尾巴逐渐拉直指向目标
-            for (int i = 1; i < JointCount; i++)
-            {
+            for (int i = 1; i < JointCount; i++) {
                 float t = (float)i / (JointCount - 1);
                 Vector2 idealPos = joints[0] + stabDirection * t * JointCount * BaseSegmentLength * 0.4f;
                 Vector2 coilPos = joints[i - 1] + (joints[i] - joints[i - 1]).SafeNormalize(stabDirection) * segmentLengths[i - 1];
@@ -312,15 +285,13 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
             glowIntensity = MathHelper.Lerp(glowIntensity, 0.7f, 0.1f);
 
             // 蓄力粒子
-            if (Main.rand.NextBool(3))
-            {
+            if (Main.rand.NextBool(3)) {
                 Vector2 dustPos = joints[JointCount - 1] + Main.rand.NextVector2Circular(20, 20);
                 Dust d = Dust.NewDustPerfect(dustPos, DustID.GoldFlame, -stabDirection * 2f, 100, default, 1.5f);
                 d.noGravity = true;
             }
 
-            if (phaseTimer >= 20)
-            {
+            if (phaseTimer >= 20) {
                 phase = TailPhase.Stab;
                 phaseTimer = 0;
                 targetExtension = MaxExtension;
@@ -328,8 +299,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
             }
         }
 
-        private void UpdateStab(Player owner)
-        {
+        private void UpdateStab(Player owner) {
             // 刺出阶段 - 极速延展
             float progress = MathHelper.Clamp(phaseTimer / 8f, 0f, 1f);
             float easedProgress = 1f - MathF.Pow(1f - progress, 3f); // EaseOutCubic
@@ -342,8 +312,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
                 totalLength += segmentLengths[i];
 
             // 尾巴笔直刺出
-            for (int i = 1; i < JointCount; i++)
-            {
+            for (int i = 1; i < JointCount; i++) {
                 float t = (float)i / (JointCount - 1);
                 joints[i] = joints[0] + stabDirection * totalLength * t * easedProgress;
             }
@@ -351,26 +320,22 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
             glowIntensity = 1f;
 
             // 刺出粒子
-            if (phaseTimer % 2 == 0)
-            {
-                for (int i = 0; i < 3; i++)
-                {
+            if (phaseTimer % 2 == 0) {
+                for (int i = 0; i < 3; i++) {
                     Vector2 dustPos = joints[JointCount - 1] + Main.rand.NextVector2Circular(10, 10);
                     Dust d = Dust.NewDustPerfect(dustPos, DustID.GoldFlame, stabDirection * Main.rand.NextFloat(5f, 10f), 150, default, 2f);
                     d.noGravity = true;
                 }
             }
 
-            if (phaseTimer >= 12)
-            {
+            if (phaseTimer >= 12) {
                 phase = TailPhase.Recover;
                 phaseTimer = 0;
                 targetExtension = 1f;
             }
         }
 
-        private void UpdateRecover(Player owner)
-        {
+        private void UpdateRecover(Player owner) {
             // 回收阶段
             float progress = MathHelper.Clamp(phaseTimer / 25f, 0f, 1f);
 
@@ -381,8 +346,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
             for (int i = 0; i < JointCount - 1; i++)
                 totalLength += segmentLengths[i];
 
-            for (int i = 1; i < JointCount; i++)
-            {
+            for (int i = 1; i < JointCount; i++) {
                 float t = (float)i / (JointCount - 1);
                 Vector2 extendedPos = joints[0] + stabDirection * totalLength * t;
                 Vector2 relaxedPos = joints[i - 1] + new Vector2(0, segmentLengths[i - 1] * 0.8f);
@@ -392,41 +356,34 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
             glowIntensity = MathHelper.Lerp(1f, 0f, progress);
             Projectile.alpha = (int)(progress * 255);
 
-            if (phaseTimer >= 30)
-            {
+            if (phaseTimer >= 30) {
                 phase = TailPhase.Done;
             }
         }
 
-        private void SolveFABRIK()
-        {
+        private void SolveFABRIK() {
             // 简化的FABRIK，只做长度约束
-            for (int i = 1; i < JointCount; i++)
-            {
+            for (int i = 1; i < JointCount; i++) {
                 Vector2 dir = (joints[i] - joints[i - 1]).SafeNormalize(Vector2.UnitY);
                 joints[i] = joints[i - 1] + dir * segmentLengths[i - 1];
             }
         }
 
-        public override bool? CanDamage()
-        {
+        public override bool? CanDamage() {
             // 只在刺出阶段造成伤害
             return phase == TailPhase.Stab;
         }
 
-        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
-        {
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
             // 击中时产生火焰粒子
-            for (int i = 0; i < 8; i++)
-            {
+            for (int i = 0; i < 8; i++) {
                 Vector2 vel = Main.rand.NextVector2Circular(6, 6);
                 Dust d = Dust.NewDustPerfect(target.Center, DustID.GoldFlame, vel, 100, default, 2f);
                 d.noGravity = true;
             }
         }
 
-        public override bool PreDraw(ref Color lightColor)
-        {
+        public override bool PreDraw(ref Color lightColor) {
             if (joints == null) return false;
 
             Texture2D bodyTex = KyuubiKitsune.MissesBody;
@@ -441,8 +398,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
             SpriteBatch spriteBatch = Main.spriteBatch;
 
             // 绘制每个体节
-            for (int i = 0; i < JointCount - 1; i++)
-            {
+            for (int i = 0; i < JointCount - 1; i++) {
                 Vector2 start = joints[i];
                 Vector2 end = joints[i + 1];
                 Vector2 direction = end - start;
@@ -472,8 +428,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
                 );
 
                 // 发光层
-                if (glowIntensity > 0)
-                {
+                if (glowIntensity > 0) {
                     Color glowColor = Color.OrangeRed * glowIntensity * 0.4f;
                     glowColor.A = 0;
                     spriteBatch.Draw(
@@ -491,8 +446,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
             }
 
             // 绘制尾尖
-            if (JointCount >= 2)
-            {
+            if (JointCount >= 2) {
                 Vector2 lastJoint = joints[JointCount - 1];
                 Vector2 prevJoint = joints[JointCount - 2];
                 Vector2 tipDir = (lastJoint - prevJoint).SafeNormalize(Vector2.UnitX);
@@ -515,8 +469,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
                 );
 
                 // 尾尖发光
-                if (glowIntensity > 0)
-                {
+                if (glowIntensity > 0) {
                     Color glowColor = Color.Gold * glowIntensity * 0.5f;
                     glowColor.A = 0;
                     spriteBatch.Draw(
