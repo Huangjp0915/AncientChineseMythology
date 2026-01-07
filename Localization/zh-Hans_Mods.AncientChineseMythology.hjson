@@ -795,6 +795,9 @@ NPCs: {
 	// AncestralDragonSoulBody.DisplayName: Ancestral Dragon Soul Body
 	// AncestralDragonSoulHead.DisplayName: Ancestral Dragon Soul Head
 	// AncestralDragonSoulTail.DisplayName: Ancestral Dragon Soul Tail
+	// CelestialDragonsBody.DisplayName: Celestial Dragons Body
+	// CelestialDragonsHead.DisplayName: Celestial Dragons Head
+	// CelestialDragonsTail.DisplayName: Celestial Dragons Tail
 }
 
 Projectiles: {
@@ -962,6 +965,13 @@ Projectiles: {
 	// HomingSoulOrb.DisplayName: Homing Soul Orb
 	// SpiralSoulFragment.DisplayName: Spiral Soul Fragment
 	// TailSweepWave.DisplayName: Tail Sweep Wave
+	// CelestialLightning.DisplayName: Celestial Lightning
+	// CelestialLightningWarning.DisplayName: Celestial Lightning Warning
+	// CelestialThunderOrb.DisplayName: Celestial Thunder Orb
+	// FallingSword.DisplayName: Falling Sword
+	// GoldenEnergy.DisplayName: Golden Energy
+	// GoldenSwordAura.DisplayName: Golden Sword Aura
+	// CelestialPathWarning.DisplayName: Celestial Path Warning
 }
 
 // HeavenBiome.DisplayName: Heaven
