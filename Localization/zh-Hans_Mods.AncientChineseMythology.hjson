@@ -792,6 +792,9 @@ NPCs: {
 	SpectreMinion.DisplayName: 幽灵随从
 	// CelestialOverseer.DisplayName: Celestial Overseer
 	// CelestialEyeMinion.DisplayName: Celestial Eye Minion
+	// CelestialDragonsBody.DisplayName: Celestial Dragons Body
+	// CelestialDragonsHead.DisplayName: Celestial Dragons Head
+	// CelestialDragonsTail.DisplayName: Celestial Dragons Tail
 }
 
 Projectiles: {
@@ -953,6 +956,13 @@ Projectiles: {
 	// PhoenixFlameWave.DisplayName: Phoenix Flame Wave
 	// PhoenixMinionFlame.DisplayName: Phoenix Minion Flame
 	// PhoenixSpark.DisplayName: Phoenix Spark
+	// CelestialLightning.DisplayName: Celestial Lightning
+	// CelestialLightningWarning.DisplayName: Celestial Lightning Warning
+	// CelestialThunderOrb.DisplayName: Celestial Thunder Orb
+	// FallingSword.DisplayName: Falling Sword
+	// GoldenEnergy.DisplayName: Golden Energy
+	// GoldenSwordAura.DisplayName: Golden Sword Aura
+	// CelestialPathWarning.DisplayName: Celestial Path Warning
 }
 
 // HeavenBiome.DisplayName: Heaven
