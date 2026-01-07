@@ -792,6 +792,9 @@ NPCs: {
 	SpectreMinion.DisplayName: 幽灵随从
 	// CelestialOverseer.DisplayName: Celestial Overseer
 	// CelestialEyeMinion.DisplayName: Celestial Eye Minion
+	// AncestralDragonSoulBody.DisplayName: Ancestral Dragon Soul Body
+	// AncestralDragonSoulHead.DisplayName: Ancestral Dragon Soul Head
+	// AncestralDragonSoulTail.DisplayName: Ancestral Dragon Soul Tail
 }
 
 Projectiles: {
@@ -953,6 +956,12 @@ Projectiles: {
 	// PhoenixFlameWave.DisplayName: Phoenix Flame Wave
 	// PhoenixMinionFlame.DisplayName: Phoenix Minion Flame
 	// PhoenixSpark.DisplayName: Phoenix Spark
+	// AncestralDragonBeam.DisplayName: Ancestral Dragon Beam
+	// AncestralMistBolt.DisplayName: Ancestral Mist Bolt
+	// AncestralSoulFragment.DisplayName: Ancestral Soul Fragment
+	// HomingSoulOrb.DisplayName: Homing Soul Orb
+	// SpiralSoulFragment.DisplayName: Spiral Soul Fragment
+	// TailSweepWave.DisplayName: Tail Sweep Wave
 }
 
 // HeavenBiome.DisplayName: Heaven

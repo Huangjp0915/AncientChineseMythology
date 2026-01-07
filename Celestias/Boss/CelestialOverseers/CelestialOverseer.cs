@@ -456,11 +456,6 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
             if (PhaseTimer == 120) {
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.2f }, NPC.Center);
                 Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(15, 50);
-
-                // 激活天空效果
-                if (!VaultUtils.isServer && !SkyManager.Instance[CelestialOverseerSky.SkyName].IsActive()) {
-                    SkyManager.Instance.Activate(CelestialOverseerSky.SkyName);
-                }
             }
 
             if (PhaseTimer > 180) {
