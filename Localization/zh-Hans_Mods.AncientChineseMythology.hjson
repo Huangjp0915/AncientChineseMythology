@@ -718,6 +718,21 @@ Items: {
 		DisplayName: 青云龙魂刀
 		Tooltip: ""
 	}
+
+	CelestialEdictScepter: {
+		// DisplayName: Celestial Edict Scepter
+		// Tooltip: ""
+	}
+
+	ScalebreakerCleaver: {
+		// DisplayName: Scalebreaker Cleaver
+		// Tooltip: ""
+	}
+
+	SkyrendDragonbreathLongbow: {
+		// DisplayName: Skyrend Dragonbreath Longbow
+		// Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -972,6 +987,20 @@ Projectiles: {
 	// GoldenEnergy.DisplayName: Golden Energy
 	// GoldenSwordAura.DisplayName: Golden Sword Aura
 	// CelestialPathWarning.DisplayName: Celestial Path Warning
+	// CelestialEdictSeal.DisplayName: Celestial Edict Seal
+	// CelestialLightningBolt.DisplayName: Celestial Lightning Bolt
+	// DragonAuraSlash.DisplayName: Dragon Aura Slash
+	// DragonAuthorityCircle.DisplayName: Dragon Authority Circle
+	// DragonbreathArrow.DisplayName: Dragonbreath Arrow
+	// DragonbreathCloud.DisplayName: Dragonbreath Cloud
+	// DragonRoarWave.DisplayName: Dragon Roar Wave
+	// ReverseScaleWrath.DisplayName: Reverse Scale Wrath
+	// ScalebreakerCleaverProjectile.DisplayName: Scalebreaker Cleaver Projectile
+	// SkyrendDragonArrow.DisplayName: Skyrend Dragon Arrow
+	// BossDragonAuthorityCircle.DisplayName: Boss Dragon Authority Circle
+	// DragonCircleWarning.DisplayName: Dragon Circle Warning
+	// ForkedCelestialLightning.DisplayName: Forked Celestial Lightning
+	// ForkedLightningWarning.DisplayName: Forked Lightning Warning
 }
 
 // HeavenBiome.DisplayName: Heaven

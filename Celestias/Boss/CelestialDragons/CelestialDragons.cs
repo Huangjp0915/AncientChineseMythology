@@ -201,7 +201,10 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons
                 case 3: // 大圆环绕
                     LargeCircleAttack(player, attackPhase);
                     break;
-                case 4: // 全屏攻击
+                case 4: // 龙威法阵 + 叉状天雷
+                    DragonAuthorityAttack(player, attackPhase);
+                    break;
+                case 5: // 全屏攻击
                     if (attackPhase >= 2)
                         FullScreenAttack(player, attackPhase);
                     else
@@ -211,11 +214,24 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons
 
             NPC.ai[1]++;
 
+            // 全局零散叉状天雷 - 贯穿整场战斗（在非法阵攻击时触发）
+            if (currentMode != 4 && Main.netMode != NetmodeID.MultiplayerClient)
+            {
+                int ambientLightningInterval = Math.Max(150, 300 - attackPhase * 50);
+                if ((int)NPC.localAI[0] % ambientLightningInterval == 0)
+                {
+                    // 在玩家附近随机位置释放零散天雷
+                    Vector2 lightningPos = player.Center + Main.rand.NextVector2Circular(600f, 400f);
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), lightningPos + new Vector2(0, -1800f), Vector2.Zero,
+                        ModContent.ProjectileType<ForkedLightningWarning>(), NPC.damage / 5, 3f, Main.myPlayer, lightningPos.X, lightningPos.Y);
+                }
+            }
+
             float phaseDuration = 600 - attackPhase * 100;
             if (NPC.ai[1] > phaseDuration)
             {
                 NPC.ai[0]++;
-                int maxPhase = attackPhase >= 2 ? 5 : 4;
+                int maxPhase = attackPhase >= 2 ? 6 : 5;
                 if (NPC.ai[0] >= maxPhase)
                     NPC.ai[0] = 0;
                 NPC.ai[1] = 0;
@@ -230,52 +246,101 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons
         }
 
         /// <summary>
-        /// 大范围巡空 - 从屏幕一侧穿越到另一侧，大起大落
+        /// 确保蠕虫保持最小速度并使用宽转弯
+        /// </summary>
+        private void ApplyMovement(Vector2 targetPos, float baseSpeed, float turnRate, float minSpeed)
+        {
+            Vector2 toTarget = targetPos - NPC.Center;
+            float distToTarget = toTarget.Length();
+            
+            // 计算期望速度方向
+            Vector2 desiredDirection = toTarget.SafeNormalize(NPC.velocity.SafeNormalize(Vector2.UnitX));
+            
+            // 限制转向速率以避免身体交叉（宽转弯）
+            float currentAngle = NPC.velocity.ToRotation();
+            float targetAngle = desiredDirection.ToRotation();
+            float angleDiff = MathHelper.WrapAngle(targetAngle - currentAngle);
+            
+            // 限制每帧最大转向角度
+            float maxTurnPerFrame = turnRate;
+            angleDiff = MathHelper.Clamp(angleDiff, -maxTurnPerFrame, maxTurnPerFrame);
+            
+            float newAngle = currentAngle + angleDiff;
+            Vector2 newDirection = newAngle.ToRotationVector2();
+            
+            // 速度基于距离调整，但保持最小速度
+            float targetSpeed = baseSpeed;
+            if (distToTarget < 200f)
+            {
+                // 接近目标时不减速太多，保持流畅
+                targetSpeed = Math.Max(minSpeed, baseSpeed * 0.8f);
+            }
+            
+            // 确保最小速度
+            float currentSpeed = NPC.velocity.Length();
+            float newSpeed = MathHelper.Lerp(currentSpeed, targetSpeed, 0.05f);
+            newSpeed = Math.Max(newSpeed, minSpeed);
+            
+            NPC.velocity = newDirection * newSpeed;
+        }
+
+        /// <summary>
+        /// 大范围巡空 - 使用航点系统完成完整的穿越，不会在玩家附近抖动
         /// </summary>
         private void WideRangeCruise(Player player, int phase)
         {
             float direction = NPC.ai[3]; // 1 或 -1
-            float time = NPC.ai[1] * 0.008f; // 较慢的周期
-
-            // 大范围水平移动：屏幕宽度的2倍范围
-            float horizontalRange = 1200f + phase * 200f;
-            // 大范围垂直移动：大起大落
-            float verticalRange = 600f + phase * 100f;
-            float baseHeight = 400f;
-
-            // 正弦波轨迹：水平匀速移动，垂直大幅波动
-            float targetX = player.Center.X + direction * horizontalRange * MathF.Cos(time);
-            float targetY = player.Center.Y - baseHeight + MathF.Sin(time * 2f) * verticalRange;
-
-            Vector2 targetPos = new Vector2(targetX, targetY);
-            Vector2 toTarget = targetPos - NPC.Center;
-
-            // 高速巡航
-            float speed = 22f + phase * 4f;
-            Vector2 desiredVelocity = toTarget.SafeNormalize(NPC.velocity.SafeNormalize(Vector2.UnitX)) * speed;
-
-            // 平滑转向但保持高速
-            NPC.velocity = Vector2.Lerp(NPC.velocity, desiredVelocity, 0.03f);
-
-            // 确保最小速度
-            float minSpeed = 18f + phase * 2f;
-            if (NPC.velocity.Length() < minSpeed)
+            
+            // 使用localAI[1]存储当前航点阶段
+            int waypointPhase = (int)NPC.localAI[1];
+            
+            // 定义航点：大范围的穿越路径
+            float horizontalDist = 1400f + phase * 200f;
+            float verticalRange = 500f + phase * 100f;
+            float baseHeight = 350f;
+            
+            Vector2 targetPos;
+            float reachDist = 250f; // 到达航点的判定距离
+            
+            switch (waypointPhase % 4)
             {
-                NPC.velocity = NPC.velocity.SafeNormalize(Vector2.UnitX * direction) * minSpeed;
+                case 0: // 飞到玩家一侧上方
+                    targetPos = player.Center + new Vector2(direction * horizontalDist, -baseHeight - verticalRange);
+                    break;
+                case 1: // 穿越到另一侧下方
+                    targetPos = player.Center + new Vector2(-direction * horizontalDist, -baseHeight + verticalRange * 0.5f);
+                    break;
+                case 2: // 飞到另一侧上方
+                    targetPos = player.Center + new Vector2(-direction * horizontalDist, -baseHeight - verticalRange * 0.8f);
+                    break;
+                default: // 穿越回起始侧下方
+                    targetPos = player.Center + new Vector2(direction * horizontalDist, -baseHeight + verticalRange * 0.3f);
+                    break;
             }
-
-            // 发射预警闪电（预警弹幕将要划过的范围）
-            if ((int)NPC.ai[1] % 120 == 60 && Main.netMode != NetmodeID.MultiplayerClient)
+            
+            // 检查是否到达当前航点
+            if (Vector2.Distance(NPC.Center, targetPos) < reachDist)
             {
-                // 计算龙即将穿越的路径
-                Vector2 futurePos = NPC.Center + NPC.velocity * 60f; // 预测1秒后的位置
+                NPC.localAI[1]++;
+            }
+            
+            // 使用宽转弯移动到目标
+            float speed = 24f + phase * 4f;
+            float minSpeed = 20f + phase * 3f;
+            float turnRate = 0.025f; // 较慢的转向速率
+            ApplyMovement(targetPos, speed, turnRate, minSpeed);
+
+            // 发射预警（预警弹幕将要划过的范围）
+            if ((int)NPC.ai[1] % 100 == 50 && Main.netMode != NetmodeID.MultiplayerClient)
+            {
+                Vector2 futurePos = NPC.Center + NPC.velocity * 50f;
                 Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, NPC.velocity.SafeNormalize(Vector2.Zero),
                     ModContent.ProjectileType<CelestialPathWarning>(), 0, 0f, Main.myPlayer,
                     futurePos.X, futurePos.Y);
             }
 
             // 发射辐射弹幕
-            if ((int)NPC.ai[1] % (80 - phase * 15) == 0 && Main.netMode != NetmodeID.MultiplayerClient)
+            if ((int)NPC.ai[1] % (70 - phase * 12) == 0 && Main.netMode != NetmodeID.MultiplayerClient)
             {
                 int count = 4 + phase;
                 for (int i = 0; i < count; i++)
@@ -289,29 +354,28 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons
         }
 
         /// <summary>
-        /// 俯冲穿越 - 从高处俯冲穿过玩家位置
+        /// 俯冲穿越 - 从高处俯冲穿过玩家位置，使用宽转弯
         /// </summary>
         private void DiveThroughAttack(Player player, int phase)
         {
             int subPhase = (int)NPC.ai[2];
+            float side = NPC.ai[3];
 
-            if (subPhase == 0) // 飞到一侧高处
+            if (subPhase == 0) // 飞到一侧高处（准备阶段）
             {
-                float side = NPC.ai[3];
-                Vector2 targetPos = player.Center + new Vector2(side * 1000f, -700f);
-                Vector2 toTarget = targetPos - NPC.Center;
+                Vector2 targetPos = player.Center + new Vector2(side * 1200f, -800f);
+                
+                float speed = 28f + phase * 3f;
+                float minSpeed = 22f + phase * 2f;
+                ApplyMovement(targetPos, speed, 0.03f, minSpeed);
 
-                float speed = 25f + phase * 3f;
-                Vector2 desiredVel = toTarget.SafeNormalize(NPC.velocity.SafeNormalize(Vector2.UnitX)) * speed;
-                NPC.velocity = Vector2.Lerp(NPC.velocity, desiredVel, 0.05f);
-
-                if (toTarget.Length() < 150f)
+                if (Vector2.Distance(NPC.Center, targetPos) < 200f)
                 {
                     NPC.ai[2] = 1;
                     // 发出预警
                     if (Main.netMode != NetmodeID.MultiplayerClient)
                     {
-                        Vector2 diveTarget = player.Center + new Vector2(-side * 800f, 200f);
+                        Vector2 diveTarget = player.Center + new Vector2(-side * 1000f, 300f);
                         Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
                             ModContent.ProjectileType<CelestialPathWarning>(), 0, 0f, Main.myPlayer,
                             diveTarget.X, diveTarget.Y);
@@ -319,73 +383,88 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons
                     SoundEngine.PlaySound(SoundID.Roar with { Volume = 1f, Pitch = 0.5f }, NPC.Center);
                 }
             }
-            else if (subPhase == 1) // 俯冲穿越
+            else if (subPhase == 1) // 俯冲穿越（高速阶段）
             {
-                float side = NPC.ai[3];
-                Vector2 targetPos = player.Center + new Vector2(-side * 800f, 200f);
-                Vector2 toTarget = targetPos - NPC.Center;
-
-                float speed = 35f + phase * 5f;
-                Vector2 desiredVel = toTarget.SafeNormalize(NPC.velocity.SafeNormalize(Vector2.UnitX)) * speed;
-                NPC.velocity = Vector2.Lerp(NPC.velocity, desiredVel, 0.08f);
+                Vector2 targetPos = player.Center + new Vector2(-side * 1000f, 300f);
+                
+                // 俯冲时使用高速但限制转向
+                float speed = 38f + phase * 5f;
+                float minSpeed = 32f + phase * 4f;
+                ApplyMovement(targetPos, speed, 0.02f, minSpeed); // 更小的转向速率
 
                 // 俯冲时喷射剑气
-                if ((int)NPC.ai[1] % 8 == 0 && Main.netMode != NetmodeID.MultiplayerClient)
+                if ((int)NPC.ai[1] % 6 == 0 && Main.netMode != NetmodeID.MultiplayerClient)
                 {
                     Vector2 sideDir = NPC.velocity.RotatedBy(MathHelper.PiOver2).SafeNormalize(Vector2.Zero);
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, sideDir * 8f,
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, sideDir * 10f,
                         ModContent.ProjectileType<GoldenSwordAura>(), NPC.damage / 4, 3f, Main.myPlayer);
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, -sideDir * 8f,
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, -sideDir * 10f,
                         ModContent.ProjectileType<GoldenSwordAura>(), NPC.damage / 4, 3f, Main.myPlayer);
                 }
 
-                if (toTarget.Length() < 150f || NPC.Center.Y > player.Center.Y + 300f)
+                // 检查是否完成穿越（到达目标点或已经过了玩家下方足够远）
+                if (Vector2.Distance(NPC.Center, targetPos) < 200f || 
+                    (NPC.Center.Y > player.Center.Y + 400f && MathF.Abs(NPC.Center.X - player.Center.X) > 600f))
                 {
                     NPC.ai[2] = 2;
                 }
             }
-            else // 回升
+            else // 回升阶段（宽转弯回到上方）
             {
-                float side = -NPC.ai[3];
-                Vector2 targetPos = player.Center + new Vector2(side * 600f, -400f);
-                Vector2 toTarget = targetPos - NPC.Center;
-
-                float speed = 20f + phase * 2f;
-                Vector2 desiredVel = toTarget.SafeNormalize(NPC.velocity.SafeNormalize(Vector2.UnitX)) * speed;
-                NPC.velocity = Vector2.Lerp(NPC.velocity, desiredVel, 0.04f);
+                float oppositeSide = -side;
+                Vector2 targetPos = player.Center + new Vector2(oppositeSide * 800f, -500f);
+                
+                float speed = 22f + phase * 2f;
+                float minSpeed = 18f + phase * 2f;
+                ApplyMovement(targetPos, speed, 0.025f, minSpeed);
             }
         }
 
         /// <summary>
-        /// 剑气喷吐 - 边巡航边喷吐
+        /// 剑气喷吐 - 使用航点系统的8字形移动
         /// </summary>
         private void SwordBreathAttack(Player player, int phase)
         {
             float direction = NPC.ai[3];
-            float time = NPC.ai[1] * 0.015f;
-
-            // 大范围水平8字形移动
-            float horizontalRange = 800f;
-            float verticalRange = 300f;
-
-            float targetX = player.Center.X + MathF.Sin(time) * horizontalRange * direction;
-            float targetY = player.Center.Y - 300f + MathF.Sin(time * 2f) * verticalRange;
-
-            Vector2 targetPos = new Vector2(targetX, targetY);
-            Vector2 toTarget = targetPos - NPC.Center;
-
-            float speed = 18f + phase * 3f;
-            Vector2 desiredVel = toTarget.SafeNormalize(NPC.velocity.SafeNormalize(Vector2.UnitX)) * speed;
-            NPC.velocity = Vector2.Lerp(NPC.velocity, desiredVel, 0.04f);
-
-            // 确保最小速度
-            if (NPC.velocity.Length() < 14f)
+            
+            // 使用localAI[2]存储8字形航点阶段
+            int waypointPhase = (int)NPC.localAI[2];
+            
+            // 8字形航点
+            float horizontalDist = 900f + phase * 100f;
+            float verticalDist = 400f + phase * 50f;
+            float baseHeight = 300f;
+            
+            Vector2 targetPos;
+            
+            switch (waypointPhase % 4)
             {
-                NPC.velocity = NPC.velocity.SafeNormalize(Vector2.UnitX * direction) * 14f;
+                case 0: // 右上
+                    targetPos = player.Center + new Vector2(direction * horizontalDist, -baseHeight - verticalDist);
+                    break;
+                case 1: // 左下（穿过中心）
+                    targetPos = player.Center + new Vector2(-direction * horizontalDist * 0.5f, -baseHeight + verticalDist * 0.3f);
+                    break;
+                case 2: // 左上
+                    targetPos = player.Center + new Vector2(-direction * horizontalDist, -baseHeight - verticalDist * 0.8f);
+                    break;
+                default: // 右下（穿过中心）
+                    targetPos = player.Center + new Vector2(direction * horizontalDist * 0.5f, -baseHeight + verticalDist * 0.5f);
+                    break;
+            }
+            
+            // 检查是否到达当前航点
+            if (Vector2.Distance(NPC.Center, targetPos) < 200f)
+            {
+                NPC.localAI[2]++;
             }
 
+            float speed = 22f + phase * 3f;
+            float minSpeed = 18f + phase * 2f;
+            ApplyMovement(targetPos, speed, 0.028f, minSpeed);
+
             // 喷吐剑气
-            int interval = Math.Max(15, 40 - phase * 8);
+            int interval = Math.Max(12, 35 - phase * 7);
             if ((int)NPC.ai[1] % interval == 0 && Main.netMode != NetmodeID.MultiplayerClient)
             {
                 Vector2 toPlayerNorm = (player.Center - NPC.Center).SafeNormalize(Vector2.Zero);
@@ -405,52 +484,162 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons
         }
 
         /// <summary>
-        /// 大圆环绕 - 在玩家周围画大圆
+        /// 大圆环绕 - 在玩家周围画大圆，保持稳定速度
         /// </summary>
         private void LargeCircleAttack(Player player, int phase)
         {
-            float radius = 700f - phase * 50f;
-            float angularSpeed = 0.02f + phase * 0.005f;
+            float radius = 800f - phase * 50f;
+            float angularSpeed = 0.018f + phase * 0.004f;
             float angle = NPC.ai[1] * angularSpeed * NPC.ai[3];
 
+            // 使用椭圆轨道，略高于玩家
             Vector2 targetPos = player.Center + new Vector2(
                 MathF.Cos(angle) * radius,
-                MathF.Sin(angle) * radius * 0.7f - 100f // 椭圆轨迹，略高于玩家
+                MathF.Sin(angle) * radius * 0.6f - 150f
             );
 
-            Vector2 toTarget = targetPos - NPC.Center;
-            float speed = 20f + phase * 4f;
-            Vector2 desiredVel = toTarget.SafeNormalize(NPC.velocity.SafeNormalize(Vector2.UnitX)) * speed;
-            NPC.velocity = Vector2.Lerp(NPC.velocity, desiredVel, 0.06f);
+            float speed = 22f + phase * 4f;
+            float minSpeed = 18f + phase * 3f;
+            ApplyMovement(targetPos, speed, 0.035f, minSpeed);
 
             // 发射辐射能量弹
-            int interval = Math.Max(10, 30 - phase * 5);
+            int interval = Math.Max(8, 25 - phase * 4);
             if ((int)NPC.ai[1] % interval == 0 && Main.netMode != NetmodeID.MultiplayerClient)
             {
                 Vector2 toPlayerNorm = (player.Center - NPC.Center).SafeNormalize(Vector2.Zero);
-                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, toPlayerNorm * 8f,
+                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, toPlayerNorm * 9f,
                     ModContent.ProjectileType<GoldenEnergy>(), NPC.damage / 4, 3f, Main.myPlayer);
             }
         }
 
         /// <summary>
-        /// 全屏攻击 - 在移动中释放
+        /// 龙威法阵攻击 - 在玩家周围召唤龙威法阵，降下叉状天雷（集中释放）
+        /// </summary>
+        private void DragonAuthorityAttack(Player player, int phase)
+        {
+            float direction = NPC.ai[3];
+            
+            // 使用航点系统盘旋
+            int waypointPhase = (int)NPC.localAI[2] % 4;
+            float radius = 700f - phase * 40f;
+            float baseHeight = 450f;
+            
+            Vector2 targetPos = waypointPhase switch
+            {
+                0 => player.Center + new Vector2(direction * radius, -baseHeight),
+                1 => player.Center + new Vector2(0, -baseHeight - 200f),
+                2 => player.Center + new Vector2(-direction * radius, -baseHeight),
+                _ => player.Center + new Vector2(0, -baseHeight + 100f)
+            };
+            
+            if (Vector2.Distance(NPC.Center, targetPos) < 180f)
+            {
+                NPC.localAI[2]++;
+            }
+
+            float speed = 18f + phase * 3f;
+            float minSpeed = 15f + phase * 2f;
+            ApplyMovement(targetPos, speed, 0.03f, minSpeed);
+
+            // 蓄力特效
+            if (!Main.dedServ && NPC.ai[1] < 60 && Main.rand.NextBool(2))
+            {
+                float angle = Main.rand.NextFloat(MathHelper.TwoPi);
+                Vector2 dustPos = NPC.Center + angle.ToRotationVector2() * Main.rand.NextFloat(40, 80);
+                int dust = Dust.NewDust(dustPos, 0, 0, DustID.GoldFlame, 0, 0, 100, default, 1.8f);
+                Main.dust[dust].noGravity = true;
+                Main.dust[dust].velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 4f;
+            }
+
+            // 召唤龙威法阵预警
+            if ((int)NPC.ai[1] == 60)
+            {
+                SoundEngine.PlaySound(SoundID.Item119 with { Pitch = 0.2f, Volume = 1f }, player.Center);
+            }
+
+            // 在玩家位置召唤法阵预警
+            if ((int)NPC.ai[1] == 70 && Main.netMode != NetmodeID.MultiplayerClient)
+            {
+                Projectile.NewProjectile(NPC.GetSource_FromAI(), player.Center, Vector2.Zero,
+                    ModContent.ProjectileType<DragonCircleWarning>(), NPC.damage / 3, 0f, Main.myPlayer, NPC.damage / 3, phase);
+            }
+
+            // 后续追加法阵
+            if (phase >= 1 && (int)NPC.ai[1] == 150 && Main.netMode != NetmodeID.MultiplayerClient)
+            {
+                Vector2 leftPos = player.Center + new Vector2(-450f, 0);
+                Vector2 rightPos = player.Center + new Vector2(450f, 0);
+                Projectile.NewProjectile(NPC.GetSource_FromAI(), leftPos, Vector2.Zero,
+                    ModContent.ProjectileType<DragonCircleWarning>(), NPC.damage / 3, 0f, Main.myPlayer, NPC.damage / 3, phase);
+                Projectile.NewProjectile(NPC.GetSource_FromAI(), rightPos, Vector2.Zero,
+                    ModContent.ProjectileType<DragonCircleWarning>(), NPC.damage / 3, 0f, Main.myPlayer, NPC.damage / 3, phase);
+            }
+
+            if (phase >= 2 && (int)NPC.ai[1] == 230 && Main.netMode != NetmodeID.MultiplayerClient)
+            {
+                for (int i = 0; i < 4; i++)
+                {
+                    float angle = MathHelper.PiOver4 + MathHelper.PiOver2 * i;
+                    Vector2 circlePos = player.Center + angle.ToRotationVector2() * 400f;
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), circlePos, Vector2.Zero,
+                        ModContent.ProjectileType<DragonCircleWarning>(), NPC.damage / 4, 0f, Main.myPlayer, NPC.damage / 4, phase);
+                }
+            }
+
+            // 集中释放叉状天雷（在法阵攻击期间频率更高）
+            int lightningInterval = Math.Max(30, 60 - phase * 12);
+            if ((int)NPC.ai[1] > 80 && (int)NPC.ai[1] % lightningInterval == 0 && Main.netMode != NetmodeID.MultiplayerClient)
+            {
+                // 预测玩家位置
+                Vector2 predictedPos = player.Center + player.velocity * 25f;
+                Projectile.NewProjectile(NPC.GetSource_FromAI(), predictedPos + new Vector2(0, -1800f), Vector2.Zero,
+                    ModContent.ProjectileType<ForkedLightningWarning>(), NPC.damage / 4, 5f, Main.myPlayer, predictedPos.X, predictedPos.Y);
+
+                SoundEngine.PlaySound(SoundID.Item122 with { Pitch = 0.3f, Volume = 0.5f }, predictedPos);
+            }
+
+            // 持续发射辐射弹幕
+            if ((int)NPC.ai[1] % (50 - phase * 8) == 0 && Main.netMode != NetmodeID.MultiplayerClient)
+            {
+                int count = 3 + phase;
+                for (int i = 0; i < count; i++)
+                {
+                    float angle = MathHelper.TwoPi * i / count + NPC.ai[1] * 0.02f;
+                    Vector2 vel = angle.ToRotationVector2() * (5f + phase);
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                        ModContent.ProjectileType<GoldenEnergy>(), NPC.damage / 5, 2f, Main.myPlayer);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 全屏攻击 - 使用航点系统在移动中释放
         /// </summary>
         private void FullScreenAttack(Player player, int phase)
         {
             float direction = NPC.ai[3];
-            float time = NPC.ai[1] * 0.01f;
+            
+            // 使用航点系统保持移动
+            int waypointPhase = (int)NPC.localAI[2] % 4;
+            float radius = 650f;
+            float baseHeight = 500f;
+            
+            Vector2 targetPos = waypointPhase switch
+            {
+                0 => player.Center + new Vector2(direction * radius, -baseHeight),
+                1 => player.Center + new Vector2(0, -baseHeight - 150f),
+                2 => player.Center + new Vector2(-direction * radius, -baseHeight),
+                _ => player.Center + new Vector2(0, -baseHeight + 50f)
+            };
+            
+            if (Vector2.Distance(NPC.Center, targetPos) < 180f)
+            {
+                NPC.localAI[2]++;
+            }
 
-            // 继续大范围移动
-            float targetX = player.Center.X + MathF.Sin(time) * 600f * direction;
-            float targetY = player.Center.Y - 500f + MathF.Cos(time * 1.5f) * 200f;
-
-            Vector2 targetPos = new Vector2(targetX, targetY);
-            Vector2 toTarget = targetPos - NPC.Center;
-
-            float speed = 15f + phase * 2f;
-            Vector2 desiredVel = toTarget.SafeNormalize(NPC.velocity.SafeNormalize(Vector2.UnitX)) * speed;
-            NPC.velocity = Vector2.Lerp(NPC.velocity, desiredVel, 0.04f);
+            float speed = 18f + phase * 2f;
+            float minSpeed = 14f + phase * 2f;
+            ApplyMovement(targetPos, speed, 0.025f, minSpeed);
 
             // 蓄力特效
             if (!Main.dedServ && NPC.ai[1] < 90 && Main.rand.NextBool(2))
@@ -475,7 +664,6 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons
                 {
                     float ang = MathHelper.TwoPi * i / count;
                     Vector2 spawnPos = player.Center + ang.ToRotationVector2() * 800;
-                    // 预警路径
                     Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, Vector2.Zero,
                         ModContent.ProjectileType<CelestialPathWarning>(), 0, 0f, Main.myPlayer,
                         player.Center.X, player.Center.Y);
