@@ -720,33 +720,33 @@ Items: {
 	}
 
 	ArchosaurBow: {
-		// DisplayName: Archosaur Bow
-		// Tooltip: ""
+		DisplayName: 祖龙残弓
+		Tooltip: ""
 	}
 
 	ArchosaurFerrara: {
-		// DisplayName: Archosaur Ferrara
-		// Tooltip: ""
+		DisplayName: 祖龙残刃
+		Tooltip: ""
 	}
 
 	ArchosaurStaff: {
-		// DisplayName: Archosaur Staff
-		// Tooltip: ""
+		DisplayName: 祖龙残杖
+		Tooltip: ""
 	}
 
 	CelestialEdictScepter: {
-		// DisplayName: Celestial Edict Scepter
-		// Tooltip: ""
+		DisplayName: 天庭敕令权杖
+		Tooltip: ""
 	}
 
 	ScalebreakerCleaver: {
-		// DisplayName: Scalebreaker Cleaver
-		// Tooltip: ""
+		DisplayName: 破鳞斩刀
+		Tooltip: ""
 	}
 
 	SkyrendDragonbreathLongbow: {
-		// DisplayName: Skyrend Dragonbreath Longbow
-		// Tooltip: ""
+		DisplayName: 裂空龙息长弓
+		Tooltip: ""
 	}
 }
 
