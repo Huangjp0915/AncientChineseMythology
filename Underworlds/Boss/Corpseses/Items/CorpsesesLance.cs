@@ -207,7 +207,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
                 Color trailColor = new Color(150, 50, 200) * progress * 0.5f;
 
                 Main.EntitySpriteDraw(texture, drawPos, null, trailColor,
-                    Projectile.oldRot[i] + MathHelper.PiOver4, drawOrigin, Projectile.scale * 0.9f, SpriteEffects.None);
+                    Projectile.oldRot[i], drawOrigin, Projectile.scale * 0.9f, SpriteEffects.None);
             }
 
             // 绘制连接线（模拟手臂）
@@ -216,7 +216,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
             // 绘制主体
             Color mainColor = Color.Lerp(lightColor, new Color(180, 80, 255), 0.4f);
             Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null,
-                mainColor, Projectile.rotation + MathHelper.PiOver4, drawOrigin, Projectile.scale, SpriteEffects.None);
+                mainColor, Projectile.rotation, drawOrigin, Projectile.scale, SpriteEffects.None);
 
             return false;
         }

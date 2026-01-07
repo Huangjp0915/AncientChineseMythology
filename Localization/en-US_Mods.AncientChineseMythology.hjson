@@ -685,7 +685,6 @@ Items: {
 		Tooltip: ""
 	}
 
-<<<<<<< Updated upstream
 	CelestialEdictScepter: {
 		DisplayName: Celestial Edict Scepter
 		Tooltip: ""
@@ -698,20 +697,6 @@ Items: {
 
 	SkyrendDragonbreathLongbow: {
 		DisplayName: Skyrend Dragonbreath Longbow
-=======
-	ArchosaurBow: {
-		DisplayName: Archosaur Bow
-		Tooltip: ""
-	}
-
-	ArchosaurFerrara: {
-		DisplayName: Archosaur Ferrara
-		Tooltip: ""
-	}
-
-	ArchosaurStaff: {
-		DisplayName: Archosaur Staff
->>>>>>> Stashed changes
 		Tooltip: ""
 	}
 }
@@ -794,6 +779,8 @@ NPCs: {
 	CelestialDragonsBody.DisplayName: Celestial Dragons Body
 	CelestialDragonsHead.DisplayName: Celestial Dragons Head
 	CelestialDragonsTail.DisplayName: Celestial Dragons Tail
+	Vaisravana.DisplayName: Vaisravana
+	YakshaMinion.DisplayName: Yaksha Minion
 }
 
 Projectiles: {
@@ -968,6 +955,35 @@ Projectiles: {
 	GoldenEnergy.DisplayName: Golden Energy
 	GoldenSwordAura.DisplayName: Golden Sword Aura
 	CelestialPathWarning.DisplayName: Celestial Path Warning
+	ArchosaurBreathWave.DisplayName: Archosaur Breath Wave
+	ArchosaurPhantom.DisplayName: Archosaur Phantom
+	ArchosaurRainArrow.DisplayName: Archosaur Rain Arrow
+	ArchosaurSoulArrow.DisplayName: Archosaur Soul Arrow
+	ArchosaurSoulCircle.DisplayName: Archosaur Soul Circle
+	ArchosaurSoulOrb.DisplayName: Archosaur Soul Orb
+	ArchosaurSoulWave.DisplayName: Archosaur Soul Wave
+	BossDragonAuthorityCircle.DisplayName: Boss Dragon Authority Circle
+	DragonCircleWarning.DisplayName: Dragon Circle Warning
+	ForkedCelestialLightning.DisplayName: Forked Celestial Lightning
+	ForkedLightningWarning.DisplayName: Forked Lightning Warning
+	CelestialEdictSeal.DisplayName: Celestial Edict Seal
+	CelestialLightningBolt.DisplayName: Celestial Lightning Bolt
+	DragonAuraSlash.DisplayName: Dragon Aura Slash
+	DragonAuthorityCircle.DisplayName: Dragon Authority Circle
+	DragonbreathArrow.DisplayName: Dragonbreath Arrow
+	DragonbreathCloud.DisplayName: Dragonbreath Cloud
+	DragonRoarWave.DisplayName: Dragon Roar Wave
+	ReverseScaleWrath.DisplayName: Reverse Scale Wrath
+	ScalebreakerCleaverProjectile.DisplayName: Scalebreaker Cleaver Projectile
+	SkyrendDragonArrow.DisplayName: Skyrend Dragon Arrow
+	ImmortalHaloRing.DisplayName: Immortal Halo Ring
+	ImmortalWave.DisplayName: Immortal Wave
+	QuadrantRay.DisplayName: Quadrant Ray
+	SweepingLightBolt.DisplayName: Sweeping Light Bolt
+	TowerBeam.DisplayName: Tower Beam
+	TreasureTowerOrb.DisplayName: Treasure Tower Orb
+	TreasureTowerRay.DisplayName: Treasure Tower Ray
+	VaisravanaStar.DisplayName: Vaisravana Star
 }
 
 HeavenBiome.DisplayName: Heaven
