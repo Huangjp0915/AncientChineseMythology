@@ -629,6 +629,46 @@ Items: {
 		DisplayName: Nether Ore
 		Tooltip: ""
 	}
+
+	AllSeeingJadeTome: {
+		DisplayName: All Seeing Jade Tome
+		Tooltip: ""
+	}
+
+	CelestialGearGreatsword: {
+		DisplayName: Celestial Gear Greatsword
+		Tooltip: ""
+	}
+
+	CelestialJudgmentChakram: {
+		DisplayName: Celestial Judgment Chakram
+		Tooltip: ""
+	}
+
+	CelestialMechanismBow: {
+		DisplayName: Celestial Mechanism Bow
+		Tooltip: ""
+	}
+
+	CelestialWatcherStaff: {
+		DisplayName: Celestial Watcher Staff
+		Tooltip: ""
+	}
+
+	ClockworkPhoenixSpear: {
+		DisplayName: Clockwork Phoenix Spear
+		Tooltip: ""
+	}
+
+	GoldenPhoenixSummonStaff: {
+		DisplayName: Golden Phoenix Summon Staff
+		Tooltip: ""
+	}
+
+	JadeDragonCloudDao: {
+		DisplayName: Jade Dragon Cloud Dao
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -701,6 +741,8 @@ NPCs: {
 	AwakeningNetherTail.DisplayName: Awakening Nether Tail
 	Spectre.DisplayName: Spectre
 	SpectreMinion.DisplayName: Spectre Minion
+	CelestialOverseer.DisplayName: Celestial Overseer
+	CelestialEyeMinion.DisplayName: Celestial Eye Minion
 }
 
 Projectiles: {
@@ -837,6 +879,31 @@ Projectiles: {
 	SoulDevourerSpearProjectile.DisplayName: Soul Devourer Spear Projectile
 	YamasGavelProjectile.DisplayName: Yamas Gavel Projectile
 	SoulseekerDaggersProj.DisplayName: Soulseeker Daggers Proj
+	CelestialEyeBeam.DisplayName: Celestial Eye Beam
+	CelestialStar.DisplayName: Celestial Star
+	DivineLightPillar.DisplayName: Divine Light Pillar
+	HolyHaloRing.DisplayName: Holy Halo Ring
+	HolyOrb.DisplayName: Holy Orb
+	CrossLaserBeam.DisplayName: Cross Laser Beam
+	DivineDeathRay.DisplayName: Divine Death Ray
+	MinionSyncLaser.DisplayName: Minion Sync Laser
+	OmegaCelestialLaser.DisplayName: Omega Celestial Laser
+	SweepingLaserBolt.DisplayName: Sweeping Laser Bolt
+	AllSeeingBeam.DisplayName: All Seeing Beam
+	AllSeeingEyeProjectile.DisplayName: All Seeing Eye Projectile
+	CelestialChakramProjectile.DisplayName: Celestial Chakram Projectile
+	CelestialGearProjectile.DisplayName: Celestial Gear Projectile
+	CelestialGearStorm.DisplayName: Celestial Gear Storm
+	CelestialLightArrow.DisplayName: Celestial Light Arrow
+	CelestialRainArrow.DisplayName: Celestial Rain Arrow
+	CelestialWatcherPillar.DisplayName: Celestial Watcher Pillar
+	ClockworkPhoenixSpearProjectile.DisplayName: Clockwork Phoenix Spear Projectile
+	GoldenPhoenixMinion.DisplayName: Golden Phoenix Minion
+	JadeDragonSlash.DisplayName: Jade Dragon Slash
+	JadeDragonWave.DisplayName: Jade Dragon Wave
+	PhoenixFlameWave.DisplayName: Phoenix Flame Wave
+	PhoenixMinionFlame.DisplayName: Phoenix Minion Flame
+	PhoenixSpark.DisplayName: Phoenix Spark
 }
 
 HeavenBiome.DisplayName: Heaven
@@ -1016,6 +1083,11 @@ Buffs: {
 	NetherSutomBuff: {
 		DisplayName: Nether Sutom Buff
 		Description: Mods.AncientChineseMythology.Buffs.NetherSutomBuff.Description
+	}
+
+	GoldenPhoenixBuff: {
+		DisplayName: Golden Phoenix Buff
+		Description: Mods.AncientChineseMythology.Buffs.GoldenPhoenixBuff.Description
 	}
 }
 
