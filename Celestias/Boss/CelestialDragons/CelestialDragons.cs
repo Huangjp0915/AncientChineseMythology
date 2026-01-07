@@ -511,7 +511,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons
             // rotation = 速度方向角度
             // 当速度向右(0度)时不需要额外旋转
             // 当速度向左(180度)时需要垂直翻转
-            Vector2 origin = new Vector2(texture.Width, texture.Height / 2f); // 右边中心为原点（头部前端）
+            Vector2 origin = texture.Size() / 2; // 右边中心为原点（头部前端）
             SpriteEffects effects = SpriteEffects.None;
 
             // 如果速度向左，垂直翻转贴图
