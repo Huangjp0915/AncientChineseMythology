@@ -17,7 +17,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
     public class CelestialJudgmentChakram : ModItem
     {
         public override void SetDefaults() {
-            Item.damage = 320;
+            Item.damage = 2320;
             Item.DamageType = DamageClass.Melee;
             Item.width = 40;
             Item.height = 40;

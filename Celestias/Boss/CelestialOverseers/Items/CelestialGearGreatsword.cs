@@ -20,7 +20,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
         private const int MaxSwings = 4;
 
         public override void SetDefaults() {
-            Item.damage = 420;
+            Item.damage = 2420;
             Item.DamageType = DamageClass.Melee;
             Item.width = 80;
             Item.height = 80;

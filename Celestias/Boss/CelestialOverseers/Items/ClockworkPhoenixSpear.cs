@@ -17,7 +17,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
     public class ClockworkPhoenixSpear : ModItem
     {
         public override void SetDefaults() {
-            Item.damage = 360;
+            Item.damage = 3360;
             Item.DamageType = DamageClass.Melee;
             Item.width = 56;
             Item.height = 56;
@@ -161,7 +161,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
             Vector2 spawnPos = Owner.MountedCenter + direction * (BaseOffset + ThrustDistance + 40f);
 
             // 每3次突刺发射大凤凰
-            if (thrustCount % 3 == 0) {
+            if (Main.rand.NextBool(3)) {
                 Projectile.NewProjectile(
                     Projectile.GetSource_FromAI(),
                     spawnPos,
@@ -371,20 +371,6 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
                 Main.spriteBatch.Draw(texture, trailPos, null, trailColor, Projectile.oldRot[i],
                     origin, new Vector2(1f * bodyScale, 0.3f * bodyScale * Projectile.scale), SpriteEffects.None, 0f);
             }
-
-            // 凤凰头
-            float pulse = 1f + MathF.Sin(wavePhase * 3f) * 0.15f;
-            Color headColor = new Color(255, 220, 150);
-            headColor.A = 0;
-            Main.spriteBatch.Draw(texture, drawPos, null, headColor, Projectile.rotation,
-                origin, new Vector2(1.3f, 0.4f * Projectile.scale) * pulse, SpriteEffects.None, 0f);
-
-            // 核心
-            Color coreColor = new Color(255, 255, 200);
-            coreColor.A = 0;
-            Main.spriteBatch.Draw(texture, drawPos, null, coreColor * 0.7f, Projectile.rotation,
-                origin, new Vector2(0.8f, 0.2f * Projectile.scale) * pulse, SpriteEffects.None, 0f);
-
             return false;
         }
 
@@ -454,13 +440,13 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
                 trailColor.A = 0;
 
                 Vector2 trailPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                Main.spriteBatch.Draw(texture, trailPos, null, trailColor, 0f, origin, 0.4f * progress, SpriteEffects.None, 0f);
+                Main.spriteBatch.Draw(texture, trailPos, null, trailColor, Projectile.rotation, origin, 0.4f * progress, SpriteEffects.None, 0f);
             }
 
             // 主体
             Color mainColor = new Color(255, 200, 100);
             mainColor.A = 0;
-            Main.spriteBatch.Draw(texture, drawPos, null, mainColor, 0f, origin, 0.5f, SpriteEffects.None, 0f);
+            Main.spriteBatch.Draw(texture, drawPos, null, mainColor, Projectile.rotation, origin, 0.5f, SpriteEffects.None, 0f);
 
             return false;
         }

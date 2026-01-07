@@ -20,7 +20,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
         private const int MaxCharge = 3;
 
         public override void SetDefaults() {
-            Item.damage = 380;
+            Item.damage = 3380;
             Item.DamageType = DamageClass.Melee;
             Item.width = 60;
             Item.height = 60;
@@ -306,14 +306,10 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
             float headPulse = 1f + MathF.Sin(wavePhase * 3f) * 0.1f;
             Color headColor = new Color(150, 255, 180);
             headColor.A = 0;
-            Main.spriteBatch.Draw(texture, drawPos, null, headColor, Projectile.rotation,
-                origin, new Vector2(1.5f, 0.5f * Projectile.scale) * headPulse, SpriteEffects.None, 0f);
 
             // 龙眼高光
             Color eyeColor = new Color(255, 255, 200);
             eyeColor.A = 0;
-            Main.spriteBatch.Draw(texture, drawPos, null, eyeColor * 0.6f, Projectile.rotation,
-                origin, new Vector2(1f, 0.25f * Projectile.scale) * headPulse, SpriteEffects.None, 0f);
 
             // 龙须光效
             if (ACMAsset.Sparkle != null) {

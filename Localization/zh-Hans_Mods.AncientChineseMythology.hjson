@@ -680,43 +680,43 @@ Items: {
 	}
 
 	AllSeeingJadeTome: {
-		// DisplayName: All Seeing Jade Tome
-		// Tooltip: ""
+		DisplayName: 全知天眼法典
+		Tooltip: ""
 	}
 
 	CelestialGearGreatsword: {
-		// DisplayName: Celestial Gear Greatsword
-		// Tooltip: ""
+		DisplayName: 天机之眼巨剑
+		Tooltip: ""
 	}
 
 	CelestialJudgmentChakram: {
-		// DisplayName: Celestial Judgment Chakram
-		// Tooltip: ""
+		DisplayName: 天道审判飞轮
+		Tooltip: ""
 	}
 
 	CelestialMechanismBow: {
-		// DisplayName: Celestial Mechanism Bow
-		// Tooltip: ""
+		DisplayName: 天工流云弓
+		Tooltip: ""
 	}
 
 	CelestialWatcherStaff: {
-		// DisplayName: Celestial Watcher Staff
-		// Tooltip: ""
+		DisplayName: 天枢监视法杖
+		Tooltip: ""
 	}
 
 	ClockworkPhoenixSpear: {
-		// DisplayName: Clockwork Phoenix Spear
-		// Tooltip: ""
+		DisplayName: 神机凤翔枪
+		Tooltip: ""
 	}
 
 	GoldenPhoenixSummonStaff: {
-		// DisplayName: Golden Phoenix Summon Staff
-		// Tooltip: ""
+		DisplayName: 御令金凤杖
+		Tooltip: ""
 	}
 
 	JadeDragonCloudDao: {
-		// DisplayName: Jade Dragon Cloud Dao
-		// Tooltip: ""
+		DisplayName: 青云龙魂刀
+		Tooltip: ""
 	}
 }
 
@@ -1135,8 +1135,8 @@ Buffs: {
 	}
 
 	GoldenPhoenixBuff: {
-		// DisplayName: Golden Phoenix Buff
-		// Description: Mods.AncientChineseMythology.Buffs.GoldenPhoenixBuff.Description
+		DisplayName: 御令金凤
+		Description: ""
 	}
 }
 

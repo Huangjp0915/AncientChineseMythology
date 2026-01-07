@@ -20,7 +20,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
         private const int MaxCharge = 5;
 
         public override void SetDefaults() {
-            Item.damage = 280;
+            Item.damage = 2280;
             Item.DamageType = DamageClass.Ranged;
             Item.width = 32;
             Item.height = 64;
@@ -110,22 +110,6 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
         public override void AI() {
             Projectile.rotation = Projectile.velocity.ToRotation() + MathHelper.PiOver2;
 
-            // 轻微追踪
-            if (!hasHomed && Projectile.timeLeft < 100) {
-                NPC target = FindClosestNPC(300f);
-                if (target != null) {
-                    Vector2 toTarget = (target.Center - Projectile.Center).SafeNormalize(Vector2.Zero);
-                    float targetAngle = toTarget.ToRotation();
-                    float currentAngle = Projectile.velocity.ToRotation();
-                    float newAngle = MathHelper.Lerp(currentAngle, targetAngle, 0.08f);
-                    Projectile.velocity = newAngle.ToRotationVector2() * Projectile.velocity.Length();
-
-                    if (Vector2.Distance(Projectile.Center, target.Center) < 50f) {
-                        hasHomed = true;
-                    }
-                }
-            }
-
             // 光箭粒子
             if (Main.rand.NextBool(3)) {
                 int dust = Dust.NewDust(Projectile.Center, 0, 0, DustID.GoldCoin, 0, 0, 100, default, 1f);
@@ -134,21 +118,6 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
             }
 
             Lighting.AddLight(Projectile.Center, new Vector3(1f, 0.95f, 0.7f) * 0.5f);
-        }
-
-        private NPC FindClosestNPC(float maxDist) {
-            NPC closest = null;
-            float closestDist = maxDist;
-            foreach (NPC npc in Main.ActiveNPCs) {
-                if (npc.CanBeChasedBy() && !npc.friendly) {
-                    float dist = Vector2.Distance(npc.Center, Projectile.Center);
-                    if (dist < closestDist) {
-                        closestDist = dist;
-                        closest = npc;
-                    }
-                }
-            }
-            return closest;
         }
 
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {

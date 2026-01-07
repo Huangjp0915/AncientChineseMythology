@@ -17,7 +17,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
     public class GoldenPhoenixSummonStaff : ModItem
     {
         public override void SetDefaults() {
-            Item.damage = 300;
+            Item.damage = 2300;
             Item.DamageType = DamageClass.Summon;
             Item.width = 48;
             Item.height = 48;
@@ -61,7 +61,6 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
     /// </summary>
     public class GoldenPhoenixBuff : ModBuff
     {
-        public override string Texture => "InnoVault/Assets/placeholder";
         public override void SetStaticDefaults() {
             Main.buffNoSave[Type] = true;
             Main.buffNoTimeDisplay[Type] = true;
@@ -83,7 +82,6 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
     /// </summary>
     public class GoldenPhoenixMinion : ModProjectile
     {
-        public override string Texture => "InnoVault/Assets/placeholder";
         private enum PhoenixState { Idle, Targeting, Attacking, Diving }
 
         private PhoenixState State {

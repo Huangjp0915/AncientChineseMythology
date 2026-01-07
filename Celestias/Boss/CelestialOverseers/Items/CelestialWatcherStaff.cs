@@ -17,7 +17,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
     public class CelestialWatcherStaff : ModItem
     {
         public override void SetDefaults() {
-            Item.damage = 400;
+            Item.damage = 1400;
             Item.DamageType = DamageClass.Magic;
             Item.width = 48;
             Item.height = 48;

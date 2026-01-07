@@ -17,7 +17,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
     public class AllSeeingJadeTome : ModItem
     {
         public override void SetDefaults() {
-            Item.damage = 350;
+            Item.damage = 2350;
             Item.DamageType = DamageClass.Magic;
             Item.width = 32;
             Item.height = 32;
