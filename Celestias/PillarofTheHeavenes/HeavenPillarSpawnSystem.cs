@@ -1,5 +1,4 @@
 using AncientChineseMythology.Celestias.PillarofTheHeavenes.Enemys;
-using Microsoft.Xna.Framework;
 using System;
 using Terraria;
 using Terraria.ID;

@@ -1,6 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using System;
+﻿using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -39,7 +37,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
             // 挥砍时的金色粒子
             if (Main.rand.NextBool(2)) {
                 int dustType = Main.rand.NextBool() ? DustID.GoldFlame : DustID.IceTorch;
-                int dust = Dust.NewDust(new Vector2(hitbox.X, hitbox.Y), hitbox.Width, hitbox.Height, dustType, 
+                int dust = Dust.NewDust(new Vector2(hitbox.X, hitbox.Y), hitbox.Width, hitbox.Height, dustType,
                     player.velocity.X * 0.2f, player.velocity.Y * 0.2f, 100, default, 1.8f);
                 Main.dust[dust].noGravity = true;
             }

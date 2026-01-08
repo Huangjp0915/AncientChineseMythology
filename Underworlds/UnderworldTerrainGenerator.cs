@@ -120,16 +120,13 @@ namespace AncientChineseMythology.Underworlds
                 Main.NewText("地府已经完整侵入！", Color.LightBlue);
                 onProgress?.Invoke(1f, "完成");
                 onComplete?.Invoke(true);
-            }
-            catch (OperationCanceledException) {
+            } catch (OperationCanceledException) {
                 Main.NewText("地形生成已取消", Color.Orange);
                 onComplete?.Invoke(false);
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 Main.NewText($"地形生成出错: {ex.Message}", Color.Red);
                 onComplete?.Invoke(false);
-            }
-            finally {
+            } finally {
                 _isGenerating = false;
                 _generationProgress = 0f;
                 _cancellationTokenSource?.Dispose();

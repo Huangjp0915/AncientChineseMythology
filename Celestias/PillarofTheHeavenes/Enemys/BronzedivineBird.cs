@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -112,7 +111,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Enemys
             // 翅膀光效粒子
             if (animationCounter % 4 == 0 && State != AIState.Recover) {
                 Vector2 wingOffset = new Vector2(-NPC.spriteDirection * 15, 5);
-                int dust = Dust.NewDust(NPC.Center + wingOffset, 0, 0, DustID.GoldFlame, 
+                int dust = Dust.NewDust(NPC.Center + wingOffset, 0, 0, DustID.GoldFlame,
                     -NPC.velocity.X * 0.2f, -NPC.velocity.Y * 0.2f, 100, default, 1.2f);
                 Main.dust[dust].noGravity = true;
             }

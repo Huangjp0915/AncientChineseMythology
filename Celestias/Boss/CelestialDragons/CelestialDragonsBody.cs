@@ -12,16 +12,14 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons
     {
         public override WormType NPCWormType => WormType.Body;
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             base.SetDefaults();
             // 体节宽度，用于计算跟随距离
             NPC.width = BodyTextureWidth;
             NPC.height = BodyTextureHeight;
         }
 
-        public override void ChangeSummonType()
-        {
+        public override void ChangeSummonType() {
             SummonNPCType = ModContent.NPCType<CelestialDragonsBody>();
 
             // 最后3节切换到尾巴

@@ -1,4 +1,3 @@
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -220,7 +219,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             // 气泡高光 - 注意LightShot朝右，需要旋转
             Color highlightColor = AoGuangHelper.PureWhite * 0.5f * bubbleScale;
             highlightColor.A = 0;
-            Main.spriteBatch.Draw(tex, drawPos + new Vector2(-8, -8) * bubbleScale, null, highlightColor, 
+            Main.spriteBatch.Draw(tex, drawPos + new Vector2(-8, -8) * bubbleScale, null, highlightColor,
                 MathHelper.PiOver4, origin, 0.3f * bubbleScale, SpriteEffects.None, 0f);
 
             return false;

@@ -1,6 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using System;
+﻿using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -204,14 +202,14 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
 
                 Vector2 pos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
                 // LightShot朝右，箭矢旋转需要减去PiOver2
-                Main.spriteBatch.Draw(tex, pos, null, trailColor, Projectile.oldRot[i] - MathHelper.PiOver2, origin, 
+                Main.spriteBatch.Draw(tex, pos, null, trailColor, Projectile.oldRot[i] - MathHelper.PiOver2, origin,
                     new Vector2(0.3f * progress, 0.5f * progress), SpriteEffects.None, 0f);
             }
 
             // 主体
             Color mainColor = AoGuangHelper.WaterGlow * 0.9f;
             mainColor.A = 0;
-            Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, mainColor, 
+            Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, mainColor,
                 Projectile.rotation - MathHelper.PiOver2, origin, new Vector2(0.4f, 0.6f), SpriteEffects.None, 0f);
 
             return false;

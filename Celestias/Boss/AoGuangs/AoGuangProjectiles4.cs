@@ -1,6 +1,4 @@
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent;
@@ -139,7 +137,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             if (ACMAsset.LightShot != null) {
                 Color coreColor = AoGuangHelper.DeepSeaBlue * vortexAlpha * 0.8f;
                 coreColor.A = 0;
-                sb.Draw(ACMAsset.LightShot, screenPos, null, coreColor, vortexRotation * 2f, 
+                sb.Draw(ACMAsset.LightShot, screenPos, null, coreColor, vortexRotation * 2f,
                     ACMAsset.LightShot.Size() / 2f, 1.5f * vortexAlpha, SpriteEffects.None, 0f);
             }
 
@@ -273,7 +271,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             tipColor.A = 0;
             Vector2 tipOffset = Projectile.velocity.SafeNormalize(Vector2.Zero) * 15f;
             if (ACMAsset.LightShot != null) {
-                Main.spriteBatch.Draw(ACMAsset.LightShot, drawPos + tipOffset, null, tipColor, 
+                Main.spriteBatch.Draw(ACMAsset.LightShot, drawPos + tipOffset, null, tipColor,
                     Projectile.rotation, ACMAsset.LightShot.Size() / 2f, 0.3f, SpriteEffects.None, 0f);
             }
 

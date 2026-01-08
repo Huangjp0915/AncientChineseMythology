@@ -1,9 +1,7 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
-using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -201,19 +199,19 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
             // 外层漩涡
             Color outerColor = AoGuangHelper.OceanTeal * 0.4f * pulse;
             outerColor.A = 0;
-            Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, outerColor, 
+            Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, outerColor,
                 Projectile.rotation * 0.5f, origin, 1.2f * pulse, SpriteEffects.None, 0f);
 
             // 主体
             Color mainColor = AoGuangHelper.WaterGlow * 0.8f;
             mainColor.A = 0;
-            Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, mainColor, 
+            Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, mainColor,
                 Projectile.rotation, origin, 0.8f * pulse, SpriteEffects.None, 0f);
 
             // 内核
             Color coreColor = AoGuangHelper.PureWhite * 0.6f;
             coreColor.A = 0;
-            Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, coreColor, 
+            Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, coreColor,
                 -Projectile.rotation, origin, 0.4f * pulse, SpriteEffects.None, 0f);
 
             Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, lightColor,

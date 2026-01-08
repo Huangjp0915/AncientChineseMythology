@@ -1,6 +1,4 @@
-﻿using InnoVault.Actors;
-
-namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
+﻿namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
 {
     /// <summary>
     /// 天柱系统入口 - 四方神圣天柱

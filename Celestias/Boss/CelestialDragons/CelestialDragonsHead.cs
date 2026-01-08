@@ -15,15 +15,13 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons
 
         public override string BossHeadTexture => "AncientChineseMythology/Celestias/Boss/CelestialDragons/CelestialDragons_Head";
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             base.SetStaticDefaults();
             NPCID.Sets.ShouldBeCountedAsBoss[NPC.type] = true;
             NPCID.Sets.BossBestiaryPriority.Add(NPC.type);
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             base.SetDefaults();
             // 宽度用于计算与下一节的距离
             // 头部贴图382宽，第一个体节从头部的一半开始
@@ -32,8 +30,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons
             NPC.boss = true;
         }
 
-        public override void ChangeSummonType()
-        {
+        public override void ChangeSummonType() {
             SummonNPCType = ModContent.NPCType<CelestialDragonsBody>();
         }
     }

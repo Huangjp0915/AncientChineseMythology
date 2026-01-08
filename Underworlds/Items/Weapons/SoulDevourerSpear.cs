@@ -1,6 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using System;
+﻿using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -298,7 +296,8 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons
                 //origin = new Vector2(0, texture.Height / 2f); //从左侧中心开始
                 rotationOffset = MathHelper.PiOver4;
                 effects = SpriteEffects.None;
-            } else {
+            }
+            else {
                 //origin = new Vector2(texture.Width, texture.Height / 2f); //从右侧中心开始
                 rotationOffset = MathHelper.Pi - MathHelper.PiOver4;
                 effects = SpriteEffects.FlipHorizontally;

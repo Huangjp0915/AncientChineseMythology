@@ -1,4 +1,3 @@
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -678,7 +677,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                     drawPos.Y < -300 || drawPos.Y > Main.screenHeight + 300)
                     continue;
 
-                Color cloudColor = Color.Lerp(new Color(255, 250, 220), new Color(220, 255, 235), 
+                Color cloudColor = Color.Lerp(new Color(255, 250, 220), new Color(220, 255, 235),
                     (float)Math.Sin(cloudDriftTimer + i * 0.5f) * 0.5f + 0.5f);
                 float alpha = (float)Math.Sin(cloud.AnimProgress * MathHelper.Pi) * intensity * 0.55f;
                 cloudColor *= alpha;
@@ -688,12 +687,12 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                 int frameY = (i / 4) % 4;
                 Rectangle smokeRect = new Rectangle(frameX * frameSize, frameY * frameSize, frameSize, frameSize);
 
-                sb.Draw(smokeTex, drawPos, smokeRect, cloudColor, cloud.Rotation, new Vector2(frameSize / 2), 
+                sb.Draw(smokeTex, drawPos, smokeRect, cloudColor, cloud.Rotation, new Vector2(frameSize / 2),
                     cloud.Scale * Main.GameViewMatrix.Zoom.X, SpriteEffects.None, 0f);
 
                 Color glowColor = cloudColor;
                 glowColor.A = 0;
-                sb.Draw(smokeTex, drawPos, smokeRect, glowColor * 0.4f, cloud.Rotation * 0.8f, 
+                sb.Draw(smokeTex, drawPos, smokeRect, glowColor * 0.4f, cloud.Rotation * 0.8f,
                     new Vector2(frameSize / 2), cloud.Scale * 1.5f * Main.GameViewMatrix.Zoom.X, SpriteEffects.None, 0f);
             }
         }
@@ -712,13 +711,13 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                     drawPos.Y < -100 || drawPos.Y > Main.screenHeight + 100)
                     continue;
 
-                Color orbColor = Color.Lerp(new Color(255, 245, 180), new Color(180, 255, 220), 
+                Color orbColor = Color.Lerp(new Color(255, 245, 180), new Color(180, 255, 220),
                     (float)Math.Sin(divinePulseTimer + i) * 0.5f + 0.5f);
                 float alpha = (float)Math.Sin(orb.AnimProgress * MathHelper.Pi) * intensity * 0.7f;
                 orbColor *= alpha;
                 orbColor.A = 0;
 
-                sb.Draw(glowTex, drawPos, null, orbColor, 0f, glowTex.Size() / 2, 
+                sb.Draw(glowTex, drawPos, null, orbColor, 0f, glowTex.Size() / 2,
                     orb.Scale * Main.GameViewMatrix.Zoom.X, SpriteEffects.None, 0f);
             }
         }

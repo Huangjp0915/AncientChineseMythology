@@ -1,4 +1,3 @@
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -233,7 +232,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
                 float progress = 1f - (float)i / Projectile.oldPos.Length;
                 Color trailColor = Color.Gold * progress * 0.5f;
                 trailColor.A = 0;
-            
+
                 Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
                 Main.EntitySpriteDraw(texture, drawPos, null, trailColor, Projectile.oldRot[i] + rotfix, origin, Projectile.scale * progress * 0.5f, effects, 0);
             }

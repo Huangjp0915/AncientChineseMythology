@@ -1,5 +1,4 @@
-﻿using AncientChineseMythology.Underworlds.Boss.AwakeningNethers.Items;
-using AncientChineseMythology.Underworlds.Boss.NetherKitsunes.Items;
+﻿using AncientChineseMythology.Underworlds.Boss.NetherKitsunes.Items;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.IO;

@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -186,7 +185,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Enemys
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
                     SoundEngine.PlaySound(SoundID.Item33, NPC.Center);
                     Vector2 direction = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
-                    
+
                     // 发射追踪弹
                     for (int i = 0; i < 5; i++) {
                         Vector2 vel = direction.RotatedBy((i - 2) * 0.1f) * 8f;

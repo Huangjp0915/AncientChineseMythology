@@ -1,5 +1,6 @@
+using AncientChineseMythology.Celestias.PillarofTheHeavenes.Tiles;
 using InnoVault.Actors;
-using Microsoft.Xna.Framework;
+using System;
 using System.Collections.Generic;
 using Terraria;
 using Terraria.ID;
@@ -23,11 +24,24 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
 
         /// <summary>天柱生成的垂直偏移（从地表向上，适应放大后的天柱）</summary>
         public const int VerticalOffset = 600;
+
+        /// <summary>矿物生成半径（像素）</summary>
+        public const int OreSpawnRadius = 1500;
+
+        /// <summary>每根天柱生成的矿物簇数量</summary>
+        public const int OreClusterCount = 80;
+
+        /// <summary>每个矿物簇的矿物数量范围</summary>
+        public const int OreClusterSizeMin = 8;
+        public const int OreClusterSizeMax = 20;
         #endregion
 
         #region 状态数据
         /// <summary>天柱是否已降临</summary>
         public static bool PillarsDescended { get; private set; } = false;
+
+        /// <summary>矿物是否已生成</summary>
+        public static bool OreGenerated { get; private set; } = false;
 
         /// <summary>四根天柱的世界位置</summary>
         public static Vector2[] PillarPositions { get; private set; } = new Vector2[PillarCount];
@@ -43,6 +57,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         public override void OnWorldLoad() {
             // 重置状态
             PillarsDescended = false;
+            OreGenerated = false;
             PillarPositions = new Vector2[PillarCount];
             PillarActorIndices = new int[PillarCount];
             for (int i = 0; i < PillarCount; i++) {
@@ -54,6 +69,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         public override void OnWorldUnload() {
             // 清理状态
             PillarsDescended = false;
+            OreGenerated = false;
             for (int i = 0; i < PillarCount; i++) {
                 PillarPositions[i] = Vector2.Zero;
                 PillarActorIndices[i] = -1;
@@ -86,6 +102,9 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
 
             // 生成天柱Actor
             SpawnPillarActors();
+
+            // 生成天极矿
+            SpawnEmpyriteOre();
 
             // 广播消息
             if (Main.netMode == NetmodeID.Server) {
@@ -204,11 +223,113 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                 }
             }
         }
+
+        /// <summary>
+        /// 在天柱周围生成天极矿
+        /// </summary>
+        private static void SpawnEmpyriteOre() {
+            if (OreGenerated) return;
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+
+            OreGenerated = true;
+            int oreType = ModContent.TileType<EmpyriteOreTile>();
+            int totalOreGenerated = 0;
+
+            for (int pillarIndex = 0; pillarIndex < PillarCount; pillarIndex++) {
+                Vector2 pillarPos = PillarPositions[pillarIndex];
+                if (pillarPos == Vector2.Zero) continue;
+
+                int centerTileX = (int)(pillarPos.X / 16f);
+                int centerTileY = (int)(pillarPos.Y / 16f);
+                int radiusTiles = OreSpawnRadius / 16;
+
+                // 生成多个矿物簇
+                for (int cluster = 0; cluster < OreClusterCount; cluster++) {
+                    // 随机选择簇中心位置（在天柱周围）
+                    float angle = Main.rand.NextFloat(MathHelper.TwoPi);
+                    float distance = Main.rand.NextFloat(radiusTiles * 0.2f, radiusTiles);
+
+                    int clusterX = centerTileX + (int)(MathF.Cos(angle) * distance);
+                    int clusterY = centerTileY + (int)(MathF.Sin(angle) * distance);
+
+                    // 确保在地下（地表以下）
+                    if (clusterY < Main.worldSurface + 20) {
+                        clusterY = (int)Main.worldSurface + Main.rand.Next(20, 100);
+                    }
+
+                    // 确保在世界边界内
+                    clusterX = (int)MathHelper.Clamp(clusterX, 50, Main.maxTilesX - 50);
+                    clusterY = (int)MathHelper.Clamp(clusterY, 50, Main.maxTilesY - 200);
+
+                    // 生成矿物簇
+                    int clusterSize = Main.rand.Next(OreClusterSizeMin, OreClusterSizeMax + 1);
+                    int oresPlaced = PlaceOreCluster(clusterX, clusterY, clusterSize, oreType);
+                    totalOreGenerated += oresPlaced;
+                }
+            }
+
+            // 通知玩家
+            if (totalOreGenerated > 0) {
+                Main.NewText($"天极之光照耀大地，神圣矿脉显现！", 220, 210, 140);
+            }
+        }
+
+        /// <summary>
+        /// 放置一个矿物簇
+        /// </summary>
+        private static int PlaceOreCluster(int centerX, int centerY, int size, int oreType) {
+            int placed = 0;
+            int attempts = size * 3;
+
+            for (int i = 0; i < attempts && placed < size; i++) {
+                // 随机偏移（形成不规则形状）
+                int offsetX = Main.rand.Next(-4, 5);
+                int offsetY = Main.rand.Next(-4, 5);
+                int tileX = centerX + offsetX;
+                int tileY = centerY + offsetY;
+
+                // 边界检查
+                if (tileX < 1 || tileX >= Main.maxTilesX - 1 || tileY < 1 || tileY >= Main.maxTilesY - 1) {
+                    continue;
+                }
+
+                Tile tile = Main.tile[tileX, tileY];
+
+                // 只替换实心方块
+                if (tile.HasTile && Main.tileSolid[tile.TileType] && !Main.tileSolidTop[tile.TileType]) {
+                    // 不替换重要物块
+                    if (TileID.Sets.Ore[tile.TileType] || tile.TileType == oreType) {
+                        continue;
+                    }
+
+                    // 可以替换石头、泥土等
+                    if (tile.TileType == TileID.Stone || tile.TileType == TileID.Dirt ||
+                        tile.TileType == TileID.Mud || tile.TileType == TileID.Ebonstone ||
+                        tile.TileType == TileID.Crimstone || tile.TileType == TileID.Pearlstone ||
+                        tile.TileType == TileID.Granite || tile.TileType == TileID.Marble ||
+                        tile.TileType == TileID.Sandstone || tile.TileType == TileID.HardenedSand) {
+
+                        tile.TileType = (ushort)oreType;
+                        tile.TileFrameX = 0;
+                        tile.TileFrameY = 0;
+                        placed++;
+
+                        // 同步
+                        if (Main.netMode == NetmodeID.Server) {
+                            NetMessage.SendTileSquare(-1, tileX, tileY, 1);
+                        }
+                    }
+                }
+            }
+
+            return placed;
+        }
         #endregion
 
         #region 数据持久化
         public override void SaveWorldData(TagCompound tag) {
             tag["PillarsDescended"] = PillarsDescended;
+            tag["OreGenerated"] = OreGenerated;
             tag["DescendTime"] = DescendTime;
 
             // 保存天柱位置
@@ -222,6 +343,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
 
         public override void LoadWorldData(TagCompound tag) {
             PillarsDescended = tag.GetBool("PillarsDescended");
+            OreGenerated = tag.GetBool("OreGenerated");
             DescendTime = tag.GetDouble("DescendTime");
 
             // 加载天柱位置

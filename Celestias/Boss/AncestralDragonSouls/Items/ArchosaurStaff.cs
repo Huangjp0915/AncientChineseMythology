@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -252,7 +251,7 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls.Items
                     Main.spriteBatch.Draw(ACMAsset.LightShot, drawPos, null, coreColor, circleRotation + i * MathHelper.TwoPi / 8f,
                     ACMAsset.LightShot.Size() / 2f, coreScale, SpriteEffects.None, 0f);
                 }
-                
+
             }
 
             return false;
@@ -362,7 +361,7 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls.Items
             // 主体
             Color mainColor = new Color(255, 255, 255) * 0.7f;
             mainColor.A = 0;
-            
+
             for (int i = 0; i < 8; i++) {
                 Main.spriteBatch.Draw(tex, drawPos, null, mainColor, i * MathHelper.TwoPi / 8f, origin, 0.5f, SpriteEffects.None, 0f);
             }

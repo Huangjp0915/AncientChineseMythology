@@ -1,6 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using System;
+﻿using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent;
@@ -99,7 +97,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Enemys
 
             // 生成神圣粒子
             if (trailCounter % 5 == 0) {
-                int dust = Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.GoldFlame, 
+                int dust = Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.GoldFlame,
                     NPC.velocity.X * 0.2f, NPC.velocity.Y * 0.2f, 100, default, 1.5f);
                 Main.dust[dust].noGravity = true;
             }
@@ -227,7 +225,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Enemys
                 Vector2 drawPos = NPC.oldPos[i] + NPC.Size / 2 - screenPos;
                 Color trailColor = drawColor * alpha * 0.4f;
                 SpriteEffects effects = NPC.spriteDirection == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
-                spriteBatch.Draw(texture, drawPos, NPC.frame, trailColor, NPC.rotation, 
+                spriteBatch.Draw(texture, drawPos, NPC.frame, trailColor, NPC.rotation,
                     NPC.frame.Size() / 2, NPC.scale, effects, 0f);
             }
 
