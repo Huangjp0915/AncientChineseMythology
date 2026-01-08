@@ -729,6 +729,41 @@ Items: {
 		DisplayName: Tsunami Piercer
 		Tooltip: ""
 	}
+
+	Cloudpiercer: {
+		DisplayName: Cloudpiercer
+		Tooltip: ""
+	}
+
+	FirmamentCleaver: {
+		DisplayName: Firmament Cleaver
+		Tooltip: ""
+	}
+
+	JadeArmillary: {
+		DisplayName: Jade Armillary
+		Tooltip: ""
+	}
+
+	PillarGuardiansHalberd: {
+		DisplayName: Pillar Guardians Halberd
+		Tooltip: ""
+	}
+
+	ScepterofTheOverseer: {
+		DisplayName: Scepterof The Overseer
+		Tooltip: ""
+	}
+
+	ThunderclapHandcannon: {
+		DisplayName: Thunderclap Handcannon
+		Tooltip: ""
+	}
+
+	TomeofDivineLaw: {
+		DisplayName: Tomeof Divine Law
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -1047,6 +1082,17 @@ Projectiles: {
 	TornadoArrow.DisplayName: Tornado Arrow
 	TsunamiPiercerThrust.DisplayName: Tsunami Piercer Thrust
 	TsunamiWaveThrust.DisplayName: Tsunami Wave Thrust
+	CelestialFragment.DisplayName: Celestial Fragment
+	ChainLightning.DisplayName: Chain Lightning
+	CloudpiercerArrow.DisplayName: Cloudpiercer Arrow
+	DivineRune.DisplayName: Divine Rune
+	FirmamentSlash.DisplayName: Firmament Slash
+	HalberdShockwave.DisplayName: Halberd Shockwave
+	HalberdThrust.DisplayName: Halberd Thrust
+	JadeArmillaryProjectile.DisplayName: Jade Armillary Projectile
+	OverseerOrb.DisplayName: Overseer Orb
+	RuneCircle.DisplayName: Rune Circle
+	ThunderclapBlast.DisplayName: Thunderclap Blast
 }
 
 HeavenBiome.DisplayName: Heaven
