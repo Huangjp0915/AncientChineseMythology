@@ -52,7 +52,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 }
             }
 
-            Projectile.rotation = Projectile.velocity.ToRotation() + MathHelper.PiOver2;
+            Projectile.rotation = Projectile.velocity.ToRotation();
 
             // 波动效果
             Vector2 perpendicular = Projectile.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
@@ -86,18 +86,18 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 trailColor.A = 0;
 
                 Vector2 pos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                Main.spriteBatch.Draw(tex, pos, null, trailColor, 0f, origin, 0.5f * progress, SpriteEffects.None, 0f);
+                Main.spriteBatch.Draw(tex, pos, null, trailColor, Projectile.rotation, origin, 0.5f * progress, SpriteEffects.None, 0f);
             }
 
             // 外光
             Color outerColor = AoGuangHelper.DragonBlue * 0.5f * pulse;
             outerColor.A = 0;
-            Main.spriteBatch.Draw(tex, drawPos, null, outerColor, 0f, origin, 0.8f * pulse, SpriteEffects.None, 0f);
+            Main.spriteBatch.Draw(tex, drawPos, null, outerColor, Projectile.rotation, origin, 0.8f * pulse, SpriteEffects.None, 0f);
 
             // 核心
             Color coreColor = AoGuangHelper.WaterGlow * 0.8f;
             coreColor.A = 0;
-            Main.spriteBatch.Draw(tex, drawPos, null, coreColor, 0f, origin, 0.5f * pulse, SpriteEffects.None, 0f);
+            Main.spriteBatch.Draw(tex, drawPos, null, coreColor, Projectile.rotation, origin, 0.5f * pulse, SpriteEffects.None, 0f);
 
             return false;
         }

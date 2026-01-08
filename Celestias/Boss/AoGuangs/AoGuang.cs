@@ -36,11 +36,15 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
         public enum BossPhase
         {
             Intro,
+            // 开场封路
+            Intro_SummonBarriers,
             // 一阶段
             Phase1_Patrol,
             Phase1_WaterBarrage,
             Phase1_VortexSummon,
             Phase1_TidalWave,
+            Phase1_BubbleStorm,
+            Phase1_CoralSpike,
             // 阶段转换
             PhaseTransition_2,
             // 二阶段
@@ -49,6 +53,8 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             Phase2_Whirlpool,
             Phase2_DragonBreath,
             Phase2_TornadoRush,
+            Phase2_TsunamiWall,
+            Phase2_DragonClaw,
             // 阶段转换
             PhaseTransition_3,
             // 三阶段
@@ -56,7 +62,9 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             Phase3_TridentStorm,
             Phase3_TidalBeam,
             Phase3_DragonCoil,
-            Phase3_FinalTsunami
+            Phase3_FinalTsunami,
+            Phase3_SeaDragonDance,
+            Phase3_AbyssalVortex
         }
 
         #endregion
@@ -99,6 +107,14 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
         // 龙息控制 - public供弹幕访问
         public float breathAngle;
         private bool isBreathActive;
+
+        // 封路龙卷控制
+        private int[] barrierTornadoIds;
+        private bool hasSpawnedBarriers;
+
+        // 龙爪攻击控制
+        private Vector2[] clawPositions;
+        private int clawIndex;
 
         // 视觉效果
         private float waveRotation;

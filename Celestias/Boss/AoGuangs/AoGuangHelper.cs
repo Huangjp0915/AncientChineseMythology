@@ -49,6 +49,27 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             return 0.5f - 0.5f * MathF.Cos(MathF.PI * t);
         }
 
+        /// <summary>
+        /// 获取LightShot纹理的正确旋转角度
+        /// LightShot纹理正面朝右，此方法返回修正后的旋转角度
+        /// </summary>
+        /// <param name="targetDirection">目标方向的弧度</param>
+        /// <returns>修正后的旋转角度</returns>
+        public static float GetLightShotRotation(float targetDirection) {
+            // LightShot默认朝右(0度)，直接返回目标方向即可
+            return targetDirection;
+        }
+
+        /// <summary>
+        /// 获取LightShot纹理朝上时的旋转角度
+        /// </summary>
+        public static float LightShotUpRotation => -MathHelper.PiOver2;
+
+        /// <summary>
+        /// 获取LightShot纹理朝下时的旋转角度
+        /// </summary>
+        public static float LightShotDownRotation => MathHelper.PiOver2;
+
         #endregion
 
         #region 绘制方法

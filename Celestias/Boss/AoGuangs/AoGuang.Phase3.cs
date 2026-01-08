@@ -397,6 +397,133 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             }
         }
 
+        /// <summary>
+        /// 海龙狂舞 - 高速S形蛇行移动并发射弹幕
+        /// </summary>
+        private void RunPhase3SeaDragonDance(Player target) {
+            // S形蛇行移动
+            float baseAngle = (target.Center - NPC.Center).ToRotation();
+            float waveOffset = MathF.Sin(AttackTimer * 0.1f) * 0.8f;
+            float currentAngle = baseAngle + waveOffset;
+
+            float speed = 25f;
+            Vector2 targetVelocity = currentAngle.ToRotationVector2() * speed;
+            NPC.velocity = Vector2.Lerp(NPC.velocity, targetVelocity, 0.15f);
+
+            // 蛇行粒子拖尾
+            if (!VaultUtils.isServer) {
+                for (int i = 0; i < 6; i++) {
+                    Vector2 dustPos = NPC.Center - NPC.velocity.SafeNormalize(Vector2.Zero) * (20 + i * 15);
+                    dustPos += Main.rand.NextVector2Circular(20, 20);
+                    int dustType = Main.rand.Next(3) switch {
+                        0 => DustID.Water,
+                        1 => DustID.BlueTorch,
+                        _ => DustID.Wet
+                    };
+                    int dust = Dust.NewDust(dustPos, 0, 0, dustType, 0, 0, 120, default, 2.5f);
+                    Main.dust[dust].noGravity = true;
+                    Main.dust[dust].velocity = -NPC.velocity * 0.1f;
+                }
+            }
+
+            // 发射水弹
+            if (AttackTimer % 6 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                // 向两侧发射
+                Vector2 perpendicular = NPC.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
+                for (int side = -1; side <= 1; side += 2) {
+                    Projectile.NewProjectile(
+                        NPC.GetSource_FromAI(),
+                        NPC.Center,
+                        perpendicular * side * 8f,
+                        ModContent.ProjectileType<DragonWaterBolt>(),
+                        NPC.damage / 4,
+                        1f
+                    );
+                }
+            }
+
+            // 每隔一段时间发射追踪水球
+            if (AttackTimer % 30 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                Projectile.NewProjectile(
+                    NPC.GetSource_FromAI(),
+                    NPC.Center,
+                    Vector2.Zero,
+                    ModContent.ProjectileType<HomingWaterOrb>(),
+                    NPC.damage / 4,
+                    1f
+                );
+            }
+
+            if (AttackTimer > 180) {
+                TransitionTo(GetRandomPhase3Attack());
+            }
+        }
+
+        /// <summary>
+        /// 深渊漩涡 - 在场地中央生成巨大漩涡并召唤水柱
+        /// </summary>
+        private void RunPhase3AbyssalVortex(Player target) {
+            switch ((int)SubState) {
+                case 0: // 飞到上方
+                    Vector2 risePos = target.Center + new Vector2(0, -500);
+                    NPC.velocity = Vector2.Lerp(NPC.velocity, (risePos - NPC.Center) * 0.06f, 0.12f);
+
+                    if (AttackTimer >= 40 || Vector2.Distance(NPC.Center, risePos) < 80f) {
+                        SubState = 1;
+                        AttackTimer = 0;
+                    }
+                    break;
+
+                case 1: // 召唤深渊漩涡
+                    NPC.velocity *= 0.9f;
+
+                    if (AttackTimer == 1 && Main.netMode != NetmodeID.MultiplayerClient) {
+                        Projectile.NewProjectile(
+                            NPC.GetSource_FromAI(),
+                            target.Center,
+                            Vector2.Zero,
+                            ModContent.ProjectileType<AbyssalVortex>(),
+                            NPC.damage / 3,
+                            0f,
+                            ai0: NPC.whoAmI
+                        );
+
+                        SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.5f, Volume = 1.5f }, target.Center);
+                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(20, 80);
+                    }
+
+                    // 从上方发射水柱
+                    if (AttackTimer > 30 && AttackTimer % 15 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                        Vector2 spikePos = target.Center + new Vector2(Main.rand.NextFloat(-400, 400), -600);
+                        Projectile.NewProjectile(
+                            NPC.GetSource_FromAI(),
+                            spikePos,
+                            new Vector2(0, 15f),
+                            ModContent.ProjectileType<FallingWaterSpear>(),
+                            NPC.damage / 3,
+                            1f
+                        );
+                    }
+
+                    // 深渊粒子
+                    if (!VaultUtils.isServer) {
+                        for (int i = 0; i < 5; i++) {
+                            float angle = Main.rand.NextFloat(MathHelper.TwoPi);
+                            float radius = Main.rand.NextFloat(150, 300);
+                            Vector2 dustPos = NPC.Center + angle.ToRotationVector2() * radius;
+                            int dust = Dust.NewDust(dustPos, 0, 0, DustID.BlueTorch, 0, 0, 180, default, 2f);
+                            Main.dust[dust].noGravity = true;
+                            Main.dust[dust].velocity = (angle + MathHelper.PiOver2).ToRotationVector2() * 6f;
+                        }
+                    }
+
+                    if (AttackTimer > 180) {
+                        TransitionTo(GetRandomPhase3Attack());
+                    }
+                    break;
+            }
+        }
+
         #endregion
     }
 }

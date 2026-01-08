@@ -45,6 +45,9 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 case BossPhase.Intro:
                     RunIntro(target);
                     break;
+                case BossPhase.Intro_SummonBarriers:
+                    RunIntroSummonBarriers(target);
+                    break;
                 // 一阶段
                 case BossPhase.Phase1_Patrol:
                     RunPhase1Patrol(target);
@@ -57,6 +60,12 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                     break;
                 case BossPhase.Phase1_TidalWave:
                     RunPhase1TidalWave(target);
+                    break;
+                case BossPhase.Phase1_BubbleStorm:
+                    RunPhase1BubbleStorm(target);
+                    break;
+                case BossPhase.Phase1_CoralSpike:
+                    RunPhase1CoralSpike(target);
                     break;
                 // 阶段转换
                 case BossPhase.PhaseTransition_2:
@@ -78,6 +87,12 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 case BossPhase.Phase2_TornadoRush:
                     RunPhase2TornadoRush(target);
                     break;
+                case BossPhase.Phase2_TsunamiWall:
+                    RunPhase2TsunamiWall(target);
+                    break;
+                case BossPhase.Phase2_DragonClaw:
+                    RunPhase2DragonClaw(target);
+                    break;
                 // 阶段转换
                 case BossPhase.PhaseTransition_3:
                     RunPhaseTransition3(target);
@@ -97,6 +112,12 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                     break;
                 case BossPhase.Phase3_FinalTsunami:
                     RunPhase3FinalTsunami(target);
+                    break;
+                case BossPhase.Phase3_SeaDragonDance:
+                    RunPhase3SeaDragonDance(target);
+                    break;
+                case BossPhase.Phase3_AbyssalVortex:
+                    RunPhase3AbyssalVortex(target);
                     break;
             }
 
@@ -160,30 +181,36 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
         }
 
         private BossPhase GetRandomPhase1Attack() {
-            return (BossPhase)(Main.rand.Next(3) switch {
+            return (BossPhase)(Main.rand.Next(5) switch {
                 0 => (int)BossPhase.Phase1_WaterBarrage,
                 1 => (int)BossPhase.Phase1_VortexSummon,
-                _ => (int)BossPhase.Phase1_TidalWave
+                2 => (int)BossPhase.Phase1_TidalWave,
+                3 => (int)BossPhase.Phase1_BubbleStorm,
+                _ => (int)BossPhase.Phase1_CoralSpike
             });
         }
 
         private BossPhase GetRandomPhase2Attack() {
-            return (BossPhase)(Main.rand.Next(5) switch {
+            return (BossPhase)(Main.rand.Next(7) switch {
                 0 => (int)BossPhase.Phase2_Charge,
                 1 => (int)BossPhase.Phase2_SummonMinions,
                 2 => (int)BossPhase.Phase2_Whirlpool,
                 3 => (int)BossPhase.Phase2_DragonBreath,
-                _ => (int)BossPhase.Phase2_TornadoRush
+                4 => (int)BossPhase.Phase2_TornadoRush,
+                5 => (int)BossPhase.Phase2_TsunamiWall,
+                _ => (int)BossPhase.Phase2_DragonClaw
             });
         }
 
         private BossPhase GetRandomPhase3Attack() {
-            return (BossPhase)(Main.rand.Next(5) switch {
+            return (BossPhase)(Main.rand.Next(7) switch {
                 0 => (int)BossPhase.Phase3_FuryCharge,
                 1 => (int)BossPhase.Phase3_TridentStorm,
                 2 => (int)BossPhase.Phase3_TidalBeam,
                 3 => (int)BossPhase.Phase3_DragonCoil,
-                _ => (int)BossPhase.Phase3_FinalTsunami
+                4 => (int)BossPhase.Phase3_FinalTsunami,
+                5 => (int)BossPhase.Phase3_SeaDragonDance,
+                _ => (int)BossPhase.Phase3_AbyssalVortex
             });
         }
 
@@ -229,6 +256,67 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             }
 
             if (PhaseTimer > 180) {
+                TransitionTo(BossPhase.Intro_SummonBarriers);
+            }
+        }
+
+        /// <summary>
+        /// 开场召唤两侧封路龙卷
+        /// </summary>
+        private void RunIntroSummonBarriers(Player target) {
+            NPC.velocity *= 0.9f;
+
+            // 保持在玩家上方
+            Vector2 hoverPos = target.Center + new Vector2(0, -350);
+            NPC.velocity += (hoverPos - NPC.Center) * 0.003f;
+
+            // 召唤两侧巨型水龙卷作为战场边界
+            if (PhaseTimer == 30 && Main.netMode != NetmodeID.MultiplayerClient) {
+                hasSpawnedBarriers = true;
+                barrierTornadoIds = new int[2];
+
+                // 左侧龙卷
+                int leftTornado = Projectile.NewProjectile(
+                    NPC.GetSource_FromAI(),
+                    target.Center + new Vector2(-800, 0),
+                    Vector2.Zero,
+                    ModContent.ProjectileType<BarrierWaterTornado>(),
+                    NPC.damage / 4,
+                    0f,
+                    ai0: NPC.whoAmI,
+                    ai1: -1 // 左侧
+                );
+                barrierTornadoIds[0] = leftTornado;
+
+                // 右侧龙卷
+                int rightTornado = Projectile.NewProjectile(
+                    NPC.GetSource_FromAI(),
+                    target.Center + new Vector2(800, 0),
+                    Vector2.Zero,
+                    ModContent.ProjectileType<BarrierWaterTornado>(),
+                    NPC.damage / 4,
+                    0f,
+                    ai0: NPC.whoAmI,
+                    ai1: 1 // 右侧
+                );
+                barrierTornadoIds[1] = rightTornado;
+
+                SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.5f, Volume = 1.5f }, NPC.Center);
+                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(20, 60);
+            }
+
+            // 龙王威压粒子
+            if (!VaultUtils.isServer && PhaseTimer > 30) {
+                for (int i = 0; i < 8; i++) {
+                    float angle = MathHelper.TwoPi * i / 8 + PhaseTimer * 0.03f;
+                    Vector2 dustPos = NPC.Center + angle.ToRotationVector2() * (120 + MathF.Sin(PhaseTimer * 0.1f) * 30);
+                    int dust = Dust.NewDust(dustPos, 0, 0, DustID.BlueTorch, 0, 0, 150, default, 2f);
+                    Main.dust[dust].noGravity = true;
+                    Main.dust[dust].velocity = (angle + MathHelper.PiOver2).ToRotationVector2() * 4f;
+                }
+            }
+
+            if (PhaseTimer > 90) {
                 TransitionTo(BossPhase.Phase1_Patrol);
             }
         }

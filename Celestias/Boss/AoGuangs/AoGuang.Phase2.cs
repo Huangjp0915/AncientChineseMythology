@@ -320,6 +320,129 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             }
         }
 
+        /// <summary>
+        /// 海啸墙 - 从一侧发射水墙横扫战场
+        /// </summary>
+        private void RunPhase2TsunamiWall(Player target) {
+            NPC.velocity *= 0.9f;
+
+            // 保持在上方
+            Vector2 hoverPos = target.Center + new Vector2(0, -400);
+            NPC.velocity += (hoverPos - NPC.Center) * 0.003f;
+
+            // 发射海啸墙
+            if (AttackTimer == 50 && Main.netMode != NetmodeID.MultiplayerClient) {
+                // 从左侧或右侧随机发射
+                bool fromLeft = Main.rand.NextBool();
+                float xOffset = fromLeft ? -600 : 600;
+                float direction = fromLeft ? 1 : -1;
+
+                for (int i = -3; i <= 3; i++) {
+                    Vector2 spawnPos = target.Center + new Vector2(xOffset, i * 80);
+                    Projectile.NewProjectile(
+                        NPC.GetSource_FromAI(),
+                        spawnPos,
+                        new Vector2(direction * 10f, 0),
+                        ModContent.ProjectileType<TsunamiWall>(),
+                        NPC.damage / 3,
+                        1f,
+                        ai0: i * 0.1f // 波浪偏移
+                    );
+                }
+
+                SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.2f, Volume = 1.3f }, NPC.Center);
+                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(15, 40);
+            }
+
+            // 同时发射一些水弹干扰
+            if (AttackTimer > 60 && AttackTimer % 25 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
+                Projectile.NewProjectile(
+                    NPC.GetSource_FromAI(),
+                    NPC.Center,
+                    toPlayer * 12f,
+                    ModContent.ProjectileType<DragonWaterBolt>(),
+                    NPC.damage / 4,
+                    1f
+                );
+            }
+
+            if (AttackTimer > 150) {
+                TransitionTo(GetRandomPhase2Attack());
+            }
+        }
+
+        /// <summary>
+        /// 龙爪攻击 - 多次爪击留下水痕
+        /// </summary>
+        private void RunPhase2DragonClaw(Player target) {
+            switch ((int)SubState) {
+                case 0: // 初始化
+                    clawPositions = new Vector2[5];
+                    clawIndex = 0;
+                    SubState = 1;
+                    AttackTimer = 0;
+                    break;
+
+                case 1: // 快速移动到攻击位置
+                    Vector2 attackPos = target.Center + new Vector2(
+                        (clawIndex % 2 == 0 ? -1 : 1) * 250f,
+                        -150f + clawIndex * 30f
+                    );
+
+                    NPC.velocity = (attackPos - NPC.Center) * 0.15f;
+
+                    if (AttackTimer >= 15 || Vector2.Distance(NPC.Center, attackPos) < 50f) {
+                        SubState = 2;
+                        AttackTimer = 0;
+                    }
+                    break;
+
+                case 2: // 爪击
+                    if (AttackTimer == 1) {
+                        // 发射爪痕弹幕
+                        if (Main.netMode != NetmodeID.MultiplayerClient) {
+                            Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
+                            Projectile.NewProjectile(
+                                NPC.GetSource_FromAI(),
+                                NPC.Center,
+                                toPlayer * 20f,
+                                ModContent.ProjectileType<DragonClawSlash>(),
+                                NPC.damage / 3,
+                                2f
+                            );
+                        }
+
+                        SoundEngine.PlaySound(SoundID.Item71 with { Pitch = 0.3f, Volume = 0.9f }, NPC.Center);
+                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(8, 15);
+
+                        // 爪击粒子
+                        if (!VaultUtils.isServer) {
+                            Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
+                            for (int i = 0; i < 12; i++) {
+                                Vector2 dustVel = toPlayer.RotatedByRandom(0.4f) * Main.rand.NextFloat(8, 15);
+                                int dust = Dust.NewDust(NPC.Center, 0, 0, DustID.BlueTorch, dustVel.X, dustVel.Y, 100, default, 2f);
+                                Main.dust[dust].noGravity = true;
+                            }
+                        }
+                    }
+
+                    NPC.velocity *= 0.85f;
+
+                    if (AttackTimer >= 20) {
+                        clawIndex++;
+                        if (clawIndex >= 4) {
+                            TransitionTo(GetRandomPhase2Attack());
+                        }
+                        else {
+                            SubState = 1;
+                            AttackTimer = 0;
+                        }
+                    }
+                    break;
+            }
+        }
+
         #endregion
     }
 }

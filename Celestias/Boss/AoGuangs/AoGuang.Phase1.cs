@@ -196,6 +196,95 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             }
         }
 
+        /// <summary>
+        /// 气泡风暴 - 发射大量追踪气泡
+        /// </summary>
+        private void RunPhase1BubbleStorm(Player target) {
+            NPC.velocity *= 0.93f;
+
+            // 悬停在玩家侧面
+            float sideOffset = (NPC.Center.X > target.Center.X) ? 350 : -350;
+            Vector2 hoverPos = target.Center + new Vector2(sideOffset, -200);
+            NPC.velocity += (hoverPos - NPC.Center) * 0.002f;
+
+            // 发射气泡
+            int fireInterval = Main.expertMode ? 8 : 10;
+            if (AttackTimer % fireInterval == 0 && AttackTimer > 20 && Main.netMode != NetmodeID.MultiplayerClient) {
+                // 随机方向发射气泡
+                float baseAngle = (target.Center - NPC.Center).ToRotation();
+                float randomOffset = Main.rand.NextFloat(-0.4f, 0.4f);
+                Vector2 vel = (baseAngle + randomOffset).ToRotationVector2() * Main.rand.NextFloat(6f, 10f);
+
+                Projectile.NewProjectile(
+                    NPC.GetSource_FromAI(),
+                    NPC.Center,
+                    vel,
+                    ModContent.ProjectileType<DragonBubble>(),
+                    NPC.damage / 4,
+                    1f
+                );
+
+                // 气泡音效
+                if (AttackTimer % 20 == 0) {
+                    SoundEngine.PlaySound(SoundID.Item85 with { Pitch = 0.5f, Volume = 0.5f }, NPC.Center);
+                }
+            }
+
+            // 气泡粒子
+            if (!VaultUtils.isServer && Main.rand.NextBool(2)) {
+                Vector2 dustPos = NPC.Center + Main.rand.NextVector2Circular(60, 60);
+                int dust = Dust.NewDust(dustPos, 0, 0, DustID.Wet, 0, -1f, 200, default, 1.5f);
+                Main.dust[dust].noGravity = true;
+            }
+
+            if (AttackTimer > 150) {
+                TransitionTo(BossPhase.Phase1_Patrol);
+            }
+        }
+
+        /// <summary>
+        /// 珊瑚尖刺 - 从地面召唤水柱攻击
+        /// </summary>
+        private void RunPhase1CoralSpike(Player target) {
+            NPC.velocity *= 0.9f;
+
+            // 保持在玩家上方
+            Vector2 hoverPos = target.Center + new Vector2(0, -450);
+            NPC.velocity += (hoverPos - NPC.Center) * 0.003f;
+
+            // 召唤水柱
+            int spikeInterval = Main.expertMode ? 20 : 25;
+            if (AttackTimer % spikeInterval == 0 && AttackTimer > 30 && Main.netMode != NetmodeID.MultiplayerClient) {
+                // 在玩家附近随机位置生成水柱
+                Vector2 spikePos = target.Center + new Vector2(Main.rand.NextFloat(-300, 300), 0);
+
+                // 找地面位置
+                spikePos.Y = target.Center.Y + 100;
+
+                Projectile.NewProjectile(
+                    NPC.GetSource_FromAI(),
+                    spikePos,
+                    Vector2.Zero,
+                    ModContent.ProjectileType<WaterSpike>(),
+                    NPC.damage / 3,
+                    1f
+                );
+
+                SoundEngine.PlaySound(SoundID.Item21 with { Pitch = -0.3f, Volume = 0.7f }, spikePos);
+            }
+
+            // 预警粒子
+            if (!VaultUtils.isServer && AttackTimer > 30) {
+                Vector2 warningPos = target.Center + new Vector2(Main.rand.NextFloat(-300, 300), 80);
+                int dust = Dust.NewDust(warningPos, 0, 0, DustID.BlueTorch, 0, -2f, 150, default, 1.2f);
+                Main.dust[dust].noGravity = true;
+            }
+
+            if (AttackTimer > 180) {
+                TransitionTo(BossPhase.Phase1_Patrol);
+            }
+        }
+
         #endregion
     }
 }

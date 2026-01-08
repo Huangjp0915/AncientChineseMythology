@@ -1003,6 +1003,13 @@ Projectiles: {
 	TidalWave.DisplayName: Tidal Wave
 	TridentProjectile.DisplayName: Trident Projectile
 	WaterVortex.DisplayName: Water Vortex
+	AbyssalVortex.DisplayName: Abyssal Vortex
+	BarrierWaterTornado.DisplayName: Barrier Water Tornado
+	DragonBubble.DisplayName: Dragon Bubble
+	DragonClawSlash.DisplayName: Dragon Claw Slash
+	FallingWaterSpear.DisplayName: Falling Water Spear
+	TsunamiWall.DisplayName: Tsunami Wall
+	WaterSpike.DisplayName: Water Spike
 }
 
 HeavenBiome.DisplayName: Heaven
