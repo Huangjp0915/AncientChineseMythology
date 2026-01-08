@@ -28,5 +28,11 @@ namespace AncientChineseMythology.Underworlds.Tiles
             Item.consumable = true;
             Item.createTile = ModContent.TileType<NetherBarTile>();
         }
+
+        public override void AddRecipes() {
+            CreateRecipe().AddIngredient(ModContent.ItemType<NetherOre>(), 4)
+                .AddTile(TileID.Furnaces)
+                .Register();
+        }
     }
 }
