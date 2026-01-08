@@ -1,9 +1,12 @@
+using AncientChineseMythology.Underworlds.Boss.AwakeningNethers.Items;
+using AncientChineseMythology.Underworlds.Boss.BAWImpermanences.Items;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
+using Terraria.GameContent.ItemDropRules;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -76,6 +79,16 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
             NPC.lifeMax = 11200000;
             NPC.damage = 200;
             NPC.defense = 90;
+        }
+
+        public override void BossLoot(ref int potionType) {
+            potionType = ItemID.SuperHealingPotion;
+        }
+
+        public override void ModifyNPCLoot(NPCLoot npcLoot) {
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<AbyssalSpine>(), 2));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<PhantomBreath>(), 2));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<SoulErosionScepter>(), 2));
         }
 
         public override void OnSpawn(IEntitySource source) {

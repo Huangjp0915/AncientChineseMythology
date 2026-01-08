@@ -1,10 +1,12 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.IO;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
+using Terraria.GameContent.ItemDropRules;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -116,6 +118,10 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
         public override void ApplyDifficultyAndPlayerScaling(int numPlayers, float balance, float bossAdjustment) {
             NPC.lifeMax = (int)(NPC.lifeMax * 0.75f * balance * bossAdjustment);
             NPC.damage = (int)(NPC.damage * 0.8f);
+        }
+
+        public override void BossLoot(ref int potionType) {
+            potionType = ItemID.GreaterHealingPotion;
         }
 
         public override void AI() {
@@ -356,7 +362,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
 
         public override void ModifyNPCLoot(NPCLoot npcLoot) {
             // 这里可以添加Boss掉落物
-            // npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<SomeItem>()));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<Corpsefragments>(), 1, 23, 30));
         }
 
         private void RunSpiralHunt(Player target) {

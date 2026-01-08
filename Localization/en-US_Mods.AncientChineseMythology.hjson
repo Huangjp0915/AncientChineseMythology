@@ -699,6 +699,11 @@ Items: {
 		DisplayName: Skyrend Dragonbreath Longbow
 		Tooltip: ""
 	}
+
+	Corpsefragments: {
+		DisplayName: Corpsefragments
+		Tooltip: ""
+	}
 }
 
 NPCs: {
