@@ -918,245 +918,245 @@ NPCs: {
 }
 
 Projectiles: {
-	StabbingProjectile.DisplayName: 黑熊金
+	StabbingProjectile.DisplayName: 突刺
 	BlackBear_Proj1.DisplayName: 黑熊金
 	BlackBear_Proj2.DisplayName: 黑熊金
 	BlackBear_Proj3.DisplayName: 黑熊金
 	BlackBear_Proj4.DisplayName: 黑熊金
-	GoldenStickSpearProjectile.DisplayName: Golden Stick Spear Projectile
-	IronStickSpearProjectile.DisplayName: Iron Stick Spear Projectile
-	WoodenStickSpearProjectile.DisplayName: Wooden Stick Spear Projectile
-	GemStickSpearProjectile.DisplayName: Gem Stick Spear Projectile
-	DragonCharmExplosion.DisplayName: 龙符咒
-	DragonCharmLaser.DisplayName: 龙符咒
-	PigCharmLaser.DisplayName: Pig Charm Laser
-	WoodenStickSpearProjectile_2.DisplayName: Wooden Stick Spear Projectile_2
-	IronStickSpearProjectile_2.DisplayName: Iron Stick Spear Projectile_2
-	IronStickSpearProjectile_3.DisplayName: Iron Stick Spear Projectile_3
-	GoldenStickSpearProjectile_2.DisplayName: Golden Stick Spear Projectile_2
-	GemStickSpearProjectile_2.DisplayName: Gem Stick Spear Projectile_2
-	BlackBearStaffProj1.DisplayName: 黑熊金
-	BlackBearStaffProj2.DisplayName: 黑熊金
-	BlackBearSwordProj1.DisplayName: Black Bear Sword Proj1
-	BlackBearBowProj1.DisplayName: 黑熊金
-	BlankProjectile.DisplayName: 黑熊金
-	CrimsonbronzeSwordProj1.DisplayName: Crimsonbronze Sword Proj1
-	CrimsonbronzeSwordProj2.DisplayName: Crimsonbronze Sword Proj2
+	GoldenStickSpearProjectile.DisplayName: 金箍棒
+	IronStickSpearProjectile.DisplayName: 铁棒
+	WoodenStickSpearProjectile.DisplayName: 木棒
+	GemStickSpearProjectile.DisplayName: 宝石棒
+	DragonCharmExplosion.DisplayName: 龙符咒爆破
+	DragonCharmLaser.DisplayName: 龙符咒射线
+	PigCharmLaser.DisplayName: 猪符咒射线
+	WoodenStickSpearProjectile_2.DisplayName: 木棒
+	IronStickSpearProjectile_2.DisplayName: 铁棒
+	IronStickSpearProjectile_3.DisplayName: 铁棒
+	GoldenStickSpearProjectile_2.DisplayName: 金箍棒
+	GemStickSpearProjectile_2.DisplayName: 宝石棒
+	BlackBearStaffProj1.DisplayName: 黑熊禅杖
+	BlackBearStaffProj2.DisplayName: 黑熊禅杖
+	BlackBearSwordProj1.DisplayName: 黑熊剑气
+	BlackBearBowProj1.DisplayName: 黑熊箭
+	BlankProjectile.DisplayName: 空白弹幕
+	CrimsonbronzeSwordProj1.DisplayName: 赤铜剑气
+	CrimsonbronzeSwordProj2.DisplayName: 赤铜剑气
 	Demon_Proj.DisplayName: 噩梦梦魇
-	PufferfishProj1.DisplayName: Pufferfish Proj1
-	MingCrowMinion.DisplayName: Ming Crow Minion
+	PufferfishProj1.DisplayName: 河豚水弹
+	MingCrowMinion.DisplayName: 冥鸦随从
 	TribulationLightning.DisplayName: 劫雷
-	EvilIntentionProj2.DisplayName: Evil Intention Proj2
+	EvilIntentionProj2.DisplayName: 恶意
 	TribulationLightningBlack.DisplayName: 玄雷
 	TribulationLightningPurple.DisplayName: 紫霄雷
 	TribulationLightningRed.DisplayName: 赤雷
-	ChengYingHitbox.DisplayName: Cheng Ying Hitbox
-	YuChangSkillProjectile.DisplayName: Yu Chang Skill Projectile
-	YuChangSwordBeanProjectile.DisplayName: Yu Chang Sword Bean Projectile
-	YuChangSwordProjectile.DisplayName: Yu Chang Sword Projectile
-	ShenxianGuanglunPet.DisplayName: Shenxian Guanglun Pet
-	GanJiangSwordProj.DisplayName: Gan Jiang Sword Proj
-	GanJiangSwordProj_2.DisplayName: Gan Jiang Sword Proj_2
-	RuyiStickSpearProjectile.DisplayName: Ruyi Stick Spear Projectile
-	RuyiStickSpearProjectile_2.DisplayName: Ruyi Stick Spear Projectile_2
-	RuyiStickSpearProjectile_3.DisplayName: Ruyi Stick Spear Projectile_3
-	BaGuaSigilProj.DisplayName: Ba Gua Sigil Proj
-	DaShengStickProjectile.DisplayName: Da Sheng Stick Projectile
-	FallingStarPierce.DisplayName: Falling Star Pierce
-	Lightning.DisplayName: Lightning
-	ThunderOrb.DisplayName: Thunder Orb
-	LocustSet.DisplayName: Locust Set
-	HanbaFireBall.DisplayName: Hanba Fire Ball
-	HanbaLaser.DisplayName: Hanba Laser
-	HanbaBigLaser.DisplayName: Hanba Big Laser
-	Shockwave.DisplayName: Shockwave
-	GhostFireProj.DisplayName: Ghost Fire Proj
-	HoqingShadow.DisplayName: Hoqing Shadow
-	OblivionFireOrb.DisplayName: Oblivion Fire Orb
-	HoqingRingFire.DisplayName: Hoqing Ring Fire
-	SaberHell.DisplayName: Saber Hell
-	YingouFireBall.DisplayName: Yingou Fire Ball
-	SaberKiller.DisplayName: Saber Killer
-	JiangcenFireBall.DisplayName: Jiangcen Fire Ball
-	HeuderHammer.DisplayName: Heuder Hammer
-	HanbaBookProj.DisplayName: Hanba Book Proj
-	HoqingFireSummonProj.DisplayName: Hoqing Fire Summon Proj
-	JiangcenHammerProj.DisplayName: Jiangcen Hammer Proj
-	SaberHellFriendly.DisplayName: Saber Hell Friendly
-	CoffinNailProjectile.DisplayName: Coffin Nail Projectile
-	ChainProj.DisplayName: Chain Proj
-	DarkGreenBoomProj.DisplayName: Dark Green Boom Proj
-	DarkGreenProj.DisplayName: Dark Green Proj
-	EyeProj.DisplayName: Eye Proj
-	Proj_756_Adjust.DisplayName: Proj_756_ Adjust
-	SpoawnProj.DisplayName: Spoawn Proj
-	NetherFlameProjectile.DisplayName: Nether Flame Projectile
-	NetherLaserBeam.DisplayName: Nether Laser Beam
-	NetherPortal.DisplayName: Nether Portal
-	CorpsesBoneShower.DisplayName: Corpses Bone Shower
-	CorpsesClapWave.DisplayName: Corpses Clap Wave
-	CorpsesShadowOrb.DisplayName: Corpses Shadow Orb
-	CorpsesesBoneArrow.DisplayName: Corpseses Bone Arrow
-	CorpsesesBoneShard.DisplayName: Corpseses Bone Shard
-	CorpsesesBookWave.DisplayName: Corpseses Book Wave
-	CorpsesesGhostHand.DisplayName: Corpseses Ghost Hand
-	CorpsesesLanceProj.DisplayName: Corpseses Lance Proj
-	CorpsesesHandMinion.DisplayName: Corpseses Hand Minion
-	NetherBreathProjectile.DisplayName: Nether Breath Projectile
-	NetherOrbProjectile.DisplayName: Nether Orb Projectile
-	NetherSlashProjectile.DisplayName: Nether Slash Projectile
-	NetherDragonFlame.DisplayName: Nether Dragon Flame
-	NetherSutomMinon.DisplayName: Nether Sutom Minon
-	KyuubiBookTail.DisplayName: Kyuubi Book Tail
-	KyuubiBookTailController.DisplayName: Kyuubi Book Tail Controller
-	NetherBookTail.DisplayName: Nether Book Tail
-	NetherBookTailController.DisplayName: Nether Book Tail Controller
-	NetherSoulBolt.DisplayName: Nether Soul Bolt
-	DakkiBookController.DisplayName: Dakki Book Controller
-	DakkiBookTail.DisplayName: Dakki Book Tail
-	DakkiCharmRing.DisplayName: Dakki Charm Ring
-	DakkiFireBolt.DisplayName: Dakki Fire Bolt
-	DakkiSoulBolt.DisplayName: Dakki Soul Bolt
-	ChainProjectile.DisplayName: Chain Projectile
-	ChainPullProjectile.DisplayName: Chain Pull Projectile
-	ChainSweepProjectile.DisplayName: Chain Sweep Projectile
-	GhostProjectile.DisplayName: Ghost Projectile
-	GhostWaveProjectile.DisplayName: Ghost Wave Projectile
-	SoulChainProjectile.DisplayName: Soul Chain Projectile
-	SoulDrainProjectile.DisplayName: Soul Drain Projectile
-	SpiritCircleProjectile.DisplayName: Spirit Circle Projectile
-	DemonSoulCircle.DisplayName: Demon Soul Circle
-	DemonSoulSeeker.DisplayName: Demon Soul Seeker
-	FerrymanArrow.DisplayName: Ferryman Arrow
-	FerrymanGhost.DisplayName: Ferryman Ghost
-	DemonicBurstWave.DisplayName: Demonic Burst Wave
-	DemonicChainBind.DisplayName: Demonic Chain Bind
-	DemonicSlashWave.DisplayName: Demonic Slash Wave
-	NetherworldSickleProjectile.DisplayName: Netherworld Sickle Projectile
-	DemonicAnnihilationProj.DisplayName: Demonic Annihilation Proj
-	AwakeningNetherBreath.DisplayName: Awakening Nether Breath
-	AwakeningNetherRift.DisplayName: Awakening Nether Rift
-	AwakeningNetherSoulOrb.DisplayName: Awakening Nether Soul Orb
-	AwakeningNetherVoidBolt.DisplayName: Awakening Nether Void Bolt
-	AbyssalRiftSlash.DisplayName: Abyssal Rift Slash
-	AbyssalSpineSlash.DisplayName: Abyssal Spine Slash
-	PhantomBreathArrow.DisplayName: Phantom Breath Arrow
-	PhantomDevastation.DisplayName: Phantom Devastation
-	PhantomSplitGhost.DisplayName: Phantom Split Ghost
-	SoulErosionCircle.DisplayName: Soul Erosion Circle
-	SpectreSoulChain.DisplayName: Spectre Soul Chain
-	SpectreSoulOrb.DisplayName: Spectre Soul Orb
-	SpectreWailingWave.DisplayName: Spectre Wailing Wave
-	SpectreWraithBolt.DisplayName: Spectre Wraith Bolt
-	SoulDevourerSpearProjectile.DisplayName: Soul Devourer Spear Projectile
-	YamasGavelProjectile.DisplayName: Yamas Gavel Projectile
-	SoulseekerDaggersProj.DisplayName: Soulseeker Daggers Proj
-	CelestialEyeBeam.DisplayName: Celestial Eye Beam
-	CelestialStar.DisplayName: Celestial Star
-	DivineLightPillar.DisplayName: Divine Light Pillar
-	HolyHaloRing.DisplayName: Holy Halo Ring
-	HolyOrb.DisplayName: Holy Orb
-	CrossLaserBeam.DisplayName: Cross Laser Beam
-	DivineDeathRay.DisplayName: Divine Death Ray
-	MinionSyncLaser.DisplayName: Minion Sync Laser
-	OmegaCelestialLaser.DisplayName: Omega Celestial Laser
-	SweepingLaserBolt.DisplayName: Sweeping Laser Bolt
-	AllSeeingBeam.DisplayName: All Seeing Beam
-	AllSeeingEyeProjectile.DisplayName: All Seeing Eye Projectile
-	CelestialChakramProjectile.DisplayName: Celestial Chakram Projectile
-	CelestialGearProjectile.DisplayName: Celestial Gear Projectile
-	CelestialGearStorm.DisplayName: Celestial Gear Storm
-	CelestialLightArrow.DisplayName: Celestial Light Arrow
-	CelestialRainArrow.DisplayName: Celestial Rain Arrow
-	CelestialWatcherPillar.DisplayName: Celestial Watcher Pillar
-	ClockworkPhoenixSpearProjectile.DisplayName: Clockwork Phoenix Spear Projectile
-	GoldenPhoenixMinion.DisplayName: Golden Phoenix Minion
-	JadeDragonSlash.DisplayName: Jade Dragon Slash
-	JadeDragonWave.DisplayName: Jade Dragon Wave
-	PhoenixFlameWave.DisplayName: Phoenix Flame Wave
-	PhoenixMinionFlame.DisplayName: Phoenix Minion Flame
-	PhoenixSpark.DisplayName: Phoenix Spark
-	AncestralDragonBeam.DisplayName: Ancestral Dragon Beam
-	AncestralMistBolt.DisplayName: Ancestral Mist Bolt
-	AncestralSoulFragment.DisplayName: Ancestral Soul Fragment
-	HomingSoulOrb.DisplayName: Homing Soul Orb
-	SpiralSoulFragment.DisplayName: Spiral Soul Fragment
-	TailSweepWave.DisplayName: Tail Sweep Wave
-	CelestialLightning.DisplayName: Celestial Lightning
-	CelestialLightningWarning.DisplayName: Celestial Lightning Warning
-	CelestialThunderOrb.DisplayName: Celestial Thunder Orb
-	FallingSword.DisplayName: Falling Sword
-	GoldenEnergy.DisplayName: Golden Energy
-	GoldenSwordAura.DisplayName: Golden Sword Aura
-	CelestialPathWarning.DisplayName: Celestial Path Warning
-	ArchosaurBreathWave.DisplayName: Archosaur Breath Wave
-	ArchosaurPhantom.DisplayName: Archosaur Phantom
-	ArchosaurRainArrow.DisplayName: Archosaur Rain Arrow
-	ArchosaurSoulArrow.DisplayName: Archosaur Soul Arrow
-	ArchosaurSoulCircle.DisplayName: Archosaur Soul Circle
-	ArchosaurSoulOrb.DisplayName: Archosaur Soul Orb
-	ArchosaurSoulWave.DisplayName: Archosaur Soul Wave
-	BossDragonAuthorityCircle.DisplayName: Boss Dragon Authority Circle
-	DragonCircleWarning.DisplayName: Dragon Circle Warning
-	ForkedCelestialLightning.DisplayName: Forked Celestial Lightning
-	ForkedLightningWarning.DisplayName: Forked Lightning Warning
-	CelestialEdictSeal.DisplayName: Celestial Edict Seal
-	CelestialLightningBolt.DisplayName: Celestial Lightning Bolt
-	DragonAuraSlash.DisplayName: Dragon Aura Slash
-	DragonAuthorityCircle.DisplayName: Dragon Authority Circle
-	DragonbreathArrow.DisplayName: Dragonbreath Arrow
-	DragonbreathCloud.DisplayName: Dragonbreath Cloud
-	DragonRoarWave.DisplayName: Dragon Roar Wave
-	ReverseScaleWrath.DisplayName: Reverse Scale Wrath
-	ScalebreakerCleaverProjectile.DisplayName: Scalebreaker Cleaver Projectile
-	SkyrendDragonArrow.DisplayName: Skyrend Dragon Arrow
-	ImmortalHaloRing.DisplayName: Immortal Halo Ring
-	ImmortalWave.DisplayName: Immortal Wave
-	QuadrantRay.DisplayName: Quadrant Ray
-	SweepingLightBolt.DisplayName: Sweeping Light Bolt
-	TowerBeam.DisplayName: Tower Beam
-	TreasureTowerOrb.DisplayName: Treasure Tower Orb
-	TreasureTowerRay.DisplayName: Treasure Tower Ray
-	VaisravanaStar.DisplayName: Vaisravana Star
-	DragonBreathBeam.DisplayName: Dragon Breath Beam
-	DragonMinion.DisplayName: Dragon Minion
-	DragonWaterBolt.DisplayName: Dragon Water Bolt
-	GiantWhirlpool.DisplayName: Giant Whirlpool
-	HomingWaterOrb.DisplayName: Homing Water Orb
-	TidalBeam.DisplayName: Tidal Beam
-	TidalWave.DisplayName: Tidal Wave
-	TridentProjectile.DisplayName: Trident Projectile
-	WaterVortex.DisplayName: Water Vortex
-	AbyssalVortex.DisplayName: Abyssal Vortex
-	BarrierWaterTornado.DisplayName: Barrier Water Tornado
-	DragonBubble.DisplayName: Dragon Bubble
-	DragonClawSlash.DisplayName: Dragon Claw Slash
-	FallingWaterSpear.DisplayName: Falling Water Spear
-	TsunamiWall.DisplayName: Tsunami Wall
-	WaterSpike.DisplayName: Water Spike
-	AbyssalDragonbladeSlash.DisplayName: Abyssal Dragonblade Slash
-	ChakramWaterBurst.DisplayName: Chakram Water Burst
-	DragonSoaringThrust.DisplayName: Dragon Soaring Thrust
-	DragonTidalSlash.DisplayName: Dragon Tidal Slash
-	DragonWaterArrow.DisplayName: Dragon Water Arrow
-	JadeDragonChakramProjectile.DisplayName: Jade Dragon Chakram Projectile
-	MiniWaterTornado.DisplayName: Mini Water Tornado
-	SummonedWaterTornado.DisplayName: Summoned Water Tornado
-	TidalDragonSpirit.DisplayName: Tidal Dragon Spirit
-	TornadoArrow.DisplayName: Tornado Arrow
-	TsunamiPiercerThrust.DisplayName: Tsunami Piercer Thrust
-	TsunamiWaveThrust.DisplayName: Tsunami Wave Thrust
-	CelestialFragment.DisplayName: Celestial Fragment
-	ChainLightning.DisplayName: Chain Lightning
-	CloudpiercerArrow.DisplayName: Cloudpiercer Arrow
-	DivineRune.DisplayName: Divine Rune
-	FirmamentSlash.DisplayName: Firmament Slash
-	HalberdShockwave.DisplayName: Halberd Shockwave
-	HalberdThrust.DisplayName: Halberd Thrust
-	JadeArmillaryProjectile.DisplayName: Jade Armillary Projectile
-	OverseerOrb.DisplayName: Overseer Orb
-	RuneCircle.DisplayName: Rune Circle
-	ThunderclapBlast.DisplayName: Thunderclap Blast
+	ChengYingHitbox.DisplayName: 承影剑
+	YuChangSkillProjectile.DisplayName: 鱼肠剑技
+	YuChangSwordBeanProjectile.DisplayName: 鱼肠剑气
+	YuChangSwordProjectile.DisplayName: 鱼肠剑
+	ShenxianGuanglunPet.DisplayName: 神仙光轮
+	GanJiangSwordProj.DisplayName: 干将剑
+	GanJiangSwordProj_2.DisplayName: 干将莫邪
+	RuyiStickSpearProjectile.DisplayName: 如意金箍棒
+	RuyiStickSpearProjectile_2.DisplayName: 如意金箍棒
+	RuyiStickSpearProjectile_3.DisplayName: 如意金箍棒
+	BaGuaSigilProj.DisplayName: 八卦符阵
+	DaShengStickProjectile.DisplayName: 大圣金箍棒
+	FallingStarPierce.DisplayName: 坠星刺
+	Lightning.DisplayName: 闪电
+	ThunderOrb.DisplayName: 雷球
+	LocustSet.DisplayName: 蝗灾群
+	HanbaFireBall.DisplayName: 旱魃火球
+	HanbaLaser.DisplayName: 旱魃尸火射线
+	HanbaBigLaser.DisplayName: 旱魃强力射线
+	Shockwave.DisplayName: 冲击波
+	GhostFireProj.DisplayName: 鬼火
+	HoqingShadow.DisplayName: 后卿幻影
+	OblivionFireOrb.DisplayName: 湮灭火球
+	HoqingRingFire.DisplayName: 后卿抗拒火环
+	SaberHell.DisplayName: 地狱刀气
+	YingouFireBall.DisplayName: 赢勾尸火
+	SaberKiller.DisplayName: 杀戮刀气
+	JiangcenFireBall.DisplayName: 将臣尸火
+	HeuderHammer.DisplayName: 将臣重锤
+	HanbaBookProj.DisplayName: 旱魃天书
+	HoqingFireSummonProj.DisplayName: 后卿唤火
+	JiangcenHammerProj.DisplayName: 将臣尸锤
+	SaberHellFriendly.DisplayName: 地狱刀气
+	CoffinNailProjectile.DisplayName: 镇魂棺材钉
+	ChainProj.DisplayName: 锁链
+	DarkGreenBoomProj.DisplayName: 幽绿爆炸
+	DarkGreenProj.DisplayName: 幽绿弹幕
+	EyeProj.DisplayName: 鬼眼
+	Proj_756_Adjust.DisplayName: 调整弹幕
+	SpoawnProj.DisplayName: 生成弹幕
+	NetherFlameProjectile.DisplayName: 幽冥鬼火
+	NetherLaserBeam.DisplayName: 幽冥射线
+	NetherPortal.DisplayName: 幽冥传送门
+	CorpsesBoneShower.DisplayName: 尸骸骨雨
+	CorpsesClapWave.DisplayName: 尸骸拍击波
+	CorpsesShadowOrb.DisplayName: 尸骸暗影球
+	CorpsesesBoneArrow.DisplayName: 尸骸骨箭
+	CorpsesesBoneShard.DisplayName: 尸骸骨片
+	CorpsesesBookWave.DisplayName: 尸骸经卷波
+	CorpsesesGhostHand.DisplayName: 尸骸鬼手
+	CorpsesesLanceProj.DisplayName: 尸骸长矛
+	CorpsesesHandMinion.DisplayName: 尸手随从
+	NetherBreathProjectile.DisplayName: 幽冥吐息
+	NetherOrbProjectile.DisplayName: 幽冥法球
+	NetherSlashProjectile.DisplayName: 幽冥斩
+	NetherDragonFlame.DisplayName: 幽冥龙焰
+	NetherSutomMinon.DisplayName: 幽冥随从
+	KyuubiBookTail.DisplayName: 九尾书卷尾
+	KyuubiBookTailController.DisplayName: 九尾尾部控制
+	NetherBookTail.DisplayName: 幽冥书卷尾
+	NetherBookTailController.DisplayName: 幽冥尾部控制
+	NetherSoulBolt.DisplayName: 幽冥灵弹
+	DakkiBookController.DisplayName: 妲己书卷控制
+	DakkiBookTail.DisplayName: 妲己书卷尾
+	DakkiCharmRing.DisplayName: 妲己魅惑环
+	DakkiFireBolt.DisplayName: 妲己狐火
+	DakkiSoulBolt.DisplayName: 妲己摄魂弹
+	ChainProjectile.DisplayName: 锁链
+	ChainPullProjectile.DisplayName: 拘魂锁
+	ChainSweepProjectile.DisplayName: 横扫锁链
+	GhostProjectile.DisplayName: 恶鬼
+	GhostWaveProjectile.DisplayName: 鬼气波
+	SoulChainProjectile.DisplayName: 勾魂链
+	SoulDrainProjectile.DisplayName: 汲魂击
+	SpiritCircleProjectile.DisplayName: 灵环
+	DemonSoulCircle.DisplayName: 魔魂环
+	DemonSoulSeeker.DisplayName: 追魂煞
+	FerrymanArrow.DisplayName: 摆渡人冥箭
+	FerrymanGhost.DisplayName: 摆渡幽魂
+	DemonicBurstWave.DisplayName: 恶魔爆裂波
+	DemonicChainBind.DisplayName: 恶魔锁链束缚
+	DemonicSlashWave.DisplayName: 恶魔斩波
+	NetherworldSickleProjectile.DisplayName: 冥界镰刀
+	DemonicAnnihilationProj.DisplayName: 恶魔湮灭
+	AwakeningNetherBreath.DisplayName: 觉醒幽冥吐息
+	AwakeningNetherRift.DisplayName: 觉醒幽冥裂隙
+	AwakeningNetherSoulOrb.DisplayName: 觉醒幽冥魂球
+	AwakeningNetherVoidBolt.DisplayName: 觉醒虚空弹
+	AbyssalRiftSlash.DisplayName: 深渊裂隙斩
+	AbyssalSpineSlash.DisplayName: 深渊脊刺斩
+	PhantomBreathArrow.DisplayName: 幻影吐息箭
+	PhantomDevastation.DisplayName: 幻影毁灭
+	PhantomSplitGhost.DisplayName: 幻影分身
+	SoulErosionCircle.DisplayName: 灵魂侵蚀环
+	SpectreSoulChain.DisplayName: 幽灵勾魂链
+	SpectreSoulOrb.DisplayName: 幽灵魂球
+	SpectreWailingWave.DisplayName: 幽灵哀嚎波
+	SpectreWraithBolt.DisplayName: 怨灵弹
+	SoulDevourerSpearProjectile.DisplayName: 噬魂矛
+	YamasGavelProjectile.DisplayName: 阎魔之槌
+	SoulseekerDaggersProj.DisplayName: 搜魂匕首
+	CelestialEyeBeam.DisplayName: 天眼光束
+	CelestialStar.DisplayName: 司天星辰
+	DivineLightPillar.DisplayName: 神圣光柱
+	HolyHaloRing.DisplayName: 圣光光环
+	HolyOrb.DisplayName: 圣光球
+	CrossLaserBeam.DisplayName: 十字激光束
+	DivineDeathRay.DisplayName: 神圣死亡射线
+	MinionSyncLaser.DisplayName: 随从协同激光
+	OmegaCelestialLaser.DisplayName: 终极天界激光
+	SweepingLaserBolt.DisplayName: 扫射激光
+	AllSeeingBeam.DisplayName: 全视光束
+	AllSeeingEyeProjectile.DisplayName: 全视之眼
+	CelestialChakramProjectile.DisplayName: 乾坤圈
+	CelestialGearProjectile.DisplayName: 天界齿轮
+	CelestialGearStorm.DisplayName: 天界齿轮风暴
+	CelestialLightArrow.DisplayName: 天界光箭
+	CelestialRainArrow.DisplayName: 天界箭雨
+	CelestialWatcherPillar.DisplayName: 监察天柱
+	ClockworkPhoenixSpearProjectile.DisplayName: 发条凤凰矛
+	GoldenPhoenixMinion.DisplayName: 金凤凰随从
+	JadeDragonSlash.DisplayName: 玉龙斩
+	JadeDragonWave.DisplayName: 玉龙波
+	PhoenixFlameWave.DisplayName: 凤凰焰波
+	PhoenixMinionFlame.DisplayName: 凤凰随从火焰
+	PhoenixSpark.DisplayName: 凤凰火花
+	AncestralDragonBeam.DisplayName: 祖龙光束
+	AncestralMistBolt.DisplayName: 祖龙雾弹
+	AncestralSoulFragment.DisplayName: 祖龙魂片
+	HomingSoulOrb.DisplayName: 追踪魂球
+	SpiralSoulFragment.DisplayName: 螺旋魂片
+	TailSweepWave.DisplayName: 尾扫波
+	CelestialLightning.DisplayName: 都天神雷
+	CelestialLightningWarning.DisplayName: 神雷预警
+	CelestialThunderOrb.DisplayName: 天雷球
+	FallingSword.DisplayName: 诛仙剑
+	GoldenEnergy.DisplayName: 金色能量
+	GoldenSwordAura.DisplayName: 金剑光环
+	CelestialPathWarning.DisplayName: 天道预警
+	ArchosaurBreathWave.DisplayName: 祖龙吐息波
+	ArchosaurPhantom.DisplayName: 祖龙幻影
+	ArchosaurRainArrow.DisplayName: 祖龙箭雨
+	ArchosaurSoulArrow.DisplayName: 祖龙魂箭
+	ArchosaurSoulCircle.DisplayName: 祖龙魂环
+	ArchosaurSoulOrb.DisplayName: 祖龙魂球
+	ArchosaurSoulWave.DisplayName: 祖龙魂波
+	BossDragonAuthorityCircle.DisplayName: 龙威法阵
+	DragonCircleWarning.DisplayName: 龙环预警
+	ForkedCelestialLightning.DisplayName: 叉状神雷
+	ForkedLightningWarning.DisplayName: 叉状雷预警
+	CelestialEdictSeal.DisplayName: 天道敕令封印
+	CelestialLightningBolt.DisplayName: 天道雷霆
+	DragonAuraSlash.DisplayName: 龙气斩
+	DragonAuthorityCircle.DisplayName: 龙威领域
+	DragonbreathArrow.DisplayName: 龙息箭
+	DragonbreathCloud.DisplayName: 龙息云
+	DragonRoarWave.DisplayName: 龙吟波
+	ReverseScaleWrath.DisplayName: 逆鳞之怒
+	ScalebreakerCleaverProjectile.DisplayName: 破鳞斩
+	SkyrendDragonArrow.DisplayName: 裂天龙箭
+	ImmortalHaloRing.DisplayName: 仙环
+	ImmortalWave.DisplayName: 仙气波
+	QuadrantRay.DisplayName: 四象射线
+	SweepingLightBolt.DisplayName: 扫射光弹
+	TowerBeam.DisplayName: 宝塔光束
+	TreasureTowerOrb.DisplayName: 宝塔法球
+	TreasureTowerRay.DisplayName: 宝塔射线
+	VaisravanaStar.DisplayName: 多闻天王星
+	DragonBreathBeam.DisplayName: 龙息光束
+	DragonMinion.DisplayName: 神龙随从
+	DragonWaterBolt.DisplayName: 神龙水弹
+	GiantWhirlpool.DisplayName: 巨型漩涡
+	HomingWaterOrb.DisplayName: 追踪水球
+	TidalBeam.DisplayName: 潮汐光束
+	TidalWave.DisplayName: 潮汐波
+	TridentProjectile.DisplayName: 三叉戟
+	WaterVortex.DisplayName: 水旋涡
+	AbyssalVortex.DisplayName: 深渊旋涡
+	BarrierWaterTornado.DisplayName: 护盾水龙卷
+	DragonBubble.DisplayName: 龙泡
+	DragonClawSlash.DisplayName: 龙爪斩
+	FallingWaterSpear.DisplayName: 堕天水矛
+	TsunamiWall.DisplayName: 海啸墙
+	WaterSpike.DisplayName: 水刺
+	AbyssalDragonbladeSlash.DisplayName: 深渊龙刃斩
+	ChakramWaterBurst.DisplayName: 轮刃水爆
+	DragonSoaringThrust.DisplayName: 飞龙在天
+	DragonTidalSlash.DisplayName: 狂龙潮汐斩
+	DragonWaterArrow.DisplayName: 龙水箭
+	JadeDragonChakramProjectile.DisplayName: 玉龙轮刃
+	MiniWaterTornado.DisplayName: 迷你水龙卷
+	SummonedWaterTornado.DisplayName: 召唤水龙卷
+	TidalDragonSpirit.DisplayName: 潮汐龙魂
+	TornadoArrow.DisplayName: 龙卷风箭
+	TsunamiPiercerThrust.DisplayName: 海啸穿刺突
+	TsunamiWaveThrust.DisplayName: 海啸波涛突
+	CelestialFragment.DisplayName: 天界碎片
+	ChainLightning.DisplayName: 连锁闪电
+	CloudpiercerArrow.DisplayName: 穿云箭
+	DivineRune.DisplayName: 神圣符文
+	FirmamentSlash.DisplayName: 苍穹斩
+	HalberdShockwave.DisplayName: 战戟冲击波
+	HalberdThrust.DisplayName: 战戟突刺
+	JadeArmillaryProjectile.DisplayName: 玉璇玑
+	OverseerOrb.DisplayName: 监视者法球
+	RuneCircle.DisplayName: 符文环
+	ThunderclapBlast.DisplayName: 霹雳爆破
 }
 
 HeavenBiome.DisplayName: Heaven
