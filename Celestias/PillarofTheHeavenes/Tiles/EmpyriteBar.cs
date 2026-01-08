@@ -43,7 +43,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Tiles
         public override void AddRecipes() {
             CreateRecipe()
                 .AddIngredient<EmpyriteOre>(4)
-                .AddTile(TileID.AdamantiteForge)
+                .AddTile(TileID.LunarCraftingStation)
                 .Register();
         }
     }

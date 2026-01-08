@@ -26,14 +26,14 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         public const int VerticalOffset = 600;
 
         /// <summary>矿物生成半径（像素）</summary>
-        public const int OreSpawnRadius = 1500;
+        public const int OreSpawnRadius = 3000;
 
         /// <summary>每根天柱生成的矿物簇数量</summary>
         public const int OreClusterCount = 80;
 
         /// <summary>每个矿物簇的矿物数量范围</summary>
-        public const int OreClusterSizeMin = 8;
-        public const int OreClusterSizeMax = 20;
+        public const int OreClusterSizeMin = 468;
+        public const int OreClusterSizeMax = 888;
         #endregion
 
         #region 状态数据
@@ -251,11 +251,6 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
 
                     int clusterX = centerTileX + (int)(MathF.Cos(angle) * distance);
                     int clusterY = centerTileY + (int)(MathF.Sin(angle) * distance);
-
-                    // 确保在地下（地表以下）
-                    if (clusterY < Main.worldSurface + 20) {
-                        clusterY = (int)Main.worldSurface + Main.rand.Next(20, 100);
-                    }
 
                     // 确保在世界边界内
                     clusterX = (int)MathHelper.Clamp(clusterX, 50, Main.maxTilesX - 50);

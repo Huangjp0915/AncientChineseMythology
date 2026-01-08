@@ -764,6 +764,16 @@ Items: {
 		DisplayName: Tomeof Divine Law
 		Tooltip: ""
 	}
+
+	EmpyriteBar: {
+		DisplayName: Empyrite Bar
+		Tooltip: ""
+	}
+
+	EmpyriteOre: {
+		DisplayName: Empyrite Ore
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -1136,6 +1146,8 @@ Tiles: {
 	TaiguWeaponWorkshop.MapEntry: Taigu Weapon Workshop
 	NetherBarTile.MapEntry: Nether Bar Tile
 	NetherOreTile.MapEntry: Nether Ore Tile
+	EmpyriteBarTile.MapEntry: Empyrite Bar Tile
+	EmpyriteOreTile.MapEntry: Empyrite Ore Tile
 }
 
 Buffs: {

@@ -813,6 +813,16 @@ Items: {
 		DisplayName: 天律法典
 		Tooltip: ""
 	}
+
+	EmpyriteBar: {
+		DisplayName: 天极锭
+		Tooltip: ""
+	}
+
+	EmpyriteOre: {
+		DisplayName: 天极矿
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -1183,8 +1193,10 @@ Tiles: {
 	XuanTieOreTile.MapEntry: 玄铁
 	LingShiOreTile.MapEntry: 灵石
 	TaiguWeaponWorkshop.MapEntry: 太古武器工坊
-	NetherBarTile.MapEntry: Nether Bar Tile
-	NetherOreTile.MapEntry: Nether Ore Tile
+	NetherBarTile.MapEntry: 幽冥锭
+	NetherOreTile.MapEntry: 幽冥矿
+	EmpyriteBarTile.MapEntry: 天极锭
+	EmpyriteOreTile.MapEntry: 天极矿
 }
 
 Buffs: {
