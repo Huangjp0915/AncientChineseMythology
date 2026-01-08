@@ -1,4 +1,5 @@
-﻿using Terraria;
+﻿using AncientChineseMythology.Celestias.PillarofTheHeavenes;
+using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
@@ -46,6 +47,9 @@ namespace AncientChineseMythology.Systems
                 //显示提示信息
                 Main.NewText("欢迎来到洪荒...", 255, 50, 50);
                 //Main.NewText("漩涡之门正在显现...", 255, 50, 50);
+
+                //触发天柱降临事件
+                HeavenPillarSystem.TriggerPillarDescend(npc.Center.X);
             }
         }
 
