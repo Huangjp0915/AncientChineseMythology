@@ -1,4 +1,6 @@
-﻿using Microsoft.Xna.Framework;
+﻿using AncientChineseMythology.Celestias.Boss.AoGuangs.Items;
+using AncientChineseMythology.Underworlds.Boss.BAWImpermanences.Items;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.IO;
@@ -6,6 +8,7 @@ using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
+using Terraria.GameContent.ItemDropRules;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -163,6 +166,18 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             }
 
             Music = MusicID.Boss2; // 可替换为自定义音乐
+        }
+
+        public override void BossLoot(ref int potionType) {
+            potionType = ItemID.GreaterHealingPotion;
+        }
+
+        public override void ModifyNPCLoot(NPCLoot npcLoot) {
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<AbyssalDragonblade>(), 5));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<JadeDragonChakram>(), 5));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<MaelstromBow>(), 5));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<TidecallersDecree>(), 5));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<TsunamiPiercer>(), 5));
         }
 
         public override void OnSpawn(IEntitySource source) {
