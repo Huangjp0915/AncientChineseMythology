@@ -76,7 +76,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
             Width = frameWidth > 0 ? (int)(frameWidth * PillarScale) : 384;
             Height = frameHeight > 0 ? (int)(frameHeight * PillarScale) : 1536;
             Scale = PillarScale;
-            DrawLayer = ActorDrawLayer.BeforePlayers;
+            DrawLayer = ActorDrawLayer.BeforeTiles;
             DrawExtendMode = 1800; // 大幅扩大绘制范围以容纳巨型天柱
 
             // 初始化动画状态
