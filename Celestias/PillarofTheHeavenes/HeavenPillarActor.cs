@@ -60,15 +60,6 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         private static int frameHeight;
         #endregion
 
-        public override void SetStaticDefaults() {
-            // 预加载纹理并计算帧尺寸
-            if (!Main.dedServ) {
-                pillarTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Celestias/PillarofTheHeavenes/PillarofTheHeavens").Value;
-                frameWidth = pillarTexture.Width / PillarCount;
-                frameHeight = pillarTexture.Height;
-            }
-        }
-
         public override void OnSpawn(params object[] args) {
             // 初始化天柱属性
             Width = frameWidth > 0 ? frameWidth : 128;
