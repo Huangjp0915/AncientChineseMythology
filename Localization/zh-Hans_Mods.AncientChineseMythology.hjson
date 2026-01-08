@@ -823,6 +823,11 @@ Items: {
 		DisplayName: 天极矿
 		Tooltip: ""
 	}
+
+	HeavenFragment: {
+		DisplayName: 天界碎片
+		Tooltip: ""
+	}
 }
 
 NPCs: {

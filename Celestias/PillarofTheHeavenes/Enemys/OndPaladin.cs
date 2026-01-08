@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Celestias.PillarofTheHeavenes.Items;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -338,6 +339,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Enemys
             npcLoot.Add(ItemDropRule.Common(ItemID.GoldBar, 2, 3, 6));
             npcLoot.Add(ItemDropRule.Common(ItemID.Javelin, 3, 10, 25));
             npcLoot.Add(ItemDropRule.Common(ItemID.SoulofMight, 5, 1, 2));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<HeavenFragment>(), 2));
         }
 
         public override float SpawnChance(NPCSpawnInfo spawnInfo) {

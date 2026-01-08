@@ -774,6 +774,11 @@ Items: {
 		DisplayName: Empyrite Ore
 		Tooltip: ""
 	}
+
+	HeavenFragment: {
+		DisplayName: Heaven Fragment
+		Tooltip: ""
+	}
 }
 
 NPCs: {

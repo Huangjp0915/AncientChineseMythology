@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Celestias.PillarofTheHeavenes.Tiles;
+using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -67,6 +68,10 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
         public override void ModifyTooltips(System.Collections.Generic.List<TooltipLine> tooltips) {
             tooltips.Add(new TooltipLine(Mod, "HeavenLore", "凝聚天雷之力的神圣手炮"));
             tooltips.Add(new TooltipLine(Mod, "HeavenEffect", "发射雷霆弹，命中后引发连锁闪电"));
+        }
+
+        public override void AddRecipes() {
+            CreateRecipe().AddIngredient<HeavenFragment>(10).AddIngredient<EmpyriteBar>(15).AddTile(TileID.LunarCraftingStation).Register();
         }
     }
 
