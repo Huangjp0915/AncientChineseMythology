@@ -21,8 +21,8 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         /// <summary>天柱间距（地图宽度的比例）</summary>
         public const float PillarSpacing = 0.2f;
 
-        /// <summary>天柱生成的垂直偏移（从地表向下）</summary>
-        public const int VerticalOffset = 200;
+        /// <summary>天柱生成的垂直偏移（从地表向上，适应放大后的天柱）</summary>
+        public const int VerticalOffset = 600;
         #endregion
 
         #region 状态数据
