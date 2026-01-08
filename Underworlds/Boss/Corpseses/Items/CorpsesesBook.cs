@@ -47,7 +47,9 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
         }
 
         public override void AddRecipes() {
-            // TODO: 添加合成配方
+            CreateRecipe().AddIngredient(ModContent.ItemType<Corpsefragments>(), 10)
+                .AddTile(TileID.LunarCraftingStation)
+                .Register();
         }
     }
 

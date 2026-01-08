@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AncientChineseMythology.Underworlds.Tiles;
+using System;
 using System.Collections.Generic;
 using Terraria;
 using Terraria.Audio;
@@ -46,7 +47,11 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons.Items
         }
 
         public override void AddRecipes() {
-            // TODO: 添加合成配方
+            CreateRecipe()
+                .AddIngredient(ModContent.ItemType<UmbralStoneItem>(), 15)
+                .AddIngredient(ModContent.ItemType<NetherBar>(), 10)
+                .AddTile(TileID.MythrilAnvil)
+                .Register();
         }
     }
 

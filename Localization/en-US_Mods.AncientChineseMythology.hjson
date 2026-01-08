@@ -629,6 +629,156 @@ Items: {
 		DisplayName: Nether Ore
 		Tooltip: ""
 	}
+
+	AllSeeingJadeTome: {
+		DisplayName: All Seeing Jade Tome
+		Tooltip: ""
+	}
+
+	CelestialGearGreatsword: {
+		DisplayName: Celestial Gear Greatsword
+		Tooltip: ""
+	}
+
+	CelestialJudgmentChakram: {
+		DisplayName: Celestial Judgment Chakram
+		Tooltip: ""
+	}
+
+	CelestialMechanismBow: {
+		DisplayName: Celestial Mechanism Bow
+		Tooltip: ""
+	}
+
+	CelestialWatcherStaff: {
+		DisplayName: Celestial Watcher Staff
+		Tooltip: ""
+	}
+
+	ClockworkPhoenixSpear: {
+		DisplayName: Clockwork Phoenix Spear
+		Tooltip: ""
+	}
+
+	GoldenPhoenixSummonStaff: {
+		DisplayName: Golden Phoenix Summon Staff
+		Tooltip: ""
+	}
+
+	JadeDragonCloudDao: {
+		DisplayName: Jade Dragon Cloud Dao
+		Tooltip: ""
+	}
+
+	ArchosaurBow: {
+		DisplayName: Archosaur Bow
+		Tooltip: ""
+	}
+
+	ArchosaurFerrara: {
+		DisplayName: Archosaur Ferrara
+		Tooltip: ""
+	}
+
+	ArchosaurStaff: {
+		DisplayName: Archosaur Staff
+		Tooltip: ""
+	}
+
+	CelestialEdictScepter: {
+		DisplayName: Celestial Edict Scepter
+		Tooltip: ""
+	}
+
+	ScalebreakerCleaver: {
+		DisplayName: Scalebreaker Cleaver
+		Tooltip: ""
+	}
+
+	SkyrendDragonbreathLongbow: {
+		DisplayName: Skyrend Dragonbreath Longbow
+		Tooltip: ""
+	}
+
+	Corpsefragments: {
+		DisplayName: Corpsefragments
+		Tooltip: ""
+	}
+
+	AbyssalDragonblade: {
+		DisplayName: Abyssal Dragonblade
+		Tooltip: ""
+	}
+
+	JadeDragonChakram: {
+		DisplayName: Jade Dragon Chakram
+		Tooltip: ""
+	}
+
+	MaelstromBow: {
+		DisplayName: Maelstrom Bow
+		Tooltip: ""
+	}
+
+	TidecallersDecree: {
+		DisplayName: Tidecallers Decree
+		Tooltip: ""
+	}
+
+	TsunamiPiercer: {
+		DisplayName: Tsunami Piercer
+		Tooltip: ""
+	}
+
+	Cloudpiercer: {
+		DisplayName: Cloudpiercer
+		Tooltip: ""
+	}
+
+	FirmamentCleaver: {
+		DisplayName: Firmament Cleaver
+		Tooltip: ""
+	}
+
+	JadeArmillary: {
+		DisplayName: Jade Armillary
+		Tooltip: ""
+	}
+
+	PillarGuardiansHalberd: {
+		DisplayName: Pillar Guardians Halberd
+		Tooltip: ""
+	}
+
+	ScepterofTheOverseer: {
+		DisplayName: Scepterof The Overseer
+		Tooltip: ""
+	}
+
+	ThunderclapHandcannon: {
+		DisplayName: Thunderclap Handcannon
+		Tooltip: ""
+	}
+
+	TomeofDivineLaw: {
+		DisplayName: Tomeof Divine Law
+		Tooltip: ""
+	}
+
+	EmpyriteBar: {
+		DisplayName: Empyrite Bar
+		Tooltip: ""
+	}
+
+	EmpyriteOre: {
+		DisplayName: Empyrite Ore
+		Tooltip: ""
+	}
+
+	HeavenFragment: {
+		DisplayName: Heaven Fragment
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -701,6 +851,21 @@ NPCs: {
 	AwakeningNetherTail.DisplayName: Awakening Nether Tail
 	Spectre.DisplayName: Spectre
 	SpectreMinion.DisplayName: Spectre Minion
+	CelestialOverseer.DisplayName: Celestial Overseer
+	CelestialEyeMinion.DisplayName: Celestial Eye Minion
+	AncestralDragonSoulBody.DisplayName: Ancestral Dragon Soul Body
+	AncestralDragonSoulHead.DisplayName: Ancestral Dragon Soul Head
+	AncestralDragonSoulTail.DisplayName: Ancestral Dragon Soul Tail
+	CelestialDragonsBody.DisplayName: Celestial Dragons Body
+	CelestialDragonsHead.DisplayName: Celestial Dragons Head
+	CelestialDragonsTail.DisplayName: Celestial Dragons Tail
+	Vaisravana.DisplayName: Vaisravana
+	YakshaMinion.DisplayName: Yaksha Minion
+	BronzedivineBird.DisplayName: Bronzedivine Bird
+	HeavenObserver.DisplayName: Heaven Observer
+	OndPaladin.DisplayName: Ond Paladin
+	Xianglong.DisplayName: Xianglong
+	AoGuang.DisplayName: Ao Guang
 }
 
 Projectiles: {
@@ -837,6 +1002,112 @@ Projectiles: {
 	SoulDevourerSpearProjectile.DisplayName: Soul Devourer Spear Projectile
 	YamasGavelProjectile.DisplayName: Yamas Gavel Projectile
 	SoulseekerDaggersProj.DisplayName: Soulseeker Daggers Proj
+	CelestialEyeBeam.DisplayName: Celestial Eye Beam
+	CelestialStar.DisplayName: Celestial Star
+	DivineLightPillar.DisplayName: Divine Light Pillar
+	HolyHaloRing.DisplayName: Holy Halo Ring
+	HolyOrb.DisplayName: Holy Orb
+	CrossLaserBeam.DisplayName: Cross Laser Beam
+	DivineDeathRay.DisplayName: Divine Death Ray
+	MinionSyncLaser.DisplayName: Minion Sync Laser
+	OmegaCelestialLaser.DisplayName: Omega Celestial Laser
+	SweepingLaserBolt.DisplayName: Sweeping Laser Bolt
+	AllSeeingBeam.DisplayName: All Seeing Beam
+	AllSeeingEyeProjectile.DisplayName: All Seeing Eye Projectile
+	CelestialChakramProjectile.DisplayName: Celestial Chakram Projectile
+	CelestialGearProjectile.DisplayName: Celestial Gear Projectile
+	CelestialGearStorm.DisplayName: Celestial Gear Storm
+	CelestialLightArrow.DisplayName: Celestial Light Arrow
+	CelestialRainArrow.DisplayName: Celestial Rain Arrow
+	CelestialWatcherPillar.DisplayName: Celestial Watcher Pillar
+	ClockworkPhoenixSpearProjectile.DisplayName: Clockwork Phoenix Spear Projectile
+	GoldenPhoenixMinion.DisplayName: Golden Phoenix Minion
+	JadeDragonSlash.DisplayName: Jade Dragon Slash
+	JadeDragonWave.DisplayName: Jade Dragon Wave
+	PhoenixFlameWave.DisplayName: Phoenix Flame Wave
+	PhoenixMinionFlame.DisplayName: Phoenix Minion Flame
+	PhoenixSpark.DisplayName: Phoenix Spark
+	AncestralDragonBeam.DisplayName: Ancestral Dragon Beam
+	AncestralMistBolt.DisplayName: Ancestral Mist Bolt
+	AncestralSoulFragment.DisplayName: Ancestral Soul Fragment
+	HomingSoulOrb.DisplayName: Homing Soul Orb
+	SpiralSoulFragment.DisplayName: Spiral Soul Fragment
+	TailSweepWave.DisplayName: Tail Sweep Wave
+	CelestialLightning.DisplayName: Celestial Lightning
+	CelestialLightningWarning.DisplayName: Celestial Lightning Warning
+	CelestialThunderOrb.DisplayName: Celestial Thunder Orb
+	FallingSword.DisplayName: Falling Sword
+	GoldenEnergy.DisplayName: Golden Energy
+	GoldenSwordAura.DisplayName: Golden Sword Aura
+	CelestialPathWarning.DisplayName: Celestial Path Warning
+	ArchosaurBreathWave.DisplayName: Archosaur Breath Wave
+	ArchosaurPhantom.DisplayName: Archosaur Phantom
+	ArchosaurRainArrow.DisplayName: Archosaur Rain Arrow
+	ArchosaurSoulArrow.DisplayName: Archosaur Soul Arrow
+	ArchosaurSoulCircle.DisplayName: Archosaur Soul Circle
+	ArchosaurSoulOrb.DisplayName: Archosaur Soul Orb
+	ArchosaurSoulWave.DisplayName: Archosaur Soul Wave
+	BossDragonAuthorityCircle.DisplayName: Boss Dragon Authority Circle
+	DragonCircleWarning.DisplayName: Dragon Circle Warning
+	ForkedCelestialLightning.DisplayName: Forked Celestial Lightning
+	ForkedLightningWarning.DisplayName: Forked Lightning Warning
+	CelestialEdictSeal.DisplayName: Celestial Edict Seal
+	CelestialLightningBolt.DisplayName: Celestial Lightning Bolt
+	DragonAuraSlash.DisplayName: Dragon Aura Slash
+	DragonAuthorityCircle.DisplayName: Dragon Authority Circle
+	DragonbreathArrow.DisplayName: Dragonbreath Arrow
+	DragonbreathCloud.DisplayName: Dragonbreath Cloud
+	DragonRoarWave.DisplayName: Dragon Roar Wave
+	ReverseScaleWrath.DisplayName: Reverse Scale Wrath
+	ScalebreakerCleaverProjectile.DisplayName: Scalebreaker Cleaver Projectile
+	SkyrendDragonArrow.DisplayName: Skyrend Dragon Arrow
+	ImmortalHaloRing.DisplayName: Immortal Halo Ring
+	ImmortalWave.DisplayName: Immortal Wave
+	QuadrantRay.DisplayName: Quadrant Ray
+	SweepingLightBolt.DisplayName: Sweeping Light Bolt
+	TowerBeam.DisplayName: Tower Beam
+	TreasureTowerOrb.DisplayName: Treasure Tower Orb
+	TreasureTowerRay.DisplayName: Treasure Tower Ray
+	VaisravanaStar.DisplayName: Vaisravana Star
+	DragonBreathBeam.DisplayName: Dragon Breath Beam
+	DragonMinion.DisplayName: Dragon Minion
+	DragonWaterBolt.DisplayName: Dragon Water Bolt
+	GiantWhirlpool.DisplayName: Giant Whirlpool
+	HomingWaterOrb.DisplayName: Homing Water Orb
+	TidalBeam.DisplayName: Tidal Beam
+	TidalWave.DisplayName: Tidal Wave
+	TridentProjectile.DisplayName: Trident Projectile
+	WaterVortex.DisplayName: Water Vortex
+	AbyssalVortex.DisplayName: Abyssal Vortex
+	BarrierWaterTornado.DisplayName: Barrier Water Tornado
+	DragonBubble.DisplayName: Dragon Bubble
+	DragonClawSlash.DisplayName: Dragon Claw Slash
+	FallingWaterSpear.DisplayName: Falling Water Spear
+	TsunamiWall.DisplayName: Tsunami Wall
+	WaterSpike.DisplayName: Water Spike
+	AbyssalDragonbladeSlash.DisplayName: Abyssal Dragonblade Slash
+	ChakramWaterBurst.DisplayName: Chakram Water Burst
+	DragonSoaringThrust.DisplayName: Dragon Soaring Thrust
+	DragonTidalSlash.DisplayName: Dragon Tidal Slash
+	DragonWaterArrow.DisplayName: Dragon Water Arrow
+	JadeDragonChakramProjectile.DisplayName: Jade Dragon Chakram Projectile
+	MiniWaterTornado.DisplayName: Mini Water Tornado
+	SummonedWaterTornado.DisplayName: Summoned Water Tornado
+	TidalDragonSpirit.DisplayName: Tidal Dragon Spirit
+	TornadoArrow.DisplayName: Tornado Arrow
+	TsunamiPiercerThrust.DisplayName: Tsunami Piercer Thrust
+	TsunamiWaveThrust.DisplayName: Tsunami Wave Thrust
+	CelestialFragment.DisplayName: Celestial Fragment
+	ChainLightning.DisplayName: Chain Lightning
+	CloudpiercerArrow.DisplayName: Cloudpiercer Arrow
+	DivineRune.DisplayName: Divine Rune
+	FirmamentSlash.DisplayName: Firmament Slash
+	HalberdShockwave.DisplayName: Halberd Shockwave
+	HalberdThrust.DisplayName: Halberd Thrust
+	JadeArmillaryProjectile.DisplayName: Jade Armillary Projectile
+	OverseerOrb.DisplayName: Overseer Orb
+	RuneCircle.DisplayName: Rune Circle
+	ThunderclapBlast.DisplayName: Thunderclap Blast
 }
 
 HeavenBiome.DisplayName: Heaven
@@ -880,6 +1151,8 @@ Tiles: {
 	TaiguWeaponWorkshop.MapEntry: Taigu Weapon Workshop
 	NetherBarTile.MapEntry: Nether Bar Tile
 	NetherOreTile.MapEntry: Nether Ore Tile
+	EmpyriteBarTile.MapEntry: Empyrite Bar Tile
+	EmpyriteOreTile.MapEntry: Empyrite Ore Tile
 }
 
 Buffs: {
@@ -1016,6 +1289,11 @@ Buffs: {
 	NetherSutomBuff: {
 		DisplayName: Nether Sutom Buff
 		Description: Mods.AncientChineseMythology.Buffs.NetherSutomBuff.Description
+	}
+
+	GoldenPhoenixBuff: {
+		DisplayName: Golden Phoenix Buff
+		Description: Mods.AncientChineseMythology.Buffs.GoldenPhoenixBuff.Description
 	}
 }
 

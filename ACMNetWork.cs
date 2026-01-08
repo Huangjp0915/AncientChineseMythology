@@ -1,5 +1,4 @@
-﻿using AncientChineseMythology.Structures;
-using System.IO;
+﻿using System.IO;
 using Terraria.DataStructures;
 
 namespace AncientChineseMythology
@@ -18,8 +17,6 @@ namespace AncientChineseMythology
                 if (!VaultUtils.isClient) {
                     return;//首先这个结构只能在客户端上生成，由服务器向所有客户端广播
                 }
-                AsgardStructure.GetInstance<AsgardStructure>().Point = point;
-                AsgardStructure.DoLoad<AsgardStructure>();
             }
         }
     }

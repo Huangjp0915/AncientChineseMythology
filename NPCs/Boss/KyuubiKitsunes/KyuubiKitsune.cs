@@ -1,10 +1,12 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.IO;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
+using Terraria.GameContent.ItemDropRules;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -157,6 +159,14 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             }
 
             Music = MusicID.Boss4; // 可以替换为自定义音乐
+        }
+
+        public override void BossLoot(ref int potionType) {
+            potionType = ItemID.HealingPotion;
+        }
+
+        public override void ModifyNPCLoot(NPCLoot npcLoot) {
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<KyuubiBook>()));
         }
 
         public override void OnSpawn(IEntitySource source) {

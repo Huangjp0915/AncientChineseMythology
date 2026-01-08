@@ -1,9 +1,11 @@
+using AncientChineseMythology.Underworlds.Boss.BAWImpermanences.Items;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
+using Terraria.GameContent.ItemDropRules;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -86,6 +88,15 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 NPC.lifeMax = (int)(NPC.lifeMax * 1.3f);
                 NPC.damage = (int)(NPC.damage * 1.2f);
             }
+        }
+
+        public override void BossLoot(ref int potionType) {
+            potionType = ItemID.HealingPotion;
+        }
+
+        public override void ModifyNPCLoot(NPCLoot npcLoot) {
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<DemonicAnnihilation>(), 2));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<NetherworldSickle>(), 2));
         }
 
         public override void OnSpawn(IEntitySource source) {

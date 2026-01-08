@@ -1,4 +1,6 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
+using AncientChineseMythology.Underworlds.Boss.NetherKitsunes.Items;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -17,7 +19,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
     public class DakkiBook : ModItem
     {
         public override void SetDefaults() {
-            Item.damage = 2380;
+            Item.damage = 6380;
             Item.DamageType = DamageClass.Magic;
             Item.width = 32;
             Item.height = 36;
@@ -48,11 +50,12 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
 
         public override void AddRecipes() {
             // 合成：九尾天书 + 幽冥狐典 + 高级材料
-            // CreateRecipe()
-            //     .AddIngredient<KyuubiBook>()
-            //     .AddIngredient<NetherKyuubiBook>()
-            //     .AddTile(TileID.LunarCraftingStation)
-            //     .Register();
+            CreateRecipe()
+                .AddIngredient<KyuubiBook>()
+                .AddIngredient<NetherKyuubiBook>()
+                .AddIngredient<Corpsefragments>(6)
+                .AddTile(TileID.LunarCraftingStation)
+                .Register();
         }
     }
 
