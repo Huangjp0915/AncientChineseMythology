@@ -1,4 +1,4 @@
-using AncientChineseMythology.Celestias.PillarofTheHeavenes.Enemys;
+ï»¿using AncientChineseMythology.Celestias.PillarofTheHeavenes.Enemys;
 using System;
 using Terraria;
 using Terraria.ID;
@@ -7,61 +7,61 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
 {
     /// <summary>
-    /// ÌìÖùÇøÓòµĞ¹ÖÉú³ÉÏµÍ³
-    /// ¹ÜÀíÌìÖùÇøÓòÄÚÌØÊâµĞ¹ÖµÄÉú³É
+    /// å¤©æŸ±åŒºåŸŸæ•Œæ€ªç”Ÿæˆç³»ç»Ÿ
+    /// ç®¡ç†å¤©æŸ±åŒºåŸŸå†…ç‰¹æ®Šæ•Œæ€ªçš„ç”Ÿæˆ
     /// </summary>
     public class HeavenPillarSpawnSystem : ModSystem
     {
-        #region ³£Á¿ÅäÖÃ
-        /// <summary>Éú³É¼ì²é¼ä¸ô£¨Ö¡£©</summary>
+        #region å¸¸é‡é…ç½®
+        /// <summary>ç”Ÿæˆæ£€æŸ¥é—´éš”ï¼ˆå¸§ï¼‰</summary>
         private const int SpawnCheckInterval = 60;
 
-        /// <summary>×î´óÍ¬Ê±´æÔÚµÄÌìÖùµĞ¹ÖÊıÁ¿</summary>
+        /// <summary>æœ€å¤§åŒæ—¶å­˜åœ¨çš„å¤©æŸ±æ•Œæ€ªæ•°é‡</summary>
         private const int MaxHeavenEnemies = 12;
 
-        /// <summary>Ã¿´ÎÉú³ÉµÄ×î´óÊıÁ¿</summary>
+        /// <summary>æ¯æ¬¡ç”Ÿæˆçš„æœ€å¤§æ•°é‡</summary>
         private const int MaxSpawnPerCheck = 2;
 
-        /// <summary>Éú³É¾àÀë·¶Î§£¨×îĞ¡£©</summary>
+        /// <summary>ç”Ÿæˆè·ç¦»èŒƒå›´ï¼ˆæœ€å°ï¼‰</summary>
         private const float MinSpawnDistance = 600f;
 
-        /// <summary>Éú³É¾àÀë·¶Î§£¨×î´ó£©</summary>
+        /// <summary>ç”Ÿæˆè·ç¦»èŒƒå›´ï¼ˆæœ€å¤§ï¼‰</summary>
         private const float MaxSpawnDistance = 1200f;
         #endregion
 
-        #region ×´Ì¬
+        #region çŠ¶æ€
         private int spawnTimer = 0;
         #endregion
 
         public override void PostUpdateWorld() {
-            // Ö»ÔÚÌìÖù½µÁÙºóÉúĞ§
+            // åªåœ¨å¤©æŸ±é™ä¸´åç”Ÿæ•ˆ
             if (!HeavenPillarSystem.PillarsDescended) return;
 
-            // ·şÎñÆ÷¶Ë´¦ÀíÉú³É
+            // æœåŠ¡å™¨ç«¯å¤„ç†ç”Ÿæˆ
             if (Main.netMode == NetmodeID.MultiplayerClient) return;
 
             spawnTimer++;
             if (spawnTimer < SpawnCheckInterval) return;
             spawnTimer = 0;
 
-            // ¶ÔÃ¿¸öÍæ¼Ò¼ì²éÉú³É
+            // å¯¹æ¯ä¸ªç©å®¶æ£€æŸ¥ç”Ÿæˆ
             foreach (Player player in Main.ActivePlayers) {
                 if (player.dead || !player.active) continue;
 
-                // ¼ì²éÍæ¼ÒÊÇ·ñÔÚÌìÖùÇøÓòÄÚ
+                // æ£€æŸ¥ç©å®¶æ˜¯å¦åœ¨å¤©æŸ±åŒºåŸŸå†…
                 if (!HeavenPillarSystem.IsInPillarRange(player.Center)) continue;
 
-                // ¼ì²éµ±Ç°ÌìÖùµĞ¹ÖÊıÁ¿
+                // æ£€æŸ¥å½“å‰å¤©æŸ±æ•Œæ€ªæ•°é‡
                 int currentEnemyCount = CountHeavenEnemies();
                 if (currentEnemyCount >= MaxHeavenEnemies) continue;
 
-                // ³¢ÊÔÉú³ÉµĞ¹Ö
+                // å°è¯•ç”Ÿæˆæ•Œæ€ª
                 TrySpawnEnemies(player, MaxHeavenEnemies - currentEnemyCount);
             }
         }
 
         /// <summary>
-        /// Í³¼Æµ±Ç°´æÔÚµÄÌìÖùµĞ¹ÖÊıÁ¿
+        /// ç»Ÿè®¡å½“å‰å­˜åœ¨çš„å¤©æŸ±æ•Œæ€ªæ•°é‡
         /// </summary>
         private static int CountHeavenEnemies() {
             int count = 0;
@@ -81,27 +81,27 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
 
         /// <summary>
-        /// ³¢ÊÔÎªÖ¸¶¨Íæ¼ÒÉú³ÉµĞ¹Ö
+        /// å°è¯•ä¸ºæŒ‡å®šç©å®¶ç”Ÿæˆæ•Œæ€ª
         /// </summary>
         private static void TrySpawnEnemies(Player player, int maxCount) {
             int spawned = 0;
 
             for (int attempt = 0; attempt < 10 && spawned < Math.Min(maxCount, MaxSpawnPerCheck); attempt++) {
-                // Ëæ»úÑ¡ÔñÉú³ÉÎ»ÖÃ
+                // éšæœºé€‰æ‹©ç”Ÿæˆä½ç½®
                 Vector2 spawnPos = FindSpawnPosition(player);
                 if (spawnPos == Vector2.Zero) continue;
 
-                // Ëæ»úÑ¡ÔñµĞ¹ÖÀàĞÍ
+                // éšæœºé€‰æ‹©æ•Œæ€ªç±»å‹
                 int npcType = ChooseEnemyType(spawnPos);
                 if (npcType == -1) continue;
 
-                // Éú³ÉµĞ¹Ö
+                // ç”Ÿæˆæ•Œæ€ª
                 int npcIndex = NPC.NewNPC(null, (int)spawnPos.X, (int)spawnPos.Y, npcType);
                 if (npcIndex >= 0 && npcIndex < Main.maxNPCs) {
                     NPC npc = Main.npc[npcIndex];
                     npc.target = player.whoAmI;
 
-                    // Éú³ÉÁ£×ÓĞ§¹û
+                    // ç”Ÿæˆç²’å­æ•ˆæœ
                     SpawnEffect(spawnPos);
 
                     spawned++;
@@ -114,35 +114,35 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
 
         /// <summary>
-        /// Ñ°ÕÒºÏÊÊµÄÉú³ÉÎ»ÖÃ
+        /// å¯»æ‰¾åˆé€‚çš„ç”Ÿæˆä½ç½®
         /// </summary>
         private static Vector2 FindSpawnPosition(Player player) {
-            // ³¢ÊÔÕÒµ½ºÏÊÊµÄÉú³Éµã
+            // å°è¯•æ‰¾åˆ°åˆé€‚çš„ç”Ÿæˆç‚¹
             for (int i = 0; i < 20; i++) {
-                // Ëæ»ú·½ÏòºÍ¾àÀë
+                // éšæœºæ–¹å‘å’Œè·ç¦»
                 float angle = Main.rand.NextFloat(MathHelper.TwoPi);
                 float distance = Main.rand.NextFloat(MinSpawnDistance, MaxSpawnDistance);
                 Vector2 offset = angle.ToRotationVector2() * distance;
                 Vector2 testPos = player.Center + offset;
 
-                // ¼ì²éÊÇ·ñÔÚÊÀ½ç·¶Î§ÄÚ
+                // æ£€æŸ¥æ˜¯å¦åœ¨ä¸–ç•ŒèŒƒå›´å†…
                 int tileX = (int)(testPos.X / 16f);
                 int tileY = (int)(testPos.Y / 16f);
 
                 if (tileX < 50 || tileX > Main.maxTilesX - 50) continue;
                 if (tileY < 50 || tileY > Main.maxTilesY - 50) continue;
 
-                // ¼ì²éÊÇ·ñÔÚÌìÖù·¶Î§ÄÚ
+                // æ£€æŸ¥æ˜¯å¦åœ¨å¤©æŸ±èŒƒå›´å†…
                 if (!HeavenPillarSystem.IsInPillarRange(testPos)) continue;
 
-                // ¼ì²éÉú³ÉµãÊÇ·ñÓĞĞ§£¨²»ÔÚ·½¿éÄÚ£©
+                // æ£€æŸ¥ç”Ÿæˆç‚¹æ˜¯å¦æœ‰æ•ˆï¼ˆä¸åœ¨æ–¹å—å†…ï¼‰
                 Tile tile = Main.tile[tileX, tileY];
                 if (tile.HasTile && Main.tileSolid[tile.TileType]) continue;
 
-                // ¶ÔÓÚµØÃæµĞ¹Ö£¬ĞèÒªÕÒµ½µØÃæ
-                bool isGroundSpawn = Main.rand.NextBool(3); // 1/3¸ÅÂÊÊÇµØÃæµĞ¹Ö
+                // å¯¹äºåœ°é¢æ•Œæ€ªï¼Œéœ€è¦æ‰¾åˆ°åœ°é¢
+                bool isGroundSpawn = Main.rand.NextBool(3); // 1/3æ¦‚ç‡æ˜¯åœ°é¢æ•Œæ€ª
                 if (isGroundSpawn) {
-                    // ÏòÏÂËÑË÷µØÃæ
+                    // å‘ä¸‹æœç´¢åœ°é¢
                     int groundY = FindGround(tileX, tileY);
                     if (groundY == -1) continue;
                     testPos = new Vector2(tileX * 16f + 8f, groundY * 16f - 32f);
@@ -155,7 +155,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
 
         /// <summary>
-        /// ´ÓÖ¸¶¨Î»ÖÃÏòÏÂËÑË÷µØÃæ
+        /// ä»æŒ‡å®šä½ç½®å‘ä¸‹æœç´¢åœ°é¢
         /// </summary>
         private static int FindGround(int tileX, int startY) {
             for (int y = startY; y < Math.Min(startY + 30, Main.maxTilesY - 50); y++) {
@@ -168,10 +168,10 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
 
         /// <summary>
-        /// ¸ù¾İÎ»ÖÃÑ¡ÔñµĞ¹ÖÀàĞÍ
+        /// æ ¹æ®ä½ç½®é€‰æ‹©æ•Œæ€ªç±»å‹
         /// </summary>
         private static int ChooseEnemyType(Vector2 position) {
-            // ¼ì²éÊÇ·ñÔÚµØÃæÉÏ
+            // æ£€æŸ¥æ˜¯å¦åœ¨åœ°é¢ä¸Š
             int tileX = (int)(position.X / 16f);
             int tileY = (int)(position.Y / 16f);
             bool hasGround = false;
@@ -184,42 +184,42 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                 }
             }
 
-            // ¸ù¾İÇé¿öÑ¡ÔñµĞ¹Ö
+            // æ ¹æ®æƒ…å†µé€‰æ‹©æ•Œæ€ª
             if (hasGround && Main.rand.NextBool(3)) {
-                // µØÃæµĞ¹Ö£º½ğ¼×Ê¥Æï
+                // åœ°é¢æ•Œæ€ªï¼šé‡‘ç”²åœ£éª‘
                 return ModContent.NPCType<OndPaladin>();
             }
             else {
-                // ·ÉĞĞµĞ¹Ö
+                // é£è¡Œæ•Œæ€ª
                 int roll = Main.rand.Next(100);
 
                 if (roll < 25) {
-                    // 25%: ÏèÁú£¨Ï¡ÓĞÇ¿Á¦£©
+                    // 25%: ç¿”é¾™ï¼ˆç¨€æœ‰å¼ºåŠ›ï¼‰
                     return ModContent.NPCType<Xianglong>();
                 }
                 else if (roll < 50) {
-                    // 25%: ÌìÑÛ
+                    // 25%: å¤©çœ¼
                     return ModContent.NPCType<HeavenObserver>();
                 }
                 else {
-                    // 50%: Í­ÓğÉñÄñ£¨×î³£¼û£©
+                    // 50%: é“œç¾½ç¥é¸Ÿï¼ˆæœ€å¸¸è§ï¼‰
                     return ModContent.NPCType<BronzedivineBird>();
                 }
             }
         }
 
         /// <summary>
-        /// Éú³ÉÊÓ¾õĞ§¹û
+        /// ç”Ÿæˆè§†è§‰æ•ˆæœ
         /// </summary>
         private static void SpawnEffect(Vector2 position) {
-            // ÉñÊ¥¹âĞ§
+            // ç¥åœ£å…‰æ•ˆ
             for (int i = 0; i < 15; i++) {
                 Vector2 vel = Main.rand.NextVector2CircularEdge(4f, 4f);
                 int dust = Dust.NewDust(position, 0, 0, DustID.GoldFlame, vel.X, vel.Y, 100, default, 1.8f);
                 Main.dust[dust].noGravity = true;
             }
 
-            // ÏéÔÆĞ§¹û
+            // ç¥¥äº‘æ•ˆæœ
             for (int i = 0; i < 5; i++) {
                 Vector2 cloudVel = Main.rand.NextVector2Circular(2f, 2f);
                 int cloud = Dust.NewDust(position, 0, 0, DustID.Cloud, cloudVel.X, cloudVel.Y, 200, default, 2.5f);
@@ -229,36 +229,36 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
     }
 
     /// <summary>
-    /// ÌìÖùÇøÓòÈ«¾ÖNPCĞŞ¸Ä
-    /// Ôö¼ÓÌìÖùÇøÓòµĞ¹ÖµÄ»ù´¡Éú³ÉÂÊ
+    /// å¤©æŸ±åŒºåŸŸå…¨å±€NPCä¿®æ”¹
+    /// å¢åŠ å¤©æŸ±åŒºåŸŸæ•Œæ€ªçš„åŸºç¡€ç”Ÿæˆç‡
     /// </summary>
     public class HeavenPillarGlobalNPC : GlobalNPC
     {
         public override void EditSpawnRate(Player player, ref int spawnRate, ref int maxSpawns) {
-            // ÔÚÌìÖùÇøÓòÔö¼ÓµĞ¹ÖÉú³ÉÂÊ
+            // åœ¨å¤©æŸ±åŒºåŸŸå¢åŠ æ•Œæ€ªç”Ÿæˆç‡
             if (HeavenPillarSystem.PillarsDescended && HeavenPillarSystem.IsInPillarRange(player.Center)) {
-                // ½µµÍÉú³É¼ä¸ô£¨Ôö¼ÓÉú³ÉÂÊ£©
+                // é™ä½ç”Ÿæˆé—´éš”ï¼ˆå¢åŠ ç”Ÿæˆç‡ï¼‰
                 spawnRate = (int)(spawnRate * 0.6f);
-                // Ôö¼Ó×î´óÉú³ÉÊıÁ¿
+                // å¢åŠ æœ€å¤§ç”Ÿæˆæ•°é‡
                 maxSpawns = (int)(maxSpawns * 1.5f);
             }
         }
 
         public override void EditSpawnPool(System.Collections.Generic.IDictionary<int, float> pool, NPCSpawnInfo spawnInfo) {
-            // ÔÚÌìÖùÇøÓòÌí¼ÓÌìÖùµĞ¹Öµ½Éú³É³Ø
+            // åœ¨å¤©æŸ±åŒºåŸŸæ·»åŠ å¤©æŸ±æ•Œæ€ªåˆ°ç”Ÿæˆæ± 
             if (HeavenPillarSystem.PillarsDescended && HeavenPillarSystem.IsInPillarRange(spawnInfo.Player.Center)) {
-                // Çå¿Õ»ò´ó·ù½µµÍÆÕÍ¨µĞ¹ÖÉú³É
+                // æ¸…ç©ºæˆ–å¤§å¹…é™ä½æ™®é€šæ•Œæ€ªç”Ÿæˆ
                 var keysToModify = new System.Collections.Generic.List<int>(pool.Keys);
                 foreach (int key in keysToModify) {
-                    pool[key] *= 0.3f; // ½µµÍÆÕÍ¨µĞ¹ÖÉú³ÉÂÊ
+                    pool[key] *= 0.3f; // é™ä½æ™®é€šæ•Œæ€ªç”Ÿæˆç‡
                 }
 
-                // Ìí¼ÓÌìÖùµĞ¹Ö
+                // æ·»åŠ å¤©æŸ±æ•Œæ€ª
                 pool[ModContent.NPCType<BronzedivineBird>()] = 0.4f;
                 pool[ModContent.NPCType<HeavenObserver>()] = 0.25f;
                 pool[ModContent.NPCType<Xianglong>()] = 0.15f;
 
-                // µØÃæÉú³ÉÊ±Ìí¼Ó½ğ¼×Ê¥Æï
+                // åœ°é¢ç”Ÿæˆæ—¶æ·»åŠ é‡‘ç”²åœ£éª‘
                 if (!spawnInfo.Sky && !spawnInfo.Water) {
                     pool[ModContent.NPCType<OndPaladin>()] = 0.2f;
                 }
@@ -267,8 +267,8 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
     }
 
     /// <summary>
-    /// ÌìÖùÇøÓòµĞ¹ÖBuffĞ§¹û
-    /// ÌìÖùµĞ¹ÖÔÚÌìÖùÇøÓòÄÚ»ñµÃÔöÒæ
+    /// å¤©æŸ±åŒºåŸŸæ•Œæ€ªBuffæ•ˆæœ
+    /// å¤©æŸ±æ•Œæ€ªåœ¨å¤©æŸ±åŒºåŸŸå†…è·å¾—å¢ç›Š
     /// </summary>
     public class HeavenPillarEnemyBuff : GlobalNPC
     {
@@ -293,14 +293,14 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
 
             glowTimer += 0.02f;
 
-            // ÔÚÌìÖùÇøÓòÄÚ»ñµÃÔöÒæ
+            // åœ¨å¤©æŸ±åŒºåŸŸå†…è·å¾—å¢ç›Š
             if (HeavenPillarSystem.IsInPillarRange(npc.Center)) {
-                // ÉúÃü»Ö¸´£¨Ã¿Ãë1µã£©
+                // ç”Ÿå‘½æ¢å¤ï¼ˆæ¯ç§’1ç‚¹ï¼‰
                 if (Main.GameUpdateCount % 60 == 0 && npc.life < npc.lifeMax) {
                     npc.life = Math.Min(npc.life + 1, npc.lifeMax);
                 }
 
-                // ·ÀÓù¼Ó³É
+                // é˜²å¾¡åŠ æˆ
                 npc.defense += 5;
             }
         }
@@ -308,7 +308,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         public override void ModifyHitPlayer(NPC npc, Player target, ref Player.HurtModifiers modifiers) {
             if (!isHeavenEnemy) return;
 
-            // ÔÚÌìÖùÇøÓòÄÚÔì³É¶îÍâÉËº¦
+            // åœ¨å¤©æŸ±åŒºåŸŸå†…é€ æˆé¢å¤–ä¼¤å®³
             if (HeavenPillarSystem.IsInPillarRange(npc.Center)) {
                 modifiers.FinalDamage *= 1.15f;
             }
@@ -317,13 +317,13 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         public override void OnKill(NPC npc) {
             if (!isHeavenEnemy) return;
 
-            // »÷É±ÌìÖùµĞ¹ÖµÄ¶îÍâ½±Àø
+            // å‡»æ€å¤©æŸ±æ•Œæ€ªçš„é¢å¤–å¥–åŠ±
             if (HeavenPillarSystem.IsInPillarRange(npc.Center)) {
-                // ¶îÍâ½ğ±Ò
+                // é¢å¤–é‡‘å¸
                 int bonusMoney = Main.rand.Next(5000, 15000);
                 Item.NewItem(npc.GetSource_Death(), npc.getRect(), ItemID.GoldCoin, bonusMoney / 10000);
 
-                // ¶îÍâ¾­ÑéÁ£×ÓĞ§¹û
+                // é¢å¤–ç»éªŒç²’å­æ•ˆæœ
                 for (int i = 0; i < 10; i++) {
                     Vector2 vel = Main.rand.NextVector2CircularEdge(5f, 5f);
                     int dust = Dust.NewDust(npc.Center, 0, 0, DustID.GoldFlame, vel.X, vel.Y, 100, default, 2f);

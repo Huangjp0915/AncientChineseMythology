@@ -1,4 +1,4 @@
-using AncientChineseMythology.Celestias.PillarofTheHeavenes.Tiles;
+ï»¿using AncientChineseMythology.Celestias.PillarofTheHeavenes.Tiles;
 using InnoVault.Actors;
 using System;
 using System.Collections.Generic;
@@ -10,52 +10,52 @@ using Terraria.ModLoader.IO;
 namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
 {
     /// <summary>
-    /// ÌìÖùÏµÍ³¹ÜÀíÆ÷
-    /// ¸ºÔğÌìÖùµÄÉú³É¡¢³Ö¾Ã»¯±£´æºÍÊÀ½ç×´Ì¬¹ÜÀí
+    /// å¤©æŸ±ç³»ç»Ÿç®¡ç†å™¨
+    /// è´Ÿè´£å¤©æŸ±çš„ç”Ÿæˆã€æŒä¹…åŒ–ä¿å­˜å’Œä¸–ç•ŒçŠ¶æ€ç®¡ç†
     /// </summary>
     public class HeavenPillarSystem : ModSystem
     {
-        #region ³£Á¿ÅäÖÃ
-        /// <summary>ÌìÖùÊıÁ¿</summary>
+        #region å¸¸é‡é…ç½®
+        /// <summary>å¤©æŸ±æ•°é‡</summary>
         public const int PillarCount = 4;
 
-        /// <summary>ÌìÖù¼ä¾à£¨µØÍ¼¿í¶ÈµÄ±ÈÀı£©</summary>
+        /// <summary>å¤©æŸ±é—´è·ï¼ˆåœ°å›¾å®½åº¦çš„æ¯”ä¾‹ï¼‰</summary>
         public const float PillarSpacing = 0.2f;
 
-        /// <summary>ÌìÖùÉú³ÉµÄ´¹Ö±Æ«ÒÆ£¨´ÓµØ±íÏòÉÏ£¬ÊÊÓ¦·Å´óºóµÄÌìÖù£©</summary>
+        /// <summary>å¤©æŸ±ç”Ÿæˆçš„å‚ç›´åç§»ï¼ˆä»åœ°è¡¨å‘ä¸Šï¼Œé€‚åº”æ”¾å¤§åçš„å¤©æŸ±ï¼‰</summary>
         public const int VerticalOffset = 600;
 
-        /// <summary>¿óÎïÉú³É°ë¾¶£¨ÏñËØ£©</summary>
+        /// <summary>çŸ¿ç‰©ç”ŸæˆåŠå¾„ï¼ˆåƒç´ ï¼‰</summary>
         public const int OreSpawnRadius = 3000;
 
-        /// <summary>Ã¿¸ùÌìÖùÉú³ÉµÄ¿óÎï´ØÊıÁ¿</summary>
+        /// <summary>æ¯æ ¹å¤©æŸ±ç”Ÿæˆçš„çŸ¿ç‰©ç°‡æ•°é‡</summary>
         public const int OreClusterCount = 80;
 
-        /// <summary>Ã¿¸ö¿óÎï´ØµÄ¿óÎïÊıÁ¿·¶Î§</summary>
+        /// <summary>æ¯ä¸ªçŸ¿ç‰©ç°‡çš„çŸ¿ç‰©æ•°é‡èŒƒå›´</summary>
         public const int OreClusterSizeMin = 468;
         public const int OreClusterSizeMax = 888;
         #endregion
 
-        #region ×´Ì¬Êı¾İ
-        /// <summary>ÌìÖùÊÇ·ñÒÑ½µÁÙ</summary>
+        #region çŠ¶æ€æ•°æ®
+        /// <summary>å¤©æŸ±æ˜¯å¦å·²é™ä¸´</summary>
         public static bool PillarsDescended { get; private set; } = false;
 
-        /// <summary>¿óÎïÊÇ·ñÒÑÉú³É</summary>
+        /// <summary>çŸ¿ç‰©æ˜¯å¦å·²ç”Ÿæˆ</summary>
         public static bool OreGenerated { get; private set; } = false;
 
-        /// <summary>ËÄ¸ùÌìÖùµÄÊÀ½çÎ»ÖÃ</summary>
+        /// <summary>å››æ ¹å¤©æŸ±çš„ä¸–ç•Œä½ç½®</summary>
         public static Vector2[] PillarPositions { get; private set; } = new Vector2[PillarCount];
 
-        /// <summary>ËÄ¸ùÌìÖùµÄActorË÷Òı</summary>
+        /// <summary>å››æ ¹å¤©æŸ±çš„Actorç´¢å¼•</summary>
         public static int[] PillarActorIndices { get; private set; } = new int[PillarCount];
 
-        /// <summary>ÌìÖù½µÁÙµÄÊ±¼ä´Á</summary>
+        /// <summary>å¤©æŸ±é™ä¸´çš„æ—¶é—´æˆ³</summary>
         public static double DescendTime { get; private set; } = 0;
         #endregion
 
-        #region ÉúÃüÖÜÆÚ
+        #region ç”Ÿå‘½å‘¨æœŸ
         public override void OnWorldLoad() {
-            // ÖØÖÃ×´Ì¬
+            // é‡ç½®çŠ¶æ€
             PillarsDescended = false;
             OreGenerated = false;
             PillarPositions = new Vector2[PillarCount];
@@ -67,7 +67,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
 
         public override void OnWorldUnload() {
-            // ÇåÀí×´Ì¬
+            // æ¸…ç†çŠ¶æ€
             PillarsDescended = false;
             OreGenerated = false;
             for (int i = 0; i < PillarCount; i++) {
@@ -77,19 +77,19 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
 
         public override void PostUpdateWorld() {
-            // Èç¹ûÌìÖùÒÑ½µÁÙµ«Actor²»´æÔÚ£¬ĞèÒªÖØĞÂÉú³É
+            // å¦‚æœå¤©æŸ±å·²é™ä¸´ä½†Actorä¸å­˜åœ¨ï¼Œéœ€è¦é‡æ–°ç”Ÿæˆ
             if (PillarsDescended && Main.netMode != NetmodeID.MultiplayerClient) {
                 ValidateAndRestorePillars();
             }
         }
         #endregion
 
-        #region ÌìÖùÉú³É
+        #region å¤©æŸ±ç”Ÿæˆ
         /// <summary>
-        /// ´¥·¢ÌìÖù½µÁÙÊÂ¼ş
-        /// ÔÚ»÷°ÜÔÂÇòÁìÖ÷ºóµ÷ÓÃ
+        /// è§¦å‘å¤©æŸ±é™ä¸´äº‹ä»¶
+        /// åœ¨å‡»è´¥æœˆçƒé¢†ä¸»åè°ƒç”¨
         /// </summary>
-        /// <param name="epicenterX">ÔÂÇòÁìÖ÷ËÀÍöÎ»ÖÃX×ø±ê£¨ÊÀ½ç×ø±ê£©</param>
+        /// <param name="epicenterX">æœˆçƒé¢†ä¸»æ­»äº¡ä½ç½®Xåæ ‡ï¼ˆä¸–ç•Œåæ ‡ï¼‰</param>
         public static void TriggerPillarDescend(float epicenterX) {
             if (PillarsDescended) return;
             if (Main.netMode == NetmodeID.MultiplayerClient) return;
@@ -97,60 +97,60 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
             PillarsDescended = true;
             DescendTime = Main.GameUpdateCount;
 
-            // ¼ÆËãËÄ¸ùÌìÖùµÄÎ»ÖÃ
+            // è®¡ç®—å››æ ¹å¤©æŸ±çš„ä½ç½®
             CalculatePillarPositions(epicenterX);
 
-            // Éú³ÉÌìÖùActor
+            // ç”Ÿæˆå¤©æŸ±Actor
             SpawnPillarActors();
 
-            // Éú³ÉÌì¼«¿ó
+            // ç”Ÿæˆå¤©æçŸ¿
             SpawnEmpyriteOre();
 
-            // ¹ã²¥ÏûÏ¢
+            // å¹¿æ’­æ¶ˆæ¯
             if (Main.netMode == NetmodeID.Server) {
                 NetMessage.SendData(MessageID.WorldData);
             }
 
-            // ÏÔÊ¾½µÁÙÏûÏ¢
-            Main.NewText("ÌìÖù½µÁÙ£¬ËÄ·½ÉñÊ¥ÏÔÏÖ...", 220, 200, 100);
+            // æ˜¾ç¤ºé™ä¸´æ¶ˆæ¯
+            Main.NewText("å¤©æŸ±é™ä¸´ï¼Œå››æ–¹ç¥åœ£æ˜¾ç°...", 220, 200, 100);
         }
 
         /// <summary>
-        /// ¼ÆËãËÄ¸ùÌìÖùµÄÊÀ½çÎ»ÖÃ
+        /// è®¡ç®—å››æ ¹å¤©æŸ±çš„ä¸–ç•Œä½ç½®
         /// </summary>
         private static void CalculatePillarPositions(float epicenterX) {
             float worldWidth = Main.maxTilesX * 16f;
 
-            // »ùÓÚÔÂÇòÁìÖ÷ËÀÍöÎ»ÖÃ¼ÆËãÌìÖùÇøÓòÖĞĞÄ
+            // åŸºäºæœˆçƒé¢†ä¸»æ­»äº¡ä½ç½®è®¡ç®—å¤©æŸ±åŒºåŸŸä¸­å¿ƒ
             float centerX = MathHelper.Clamp(epicenterX, worldWidth * 0.2f, worldWidth * 0.8f);
 
-            // ÌìÖùºáÏò·Ö²¼·¶Î§
-            float totalSpread = worldWidth * PillarSpacing * 3; // Èı¸ö¼ä¸ô
+            // å¤©æŸ±æ¨ªå‘åˆ†å¸ƒèŒƒå›´
+            float totalSpread = worldWidth * PillarSpacing * 3; // ä¸‰ä¸ªé—´éš”
             float spacing = totalSpread / 3;
 
-            // ´ÓÖĞĞÄÏòÁ½²à·Ö²¼
+            // ä»ä¸­å¿ƒå‘ä¸¤ä¾§åˆ†å¸ƒ
             float startX = centerX - totalSpread / 2;
 
             for (int i = 0; i < PillarCount; i++) {
                 float pillarX = startX + spacing * i;
 
-                // È·±£²»³¬³öÊÀ½ç±ß½ç
+                // ç¡®ä¿ä¸è¶…å‡ºä¸–ç•Œè¾¹ç•Œ
                 pillarX = MathHelper.Clamp(pillarX, 200 * 16f, (Main.maxTilesX - 200) * 16f);
 
-                // ÕÒµ½¸ÃÎ»ÖÃµÄµØ±í¸ß¶È
+                // æ‰¾åˆ°è¯¥ä½ç½®çš„åœ°è¡¨é«˜åº¦
                 int tileX = (int)(pillarX / 16f);
                 int surfaceY = FindSurfaceY(tileX);
 
-                // ÌìÖùÎ»ÖÃ£¨ÉÔÎ¢ÔÚµØ±íÉÏ·½£©
+                // å¤©æŸ±ä½ç½®ï¼ˆç¨å¾®åœ¨åœ°è¡¨ä¸Šæ–¹ï¼‰
                 PillarPositions[i] = new Vector2(pillarX, surfaceY * 16f - VerticalOffset);
             }
         }
 
         /// <summary>
-        /// ²éÕÒÖ¸¶¨X×ø±êµÄµØ±íY×ø±ê
+        /// æŸ¥æ‰¾æŒ‡å®šXåæ ‡çš„åœ°è¡¨Yåæ ‡
         /// </summary>
         private static int FindSurfaceY(int tileX) {
-            // ´ÓÌì¿Õ¿ªÊ¼ÏòÏÂÉ¨Ãè
+            // ä»å¤©ç©ºå¼€å§‹å‘ä¸‹æ‰«æ
             for (int y = 100; y < Main.maxTilesY - 200; y++) {
                 Tile tile = Main.tile[tileX, y];
                 if (tile.HasTile && Main.tileSolid[tile.TileType]) {
@@ -161,21 +161,21 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
 
         /// <summary>
-        /// Éú³ÉÌìÖùActorÊµÌå
+        /// ç”Ÿæˆå¤©æŸ±Actorå®ä½“
         /// </summary>
         private static void SpawnPillarActors() {
             for (int i = 0; i < PillarCount; i++) {
                 Vector2 pos = PillarPositions[i];
                 if (pos == Vector2.Zero) continue;
 
-                // Ê¹ÓÃActorLoaderÉú³ÉActor
+                // ä½¿ç”¨ActorLoaderç”ŸæˆActor
                 int actorId = ActorLoader.GetActorID<HeavenPillarActor>();
                 int slot = ActorLoader.NewActor(actorId, pos, Vector2.Zero);
 
                 if (slot >= 0 && slot < ActorLoader.MaxActorCount) {
                     PillarActorIndices[i] = slot;
 
-                    // ÉèÖÃÌìÖùÑùÊ½Ë÷Òı
+                    // è®¾ç½®å¤©æŸ±æ ·å¼ç´¢å¼•
                     Actor actor = ActorLoader.Actors[slot];
                     if (actor is HeavenPillarActor pillar) {
                         pillar.PillarStyleIndex = i;
@@ -185,7 +185,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
 
         /// <summary>
-        /// ÑéÖ¤²¢»Ö¸´ÌìÖù£¨Èç¹ûActor¶ªÊ§£©
+        /// éªŒè¯å¹¶æ¢å¤å¤©æŸ±ï¼ˆå¦‚æœActorä¸¢å¤±ï¼‰
         /// </summary>
         private static void ValidateAndRestorePillars() {
             for (int i = 0; i < PillarCount; i++) {
@@ -207,7 +207,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                 }
 
                 if (needsRestore) {
-                    // ÖØĞÂÉú³ÉÌìÖù
+                    // é‡æ–°ç”Ÿæˆå¤©æŸ±
                     int actorId = ActorLoader.GetActorID<HeavenPillarActor>();
                     int slot = ActorLoader.NewActor(actorId, pos, Vector2.Zero);
 
@@ -217,7 +217,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                         Actor actor = ActorLoader.Actors[slot];
                         if (actor is HeavenPillarActor pillar) {
                             pillar.PillarStyleIndex = i;
-                            pillar.HasDescended = true; // Ö±½ÓÉèÖÃÎªÒÑ½µÁÙ×´Ì¬
+                            pillar.HasDescended = true; // ç›´æ¥è®¾ç½®ä¸ºå·²é™ä¸´çŠ¶æ€
                         }
                     }
                 }
@@ -225,7 +225,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
 
         /// <summary>
-        /// ÔÚÌìÖùÖÜÎ§Éú³ÉÌì¼«¿ó
+        /// åœ¨å¤©æŸ±å‘¨å›´ç”Ÿæˆå¤©æçŸ¿
         /// </summary>
         private static void SpawnEmpyriteOre() {
             if (OreGenerated) return;
@@ -243,61 +243,61 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                 int centerTileY = (int)(pillarPos.Y / 16f);
                 int radiusTiles = OreSpawnRadius / 16;
 
-                // Éú³É¶à¸ö¿óÎï´Ø
+                // ç”Ÿæˆå¤šä¸ªçŸ¿ç‰©ç°‡
                 for (int cluster = 0; cluster < OreClusterCount; cluster++) {
-                    // Ëæ»úÑ¡Ôñ´ØÖĞĞÄÎ»ÖÃ£¨ÔÚÌìÖùÖÜÎ§£©
+                    // éšæœºé€‰æ‹©ç°‡ä¸­å¿ƒä½ç½®ï¼ˆåœ¨å¤©æŸ±å‘¨å›´ï¼‰
                     float angle = Main.rand.NextFloat(MathHelper.TwoPi);
                     float distance = Main.rand.NextFloat(radiusTiles * 0.2f, radiusTiles);
 
                     int clusterX = centerTileX + (int)(MathF.Cos(angle) * distance);
                     int clusterY = centerTileY + (int)(MathF.Sin(angle) * distance);
 
-                    // È·±£ÔÚÊÀ½ç±ß½çÄÚ
+                    // ç¡®ä¿åœ¨ä¸–ç•Œè¾¹ç•Œå†…
                     clusterX = (int)MathHelper.Clamp(clusterX, 50, Main.maxTilesX - 50);
                     clusterY = (int)MathHelper.Clamp(clusterY, 50, Main.maxTilesY - 200);
 
-                    // Éú³É¿óÎï´Ø
+                    // ç”ŸæˆçŸ¿ç‰©ç°‡
                     int clusterSize = Main.rand.Next(OreClusterSizeMin, OreClusterSizeMax + 1);
                     int oresPlaced = PlaceOreCluster(clusterX, clusterY, clusterSize, oreType);
                     totalOreGenerated += oresPlaced;
                 }
             }
 
-            // Í¨ÖªÍæ¼Ò
+            // é€šçŸ¥ç©å®¶
             if (totalOreGenerated > 0) {
-                Main.NewText($"Ìì¼«Ö®¹âÕÕÒ«´óµØ£¬ÉñÊ¥¿óÂöÏÔÏÖ£¡", 220, 210, 140);
+                Main.NewText($"å¤©æä¹‹å…‰ç…§è€€å¤§åœ°ï¼Œç¥åœ£çŸ¿è„‰æ˜¾ç°ï¼", 220, 210, 140);
             }
         }
 
         /// <summary>
-        /// ·ÅÖÃÒ»¸ö¿óÎï´Ø
+        /// æ”¾ç½®ä¸€ä¸ªçŸ¿ç‰©ç°‡
         /// </summary>
         private static int PlaceOreCluster(int centerX, int centerY, int size, int oreType) {
             int placed = 0;
             int attempts = size * 3;
 
             for (int i = 0; i < attempts && placed < size; i++) {
-                // Ëæ»úÆ«ÒÆ£¨ĞÎ³É²»¹æÔòĞÎ×´£©
+                // éšæœºåç§»ï¼ˆå½¢æˆä¸è§„åˆ™å½¢çŠ¶ï¼‰
                 int offsetX = Main.rand.Next(-4, 5);
                 int offsetY = Main.rand.Next(-4, 5);
                 int tileX = centerX + offsetX;
                 int tileY = centerY + offsetY;
 
-                // ±ß½ç¼ì²é
+                // è¾¹ç•Œæ£€æŸ¥
                 if (tileX < 1 || tileX >= Main.maxTilesX - 1 || tileY < 1 || tileY >= Main.maxTilesY - 1) {
                     continue;
                 }
 
                 Tile tile = Main.tile[tileX, tileY];
 
-                // Ö»Ìæ»»ÊµĞÄ·½¿é
+                // åªæ›¿æ¢å®å¿ƒæ–¹å—
                 if (tile.HasTile && Main.tileSolid[tile.TileType] && !Main.tileSolidTop[tile.TileType]) {
-                    // ²»Ìæ»»ÖØÒªÎï¿é
+                    // ä¸æ›¿æ¢é‡è¦ç‰©å—
                     if (TileID.Sets.Ore[tile.TileType] || tile.TileType == oreType) {
                         continue;
                     }
 
-                    // ¿ÉÒÔÌæ»»Ê¯Í·¡¢ÄàÍÁµÈ
+                    // å¯ä»¥æ›¿æ¢çŸ³å¤´ã€æ³¥åœŸç­‰
                     if (tile.TileType == TileID.Stone || tile.TileType == TileID.Dirt ||
                         tile.TileType == TileID.Mud || tile.TileType == TileID.Ebonstone ||
                         tile.TileType == TileID.Crimstone || tile.TileType == TileID.Pearlstone ||
@@ -309,7 +309,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                         tile.TileFrameY = 0;
                         placed++;
 
-                        // Í¬²½
+                        // åŒæ­¥
                         if (Main.netMode == NetmodeID.Server) {
                             NetMessage.SendTileSquare(-1, tileX, tileY, 1);
                         }
@@ -321,13 +321,13 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
         #endregion
 
-        #region Êı¾İ³Ö¾Ã»¯
+        #region æ•°æ®æŒä¹…åŒ–
         public override void SaveWorldData(TagCompound tag) {
             tag["PillarsDescended"] = PillarsDescended;
             tag["OreGenerated"] = OreGenerated;
             tag["DescendTime"] = DescendTime;
 
-            // ±£´æÌìÖùÎ»ÖÃ
+            // ä¿å­˜å¤©æŸ±ä½ç½®
             List<float> positionData = [];
             for (int i = 0; i < PillarCount; i++) {
                 positionData.Add(PillarPositions[i].X);
@@ -341,23 +341,29 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
             OreGenerated = tag.GetBool("OreGenerated");
             DescendTime = tag.GetDouble("DescendTime");
 
-            // ¼ÓÔØÌìÖùÎ»ÖÃ
+            // åŠ è½½å¤©æŸ±ä½ç½®
             if (tag.TryGet("PillarPositions", out List<float> positionData)) {
                 for (int i = 0; i < PillarCount && i * 2 + 1 < positionData.Count; i++) {
                     PillarPositions[i] = new Vector2(positionData[i * 2], positionData[i * 2 + 1]);
                 }
             }
 
-            // ÖØÖÃActorË÷Òı£¨ĞèÒªÔÚÊÀ½ç¼ÓÔØºóÖØĞÂÑéÖ¤£©
+            // é‡ç½®Actorç´¢å¼•ï¼ˆéœ€è¦åœ¨ä¸–ç•ŒåŠ è½½åé‡æ–°éªŒè¯ï¼‰
             for (int i = 0; i < PillarCount; i++) {
                 PillarActorIndices[i] = -1;
             }
         }
         #endregion
 
-        #region ¸¨Öú·½·¨
+        public override void PostUpdateEverything() {
+            if (IsInPillarRange(Main.LocalPlayer.position)) {
+                Main.newMusic = Main.musicBox2 = MusicLoader.GetMusicSlot("AncientChineseMythology/Sounds/Music/PillarofTheHeavens");
+            }
+        }
+
+        #region è¾…åŠ©æ–¹æ³•
         /// <summary>
-        /// »ñÈ¡¾àÀëÖ¸¶¨Î»ÖÃ×î½üµÄÌìÖù
+        /// è·å–è·ç¦»æŒ‡å®šä½ç½®æœ€è¿‘çš„å¤©æŸ±
         /// </summary>
         public static int GetNearestPillarIndex(Vector2 position) {
             if (!PillarsDescended) return -1;
@@ -379,7 +385,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
 
         /// <summary>
-        /// ¼ì²éÖ¸¶¨Î»ÖÃÊÇ·ñÔÚÌìÖùÓ°Ïì·¶Î§ÄÚ
+        /// æ£€æŸ¥æŒ‡å®šä½ç½®æ˜¯å¦åœ¨å¤©æŸ±å½±å“èŒƒå›´å†…
         /// </summary>
         public static bool IsInPillarRange(Vector2 position, float range = HeavenPillarActor.EffectRadius) {
             if (!PillarsDescended) return false;
@@ -396,7 +402,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
 
         /// <summary>
-        /// »ñÈ¡Ö¸¶¨Î»ÖÃÊÜµ½µÄÌìÖùÓ°ÏìÇ¿¶È£¨0-1£©
+        /// è·å–æŒ‡å®šä½ç½®å—åˆ°çš„å¤©æŸ±å½±å“å¼ºåº¦ï¼ˆ0-1ï¼‰
         /// </summary>
         public static float GetPillarInfluence(Vector2 position) {
             if (!PillarsDescended) return 0f;
