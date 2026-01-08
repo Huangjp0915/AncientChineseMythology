@@ -839,6 +839,7 @@ NPCs: {
 	HeavenObserver.DisplayName: 天眼
 	OndPaladin.DisplayName: 仙剑
 	Xianglong.DisplayName: 祥龙
+	AoGuang.DisplayName: 敖广
 }
 
 Projectiles: {
@@ -1042,6 +1043,15 @@ Projectiles: {
 	// TreasureTowerOrb.DisplayName: Treasure Tower Orb
 	// TreasureTowerRay.DisplayName: Treasure Tower Ray
 	// VaisravanaStar.DisplayName: Vaisravana Star
+	// DragonBreathBeam.DisplayName: Dragon Breath Beam
+	// DragonMinion.DisplayName: Dragon Minion
+	// DragonWaterBolt.DisplayName: Dragon Water Bolt
+	// GiantWhirlpool.DisplayName: Giant Whirlpool
+	// HomingWaterOrb.DisplayName: Homing Water Orb
+	// TidalBeam.DisplayName: Tidal Beam
+	// TidalWave.DisplayName: Tidal Wave
+	// TridentProjectile.DisplayName: Trident Projectile
+	// WaterVortex.DisplayName: Water Vortex
 }
 
 // HeavenBiome.DisplayName: Heaven

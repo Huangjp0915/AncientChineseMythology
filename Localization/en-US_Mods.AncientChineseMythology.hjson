@@ -790,6 +790,7 @@ NPCs: {
 	HeavenObserver.DisplayName: Heaven Observer
 	OndPaladin.DisplayName: Ond Paladin
 	Xianglong.DisplayName: Xianglong
+	AoGuang.DisplayName: Ao Guang
 }
 
 Projectiles: {
@@ -993,6 +994,15 @@ Projectiles: {
 	TreasureTowerOrb.DisplayName: Treasure Tower Orb
 	TreasureTowerRay.DisplayName: Treasure Tower Ray
 	VaisravanaStar.DisplayName: Vaisravana Star
+	DragonBreathBeam.DisplayName: Dragon Breath Beam
+	DragonMinion.DisplayName: Dragon Minion
+	DragonWaterBolt.DisplayName: Dragon Water Bolt
+	GiantWhirlpool.DisplayName: Giant Whirlpool
+	HomingWaterOrb.DisplayName: Homing Water Orb
+	TidalBeam.DisplayName: Tidal Beam
+	TidalWave.DisplayName: Tidal Wave
+	TridentProjectile.DisplayName: Trident Projectile
+	WaterVortex.DisplayName: Water Vortex
 }
 
 HeavenBiome.DisplayName: Heaven
