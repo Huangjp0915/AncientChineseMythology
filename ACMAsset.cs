@@ -15,6 +15,7 @@ namespace AncientChineseMythology
         public static Texture2D GlaciateWave;
         /// <summary>
         /// 大小64*64，一个光弹灰度图，黑底，通常用于复合一些光弹类型的特效或者视觉效果，或者复合叠加出一下圆形的光效，一般来讲，绘制时颜色的A值通道需要设置为0
+        /// 同时我不得不说，此纹理正面朝向于右侧，是一个‘--》’形状，如果要绘制注意旋转角
         /// </summary>
         public static Texture2D LightShot;
         /// <summary>

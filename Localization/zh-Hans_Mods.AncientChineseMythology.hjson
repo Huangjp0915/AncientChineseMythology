@@ -825,16 +825,20 @@ NPCs: {
 	AwakeningNetherTail.DisplayName: 觉醒-冥府尽头-幽冥龙
 	Spectre.DisplayName: 幽灵
 	SpectreMinion.DisplayName: 幽灵随从
-	// CelestialOverseer.DisplayName: Celestial Overseer
-	// CelestialEyeMinion.DisplayName: Celestial Eye Minion
-	// AncestralDragonSoulBody.DisplayName: Ancestral Dragon Soul Body
-	// AncestralDragonSoulHead.DisplayName: Ancestral Dragon Soul Head
-	// AncestralDragonSoulTail.DisplayName: Ancestral Dragon Soul Tail
-	// CelestialDragonsBody.DisplayName: Celestial Dragons Body
-	// CelestialDragonsHead.DisplayName: Celestial Dragons Head
-	// CelestialDragonsTail.DisplayName: Celestial Dragons Tail
-	// Vaisravana.DisplayName: Vaisravana
-	// YakshaMinion.DisplayName: Yaksha Minion
+	CelestialOverseer.DisplayName: 天庭观察者
+	CelestialEyeMinion.DisplayName: 天庭观察者仆从
+	AncestralDragonSoulBody.DisplayName: 祖龙残魂
+	AncestralDragonSoulHead.DisplayName: 祖龙残魂
+	AncestralDragonSoulTail.DisplayName: 祖龙残魂
+	CelestialDragonsBody.DisplayName: 天御金龙
+	CelestialDragonsHead.DisplayName: 天御金龙
+	CelestialDragonsTail.DisplayName: 天御金龙
+	Vaisravana.DisplayName: 多闻天王
+	YakshaMinion.DisplayName: 夜叉仆从
+	BronzedivineBird.DisplayName: 青铜神鸟
+	HeavenObserver.DisplayName: 天眼
+	OndPaladin.DisplayName: 仙剑
+	Xianglong.DisplayName: 祥龙
 }
 
 Projectiles: {

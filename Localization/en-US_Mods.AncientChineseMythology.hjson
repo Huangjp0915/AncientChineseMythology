@@ -786,6 +786,10 @@ NPCs: {
 	CelestialDragonsTail.DisplayName: Celestial Dragons Tail
 	Vaisravana.DisplayName: Vaisravana
 	YakshaMinion.DisplayName: Yaksha Minion
+	BronzedivineBird.DisplayName: Bronzedivine Bird
+	HeavenObserver.DisplayName: Heaven Observer
+	OndPaladin.DisplayName: Ond Paladin
+	Xianglong.DisplayName: Xianglong
 }
 
 Projectiles: {
