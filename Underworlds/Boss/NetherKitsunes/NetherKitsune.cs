@@ -1,10 +1,13 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Underworlds.Boss.AwakeningNethers.Items;
+using AncientChineseMythology.Underworlds.Boss.NetherKitsunes.Items;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.IO;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
+using Terraria.GameContent.ItemDropRules;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -163,6 +166,14 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             }
 
             Music = MusicLoader.GetMusicSlot("AncientChineseMythology/Sounds/Music/Underworld");
+        }
+
+        public override void BossLoot(ref int potionType) {
+            potionType = ItemID.SuperHealingPotion;
+        }
+
+        public override void ModifyNPCLoot(NPCLoot npcLoot) {
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<NetherKyuubiBook>()));
         }
 
         public override void OnSpawn(IEntitySource source) {

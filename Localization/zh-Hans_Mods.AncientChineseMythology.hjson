@@ -750,8 +750,8 @@ Items: {
 	}
 
 	Corpsefragments: {
-		// DisplayName: Corpsefragments
-		// Tooltip: ""
+		DisplayName: 尸块
+		Tooltip: ""
 	}
 }
 
