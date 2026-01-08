@@ -277,27 +277,27 @@ Items: {
 
 	BronzeAxe: {
 		DisplayName: 青铜斧
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	BronzePickaxe: {
 		DisplayName: 青铜镐
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	Pufferfish: {
 		DisplayName: 河豚鱼
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	Starflower: {
 		DisplayName: 星辰花
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	StarflowerSeeds: {
 		DisplayName: 星辰花种子
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	ShengZhuStatue: {
@@ -312,32 +312,32 @@ Items: {
 
 	IronArmorFlower: {
 		DisplayName: 铁甲花
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	IronArmorFlowerSeeds: {
 		DisplayName: 铁甲花种子
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	BlazingFlower: {
 		DisplayName: 怒焰花
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	BlazingFlowerSeeds: {
 		DisplayName: 怒焰花种子
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	BloodLingzhi: {
 		DisplayName: 血灵芝
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	BloodLingzhiSeeds: {
 		DisplayName: 血灵芝种子
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	MingCrowStaff: {
@@ -357,12 +357,12 @@ Items: {
 
 	BloodSeaSand: {
 		DisplayName: 血海砂
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	BloodSeaSandstone: {
-		// DisplayName: Blood Sea Sandstone
-		// Tooltip: ""
+		DisplayName: Blood Sea Sandstone
+		Tooltip: ""
 	}
 
 	SkyAltarItem: {
@@ -378,32 +378,32 @@ Items: {
 	CupriteHelmet: {
 		SetBonus: 受到近战伤害时有30%让对方被灼烧
 		DisplayName: 赤铜头盔
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	CupriteBreastplate: {
 		DisplayName: 赤铜甲
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	CupriteLeggings: {
 		DisplayName: 赤铜护胫
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	CelestialJadeBrick: {
 		DisplayName: 天阶玉砖
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	CloudyGoldSand: {
 		DisplayName: 云霞金沙
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	FloatingBasalt: {
 		DisplayName: 浮空玄石
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	ChengYingReins: {
@@ -422,17 +422,17 @@ Items: {
 
 	ShenxianGuanglunItem: {
 		DisplayName: 神仙光轮
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	CloudMountItem: {
 		DisplayName: 祥云
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	GanJiangSword: {
 		DisplayName: 干将剑
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	XuanTieBar: {
@@ -442,7 +442,7 @@ Items: {
 
 	XuanTieOre: {
 		DisplayName: 玄铁矿
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	XuanTieSword: {
@@ -461,37 +461,37 @@ Items: {
 
 	BoneSword: {
 		DisplayName: 骨刃
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	Bone: {
 		DisplayName: 骨片
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	LingShiOre: {
 		DisplayName: 灵石
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	ZhenfaBook: {
 		DisplayName: 阵法百科全书
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	ZhenfaPaper: {
 		DisplayName: 阵法纸
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	TaiguWeaponWorkshopItem: {
 		DisplayName: 太古武器工坊
-		// Tooltip: ""
+		Tooltip: ""
 	}
 
 	TestItem: {
-		// DisplayName: Test Item
-		// Tooltip: ""
+		DisplayName: Test Item
+		Tooltip: ""
 	}
 
 	RedwoodCoffin: {
@@ -753,6 +753,31 @@ Items: {
 		DisplayName: 尸块
 		Tooltip: ""
 	}
+
+	AbyssalDragonblade: {
+		DisplayName: 镇海龙渊
+		Tooltip: ""
+	}
+
+	JadeDragonChakram: {
+		DisplayName: 海潮龙环
+		Tooltip: ""
+	}
+
+	MaelstromBow: {
+		DisplayName: 狂澜之息
+		Tooltip: ""
+	}
+
+	TidecallersDecree: {
+		DisplayName: 唤潮御令
+		Tooltip: ""
+	}
+
+	TsunamiPiercer: {
+		DisplayName: 惊涛穿刺者
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -772,7 +797,7 @@ NPCs: {
 	}
 
 	Angry_gargoyle.DisplayName: 愤怒的石像鬼
-	// angry_gargoyle.DisplayName: angry_gargoyle
+	angry_gargoyle.DisplayName: angry_gargoyle
 	BlackBear.DisplayName: 黑熊金
 	TaiShangLaoJunNPC.DisplayName: 太上老君
 	BloodCrow.DisplayName: 血鸦
@@ -848,240 +873,252 @@ Projectiles: {
 	BlackBear_Proj2.DisplayName: 黑熊金
 	BlackBear_Proj3.DisplayName: 黑熊金
 	BlackBear_Proj4.DisplayName: 黑熊金
-	// GoldenStickSpearProjectile.DisplayName: Golden Stick Spear Projectile
-	// IronStickSpearProjectile.DisplayName: Iron Stick Spear Projectile
-	// WoodenStickSpearProjectile.DisplayName: Wooden Stick Spear Projectile
-	// GemStickSpearProjectile.DisplayName: Gem Stick Spear Projectile
+	GoldenStickSpearProjectile.DisplayName: Golden Stick Spear Projectile
+	IronStickSpearProjectile.DisplayName: Iron Stick Spear Projectile
+	WoodenStickSpearProjectile.DisplayName: Wooden Stick Spear Projectile
+	GemStickSpearProjectile.DisplayName: Gem Stick Spear Projectile
 	DragonCharmExplosion.DisplayName: 龙符咒
 	DragonCharmLaser.DisplayName: 龙符咒
-	// PigCharmLaser.DisplayName: Pig Charm Laser
-	// WoodenStickSpearProjectile_2.DisplayName: Wooden Stick Spear Projectile_2
-	// IronStickSpearProjectile_2.DisplayName: Iron Stick Spear Projectile_2
-	// IronStickSpearProjectile_3.DisplayName: Iron Stick Spear Projectile_3
-	// GoldenStickSpearProjectile_2.DisplayName: Golden Stick Spear Projectile_2
-	// GemStickSpearProjectile_2.DisplayName: Gem Stick Spear Projectile_2
+	PigCharmLaser.DisplayName: Pig Charm Laser
+	WoodenStickSpearProjectile_2.DisplayName: Wooden Stick Spear Projectile_2
+	IronStickSpearProjectile_2.DisplayName: Iron Stick Spear Projectile_2
+	IronStickSpearProjectile_3.DisplayName: Iron Stick Spear Projectile_3
+	GoldenStickSpearProjectile_2.DisplayName: Golden Stick Spear Projectile_2
+	GemStickSpearProjectile_2.DisplayName: Gem Stick Spear Projectile_2
 	BlackBearStaffProj1.DisplayName: 黑熊金
 	BlackBearStaffProj2.DisplayName: 黑熊金
-	// BlackBearSwordProj1.DisplayName: Black Bear Sword Proj1
+	BlackBearSwordProj1.DisplayName: Black Bear Sword Proj1
 	BlackBearBowProj1.DisplayName: 黑熊金
 	BlankProjectile.DisplayName: 黑熊金
-	// CrimsonbronzeSwordProj1.DisplayName: Crimsonbronze Sword Proj1
-	// CrimsonbronzeSwordProj2.DisplayName: Crimsonbronze Sword Proj2
+	CrimsonbronzeSwordProj1.DisplayName: Crimsonbronze Sword Proj1
+	CrimsonbronzeSwordProj2.DisplayName: Crimsonbronze Sword Proj2
 	Demon_Proj.DisplayName: 噩梦梦魇
-	// PufferfishProj1.DisplayName: Pufferfish Proj1
-	// MingCrowMinion.DisplayName: Ming Crow Minion
+	PufferfishProj1.DisplayName: Pufferfish Proj1
+	MingCrowMinion.DisplayName: Ming Crow Minion
 	TribulationLightning.DisplayName: 劫雷
-	// EvilIntentionProj2.DisplayName: Evil Intention Proj2
+	EvilIntentionProj2.DisplayName: Evil Intention Proj2
 	TribulationLightningBlack.DisplayName: 玄雷
 	TribulationLightningPurple.DisplayName: 紫霄雷
 	TribulationLightningRed.DisplayName: 赤雷
-	// ChengYingHitbox.DisplayName: Cheng Ying Hitbox
-	// YuChangSkillProjectile.DisplayName: Yu Chang Skill Projectile
-	// YuChangSwordBeanProjectile.DisplayName: Yu Chang Sword Bean Projectile
-	// YuChangSwordProjectile.DisplayName: Yu Chang Sword Projectile
-	// ShenxianGuanglunPet.DisplayName: Shenxian Guanglun Pet
-	// GanJiangSwordProj.DisplayName: Gan Jiang Sword Proj
-	// GanJiangSwordProj_2.DisplayName: Gan Jiang Sword Proj_2
-	// RuyiStickSpearProjectile.DisplayName: Ruyi Stick Spear Projectile
-	// RuyiStickSpearProjectile_2.DisplayName: Ruyi Stick Spear Projectile_2
-	// RuyiStickSpearProjectile_3.DisplayName: Ruyi Stick Spear Projectile_3
-	// BaGuaSigilProj.DisplayName: Ba Gua Sigil Proj
-	// DaShengStickProjectile.DisplayName: Da Sheng Stick Projectile
-	// FallingStarPierce.DisplayName: Falling Star Pierce
-	// Lightning.DisplayName: Lightning
-	// ThunderOrb.DisplayName: Thunder Orb
-	// LocustSet.DisplayName: Locust Set
-	// HanbaFireBall.DisplayName: Hanba Fire Ball
-	// HanbaLaser.DisplayName: Hanba Laser
-	// HanbaBigLaser.DisplayName: Hanba Big Laser
-	// Shockwave.DisplayName: Shockwave
-	// GhostFireProj.DisplayName: Ghost Fire Proj
-	// HoqingShadow.DisplayName: Hoqing Shadow
-	// OblivionFireOrb.DisplayName: Oblivion Fire Orb
-	// HoqingRingFire.DisplayName: Hoqing Ring Fire
-	// SaberHell.DisplayName: Saber Hell
-	// YingouFireBall.DisplayName: Yingou Fire Ball
-	// SaberKiller.DisplayName: Saber Killer
-	// JiangcenFireBall.DisplayName: Jiangcen Fire Ball
-	// HeuderHammer.DisplayName: Heuder Hammer
-	// HanbaBookProj.DisplayName: Hanba Book Proj
-	// HoqingFireSummonProj.DisplayName: Hoqing Fire Summon Proj
-	// JiangcenHammerProj.DisplayName: Jiangcen Hammer Proj
-	// SaberHellFriendly.DisplayName: Saber Hell Friendly
-	// CoffinNailProjectile.DisplayName: Coffin Nail Projectile
-	// ChainProj.DisplayName: Chain Proj
-	// DarkGreenBoomProj.DisplayName: Dark Green Boom Proj
-	// DarkGreenProj.DisplayName: Dark Green Proj
-	// EyeProj.DisplayName: Eye Proj
-	// Proj_756_Adjust.DisplayName: Proj_756_ Adjust
-	// SpoawnProj.DisplayName: Spoawn Proj
-	// NetherFlameProjectile.DisplayName: Nether Flame Projectile
-	// NetherLaserBeam.DisplayName: Nether Laser Beam
-	// NetherPortal.DisplayName: Nether Portal
-	// CorpsesBoneShower.DisplayName: Corpses Bone Shower
-	// CorpsesClapWave.DisplayName: Corpses Clap Wave
-	// CorpsesShadowOrb.DisplayName: Corpses Shadow Orb
-	// CorpsesesBoneArrow.DisplayName: Corpseses Bone Arrow
-	// CorpsesesBoneShard.DisplayName: Corpseses Bone Shard
-	// CorpsesesBookWave.DisplayName: Corpseses Book Wave
-	// CorpsesesGhostHand.DisplayName: Corpseses Ghost Hand
-	// CorpsesesLanceProj.DisplayName: Corpseses Lance Proj
-	// CorpsesesHandMinion.DisplayName: Corpseses Hand Minion
-	// NetherBreathProjectile.DisplayName: Nether Breath Projectile
-	// NetherOrbProjectile.DisplayName: Nether Orb Projectile
-	// NetherSlashProjectile.DisplayName: Nether Slash Projectile
-	// NetherDragonFlame.DisplayName: Nether Dragon Flame
-	// NetherSutomMinon.DisplayName: Nether Sutom Minon
-	// KyuubiBookTail.DisplayName: Kyuubi Book Tail
-	// KyuubiBookTailController.DisplayName: Kyuubi Book Tail Controller
-	// NetherBookTail.DisplayName: Nether Book Tail
-	// NetherBookTailController.DisplayName: Nether Book Tail Controller
-	// NetherSoulBolt.DisplayName: Nether Soul Bolt
-	// DakkiBookController.DisplayName: Dakki Book Controller
-	// DakkiBookTail.DisplayName: Dakki Book Tail
-	// DakkiCharmRing.DisplayName: Dakki Charm Ring
-	// DakkiFireBolt.DisplayName: Dakki Fire Bolt
-	// DakkiSoulBolt.DisplayName: Dakki Soul Bolt
-	// ChainProjectile.DisplayName: Chain Projectile
-	// ChainPullProjectile.DisplayName: Chain Pull Projectile
-	// ChainSweepProjectile.DisplayName: Chain Sweep Projectile
-	// GhostProjectile.DisplayName: Ghost Projectile
-	// GhostWaveProjectile.DisplayName: Ghost Wave Projectile
-	// SoulChainProjectile.DisplayName: Soul Chain Projectile
-	// SoulDrainProjectile.DisplayName: Soul Drain Projectile
-	// SpiritCircleProjectile.DisplayName: Spirit Circle Projectile
-	// DemonSoulCircle.DisplayName: Demon Soul Circle
-	// DemonSoulSeeker.DisplayName: Demon Soul Seeker
-	// FerrymanArrow.DisplayName: Ferryman Arrow
-	// FerrymanGhost.DisplayName: Ferryman Ghost
-	// DemonicBurstWave.DisplayName: Demonic Burst Wave
-	// DemonicChainBind.DisplayName: Demonic Chain Bind
-	// DemonicSlashWave.DisplayName: Demonic Slash Wave
-	// NetherworldSickleProjectile.DisplayName: Netherworld Sickle Projectile
-	// DemonicAnnihilationProj.DisplayName: Demonic Annihilation Proj
-	// AwakeningNetherBreath.DisplayName: Awakening Nether Breath
-	// AwakeningNetherRift.DisplayName: Awakening Nether Rift
-	// AwakeningNetherSoulOrb.DisplayName: Awakening Nether Soul Orb
-	// AwakeningNetherVoidBolt.DisplayName: Awakening Nether Void Bolt
-	// AbyssalRiftSlash.DisplayName: Abyssal Rift Slash
-	// AbyssalSpineSlash.DisplayName: Abyssal Spine Slash
-	// PhantomBreathArrow.DisplayName: Phantom Breath Arrow
-	// PhantomDevastation.DisplayName: Phantom Devastation
-	// PhantomSplitGhost.DisplayName: Phantom Split Ghost
-	// SoulErosionCircle.DisplayName: Soul Erosion Circle
-	// SpectreSoulChain.DisplayName: Spectre Soul Chain
-	// SpectreSoulOrb.DisplayName: Spectre Soul Orb
-	// SpectreWailingWave.DisplayName: Spectre Wailing Wave
-	// SpectreWraithBolt.DisplayName: Spectre Wraith Bolt
-	// SoulDevourerSpearProjectile.DisplayName: Soul Devourer Spear Projectile
-	// YamasGavelProjectile.DisplayName: Yamas Gavel Projectile
-	// SoulseekerDaggersProj.DisplayName: Soulseeker Daggers Proj
-	// CelestialEyeBeam.DisplayName: Celestial Eye Beam
-	// CelestialStar.DisplayName: Celestial Star
-	// DivineLightPillar.DisplayName: Divine Light Pillar
-	// HolyHaloRing.DisplayName: Holy Halo Ring
-	// HolyOrb.DisplayName: Holy Orb
-	// CrossLaserBeam.DisplayName: Cross Laser Beam
-	// DivineDeathRay.DisplayName: Divine Death Ray
-	// MinionSyncLaser.DisplayName: Minion Sync Laser
-	// OmegaCelestialLaser.DisplayName: Omega Celestial Laser
-	// SweepingLaserBolt.DisplayName: Sweeping Laser Bolt
-	// AllSeeingBeam.DisplayName: All Seeing Beam
-	// AllSeeingEyeProjectile.DisplayName: All Seeing Eye Projectile
-	// CelestialChakramProjectile.DisplayName: Celestial Chakram Projectile
-	// CelestialGearProjectile.DisplayName: Celestial Gear Projectile
-	// CelestialGearStorm.DisplayName: Celestial Gear Storm
-	// CelestialLightArrow.DisplayName: Celestial Light Arrow
-	// CelestialRainArrow.DisplayName: Celestial Rain Arrow
-	// CelestialWatcherPillar.DisplayName: Celestial Watcher Pillar
-	// ClockworkPhoenixSpearProjectile.DisplayName: Clockwork Phoenix Spear Projectile
-	// GoldenPhoenixMinion.DisplayName: Golden Phoenix Minion
-	// JadeDragonSlash.DisplayName: Jade Dragon Slash
-	// JadeDragonWave.DisplayName: Jade Dragon Wave
-	// PhoenixFlameWave.DisplayName: Phoenix Flame Wave
-	// PhoenixMinionFlame.DisplayName: Phoenix Minion Flame
-	// PhoenixSpark.DisplayName: Phoenix Spark
-	// AncestralDragonBeam.DisplayName: Ancestral Dragon Beam
-	// AncestralMistBolt.DisplayName: Ancestral Mist Bolt
-	// AncestralSoulFragment.DisplayName: Ancestral Soul Fragment
-	// HomingSoulOrb.DisplayName: Homing Soul Orb
-	// SpiralSoulFragment.DisplayName: Spiral Soul Fragment
-	// TailSweepWave.DisplayName: Tail Sweep Wave
-	// CelestialLightning.DisplayName: Celestial Lightning
-	// CelestialLightningWarning.DisplayName: Celestial Lightning Warning
-	// CelestialThunderOrb.DisplayName: Celestial Thunder Orb
-	// FallingSword.DisplayName: Falling Sword
-	// GoldenEnergy.DisplayName: Golden Energy
-	// GoldenSwordAura.DisplayName: Golden Sword Aura
-	// CelestialPathWarning.DisplayName: Celestial Path Warning
-	// ArchosaurBreathWave.DisplayName: Archosaur Breath Wave
-	// ArchosaurPhantom.DisplayName: Archosaur Phantom
-	// ArchosaurRainArrow.DisplayName: Archosaur Rain Arrow
-	// ArchosaurSoulArrow.DisplayName: Archosaur Soul Arrow
-	// ArchosaurSoulCircle.DisplayName: Archosaur Soul Circle
-	// ArchosaurSoulOrb.DisplayName: Archosaur Soul Orb
-	// ArchosaurSoulWave.DisplayName: Archosaur Soul Wave
-	// BossDragonAuthorityCircle.DisplayName: Boss Dragon Authority Circle
-	// DragonCircleWarning.DisplayName: Dragon Circle Warning
-	// ForkedCelestialLightning.DisplayName: Forked Celestial Lightning
-	// ForkedLightningWarning.DisplayName: Forked Lightning Warning
-	// CelestialEdictSeal.DisplayName: Celestial Edict Seal
-	// CelestialLightningBolt.DisplayName: Celestial Lightning Bolt
-	// DragonAuraSlash.DisplayName: Dragon Aura Slash
-	// DragonAuthorityCircle.DisplayName: Dragon Authority Circle
-	// DragonbreathArrow.DisplayName: Dragonbreath Arrow
-	// DragonbreathCloud.DisplayName: Dragonbreath Cloud
-	// DragonRoarWave.DisplayName: Dragon Roar Wave
-	// ReverseScaleWrath.DisplayName: Reverse Scale Wrath
-	// ScalebreakerCleaverProjectile.DisplayName: Scalebreaker Cleaver Projectile
-	// SkyrendDragonArrow.DisplayName: Skyrend Dragon Arrow
-	// ImmortalHaloRing.DisplayName: Immortal Halo Ring
-	// ImmortalWave.DisplayName: Immortal Wave
-	// QuadrantRay.DisplayName: Quadrant Ray
-	// SweepingLightBolt.DisplayName: Sweeping Light Bolt
-	// TowerBeam.DisplayName: Tower Beam
-	// TreasureTowerOrb.DisplayName: Treasure Tower Orb
-	// TreasureTowerRay.DisplayName: Treasure Tower Ray
-	// VaisravanaStar.DisplayName: Vaisravana Star
-	// DragonBreathBeam.DisplayName: Dragon Breath Beam
-	// DragonMinion.DisplayName: Dragon Minion
-	// DragonWaterBolt.DisplayName: Dragon Water Bolt
-	// GiantWhirlpool.DisplayName: Giant Whirlpool
-	// HomingWaterOrb.DisplayName: Homing Water Orb
-	// TidalBeam.DisplayName: Tidal Beam
-	// TidalWave.DisplayName: Tidal Wave
-	// TridentProjectile.DisplayName: Trident Projectile
-	// WaterVortex.DisplayName: Water Vortex
-	// AbyssalVortex.DisplayName: Abyssal Vortex
-	// BarrierWaterTornado.DisplayName: Barrier Water Tornado
-	// DragonBubble.DisplayName: Dragon Bubble
-	// DragonClawSlash.DisplayName: Dragon Claw Slash
-	// FallingWaterSpear.DisplayName: Falling Water Spear
-	// TsunamiWall.DisplayName: Tsunami Wall
-	// WaterSpike.DisplayName: Water Spike
+	ChengYingHitbox.DisplayName: Cheng Ying Hitbox
+	YuChangSkillProjectile.DisplayName: Yu Chang Skill Projectile
+	YuChangSwordBeanProjectile.DisplayName: Yu Chang Sword Bean Projectile
+	YuChangSwordProjectile.DisplayName: Yu Chang Sword Projectile
+	ShenxianGuanglunPet.DisplayName: Shenxian Guanglun Pet
+	GanJiangSwordProj.DisplayName: Gan Jiang Sword Proj
+	GanJiangSwordProj_2.DisplayName: Gan Jiang Sword Proj_2
+	RuyiStickSpearProjectile.DisplayName: Ruyi Stick Spear Projectile
+	RuyiStickSpearProjectile_2.DisplayName: Ruyi Stick Spear Projectile_2
+	RuyiStickSpearProjectile_3.DisplayName: Ruyi Stick Spear Projectile_3
+	BaGuaSigilProj.DisplayName: Ba Gua Sigil Proj
+	DaShengStickProjectile.DisplayName: Da Sheng Stick Projectile
+	FallingStarPierce.DisplayName: Falling Star Pierce
+	Lightning.DisplayName: Lightning
+	ThunderOrb.DisplayName: Thunder Orb
+	LocustSet.DisplayName: Locust Set
+	HanbaFireBall.DisplayName: Hanba Fire Ball
+	HanbaLaser.DisplayName: Hanba Laser
+	HanbaBigLaser.DisplayName: Hanba Big Laser
+	Shockwave.DisplayName: Shockwave
+	GhostFireProj.DisplayName: Ghost Fire Proj
+	HoqingShadow.DisplayName: Hoqing Shadow
+	OblivionFireOrb.DisplayName: Oblivion Fire Orb
+	HoqingRingFire.DisplayName: Hoqing Ring Fire
+	SaberHell.DisplayName: Saber Hell
+	YingouFireBall.DisplayName: Yingou Fire Ball
+	SaberKiller.DisplayName: Saber Killer
+	JiangcenFireBall.DisplayName: Jiangcen Fire Ball
+	HeuderHammer.DisplayName: Heuder Hammer
+	HanbaBookProj.DisplayName: Hanba Book Proj
+	HoqingFireSummonProj.DisplayName: Hoqing Fire Summon Proj
+	JiangcenHammerProj.DisplayName: Jiangcen Hammer Proj
+	SaberHellFriendly.DisplayName: Saber Hell Friendly
+	CoffinNailProjectile.DisplayName: Coffin Nail Projectile
+	ChainProj.DisplayName: Chain Proj
+	DarkGreenBoomProj.DisplayName: Dark Green Boom Proj
+	DarkGreenProj.DisplayName: Dark Green Proj
+	EyeProj.DisplayName: Eye Proj
+	Proj_756_Adjust.DisplayName: Proj_756_ Adjust
+	SpoawnProj.DisplayName: Spoawn Proj
+	NetherFlameProjectile.DisplayName: Nether Flame Projectile
+	NetherLaserBeam.DisplayName: Nether Laser Beam
+	NetherPortal.DisplayName: Nether Portal
+	CorpsesBoneShower.DisplayName: Corpses Bone Shower
+	CorpsesClapWave.DisplayName: Corpses Clap Wave
+	CorpsesShadowOrb.DisplayName: Corpses Shadow Orb
+	CorpsesesBoneArrow.DisplayName: Corpseses Bone Arrow
+	CorpsesesBoneShard.DisplayName: Corpseses Bone Shard
+	CorpsesesBookWave.DisplayName: Corpseses Book Wave
+	CorpsesesGhostHand.DisplayName: Corpseses Ghost Hand
+	CorpsesesLanceProj.DisplayName: Corpseses Lance Proj
+	CorpsesesHandMinion.DisplayName: Corpseses Hand Minion
+	NetherBreathProjectile.DisplayName: Nether Breath Projectile
+	NetherOrbProjectile.DisplayName: Nether Orb Projectile
+	NetherSlashProjectile.DisplayName: Nether Slash Projectile
+	NetherDragonFlame.DisplayName: Nether Dragon Flame
+	NetherSutomMinon.DisplayName: Nether Sutom Minon
+	KyuubiBookTail.DisplayName: Kyuubi Book Tail
+	KyuubiBookTailController.DisplayName: Kyuubi Book Tail Controller
+	NetherBookTail.DisplayName: Nether Book Tail
+	NetherBookTailController.DisplayName: Nether Book Tail Controller
+	NetherSoulBolt.DisplayName: Nether Soul Bolt
+	DakkiBookController.DisplayName: Dakki Book Controller
+	DakkiBookTail.DisplayName: Dakki Book Tail
+	DakkiCharmRing.DisplayName: Dakki Charm Ring
+	DakkiFireBolt.DisplayName: Dakki Fire Bolt
+	DakkiSoulBolt.DisplayName: Dakki Soul Bolt
+	ChainProjectile.DisplayName: Chain Projectile
+	ChainPullProjectile.DisplayName: Chain Pull Projectile
+	ChainSweepProjectile.DisplayName: Chain Sweep Projectile
+	GhostProjectile.DisplayName: Ghost Projectile
+	GhostWaveProjectile.DisplayName: Ghost Wave Projectile
+	SoulChainProjectile.DisplayName: Soul Chain Projectile
+	SoulDrainProjectile.DisplayName: Soul Drain Projectile
+	SpiritCircleProjectile.DisplayName: Spirit Circle Projectile
+	DemonSoulCircle.DisplayName: Demon Soul Circle
+	DemonSoulSeeker.DisplayName: Demon Soul Seeker
+	FerrymanArrow.DisplayName: Ferryman Arrow
+	FerrymanGhost.DisplayName: Ferryman Ghost
+	DemonicBurstWave.DisplayName: Demonic Burst Wave
+	DemonicChainBind.DisplayName: Demonic Chain Bind
+	DemonicSlashWave.DisplayName: Demonic Slash Wave
+	NetherworldSickleProjectile.DisplayName: Netherworld Sickle Projectile
+	DemonicAnnihilationProj.DisplayName: Demonic Annihilation Proj
+	AwakeningNetherBreath.DisplayName: Awakening Nether Breath
+	AwakeningNetherRift.DisplayName: Awakening Nether Rift
+	AwakeningNetherSoulOrb.DisplayName: Awakening Nether Soul Orb
+	AwakeningNetherVoidBolt.DisplayName: Awakening Nether Void Bolt
+	AbyssalRiftSlash.DisplayName: Abyssal Rift Slash
+	AbyssalSpineSlash.DisplayName: Abyssal Spine Slash
+	PhantomBreathArrow.DisplayName: Phantom Breath Arrow
+	PhantomDevastation.DisplayName: Phantom Devastation
+	PhantomSplitGhost.DisplayName: Phantom Split Ghost
+	SoulErosionCircle.DisplayName: Soul Erosion Circle
+	SpectreSoulChain.DisplayName: Spectre Soul Chain
+	SpectreSoulOrb.DisplayName: Spectre Soul Orb
+	SpectreWailingWave.DisplayName: Spectre Wailing Wave
+	SpectreWraithBolt.DisplayName: Spectre Wraith Bolt
+	SoulDevourerSpearProjectile.DisplayName: Soul Devourer Spear Projectile
+	YamasGavelProjectile.DisplayName: Yamas Gavel Projectile
+	SoulseekerDaggersProj.DisplayName: Soulseeker Daggers Proj
+	CelestialEyeBeam.DisplayName: Celestial Eye Beam
+	CelestialStar.DisplayName: Celestial Star
+	DivineLightPillar.DisplayName: Divine Light Pillar
+	HolyHaloRing.DisplayName: Holy Halo Ring
+	HolyOrb.DisplayName: Holy Orb
+	CrossLaserBeam.DisplayName: Cross Laser Beam
+	DivineDeathRay.DisplayName: Divine Death Ray
+	MinionSyncLaser.DisplayName: Minion Sync Laser
+	OmegaCelestialLaser.DisplayName: Omega Celestial Laser
+	SweepingLaserBolt.DisplayName: Sweeping Laser Bolt
+	AllSeeingBeam.DisplayName: All Seeing Beam
+	AllSeeingEyeProjectile.DisplayName: All Seeing Eye Projectile
+	CelestialChakramProjectile.DisplayName: Celestial Chakram Projectile
+	CelestialGearProjectile.DisplayName: Celestial Gear Projectile
+	CelestialGearStorm.DisplayName: Celestial Gear Storm
+	CelestialLightArrow.DisplayName: Celestial Light Arrow
+	CelestialRainArrow.DisplayName: Celestial Rain Arrow
+	CelestialWatcherPillar.DisplayName: Celestial Watcher Pillar
+	ClockworkPhoenixSpearProjectile.DisplayName: Clockwork Phoenix Spear Projectile
+	GoldenPhoenixMinion.DisplayName: Golden Phoenix Minion
+	JadeDragonSlash.DisplayName: Jade Dragon Slash
+	JadeDragonWave.DisplayName: Jade Dragon Wave
+	PhoenixFlameWave.DisplayName: Phoenix Flame Wave
+	PhoenixMinionFlame.DisplayName: Phoenix Minion Flame
+	PhoenixSpark.DisplayName: Phoenix Spark
+	AncestralDragonBeam.DisplayName: Ancestral Dragon Beam
+	AncestralMistBolt.DisplayName: Ancestral Mist Bolt
+	AncestralSoulFragment.DisplayName: Ancestral Soul Fragment
+	HomingSoulOrb.DisplayName: Homing Soul Orb
+	SpiralSoulFragment.DisplayName: Spiral Soul Fragment
+	TailSweepWave.DisplayName: Tail Sweep Wave
+	CelestialLightning.DisplayName: Celestial Lightning
+	CelestialLightningWarning.DisplayName: Celestial Lightning Warning
+	CelestialThunderOrb.DisplayName: Celestial Thunder Orb
+	FallingSword.DisplayName: Falling Sword
+	GoldenEnergy.DisplayName: Golden Energy
+	GoldenSwordAura.DisplayName: Golden Sword Aura
+	CelestialPathWarning.DisplayName: Celestial Path Warning
+	ArchosaurBreathWave.DisplayName: Archosaur Breath Wave
+	ArchosaurPhantom.DisplayName: Archosaur Phantom
+	ArchosaurRainArrow.DisplayName: Archosaur Rain Arrow
+	ArchosaurSoulArrow.DisplayName: Archosaur Soul Arrow
+	ArchosaurSoulCircle.DisplayName: Archosaur Soul Circle
+	ArchosaurSoulOrb.DisplayName: Archosaur Soul Orb
+	ArchosaurSoulWave.DisplayName: Archosaur Soul Wave
+	BossDragonAuthorityCircle.DisplayName: Boss Dragon Authority Circle
+	DragonCircleWarning.DisplayName: Dragon Circle Warning
+	ForkedCelestialLightning.DisplayName: Forked Celestial Lightning
+	ForkedLightningWarning.DisplayName: Forked Lightning Warning
+	CelestialEdictSeal.DisplayName: Celestial Edict Seal
+	CelestialLightningBolt.DisplayName: Celestial Lightning Bolt
+	DragonAuraSlash.DisplayName: Dragon Aura Slash
+	DragonAuthorityCircle.DisplayName: Dragon Authority Circle
+	DragonbreathArrow.DisplayName: Dragonbreath Arrow
+	DragonbreathCloud.DisplayName: Dragonbreath Cloud
+	DragonRoarWave.DisplayName: Dragon Roar Wave
+	ReverseScaleWrath.DisplayName: Reverse Scale Wrath
+	ScalebreakerCleaverProjectile.DisplayName: Scalebreaker Cleaver Projectile
+	SkyrendDragonArrow.DisplayName: Skyrend Dragon Arrow
+	ImmortalHaloRing.DisplayName: Immortal Halo Ring
+	ImmortalWave.DisplayName: Immortal Wave
+	QuadrantRay.DisplayName: Quadrant Ray
+	SweepingLightBolt.DisplayName: Sweeping Light Bolt
+	TowerBeam.DisplayName: Tower Beam
+	TreasureTowerOrb.DisplayName: Treasure Tower Orb
+	TreasureTowerRay.DisplayName: Treasure Tower Ray
+	VaisravanaStar.DisplayName: Vaisravana Star
+	DragonBreathBeam.DisplayName: Dragon Breath Beam
+	DragonMinion.DisplayName: Dragon Minion
+	DragonWaterBolt.DisplayName: Dragon Water Bolt
+	GiantWhirlpool.DisplayName: Giant Whirlpool
+	HomingWaterOrb.DisplayName: Homing Water Orb
+	TidalBeam.DisplayName: Tidal Beam
+	TidalWave.DisplayName: Tidal Wave
+	TridentProjectile.DisplayName: Trident Projectile
+	WaterVortex.DisplayName: Water Vortex
+	AbyssalVortex.DisplayName: Abyssal Vortex
+	BarrierWaterTornado.DisplayName: Barrier Water Tornado
+	DragonBubble.DisplayName: Dragon Bubble
+	DragonClawSlash.DisplayName: Dragon Claw Slash
+	FallingWaterSpear.DisplayName: Falling Water Spear
+	TsunamiWall.DisplayName: Tsunami Wall
+	WaterSpike.DisplayName: Water Spike
+	AbyssalDragonbladeSlash.DisplayName: Abyssal Dragonblade Slash
+	ChakramWaterBurst.DisplayName: Chakram Water Burst
+	DragonSoaringThrust.DisplayName: Dragon Soaring Thrust
+	DragonTidalSlash.DisplayName: Dragon Tidal Slash
+	DragonWaterArrow.DisplayName: Dragon Water Arrow
+	JadeDragonChakramProjectile.DisplayName: Jade Dragon Chakram Projectile
+	MiniWaterTornado.DisplayName: Mini Water Tornado
+	SummonedWaterTornado.DisplayName: Summoned Water Tornado
+	TidalDragonSpirit.DisplayName: Tidal Dragon Spirit
+	TornadoArrow.DisplayName: Tornado Arrow
+	TsunamiPiercerThrust.DisplayName: Tsunami Piercer Thrust
+	TsunamiWaveThrust.DisplayName: Tsunami Wave Thrust
 }
 
-// HeavenBiome.DisplayName: Heaven
+HeavenBiome.DisplayName: Heaven
 
 Biomes: {
 	HeavenBiome: {
 		TownNPCDialogueName: 天庭
-		// DisplayName: Heaven Biome
+		DisplayName: Heaven Biome
 	}
 
 	TestBiome: {
-		// DisplayName: Test Biome
-		// TownNPCDialogueName: the Test Biome
+		DisplayName: Test Biome
+		TownNPCDialogueName: the Test Biome
 	}
 
 	BloodSeaBiome: {
 		DisplayName: 血海
-		// TownNPCDialogueName: the Blood Sea Biome
+		TownNPCDialogueName: the Blood Sea Biome
 	}
 
 	UnderworldBiome: {
-		// DisplayName: Underworld Biome
-		// TownNPCDialogueName: the Underworld Biome
+		DisplayName: Underworld Biome
+		TownNPCDialogueName: the Underworld Biome
 	}
 }
 
@@ -1093,15 +1130,15 @@ Tiles: {
 	StarflowerHerbTile.MapEntry: 星辰花
 	IronArmorFlowerHerbTile.MapEntry: 铁甲花
 	SkyAltarTile.MapEntry: 天庭祭坛
-	// CloudyGoldGrass.MapEntry: Cloudy Gold Grass
+	CloudyGoldGrass.MapEntry: Cloudy Gold Grass
 	CelestialJadeBrick.MapEntry: 天阶玉砖
-	// CloudyGoldSand.MapEntry: Cloudy Gold Sand
-	// FloatingBasalt.MapEntry: Floating Basalt
+	CloudyGoldSand.MapEntry: Cloudy Gold Sand
+	FloatingBasalt.MapEntry: Floating Basalt
 	XuanTieOreTile.MapEntry: 玄铁
 	LingShiOreTile.MapEntry: 灵石
 	TaiguWeaponWorkshop.MapEntry: 太古武器工坊
-	// NetherBarTile.MapEntry: Nether Bar Tile
-	// NetherOreTile.MapEntry: Nether Ore Tile
+	NetherBarTile.MapEntry: Nether Bar Tile
+	NetherOreTile.MapEntry: Nether Ore Tile
 }
 
 Buffs: {
@@ -1201,43 +1238,43 @@ Buffs: {
 	}
 
 	XuanTieBleed: {
-		// DisplayName: Xuan Tie Bleed
-		// Description: Mods.AncientChineseMythology.Buffs.XuanTieBleed.Description
+		DisplayName: Xuan Tie Bleed
+		Description: Mods.AncientChineseMythology.Buffs.XuanTieBleed.Description
 	}
 
 	BaGuaBuff: {
 		DisplayName: 八卦阵
-		// Description: Mods.AncientChineseMythology.Buffs.BaGuaBuff.Description
+		Description: Mods.AncientChineseMythology.Buffs.BaGuaBuff.Description
 	}
 
 	ChainProj_Buff_1: {
-		// DisplayName: Chain Proj_ Buff_1
-		// Description: Mods.AncientChineseMythology.Buffs.ChainProj_Buff_1.Description
+		DisplayName: Chain Proj_ Buff_1
+		Description: Mods.AncientChineseMythology.Buffs.ChainProj_Buff_1.Description
 	}
 
 	DeclineSpeedBuff_1: {
-		// DisplayName: Decline Speed Buff_1
-		// Description: Mods.AncientChineseMythology.Buffs.DeclineSpeedBuff_1.Description
+		DisplayName: Decline Speed Buff_1
+		Description: Mods.AncientChineseMythology.Buffs.DeclineSpeedBuff_1.Description
 	}
 
 	DeclineSpeedBuff_2: {
-		// DisplayName: Decline Speed Buff_2
-		// Description: Mods.AncientChineseMythology.Buffs.DeclineSpeedBuff_2.Description
+		DisplayName: Decline Speed Buff_2
+		Description: Mods.AncientChineseMythology.Buffs.DeclineSpeedBuff_2.Description
 	}
 
 	EyeProj_Buff_1: {
-		// DisplayName: Eye Proj_ Buff_1
-		// Description: Mods.AncientChineseMythology.Buffs.EyeProj_Buff_1.Description
+		DisplayName: Eye Proj_ Buff_1
+		Description: Mods.AncientChineseMythology.Buffs.EyeProj_Buff_1.Description
 	}
 
 	CorpsesesHandMinionBuff: {
-		// DisplayName: Corpseses Hand Minion Buff
-		// Description: Mods.AncientChineseMythology.Buffs.CorpsesesHandMinionBuff.Description
+		DisplayName: Corpseses Hand Minion Buff
+		Description: Mods.AncientChineseMythology.Buffs.CorpsesesHandMinionBuff.Description
 	}
 
 	NetherSutomBuff: {
-		// DisplayName: Nether Sutom Buff
-		// Description: Mods.AncientChineseMythology.Buffs.NetherSutomBuff.Description
+		DisplayName: Nether Sutom Buff
+		Description: Mods.AncientChineseMythology.Buffs.NetherSutomBuff.Description
 	}
 
 	GoldenPhoenixBuff: {

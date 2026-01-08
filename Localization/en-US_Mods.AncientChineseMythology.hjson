@@ -704,6 +704,31 @@ Items: {
 		DisplayName: Corpsefragments
 		Tooltip: ""
 	}
+
+	AbyssalDragonblade: {
+		DisplayName: Abyssal Dragonblade
+		Tooltip: ""
+	}
+
+	JadeDragonChakram: {
+		DisplayName: Jade Dragon Chakram
+		Tooltip: ""
+	}
+
+	MaelstromBow: {
+		DisplayName: Maelstrom Bow
+		Tooltip: ""
+	}
+
+	TidecallersDecree: {
+		DisplayName: Tidecallers Decree
+		Tooltip: ""
+	}
+
+	TsunamiPiercer: {
+		DisplayName: Tsunami Piercer
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -1010,6 +1035,18 @@ Projectiles: {
 	FallingWaterSpear.DisplayName: Falling Water Spear
 	TsunamiWall.DisplayName: Tsunami Wall
 	WaterSpike.DisplayName: Water Spike
+	AbyssalDragonbladeSlash.DisplayName: Abyssal Dragonblade Slash
+	ChakramWaterBurst.DisplayName: Chakram Water Burst
+	DragonSoaringThrust.DisplayName: Dragon Soaring Thrust
+	DragonTidalSlash.DisplayName: Dragon Tidal Slash
+	DragonWaterArrow.DisplayName: Dragon Water Arrow
+	JadeDragonChakramProjectile.DisplayName: Jade Dragon Chakram Projectile
+	MiniWaterTornado.DisplayName: Mini Water Tornado
+	SummonedWaterTornado.DisplayName: Summoned Water Tornado
+	TidalDragonSpirit.DisplayName: Tidal Dragon Spirit
+	TornadoArrow.DisplayName: Tornado Arrow
+	TsunamiPiercerThrust.DisplayName: Tsunami Piercer Thrust
+	TsunamiWaveThrust.DisplayName: Tsunami Wave Thrust
 }
 
 HeavenBiome.DisplayName: Heaven
