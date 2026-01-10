@@ -861,11 +861,15 @@ NPCs: {
 	CelestialDragonsTail.DisplayName: Celestial Dragons Tail
 	Vaisravana.DisplayName: Vaisravana
 	YakshaMinion.DisplayName: Yaksha Minion
+	Yaksha.DisplayName: Yaksha
 	BronzedivineBird.DisplayName: Bronzedivine Bird
 	HeavenObserver.DisplayName: Heaven Observer
 	OndPaladin.DisplayName: Ond Paladin
 	Xianglong.DisplayName: Xianglong
 	AoGuang.DisplayName: Ao Guang
+	SoulHarvester.DisplayName: Soul Harvester
+	ThebonesinTheTomb.DisplayName: Thebonesin The Tomb
+	TheDeceasedPerson.DisplayName: The Deceased Person
 }
 
 Projectiles: {
@@ -1108,6 +1112,10 @@ Projectiles: {
 	OverseerOrb.DisplayName: Overseer Orb
 	RuneCircle.DisplayName: Rune Circle
 	ThunderclapBlast.DisplayName: Thunderclap Blast
+	BoneSpike.DisplayName: Bone Spike
+	GhostOrbProjectile.DisplayName: Ghost Orb Projectile
+	SoulSickle.DisplayName: Soul Sickle
+	YakshaFireball.DisplayName: Yaksha Fireball
 }
 
 HeavenBiome.DisplayName: Heaven
