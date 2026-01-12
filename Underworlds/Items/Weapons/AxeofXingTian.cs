@@ -1,4 +1,5 @@
-﻿using Terraria;
+﻿using AncientChineseMythology.Underworlds.Tiles;
+using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -49,6 +50,10 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons
             if (healthRatio < 0.5f) {
                 damage += 0.3f * (1f - healthRatio * 2f);
             }
+        }
+
+        public override void AddRecipes() {
+            CreateRecipe().AddIngredient<SoulFragment>(6).AddIngredient<UmbralStoneItem>(22).AddTile(TileID.Anvils).Register();
         }
     }
 }

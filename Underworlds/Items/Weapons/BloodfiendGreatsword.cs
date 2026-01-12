@@ -1,4 +1,5 @@
-﻿using Terraria;
+﻿using AncientChineseMythology.Underworlds.Tiles;
+using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -45,6 +46,10 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons
                 Dust.NewDust(new Microsoft.Xna.Framework.Vector2(hitbox.X, hitbox.Y), hitbox.Width, hitbox.Height,
                     DustID.Blood, player.velocity.X * 0.2f, player.velocity.Y * 0.2f, 150, default, 1.4f);
             }
+        }
+
+        public override void AddRecipes() {
+            CreateRecipe().AddIngredient<SoulFragment>(6).AddIngredient<UmbralStoneItem>(25).AddTile(TileID.Anvils).Register();
         }
     }
 }

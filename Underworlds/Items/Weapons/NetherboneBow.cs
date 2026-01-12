@@ -1,4 +1,5 @@
-﻿using Terraria;
+﻿using AncientChineseMythology.Underworlds.Tiles;
+using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -46,6 +47,10 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons
                 Projectile.NewProjectile(source, position, perturbedSpeed, type, damage, knockback, player.whoAmI);
             }
             return true;
+        }
+
+        public override void AddRecipes() {
+            CreateRecipe().AddIngredient<SoulFragment>(6).AddIngredient<UmbralStoneItem>(22).AddTile(TileID.Anvils).Register();
         }
     }
 }

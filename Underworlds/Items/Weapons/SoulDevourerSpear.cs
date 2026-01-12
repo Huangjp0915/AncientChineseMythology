@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Underworlds.Tiles;
+using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -37,6 +38,10 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons
         public override bool CanUseItem(Player player) {
             //确保同时只有一个枪存在
             return player.ownedProjectileCounts[ModContent.ProjectileType<SoulDevourerSpearProjectile>()] < 1;
+        }
+
+        public override void AddRecipes() {
+            CreateRecipe().AddIngredient<SoulFragment>(6).AddIngredient<UmbralStoneItem>(22).AddTile(TileID.Anvils).Register();
         }
     }
 

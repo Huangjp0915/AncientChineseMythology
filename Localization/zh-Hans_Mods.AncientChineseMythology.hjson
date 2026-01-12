@@ -828,6 +828,11 @@ Items: {
 		DisplayName: 天界碎片
 		Tooltip: ""
 	}
+
+	SoulFragment: {
+		DisplayName: 残魂
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -910,11 +915,15 @@ NPCs: {
 	CelestialDragonsTail.DisplayName: 天御金龙
 	Vaisravana.DisplayName: 多闻天王
 	YakshaMinion.DisplayName: 夜叉仆从
+	// Yaksha.DisplayName: Yaksha
 	BronzedivineBird.DisplayName: 青铜神鸟
 	HeavenObserver.DisplayName: 天眼
 	OndPaladin.DisplayName: 仙剑
 	Xianglong.DisplayName: 祥龙
 	AoGuang.DisplayName: 敖广
+	// SoulHarvester.DisplayName: Soul Harvester
+	// ThebonesinTheTomb.DisplayName: Thebonesin The Tomb
+	// TheDeceasedPerson.DisplayName: The Deceased Person
 }
 
 Projectiles: {
@@ -1157,6 +1166,10 @@ Projectiles: {
 	OverseerOrb.DisplayName: 监视者法球
 	RuneCircle.DisplayName: 符文环
 	ThunderclapBlast.DisplayName: 霹雳爆破
+	// BoneSpike.DisplayName: Bone Spike
+	// GhostOrbProjectile.DisplayName: Ghost Orb Projectile
+	// SoulSickle.DisplayName: Soul Sickle
+	// YakshaFireball.DisplayName: Yaksha Fireball
 }
 
 HeavenBiome.DisplayName: Heaven
