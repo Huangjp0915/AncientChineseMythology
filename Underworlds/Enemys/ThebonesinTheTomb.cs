@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Underworlds.Items;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -294,6 +295,7 @@ namespace AncientChineseMythology.Underworlds.Enemys
         public override void ModifyNPCLoot(NPCLoot npcLoot) {
             npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<AncientChineseMythology.Items.Materials.Bone>(), 1, 3, 8));
             npcLoot.Add(ItemDropRule.Common(ItemID.Bone, 2, 5, 12));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<SoulFragment>(), 2));
         }
 
         public override float SpawnChance(NPCSpawnInfo spawnInfo) {

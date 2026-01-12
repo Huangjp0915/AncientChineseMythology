@@ -1,4 +1,6 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Celestias.PillarofTheHeavenes.Items;
+using AncientChineseMythology.Underworlds.Items;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -326,6 +328,7 @@ namespace AncientChineseMythology.Underworlds.Enemys
             npcLoot.Add(ItemDropRule.Common(ItemID.SoulofNight, 3, 2, 4));
             npcLoot.Add(ItemDropRule.Common(ItemID.DeathSickle, 50));
             npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<AncientChineseMythology.Items.Materials.DiHuo>(), 4, 1, 3));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<SoulFragment>(), 2));
         }
 
         public override float SpawnChance(NPCSpawnInfo spawnInfo) {

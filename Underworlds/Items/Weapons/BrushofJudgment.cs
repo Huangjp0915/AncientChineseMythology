@@ -1,4 +1,5 @@
-﻿using Terraria;
+﻿using AncientChineseMythology.Underworlds.Tiles;
+using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -45,6 +46,10 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons
         public override void ModifyShootStats(Player player, ref Vector2 position, ref Vector2 velocity, ref int type, ref int damage, ref float knockback) {
             //从笔尖位置发射
             position = player.Center + velocity.SafeNormalize(Vector2.Zero) * 20f;
+        }
+
+        public override void AddRecipes() {
+            CreateRecipe().AddIngredient<SoulFragment>(6).AddIngredient<UmbralStoneItem>(25).AddTile(TileID.Anvils).Register();
         }
     }
 }
