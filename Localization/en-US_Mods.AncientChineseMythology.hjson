@@ -779,6 +779,11 @@ Items: {
 		DisplayName: Heaven Fragment
 		Tooltip: ""
 	}
+
+	SoulFragment: {
+		DisplayName: Soul Fragment
+		Tooltip: ""
+	}
 }
 
 NPCs: {

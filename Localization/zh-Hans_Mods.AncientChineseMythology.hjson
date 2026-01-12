@@ -828,6 +828,11 @@ Items: {
 		DisplayName: 天界碎片
 		Tooltip: ""
 	}
+
+	SoulFragment: {
+		DisplayName: 残魂
+		Tooltip: ""
+	}
 }
 
 NPCs: {
