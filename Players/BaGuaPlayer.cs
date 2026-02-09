@@ -1049,7 +1049,7 @@ namespace AncientChineseMythology.Players
                     //多人联机同步
                     if (Main.netMode == NetmodeID.Server) {
                         ModPacket p = Mod.GetPacket();
-                        p.Write((byte)MessageType.SyncBaGuaSlot);
+                        p.Write((byte)ACMMessageType.SyncBaGuaSlot);
                         p.Write((byte)Player.whoAmI);
                         p.Write((byte)i);
                         ItemIO.Send(BaGuaItems[i], p, true);

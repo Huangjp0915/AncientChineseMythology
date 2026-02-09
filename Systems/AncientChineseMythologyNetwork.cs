@@ -4,7 +4,7 @@ namespace AncientChineseMythology.Systems
 {
     public class AncientChineseMythologyNetwork : ModSystem
     {
-        internal enum MessageType : byte
+        internal enum ACMMessageType : byte
         {
             SkyKeyUnlock,
             SyncBaGuaSlot

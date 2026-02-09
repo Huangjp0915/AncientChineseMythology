@@ -1,5 +1,4 @@
-﻿using AncientChineseMythology.Celestias.PillarofTheHeavenes.Items;
-using AncientChineseMythology.Underworlds.Items;
+﻿using AncientChineseMythology.Underworlds.Items;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;

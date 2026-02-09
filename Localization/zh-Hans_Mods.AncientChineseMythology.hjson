@@ -924,6 +924,9 @@ NPCs: {
 	// SoulHarvester.DisplayName: Soul Harvester
 	// ThebonesinTheTomb.DisplayName: Thebonesin The Tomb
 	// TheDeceasedPerson.DisplayName: The Deceased Person
+	// AzureDragonBody.DisplayName: Azure Dragon Body
+	// AzureDragonHead.DisplayName: Azure Dragon Head
+	// AzureDragonTail.DisplayName: Azure Dragon Tail
 }
 
 Projectiles: {
