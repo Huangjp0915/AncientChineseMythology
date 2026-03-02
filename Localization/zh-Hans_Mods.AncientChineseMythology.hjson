@@ -855,7 +855,7 @@ Items: {
 
     KarmasMirrorBlade: {
         DisplayName: 孽镜回旋刃
-        Tooltip: 
+        Tooltip:
             '''
             如同孽镜台般映照罪孽，去而复返
             你的敌人将在镜中看到自己最深重的罪
@@ -864,7 +864,7 @@ Items: {
 
     NetherfireBlunderbuss: {
         DisplayName: 冥府幽火铳
-        Tooltip: 
+        Tooltip:
             '''
             发射冥府幽火，不仅灼烧肉体，更焚烧灵魂
             '''
