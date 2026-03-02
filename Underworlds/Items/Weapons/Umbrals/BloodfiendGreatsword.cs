@@ -3,7 +3,7 @@ using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Underworlds.Items.Weapons
+namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
 {
     /// <summary>
     /// 血魔巨剑 - 地府血魔锻造的巨剑，近战大剑类武器
@@ -43,7 +43,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons
         public override void MeleeEffects(Player player, Rectangle hitbox) {
             //挥舞时产生血红色粒子
             if (Main.rand.NextBool(2)) {
-                Dust.NewDust(new Microsoft.Xna.Framework.Vector2(hitbox.X, hitbox.Y), hitbox.Width, hitbox.Height,
+                Dust.NewDust(new Vector2(hitbox.X, hitbox.Y), hitbox.Width, hitbox.Height,
                     DustID.Blood, player.velocity.X * 0.2f, player.velocity.Y * 0.2f, 150, default, 1.4f);
             }
         }

@@ -833,6 +833,79 @@ Items: {
 		DisplayName: 残魂
 		Tooltip: ""
 	}
+
+	CodexofFate: {
+        DisplayName: 生死冥罗录
+        Tooltip: 
+            '''
+            记载众生死期与因果的冥府秘典
+            翻开它，你将看到他们的结局
+            （也许还有你的。）
+            '''
+    }
+
+    JudgesSoulhook: {
+        DisplayName: 判官勾魂枪
+        Tooltip: 
+            '''
+            判官裁决，勾魂摄魄
+            击中敌人时有几率赋予“灵魂剥离”效果
+            '''
+    }
+
+    KarmasMirrorBlade: {
+        DisplayName: 孽镜回旋刃
+        Tooltip: 
+            '''
+            如同孽镜台般映照罪孽，去而复返
+            你的敌人将在镜中看到自己最深重的罪
+            '''
+    }
+
+    NetherfireBlunderbuss: {
+        DisplayName: 冥府幽火铳
+        Tooltip: 
+            '''
+            发射冥府幽火，不仅灼烧肉体，更焚烧灵魂
+            '''
+    }
+
+    NetherRockSoulbomb: {
+        DisplayName: 冥岩爆魂雷 
+        Tooltip: 
+            '''
+            由冥岩制成，能引爆灵魂的雷弹
+            爆炸后留下持续燃烧的幽火场
+            '''
+    }
+
+    StaveofNetherflow: {
+        DisplayName: 黄泉幽冥杖
+        Tooltip: 
+            '''
+            凝聚黄泉幽冥之力的法杖。
+            召唤一个能够吸取敌人生命的幽冥旋涡
+            '''
+    }
+
+    UnderworldSoulguide: {
+        DisplayName: 黄泉引魂弓
+        Tooltip: 
+            '''
+            引渡灵魂前往黄泉的弓
+            箭矢会追踪附近的灵魂
+            '''
+    }
+
+    YamasSeverance: {
+        DisplayName: 阎摩断业刀
+        Tooltip: 
+            '''
+            阎王用以裁断众生业报的巨刀
+            它不需要刀鞘，因为业报从不休息
+            右键使用可释放一击必杀（仅对非Boss怪有效）
+            '''
+    }
 }
 
 NPCs: {
@@ -915,18 +988,18 @@ NPCs: {
 	CelestialDragonsTail.DisplayName: 天御金龙
 	Vaisravana.DisplayName: 多闻天王
 	YakshaMinion.DisplayName: 夜叉仆从
-	// Yaksha.DisplayName: Yaksha
+	Yaksha.DisplayName: Yaksha
 	BronzedivineBird.DisplayName: 青铜神鸟
 	HeavenObserver.DisplayName: 天眼
 	OndPaladin.DisplayName: 仙剑
 	Xianglong.DisplayName: 祥龙
 	AoGuang.DisplayName: 敖广
-	// SoulHarvester.DisplayName: Soul Harvester
-	// ThebonesinTheTomb.DisplayName: Thebonesin The Tomb
-	// TheDeceasedPerson.DisplayName: The Deceased Person
-	// AzureDragonBody.DisplayName: Azure Dragon Body
-	// AzureDragonHead.DisplayName: Azure Dragon Head
-	// AzureDragonTail.DisplayName: Azure Dragon Tail
+	SoulHarvester.DisplayName: Soul Harvester
+	ThebonesinTheTomb.DisplayName: Thebonesin The Tomb
+	TheDeceasedPerson.DisplayName: The Deceased Person
+	AzureDragonBody.DisplayName: Azure Dragon Body
+	AzureDragonHead.DisplayName: Azure Dragon Head
+	AzureDragonTail.DisplayName: Azure Dragon Tail
 }
 
 Projectiles: {
@@ -1169,10 +1242,18 @@ Projectiles: {
 	OverseerOrb.DisplayName: 监视者法球
 	RuneCircle.DisplayName: 符文环
 	ThunderclapBlast.DisplayName: 霹雳爆破
-	// BoneSpike.DisplayName: Bone Spike
-	// GhostOrbProjectile.DisplayName: Ghost Orb Projectile
-	// SoulSickle.DisplayName: Soul Sickle
-	// YakshaFireball.DisplayName: Yaksha Fireball
+	BoneSpike.DisplayName: Bone Spike
+	GhostOrbProjectile.DisplayName: Ghost Orb Projectile
+	SoulSickle.DisplayName: Soul Sickle
+	YakshaFireball.DisplayName: Yaksha Fireball
+	FateRuneProjectile.DisplayName: Fate Rune Projectile
+	JudgesSoulhookProjectile.DisplayName: Judges Soulhook Projectile
+	KarmasMirrorBladeProj.DisplayName: Karmas Mirror Blade Proj
+	NetherfireBullet.DisplayName: Netherfire Bullet
+	NetherflowOrb.DisplayName: Netherflow Orb
+	NetherRockSoulbombProj.DisplayName: Nether Rock Soulbomb Proj
+	SoulguideArrow.DisplayName: Soulguide Arrow
+	YamasSeveranceSlash.DisplayName: Yamas Severance Slash
 }
 
 HeavenBiome.DisplayName: Heaven

@@ -4,7 +4,7 @@ using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Underworlds.Items.Weapons
+namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
 {
     /// <summary>
     /// 冥骨弓 - 由地府亡灵骨骼制成的弓，远程弓类武器

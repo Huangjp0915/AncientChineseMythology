@@ -3,7 +3,7 @@ using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Underworlds.Items.Weapons
+namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
 {
     /// <summary>
     /// 刑天之斧 - 无头战神刑天的战斧，近战斧类武器
@@ -39,7 +39,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons
         public override void MeleeEffects(Player player, Rectangle hitbox) {
             //挥舞时产生血红色粒子
             if (Main.rand.NextBool(2)) {
-                Dust.NewDust(new Microsoft.Xna.Framework.Vector2(hitbox.X, hitbox.Y), hitbox.Width, hitbox.Height,
+                Dust.NewDust(new Vector2(hitbox.X, hitbox.Y), hitbox.Width, hitbox.Height,
                     DustID.Blood, player.velocity.X * 0.3f, player.velocity.Y * 0.3f, 100, default, 1.2f);
             }
         }

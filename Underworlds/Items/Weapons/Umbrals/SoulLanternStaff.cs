@@ -4,7 +4,7 @@ using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Underworlds.Items.Weapons
+namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
 {
     /// <summary>
     /// 魂灯杖 - 引导亡魂的灯笼法杖，召唤武器

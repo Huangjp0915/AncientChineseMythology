@@ -2,7 +2,6 @@ using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.ID;
-using Terraria.ModLoader;
 
 namespace AncientChineseMythology.NPCs.Boss.AzureDragons
 {
@@ -288,7 +287,8 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                         chargeCount++;
                         if (chargeCount >= maxCharges) {
                             TransitionTo(AIState.Phase1_Orbit);
-                        } else {
+                        }
+                        else {
                             SubState = 1;
                             AttackTimer = 0;
                         }
@@ -573,7 +573,8 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                         chargeCount++;
                         if (chargeCount >= maxCharges) {
                             TransitionTo(AIState.Phase2_StormChase);
-                        } else {
+                        }
+                        else {
                             SubState = 1;
                             AttackTimer = 0;
                         }

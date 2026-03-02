@@ -7,7 +7,7 @@ using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Underworlds.Items.Weapons
+namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
 {
     /// <summary>
     /// 阎罗锤 - 地府阎王的审判之锤，可投掷并飞回的回旋锤
@@ -71,7 +71,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons
     /// </summary>
     public class YamasGavelProjectile : ModProjectile
     {
-        public override string Texture => "AncientChineseMythology/Underworlds/Items/Weapons/YamasGavel";
+        public override string Texture => "AncientChineseMythology/Underworlds/Items/Weapons/Umbrals/YamasGavel";
 
         //AI状态
         private enum GavelState { Flying, Returning }

@@ -784,6 +784,46 @@ Items: {
 		DisplayName: Soul Fragment
 		Tooltip: ""
 	}
+
+	CodexofFate: {
+		DisplayName: Codexof Fate
+		Tooltip: ""
+	}
+
+	JudgesSoulhook: {
+		DisplayName: Judges Soulhook
+		Tooltip: ""
+	}
+
+	KarmasMirrorBlade: {
+		DisplayName: Karmas Mirror Blade
+		Tooltip: ""
+	}
+
+	NetherfireBlunderbuss: {
+		DisplayName: Netherfire Blunderbuss
+		Tooltip: ""
+	}
+
+	NetherRockSoulbomb: {
+		DisplayName: Nether Rock Soulbomb
+		Tooltip: ""
+	}
+
+	StaveofNetherflow: {
+		DisplayName: Staveof Netherflow
+		Tooltip: ""
+	}
+
+	UnderworldSoulguide: {
+		DisplayName: Underworld Soulguide
+		Tooltip: ""
+	}
+
+	YamasSeverance: {
+		DisplayName: Yamas Severance
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -1124,6 +1164,14 @@ Projectiles: {
 	GhostOrbProjectile.DisplayName: Ghost Orb Projectile
 	SoulSickle.DisplayName: Soul Sickle
 	YakshaFireball.DisplayName: Yaksha Fireball
+	FateRuneProjectile.DisplayName: Fate Rune Projectile
+	JudgesSoulhookProjectile.DisplayName: Judges Soulhook Projectile
+	KarmasMirrorBladeProj.DisplayName: Karmas Mirror Blade Proj
+	NetherfireBullet.DisplayName: Netherfire Bullet
+	NetherflowOrb.DisplayName: Netherflow Orb
+	NetherRockSoulbombProj.DisplayName: Nether Rock Soulbomb Proj
+	SoulguideArrow.DisplayName: Soulguide Arrow
+	YamasSeveranceSlash.DisplayName: Yamas Severance Slash
 }
 
 HeavenBiome.DisplayName: Heaven

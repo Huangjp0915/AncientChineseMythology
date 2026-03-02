@@ -7,7 +7,7 @@ using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace AncientChineseMythology.Underworlds.Items.Weapons
+namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
 {
     /// <summary>
     /// 噬魂枪 - 吞噬亡魂的地府长枪，使用手持弹幕实现长枪突刺动画
@@ -51,7 +51,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons
     /// </summary>
     public class SoulDevourerSpearProjectile : ModProjectile
     {
-        public override string Texture => "AncientChineseMythology/Underworlds/Items/Weapons/SoulDevourerSpear";
+        public override string Texture => "AncientChineseMythology/Underworlds/Items/Weapons/Umbrals/SoulDevourerSpear";
 
         //攻击阶段
         private enum AttackStage { Prepare, Thrust, Retract }
