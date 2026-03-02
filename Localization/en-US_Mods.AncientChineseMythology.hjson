@@ -904,6 +904,92 @@ Items: {
 			No soul can escape the gate once opened
 			'''
 	}
+
+	CelestialImperatorGreatblade: {
+		DisplayName: Celestial Imperator Greatblade
+		Tooltip:
+			'''
+			The blade of myriad calamities forged by the Yin Emperor, severing all cycles of reincarnation
+			3-hit combo: first two strikes release 5 Imperator Slashes, third triggers Void Eruption
+			Critical hits unleash chained judgment on all enemies within 600 range
+			Instantly obliterates non-boss enemies below 25% health
+			'''
+	}
+
+	PrimordialChaosDeicideBow: {
+		DisplayName: Primordial Chaos Deicide Bow
+		Tooltip:
+			'''
+			A deicide bow condensed from primordial chaos energy, requires no mundane arrows
+			Fires a Chaos Deicide Arrow that creates a Feather Rain Zone on impact
+			Rain zone lasts 3 seconds, showering tracking feather arrows from above
+			'''
+	}
+
+	HellwyrmAnnihilationCannon: {
+		DisplayName: Hellwyrm Annihilation Cannon
+		Tooltip:
+			'''
+			The ultimate cannon sealed with a hell dragon's breath, requires no ammo
+			Fires an expanding Dragon Breath Wave that grows larger with distance
+			Hit enemies are branded with Annihilation Marks that detonate after 2s for double damage
+			'''
+	}
+
+	AbyssalFrostJudgmentChakram: {
+		DisplayName: Abyssal Frost Judgment Chakram
+		Tooltip:
+			'''
+			The Judgment Wheel of the Nine Hells, condensed from abyssal frost
+			Orbits the wielder and auto-targets nearby enemies with dash attacks
+			Every 5th hit triggers Absolute Zero Judgment, freezing all enemies in range
+			Inflicts Frostburn, Frozen, and Broken Armor on hit
+			'''
+	}
+
+	VoidDamnationSoulpiercerSpear: {
+		DisplayName: Void Damnation Soulpiercer Spear
+		Tooltip:
+			'''
+			The spear of void damnation that pierces through eternal calamity
+			Extreme thrust range, leaves a persistent Void Rift along the thrust path
+			Ignores enemy defense on hit, heals on every strike
+			Killing enemies triggers Void Eruption with massive healing burst
+			'''
+	}
+
+	NightmareRashomonMyriadCurseTome: {
+		DisplayName: Nightmare Rashomon Myriad-Curse Tome
+		Tooltip:
+			'''
+			A forbidden tome recording primordial nightmares and infinite curses
+			Summons a Rashomon Gate at cursor position, lasting 4 seconds
+			Gate pulls enemies in and continuously damages them
+			Spawns 3 Nightmare Tendrils every second to hunt down enemies
+			'''
+	}
+
+	NetherworldArchonFateScepter: {
+		DisplayName: Netherworld Archon Fate Scepter
+		Tooltip:
+			'''
+			The scepter of fate wielded by the Supreme Judge of the Netherworld
+			Fires 5 homing Fate Decree Orbs per cast
+			Hit enemies are branded with Fate Marks that detonate after 3 seconds
+			Detonation damage = accumulated damage x 1.5, with AOE splash
+			'''
+	}
+
+	ShadowOblivionSingularityBomb: {
+		DisplayName: Shadow Oblivion Singularity Bomb
+		Tooltip:
+			'''
+			The ultimate annihilation bomb condensed from void singularity
+			Creates a 1-second gravity well that pulls enemies inward on impact
+			Followed by a catastrophic implosion covering a massive area
+			Killed enemies spawn chain-reaction singularities
+			'''
+	}
 }
 
 NPCs: {
@@ -1261,6 +1347,22 @@ Projectiles: {
 	NetherEclipseOrb.DisplayName: Nether Eclipse Orb
 	SoulShatteringBombProj.DisplayName: Soul-Shattering Bomb
 	SoulShatteringSubBomb.DisplayName: Soul-Shattering Cluster Bomb
+	ImperatorSlash.DisplayName: Imperator Slash
+	ImperatorVoidEruption.DisplayName: Void Myriad-Calamity Eruption
+	ChaosDeicideArrow.DisplayName: Chaos Deicide Arrow
+	ChaosRainZone.DisplayName: Feather Rain Zone
+	ChaosRainArrow.DisplayName: Deicide Feather Arrow
+	DragonBreathWave.DisplayName: Dragon Breath Wave
+	DragonAnnihilationMark.DisplayName: Annihilation Dragon Mark
+	FrostJudgmentChakramProj.DisplayName: Frost Judgment Chakram
+	VoidSoulpiercerProjectile.DisplayName: Void Soulpiercer
+	VoidRiftLine.DisplayName: Void Rift
+	RashomonGateProj.DisplayName: Rashomon Gate
+	NightmareTendril.DisplayName: Nightmare Tendril
+	FateDecreeOrb.DisplayName: Fate Decree Orb
+	FateMarkProj.DisplayName: Fate Mark
+	SingularityBombProj.DisplayName: Singularity Bomb
+	SingularityEcho.DisplayName: Singularity Echo
 }
 
 HeavenBiome.DisplayName: Heaven

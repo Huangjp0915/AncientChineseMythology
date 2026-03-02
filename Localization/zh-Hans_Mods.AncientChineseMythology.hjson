@@ -991,6 +991,100 @@ Items: {
 			碎魂裂魄，天崩地陷
 			'''
 	}
+
+	CelestialImperatorGreatblade: {
+		DisplayName: 酆都万劫寂灭黑帝刀
+		Tooltip:
+			'''
+			阴天子亲铸的万劫寂灭之刃，斩尽六道一切轮回
+			三连击循环：前两击释放五道黑帝斩，第三击引爆虚空万劫柱
+			暴击时对600范围内所有敌人造成连锁审判
+			非Boss敌人血量低于25%时直接寂灭
+			万劫不复，诸天归寂
+			'''
+	}
+
+	PrimordialChaosDeicideBow: {
+		DisplayName: 混元吞天万羽坠神弓
+		Tooltip:
+			'''
+			以混元之力凝聚的弑神弓，无需凡俗箭矢
+			射出混元弑神箭，命中后开启万羽坠神域
+			坠神域持续3秒，不断降下追踪羽箭雨
+			天穹破碎，万羽坠落，诸神殒命
+			'''
+	}
+
+	HellwyrmAnnihilationCannon: {
+		DisplayName: 地狱冥龙吐纳寂灭炮
+		Tooltip:
+			'''
+			封印地狱冥龙吐息之力的终极火炮，无需凡俗弹药
+			发射不断膨胀的龙息冲击波，越远越强
+			命中敌人施加寂灭龙印，2秒后引爆造成双倍伤害
+			龙吟震天，寂灭万物
+			'''
+	}
+
+	AbyssalFrostJudgmentChakram: {
+		DisplayName: 极寒渊薮九幽判官轮
+		Tooltip:
+			'''
+			凝聚九幽极寒之力的判官审判之轮
+			投掷后自动环绕持有者运转，主动追击附近敌人
+			每第5次命中触发「绝对零度审判」，冻结范围内所有敌人
+			命中施加冰焰、冰冻与碎甲
+			极寒渊薮，九幽判官，万物凝冰
+			'''
+	}
+
+	VoidDamnationSoulpiercerSpear: {
+		DisplayName: 虚空断罪永劫穿心矛
+		Tooltip:
+			'''
+			贯穿虚空与永劫的断罪之矛
+			超远距离突刺，突刺路径留下持续2秒的虚空裂隙
+			命中无视敌人防御，每次命中回复生命
+			击杀敌人触发虚空爆发并大量回血
+			虚空断罪，永劫穿心，万物归无
+			'''
+	}
+
+	NightmareRashomonMyriadCurseTome: {
+		DisplayName: 噩梦罗生门万咒葬神典
+		Tooltip:
+			'''
+			记载万古噩梦与无尽诅咒的葬神秘典
+			在光标位置召唤罗生门，持续4秒
+			罗生门吸引并持续伤害周围敌人
+			每秒释放三条噩梦触手追踪猎杀
+			罗生门开，万咒齐发，诸神入葬
+			'''
+	}
+
+	NetherworldArchonFateScepter: {
+		DisplayName: 冥府至尊判官司命杖
+		Tooltip:
+			'''
+			冥府至尊判官执掌司命的权杖
+			每次释放五枚命运法令灵球追踪敌人
+			命中敌人施加命运烙印，3秒后引爆
+			引爆伤害 = 累积伤害 × 1.5，并对范围内敌人造成溅射
+			命运已定，万物伏诛
+			'''
+	}
+
+	ShadowOblivionSingularityBomb: {
+		DisplayName: 暗影寂灭终极奇点炸弹
+		Tooltip:
+			'''
+			凝聚虚空奇点之力的终极湮灭炸弹
+			落地后展开引力场持续吸引敌人1秒
+			随后引发毁灭性内爆，覆盖巨大范围
+			被击杀的敌人产生连锁奇点，引发次级爆炸
+			奇点坍缩，万物湮灭，归于虚无
+			'''
+	}
 }
 
 NPCs: {
@@ -1348,6 +1442,22 @@ Projectiles: {
 	NetherEclipseOrb.DisplayName: 寂灭冥球
 	SoulShatteringBombProj.DisplayName: 碎魂黄泉雷
 	SoulShatteringSubBomb.DisplayName: 碎魂子雷
+	ImperatorSlash.DisplayName: 黑帝斩
+	ImperatorVoidEruption.DisplayName: 虚空万劫爆
+	ChaosDeicideArrow.DisplayName: 混元弑神箭
+	ChaosRainZone.DisplayName: 万羽坠神域
+	ChaosRainArrow.DisplayName: 坠神羽箭
+	DragonBreathWave.DisplayName: 冥龙吐息
+	DragonAnnihilationMark.DisplayName: 寂灭龙印
+	FrostJudgmentChakramProj.DisplayName: 九幽判官轮刃
+	VoidSoulpiercerProjectile.DisplayName: 虚空穿心矛
+	VoidRiftLine.DisplayName: 虚空裂隙
+	RashomonGateProj.DisplayName: 罗生门
+	NightmareTendril.DisplayName: 噩梦触手
+	FateDecreeOrb.DisplayName: 命运法令灵球
+	FateMarkProj.DisplayName: 命运烙印
+	SingularityBombProj.DisplayName: 奇点炸弹
+	SingularityEcho.DisplayName: 奇点回响
 }
 
 HeavenBiome.DisplayName: Heaven
