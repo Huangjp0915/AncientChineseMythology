@@ -835,77 +835,162 @@ Items: {
 	}
 
 	CodexofFate: {
-        DisplayName: 生死冥罗录
-        Tooltip: 
-            '''
-            记载众生死期与因果的冥府秘典
-            翻开它，你将看到他们的结局
-            （也许还有你的。）
-            '''
-    }
+		DisplayName: 生死冥罗录
+		Tooltip:
+			'''
+			记载众生死期与因果的冥府秘典
+			翻开它，你将看到他们的结局
+			（也许还有你的。）
+			'''
+	}
 
-    JudgesSoulhook: {
-        DisplayName: 判官勾魂枪
-        Tooltip: 
-            '''
-            判官裁决，勾魂摄魄
-            击中敌人时有几率赋予“灵魂剥离”效果
-            '''
-    }
+	JudgesSoulhook: {
+		DisplayName: 判官勾魂枪
+		Tooltip:
+			'''
+			判官裁决，勾魂摄魄
+			击中敌人时有几率赋予“灵魂剥离”效果
+			'''
+	}
 
-    KarmasMirrorBlade: {
-        DisplayName: 孽镜回旋刃
-        Tooltip:
-            '''
-            如同孽镜台般映照罪孽，去而复返
-            你的敌人将在镜中看到自己最深重的罪
-            '''
-    }
+	KarmasMirrorBlade: {
+		DisplayName: 孽镜回旋刃
+		Tooltip:
+			'''
+			如同孽镜台般映照罪孽，去而复返
+			你的敌人将在镜中看到自己最深重的罪
+			'''
+	}
 
-    NetherfireBlunderbuss: {
-        DisplayName: 冥府幽火铳
-        Tooltip:
-            '''
-            发射冥府幽火，不仅灼烧肉体，更焚烧灵魂
-            '''
-    }
+	NetherfireBlunderbuss: {
+		DisplayName: 冥府幽火铳
+		Tooltip: 发射冥府幽火，不仅灼烧肉体，更焚烧灵魂
+	}
 
-    NetherRockSoulbomb: {
-        DisplayName: 冥岩爆魂雷 
-        Tooltip: 
-            '''
-            由冥岩制成，能引爆灵魂的雷弹
-            爆炸后留下持续燃烧的幽火场
-            '''
-    }
+	NetherRockSoulbomb: {
+		DisplayName: 冥岩爆魂雷
+		Tooltip:
+			'''
+			由冥岩制成，能引爆灵魂的雷弹
+			爆炸后留下持续燃烧的幽火场
+			'''
+	}
 
-    StaveofNetherflow: {
-        DisplayName: 黄泉幽冥杖
-        Tooltip: 
-            '''
-            凝聚黄泉幽冥之力的法杖
-            召唤一个能够吸取敌人生命的幽冥旋涡
-            '''
-    }
+	StaveofNetherflow: {
+		DisplayName: 黄泉幽冥杖
+		Tooltip:
+			'''
+			凝聚黄泉幽冥之力的法杖
+			召唤一个能够吸取敌人生命的幽冥旋涡
+			'''
+	}
 
-    UnderworldSoulguide: {
-        DisplayName: 黄泉引魂弓
-        Tooltip: 
-            '''
-            引渡灵魂前往黄泉的弓
-            箭矢会追踪附近的灵魂
-            '''
-    }
+	UnderworldSoulguide: {
+		DisplayName: 黄泉引魂弓
+		Tooltip:
+			'''
+			引渡灵魂前往黄泉的弓
+			箭矢会追踪附近的灵魂
+			'''
+	}
 
-    YamasSeverance: {
-        DisplayName: 阎摩断业刀
-        Tooltip: 
-            '''
-            阎王用以裁断众生业报的巨刀
-            它不需要刀鞘，因为业报从不休息
-            右键使用可释放一击必杀（仅对非Boss怪有效）
-            '''
-    }
+	YamasSeverance: {
+		DisplayName: 阎摩断业刀
+		Tooltip:
+			'''
+			阎王用以裁断众生业报的巨刀
+			它不需要刀鞘，因为业报从不休息
+			右键使用可释放一击必杀（仅对非Boss怪有效）
+			'''
+	}
+
+	YamasDeicide: {
+		DisplayName: 阎摩断业屠神刀
+		Tooltip:
+			'''
+			不仅裁断业报，更能屠戮神魔的终极巨刃
+			三道屠神斩击同时释放，暴击触发神魔审判
+			非Boss敌人血量低于15%时直接斩杀
+			诸天万界，一刀断之
+			'''
+	}
+
+	DamnedSoulguide: {
+		DisplayName: 黄泉万劫引魂弓
+		Tooltip:
+			'''
+			引渡遭受万劫不复之苦的灵魂
+			每次射出五支追踪万劫箭，概率额外射出三支灵魂箭
+			暴击时触发灵魂连锁爆发，牵引附近敌人的灵魂
+			黄泉路上，无魂可逃
+			'''
+	}
+
+	SoulEatingCannon: {
+		DisplayName: 冥府噬魂幽火炮
+		Tooltip:
+			'''
+			能吞噬灵魂的重型冥府火器
+			散射10到15发噬魂弹，命中后灵魂爆裂
+			击杀敌人后吸收灵魂回复生命
+			炮火所至，灵魂尽灭
+			'''
+	}
+
+	InfinityKarmaBlade: {
+		DisplayName: 孽镜无间回旋刃
+		Tooltip:
+			'''
+			如同无间地狱般永无止境轮回的利刃
+			三刃齐发，镜像反射加深伤害
+			暴击时触发无间镜像反伤，敌人的罪孽加倍奉还
+			轮回不止，因果不灭
+			'''
+	}
+
+	OblivionSoulhook: {
+		DisplayName: 判官寂灭勾魂枪
+		Tooltip:
+			'''
+			带来终极寂灭和死亡的判官之枪
+			极大突刺范围，每次命中大量吸收灵魂回复生命
+			击杀敌人时触发寂灭爆发，对范围内所有敌人造成毁灭伤害
+			判官落笔，万物寂灭
+			'''
+	}
+
+	CodexofMyriadDemons: {
+		DisplayName: 生死因果万魔录
+		Tooltip:
+			'''
+			记载万魔因果、掌控生死轮回的终极秘典
+			每次释放五枚追踪万魔符文
+			暴击时触发全范围链式雷击，连锁五个敌人
+			万魔臣服，因果轮转
+			'''
+	}
+
+	StaveofNetherEclipse: {
+		DisplayName: 黄泉寂灭冥罗杖
+		Tooltip:
+			'''
+			凝聚黄泉寂灭之力、显化冥府罗网的法杖
+			同时发射三枚寂灭冥球，命中后展开冥府罗网
+			罗网区域内所有敌人受到减速和暗影焰侵蚀
+			罗网天下，无处遁逃
+			'''
+	}
+
+	SoulShatteringUnderworldBomb: {
+		DisplayName: 冥岩碎魂黄泉雷
+		Tooltip:
+			'''
+			能粉碎灵魂、开启黄泉之门的冥岩重雷
+			爆炸后分裂为三枚子雷，每枚拥有巨大爆炸范围
+			黄泉之门一旦打开，灵魂无处可藏
+			碎魂裂魄，天崩地陷
+			'''
+	}
 }
 
 NPCs: {
@@ -1254,6 +1339,15 @@ Projectiles: {
 	NetherRockSoulbombProj.DisplayName: Nether Rock Soulbomb Proj
 	SoulguideArrow.DisplayName: Soulguide Arrow
 	YamasSeveranceSlash.DisplayName: Yamas Severance Slash
+	YamasDeicideSlash.DisplayName: 屠神斩击
+	DamnedSoulguideArrow.DisplayName: 万劫引魂箭
+	SoulEatingBullet.DisplayName: 噬魂弹
+	InfinityKarmaBladeProj.DisplayName: 无间回旋刃
+	OblivionSoulhookProjectile.DisplayName: 寂灭勾魂枪
+	MyriadDemonRune.DisplayName: 万魔符文
+	NetherEclipseOrb.DisplayName: 寂灭冥球
+	SoulShatteringBombProj.DisplayName: 碎魂黄泉雷
+	SoulShatteringSubBomb.DisplayName: 碎魂子雷
 }
 
 HeavenBiome.DisplayName: Heaven

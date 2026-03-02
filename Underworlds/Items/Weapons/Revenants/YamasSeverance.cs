@@ -1,10 +1,8 @@
-using AncientChineseMythology.Underworlds.Items;
 using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
-using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -96,6 +94,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
 
         public override void AddRecipes() {
             CreateRecipe()
+                .AddIngredient(ModContent.ItemType<NetherBar>(), 8)
                 .AddIngredient<SoulFragment>(8)
                 .AddIngredient<UmbralStoneItem>(28)
                 .AddTile(TileID.MythrilAnvil)

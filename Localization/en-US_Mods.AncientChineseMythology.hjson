@@ -824,6 +824,86 @@ Items: {
 		DisplayName: Yamas Severance
 		Tooltip: ""
 	}
+
+	YamasDeicide: {
+		DisplayName: Yama's Deicide
+		Tooltip:
+			'''
+			The ultimate blade that severs karma and slays gods
+			Releases three divine slashes, critical hits trigger Divine Judgment
+			Instantly executes non-boss enemies below 15% health
+			'''
+	}
+
+	DamnedSoulguide: {
+		DisplayName: Damned Soulguide
+		Tooltip:
+			'''
+			Guides the souls of those damned to ten thousand calamities
+			Fires 5 homing soul arrows with a chance for 3 bonus shots
+			Critical hits trigger chained soul explosions
+			'''
+	}
+
+	SoulEatingCannon: {
+		DisplayName: Soul-Eating Cannon
+		Tooltip:
+			'''
+			A heavy nether cannon that devours souls
+			Sprays 10-15 soul-eating bullets, causes soul burst on hit
+			Absorbs souls to restore life on kill
+			'''
+	}
+
+	InfinityKarmaBlade: {
+		DisplayName: Infinity Karma Blade
+		Tooltip:
+			'''
+			A blade of endless karmic cycles, like the Avici Hell itself
+			Throws 3 boomerangs simultaneously with mirror-reflection damage
+			Critical hits reflect double damage upon enemies
+			'''
+	}
+
+	OblivionSoulhook: {
+		DisplayName: Oblivion Soulhook
+		Tooltip:
+			'''
+			The Judge's spear of ultimate oblivion and death
+			Massive thrust range with heavy life steal on hit
+			Killing enemies triggers Oblivion Burst, devastating nearby foes
+			'''
+	}
+
+	CodexofMyriadDemons: {
+		DisplayName: Codex of Myriad Demons
+		Tooltip:
+			'''
+			The ultimate codex recording the karma of ten thousand demons
+			Fires 5 homing demon runes per cast
+			Critical hits trigger chained lightning across 5 enemies
+			'''
+	}
+
+	StaveofNetherEclipse: {
+		DisplayName: Stave of Nether-Eclipse
+		Tooltip:
+			'''
+			A stave channeling the power of Yellow Spring's oblivion
+			Fires 3 eclipse orbs that create binding nether zones on hit
+			Enemies in the zone are slowed and scorched by shadow flames
+			'''
+	}
+
+	SoulShatteringUnderworldBomb: {
+		DisplayName: Soul-Shattering Underworld Bomb
+		Tooltip:
+			'''
+			A nether-rock bomb that shatters souls and opens the gates of Yellow Spring
+			Splits into 3 cluster bombs after detonation, each with massive blast radius
+			No soul can escape the gate once opened
+			'''
+	}
 }
 
 NPCs: {
@@ -1172,6 +1252,15 @@ Projectiles: {
 	NetherRockSoulbombProj.DisplayName: Nether Rock Soulbomb Proj
 	SoulguideArrow.DisplayName: Soulguide Arrow
 	YamasSeveranceSlash.DisplayName: Yamas Severance Slash
+	YamasDeicideSlash.DisplayName: Deicide Slash
+	DamnedSoulguideArrow.DisplayName: Damned Soul Arrow
+	SoulEatingBullet.DisplayName: Soul-Eating Bullet
+	InfinityKarmaBladeProj.DisplayName: Infinity Karma Blade
+	OblivionSoulhookProjectile.DisplayName: Oblivion Soulhook
+	MyriadDemonRune.DisplayName: Myriad Demon Rune
+	NetherEclipseOrb.DisplayName: Nether Eclipse Orb
+	SoulShatteringBombProj.DisplayName: Soul-Shattering Bomb
+	SoulShatteringSubBomb.DisplayName: Soul-Shattering Cluster Bomb
 }
 
 HeavenBiome.DisplayName: Heaven

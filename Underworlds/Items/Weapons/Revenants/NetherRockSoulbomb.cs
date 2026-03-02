@@ -1,4 +1,3 @@
-using AncientChineseMythology.Underworlds.Items;
 using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
 using System;
@@ -44,6 +43,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
 
         public override void AddRecipes() {
             CreateRecipe()
+                .AddIngredient(ModContent.ItemType<NetherBar>(), 8)
                 .AddIngredient<SoulFragment>(8)
                 .AddIngredient<UmbralStoneItem>(28)
                 .AddTile(TileID.MythrilAnvil)
