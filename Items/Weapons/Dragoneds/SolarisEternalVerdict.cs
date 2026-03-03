@@ -83,7 +83,7 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                 (float)Math.Sin(Timer * 0.035f) * 40f,
                 -180f - (float)Math.Sin(Timer * 0.05f) * 15f);
             Projectile.velocity = Vector2.Lerp(Projectile.velocity, (hover - Projectile.Center) * 0.08f, 0.12f);
-            Projectile.rotation += 0.03f;
+            Projectile.rotation = 0;
 
             // 寻找目标，每60帧朝目标发射4道射线
             if (Timer % 60 == 0 && Projectile.owner == Main.myPlayer) {

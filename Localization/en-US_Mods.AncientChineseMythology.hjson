@@ -516,7 +516,10 @@ Items: {
 			'''
 	}
 
-	ArcaneRepulsionArray: {
+	ArgentPulseObliterator: {
+		DisplayName: Argent Pulse Obliterator
+		Tooltip: Rapidly fires silver-blue energy bolts; every 8th shot triggers an overcharged triple burst
+	}
 		DisplayName: Arcane Repulsion Array
 		Tooltip:
 			'''
@@ -1318,6 +1321,8 @@ Projectiles: {
 	VaultshadeBlast.DisplayName: Vaultshade Blast
 	ArcaneRepulsionArrayProj.DisplayName: Arcane Repulsion Drone
 	ArcaneRepulsionLaser.DisplayName: Arcane Repulsion Laser
+	ArgentPulseBolt.DisplayName: Argent Pulse Bolt
+	ArgentPulseImpact.DisplayName: Argent Pulse Impact
 	AzureTorrentBladesProj.DisplayName: Azure Torrent Blade
 	DraconicEmberProj.DisplayName: Draconic Wyrm
 	DraconicEmberEggProj.DisplayName: Draconic Ember Egg

@@ -561,7 +561,10 @@ Items: {
 			'''
 	}
 
-	ArcaneRepulsionArray: {
+	ArgentPulseObliterator: {
+		DisplayName: 银脉湮灭冲锋枪
+		Tooltip: 高速连射银蓝能量脉冲弹，每8发触发超载三连矢
+	}
 		DisplayName: 圣械幽蓝斥力阵
 		Tooltip:
 			'''
@@ -1413,6 +1416,8 @@ Projectiles: {
 	VaultshadeBlast.DisplayName: 幽穹虚空内爆
 	ArcaneRepulsionArrayProj.DisplayName: 金蓝龙鳞无人机
 	ArcaneRepulsionLaser.DisplayName: 龙鳞穿透激光
+	ArgentPulseBolt.DisplayName: 银脉能量弹
+	ArgentPulseImpact.DisplayName: 银脉电爽碸花
 	AzureTorrentBladesProj.DisplayName: 蔚蓝激流剑
 	DraconicEmberProj.DisplayName: 熊龙小吴
 	DraconicEmberEggProj.DisplayName: 熊龙玄蛋
