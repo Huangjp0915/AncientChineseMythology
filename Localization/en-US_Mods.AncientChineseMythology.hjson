@@ -390,6 +390,51 @@ Items: {
 		Tooltip: ""
 	}
 
+	AureateVoidrender: {
+		DisplayName: Aureate Voidrender
+		Tooltip:
+			'''
+			A colossal blade that tears through the void itself
+			Every swing unleashes a gold-violet void slash wave
+			'''
+	}
+
+	CelestialHubAnnihilator: {
+		DisplayName: Celestial Hub Annihilator
+		Tooltip:
+			'''
+			Channels the power of Tianpivot, fires three-forked annihilation shells
+			Each impact detonates a world-ending stellar annihilation
+			'''
+	}
+
+	CelestialCircletScepter: {
+		DisplayName: Celestial Circlet Scepter
+		Tooltip:
+			'''
+			Releases 5 spiraling celestial energy rings
+			The rings converge then streak toward the nearest enemy
+			'''
+	}
+
+	GeoarchonRupturer: {
+		DisplayName: Geoarchon Rupturer
+		Tooltip:
+			'''
+			Resonates with earth-force, cracking the abyss asunder
+			Summons seven geo-energy pillars at the target location
+			'''
+	}
+
+	AurelianCataclysmSmasher: {
+		DisplayName: Aurelian Cataclysm Smasher
+		Tooltip:
+			'''
+			A catastrophic golden war hammer that shatters all in one blow
+			On hit, triggers a ground-rending golden shockwave across the field
+			'''
+	}
+
 	XuanTieBar: {
 		DisplayName: Xuan Tie Bar
 		Tooltip: ""
@@ -1126,6 +1171,15 @@ Projectiles: {
 	ShenxianGuanglunPet.DisplayName: Shenxian Guanglun Pet
 	GanJiangSwordProj.DisplayName: Gan Jiang Sword Proj
 	GanJiangSwordProj_2.DisplayName: Gan Jiang Sword Proj_2
+	AurelianCataclysmSmasherProj.DisplayName: Aurelian Cataclysm Smasher
+	AurelianShockwave.DisplayName: Aurelian Shockwave
+	AureateVoidrenderSwing.DisplayName: Aureate Voidrender
+	AureateVoidWave.DisplayName: Aureate Void Wave
+	CelestialHubShell.DisplayName: Celestial Hub Shell
+	CelestialHubExplosion.DisplayName: Celestial Hub Explosion
+	CelestialCircletOrb.DisplayName: Celestial Circlet Orb
+	GeoarchonMarker.DisplayName: Geoarchon Marker
+	GeoarchonPillar.DisplayName: Geoarchon Pillar
 	RuyiStickSpearProjectile.DisplayName: Ruyi Stick Spear Projectile
 	RuyiStickSpearProjectile_2.DisplayName: Ruyi Stick Spear Projectile_2
 	RuyiStickSpearProjectile_3.DisplayName: Ruyi Stick Spear Projectile_3

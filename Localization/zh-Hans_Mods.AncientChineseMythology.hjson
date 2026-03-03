@@ -435,6 +435,51 @@ Items: {
 		Tooltip: ""
 	}
 
+	AureateVoidrender: {
+		DisplayName: 辉金虚空斩裂刃
+		Tooltip:
+			'''
+			撕裂虚空的巨刃，挥舞时金芒迸射
+			每次挥击都会释放穿透虚空的金-紫双色斩浪
+			'''
+	}
+
+	CelestialHubAnnihilator: {
+		DisplayName: 天枢聚能湮灭炮
+		Tooltip:
+			'''
+			聚合天枢星力，发射三叉湮灭炮弹
+			炮弹落点爆发出毁天灭地的星力湮灭
+			'''
+	}
+
+	CelestialCircletScepter: {
+		DisplayName: 天枢耀能环流杖
+		Tooltip:
+			'''
+			汇聚天枢的能量，释放5枚旋转耀能光环
+			光环螺旋收束后追踪最近的目标冲刺贯穿
+			'''
+	}
+
+	GeoarchonRupturer: {
+		DisplayName: 坤铉破渊权杖
+		Tooltip:
+			'''
+			坤力共鸣，大地震裂，渊底崩塌
+			在目标位置召唤七根地能裂穴能量柱
+			'''
+	}
+
+	AurelianCataclysmSmasher: {
+		DisplayName: 万劫狂金震碎者
+		Tooltip:
+			'''
+			集万劫之力于一击，砸碎一切的狂金重锤
+			命中时掀起全场金色裂地冲击波，令大地颤抖
+			'''
+	}
+
 	XuanTieBar: {
 		DisplayName: 玄铁锭
 		Tooltip: 坚硬无比
@@ -1221,6 +1266,15 @@ Projectiles: {
 	ShenxianGuanglunPet.DisplayName: 神仙光轮
 	GanJiangSwordProj.DisplayName: 干将剑
 	GanJiangSwordProj_2.DisplayName: 干将莫邪
+	AurelianCataclysmSmasherProj.DisplayName: 万劫狂金锤
+	AurelianShockwave.DisplayName: 金裂冒冲波
+	AureateVoidrenderSwing.DisplayName: 辉金虚空斩裂刃
+	AureateVoidWave.DisplayName: 虚空斩浪
+	CelestialHubShell.DisplayName: 天枢湮灭炮弹
+	CelestialHubExplosion.DisplayName: 星力湮灭爆炸
+	CelestialCircletOrb.DisplayName: 天枢耀能光环
+	GeoarchonMarker.DisplayName: 坤空地标
+	GeoarchonPillar.DisplayName: 地能裂穴能量柱
 	RuyiStickSpearProjectile.DisplayName: 如意金箍棒
 	RuyiStickSpearProjectile_2.DisplayName: 如意金箍棒
 	RuyiStickSpearProjectile_3.DisplayName: 如意金箍棒
