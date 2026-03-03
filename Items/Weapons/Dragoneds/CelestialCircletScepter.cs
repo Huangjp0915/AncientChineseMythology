@@ -17,20 +17,21 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
         public override void SetDefaults() {
             Item.damage = 480;
             Item.DamageType = DamageClass.Magic;
-            Item.width  = 50;
+            Item.width = 50;
             Item.height = 50;
-            Item.useTime      = 32;
+            Item.useTime = 32;
             Item.useAnimation = 32;
             Item.useStyle = ItemUseStyleID.Shoot;
             Item.knockBack = 8;
-            Item.crit  = 25;
-            Item.mana  = 28;
+            Item.crit = 25;
+            Item.mana = 28;
             Item.value = Item.buyPrice(gold: 200);
-            Item.rare  = ItemRarityID.Purple;
-            Item.autoReuse    = true;
-            Item.noMelee      = true;
+            Item.rare = ItemRarityID.Purple;
+            Item.autoReuse = true;
+            Item.noMelee = true;
             Item.shoot = ModContent.ProjectileType<CelestialCircletOrb>();
             Item.shootSpeed = 16f;
+            Item.staff[Type] = true;
         }
 
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
@@ -56,7 +57,7 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
             => "AncientChineseMythology/Textures/Masking/BlankStar";
 
         public override void SetStaticDefaults() {
-            ProjectileID.Sets.TrailingMode[Type]    = 2;
+            ProjectileID.Sets.TrailingMode[Type] = 2;
             ProjectileID.Sets.TrailCacheLength[Type] = 12;
         }
 
@@ -65,16 +66,16 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
         private const float ORBIT_DURATION = 90f; // 1.5秒 绕行后改为追踪
 
         public override void SetDefaults() {
-            Projectile.width  = 32;
+            Projectile.width = 32;
             Projectile.height = 32;
-            Projectile.friendly    = true;
+            Projectile.friendly = true;
             Projectile.tileCollide = false;
-            Projectile.penetrate   = 5;
-            Projectile.timeLeft    = 280;
-            Projectile.DamageType  = DamageClass.Magic;
-            Projectile.light       = 1.0f;
-            Projectile.usesLocalNPCImmunity  = true;
-            Projectile.localNPCHitCooldown   = 10;
+            Projectile.penetrate = 5;
+            Projectile.timeLeft = 280;
+            Projectile.DamageType = DamageClass.Magic;
+            Projectile.light = 1.0f;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 10;
         }
 
         public override void AI() {
@@ -86,7 +87,7 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                 Vector2 center = p.Center + p.DirectionTo(Main.MouseWorld) * 160f;
                 float baseAngle = Projectile.ai[0]; // 初始相位
                 float orbitRadius = MathHelper.Lerp(180f, 60f, _orbitTimer / ORBIT_DURATION);
-                float orbitSpeed  = MathHelper.Lerp(0.08f, 0.18f, _orbitTimer / ORBIT_DURATION);
+                float orbitSpeed = MathHelper.Lerp(0.08f, 0.18f, _orbitTimer / ORBIT_DURATION);
                 float angle = baseAngle + _orbitTimer * orbitSpeed;
                 Vector2 target = center + new Vector2(orbitRadius, 0).RotatedBy(angle);
                 Projectile.velocity = (target - Projectile.Center) * 0.18f;
@@ -109,23 +110,6 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
             }
 
             Projectile.rotation += 0.22f;
-
-            // 弧光粒子
-            if (Main.rand.NextBool(3)) {
-                Dust d = Dust.NewDustPerfect(
-                    Projectile.Center + Main.rand.NextVector2Circular(12, 12),
-                    DustID.BlueFairy,
-                    Main.rand.NextVector2Circular(3, 3), 0,
-                    new Color(100, 210, 255), Main.rand.NextFloat(0.8f, 2.0f));
-                d.noGravity = true;
-            }
-            if (Main.rand.NextBool(5)) {
-                Dust ds = Dust.NewDustPerfect(Projectile.Center,
-                    DustID.Flare_Blue,
-                    Main.rand.NextVector2Circular(6, 6), 0,
-                    new Color(240, 255, 120), 1.8f);
-                ds.noGravity = true;
-            }
         }
 
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
@@ -148,40 +132,49 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                 Main.GameViewMatrix.TransformationMatrix);
 
             Texture2D star = ACMAsset.BlankStar;
-            Texture2D sg   = ACMAsset.SoftGlow;
-            Texture2D arc  = ACMAsset.ElectricArcSheet;
+            Texture2D sg = ACMAsset.SoftGlow;
+            Texture2D arc = ACMAsset.ElectricArcSheet;
 
-            // 电弧光环背景（ElectricArcSheet 取第0行）
-            Rectangle arcFrame = new Rectangle(0, 0, arc.Width, arc.Height / 4);
-            Color arcCol = new Color(80, 180, 255) { A = 0 };
+            // 电弧光环背景 - 帧循环
+            int row = (int)(Main.timeForVisualEffects / 7) % 4;
+            Rectangle arcFrame = new Rectangle(0, row * (arc.Height / 4), arc.Width, arc.Height / 4);
+            float pulse = 0.75f + 0.25f * MathF.Sin((float)Main.timeForVisualEffects * 0.20f);
             sb.Draw(arc, Projectile.Center - Main.screenPosition, arcFrame,
-                arcCol * 0.5f, Projectile.rotation * 0.5f,
+                new Color(80, 180, 255) * (0.60f * pulse), Projectile.rotation * 0.5f,
                 new Vector2(arcFrame.Width * 0.5f, arcFrame.Height * 0.5f),
-                0.4f, SpriteEffects.None, 0);
+                1.0f, SpriteEffects.None, 0);
+            sb.Draw(arc, Projectile.Center - Main.screenPosition, arcFrame,
+                new Color(130, 220, 255) * (0.40f * pulse), Projectile.rotation * 0.5f + MathHelper.PiOver4,
+                new Vector2(arcFrame.Width * 0.5f, arcFrame.Height * 0.5f),
+                0.75f, SpriteEffects.None, 0);
 
-            // 拖尾
+            // 拖尾 SoftGlow 灯带
             for (int i = 1; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
-                float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.55f;
-                Color tc = new Color(100, 210, 255) { A = 0 };
+                float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.60f;
                 sb.Draw(sg,
                     Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition,
-                    null, tc * a, 0f,
+                    null, new Color(100, 210, 255) * a, 0f,
                     new Vector2(sg.Width * 0.5f, sg.Height * 0.5f),
-                    0.35f, SpriteEffects.None, 0);
+                    0.80f, SpriteEffects.None, 0);
             }
 
-            // BlankStar 主星（A=0 使颜色直接叠加）
-            Color starCol = new Color(160, 230, 255) { A = 0 };
+            // BlankStar 大星主体（双层旋转）
             sb.Draw(star, Projectile.Center - Main.screenPosition, null,
-                starCol * 0.9f, Projectile.rotation,
+                new Color(160, 230, 255) * (1.0f * pulse),
+                Projectile.rotation,
                 new Vector2(star.Width * 0.5f, star.Height * 0.5f),
-                0.65f, SpriteEffects.None, 0);
+                1.80f, SpriteEffects.None, 0);
+            sb.Draw(star, Projectile.Center - Main.screenPosition, null,
+                new Color(220, 245, 255) * (0.50f * pulse),
+                Projectile.rotation + MathHelper.PiOver4,
+                new Vector2(star.Width * 0.5f, star.Height * 0.5f),
+                1.20f, SpriteEffects.None, 0);
 
             // SoftGlow 核心
             sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-                new Color(200, 240, 255, 0) * 0.8f, 0f,
+                new Color(200, 240, 255) * (0.90f * pulse), 0f,
                 new Vector2(sg.Width * 0.5f, sg.Height * 0.5f),
-                0.28f, SpriteEffects.None, 0);
+                1.10f, SpriteEffects.None, 0);
 
             sb.End();
             sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,

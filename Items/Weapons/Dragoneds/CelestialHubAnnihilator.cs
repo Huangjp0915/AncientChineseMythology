@@ -74,22 +74,6 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
 
         public override void AI() {
             Projectile.rotation = Projectile.velocity.ToRotation();
-            // 行进粒子
-            if (Main.rand.NextBool(2)) {
-                Dust d = Dust.NewDustPerfect(
-                    Projectile.Center + Main.rand.NextVector2Circular(8, 8),
-                    DustID.BlueTorch,
-                    -Projectile.velocity * 0.2f + Main.rand.NextVector2Circular(2, 2),
-                    0, new Color(100, 200, 255), Main.rand.NextFloat(1.2f, 2.8f));
-                d.noGravity = true;
-            }
-            if (Main.rand.NextBool(4)) {
-                Dust ds = Dust.NewDustPerfect(Projectile.Center,
-                    DustID.Flare_Blue,
-                    Main.rand.NextVector2Circular(5, 5), 0,
-                    new Color(240, 255, 80), 2.0f);
-                ds.noGravity = true;
-            }
         }
 
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
@@ -144,30 +128,35 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
 
             Texture2D tex = ACMAsset.LightShot;
 
-            // 拖尾
+            // 拖尾——渐变蓝白光束
             for (int i = 1; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
-                float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.65f;
-                Color col = new Color(80, 200, 255, 0) * a;
+                float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.75f;
                 sb.Draw(tex,
                     Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition,
-                    null, col, Projectile.oldRot[i],
+                    null, new Color(80, 200, 255) * a, Projectile.oldRot[i],
                     new Vector2(tex.Width * 0.5f, tex.Height * 0.5f),
-                    new Vector2(0.28f + i * 0.012f, 0.18f), SpriteEffects.None, 0);
+                    new Vector2(0.55f + i * 0.015f, 0.25f), SpriteEffects.None, 0);
+                // 白核心补层
+                sb.Draw(tex,
+                    Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition,
+                    null, new Color(220, 245, 255) * (a * 0.45f), Projectile.oldRot[i],
+                    new Vector2(tex.Width * 0.5f, tex.Height * 0.5f),
+                    new Vector2(0.30f, 0.12f), SpriteEffects.None, 0);
             }
 
             // 本体（LightShot 正面朝右，旋转对齐速度）
             sb.Draw(tex, Projectile.Center - Main.screenPosition, null,
-                new Color(200, 240, 255, 0),
+                new Color(210, 245, 255),
                 Projectile.rotation,
                 new Vector2(tex.Width * 0.5f, tex.Height * 0.5f),
-                new Vector2(0.35f, 0.22f), SpriteEffects.None, 0);
+                new Vector2(0.90f, 0.30f), SpriteEffects.None, 0);
 
             // 中心光核
             Texture2D sg = ACMAsset.SoftGlow;
             sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-                new Color(120, 220, 255, 0) * 0.8f, 0f,
+                new Color(120, 220, 255) * 0.85f, 0f,
                 new Vector2(sg.Width * 0.5f, sg.Height * 0.5f),
-                0.55f, SpriteEffects.None, 0);
+                0.75f, SpriteEffects.None, 0);
 
             sb.End();
             sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
@@ -200,7 +189,7 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
         public override bool PreDraw(ref Color lightColor) {
             float prog  = 1f - Projectile.timeLeft / 65f;
             float alpha = MathHelper.SmoothStep(0.9f, 0f, prog);
-            float scale = MathHelper.SmoothStep(0f, 16f, ACMUtils.QuadOut(prog));
+            float scale = MathHelper.SmoothStep(0f, 24f, ACMUtils.QuadOut(prog));
 
             SpriteBatch sb = Main.spriteBatch;
             sb.End();
@@ -208,35 +197,45 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                 DepthStencilState.None, RasterizerState.CullNone, null,
                 Main.GameViewMatrix.TransformationMatrix);
 
+            Texture2D burst   = ACMAsset.SlashBurst;
             Texture2D sparkle = ACMAsset.Sparkle;
             Texture2D sg      = ACMAsset.SoftGlow;
             Texture2D star    = ACMAsset.BlankStar;
 
-            // 外层光爆
+            // 四向辐射冲击波（SlashBurst 旋转四次，45° 间隔）
+            for (int k = 0; k < 4; k++) {
+                float ang = k * MathHelper.PiOver2 + MathHelper.PiOver4;
+                sb.Draw(burst, Projectile.Center - Main.screenPosition, null,
+                    new Color(50, 180, 255) * (alpha * 0.70f), ang,
+                    new Vector2(burst.Width * 0.5f, burst.Height),
+                    scale * 0.55f, SpriteEffects.None, 0);
+            }
+
+            // 外层双 Sparkle 十字
             sb.Draw(sparkle, Projectile.Center - Main.screenPosition, null,
-                new Color(50, 180, 255, 0) * alpha,
+                new Color(80, 210, 255) * alpha,
                 (float)Main.timeForVisualEffects * 0.015f,
                 new Vector2(sparkle.Width * 0.5f, sparkle.Height * 0.5f),
-                scale * 0.65f, SpriteEffects.None, 0);
+                scale * 0.80f, SpriteEffects.None, 0);
             sb.Draw(sparkle, Projectile.Center - Main.screenPosition, null,
-                new Color(200, 240, 255, 0) * alpha * 0.7f,
+                new Color(200, 240, 255) * (alpha * 0.65f),
                 (float)Main.timeForVisualEffects * 0.015f + MathHelper.PiOver4,
                 new Vector2(sparkle.Width * 0.5f, sparkle.Height * 0.5f),
-                scale * 0.5f, SpriteEffects.None, 0);
+                scale * 0.62f, SpriteEffects.None, 0);
 
-            // BlankStar 星核（A=0 叠加）
-            Color starCol = new Color(140, 210, 255) { A = 0 };
+            // BlankStar 大星核
             sb.Draw(star, Projectile.Center - Main.screenPosition, null,
-                starCol * alpha * 1.3f, 0f,
+                new Color(160, 220, 255) * (alpha * 1.2f),
+                (float)Main.timeForVisualEffects * 0.02f,
                 new Vector2(star.Width * 0.5f, star.Height * 0.5f),
-                scale * 0.45f, SpriteEffects.None, 0);
+                scale * 0.50f, SpriteEffects.None, 0);
 
-            // SoftGlow 核心
+            // SoftGlow 核心白光
             sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-                new Color(255, 255, 255, 0) * alpha,
+                new Color(240, 255, 255) * alpha,
                 0f,
                 new Vector2(sg.Width * 0.5f, sg.Height * 0.5f),
-                scale * 0.22f, SpriteEffects.None, 0);
+                scale * 0.30f, SpriteEffects.None, 0);
 
             sb.End();
             sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,

@@ -197,25 +197,48 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
 
         public override bool PreDraw(ref Color lightColor) {
             SpriteBatch sb = Main.spriteBatch;
+            float rotOff = Projectile.spriteDirection > 0
+                ? MathHelper.PiOver4 : MathHelper.PiOver4 + MathHelper.Pi;
 
-            // ── 绘制金色剑气拖尾（使用 SlashBurst masking 纹理着色） ──
-            Texture2D trailTex = ACMAsset.SlashBurst;
             sb.End();
             sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
                 DepthStencilState.None, RasterizerState.CullNone, null,
                 Main.GameViewMatrix.TransformationMatrix);
 
+            Texture2D slashTex = ACMAsset.SlashBurst;
+            Texture2D sgTex    = ACMAsset.SoftGlow;
+
             if (CurrentStage == Stage.Execute) {
+                // ── 拖尾：用 SlashBurst 扇形叠加，金色 + 紫虚空双层 ──
                 for (int i = 1; i < 14 && i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
-                    float alpha = (1f - i / 14f) * 0.55f;
-                    Color trailCol = new Color(255, 200, 30, 0) * alpha;
-                    float rot = Projectile.oldRot[i] + (Projectile.spriteDirection > 0
-                        ? MathHelper.PiOver4 : MathHelper.PiOver4 + MathHelper.Pi);
-                    sb.Draw(trailTex, Projectile.Center - Main.screenPosition,
-                        null, trailCol, rot,
-                        new Vector2(trailTex.Width * 0.5f, trailTex.Height),
-                        Projectile.scale * 0.55f, SpriteEffects.None, 0);
+                    float a = (1f - i / 14f) * 0.72f;
+                    float rot = Projectile.oldRot[i] + rotOff;
+                    // 金色层
+                    sb.Draw(slashTex, Projectile.Center - Main.screenPosition, null,
+                        new Color(255, 200, 30) * a, rot,
+                        new Vector2(slashTex.Width * 0.5f, slashTex.Height),
+                        Projectile.scale * 0.6f, SpriteEffects.None, 0);
+                    // 紫色虚空叠层（偏移旋转更显撕裂感）
+                    sb.Draw(slashTex, Projectile.Center - Main.screenPosition, null,
+                        new Color(180, 40, 255) * (a * 0.45f), rot + 0.18f,
+                        new Vector2(slashTex.Width * 0.5f, slashTex.Height),
+                        Projectile.scale * 0.45f, SpriteEffects.None, 0);
                 }
+
+                // ── 锤头光晕：SoftGlow 大圆光 + Sparkle 星芒 ──
+                float pulse = 0.85f + 0.15f * MathF.Sin((float)Main.timeForVisualEffects * 0.25f);
+                sb.Draw(sgTex, Projectile.Center - Main.screenPosition, null,
+                    new Color(255, 210, 50) * 0.70f * pulse,
+                    Projectile.rotation + rotOff,
+                    new Vector2(sgTex.Width * 0.5f, sgTex.Height * 0.5f),
+                    Projectile.scale * 2.5f, SpriteEffects.None, 0);
+
+                Texture2D sparkle = ACMAsset.Sparkle;
+                sb.Draw(sparkle, Projectile.Center - Main.screenPosition, null,
+                    new Color(255, 230, 80) * 0.55f,
+                    (float)Main.timeForVisualEffects * 0.04f,
+                    new Vector2(sparkle.Width * 0.5f, sparkle.Height * 0.5f),
+                    Projectile.scale * 0.9f, SpriteEffects.None, 0);
             }
 
             sb.End();
@@ -223,27 +246,14 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                 DepthStencilState.None, RasterizerState.CullNone, null,
                 Main.GameViewMatrix.TransformationMatrix);
 
-            // ── 绘制锤子本体 ──
+            // ── 锤子本体 ──
             Texture2D tex = ModContent.Request<Texture2D>(Texture).Value;
             SpriteEffects fx = Projectile.spriteDirection < 0 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
-            float rotOff = Projectile.spriteDirection > 0
-                ? MathHelper.PiOver4 : MathHelper.PiOver4 + MathHelper.Pi;
             Vector2 origin = Projectile.spriteDirection > 0
                 ? new Vector2(0, tex.Height) : new Vector2(tex.Width, tex.Height);
-            Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition,
-                null, lightColor * Projectile.Opacity,
-                Projectile.rotation + rotOff, origin,
-                Projectile.scale, fx, 0);
-
-            // ── 挥击期间叠加金色光晕 ──
-            if (CurrentStage == Stage.Execute) {
-                Texture2D glow = ACMAsset.SoftGlow;
-                Color glowCol = new Color(255, 200, 30, 0) * 0.45f;
-                Main.spriteBatch.Draw(glow, Projectile.Center - Main.screenPosition,
-                    null, glowCol, Projectile.rotation + rotOff,
-                    new Vector2(glow.Width * 0.5f, glow.Height * 0.5f),
-                    Projectile.scale * 1.8f, SpriteEffects.None, 0);
-            }
+            sb.Draw(tex, Projectile.Center - Main.screenPosition,
+                null, lightColor, Projectile.rotation + rotOff,
+                origin, Projectile.scale, fx, 0);
 
             return false;
         }
@@ -270,9 +280,9 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
         public override bool ShouldUpdatePosition() => false;
 
         public override bool PreDraw(ref Color lightColor) {
-            float progress = 1f - Projectile.timeLeft / 50f; // 0→1 扩散
-            float scale    = progress * 14f;
-            float alpha    = (1f - progress) * 0.85f;
+            float progress = 1f - Projectile.timeLeft / 50f;
+            float alpha    = ACMUtils.QuadOut(1f - progress);
+            float scale    = ACMUtils.QuadOut(progress) * 18f;
 
             SpriteBatch sb = Main.spriteBatch;
             sb.End();
@@ -280,26 +290,36 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                 DepthStencilState.None, RasterizerState.CullNone, null,
                 Main.GameViewMatrix.TransformationMatrix);
 
-            // 用 Sparkle 纹理绘制爆炸十字闪光
             Texture2D sparkle = ACMAsset.Sparkle;
-            Color col = new Color(255, 220, 60, 0) * alpha;
-            sb.Draw(sparkle, Projectile.Center - Main.screenPosition, null,
-                col, 0f,
-                new Vector2(sparkle.Width * 0.5f, sparkle.Height * 0.5f),
-                scale * 0.6f, SpriteEffects.None, 0);
+            Texture2D sg      = ACMAsset.SoftGlow;
 
-            // 旋转45°再叠一层，形成八芒星
+            // ── 外圈八芒星冲击环  ──
             sb.Draw(sparkle, Projectile.Center - Main.screenPosition, null,
-                col * 0.65f, MathHelper.PiOver4,
+                new Color(255, 220, 60) * alpha,
+                (float)Main.timeForVisualEffects * 0.02f,
                 new Vector2(sparkle.Width * 0.5f, sparkle.Height * 0.5f),
-                scale * 0.5f, SpriteEffects.None, 0);
+                scale * 0.75f, SpriteEffects.None, 0);
+            sb.Draw(sparkle, Projectile.Center - Main.screenPosition, null,
+                new Color(255, 200, 30) * (alpha * 0.55f),
+                (float)Main.timeForVisualEffects * 0.02f + MathHelper.PiOver4,
+                new Vector2(sparkle.Width * 0.5f, sparkle.Height * 0.5f),
+                scale * 0.60f, SpriteEffects.None, 0);
 
-            // 中心 SoftGlow
-            Texture2D sg = ACMAsset.SoftGlow;
+            // ── SlashBurst 径向爆散（4方向叠加）──
+            Texture2D slash = ACMAsset.SlashBurst;
+            for (int k = 0; k < 4; k++) {
+                sb.Draw(slash, Projectile.Center - Main.screenPosition, null,
+                    new Color(255, 180, 20) * (alpha * 0.65f),
+                    k * MathHelper.PiOver2,
+                    new Vector2(slash.Width * 0.5f, slash.Height),
+                    new Vector2(scale * 0.28f, scale * 0.55f), SpriteEffects.None, 0);
+            }
+
+            // ── 中心 SoftGlow 强核 ──
             sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-                new Color(255, 240, 100, 0) * alpha * 1.2f, 0f,
+                new Color(255, 240, 120) * alpha * 1.3f, 0f,
                 new Vector2(sg.Width * 0.5f, sg.Height * 0.5f),
-                scale * 0.35f, SpriteEffects.None, 0);
+                scale * 0.40f, SpriteEffects.None, 0);
 
             sb.End();
             sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,

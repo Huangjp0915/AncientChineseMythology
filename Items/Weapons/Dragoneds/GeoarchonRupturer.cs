@@ -31,6 +31,7 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
             Item.noMelee      = true;
             Item.shoot = ModContent.ProjectileType<GeoarchonMarker>();
             Item.shootSpeed = 22f;
+            Item.staff[Type] = true;
         }
 
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
@@ -65,15 +66,6 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
         public override void AI() {
             Projectile.rotation += 0.18f;
 
-            // 飞行粒子
-            if (Main.rand.NextBool(3)) {
-                Dust d = Dust.NewDustPerfect(Projectile.Center,
-                    DustID.AmberBolt,
-                    Main.rand.NextVector2Circular(5, 5), 0,
-                    new Color(255, 160, 30), 1.5f);
-                d.noGravity = true;
-            }
-
             // 接近目标或碰墙则引爆
             if (!_erupted && Projectile.velocity.Length() < 0.5f) {
                 Erupt();
@@ -95,14 +87,6 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                 SoundEngine.PlaySound(SoundID.DD2_ExplosiveTrapExplode, Projectile.position);
                 Main.player[Projectile.owner].GetModPlayer<ScreenShakePlayer>()
                     .ShakeScreen(14f, 22);
-                // 地面碎裂尘埃
-                for (int i = 0; i < 28; i++) {
-                    Dust d = Dust.NewDustPerfect(Projectile.Center,
-                        DustID.AmberBolt,
-                        Main.rand.NextVector2Circular(12f, 12f), 0,
-                        new Color(240, 150, 30), Main.rand.NextFloat(2f, 4.5f));
-                    d.noGravity = false;
-                }
             }
 
             // 7根裂穴柱：中心1根 + 外围6根（正六边形）
@@ -116,7 +100,7 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                 // 稍微错开延迟 → 使用 ai[0] 保存偏移
                 Projectile.NewProjectile(
                     Projectile.GetSource_Death(),
-                    spawnPos, Vector2.Zero,
+                    spawnPos, Projectile.velocity.UnitVector(),
                     ModContent.ProjectileType<GeoarchonPillar>(),
                     Projectile.damage, Projectile.knockBack, Projectile.owner,
                     ai0: i * 4f); // 延迟帧数
@@ -132,9 +116,9 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
 
             Texture2D sg = ACMAsset.SoftGlow;
             sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-                new Color(255, 140, 20, 0) * 0.85f, Projectile.rotation,
+                new Color(255, 140, 20) * 0.90f, Projectile.rotation,
                 new Vector2(sg.Width * 0.5f, sg.Height * 0.5f),
-                0.5f, SpriteEffects.None, 0);
+                0.6f, SpriteEffects.None, 0);
 
             sb.End();
             sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
@@ -175,28 +159,9 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
         public override void AI() {
             if (Delay > 0) { Delay--; return; }
             LiveTime++;
+            Projectile.rotation = Projectile.velocity.ToRotation() - MathHelper.PiOver2;
             Projectile.alpha = (int)MathHelper.Lerp(0, 255,
                 LiveTime > LIFETIME ? (LiveTime - LIFETIME) / 16f : 0f);
-
-            // 粒子
-            if (LiveTime < LIFETIME && Main.rand.NextBool(3)) {
-                float h = Projectile.height * 0.5f;
-                Vector2 pos = Projectile.Center +
-                    new Vector2(Main.rand.NextFloat(-20f, 20f),
-                                Main.rand.NextFloat(-h, 0));
-                Dust d = Dust.NewDustPerfect(pos, DustID.AmberBolt,
-                    new Vector2(Main.rand.NextFloat(-3f, 3f), Main.rand.NextFloat(-8f, -2f)),
-                    0, new Color(255, 160, 20), Main.rand.NextFloat(1.5f, 3f));
-                d.noGravity = true;
-            }
-            if (LiveTime < LIFETIME && Main.rand.NextBool(6)) {
-                Dust de = Dust.NewDustPerfect(
-                    Projectile.Center + new Vector2(Main.rand.NextFloat(-25, 25), -Projectile.height * 0.5f),
-                    DustID.GlowingMushroom,
-                    new Vector2(0, Main.rand.NextFloat(-5, -2)), 0,
-                    new Color(100, 240, 80), 2.0f);
-                de.noGravity = true;
-            }
         }
 
         public override bool? CanDamage() => LiveTime > 0 && LiveTime < LIFETIME ? null : false;
@@ -230,35 +195,56 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
             Texture2D slash = ACMAsset.SlashBurst;
             Texture2D sg    = ACMAsset.SoftGlow;
             Texture2D em    = ACMAsset.EmberShards;
+            Texture2D bolt  = ACMAsset.LightningBranch;
+            Texture2D spark = ACMAsset.Sparkle;
 
-            // 主柱（SlashBurst，正面朝上，纵向扩展）
-            Color mainCol = new Color(255, 160, 20, 0) * alpha;
+            // ── 主柱（SlashBurst 向上，超大纥向拉伸）──
             sb.Draw(slash, Projectile.Center - Main.screenPosition, null,
-                mainCol,
-                -MathHelper.PiOver2, // 旋转使纹理向上
-                new Vector2(slash.Width * 0.5f, slash.Height), // 底部锚点
-                new Vector2(0.55f, scaleY * 0.9f), SpriteEffects.None, 0);
-
-            // 绿色地能光晕叠加
-            Color geoCol = new Color(80, 230, 60, 0) * alpha * 0.55f;
-            sb.Draw(slash, Projectile.Center - Main.screenPosition, null,
-                geoCol, -MathHelper.PiOver2,
+                new Color(255, 160, 20) * alpha,
+                Projectile.rotation,
                 new Vector2(slash.Width * 0.5f, slash.Height),
-                new Vector2(0.4f, scaleY * 0.75f), SpriteEffects.None, 0);
+                new Vector2(1.65f, scaleY * 3.6f), SpriteEffects.None, 0);
 
-            // 底部 SoftGlow
+            // 绿色地能光晕叠层
+            sb.Draw(slash, Projectile.Center - Main.screenPosition, null,
+                new Color(80, 230, 60) * (alpha * 0.55f),
+                Projectile.rotation,
+                new Vector2(slash.Width * 0.5f, slash.Height),
+                new Vector2(1.15f, scaleY * 2.80f), SpriteEffects.None, 0);
+
+            // ── 两侧 LightningBranch 闪电 ──
+            sb.Draw(bolt, Projectile.Center - Main.screenPosition, null,
+                new Color(255, 200, 50) * (alpha * 0.70f),
+                Projectile.rotation + 0.10f,
+                new Vector2(bolt.Width * 0.5f, bolt.Height),
+                new Vector2(0.55f, scaleY * 2.50f), SpriteEffects.None, 0);
+            sb.Draw(bolt, Projectile.Center - Main.screenPosition, null,
+                new Color(255, 200, 50) * (alpha * 0.70f),
+                Projectile.rotation - 0.10f,
+                new Vector2(bolt.Width * 0.5f, bolt.Height),
+                new Vector2(-0.55f, scaleY * 2.50f), SpriteEffects.None, 0);
+
+            // ── 柱顶 Sparkle 星芒 ──
+            Vector2 topPos = Projectile.Center
+                - new Vector2(0, Projectile.height * scaleY * 2.20f);
+            sb.Draw(spark, topPos - Main.screenPosition, null,
+                new Color(255, 220, 80) * (alpha * 0.80f),
+                (float)Main.timeForVisualEffects * 0.06f,
+                new Vector2(spark.Width * 0.5f, spark.Height * 0.5f),
+                1.10f, SpriteEffects.None, 0);
+
+            // ── 底部 SoftGlow 大光团 ──
             sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-                new Color(255, 180, 30, 0) * alpha * 0.9f, 0f,
+                new Color(255, 180, 30) * (alpha * 0.90f), 0f,
                 new Vector2(sg.Width * 0.5f, sg.Height * 0.5f),
-                1.4f, SpriteEffects.None, 0);
+                2.8f, SpriteEffects.None, 0);
 
-            // EmberShards 碎片
-            if (LiveTime < LIFETIME * 0.5f) {
-                Color emCol = new Color(255, 130, 20, 0) * alpha * 0.35f;
+            if (LiveTime < LIFETIME * 0.55f) {
                 sb.Draw(em, Projectile.Center - Main.screenPosition, null,
-                    emCol, prog * MathHelper.TwoPi,
+                    new Color(255, 140, 20) * (alpha * 0.55f),
+                    prog * MathHelper.TwoPi,
                     new Vector2(em.Width * 0.5f, em.Height * 0.5f),
-                    0.25f, SpriteEffects.None, 0);
+                    0.55f, SpriteEffects.None, 0);
             }
 
             sb.End();

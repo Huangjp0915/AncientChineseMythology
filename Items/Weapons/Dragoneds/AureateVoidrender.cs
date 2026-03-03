@@ -106,24 +106,6 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
             float execDur     = totalTime * EXEC_FRAC;
             float unwindDur   = totalTime * (1f - PREP_FRAC - EXEC_FRAC);
 
-            // 粒子
-            if (CurrentStage == Stage.Execute) {
-                for (int i = 0; i < 3; i++) {
-                    Dust d = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(20, 20),
-                        DustID.GoldCoin,
-                        Main.rand.NextVector2Circular(5, 5) - Projectile.velocity * 0.3f,
-                        0, new Color(255, 210, 40), Main.rand.NextFloat(1.2f, 2.5f));
-                    d.noGravity = true;
-                }
-                // 虚空紫尘
-                if (Main.rand.NextBool(3)) {
-                    Dust dv = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(40, 40),
-                        DustID.Shadowflame,
-                        Main.rand.NextVector2Circular(3, 3), 0, default, 1.5f);
-                    dv.noGravity = true;
-                }
-            }
-
             switch (CurrentStage) {
                 case Stage.Prepare:
                     RawProgress = 0f;
@@ -138,13 +120,14 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                     // 挥到一半时发射剑气
                     if (!_waveFired && Timer >= execDur * 0.35f) {
                         _waveFired = true;
-                        Vector2 waveDir = Owner.To(Main.MouseWorld).UnitVector();
+                        Vector2 waveDir = Owner.DirectionTo(Main.MouseWorld);
                         Projectile.NewProjectile(
                             Owner.GetSource_ItemUse(Owner.HeldItem),
                             Owner.Center, waveDir * 22f,
                             ModContent.ProjectileType<AureateVoidWave>(),
                             (int)(Owner.HeldItem.damage * 1.5f),
                             Owner.HeldItem.knockBack * 0.7f, Owner.whoAmI);
+                        SoundEngine.PlaySound(SoundID.Item84, Owner.position);
                     }
                     if (Timer >= execDur) CurrentStage = Stage.Unwind;
                     break;
@@ -186,57 +169,66 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
 
         public override bool PreDraw(ref Color lightColor) {
             SpriteBatch sb = Main.spriteBatch;
+            float rotOff = Projectile.spriteDirection > 0
+                ? MathHelper.PiOver4 : MathHelper.PiOver4 + MathHelper.Pi;
 
-            // Additive 模式绘制挥舞拖尾
+            // ── 先切换到 Additive，绘制拖尾和光晕 ──
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null,
+                Main.GameViewMatrix.TransformationMatrix);
+
             if (CurrentStage == Stage.Execute) {
                 Texture2D slash = ACMAsset.GlaciateWave;
                 for (int i = 1; i < 12 && i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
-                    float a = (1f - i / 12f) * 0.50f;
+                    float a   = (1f - i / 12f) * 0.70f;
+                    float rot = Projectile.oldRot[i] + rotOff;
                     // 金色主层
-                    Color cg = new Color(255, 200, 20, 0) * a;
-                    float rot = Projectile.oldRot[i] +
-                        (Projectile.spriteDirection > 0 ? MathHelper.PiOver4 : MathHelper.PiOver4 + MathHelper.Pi);
                     sb.Draw(slash, Projectile.Center - Main.screenPosition, null,
-                        cg, rot,
+                        new Color(255, 200, 20) * a, rot,
+                        new Vector2(slash.Width * 0.5f, slash.Height * 0.5f),
+                        Projectile.scale * 0.52f, SpriteEffects.None, 0);
+                    // 虚空紫色叠加
+                    sb.Draw(slash, Projectile.Center - Main.screenPosition, null,
+                        new Color(160, 30, 255) * (a * 0.48f), rot + 0.13f,
                         new Vector2(slash.Width * 0.5f, slash.Height * 0.5f),
                         Projectile.scale * 0.38f, SpriteEffects.None, 0);
-                    // 虚空紫色叠加
-                    Color cv = new Color(160, 30, 255, 0) * a * 0.5f;
-                    sb.Draw(slash, Projectile.Center - Main.screenPosition, null,
-                        cv, rot + 0.12f,
-                        new Vector2(slash.Width * 0.5f, slash.Height * 0.5f),
-                        Projectile.scale * 0.32f, SpriteEffects.None, 0);
                 }
+
+                // SoftGlow 脉冲光晕
+                float pulse = 0.75f + 0.25f * MathF.Sin((float)Main.timeForVisualEffects * 0.25f);
+                Texture2D sg = ACMAsset.SoftGlow;
+                sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
+                    new Color(255, 210, 40) * 0.65f * pulse, Projectile.rotation + rotOff,
+                    new Vector2(sg.Width * 0.5f, sg.Height * 0.5f),
+                    Projectile.scale * 2.4f, SpriteEffects.None, 0);
+
+                // Sparkle 剑尖星芒
+                Texture2D sparkle = ACMAsset.Sparkle;
+                Vector2 tip = Projectile.Center + Projectile.rotation.ToRotationVector2()
+                              * Projectile.Size.Length() * Projectile.scale * 0.6f;
+                sb.Draw(sparkle, tip - Main.screenPosition, null,
+                    new Color(255, 235, 80) * 0.55f,
+                    (float)Main.timeForVisualEffects * 0.06f,
+                    new Vector2(sparkle.Width * 0.5f, sparkle.Height * 0.5f),
+                    Projectile.scale * 0.75f, SpriteEffects.None, 0);
             }
 
-            // 本体绘制
+            // ── 恢复 AlphaBlend 绘制刀身本体 ──
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null,
+                Main.GameViewMatrix.TransformationMatrix);
+
             Texture2D tex = ModContent.Request<Texture2D>(Texture).Value;
             SpriteEffects fx = Projectile.spriteDirection < 0
                 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
-            float rotOff = Projectile.spriteDirection > 0
-                ? MathHelper.PiOver4 : MathHelper.PiOver4 + MathHelper.Pi;
             Vector2 origin = Projectile.spriteDirection > 0
                 ? new Vector2(0, tex.Height) : new Vector2(tex.Width, tex.Height);
             sb.Draw(tex, Projectile.Center - Main.screenPosition, null,
                 lightColor, Projectile.rotation + rotOff, origin,
                 Projectile.scale, fx, 0);
 
-            // 叠加金色光晕
-            if (CurrentStage == Stage.Execute) {
-                sb.End();
-                sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
-                    DepthStencilState.None, RasterizerState.CullNone, null,
-                    Main.GameViewMatrix.TransformationMatrix);
-                Texture2D sg = ACMAsset.SoftGlow;
-                sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-                    new Color(255, 210, 30, 0) * 0.4f, Projectile.rotation + rotOff,
-                    new Vector2(sg.Width * 0.5f, sg.Height * 0.5f),
-                    Projectile.scale * 2.0f, SpriteEffects.None, 0);
-                sb.End();
-                sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
-                    DepthStencilState.None, RasterizerState.CullNone, null,
-                    Main.GameViewMatrix.TransformationMatrix);
-            }
             return false;
         }
     }
@@ -268,37 +260,49 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
 
         public override void AI() {
             Projectile.rotation = Projectile.velocity.ToRotation();
-            // 散发粒子
-            if (Main.rand.NextBool(3)) {
-                Dust d = Dust.NewDustPerfect(
-                    Projectile.Center + Main.rand.NextVector2Circular(30, 14),
-                    DustID.GoldFlame, -Projectile.velocity * 0.1f, 0,
-                    new Color(255, 200, 30), Main.rand.NextFloat(1f, 2.5f));
-                d.noGravity = true;
-            }
         }
 
         public override bool PreDraw(ref Color lightColor) {
             SpriteBatch sb = Main.spriteBatch;
             Texture2D tex  = ACMAsset.GlaciateWave;
+            Texture2D sg   = ACMAsset.SoftGlow;
 
-            float life = 1f - Projectile.timeLeft / 55f;
-            float scaleX = MathHelper.Lerp(1.2f, 0.7f, life);
-            float scaleY = MathHelper.Lerp(0.55f, 0.3f, life);
+            float life   = 1f - Projectile.timeLeft / 55f;
+            float scaleX = MathHelper.Lerp(1.8f, 0.6f, ACMUtils.QuadIn(life));
+            float scaleY = MathHelper.Lerp(0.70f, 0.28f, ACMUtils.QuadIn(life));
+            float alpha  = ACMUtils.QuadOut(1f - life) * 0.95f;
+
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null,
+                Main.GameViewMatrix.TransformationMatrix);
 
             // 金色主体
             sb.Draw(tex, Projectile.Center - Main.screenPosition, null,
-                new Color(255, 210, 30, 0) * (1f - life * 0.5f),
+                new Color(255, 215, 40) * alpha,
                 Projectile.rotation,
                 new Vector2(tex.Width * 0.5f, tex.Height * 0.5f),
                 new Vector2(scaleX, scaleY), SpriteEffects.None, 0);
 
-            // 虚空紫色叠层
+            // 虚空紫色叠层（稍偏、稍窄，制造切割感）
             sb.Draw(tex, Projectile.Center - Main.screenPosition, null,
-                new Color(130, 0, 255, 0) * (1f - life * 0.6f) * 0.6f,
-                Projectile.rotation + 0.05f,
+                new Color(140, 0, 255) * (alpha * 0.55f),
+                Projectile.rotation + 0.06f,
                 new Vector2(tex.Width * 0.5f, tex.Height * 0.5f),
-                new Vector2(scaleX * 0.85f, scaleY * 0.85f), SpriteEffects.None, 0);
+                new Vector2(scaleX * 0.78f, scaleY * 0.78f), SpriteEffects.None, 0);
+
+            // 前端 SoftGlow 弹头光折
+            Vector2 frontPos = Projectile.Center
+                + Projectile.velocity.SafeNormalize(Vector2.Zero) * 50f;
+            sb.Draw(sg, frontPos - Main.screenPosition, null,
+                new Color(255, 225, 80) * alpha * 0.80f, 0f,
+                new Vector2(sg.Width * 0.5f, sg.Height * 0.5f),
+                scaleY * 2.2f, SpriteEffects.None, 0);
+
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null,
+                Main.GameViewMatrix.TransformationMatrix);
 
             return false;
         }
