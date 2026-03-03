@@ -565,6 +565,8 @@ Items: {
 		DisplayName: 银脉湮灭冲锋枪
 		Tooltip: 高速连射银蓝能量脉冲弹，每8发触发超载三连矢
 	}
+
+	ArcaneRepulsionArray: {
 		DisplayName: 圣械幽蓝斥力阵
 		Tooltip:
 			'''

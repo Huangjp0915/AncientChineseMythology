@@ -520,6 +520,8 @@ Items: {
 		DisplayName: Argent Pulse Obliterator
 		Tooltip: Rapidly fires silver-blue energy bolts; every 8th shot triggers an overcharged triple burst
 	}
+
+	ArcaneRepulsionArray: {
 		DisplayName: Arcane Repulsion Array
 		Tooltip:
 			'''
