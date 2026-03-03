@@ -137,7 +137,11 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
 
             // 游动时在身后拖出水迹4封小波纹（墙墨深蓝 + 泡沫白）
             if (wakeA > 0.04f && Projectile.oldPos != null) {
-                float wRot = Projectile.velocity.ToRotation() + MathHelper.PiOver2;
+                // 水迹垂直于运动方向展开，翻转时同步补偿角度
+                float velRot = Projectile.spriteDirection < 0
+                    ? MathHelper.Pi - Projectile.rotation
+                    : Projectile.rotation;
+                float wRot = velRot + MathHelper.PiOver2;
                 for (int i = 0; i < 4 && i < Projectile.oldPos.Length; i++) {
                     float ta = (1f - i / 4f) * wakeA;
                     Vector2 wp = Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition;
@@ -162,8 +166,12 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
             sb.End();
             sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
                 DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+            // 翻转时贴图镜像，绘制旋转角需对称补偿：drawRot = π - rotation，否则鱼头朝向相反
             SpriteEffects se = Projectile.spriteDirection < 0 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
-            sb.Draw(tex, Projectile.Center - Main.screenPosition, src, lightColor, Projectile.rotation,
+            float drawRot = Projectile.spriteDirection < 0
+                ? MathHelper.Pi - Projectile.rotation
+                : Projectile.rotation;
+            sb.Draw(tex, Projectile.Center - Main.screenPosition, src, lightColor, drawRot,
                 new Vector2(tex.Width * 0.5f, fh * 0.5f), 1.0f, se, 0);
             return false;
         }
