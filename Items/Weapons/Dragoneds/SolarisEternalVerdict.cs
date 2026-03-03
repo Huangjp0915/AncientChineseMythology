@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -15,7 +14,7 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
     public class SolarisEternalVerdictBuff : ModBuff
     {
         public override void SetStaticDefaults() {
-            Main.buffNoSave[Type]        = true;
+            Main.buffNoSave[Type] = true;
             Main.buffNoTimeDisplay[Type] = true;
         }
         public override void Update(Player player, ref int buffIndex) {
@@ -27,21 +26,21 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
     public class SolarisEternalVerdict : ModItem
     {
         public override void SetDefaults() {
-            Item.damage     = 500;
+            Item.damage = 500;
             Item.DamageType = DamageClass.Summon;
-            Item.mana       = 12;
-            Item.width      = 60;
-            Item.height     = 60;
-            Item.useTime      = 35;
+            Item.mana = 12;
+            Item.width = 60;
+            Item.height = 60;
+            Item.useTime = 35;
             Item.useAnimation = 35;
-            Item.useStyle   = ItemUseStyleID.Swing;
-            Item.knockBack  = 10;
-            Item.value      = Item.buyPrice(gold: 200);
-            Item.rare       = ItemRarityID.Purple;
-            Item.autoReuse  = false;
-            Item.noMelee    = true;
-            Item.buffType   = ModContent.BuffType<SolarisEternalVerdictBuff>();
-            Item.shoot      = ModContent.ProjectileType<SolarisEternalVerdictProj>();
+            Item.useStyle = ItemUseStyleID.Swing;
+            Item.knockBack = 10;
+            Item.value = Item.buyPrice(gold: 200);
+            Item.rare = ItemRarityID.Purple;
+            Item.autoReuse = false;
+            Item.noMelee = true;
+            Item.buffType = ModContent.BuffType<SolarisEternalVerdictBuff>();
+            Item.shoot = ModContent.ProjectileType<SolarisEternalVerdictProj>();
             Item.shootSpeed = 8f;
         }
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
@@ -54,21 +53,21 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
     public class SolarisEternalVerdictProj : ModProjectile
     {
         public override void SetStaticDefaults() {
-            Main.projPet[Type]                           = true;
-            ProjectileID.Sets.MinionSacrificable[Type]   = true;
+            Main.projPet[Type] = true;
+            ProjectileID.Sets.MinionSacrificable[Type] = true;
             ProjectileID.Sets.CultistIsResistantTo[Type] = true;
         }
         public override void SetDefaults() {
-            Projectile.width  = 50;
+            Projectile.width = 50;
             Projectile.height = 50;
-            Projectile.friendly    = true;
-            Projectile.minion      = true;
-            Projectile.DamageType  = DamageClass.Summon;
+            Projectile.friendly = true;
+            Projectile.minion = true;
+            Projectile.DamageType = DamageClass.Summon;
             Projectile.minionSlots = 1.5f;
-            Projectile.penetrate   = -1;
+            Projectile.penetrate = -1;
             Projectile.tileCollide = false;
             Projectile.ignoreWater = true;
-            Projectile.timeLeft    = Main.maxTilesX;
+            Projectile.timeLeft = Main.maxTilesX;
         }
         private ref float Timer => ref Projectile.ai[0];
 
@@ -98,7 +97,7 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                 if (hit) {
                     SoundEngine.PlaySound(SoundID.Item12, Projectile.position);
                     float baseAng = Projectile.DirectionTo(tgt).ToRotation();
-                    float spread  = MathHelper.PiOver4 * 0.38f; // 每侧22.5°
+                    float spread = MathHelper.PiOver4 * 0.38f; // 每侧22.5°
                     for (int k = -1; k <= 1; k += 2) {
                         for (int j = 0; j < 2; j++) {
                             float ang = baseAng + k * spread * j;
@@ -117,8 +116,8 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
 
         public override bool PreDraw(ref Color lightColor) {
             SpriteBatch sb = Main.spriteBatch;
-            Texture2D tex  = Terraria.GameContent.TextureAssets.Projectile[Type].Value;
-            Texture2D sg   = ACMAsset.SoftGlow;
+            Texture2D tex = Terraria.GameContent.TextureAssets.Projectile[Type].Value;
+            Texture2D sg = ACMAsset.SoftGlow;
             Texture2D star = ACMAsset.BlankStar;
 
             sb.End();
@@ -151,20 +150,20 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
     {
         public override string Texture => "AncientChineseMythology/Textures/Masking/LightShot";
         public override void SetStaticDefaults() {
-            ProjectileID.Sets.TrailingMode[Type]    = 2;
+            ProjectileID.Sets.TrailingMode[Type] = 2;
             ProjectileID.Sets.TrailCacheLength[Type] = 14;
         }
         public override void SetDefaults() {
-            Projectile.width  = 14;
+            Projectile.width = 14;
             Projectile.height = 14;
-            Projectile.friendly    = true;
+            Projectile.friendly = true;
             Projectile.tileCollide = false;
-            Projectile.penetrate   = 4;
-            Projectile.timeLeft    = 120;
-            Projectile.DamageType  = DamageClass.Summon;
-            Projectile.light       = 1.2f;
-            Projectile.usesLocalNPCImmunity  = true;
-            Projectile.localNPCHitCooldown   = 5;
+            Projectile.penetrate = 4;
+            Projectile.timeLeft = 120;
+            Projectile.DamageType = DamageClass.Summon;
+            Projectile.light = 1.2f;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 5;
         }
         public override void AI() => Projectile.rotation = Projectile.velocity.ToRotation();
         public override bool PreDraw(ref Color lightColor) {
@@ -173,7 +172,8 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
             sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
                 DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
             Texture2D tex = ACMAsset.LightShot;
-            Texture2D sg  = ACMAsset.SoftGlow;
+            Texture2D sg = ACMAsset.SoftGlow;
+            Texture2D star = ACMAsset.BlankStar;
             for (int i = 1; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
                 float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.78f;
                 sb.Draw(tex, Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition, null,
@@ -190,6 +190,13 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                 new Vector2(0.95f, 0.22f), SpriteEffects.None, 0);
             sb.Draw(sg, Projectile.Center - Main.screenPosition, null, new Color(255, 220, 50) * 0.85f, 0f,
                 new Vector2(sg.Width * 0.5f, sg.Height * 0.5f), 0.55f, SpriteEffects.None, 0);
+            // 弹头脆弱脑大抗星芙脑呵呵心脱自简单单
+            float headPulse = 0.55f + 0.45f * (float)Math.Sin(Main.timeForVisualEffects * 0.18f);
+            sb.Draw(star, Projectile.Center - Main.screenPosition, null,
+                new Color(255, 240, 80) * (0.85f * headPulse),
+                (float)Main.timeForVisualEffects * 0.06f,
+                new Vector2(star.Width * 0.5f, star.Height * 0.5f),
+                0.28f + 0.08f * headPulse, SpriteEffects.None, 0);
             sb.End();
             sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
                 DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);

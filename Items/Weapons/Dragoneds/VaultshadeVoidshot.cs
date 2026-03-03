@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -16,19 +15,19 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
         public override void SetDefaults() {
             Item.damage = 570;
             Item.DamageType = DamageClass.Ranged;
-            Item.width  = 100;
+            Item.width = 100;
             Item.height = 28;
-            Item.useTime      = 44;
+            Item.useTime = 44;
             Item.useAnimation = 44;
-            Item.useStyle     = ItemUseStyleID.Shoot;
-            Item.knockBack    = 16;
-            Item.crit         = 26;
-            Item.value        = Item.buyPrice(gold: 200);
-            Item.rare         = ItemRarityID.Purple;
-            Item.autoReuse    = true;
-            Item.notAmmo      = true;
-            Item.shoot        = ModContent.ProjectileType<VaultshadeVolt>();
-            Item.shootSpeed   = 42f;
+            Item.useStyle = ItemUseStyleID.Shoot;
+            Item.knockBack = 16;
+            Item.crit = 26;
+            Item.value = Item.buyPrice(gold: 200);
+            Item.rare = ItemRarityID.Purple;
+            Item.autoReuse = true;
+            Item.notAmmo = true;
+            Item.shoot = ModContent.ProjectileType<VaultshadeVolt>();
+            Item.shootSpeed = 42f;
         }
 
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
@@ -45,21 +44,21 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
             => "AncientChineseMythology/Textures/Masking/LightShot";
 
         public override void SetStaticDefaults() {
-            ProjectileID.Sets.TrailingMode[Type]    = 2;
+            ProjectileID.Sets.TrailingMode[Type] = 2;
             ProjectileID.Sets.TrailCacheLength[Type] = 18;
         }
 
         public override void SetDefaults() {
-            Projectile.width  = 16;
+            Projectile.width = 16;
             Projectile.height = 16;
-            Projectile.friendly    = true;
+            Projectile.friendly = true;
             Projectile.tileCollide = true;
-            Projectile.penetrate   = 2;
-            Projectile.timeLeft    = 220;
-            Projectile.DamageType  = DamageClass.Ranged;
-            Projectile.light       = 1.0f;
-            Projectile.usesLocalNPCImmunity  = true;
-            Projectile.localNPCHitCooldown   = 8;
+            Projectile.penetrate = 2;
+            Projectile.timeLeft = 220;
+            Projectile.DamageType = DamageClass.Ranged;
+            Projectile.light = 1.0f;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 8;
         }
 
         private float ScaleMult => MathHelper.Lerp(0.80f, 1.30f, 1f - Projectile.timeLeft / 220f);
@@ -82,7 +81,7 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                 Main.GameViewMatrix.TransformationMatrix);
 
             Texture2D tex = ACMAsset.LightShot;
-            Texture2D sg  = ACMAsset.SoftGlow;
+            Texture2D sg = ACMAsset.SoftGlow;
 
             for (int i = 1; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
                 float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.78f;
@@ -122,23 +121,23 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
             => "AncientChineseMythology/Items/Weapons/Dragoneds/VaultshadeVoidshot";
 
         public override void SetDefaults() {
-            Projectile.width     = 10;
-            Projectile.height    = 10;
-            Projectile.friendly  = false;
+            Projectile.width = 10;
+            Projectile.height = 10;
+            Projectile.friendly = false;
             Projectile.tileCollide = false;
             Projectile.penetrate = -1;
-            Projectile.timeLeft  = 65;
-            Projectile.alpha     = 255;
+            Projectile.timeLeft = 65;
+            Projectile.alpha = 255;
         }
 
         public override bool ShouldUpdatePosition() => false;
 
         public override bool PreDraw(ref Color lightColor) {
-            float prog  = 1f - Projectile.timeLeft / 65f;
+            float prog = 1f - Projectile.timeLeft / 65f;
             // 内爆: 初始大 -> 内缩
             float alpha = MathHelper.SmoothStep(0.90f, 0f, prog);
             float scaleOuter = MathHelper.SmoothStep(24f, 2f, ACMUtils.QuadIn(prog));
-            float scaleCore  = MathHelper.SmoothStep(0f, 14f, ACMUtils.QuadOut(prog) * 0.5f);
+            float scaleCore = MathHelper.SmoothStep(0f, 14f, ACMUtils.QuadOut(prog) * 0.5f);
             SpriteBatch sb = Main.spriteBatch;
             sb.End();
             sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
@@ -146,8 +145,8 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                 Main.GameViewMatrix.TransformationMatrix);
 
             Texture2D burst = ACMAsset.SlashBurst;
-            Texture2D sg    = ACMAsset.SoftGlow;
-            Texture2D bolt  = ACMAsset.LightningBranch;
+            Texture2D sg = ACMAsset.SoftGlow;
+            Texture2D bolt = ACMAsset.LightningBranch;
 
             // 紫色虚空履空而来
             for (int k = 0; k < 4; k++) {

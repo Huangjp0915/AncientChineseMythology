@@ -17,18 +17,18 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
         public override void SetDefaults() {
             Item.damage = 500;
             Item.DamageType = DamageClass.Magic;
-            Item.width  = 52;
+            Item.width = 52;
             Item.height = 52;
-            Item.useTime      = 42;
+            Item.useTime = 42;
             Item.useAnimation = 42;
             Item.useStyle = ItemUseStyleID.Shoot;
             Item.knockBack = 12;
-            Item.crit  = 20;
-            Item.mana  = 35;
+            Item.crit = 20;
+            Item.mana = 35;
             Item.value = Item.buyPrice(gold: 200);
-            Item.rare  = ItemRarityID.Purple;
-            Item.autoReuse    = true;
-            Item.noMelee      = true;
+            Item.rare = ItemRarityID.Purple;
+            Item.autoReuse = true;
+            Item.noMelee = true;
             Item.shoot = ModContent.ProjectileType<GeoarchonMarker>();
             Item.shootSpeed = 22f;
             Item.staff[Type] = true;
@@ -53,14 +53,14 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
         private bool _erupted = false;
 
         public override void SetDefaults() {
-            Projectile.width  = 14;
+            Projectile.width = 14;
             Projectile.height = 14;
-            Projectile.friendly    = true;
+            Projectile.friendly = true;
             Projectile.tileCollide = true;
-            Projectile.penetrate   = 1;
-            Projectile.timeLeft    = 120;
-            Projectile.DamageType  = DamageClass.Magic;
-            Projectile.light       = 0.8f;
+            Projectile.penetrate = 1;
+            Projectile.timeLeft = 120;
+            Projectile.DamageType = DamageClass.Magic;
+            Projectile.light = 0.8f;
         }
 
         public override void AI() {
@@ -137,21 +137,21 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
             => "AncientChineseMythology/Textures/Masking/SlashBurst";
 
         // ai[0] = 延迟帧数（发光之前等待）
-        private ref float Delay    => ref Projectile.ai[0];
+        private ref float Delay => ref Projectile.ai[0];
         private ref float LiveTime => ref Projectile.localAI[0];
         private const float LIFETIME = 65f;
 
         public override void SetDefaults() {
-            Projectile.width  = 60;
+            Projectile.width = 60;
             Projectile.height = 120;
-            Projectile.friendly    = true;
+            Projectile.friendly = true;
             Projectile.tileCollide = false;
-            Projectile.penetrate   = -1;
-            Projectile.timeLeft    = (int)(LIFETIME + 30f);
-            Projectile.DamageType  = DamageClass.Magic;
-            Projectile.alpha       = 255;
-            Projectile.usesLocalNPCImmunity  = true;
-            Projectile.localNPCHitCooldown   = 8;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = (int)(LIFETIME + 30f);
+            Projectile.DamageType = DamageClass.Magic;
+            Projectile.alpha = 255;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 8;
         }
 
         public override bool ShouldUpdatePosition() => false;
@@ -178,9 +178,9 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
         public override bool PreDraw(ref Color lightColor) {
             if (Delay > 0) return false;
 
-            float prog  = Math.Min(LiveTime / LIFETIME, 1f);
+            float prog = Math.Min(LiveTime / LIFETIME, 1f);
             float enter = Math.Min(LiveTime / 12f, 1f);
-            float exit  = LiveTime > LIFETIME ? 1f - (LiveTime - LIFETIME) / 16f : 1f;
+            float exit = LiveTime > LIFETIME ? 1f - (LiveTime - LIFETIME) / 16f : 1f;
             float alpha = enter * exit;
 
             // 纵向拉伸 Y
@@ -193,9 +193,9 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                 Main.GameViewMatrix.TransformationMatrix);
 
             Texture2D slash = ACMAsset.SlashBurst;
-            Texture2D sg    = ACMAsset.SoftGlow;
-            Texture2D em    = ACMAsset.EmberShards;
-            Texture2D bolt  = ACMAsset.LightningBranch;
+            Texture2D sg = ACMAsset.SoftGlow;
+            Texture2D em = ACMAsset.EmberShards;
+            Texture2D bolt = ACMAsset.LightningBranch;
             Texture2D spark = ACMAsset.Sparkle;
 
             // ── 主柱（SlashBurst 向上，超大纥向拉伸）──

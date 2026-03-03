@@ -1,6 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using System;
+﻿using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -17,16 +15,16 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
         public override void SetDefaults() {
             Item.damage = 515;
             Item.DamageType = DamageClass.Ranged;
-            Item.width  = 30;
+            Item.width = 30;
             Item.height = 80;
-            Item.useTime      = 18;
+            Item.useTime = 18;
             Item.useAnimation = 18;
             Item.useStyle = ItemUseStyleID.Shoot;
             Item.knockBack = 12;
-            Item.crit  = 24;
+            Item.crit = 24;
             Item.value = Item.buyPrice(gold: 200);
-            Item.rare  = ItemRarityID.Purple;
-            Item.autoReuse    = true;
+            Item.rare = ItemRarityID.Purple;
+            Item.autoReuse = true;
             Item.shoot = ModContent.ProjectileType<TwilightGlazeArrow>();
             Item.shootSpeed = 22f;
             Item.useAmmo = AmmoID.Arrow;
@@ -47,21 +45,21 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
             => "AncientChineseMythology/Textures/Masking/LightShot";
 
         public override void SetStaticDefaults() {
-            ProjectileID.Sets.TrailingMode[Type]    = 2;
+            ProjectileID.Sets.TrailingMode[Type] = 2;
             ProjectileID.Sets.TrailCacheLength[Type] = 16;
         }
 
         public override void SetDefaults() {
-            Projectile.width  = 12;
+            Projectile.width = 12;
             Projectile.height = 12;
-            Projectile.friendly    = true;
+            Projectile.friendly = true;
             Projectile.tileCollide = true;
-            Projectile.penetrate   = 4;
-            Projectile.timeLeft    = 220;
-            Projectile.DamageType  = DamageClass.Ranged;
-            Projectile.light       = 0.9f;
-            Projectile.usesLocalNPCImmunity  = true;
-            Projectile.localNPCHitCooldown   = 6;
+            Projectile.penetrate = 4;
+            Projectile.timeLeft = 220;
+            Projectile.DamageType = DamageClass.Ranged;
+            Projectile.light = 0.9f;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 6;
         }
 
         public override void AI() {
@@ -84,7 +82,7 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                 Main.GameViewMatrix.TransformationMatrix);
 
             Texture2D tex = ACMAsset.LightShot;
-            Texture2D sg  = ACMAsset.SoftGlow;
+            Texture2D sg = ACMAsset.SoftGlow;
 
             for (int i = 1; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
                 float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.68f;
@@ -123,20 +121,20 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
             => "AncientChineseMythology/Items/Weapons/Dragoneds/TwilightGlazeGreatbow";
 
         public override void SetDefaults() {
-            Projectile.width     = 10;
-            Projectile.height    = 10;
-            Projectile.friendly  = false;
+            Projectile.width = 10;
+            Projectile.height = 10;
+            Projectile.friendly = false;
             Projectile.tileCollide = false;
             Projectile.penetrate = -1;
-            Projectile.timeLeft  = 40;
-            Projectile.alpha     = 255;
+            Projectile.timeLeft = 40;
+            Projectile.alpha = 255;
         }
 
         public override bool ShouldUpdatePosition() => false;
 
         public override bool PreDraw(ref Color lightColor) {
-            float prog  = 1f - Projectile.timeLeft / 40f;
-            float alpha = MathHelper.SmoothStep(0.85f, 0f, prog);
+            float prog = 1f - Projectile.timeLeft / 40f;
+            float alpha = MathHelper.SmoothStep(0.88f, 0f, prog);
             float scale = MathHelper.SmoothStep(0f, 10f, ACMUtils.QuadOut(prog));
             SpriteBatch sb = Main.spriteBatch;
             sb.End();
@@ -144,25 +142,32 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                 DepthStencilState.None, RasterizerState.CullNone, null,
                 Main.GameViewMatrix.TransformationMatrix);
 
-            Texture2D burst = ACMAsset.SlashBurst;
-            Texture2D sg    = ACMAsset.SoftGlow;
-            Texture2D spark = ACMAsset.Sparkle;
+            Texture2D wave = ACMAsset.GlaciateWave;
+            Texture2D sg = ACMAsset.SoftGlow;
 
+            // 4张波纹向四斜方扩散，模拟水花溅散（斜向展开贴合弓箭落水主题）
             for (int k = 0; k < 4; k++) {
-                sb.Draw(burst, Projectile.Center - Main.screenPosition, null,
-                    new Color(0, 210, 185) * (alpha * 0.60f), k * MathHelper.PiOver2 + MathHelper.PiOver4,
-                    new Vector2(burst.Width * 0.5f, burst.Height),
-                    scale * 0.35f, SpriteEffects.None, 0);
+                float wAngle = k * MathHelper.PiOver2 + MathHelper.PiOver4;
+                sb.Draw(wave, Projectile.Center - Main.screenPosition, null,
+                    new Color(0, 215, 185) * (alpha * 0.62f),
+                    wAngle,
+                    new Vector2(wave.Width * 0.5f, wave.Height * 0.5f),
+                    new Vector2(scale * 0.32f, scale * 0.12f), SpriteEffects.None, 0);
             }
-            sb.Draw(spark, Projectile.Center - Main.screenPosition, null,
-                new Color(80, 235, 205) * alpha,
-                (float)Main.timeForVisualEffects * 0.015f,
-                new Vector2(spark.Width * 0.5f, spark.Height * 0.5f),
-                scale * 0.50f, SpriteEffects.None, 0);
+            // 次级珊瑚色涟漪（略小，90°旋转偏移）
+            for (int k = 0; k < 4; k++) {
+                float wAngle = k * MathHelper.PiOver2;
+                sb.Draw(wave, Projectile.Center - Main.screenPosition, null,
+                    new Color(255, 100, 130) * (alpha * 0.38f),
+                    wAngle,
+                    new Vector2(wave.Width * 0.5f, wave.Height * 0.5f),
+                    new Vector2(scale * 0.20f, scale * 0.08f), SpriteEffects.None, 0);
+            }
+            // 中心青白柔光
             sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-                new Color(200, 255, 245) * alpha, 0f,
+                new Color(190, 255, 245) * alpha, 0f,
                 new Vector2(sg.Width * 0.5f, sg.Height * 0.5f),
-                scale * 0.18f, SpriteEffects.None, 0);
+                scale * 0.22f, SpriteEffects.None, 0);
 
             sb.End();
             sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,

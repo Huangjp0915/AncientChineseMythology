@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -15,7 +14,7 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
     public class DraconicEmberBuff : ModBuff
     {
         public override void SetStaticDefaults() {
-            Main.buffNoSave[Type]        = true;
+            Main.buffNoSave[Type] = true;
             Main.buffNoTimeDisplay[Type] = true;
         }
         public override void Update(Player player, ref int buffIndex) {
@@ -27,21 +26,21 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
     public class DraconicEmber : ModItem
     {
         public override void SetDefaults() {
-            Item.damage     = 480;
+            Item.damage = 480;
             Item.DamageType = DamageClass.Summon;
-            Item.mana       = 15;
-            Item.width      = 60;
-            Item.height     = 60;
-            Item.useTime      = 35;
+            Item.mana = 15;
+            Item.width = 60;
+            Item.height = 60;
+            Item.useTime = 35;
             Item.useAnimation = 35;
-            Item.useStyle   = ItemUseStyleID.Swing;
-            Item.knockBack  = 12;
-            Item.value      = Item.buyPrice(gold: 200);
-            Item.rare       = ItemRarityID.Purple;
-            Item.autoReuse  = false;
-            Item.noMelee    = true;
-            Item.buffType   = ModContent.BuffType<DraconicEmberBuff>();
-            Item.shoot      = ModContent.ProjectileType<DraconicEmberProj>();
+            Item.useStyle = ItemUseStyleID.Swing;
+            Item.knockBack = 12;
+            Item.value = Item.buyPrice(gold: 200);
+            Item.rare = ItemRarityID.Purple;
+            Item.autoReuse = false;
+            Item.noMelee = true;
+            Item.buffType = ModContent.BuffType<DraconicEmberBuff>();
+            Item.shoot = ModContent.ProjectileType<DraconicEmberProj>();
             Item.shootSpeed = 8f;
         }
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
@@ -54,21 +53,21 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
     public class DraconicEmberProj : ModProjectile
     {
         public override void SetStaticDefaults() {
-            Main.projPet[Type]                           = true;
-            ProjectileID.Sets.MinionSacrificable[Type]   = true;
+            Main.projPet[Type] = true;
+            ProjectileID.Sets.MinionSacrificable[Type] = true;
             ProjectileID.Sets.CultistIsResistantTo[Type] = true;
         }
         public override void SetDefaults() {
-            Projectile.width  = 60;
+            Projectile.width = 60;
             Projectile.height = 60;
-            Projectile.friendly    = true;
-            Projectile.minion      = true;
-            Projectile.DamageType  = DamageClass.Summon;
+            Projectile.friendly = true;
+            Projectile.minion = true;
+            Projectile.DamageType = DamageClass.Summon;
             Projectile.minionSlots = 2f;
-            Projectile.penetrate   = -1;
+            Projectile.penetrate = -1;
             Projectile.tileCollide = false;
             Projectile.ignoreWater = true;
-            Projectile.timeLeft    = Main.maxTilesX;
+            Projectile.timeLeft = Main.maxTilesX;
         }
         private ref float Timer => ref Projectile.ai[0];
 
@@ -96,7 +95,8 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                         ModContent.ProjectileType<DraconicEmberEggProj>(),
                         Projectile.damage, 0f, Projectile.owner);
                 }
-            } else {
+            }
+            else {
                 Vector2 idle = owner.Center + new Vector2(0f, -150f + (float)Math.Sin(Timer * 0.03f) * 30f);
                 Projectile.velocity = Vector2.Lerp(Projectile.velocity, (idle - Projectile.Center) * 0.07f, 0.10f);
             }
@@ -107,7 +107,7 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
         public override bool PreDraw(ref Color lightColor) {
             SpriteBatch sb = Main.spriteBatch;
             Texture2D tex = Terraria.GameContent.TextureAssets.Projectile[Type].Value;
-            Texture2D sg  = ACMAsset.SoftGlow;
+            Texture2D sg = ACMAsset.SoftGlow;
             Texture2D emb = ACMAsset.EmberShards;
 
             sb.End();
@@ -134,29 +134,29 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
     public class DraconicEmberEggProj : ModProjectile
     {
         public override void SetStaticDefaults() {
-            ProjectileID.Sets.TrailingMode[Type]    = 2;
+            ProjectileID.Sets.TrailingMode[Type] = 2;
             ProjectileID.Sets.TrailCacheLength[Type] = 12;
         }
         public override void SetDefaults() {
-            Projectile.width  = 22;
+            Projectile.width = 22;
             Projectile.height = 22;
-            Projectile.friendly    = true;
+            Projectile.friendly = true;
             Projectile.tileCollide = true;
-            Projectile.penetrate   = 3;
-            Projectile.timeLeft    = 150;
-            Projectile.DamageType  = DamageClass.Summon;
-            Projectile.light       = 0.8f;
-            Projectile.usesLocalNPCImmunity  = true;
-            Projectile.localNPCHitCooldown   = 8;
+            Projectile.penetrate = 3;
+            Projectile.timeLeft = 150;
+            Projectile.DamageType = DamageClass.Summon;
+            Projectile.light = 0.8f;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 8;
         }
         public override void AI() {
             Projectile.rotation = Projectile.velocity.ToRotation();
             Projectile.velocity.Y += 0.08f;
         }
         public override void OnKill(int timeLeft) {
-            SoundEngine.PlaySound(SoundID.Item14, Projectile.position);
+            SoundEngine.PlaySound(SoundID.Item20, Projectile.position);
             Projectile.NewProjectile(Projectile.GetSource_Death(), Projectile.Center, Vector2.Zero,
-                ModContent.ProjectileType<GeocrystalBurst>(), 0, 0f, Projectile.owner);
+                ModContent.ProjectileType<DraconicLavaFlare>(), 0, 0f, Projectile.owner);
         }
         public override bool PreDraw(ref Color lightColor) {
             SpriteBatch sb = Main.spriteBatch;
@@ -164,7 +164,7 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
             sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
                 DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
             Texture2D tex = Terraria.GameContent.TextureAssets.Projectile[Type].Value;
-            Texture2D sg  = ACMAsset.SoftGlow;
+            Texture2D sg = ACMAsset.SoftGlow;
             for (int i = 1; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
                 float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.65f;
                 sb.Draw(sg, Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition, null,
@@ -176,6 +176,83 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                 DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
             sb.Draw(tex, Projectile.Center - Main.screenPosition, null, lightColor, Projectile.rotation,
                 new Vector2(tex.Width * 0.5f, tex.Height * 0.5f), 1.0f, SpriteEffects.None, 0);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 龙炎熔核爆炸 —— 熔岩玄蛋爆炸时产生的红橙熔岩焰核视觉弹幕
+    /// </summary>
+    public class DraconicLavaFlare : ModProjectile
+    {
+        public override string Texture
+            => "AncientChineseMythology/Items/Weapons/Dragoneds/DraconicEmber";
+
+        public override void SetDefaults() {
+            Projectile.width = 10;
+            Projectile.height = 10;
+            Projectile.friendly = false;
+            Projectile.tileCollide = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = 50;
+            Projectile.alpha = 255;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+
+        public override bool PreDraw(ref Color lightColor) {
+            float prog = 1f - Projectile.timeLeft / 50f;
+            float alpha = MathHelper.SmoothStep(0.95f, 0f, prog);
+            float scale = MathHelper.SmoothStep(0f, 16f, ACMUtils.QuadOut(prog));
+            SpriteBatch sb = Main.spriteBatch;
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null,
+                Main.GameViewMatrix.TransformationMatrix);
+
+            Texture2D burst = ACMAsset.SlashBurst;
+            Texture2D emb = ACMAsset.EmberShards;
+            Texture2D sg = ACMAsset.SoftGlow;
+
+            // 四向红橙熔岩迸射
+            for (int k = 0; k < 4; k++) {
+                sb.Draw(burst, Projectile.Center - Main.screenPosition, null,
+                    new Color(230, 55, 10) * (alpha * 0.72f), k * MathHelper.PiOver2 + (float)Main.timeForVisualEffects * 0.01f,
+                    new Vector2(burst.Width * 0.5f, burst.Height),
+                    scale * 0.48f, SpriteEffects.None, 0);
+            }
+            // 斜向橙焰辅射
+            for (int k = 0; k < 4; k++) {
+                sb.Draw(burst, Projectile.Center - Main.screenPosition, null,
+                    new Color(255, 120, 0) * (alpha * 0.50f), k * MathHelper.PiOver2 + MathHelper.PiOver4,
+                    new Vector2(burst.Width * 0.5f, burst.Height),
+                    scale * 0.32f, SpriteEffects.None, 0);
+            }
+            // 快速旋转的熔岩炽片
+            sb.Draw(emb, Projectile.Center - Main.screenPosition, null,
+                new Color(255, 90, 5) * (alpha * 0.80f),
+                (float)Main.timeForVisualEffects * 0.12f,
+                new Vector2(emb.Width * 0.5f, emb.Height * 0.5f),
+                scale * 0.65f, SpriteEffects.None, 0);
+            sb.Draw(emb, Projectile.Center - Main.screenPosition, null,
+                new Color(255, 200, 40) * (alpha * 0.45f),
+                -(float)Main.timeForVisualEffects * 0.08f,
+                new Vector2(emb.Width * 0.5f, emb.Height * 0.5f),
+                scale * 0.35f, SpriteEffects.None, 0);
+            // 橙红核心光晕
+            sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
+                new Color(255, 130, 20) * alpha, 0f,
+                new Vector2(sg.Width * 0.5f, sg.Height * 0.5f),
+                scale * 0.40f, SpriteEffects.None, 0);
+            sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
+                new Color(255, 255, 160) * (alpha * 0.60f), 0f,
+                new Vector2(sg.Width * 0.5f, sg.Height * 0.5f),
+                scale * 0.15f, SpriteEffects.None, 0);
+
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null,
+                Main.GameViewMatrix.TransformationMatrix);
             return false;
         }
     }

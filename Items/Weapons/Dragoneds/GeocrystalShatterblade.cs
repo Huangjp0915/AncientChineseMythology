@@ -16,18 +16,18 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
         public override void SetDefaults() {
             Item.damage = 530;
             Item.DamageType = DamageClass.Melee;
-            Item.width  = 90;
+            Item.width = 90;
             Item.height = 90;
-            Item.useTime      = 26;
+            Item.useTime = 26;
             Item.useAnimation = 26;
             Item.useStyle = ItemUseStyleID.Shoot;
             Item.knockBack = 16;
-            Item.crit  = 20;
+            Item.crit = 20;
             Item.value = Item.buyPrice(gold: 200);
-            Item.rare  = ItemRarityID.Purple;
-            Item.autoReuse    = true;
+            Item.rare = ItemRarityID.Purple;
+            Item.autoReuse = true;
             Item.noUseGraphic = true;
-            Item.noMelee      = true;
+            Item.noMelee = true;
             Item.shoot = ModContent.ProjectileType<GeocrystalShatterbladeSwing>();
             Item.shootSpeed = 3f;
         }
@@ -43,12 +43,12 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
         public override string Texture
             => "AncientChineseMythology/Items/Weapons/Dragoneds/GeocrystalShatterblade";
         private const float SWING_RANGE = (float)Math.PI * 1.6f;
-        private const float PREP_FRAC   = 0.22f;
-        private const float EXEC_FRAC   = 0.52f;
+        private const float PREP_FRAC = 0.22f;
+        private const float EXEC_FRAC = 0.52f;
 
         private enum Stage { Prepare, Execute, Unwind }
-        private ref float Timer       => ref Projectile.ai[0];
-        private ref float InitAngle   => ref Projectile.ai[1];
+        private ref float Timer => ref Projectile.ai[0];
+        private ref float InitAngle => ref Projectile.ai[1];
         private ref float RawProgress => ref Projectile.localAI[0];
         private Stage CurrentStage {
             get => (Stage)Projectile.localAI[1];
@@ -59,19 +59,19 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
 
         public override void SetStaticDefaults() {
             ProjectileID.Sets.HeldProjDoesNotUsePlayerGfxOffY[Type] = true;
-            ProjectileID.Sets.TrailingMode[Type]    = 2;
+            ProjectileID.Sets.TrailingMode[Type] = 2;
             ProjectileID.Sets.TrailCacheLength[Type] = 14;
         }
 
         public override void SetDefaults() {
-            Projectile.width  = 90;
+            Projectile.width = 90;
             Projectile.height = 90;
-            Projectile.friendly    = true;
-            Projectile.timeLeft    = 10000;
-            Projectile.penetrate   = -1;
+            Projectile.friendly = true;
+            Projectile.timeLeft = 10000;
+            Projectile.penetrate = -1;
             Projectile.tileCollide = false;
-            Projectile.usesLocalNPCImmunity  = true;
-            Projectile.localNPCHitCooldown   = -1;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = -1;
             Projectile.ownerHitCheck = true;
             Projectile.DamageType = DamageClass.Melee;
         }
@@ -92,10 +92,10 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
         public override void AI() {
             if (!Owner.active || Owner.dead) { Projectile.Kill(); return; }
             Owner.itemAnimation = 2;
-            Owner.itemTime      = 2;
+            Owner.itemTime = 2;
             float totalTime = Owner.itemAnimationMax;
-            float prepEnd   = totalTime * PREP_FRAC;
-            float execDur   = totalTime * EXEC_FRAC;
+            float prepEnd = totalTime * PREP_FRAC;
+            float execDur = totalTime * EXEC_FRAC;
             float unwindDur = totalTime * (1f - PREP_FRAC - EXEC_FRAC);
 
             switch (CurrentStage) {
@@ -136,8 +136,8 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                 Projectile.rotation - MathHelper.PiOver2);
             arm.Y += Owner.gfxOffY;
             Projectile.Center = arm;
-            Projectile.scale  = 1.3f * Owner.GetAdjustedItemScale(Owner.HeldItem);
-            Owner.heldProj    = Projectile.whoAmI;
+            Projectile.scale = 1.3f * Owner.GetAdjustedItemScale(Owner.HeldItem);
+            Owner.heldProj = Projectile.whoAmI;
             Timer++;
         }
 
@@ -169,7 +169,7 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
             if (CurrentStage == Stage.Execute) {
                 Texture2D wave = ACMAsset.GlaciateWave;
                 for (int i = 1; i < 12 && i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
-                    float a   = (1f - i / 12f) * 0.72f;
+                    float a = (1f - i / 12f) * 0.72f;
                     float rot = Projectile.oldRot[i] + rotOff;
                     sb.Draw(wave, Projectile.Center - Main.screenPosition, null,
                         new Color(255, 70, 20) * a, rot,
@@ -219,20 +219,20 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
             => "AncientChineseMythology/Items/Weapons/Dragoneds/GeocrystalShatterblade";
 
         public override void SetDefaults() {
-            Projectile.width     = 10;
-            Projectile.height    = 10;
-            Projectile.friendly  = true;
+            Projectile.width = 10;
+            Projectile.height = 10;
+            Projectile.friendly = true;
             Projectile.tileCollide = false;
             Projectile.penetrate = -1;
-            Projectile.timeLeft  = 55;
-            Projectile.alpha     = 255;
+            Projectile.timeLeft = 55;
+            Projectile.alpha = 255;
             Projectile.DamageType = DamageClass.Melee;
         }
 
         public override bool ShouldUpdatePosition() => false;
 
         public override bool PreDraw(ref Color lightColor) {
-            float prog  = 1f - Projectile.timeLeft / 55f;
+            float prog = 1f - Projectile.timeLeft / 55f;
             float alpha = MathHelper.SmoothStep(0.9f, 0f, prog);
             float scale = MathHelper.SmoothStep(0f, 20f, ACMUtils.QuadOut(prog));
             SpriteBatch sb = Main.spriteBatch;
@@ -242,8 +242,8 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                 Main.GameViewMatrix.TransformationMatrix);
 
             Texture2D burst = ACMAsset.SlashBurst;
-            Texture2D em    = ACMAsset.EmberShards;
-            Texture2D sg    = ACMAsset.SoftGlow;
+            Texture2D em = ACMAsset.EmberShards;
+            Texture2D sg = ACMAsset.SoftGlow;
             Texture2D spark = ACMAsset.Sparkle;
 
             for (int k = 0; k < 4; k++) {

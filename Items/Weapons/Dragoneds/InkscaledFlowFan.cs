@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.DataStructures;
@@ -14,7 +13,7 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
     public class InkscaledFlowFanBuff : ModBuff
     {
         public override void SetStaticDefaults() {
-            Main.buffNoSave[Type]        = true;
+            Main.buffNoSave[Type] = true;
             Main.buffNoTimeDisplay[Type] = true;
         }
         public override void Update(Player player, ref int buffIndex) {
@@ -26,21 +25,21 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
     public class InkscaledFlowFan : ModItem
     {
         public override void SetDefaults() {
-            Item.damage     = 430;
+            Item.damage = 430;
             Item.DamageType = DamageClass.Summon;
-            Item.mana       = 7;
-            Item.width      = 50;
-            Item.height     = 50;
-            Item.useTime      = 22;
+            Item.mana = 7;
+            Item.width = 50;
+            Item.height = 50;
+            Item.useTime = 22;
             Item.useAnimation = 22;
-            Item.useStyle   = ItemUseStyleID.Swing;
-            Item.knockBack  = 5;
-            Item.value      = Item.buyPrice(gold: 200);
-            Item.rare       = ItemRarityID.Purple;
-            Item.autoReuse  = false;
-            Item.noMelee    = true;
-            Item.buffType   = ModContent.BuffType<InkscaledFlowFanBuff>();
-            Item.shoot      = ModContent.ProjectileType<InkscaledFlowFanProj>();
+            Item.useStyle = ItemUseStyleID.Swing;
+            Item.knockBack = 5;
+            Item.value = Item.buyPrice(gold: 200);
+            Item.rare = ItemRarityID.Purple;
+            Item.autoReuse = false;
+            Item.noMelee = true;
+            Item.buffType = ModContent.BuffType<InkscaledFlowFanBuff>();
+            Item.shoot = ModContent.ProjectileType<InkscaledFlowFanProj>();
             Item.shootSpeed = 8f;
         }
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
@@ -55,24 +54,31 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
         private static readonly int TOTAL_FRAMES = 5;
 
         public override void SetStaticDefaults() {
-            Main.projFrames[Type]                        = TOTAL_FRAMES;
-            Main.projPet[Type]                           = true;
-            ProjectileID.Sets.MinionSacrificable[Type]   = true;
+            Main.projFrames[Type] = TOTAL_FRAMES;
+            Main.projPet[Type] = true;
+            ProjectileID.Sets.MinionSacrificable[Type] = true;
             ProjectileID.Sets.CultistIsResistantTo[Type] = true;
+            ProjectileID.Sets.TrailingMode[Type] = 2;
+            ProjectileID.Sets.TrailCacheLength[Type] = 6;
         }
         public override void SetDefaults() {
-            Projectile.width  = 36;
+            Projectile.width = 36;
             Projectile.height = 36;
-            Projectile.friendly    = true;
-            Projectile.minion      = true;
-            Projectile.DamageType  = DamageClass.Summon;
+            Projectile.friendly = true;
+            Projectile.minion = true;
+            Projectile.DamageType = DamageClass.Summon;
             Projectile.minionSlots = 0.5f;
-            Projectile.penetrate   = -1;
+            Projectile.penetrate = -1;
             Projectile.tileCollide = false;
             Projectile.ignoreWater = true;
-            Projectile.timeLeft    = Main.maxTilesX;
+            Projectile.timeLeft = Main.maxTilesX;
         }
         private ref float Timer => ref Projectile.ai[0];
+
+        public override bool MinionContactDamage() {
+            // 允许召唤物本体直接对 NPC 造成接触伤害
+            return true;
+        }
 
         public override void AI() {
             Player owner = Main.player[Projectile.owner];
@@ -96,7 +102,8 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
             Vector2 baseVel;
             if (hit) {
                 baseVel = Projectile.DirectionTo(tgt) * 17f;
-            } else {
+            }
+            else {
                 // 绕玩家波浪游动
                 float wave = (float)Math.Sin(Timer * 0.06f) * 60f;
                 Vector2 idle = owner.Center + new Vector2(-50f * owner.direction, -60f + wave);
@@ -115,16 +122,43 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
         public override bool PreDraw(ref Color lightColor) {
             SpriteBatch sb = Main.spriteBatch;
             Texture2D tex = Terraria.GameContent.TextureAssets.Projectile[Type].Value;
-            Texture2D sg  = ACMAsset.SoftGlow;
+            Texture2D sg = ACMAsset.SoftGlow;
+            Texture2D wave = ACMAsset.GlaciateWave;
             int fh = tex.Height / TOTAL_FRAMES;
             Rectangle src = new Rectangle(0, Projectile.frame * fh, tex.Width, fh);
+
+            float speed = Projectile.velocity.Length();
+            float wakeA = MathHelper.Clamp(speed / 18f, 0f, 0.60f);
+            float pulse = 0.28f + 0.12f * (float)Math.Sin(Main.timeForVisualEffects * 0.08f);
 
             sb.End();
             sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
                 DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
-            float pulse = 0.28f + 0.12f * (float)Math.Sin(Main.timeForVisualEffects * 0.08f);
-            sb.Draw(sg, Projectile.Center - Main.screenPosition, null, new Color(180, 210, 240) * pulse, 0f,
+
+            // 游动时在身后拖出水迹4封小波纹（墙墨深蓝 + 泡沫白）
+            if (wakeA > 0.04f && Projectile.oldPos != null) {
+                float wRot = Projectile.velocity.ToRotation() + MathHelper.PiOver2;
+                for (int i = 0; i < 4 && i < Projectile.oldPos.Length; i++) {
+                    float ta = (1f - i / 4f) * wakeA;
+                    Vector2 wp = Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition;
+                    // 深墓岼黑层
+                    sb.Draw(wave, wp, null,
+                        new Color(30, 40, 80) * (ta * 0.65f), wRot,
+                        new Vector2(wave.Width * 0.5f, wave.Height * 0.5f),
+                        new Vector2(0.22f + i * 0.04f, 0.08f), SpriteEffects.None, 0);
+                    // 泡沫白光层
+                    sb.Draw(wave, wp, null,
+                        new Color(180, 225, 255) * (ta * 0.40f), wRot + 0.12f,
+                        new Vector2(wave.Width * 0.5f, wave.Height * 0.5f),
+                        new Vector2(0.12f + i * 0.02f, 0.05f), SpriteEffects.None, 0);
+                }
+            }
+
+            // 子弹柔光脉冲
+            sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
+                new Color(180, 210, 240) * pulse, 0f,
                 new Vector2(sg.Width * 0.5f, sg.Height * 0.5f), 1.1f, SpriteEffects.None, 0);
+
             sb.End();
             sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
                 DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);

@@ -1,6 +1,5 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using System;
-using System.Collections.Generic;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -47,15 +46,15 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
         public override string Texture
             => "AncientChineseMythology/Items/Weapons/Dragoneds/AurelianCataclysmSmasher";
         // 挥舞总弧度（约270°）
-        private const float SWING_RANGE  = (float)Math.PI * 1.5f;
-        private const float PREP_FRAC    = 0.25f; // 蓄力占比
-        private const float SWING_FRAC   = 0.55f; // 挥击占比
+        private const float SWING_RANGE = (float)Math.PI * 1.5f;
+        private const float PREP_FRAC = 0.25f; // 蓄力占比
+        private const float SWING_FRAC = 0.55f; // 挥击占比
         // unwind 占剩余部分
 
         private enum Stage { Prepare, Execute, Unwind }
 
-        private ref float Timer      => ref Projectile.ai[0];
-        private ref float InitAngle  => ref Projectile.ai[1];
+        private ref float Timer => ref Projectile.ai[0];
+        private ref float InitAngle => ref Projectile.ai[1];
         private ref float RawProgress => ref Projectile.localAI[0];
         private Stage CurrentStage {
             get => (Stage)Projectile.localAI[1];
@@ -69,19 +68,19 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
 
         public override void SetStaticDefaults() {
             ProjectileID.Sets.HeldProjDoesNotUsePlayerGfxOffY[Type] = true;
-            ProjectileID.Sets.TrailingMode[Type]  = 2;
+            ProjectileID.Sets.TrailingMode[Type] = 2;
             ProjectileID.Sets.TrailCacheLength[Type] = 16;
         }
 
         public override void SetDefaults() {
-            Projectile.width  = 80;
+            Projectile.width = 80;
             Projectile.height = 80;
-            Projectile.friendly   = true;
-            Projectile.timeLeft   = 10000;
-            Projectile.penetrate  = -1;
+            Projectile.friendly = true;
+            Projectile.timeLeft = 10000;
+            Projectile.penetrate = -1;
             Projectile.tileCollide = false;
-            Projectile.usesLocalNPCImmunity  = true;
-            Projectile.localNPCHitCooldown   = -1;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = -1;
             Projectile.ownerHitCheck = true;
             Projectile.DamageType = DamageClass.Melee;
         }
@@ -96,11 +95,11 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
         public override void AI() {
             if (!Owner.active || Owner.dead) { Projectile.Kill(); return; }
             Owner.itemAnimation = 2;
-            Owner.itemTime      = 2;
+            Owner.itemTime = 2;
 
             float totalTime = Owner.itemAnimationMax;
-            float prepEnd   = totalTime * PREP_FRAC;
-            float swingEnd  = totalTime * (PREP_FRAC + SWING_FRAC);
+            float prepEnd = totalTime * PREP_FRAC;
+            float swingEnd = totalTime * (PREP_FRAC + SWING_FRAC);
 
             // 粒子拖尾（挥击阶段）
             if (CurrentStage == Stage.Execute && Main.rand.NextBool(2)) {
@@ -142,8 +141,8 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                 Projectile.rotation - MathHelper.PiOver2);
             arm.Y += Owner.gfxOffY;
             Projectile.Center = arm;
-            Projectile.scale  = 1.35f * Owner.GetAdjustedItemScale(Owner.HeldItem);
-            Owner.heldProj    = Projectile.whoAmI;
+            Projectile.scale = 1.35f * Owner.GetAdjustedItemScale(Owner.HeldItem);
+            Owner.heldProj = Projectile.whoAmI;
 
             Timer++;
         }
@@ -169,7 +168,7 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                         Main.rand.NextVector2Circular(14f, 14f), 0,
                         new Color(255, 240, 130), 3.5f);
                     ds.noGravity = true;
-                    ds.fadeIn    = 1f;
+                    ds.fadeIn = 1f;
                 }
                 // 生成环形冲击波弹幕（视觉用，无伤害）
                 Projectile.NewProjectile(Owner.GetSource_ItemUse(Owner.HeldItem),
@@ -184,7 +183,7 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
 
         public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
             Vector2 start = Owner.MountedCenter;
-            Vector2 end   = start + Projectile.rotation.ToRotationVector2()
+            Vector2 end = start + Projectile.rotation.ToRotationVector2()
                             * (Projectile.Size.Length() * Projectile.scale * 1.1f);
             float col = 0f;
             return Collision.CheckAABBvLineCollision(targetHitbox.TopLeft(), targetHitbox.Size(),
@@ -206,7 +205,7 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                 Main.GameViewMatrix.TransformationMatrix);
 
             Texture2D slashTex = ACMAsset.SlashBurst;
-            Texture2D sgTex    = ACMAsset.SoftGlow;
+            Texture2D sgTex = ACMAsset.SoftGlow;
 
             if (CurrentStage == Stage.Execute) {
                 // ── 拖尾：用 SlashBurst 扇形叠加，金色 + 紫虚空双层 ──
@@ -267,22 +266,22 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
         public override string Texture => "AncientChineseMythology/Items/Weapons/Dragoneds/AurelianCataclysmSmasher";
 
         public override void SetDefaults() {
-            Projectile.width     = 10;
-            Projectile.height    = 10;
-            Projectile.friendly  = false;
+            Projectile.width = 10;
+            Projectile.height = 10;
+            Projectile.friendly = false;
             Projectile.tileCollide = false;
             Projectile.penetrate = -1;
-            Projectile.timeLeft  = 50;
-            Projectile.alpha     = 255;
-            Projectile.aiStyle   = -1;
+            Projectile.timeLeft = 50;
+            Projectile.alpha = 255;
+            Projectile.aiStyle = -1;
         }
 
         public override bool ShouldUpdatePosition() => false;
 
         public override bool PreDraw(ref Color lightColor) {
             float progress = 1f - Projectile.timeLeft / 50f;
-            float alpha    = ACMUtils.QuadOut(1f - progress);
-            float scale    = ACMUtils.QuadOut(progress) * 18f;
+            float alpha = ACMUtils.QuadOut(1f - progress);
+            float scale = ACMUtils.QuadOut(progress) * 18f;
 
             SpriteBatch sb = Main.spriteBatch;
             sb.End();
@@ -291,7 +290,7 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                 Main.GameViewMatrix.TransformationMatrix);
 
             Texture2D sparkle = ACMAsset.Sparkle;
-            Texture2D sg      = ACMAsset.SoftGlow;
+            Texture2D sg = ACMAsset.SoftGlow;
 
             // ── 外圈八芒星冲击环  ──
             sb.Draw(sparkle, Projectile.Center - Main.screenPosition, null,

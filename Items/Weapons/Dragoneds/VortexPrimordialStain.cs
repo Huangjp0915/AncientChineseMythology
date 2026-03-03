@@ -16,20 +16,21 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
         public override void SetDefaults() {
             Item.damage = 475;
             Item.DamageType = DamageClass.Magic;
-            Item.width  = 50;
+            Item.width = 50;
             Item.height = 50;
-            Item.useTime      = 22;
+            Item.useTime = 22;
             Item.useAnimation = 22;
             Item.useStyle = ItemUseStyleID.Shoot;
             Item.knockBack = 10;
-            Item.crit  = 24;
-            Item.mana  = 30;
+            Item.crit = 24;
+            Item.mana = 30;
             Item.value = Item.buyPrice(gold: 200);
-            Item.rare  = ItemRarityID.Purple;
-            Item.autoReuse    = true;
-            Item.noMelee      = true;
+            Item.rare = ItemRarityID.Purple;
+            Item.autoReuse = true;
+            Item.noMelee = true;
             Item.shoot = ModContent.ProjectileType<VortexStainOrb>();
             Item.shootSpeed = 18f;
+            Item.staff[Type] = true;
         }
 
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
@@ -50,7 +51,7 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
             => "AncientChineseMythology/Textures/Masking/BlankStar";
 
         public override void SetStaticDefaults() {
-            ProjectileID.Sets.TrailingMode[Type]    = 2;
+            ProjectileID.Sets.TrailingMode[Type] = 2;
             ProjectileID.Sets.TrailCacheLength[Type] = 12;
         }
 
@@ -59,16 +60,16 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
         private const float HOME_START = 60f;
 
         public override void SetDefaults() {
-            Projectile.width  = 30;
+            Projectile.width = 30;
             Projectile.height = 30;
-            Projectile.friendly    = true;
+            Projectile.friendly = true;
             Projectile.tileCollide = false;
-            Projectile.penetrate   = 6;
-            Projectile.timeLeft    = 240;
-            Projectile.DamageType  = DamageClass.Magic;
-            Projectile.light       = 0.8f;
-            Projectile.usesLocalNPCImmunity  = true;
-            Projectile.localNPCHitCooldown   = 10;
+            Projectile.penetrate = 6;
+            Projectile.timeLeft = 240;
+            Projectile.DamageType = DamageClass.Magic;
+            Projectile.light = 0.8f;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 10;
         }
 
         public override void AI() {
@@ -109,8 +110,8 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                 Main.GameViewMatrix.TransformationMatrix);
 
             Texture2D star = ACMAsset.BlankStar;
-            Texture2D sg   = ACMAsset.SoftGlow;
-            Texture2D arc  = ACMAsset.ElectricArcSheet;
+            Texture2D sg = ACMAsset.SoftGlow;
+            Texture2D arc = ACMAsset.ElectricArcSheet;
 
             float pulse = 0.80f + 0.20f * MathF.Sin((float)Main.timeForVisualEffects * 0.18f);
 

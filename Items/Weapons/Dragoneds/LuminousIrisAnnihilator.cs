@@ -1,6 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using System;
+﻿using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -17,17 +15,17 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
         public override void SetDefaults() {
             Item.damage = 550;
             Item.DamageType = DamageClass.Ranged;
-            Item.width  = 80;
+            Item.width = 80;
             Item.height = 30;
-            Item.useTime      = 28;
+            Item.useTime = 28;
             Item.useAnimation = 28;
             Item.useStyle = ItemUseStyleID.Shoot;
             Item.knockBack = 15;
-            Item.crit  = 20;
+            Item.crit = 20;
             Item.value = Item.buyPrice(gold: 200);
-            Item.rare  = ItemRarityID.Purple;
-            Item.autoReuse    = true;
-            Item.notAmmo      = true;
+            Item.rare = ItemRarityID.Purple;
+            Item.autoReuse = true;
+            Item.notAmmo = true;
             Item.shoot = ModContent.ProjectileType<LuminousIrisShell>();
             Item.shootSpeed = 22f;
         }
@@ -45,21 +43,21 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
             => "AncientChineseMythology/Textures/Masking/LightShot";
 
         public override void SetStaticDefaults() {
-            ProjectileID.Sets.TrailingMode[Type]    = 2;
+            ProjectileID.Sets.TrailingMode[Type] = 2;
             ProjectileID.Sets.TrailCacheLength[Type] = 18;
         }
 
         public override void SetDefaults() {
-            Projectile.width  = 28;
+            Projectile.width = 28;
             Projectile.height = 28;
-            Projectile.friendly    = true;
+            Projectile.friendly = true;
             Projectile.tileCollide = true;
-            Projectile.penetrate   = 6;
-            Projectile.timeLeft    = 180;
-            Projectile.DamageType  = DamageClass.Ranged;
-            Projectile.light       = 1.4f;
-            Projectile.usesLocalNPCImmunity  = true;
-            Projectile.localNPCHitCooldown   = 8;
+            Projectile.penetrate = 6;
+            Projectile.timeLeft = 180;
+            Projectile.DamageType = DamageClass.Ranged;
+            Projectile.light = 1.4f;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 8;
         }
 
         public override void AI() => Projectile.rotation = Projectile.velocity.ToRotation();
@@ -79,7 +77,7 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                 Main.GameViewMatrix.TransformationMatrix);
 
             Texture2D tex = ACMAsset.LightShot;
-            Texture2D sg  = ACMAsset.SoftGlow;
+            Texture2D sg = ACMAsset.SoftGlow;
 
             for (int i = 1; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
                 float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.75f;
@@ -118,19 +116,19 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
             => "AncientChineseMythology/Items/Weapons/Dragoneds/LuminousIrisAnnihilator";
 
         public override void SetDefaults() {
-            Projectile.width     = 10;
-            Projectile.height    = 10;
-            Projectile.friendly  = false;
+            Projectile.width = 10;
+            Projectile.height = 10;
+            Projectile.friendly = false;
             Projectile.tileCollide = false;
             Projectile.penetrate = -1;
-            Projectile.timeLeft  = 65;
-            Projectile.alpha     = 255;
+            Projectile.timeLeft = 65;
+            Projectile.alpha = 255;
         }
 
         public override bool ShouldUpdatePosition() => false;
 
         public override bool PreDraw(ref Color lightColor) {
-            float prog  = 1f - Projectile.timeLeft / 65f;
+            float prog = 1f - Projectile.timeLeft / 65f;
             float alpha = MathHelper.SmoothStep(0.92f, 0f, prog);
             float scale = MathHelper.SmoothStep(0f, 26f, ACMUtils.QuadOut(prog));
             SpriteBatch sb = Main.spriteBatch;
@@ -139,40 +137,43 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                 DepthStencilState.None, RasterizerState.CullNone, null,
                 Main.GameViewMatrix.TransformationMatrix);
 
-            Texture2D burst = ACMAsset.SlashBurst;
-            Texture2D star  = ACMAsset.BlankStar;
-            Texture2D sg    = ACMAsset.SoftGlow;
-            Texture2D spark = ACMAsset.Sparkle;
-            Texture2D bolt  = ACMAsset.LightningBranch;
+            Texture2D bolt = ACMAsset.LightningBranch;
+            Texture2D arc = ACMAsset.ElectricArcSheet;
+            Texture2D star = ACMAsset.BlankStar;
+            Texture2D sg = ACMAsset.SoftGlow;
 
-            // 四射展开辐射光爆
-            for (int k = 0; k < 4; k++) {
-                sb.Draw(burst, Projectile.Center - Main.screenPosition, null,
-                    new Color(255, 185, 20) * (alpha * 0.68f), k * MathHelper.PiOver2,
-                    new Vector2(burst.Width * 0.5f, burst.Height),
-                    scale * 0.56f, SpriteEffects.None, 0);
-            }
-            // 闪电光芒
+            // 4道闪电冲射光芒（主方向）
             for (int k = 0; k < 4; k++) {
                 sb.Draw(bolt, Projectile.Center - Main.screenPosition, null,
-                    new Color(255, 220, 60) * (alpha * 0.55f), k * MathHelper.PiOver2 + MathHelper.PiOver4,
+                    new Color(255, 215, 30) * (alpha * 0.78f), k * MathHelper.PiOver2,
                     new Vector2(bolt.Width * 0.5f, bolt.Height),
-                    new Vector2(0.38f, scale * 0.28f), SpriteEffects.None, 0);
+                    new Vector2(0.45f, scale * 0.40f), SpriteEffects.None, 0);
             }
-            sb.Draw(spark, Projectile.Center - Main.screenPosition, null,
-                new Color(255, 210, 40) * alpha,
-                (float)Main.timeForVisualEffects * 0.015f,
-                new Vector2(spark.Width * 0.5f, spark.Height * 0.5f),
-                scale * 0.82f, SpriteEffects.None, 0);
-            sb.Draw(star, Projectile.Center - Main.screenPosition, null,
-                new Color(255, 230, 100) * (alpha * 1.15f),
-                (float)Main.timeForVisualEffects * 0.020f,
-                new Vector2(star.Width * 0.5f, star.Height * 0.5f),
+            // ElectricArcSheet外环能量放电（逐帧播放，分扄16行）
+            int arcFrame = (int)(Main.timeForVisualEffects / 3) % 4;
+            Rectangle arcSrc = new Rectangle(0, arcFrame * (arc.Height / 4), arc.Width, arc.Height / 4);
+            sb.Draw(arc, Projectile.Center - Main.screenPosition, arcSrc,
+                new Color(255, 200, 50) * (alpha * 0.62f),
+                (float)Main.timeForVisualEffects * 0.025f,
+                new Vector2(arc.Width * 0.5f, (arc.Height / 4) * 0.5f),
                 scale * 0.50f, SpriteEffects.None, 0);
+            // 逆旋外层四角星
+            sb.Draw(star, Projectile.Center - Main.screenPosition, null,
+                new Color(255, 240, 120) * (alpha * 1.10f),
+                -(float)Main.timeForVisualEffects * 0.018f,
+                new Vector2(star.Width * 0.5f, star.Height * 0.5f),
+                scale * 0.55f, SpriteEffects.None, 0);
+            // 正旋内层四角星（偏45°）
+            sb.Draw(star, Projectile.Center - Main.screenPosition, null,
+                new Color(255, 255, 180) * (alpha * 0.75f),
+                (float)Main.timeForVisualEffects * 0.012f + MathHelper.PiOver4,
+                new Vector2(star.Width * 0.5f, star.Height * 0.5f),
+                scale * 0.32f, SpriteEffects.None, 0);
+            // 金白核心
             sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
                 new Color(255, 255, 200) * alpha, 0f,
                 new Vector2(sg.Width * 0.5f, sg.Height * 0.5f),
-                scale * 0.32f, SpriteEffects.None, 0);
+                scale * 0.30f, SpriteEffects.None, 0);
 
             sb.End();
             sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,

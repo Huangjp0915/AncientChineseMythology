@@ -1321,6 +1321,7 @@ Projectiles: {
 	AzureTorrentBladesProj.DisplayName: Azure Torrent Blade
 	DraconicEmberProj.DisplayName: Draconic Wyrm
 	DraconicEmberEggProj.DisplayName: Draconic Ember Egg
+	DraconicLavaFlare.DisplayName: Draconic Lava Flare
 	InkscaledFlowFanProj.DisplayName: Inkscaled Fish
 	SolarisEternalVerdictProj.DisplayName: Solaris Eye
 	SolarisRay.DisplayName: Solaris Ray

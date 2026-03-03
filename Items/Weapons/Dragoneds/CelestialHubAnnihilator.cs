@@ -1,5 +1,4 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
-using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -17,20 +16,20 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
         public override void SetDefaults() {
             Item.damage = 560;
             Item.DamageType = DamageClass.Ranged;
-            Item.width  = 80;
+            Item.width = 80;
             Item.height = 30;
-            Item.useTime      = 38;
+            Item.useTime = 38;
             Item.useAnimation = 38;
             Item.useStyle = ItemUseStyleID.Shoot;
             Item.knockBack = 16;
-            Item.crit  = 18;
+            Item.crit = 18;
             Item.value = Item.buyPrice(gold: 200);
-            Item.rare  = ItemRarityID.Purple;
-            Item.autoReuse    = true;
-            Item.notAmmo       = true;
+            Item.rare = ItemRarityID.Purple;
+            Item.autoReuse = true;
+            Item.notAmmo = true;
             Item.shoot = ModContent.ProjectileType<CelestialHubShell>();
             Item.shootSpeed = 26f;
-            Item.channel      = true; // 充能手感
+            Item.channel = true; // 充能手感
         }
 
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
@@ -55,21 +54,21 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
             => "AncientChineseMythology/Textures/Masking/LightShot";
 
         public override void SetStaticDefaults() {
-            ProjectileID.Sets.TrailingMode[Type]    = 2;
+            ProjectileID.Sets.TrailingMode[Type] = 2;
             ProjectileID.Sets.TrailCacheLength[Type] = 18;
         }
 
         public override void SetDefaults() {
-            Projectile.width  = 28;
+            Projectile.width = 28;
             Projectile.height = 28;
-            Projectile.friendly    = true;
+            Projectile.friendly = true;
             Projectile.tileCollide = true;
-            Projectile.penetrate   = 8; // 穿透8个敌人
-            Projectile.timeLeft    = 180;
-            Projectile.DamageType  = DamageClass.Ranged;
-            Projectile.light       = 1.2f;
-            Projectile.usesLocalNPCImmunity  = true;
-            Projectile.localNPCHitCooldown   = 6;
+            Projectile.penetrate = 8; // 穿透8个敌人
+            Projectile.timeLeft = 180;
+            Projectile.DamageType = DamageClass.Ranged;
+            Projectile.light = 1.2f;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 6;
         }
 
         public override void AI() {
@@ -175,19 +174,19 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
             => "AncientChineseMythology/Items/Weapons/Dragoneds/CelestialHubAnnihilator";
 
         public override void SetDefaults() {
-            Projectile.width     = 10;
-            Projectile.height    = 10;
-            Projectile.friendly  = false;
+            Projectile.width = 10;
+            Projectile.height = 10;
+            Projectile.friendly = false;
             Projectile.tileCollide = false;
             Projectile.penetrate = -1;
-            Projectile.timeLeft  = 65;
-            Projectile.alpha     = 255;
+            Projectile.timeLeft = 65;
+            Projectile.alpha = 255;
         }
 
         public override bool ShouldUpdatePosition() => false;
 
         public override bool PreDraw(ref Color lightColor) {
-            float prog  = 1f - Projectile.timeLeft / 65f;
+            float prog = 1f - Projectile.timeLeft / 65f;
             float alpha = MathHelper.SmoothStep(0.9f, 0f, prog);
             float scale = MathHelper.SmoothStep(0f, 24f, ACMUtils.QuadOut(prog));
 
@@ -197,10 +196,10 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
                 DepthStencilState.None, RasterizerState.CullNone, null,
                 Main.GameViewMatrix.TransformationMatrix);
 
-            Texture2D burst   = ACMAsset.SlashBurst;
+            Texture2D burst = ACMAsset.SlashBurst;
             Texture2D sparkle = ACMAsset.Sparkle;
-            Texture2D sg      = ACMAsset.SoftGlow;
-            Texture2D star    = ACMAsset.BlankStar;
+            Texture2D sg = ACMAsset.SoftGlow;
+            Texture2D star = ACMAsset.BlankStar;
 
             // 四向辐射冲击波（SlashBurst 旋转四次，45° 间隔）
             for (int k = 0; k < 4; k++) {
