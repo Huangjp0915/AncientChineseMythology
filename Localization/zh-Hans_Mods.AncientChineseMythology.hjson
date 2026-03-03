@@ -480,6 +480,132 @@ Items: {
 			'''
 	}
 
+	AzureRuinBlade: {
+		DisplayName: 蔚蓝毁刃
+		Tooltip:
+			'''
+			凝聚蔚蓝大海之力，斩出奔涌潮砍
+			挥击时释放汹涌的蓝色潮汐剑气
+			'''
+	}
+
+	GeocrystalShatterblade: {
+		DisplayName: 地晶裂碎大剑
+		Tooltip:
+			'''
+			源自地核晶体之力，招招迸发熔岩爆裂
+			命中时引发熔岩晶爆，撼动大地
+			'''
+	}
+
+	QuadraseaCataclysmicEdge: {
+		DisplayName: 四海灾变锋刃
+		Tooltip:
+			'''
+			汇聚四海之威，斩出绿珊瑚三重剑波
+			挥击时发射三道珊瑚海洋剑气
+			'''
+	}
+
+	VortexPrimordialStain: {
+		DisplayName: 漩流玄印权杖
+		Tooltip:
+			'''
+			蕴含漩涡原初之力，发射青珊瑚追踪光球
+			光球起初蜿蜒飞行，随后追踪最近的敌人
+			'''
+	}
+
+	LuminanceStellarCannon: {
+		DisplayName: 星光凝聚炮
+		Tooltip:
+			'''
+			集星光之能于炮膛，射出穿透白蓝能束
+			命中后引发星能爆裂，照亮黑暗
+			'''
+	}
+
+	LuminousIrisAnnihilator: {
+		DisplayName: 耀虹湮灭手炮
+		Tooltip:
+			'''
+			凝聚万彩虹光，发射毁天灭地的金色炮弹
+			命中后引发漫天金光爆炸
+			'''
+	}
+
+	TwilightGlazeGreatbow: {
+		DisplayName: 暮光流华大弓
+		Tooltip:
+			'''
+			暮色流华之弓，无论何种箭矢皆化为珊瑚海洋之箭
+			发射穿透青珊瑚箭，命中后绽放海洋光爆
+			'''
+	}
+
+	StarfireAnnihilator: {
+		DisplayName: 星火寂灭重炮
+		Tooltip:
+			'''
+			引导珊瑚星火的力量，发射能穿透多个敌人的高速星弹
+			命中时引爆出珊瑚青色的星辰爆炸
+			'''
+	}
+
+	VaultshadeVoidshot: {
+		DisplayName: 穹闪破空狙击
+		Tooltip:
+			'''
+			一把褐色的科技狙击枪，发射随着飞行不断扩大的虚空弹
+			命中时触发紫色的虚空内爆，将敌人吸入其中
+			'''
+	}
+
+	ArcaneRepulsionArray: {
+		DisplayName: 圣械幽蓝斥力阵
+		Tooltip:
+			'''
+			召唤金蓝相间的龙鳞无人机进行巡逻，并向敌人发射穿透性激光
+			激光可穿透多个目标
+			'''
+	}
+
+	AzureTorrentBlades: {
+		DisplayName: 列斩幽蓝剑意
+		Tooltip:
+			'''
+			召唤悬浮在剑鞘中的幽蓝剑意，随后带着蓝色光辉旋转冲出
+			可召唤多把剑刃；它们在高速旋转时造成接触伤害
+			'''
+	}
+
+	DraconicEmber: {
+		DisplayName: 劫火龙裔之卵
+		Tooltip:
+			'''
+			召唤一条熔岩蛟龙，它会疯狂猎杀敌人并定期发射余烬之卵
+			余烬之卵触碰即会爆炸，焚烧挡在路上的一切
+			'''
+	}
+
+	InkscaledFlowFan: {
+		DisplayName: 墨鳞水折画灵扇
+		Tooltip:
+			'''
+			召唤呈波浪状游动并追踪敌人的墨鳞游鱼
+			可召唤多条游鱼来淹没敌人
+			'''
+	}
+
+	SolarisEternalVerdict: {
+		DisplayName: 烈阳永恒裁断
+		Tooltip:
+			'''
+			召唤一颗璀璨的烈阳之眼悬浮在你上方，向附近的敌人爆发太阳射线
+			太阳射线可穿透多个目标，降下永恒的裁断
+			'''
+	}
+
 	XuanTieBar: {
 		DisplayName: 玄铁锭
 		Tooltip: 坚硬无比
@@ -1268,6 +1394,31 @@ Projectiles: {
 	GanJiangSwordProj_2.DisplayName: 干将莫邪
 	AurelianCataclysmSmasherProj.DisplayName: 万劫狂金锤
 	AurelianShockwave.DisplayName: 金裂冒冲波
+	AzureRuinBladeSwing.DisplayName: 蔚蓝毁刃
+	AzureRuinTidal.DisplayName: 蔚蓝潮汐剑气
+	GeocrystalShatterbladeSwing.DisplayName: 地晶裂碎大剑
+	GeocrystalBurst.DisplayName: 地晶熔岩爆裂
+	QuadraseaEdgeSwing.DisplayName: 四海灾变锋刃
+	QuadraseaWave.DisplayName: 四海珊瑚剑气
+	VortexStainOrb.DisplayName: 漩流玄印光球
+	LuminanceStellarShell.DisplayName: 星光能束
+	LuminanceStellarBurst.DisplayName: 星光爆裂
+	LuminousIrisShell.DisplayName: 耀虹炮弹
+	LuminousIrisExplosion.DisplayName: 耀虹湮灭爆炸
+	TwilightGlazeArrow.DisplayName: 暮光流华之箭
+	TwilightGlazeImpact.DisplayName: 暮光流华冲击
+	StarfireShell.DisplayName: 星火光砖
+	StarfireExplosion.DisplayName: 星火星海爆裂
+	VaultshadeVolt.DisplayName: 幽穹虚空碴
+	VaultshadeBlast.DisplayName: 幽穹虚空内爆
+	ArcaneRepulsionArrayProj.DisplayName: 金蓝龙鳞无人机
+	ArcaneRepulsionLaser.DisplayName: 龙鳞穿透激光
+	AzureTorrentBladesProj.DisplayName: 蔚蓝激流剑
+	DraconicEmberProj.DisplayName: 熊龙小吴
+	DraconicEmberEggProj.DisplayName: 熊龙玄蛋
+	InkscaledFlowFanProj.DisplayName: 墨鳞游鱼
+	SolarisEternalVerdictProj.DisplayName: 太阳看眼
+	SolarisRay.DisplayName: 太阳射线
 	AureateVoidrenderSwing.DisplayName: 辉金虚空斩裂刃
 	AureateVoidWave.DisplayName: 虚空斩浪
 	CelestialHubShell.DisplayName: 天枢湮灭炮弹
@@ -1698,6 +1849,31 @@ Buffs: {
 	GoldenPhoenixBuff: {
 		DisplayName: 御令金凤
 		Description: ""
+	}
+
+	ArcaneRepulsionArrayBuff: {
+		DisplayName: 奥能排斥阵列
+		Description: 金蓝龙鳞无人机为你而战！
+	}
+
+	AzureTorrentBladesBuff: {
+		DisplayName: 蔚蓝激流剑群
+		Description: 蔚蓝剑群为你而战！
+	}
+
+	DraconicEmberBuff: {
+		DisplayName: 龙炎骸火
+		Description: 熊龙小吴为你而战！
+	}
+
+	InkscaledFlowFanBuff: {
+		DisplayName: 墨鳞流扇
+		Description: 墨鳞游鱼为你而战！
+	}
+
+	SolarisEternalVerdictBuff: {
+		DisplayName: 太阳不灭裁决
+		Description: 太阳看眼为你而战！
 	}
 }
 

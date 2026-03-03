@@ -435,6 +435,132 @@ Items: {
 			'''
 	}
 
+	AzureRuinBlade: {
+		DisplayName: Azure Ruin Blade
+		Tooltip:
+			'''
+			Gathering the might of the azure sea, unleash a surging tidal slash
+			Releases a crashing blue tidal wave on swing
+			'''
+	}
+
+	GeocrystalShatterblade: {
+		DisplayName: Geocrystal Shatterblade
+		Tooltip:
+			'''
+			Channeling the earth's crystal core, each swing erupts in molten fury
+			On hit, triggers a lava crystal burst that shakes the ground
+			'''
+	}
+
+	QuadraseaCataclysmicEdge: {
+		DisplayName: Quadrasea Cataclysmic Edge
+		Tooltip:
+			'''
+			Harnessing the wrath of all four seas, launches three coral wave slashes
+			Fires a spread of three coral ocean sword beams on swing
+			'''
+	}
+
+	VortexPrimordialStain: {
+		DisplayName: Vortex Primordial Stain
+		Tooltip:
+			'''
+			Infused with primordial vortex energy, fires three tracking teal-coral orbs
+			Orbs coil in serpentine paths before homing in on the nearest enemy
+			'''
+	}
+
+	LuminanceStellarCannon: {
+		DisplayName: Luminance Stellar Cannon
+		Tooltip:
+			'''
+			Condenses starlight into the barrel, firing a piercing white-blue energy bolt
+			Triggers a stellar burst explosion on impact
+			'''
+	}
+
+	LuminousIrisAnnihilator: {
+		DisplayName: Luminous Iris Annihilator
+		Tooltip:
+			'''
+			Concentrates brilliant rainbow light, unleashing a devastating golden shell
+			Detonates in a cascade of golden radiance on impact
+			'''
+	}
+
+	TwilightGlazeGreatbow: {
+		DisplayName: Twilight Glaze Greatbow
+		Tooltip:
+			'''
+			A twilight greatbow that converts any ammo into coral ocean arrows
+			Fires piercing teal-coral arrows that bloom into a sea-light burst on impact
+			'''
+	}
+
+	StarfireAnnihilator: {
+		DisplayName: Starfire Annihilator
+		Tooltip:
+			'''
+			Channels the power of coral starfire, launching a high-speed bolt through multiple foes
+			Detonates in a coral-teal star explosion on impact
+			'''
+	}
+
+	VaultshadeVoidshot: {
+		DisplayName: Vaultshade Voidshot
+		Tooltip:
+			'''
+			A brown-tech sniper rifle that fires a growing void bolt as it travels
+			On impact, triggers a purple void implosion that draws enemies in
+			'''
+	}
+
+	ArcaneRepulsionArray: {
+		DisplayName: Arcane Repulsion Array
+		Tooltip:
+			'''
+			Summons a gold-azure dragon-scale drone that patrols and fires piercing lasers at enemies
+			The laser penetrates multiple targets
+			'''
+	}
+
+	AzureTorrentBlades: {
+		DisplayName: Azure Torrent Blades
+		Tooltip:
+			'''
+			Summons azure blades that hover in sheaths, then dash out spinning with blue radiance
+			Multiple blades can be summoned; they deal contact damage while rapidly rotating
+			'''
+	}
+
+	DraconicEmber: {
+		DisplayName: Draconic Ember
+		Tooltip:
+			'''
+			Summons a lava wyrm that aggressively hunts enemies and periodically launches ember eggs
+			Ember eggs explode on contact, scorching all who stand in the way
+			'''
+	}
+
+	InkscaledFlowFan: {
+		DisplayName: Inkscaled Flow Fan
+		Tooltip:
+			'''
+			Summons ink-scaled fish that swim in wave patterns and home in on enemies
+			Multiple fish can be summoned to overwhelm foes
+			'''
+	}
+
+	SolarisEternalVerdict: {
+		DisplayName: Solaris Eternal Verdict
+		Tooltip:
+			'''
+			Summons a radiant solar eye that hovers above you and fires sun ray bursts at nearby enemies
+			Sun rays penetrate through multiple targets, delivering the Eternal Verdict
+			'''
+	}
+
 	XuanTieBar: {
 		DisplayName: Xuan Tie Bar
 		Tooltip: ""
@@ -1173,6 +1299,31 @@ Projectiles: {
 	GanJiangSwordProj_2.DisplayName: Gan Jiang Sword Proj_2
 	AurelianCataclysmSmasherProj.DisplayName: Aurelian Cataclysm Smasher
 	AurelianShockwave.DisplayName: Aurelian Shockwave
+	AzureRuinBladeSwing.DisplayName: Azure Ruin Blade
+	AzureRuinTidal.DisplayName: Azure Ruin Tidal Wave
+	GeocrystalShatterbladeSwing.DisplayName: Geocrystal Shatterblade
+	GeocrystalBurst.DisplayName: Geocrystal Lava Burst
+	QuadraseaEdgeSwing.DisplayName: Quadrasea Cataclysmic Edge
+	QuadraseaWave.DisplayName: Quadrasea Coral Wave
+	VortexStainOrb.DisplayName: Vortex Stain Orb
+	LuminanceStellarShell.DisplayName: Luminance Stellar Shell
+	LuminanceStellarBurst.DisplayName: Luminance Stellar Burst
+	LuminousIrisShell.DisplayName: Luminous Iris Shell
+	LuminousIrisExplosion.DisplayName: Luminous Iris Explosion
+	TwilightGlazeArrow.DisplayName: Twilight Glaze Arrow
+	TwilightGlazeImpact.DisplayName: Twilight Glaze Impact
+	StarfireShell.DisplayName: Starfire Shell
+	StarfireExplosion.DisplayName: Starfire Explosion
+	VaultshadeVolt.DisplayName: Vaultshade Volt
+	VaultshadeBlast.DisplayName: Vaultshade Blast
+	ArcaneRepulsionArrayProj.DisplayName: Arcane Repulsion Drone
+	ArcaneRepulsionLaser.DisplayName: Arcane Repulsion Laser
+	AzureTorrentBladesProj.DisplayName: Azure Torrent Blade
+	DraconicEmberProj.DisplayName: Draconic Wyrm
+	DraconicEmberEggProj.DisplayName: Draconic Ember Egg
+	InkscaledFlowFanProj.DisplayName: Inkscaled Fish
+	SolarisEternalVerdictProj.DisplayName: Solaris Eye
+	SolarisRay.DisplayName: Solaris Ray
 	AureateVoidrenderSwing.DisplayName: Aureate Voidrender
 	AureateVoidWave.DisplayName: Aureate Void Wave
 	CelestialHubShell.DisplayName: Celestial Hub Shell
@@ -1603,6 +1754,31 @@ Buffs: {
 	GoldenPhoenixBuff: {
 		DisplayName: Golden Phoenix Buff
 		Description: Mods.AncientChineseMythology.Buffs.GoldenPhoenixBuff.Description
+	}
+
+	ArcaneRepulsionArrayBuff: {
+		DisplayName: Arcane Repulsion Array
+		Description: The dragon-scale drone fights for you!
+	}
+
+	AzureTorrentBladesBuff: {
+		DisplayName: Azure Torrent Blades
+		Description: The azure blades fight for you!
+	}
+
+	DraconicEmberBuff: {
+		DisplayName: Draconic Ember
+		Description: The lava wyrm fights for you!
+	}
+
+	InkscaledFlowFanBuff: {
+		DisplayName: Inkscaled Flow Fan
+		Description: The inkscaled fish fight for you!
+	}
+
+	SolarisEternalVerdictBuff: {
+		DisplayName: Solaris Eternal Verdict
+		Description: The solar eye fights for you!
 	}
 }
 
