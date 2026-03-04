@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -9,8 +9,8 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Items.Weapons.DivineWoods;
 
 /// <summary>
-/// ÉñÄ¾³¤¹­ - ĞîÁ¦ĞÍ¹­£¬¶Ì°´¿ìËÙ·¢ÉäÒ¶ÈĞ¼ı£¬³¤°´ĞîÁ¦ÊÍ·ÅÂİĞıÒ¶±©·ç
-/// ĞîÁ¦µ¯Ä»²ÎÕÕCelestialCircletScepterµÄÂİĞıÊÕÊø¡ú×·×Ù³å´ÌÄ£Ê½
+/// ç¥æœ¨é•¿å¼“ - è“„åŠ›å‹å¼“ï¼ŒçŸ­æŒ‰å¿«é€Ÿå‘å°„å¶åˆƒç®­ï¼Œé•¿æŒ‰è“„åŠ›é‡Šæ”¾èºæ—‹å¶æš´é£
+/// è“„åŠ›å¼¹å¹•å‚ç…§CelestialCircletScepterçš„èºæ—‹æ”¶æŸâ†’è¿½è¸ªå†²åˆºæ¨¡å¼
 /// </summary>
 public class DivineWoodLongbow : ModItem
 {
@@ -41,10 +41,10 @@ public class DivineWoodLongbow : ModItem
     }
 
     public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
-        // Ö÷¼ı
+        // ä¸»ç®­
         Projectile.NewProjectile(source, position, velocity, type, damage, knockback, player.whoAmI);
 
-        // Á½²àÂİĞıÒ¶ÈĞ
+        // ä¸¤ä¾§èºæ—‹å¶åˆƒ
         for (int i = 0; i < 2; i++) {
             float offsetAngle = (i == 0 ? -1 : 1) * MathHelper.ToRadians(18);
             Vector2 perturbedVel = velocity.RotatedBy(offsetAngle) * 0.9f;
@@ -59,7 +59,7 @@ public class DivineWoodLongbow : ModItem
 }
 
 /// <summary>
-/// ÉñÄ¾Ò¶ÈĞ¼ı - ¸ßËÙÖ÷¼ı£¬ÃüÖĞºóÊÍ·ÅLightShotÂÌÉ«´©Í¸ÄÜÁ¿
+/// ç¥æœ¨å¶åˆƒç®­ - é«˜é€Ÿä¸»ç®­ï¼Œå‘½ä¸­åé‡Šæ”¾LightShotç»¿è‰²ç©¿é€èƒ½é‡
 /// </summary>
 public class DivineWoodLeafBolt : ModProjectile
 {
@@ -152,8 +152,8 @@ public class DivineWoodLeafBolt : ModProjectile
 }
 
 /// <summary>
-/// ÂİĞıÒ¶ÈĞ - Á½²àÊÍ·ÅµÄÂİĞı·ÉĞĞÒ¶ÈĞ£¬³õÆÚÂİĞı·ÉĞĞºó×·×Ù×î½üµĞÈË
-/// ²ÎÕÕCelestialCircletOrbµÄ orbit ¡ú homing Ä£Ê½
+/// èºæ—‹å¶åˆƒ - ä¸¤ä¾§é‡Šæ”¾çš„èºæ—‹é£è¡Œå¶åˆƒï¼ŒåˆæœŸèºæ—‹é£è¡Œåè¿½è¸ªæœ€è¿‘æ•Œäºº
+/// å‚ç…§CelestialCircletOrbçš„ orbit â†’ homing æ¨¡å¼
 /// </summary>
 public class DivineWoodSpiralLeaf : ModProjectile
 {

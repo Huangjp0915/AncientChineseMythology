@@ -1,4 +1,4 @@
-using AncientChineseMythology.Celestias.PillarofTheHeavenes.Items;
+ï»¿using AncientChineseMythology.Celestias.PillarofTheHeavenes.Items;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -10,8 +10,8 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Items.Weapons.DivineWoods;
 
 /// <summary>
-/// ÉñÄ¾»ğï¥ - ÈıÁ¬·¢¾£¼¬µ¯£¬Ã¿µÚÈıÁ¬·¢Ìæ»»ÎªÒ»¿Å»¡ÏßÖÖ×ÓÆÈ»÷ÅÚ
-/// ¾£¼¬µ¯Ê¹ÓÃLightShot¸ßËÙ´©Í¸£¬ÖÖ×Óµ¯ÂäµØºó±¬Õ¨Éú³É¶ÌÔİ¾£¼¬ÁìÓò
+/// ç¥æœ¨ç«é“³ - ä¸‰è¿å‘è†æ£˜å¼¹ï¼Œæ¯ç¬¬ä¸‰è¿å‘æ›¿æ¢ä¸ºä¸€é¢—å¼§çº¿ç§å­è¿«å‡»ç‚®
+/// è†æ£˜å¼¹ä½¿ç”¨LightShoté«˜é€Ÿç©¿é€ï¼Œç§å­å¼¹è½åœ°åçˆ†ç‚¸ç”ŸæˆçŸ­æš‚è†æ£˜é¢†åŸŸ
 /// </summary>
 public class DivineWoodMusket : ModItem
 {
@@ -52,7 +52,7 @@ public class DivineWoodMusket : ModItem
         Vector2 muzzlePos = position + muzzleDir * 40f;
 
         if (burstCounter % 9 == 0) {
-            // Ã¿µÚ9·¢(µÚ3´ÎÈıÁ¬×îºóÒ»·¢)Éä³ö»¡ÏßÖÖ×Óµ¯
+            // æ¯ç¬¬9å‘(ç¬¬3æ¬¡ä¸‰è¿æœ€åä¸€å‘)å°„å‡ºå¼§çº¿ç§å­å¼¹
             Vector2 mortarVel = velocity * 0.7f + new Vector2(0, -4f);
             Projectile.NewProjectile(source, muzzlePos, mortarVel,
                 ModContent.ProjectileType<DivineWoodSeedMortar>(),
@@ -64,7 +64,7 @@ public class DivineWoodMusket : ModItem
             Projectile.NewProjectile(source, muzzlePos, perturbedVel, type, damage, knockback, player.whoAmI);
         }
 
-        // Ç¹¿ÚÁ£×Ó
+        // æªå£ç²’å­
         for (int i = 0; i < 4; i++) {
             Vector2 dustVel = -muzzleDir.RotatedByRandom(0.3f) * Main.rand.NextFloat(2f, 4f);
             Dust d = Dust.NewDustPerfect(muzzlePos, DustID.JungleTorch, dustVel, 80, default, 1.2f);
@@ -76,7 +76,7 @@ public class DivineWoodMusket : ModItem
 }
 
 /// <summary>
-/// ¾£¼¬Õëµ¯ - ¸ßËÙ´©Í¸µ¯Íè£¬Ê¹ÓÃLightShotäÖÈ¾
+/// è†æ£˜é’ˆå¼¹ - é«˜é€Ÿç©¿é€å¼¹ä¸¸ï¼Œä½¿ç”¨LightShotæ¸²æŸ“
 /// </summary>
 public class DivineWoodThornNeedle : ModProjectile
 {
@@ -152,8 +152,8 @@ public class DivineWoodThornNeedle : ModProjectile
 }
 
 /// <summary>
-/// ÖÖ×ÓÆÈ»÷µ¯ - »¡Ïß·ÉĞĞ£¬ÂäµØ±¬Õ¨Éú³É¾£¼¬ÁìÓò
-/// Ê¹ÓÃSoftGlow + SlashBurstäÖÈ¾±¬Õ¨
+/// ç§å­è¿«å‡»å¼¹ - å¼§çº¿é£è¡Œï¼Œè½åœ°çˆ†ç‚¸ç”Ÿæˆè†æ£˜é¢†åŸŸ
+/// ä½¿ç”¨SoftGlow + SlashBurstæ¸²æŸ“çˆ†ç‚¸
 /// </summary>
 public class DivineWoodSeedMortar : ModProjectile
 {
@@ -235,8 +235,8 @@ public class DivineWoodSeedMortar : ModProjectile
 }
 
 /// <summary>
-/// ¾£¼¬ÁìÓò±¬Õ¨ - ÖÖ×ÓÂäµØºó²úÉúµÄÀ©É¢ÉËº¦ÇøÓò
-/// Ê¹ÓÃSlashBurst + SoftGlow×ö×ÔÈ»±¬Õ¨¹âĞ§
+/// è†æ£˜é¢†åŸŸçˆ†ç‚¸ - ç§å­è½åœ°åäº§ç”Ÿçš„æ‰©æ•£ä¼¤å®³åŒºåŸŸ
+/// ä½¿ç”¨SlashBurst + SoftGlowåšè‡ªç„¶çˆ†ç‚¸å…‰æ•ˆ
 /// </summary>
 public class DivineWoodThornFieldExplosion : ModProjectile
 {
@@ -298,31 +298,31 @@ public class DivineWoodThornFieldExplosion : ModProjectile
         Texture2D sg = ACMAsset.SoftGlow;
         Texture2D sparkle = ACMAsset.Sparkle;
 
-        // ·ÅÉä×´ÌÙÂû±¬·¢
+        // æ”¾å°„çŠ¶è—¤è”“çˆ†å‘
         for (int k = 0; k < 6; k++) {
             float bAngle = k * MathF.PI / 3f + Projectile.ai[0] * 0.02f;
             float bLen = (k % 2 == 0) ? scale * 0.55f : scale * 0.35f;
             Color bColor = (k % 2 == 0) ? new Color(40, 200, 60) : new Color(160, 255, 180);
             sb.Draw(burst, Projectile.Center - Main.screenPosition, null,
                 bColor * (alpha * 0.75f), bAngle,
-                new Vector2(burst.Width * 0.5f, burst.Height), // ´Óµ×²¿ÖĞĞÄ·¢É¢
+                new Vector2(burst.Width * 0.5f, burst.Height), // ä»åº•éƒ¨ä¸­å¿ƒå‘æ•£
                 new Vector2(0.12f, bLen), SpriteEffects.None, 0);
         }
 
-        // Íâ²ãÈá¹â
+        // å¤–å±‚æŸ”å…‰
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
             new Color(60, 200, 70) * (alpha * 0.45f), 0f,
             sg.Size() * 0.5f,
             scale * 0.50f, SpriteEffects.None, 0);
 
-        // ÖĞĞÄ°×ºË
+        // ä¸­å¿ƒç™½æ ¸
         float flashAlpha = MathHelper.SmoothStep(1f, 0f, prog * 1.5f);
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
             new Color(220, 255, 230) * (alpha * flashAlpha), 0f,
             sg.Size() * 0.5f,
             scale * 0.18f, SpriteEffects.None, 0);
 
-        // »¨°êSparkle×°ÊÎ
+        // èŠ±ç“£Sparkleè£…é¥°
         sb.Draw(sparkle, Projectile.Center - Main.screenPosition, null,
             new Color(100, 255, 120) * (alpha * 0.50f),
             Projectile.ai[0] * 0.04f,

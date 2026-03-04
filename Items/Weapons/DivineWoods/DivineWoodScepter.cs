@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -10,10 +10,10 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Items.Weapons.DivineWoods;
 
 /// <summary>
-/// ÉñÄ¾ÁéÕÈ - ·¨Ê¦·¨ÕÈ£¬ÏòÊó±ê·½ÏòÊÍ·ÅÒ»µÀÌÙÂûÁ´±Ş
-/// ÌÙÂûÖğ½ÚÑÓÉì£¨Ê¹ÓÃÔ­°æNettleBurstÎÆÀí·ç¸ñµÄÁ´Ê½äÖÈ¾£©
-/// Ã¿Ò»½ÚÌÙÂû¶¼ÊÇ¶ÀÁ¢ÉËº¦Ô´£¬Ä©¶ËÃüÖĞÊ±ÊÍ·ÅÒ¶Æ¬±¬·¢
-/// ÌÙÂûÕûÌåÁ¬½ÓÍæ¼ÒÓëÄ©¶Ë£¬ĞÎ³ÉÒ»Ìõ³é´òÊ½µÄÂÌÉ«Á´±Ş
+/// ç¥æœ¨çµæ– - æ³•å¸ˆæ³•æ–ï¼Œå‘é¼ æ ‡æ–¹å‘é‡Šæ”¾ä¸€é“è—¤è”“é“¾é­
+/// è—¤è”“é€èŠ‚å»¶ä¼¸ï¼ˆä½¿ç”¨åŸç‰ˆNettleBurstçº¹ç†é£æ ¼çš„é“¾å¼æ¸²æŸ“ï¼‰
+/// æ¯ä¸€èŠ‚è—¤è”“éƒ½æ˜¯ç‹¬ç«‹ä¼¤å®³æºï¼Œæœ«ç«¯å‘½ä¸­æ—¶é‡Šæ”¾å¶ç‰‡çˆ†å‘
+/// è—¤è”“æ•´ä½“è¿æ¥ç©å®¶ä¸æœ«ç«¯ï¼Œå½¢æˆä¸€æ¡æŠ½æ‰“å¼çš„ç»¿è‰²é“¾é­
 /// </summary>
 public class DivineWoodScepter : ModItem
 {
@@ -47,9 +47,9 @@ public class DivineWoodScepter : ModItem
 }
 
 /// <summary>
-/// ÌÙÂûÁ´±ŞÍ·²¿ - ·¨ÕÈÊÍ·ÅµÄÌÙÂûÇ°¶Ë
-/// ·ÉĞĞÊ±ÔÚÉíºóÁôÏÂÁ´Ê½ÌÙÂû¶Î£¬ÃüÖĞºóÊÍ·ÅÒ¶Æ¬±¬·¢
-/// Ê¹ÓÃÁ´Ê½»æÖÆÁ¬½ÓÍæ¼ÒÓëÍ·²¿Ö®¼äµÄÌÙÂû½Ú¶Î
+/// è—¤è”“é“¾é­å¤´éƒ¨ - æ³•æ–é‡Šæ”¾çš„è—¤è”“å‰ç«¯
+/// é£è¡Œæ—¶åœ¨èº«åç•™ä¸‹é“¾å¼è—¤è”“æ®µï¼Œå‘½ä¸­åé‡Šæ”¾å¶ç‰‡çˆ†å‘
+/// ä½¿ç”¨é“¾å¼ç»˜åˆ¶è¿æ¥ç©å®¶ä¸å¤´éƒ¨ä¹‹é—´çš„è—¤è”“èŠ‚æ®µ
 /// </summary>
 public class DivineWoodVineWhipHead : ModProjectile
 {
@@ -84,7 +84,7 @@ public class DivineWoodVineWhipHead : ModProjectile
         Projectile.rotation = Projectile.velocity.ToRotation();
         Projectile.velocity *= 0.96f;
 
-        // ÇáÎ¢×·×Ù
+        // è½»å¾®è¿½è¸ª
         float closestDist = 350f;
         int targetIdx = -1;
         for (int i = 0; i < Main.maxNPCs; i++) {
@@ -98,7 +98,7 @@ public class DivineWoodVineWhipHead : ModProjectile
             Projectile.velocity = Vector2.Lerp(Projectile.velocity, dir * Projectile.velocity.Length(), 0.04f);
         }
 
-        // ÌÙÂû¼â¶ËÁ£×Ó
+        // è—¤è”“å°–ç«¯ç²’å­
         if (Main.rand.NextBool(2)) {
             Dust d = Dust.NewDustPerfect(
                 Projectile.Center + Main.rand.NextVector2Circular(8, 8),
@@ -113,14 +113,14 @@ public class DivineWoodVineWhipHead : ModProjectile
         target.AddBuff(BuffID.Poisoned, 360);
         target.AddBuff(BuffID.Venom, 180);
 
-        // ÃüÖĞÊÍ·ÅÒ¶Æ¬±¬·¢
+        // å‘½ä¸­é‡Šæ”¾å¶ç‰‡çˆ†å‘
         for (int i = 0; i < 8; i++) {
             Dust d = Dust.NewDustPerfect(target.Center, DustID.JungleTorch,
                 Main.rand.NextVector2Circular(6f, 6f), 40, default, 2f);
             d.noGravity = true;
         }
 
-        // ÊÍ·Å4Æ¬×·×ÙÒ¶×Ó
+        // é‡Šæ”¾4ç‰‡è¿½è¸ªå¶å­
         if (Projectile.owner == Main.myPlayer) {
             for (int i = 0; i < 4; i++) {
                 Vector2 leafVel = Main.rand.NextVector2CircularEdge(6f, 6f);
@@ -145,7 +145,7 @@ public class DivineWoodVineWhipHead : ModProjectile
         SpriteBatch sb = Main.spriteBatch;
         Player owner = Main.player[Projectile.owner];
 
-        // === Á´Ê½ÌÙÂû»æÖÆ£ºÍæ¼ÒÖĞĞÄµ½µ¯Ä»ÖĞĞÄ ===
+        // === é“¾å¼è—¤è”“ç»˜åˆ¶ï¼šç©å®¶ä¸­å¿ƒåˆ°å¼¹å¹•ä¸­å¿ƒ ===
         Texture2D vineTex = TextureAssets.Chains[13].Value; // Jungle/vine chain texture
         Vector2 start = owner.MountedCenter;
         Vector2 end = Projectile.Center;
@@ -159,7 +159,7 @@ public class DivineWoodVineWhipHead : ModProjectile
         for (int i = 0; i < segmentCount; i++) {
             float progress = (float)i / segmentCount;
             Vector2 segPos = start + direction * (i * segmentLen);
-            // ÕıÏÒÆ«ÒÆÈÃÌÙÂûÍäÇú
+            // æ­£å¼¦åç§»è®©è—¤è”“å¼¯æ›²
             float wave = MathF.Sin(progress * MathF.PI * 2f + Timer * 0.15f) * 12f * (1f - progress);
             Vector2 perp = new(-direction.Y, direction.X);
             Vector2 drawPos = segPos + perp * wave - Main.screenPosition;
@@ -168,7 +168,7 @@ public class DivineWoodVineWhipHead : ModProjectile
                 1f, SpriteEffects.None, 0);
         }
 
-        // === Í·²¿ÌØĞ§»æÖÆ ===
+        // === å¤´éƒ¨ç‰¹æ•ˆç»˜åˆ¶ ===
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
             DepthStencilState.None, RasterizerState.CullNone, null,
@@ -179,7 +179,7 @@ public class DivineWoodVineWhipHead : ModProjectile
 
         float pulse = 0.6f + 0.2f * MathF.Sin(Timer * 0.25f);
 
-        // Í·²¿·¢¹âºËĞÄ
+        // å¤´éƒ¨å‘å…‰æ ¸å¿ƒ
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
             new Color(60, 220, 80) * (0.65f * pulse), 0f,
             sg.Size() * 0.5f,
@@ -189,14 +189,14 @@ public class DivineWoodVineWhipHead : ModProjectile
             sg.Size() * 0.5f,
             0.30f, SpriteEffects.None, 0);
 
-        // Í·²¿¼â¶ËSparkle
+        // å¤´éƒ¨å°–ç«¯Sparkle
         sb.Draw(sparkle, Projectile.Center - Main.screenPosition, null,
             new Color(100, 255, 120) * (0.45f * pulse),
             Timer * 0.08f,
             sparkle.Size() * 0.5f,
             0.25f, SpriteEffects.None, 0);
 
-        // ÑØÁ´Éí·¢¹â½Úµã
+        // æ²¿é“¾èº«å‘å…‰èŠ‚ç‚¹
         for (int i = 0; i < segmentCount; i += 3) {
             float progress = (float)i / segmentCount;
             Vector2 segPos = start + direction * (i * segmentLen);
@@ -218,8 +218,8 @@ public class DivineWoodVineWhipHead : ModProjectile
 }
 
 /// <summary>
-/// ÌÙÂûÒ¶±¬ - ÌÙÂûÃüÖĞºóÊÍ·ÅµÄ×·×ÙÒ¶Æ¬
-/// Ê¹ÓÃÔ­°æLeafÎÆÀí£¬×·×Ù×î½üµĞÈË
+/// è—¤è”“å¶çˆ† - è—¤è”“å‘½ä¸­åé‡Šæ”¾çš„è¿½è¸ªå¶ç‰‡
+/// ä½¿ç”¨åŸç‰ˆLeafçº¹ç†ï¼Œè¿½è¸ªæœ€è¿‘æ•Œäºº
 /// </summary>
 public class DivineWoodVineBurstLeaf : ModProjectile
 {

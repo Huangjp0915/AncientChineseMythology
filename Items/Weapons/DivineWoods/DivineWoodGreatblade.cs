@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -9,9 +9,9 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Items.Weapons.DivineWoods;
 
 /// <summary>
-/// ÉñÄ¾¾ŞÈĞ - ³ÖÎÕĞÍ»Ó¿³´óµ¶£¬²ÎÕÕAzureRuinBladeµÄHeld ProjectileÏµÍ³
-/// »Óµ¶Ê±ÊÍ·ÅÌÙÂû»¡¹â£¬»¡¹â»ÓÖÁ40%½ø¶ÈÊ±ÏòÊó±ê·½Ïò·¢ÉäÒ»µÀ×ÔÈ»µ¶²¨
-/// µ¶²¨ÑØÍ¾Éú³¤¾£¼¬£¬ÃüÖĞºóÌÙÂû²øÈÆ¼õËÙµĞÈË
+/// ç¥æœ¨å·¨åˆƒ - æŒæ¡å‹æŒ¥ç å¤§åˆ€ï¼Œå‚ç…§AzureRuinBladeçš„Held Projectileç³»ç»Ÿ
+/// æŒ¥åˆ€æ—¶é‡Šæ”¾è—¤è”“å¼§å…‰ï¼Œå¼§å…‰æŒ¥è‡³40%è¿›åº¦æ—¶å‘é¼ æ ‡æ–¹å‘å‘å°„ä¸€é“è‡ªç„¶åˆ€æ³¢
+/// åˆ€æ³¢æ²¿é€”ç”Ÿé•¿è†æ£˜ï¼Œå‘½ä¸­åè—¤è”“ç¼ ç»•å‡é€Ÿæ•Œäºº
 /// </summary>
 public class DivineWoodGreatblade : ModItem
 {
@@ -44,8 +44,8 @@ public class DivineWoodGreatblade : ModItem
 }
 
 /// <summary>
-/// ÉñÄ¾¾ŞÈĞ»Ó¿³µ¯Ä» - ³ÖÎÕĞı×ª£¬»Ó¶¯Ê±ÊÍ·ÅÌÙÂû»¡¹âÍÏÎ²
-/// »ÓÖÁ40%½ø¶ÈÊ±ÊÍ·Å×ÔÈ»µ¶²¨
+/// ç¥æœ¨å·¨åˆƒæŒ¥ç å¼¹å¹• - æŒæ¡æ—‹è½¬ï¼ŒæŒ¥åŠ¨æ—¶é‡Šæ”¾è—¤è”“å¼§å…‰æ‹–å°¾
+/// æŒ¥è‡³40%è¿›åº¦æ—¶é‡Šæ”¾è‡ªç„¶åˆ€æ³¢
 /// </summary>
 public class DivineWoodGreatbladeSwing : ModProjectile
 {
@@ -245,8 +245,8 @@ public class DivineWoodGreatbladeSwing : ModProjectile
 }
 
 /// <summary>
-/// ×ÔÈ»µ¶²¨ - »Óµ¶ÊÍ·ÅµÄ´äÂÌ»¡ĞÎÄÜÁ¿²¨
-/// Ê¹ÓÃGlaciateWave×öÖ÷ÌåäÖÈ¾£¬LightShot×öÍÏÎ²
+/// è‡ªç„¶åˆ€æ³¢ - æŒ¥åˆ€é‡Šæ”¾çš„ç¿ ç»¿å¼§å½¢èƒ½é‡æ³¢
+/// ä½¿ç”¨GlaciateWaveåšä¸»ä½“æ¸²æŸ“ï¼ŒLightShotåšæ‹–å°¾
 /// </summary>
 public class DivineWoodVineWave : ModProjectile
 {

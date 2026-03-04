@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -10,9 +10,9 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Items.Weapons.DivineWoods;
 
 /// <summary>
-/// ÉñÄ¾µä¼® - ·¨Ê¦Ä§·¨Êé£¬Ã¿´ÎÊ¹ÓÃÊÍ·Å8~12Æ¬Ò¶Æ¬ÉÈĞÎÉ¢Éä
-/// Ò¶Æ¬Ê¹ÓÃÔ­°æLeafÎÆÀí£¬³õÆÚÉÈĞÎÉ¢ÉäºóÂİĞı·ÉĞĞ£¬È»ºó×·×Ù×î½üµĞÈË
-/// Ò¶Æ¬ÃüÖĞºóÓĞ¸ÅÂÊÊÍ·Å´ÎÉúĞ¡»¨°ê
+/// ç¥æœ¨å…¸ç± - æ³•å¸ˆé­”æ³•ä¹¦ï¼Œæ¯æ¬¡ä½¿ç”¨é‡Šæ”¾8~12ç‰‡å¶ç‰‡æ‰‡å½¢æ•£å°„
+/// å¶ç‰‡ä½¿ç”¨åŸç‰ˆLeafçº¹ç†ï¼ŒåˆæœŸæ‰‡å½¢æ•£å°„åèºæ—‹é£è¡Œï¼Œç„¶åè¿½è¸ªæœ€è¿‘æ•Œäºº
+/// å¶ç‰‡å‘½ä¸­åæœ‰æ¦‚ç‡é‡Šæ”¾æ¬¡ç”Ÿå°èŠ±ç“£
 /// </summary>
 public class DivineWoodTome : ModItem
 {
@@ -48,13 +48,13 @@ public class DivineWoodTome : ModItem
             angle += Main.rand.NextFloat(-0.05f, 0.05f);
             float speed = velocity.Length() * Main.rand.NextFloat(0.85f, 1.15f);
             Vector2 leafVel = angle.ToRotationVector2() * speed;
-            // ai[0] = ÂİĞı·½Ïò (½»Ìæ×óÓÒ)
+            // ai[0] = èºæ—‹æ–¹å‘ (äº¤æ›¿å·¦å³)
             float spiralDir = i % 2 == 0 ? 1f : -1f;
             Projectile.NewProjectile(source, position, leafVel, type, damage, knockback,
                 player.whoAmI, ai0: spiralDir);
         }
 
-        // ÊÍ·ÅÒ¶Æ¬³¾Îí
+        // é‡Šæ”¾å¶ç‰‡å°˜é›¾
         for (int i = 0; i < 15; i++) {
             Vector2 dustVel = velocity.SafeNormalize(Vector2.UnitX).RotatedByRandom(0.6f) * Main.rand.NextFloat(2f, 6f);
             Dust d = Dust.NewDustPerfect(position, DustID.GrassBlades, dustVel, 80, default, 1.5f);
@@ -66,9 +66,9 @@ public class DivineWoodTome : ModItem
 }
 
 /// <summary>
-/// ÉñÄ¾Ò¶ÈĞ - Ê¹ÓÃÔ­°æLeafÎÆÀíµÄÒ¶Æ¬µ¯Ä»
-/// ³õÆÚÖ±Ïß·ÉĞĞ+ÂİĞıÆ«ÒÆ£¬È»ºó×·×Ù×î½üµĞÈË
-/// ÃüÖĞÊ±ÓĞ40%¸ÅÂÊÊÍ·Å´ÎÉú»¨°ê
+/// ç¥æœ¨å¶åˆƒ - ä½¿ç”¨åŸç‰ˆLeafçº¹ç†çš„å¶ç‰‡å¼¹å¹•
+/// åˆæœŸç›´çº¿é£è¡Œ+èºæ—‹åç§»ï¼Œç„¶åè¿½è¸ªæœ€è¿‘æ•Œäºº
+/// å‘½ä¸­æ—¶æœ‰40%æ¦‚ç‡é‡Šæ”¾æ¬¡ç”ŸèŠ±ç“£
 /// </summary>
 public class DivineWoodTomeLeaf : ModProjectile
 {
@@ -105,7 +105,7 @@ public class DivineWoodTomeLeaf : ModProjectile
         }
 
         if (_timer < SpiralDuration) {
-            // ÂİĞıÆ«ÒÆ½×¶Î£ºÔÚ´¹Ö±ÓÚ·ÉĞĞ·½ÏòÉÏÊ©¼ÓÕıÏÒÆ«ÒÆ
+            // èºæ—‹åç§»é˜¶æ®µï¼šåœ¨å‚ç›´äºé£è¡Œæ–¹å‘ä¸Šæ–½åŠ æ­£å¼¦åç§»
             float spiralDir = Projectile.ai[0];
             float spiralForce = MathF.Sin(_timer * 0.3f) * spiralDir * 0.8f;
             Vector2 perpendicular = new(-Projectile.velocity.Y, Projectile.velocity.X);
@@ -114,7 +114,7 @@ public class DivineWoodTomeLeaf : ModProjectile
             Projectile.velocity *= 0.98f;
         }
         else {
-            // ×·×Ù½×¶Î
+            // è¿½è¸ªé˜¶æ®µ
             float closestDist = 500f;
             int targetIdx = -1;
             for (int i = 0; i < Main.maxNPCs; i++) {
@@ -129,7 +129,7 @@ public class DivineWoodTomeLeaf : ModProjectile
             }
         }
 
-        // Ò¶Æ¬Á£×ÓÍÏÎ²
+        // å¶ç‰‡ç²’å­æ‹–å°¾
         if (Main.rand.NextBool(3)) {
             Dust trail = Dust.NewDustPerfect(Projectile.Center, DustID.GrassBlades,
                 -Projectile.velocity * 0.05f, 100, default, 0.9f);
@@ -148,7 +148,7 @@ public class DivineWoodTomeLeaf : ModProjectile
             d.noGravity = true;
         }
 
-        // 40%¸ÅÂÊÊÍ·Å´ÎÉú»¨°ê
+        // 40%æ¦‚ç‡é‡Šæ”¾æ¬¡ç”ŸèŠ±ç“£
         if (Main.rand.NextBool(5, 12) && Projectile.owner == Main.myPlayer) {
             Vector2 petalVel = Main.rand.NextVector2CircularEdge(5f, 5f);
             Projectile.NewProjectile(Projectile.GetSource_FromThis(), target.Center,
@@ -177,8 +177,8 @@ public class DivineWoodTomeLeaf : ModProjectile
 }
 
 /// <summary>
-/// ´ÎÉú»¨°ê - Ò¶Æ¬ÃüÖĞÊ±¸ÅÂÊÊÍ·ÅµÄĞ¡»¨°ê
-/// Ê¹ÓÃÔ­°æFlowerPetalÎÆÀí£¬×·×Ù¸½½üµĞÈË
+/// æ¬¡ç”ŸèŠ±ç“£ - å¶ç‰‡å‘½ä¸­æ—¶æ¦‚ç‡é‡Šæ”¾çš„å°èŠ±ç“£
+/// ä½¿ç”¨åŸç‰ˆFlowerPetalçº¹ç†ï¼Œè¿½è¸ªé™„è¿‘æ•Œäºº
 /// </summary>
 public class DivineWoodTomePetal : ModProjectile
 {
@@ -210,7 +210,7 @@ public class DivineWoodTomePetal : ModProjectile
             Projectile.frame = (Projectile.frame + 1) % Main.projFrames[Type];
         }
 
-        // Ç°15Ö¡¼õËÙ£¬È»ºó×·×Ù
+        // å‰15å¸§å‡é€Ÿï¼Œç„¶åè¿½è¸ª
         if (_timer < 15) {
             Projectile.velocity *= 0.92f;
         }

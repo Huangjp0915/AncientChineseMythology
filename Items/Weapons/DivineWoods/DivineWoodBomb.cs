@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -9,8 +9,8 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Items.Weapons.DivineWoods;
 
 /// <summary>
-/// ÉñÄ¾ÖÖ×Óµ¯ - Å×ÖÀ»¡ÏßÖÖ×Ó£¬Åö×²ºó±¬Õ¨ÕÀ·Å
-/// ±¬Õ¨Ê¹ÓÃSlashBurst+SoftGlow+Sparkle¶à²ãµş¼Ó£¬ÊÍ·Å8µÀ×·×ÙÌÙÂûËéÆ¬
+/// ç¥æœ¨ç§å­å¼¹ - æŠ›æ·å¼§çº¿ç§å­ï¼Œç¢°æ’åçˆ†ç‚¸ç»½æ”¾
+/// çˆ†ç‚¸ä½¿ç”¨SlashBurst+SoftGlow+Sparkleå¤šå±‚å åŠ ï¼Œé‡Šæ”¾8é“è¿½è¸ªè—¤è”“ç¢ç‰‡
 /// </summary>
 public class DivineWoodBomb : ModItem
 {
@@ -35,7 +35,7 @@ public class DivineWoodBomb : ModItem
     }
 
     public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
-        // ÉÏÅ×»¡Ïß
+        // ä¸ŠæŠ›å¼§çº¿
         Vector2 launchVel = velocity + new Vector2(0, -3f);
         Projectile.NewProjectile(source, position, launchVel, type, damage, knockback, player.whoAmI);
         return false;
@@ -43,8 +43,8 @@ public class DivineWoodBomb : ModItem
 }
 
 /// <summary>
-/// ÉñÄ¾ÖÖ×ÓÊÖÀ× - »¡Ïß·ÉĞĞ£¬Åö×²»ò³¬Ê±ºó±¬Õ¨
-/// Ê¹ÓÃSoftGlow×ö·ÉĞĞÊ±µÄºôÎü¹âÔÎ
+/// ç¥æœ¨ç§å­æ‰‹é›· - å¼§çº¿é£è¡Œï¼Œç¢°æ’æˆ–è¶…æ—¶åçˆ†ç‚¸
+/// ä½¿ç”¨SoftGlowåšé£è¡Œæ—¶çš„å‘¼å¸å…‰æ™•
 /// </summary>
 public class DivineWoodSeedGrenade : ModProjectile
 {
@@ -74,7 +74,7 @@ public class DivineWoodSeedGrenade : ModProjectile
             -Projectile.velocity * 0.08f, 60, default, 1.2f);
         d.noGravity = true;
 
-        // ³¬Ê±±¬Õ¨
+        // è¶…æ—¶çˆ†ç‚¸
         if (AiTimer > 120) Explode();
     }
 
@@ -87,19 +87,19 @@ public class DivineWoodSeedGrenade : ModProjectile
     }
 
     private void Explode() {
-        if (Projectile.ai[1] != 0) return; // ·ÀÖ¹ÖØ¸´±¬Õ¨
+        if (Projectile.ai[1] != 0) return; // é˜²æ­¢é‡å¤çˆ†ç‚¸
         Projectile.ai[1] = 1;
 
         SoundEngine.PlaySound(SoundID.Item14 with { Volume = 1f, Pitch = 0.3f }, Projectile.Center);
 
         if (Main.myPlayer == Projectile.owner) {
-            // ±¬Õ¨VFXµ¯Ä»
+            // çˆ†ç‚¸VFXå¼¹å¹•
             Projectile.NewProjectile(
                 Projectile.GetSource_Death(), Projectile.Center, Vector2.Zero,
                 ModContent.ProjectileType<DivineWoodBloomExplosion>(),
                 Projectile.damage, Projectile.knockBack, Projectile.owner);
 
-            // 8µÀ×·×ÙÌÙÂûËéÆ¬
+            // 8é“è¿½è¸ªè—¤è”“ç¢ç‰‡
             for (int i = 0; i < 8; i++) {
                 float angle = MathHelper.TwoPi * i / 8;
                 Vector2 fragVel = angle.ToRotationVector2() * Main.rand.NextFloat(6f, 10f);
@@ -154,8 +154,8 @@ public class DivineWoodSeedGrenade : ModProjectile
 }
 
 /// <summary>
-/// ×ÔÈ»ÕÀ·Å±¬Õ¨ - ÖÖ×Ó±¬Õ¨µÄÊÓ¾õĞ§¹ûµ¯Ä»
-/// Ê¹ÓÃSlashBurst×ö·ÅÉä×´ÌÙÂû±¬·¢£¬SoftGlow×öÀ©É¢¹â»·£¬Sparkle×ö»¨°ê×°ÊÎ
+/// è‡ªç„¶ç»½æ”¾çˆ†ç‚¸ - ç§å­çˆ†ç‚¸çš„è§†è§‰æ•ˆæœå¼¹å¹•
+/// ä½¿ç”¨SlashBurståšæ”¾å°„çŠ¶è—¤è”“çˆ†å‘ï¼ŒSoftGlowåšæ‰©æ•£å…‰ç¯ï¼ŒSparkleåšèŠ±ç“£è£…é¥°
 /// </summary>
 public class DivineWoodBloomExplosion : ModProjectile
 {
@@ -220,7 +220,7 @@ public class DivineWoodBloomExplosion : ModProjectile
         Texture2D sparkle = ACMAsset.Sparkle;
         Texture2D star = ACMAsset.BlankStar;
 
-        // ·ÅÉä×´ÌÙÂû±¬·¢ - 8Ïò
+        // æ”¾å°„çŠ¶è—¤è”“çˆ†å‘ - 8å‘
         for (int k = 0; k < 8; k++) {
             float bAngle = k * MathF.PI / 4f + Timer * 0.02f;
             bool cardinal = (k % 2 == 0);
@@ -233,27 +233,27 @@ public class DivineWoodBloomExplosion : ModProjectile
                 new Vector2(0.14f, bLen), SpriteEffects.None, 0);
         }
 
-        // Íâ²ãÀ©É¢¹â»·
+        // å¤–å±‚æ‰©æ•£å…‰ç¯
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
             new Color(60, 210, 70) * (alpha * 0.45f), 0f,
             sg.Size() * 0.5f,
             scale * 0.55f, SpriteEffects.None, 0);
 
-        // ÖĞĞÄ°×ºËÉÁ¹â
+        // ä¸­å¿ƒç™½æ ¸é—ªå…‰
         float flashAlpha = MathHelper.SmoothStep(1.1f, 0f, prog * 1.5f);
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
             new Color(220, 255, 230) * (alpha * flashAlpha), 0f,
             sg.Size() * 0.5f,
             scale * 0.20f, SpriteEffects.None, 0);
 
-        // BlankStar»¨¶äĞı×ª
+        // BlankStarèŠ±æœµæ—‹è½¬
         sb.Draw(star, Projectile.Center - Main.screenPosition, null,
             new Color(100, 255, 120) * (alpha * 0.55f),
             Timer * 0.08f,
             star.Size() * 0.5f,
             scale * 0.12f, SpriteEffects.None, 0);
 
-        // Sparkle»¨°ê×°ÊÎ
+        // SparkleèŠ±ç“£è£…é¥°
         sb.Draw(sparkle, Projectile.Center - Main.screenPosition, null,
             new Color(180, 255, 100) * (alpha * 0.45f),
             -Timer * 0.05f,
@@ -269,8 +269,8 @@ public class DivineWoodBloomExplosion : ModProjectile
 }
 
 /// <summary>
-/// ÌÙÂûËéÆ¬ - ±¬Õ¨ºóÊÍ·ÅµÄ×·×ÙËéÆ¬
-/// Ê¹ÓÃBlankStaräÖÈ¾£¬×·×Ù×î½üµĞÈË
+/// è—¤è”“ç¢ç‰‡ - çˆ†ç‚¸åé‡Šæ”¾çš„è¿½è¸ªç¢ç‰‡
+/// ä½¿ç”¨BlankStaræ¸²æŸ“ï¼Œè¿½è¸ªæœ€è¿‘æ•Œäºº
 /// </summary>
 public class DivineWoodVineShard : ModProjectile
 {

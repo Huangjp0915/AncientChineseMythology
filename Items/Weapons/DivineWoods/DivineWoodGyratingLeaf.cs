@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -10,9 +10,9 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Items.Weapons.DivineWoods;
 
 /// <summary>
-/// ÉñÄ¾ĞıÒ¶ - Í¶ÖÀºó½øÈë»·ÈÆ¹ìµÀµÄ»ØĞıÒ¶ÈĞ
-/// ³å´Ì¹¥»÷Ê±ÊÍ·ÅÒ»È¦Ò¶Æ¬µ¯Ä»Ğı·ç
-/// ÃüÖĞ5´Î´¥·¢×ÔÈ»²Ã¾ö£ºÊÍ·Å»¨°ê»·ĞÎµ¯Ä»
+/// ç¥æœ¨æ—‹å¶ - æŠ•æ·åè¿›å…¥ç¯ç»•è½¨é“çš„å›æ—‹å¶åˆƒ
+/// å†²åˆºæ”»å‡»æ—¶é‡Šæ”¾ä¸€åœˆå¶ç‰‡å¼¹å¹•æ—‹é£
+/// å‘½ä¸­5æ¬¡è§¦å‘è‡ªç„¶è£å†³ï¼šé‡Šæ”¾èŠ±ç“£ç¯å½¢å¼¹å¹•
 /// </summary>
 public class DivineWoodGyratingLeaf : ModItem
 {
@@ -42,8 +42,8 @@ public class DivineWoodGyratingLeaf : ModItem
 }
 
 /// <summary>
-/// ÉñÄ¾ĞıÒ¶µ¯Ä» - Ê¹ÓÃ×ÔÉíÎÆÀí£¬×´Ì¬»úÇı¶¯
-/// ³å´ÌÊ±ÊÍ·ÅÒ¶Æ¬Ğı·ç£¬²Ã¾öÊ±ÊÍ·Å»¨°êµ¯Ä»
+/// ç¥æœ¨æ—‹å¶å¼¹å¹• - ä½¿ç”¨è‡ªèº«çº¹ç†ï¼ŒçŠ¶æ€æœºé©±åŠ¨
+/// å†²åˆºæ—¶é‡Šæ”¾å¶ç‰‡æ—‹é£ï¼Œè£å†³æ—¶é‡Šæ”¾èŠ±ç“£å¼¹å¹•
 /// </summary>
 public class DivineWoodGyratingLeafProj : ModProjectile
 {
@@ -102,7 +102,7 @@ public class DivineWoodGyratingLeafProj : ModProjectile
             case LeafState.Returning: HandleReturning(owner); break;
         }
 
-        // »·ÈÆÊ±ÖÜÆÚĞÔÊÍ·Å×°ÊÎÒ¶Æ¬
+        // ç¯ç»•æ—¶å‘¨æœŸæ€§é‡Šæ”¾è£…é¥°å¶ç‰‡
         if (State == LeafState.Orbiting && Timer % 20 == 0) {
             Dust d = Dust.NewDustPerfect(
                 Projectile.Center + Main.rand.NextVector2Circular(20, 20),
@@ -149,7 +149,7 @@ public class DivineWoodGyratingLeafProj : ModProjectile
                 Projectile.velocity = (target.Center - Projectile.Center).SafeNormalize(Vector2.UnitX) * DashSpeed;
                 SoundEngine.PlaySound(SoundID.Item7 with { Volume = 0.5f, Pitch = 0.6f }, Projectile.Center);
 
-                // ³å´ÌÊ±ÊÍ·Å6Æ¬Ğı·çÒ¶Æ¬
+                // å†²åˆºæ—¶é‡Šæ”¾6ç‰‡æ—‹é£å¶ç‰‡
                 if (Projectile.owner == Main.myPlayer) {
                     for (int i = 0; i < 6; i++) {
                         float angle = MathHelper.TwoPi * i / 6;
@@ -197,7 +197,7 @@ public class DivineWoodGyratingLeafProj : ModProjectile
             burst.noGravity = true;
         }
 
-        // Ã¿5´ÎÃüÖĞ´¥·¢×ÔÈ»²Ã¾ö£ºÊÍ·Å»¨°êµ¯Ä»»·
+        // æ¯5æ¬¡å‘½ä¸­è§¦å‘è‡ªç„¶è£å†³ï¼šé‡Šæ”¾èŠ±ç“£å¼¹å¹•ç¯
         if (HitCounter % 5 == 0) {
             SoundEngine.PlaySound(SoundID.Item17 with { Volume = 1f, Pitch = 0.5f }, target.Center);
 
@@ -302,8 +302,8 @@ public class DivineWoodGyratingLeafProj : ModProjectile
 }
 
 /// <summary>
-/// Ğı·çÒ¶Æ¬ - ³å´ÌÊ±ÊÍ·ÅµÄĞı×ªÒ¶Æ¬£¬Ê¹ÓÃÔ­°æLeafÎÆÀí
-/// ¶ÌÔİ·ÉĞĞºó×·×ÙµĞÈË
+/// æ—‹é£å¶ç‰‡ - å†²åˆºæ—¶é‡Šæ”¾çš„æ—‹è½¬å¶ç‰‡ï¼Œä½¿ç”¨åŸç‰ˆLeafçº¹ç†
+/// çŸ­æš‚é£è¡Œåè¿½è¸ªæ•Œäºº
 /// </summary>
 public class DivineWoodWhirlLeaf : ModProjectile
 {
@@ -335,7 +335,7 @@ public class DivineWoodWhirlLeaf : ModProjectile
             Projectile.frame = (Projectile.frame + 1) % Main.projFrames[Type];
         }
 
-        // Ç°30Ö¡ÂİĞıÀ©É¢£¬È»ºó×·×Ù
+        // å‰30å¸§èºæ—‹æ‰©æ•£ï¼Œç„¶åè¿½è¸ª
         if (_timer > 30) {
             float closestDist = 500f;
             int targetIdx = -1;
@@ -376,8 +376,8 @@ public class DivineWoodWhirlLeaf : ModProjectile
 }
 
 /// <summary>
-/// ²Ã¾ö»¨°ê - 5´ÎÃüÖĞ²Ã¾öÊ±ÊÍ·ÅµÄ»¨°êµ¯Ä»
-/// Ê¹ÓÃÔ­°æFlowerPetalÎÆÀí£¬À©É¢ºó×·×Ù×î½üµĞÈË
+/// è£å†³èŠ±ç“£ - 5æ¬¡å‘½ä¸­è£å†³æ—¶é‡Šæ”¾çš„èŠ±ç“£å¼¹å¹•
+/// ä½¿ç”¨åŸç‰ˆFlowerPetalçº¹ç†ï¼Œæ‰©æ•£åè¿½è¸ªæœ€è¿‘æ•Œäºº
 /// </summary>
 public class DivineWoodVerdictPetal : ModProjectile
 {
@@ -411,7 +411,7 @@ public class DivineWoodVerdictPetal : ModProjectile
             Projectile.frame = (Projectile.frame + 1) % Main.projFrames[Type];
         }
 
-        // Ç°20Ö¡¼õËÙÀ©É¢£¬È»ºó¼ÓËÙ×·×Ù
+        // å‰20å¸§å‡é€Ÿæ‰©æ•£ï¼Œç„¶ååŠ é€Ÿè¿½è¸ª
         if (_timer < 20) {
             Projectile.velocity *= 0.95f;
         }
