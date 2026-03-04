@@ -10,9 +10,10 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Items.Weapons.DivineWoods;
 
 /// <summary>
-/// 神木灵杖 - 法师法杖，发射自然能量弹，落点生成藤蔓漩涡持续伤害
-/// 能量弹飞行时吸附周围叶片粒子，命中后在目标位置绽放藤蔓漩涡
-/// 漩涡持续牵引并伤害附近敌人，施加中毒+毒液
+/// 神木灵杖 - 法师法杖，向鼠标方向释放一道藤蔓链鞭
+/// 藤蔓逐节延伸（使用原版NettleBurst纹理风格的链式渲染）
+/// 每一节藤蔓都是独立伤害源，末端命中时释放叶片爆发
+/// 藤蔓整体连接玩家与末端，形成一条抽打式的绿色链鞭
 /// </summary>
 public class DivineWoodScepter : ModItem
 {
@@ -22,8 +23,8 @@ public class DivineWoodScepter : ModItem
         Item.DamageType = DamageClass.Magic;
         Item.width = 36;
         Item.height = 36;
-        Item.useTime = 30;
-        Item.useAnimation = 30;
+        Item.useTime = 26;
+        Item.useAnimation = 26;
         Item.useStyle = ItemUseStyleID.Shoot;
         Item.knockBack = 5f;
         Item.value = Item.buyPrice(gold: 50);
@@ -31,50 +32,60 @@ public class DivineWoodScepter : ModItem
         Item.UseSound = SoundID.Item8;
         Item.autoReuse = true;
         Item.noMelee = true;
-        Item.shoot = ModContent.ProjectileType<DivineWoodNatureBolt>();
-        Item.shootSpeed = 16f;
-        Item.mana = 12;
+        Item.shoot = ModContent.ProjectileType<DivineWoodVineWhipHead>();
+        Item.shootSpeed = 18f;
+        Item.mana = 14;
+        Item.channel = true;
         Item.staff[Type] = true;
     }
 
     public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
         Projectile.NewProjectile(source, position, velocity, type, damage, knockback, player.whoAmI);
-        SoundEngine.PlaySound(SoundID.Item8 with { Pitch = 0.3f }, player.Center);
+        SoundEngine.PlaySound(SoundID.Grass with { Volume = 0.7f, Pitch = 0.2f }, player.Center);
         return false;
     }
 }
 
 /// <summary>
-/// 自然能量弹 - 飞行时吸附叶片粒子，命中后在落点生成藤蔓漩涡
-/// 使用BlankStar + SoftGlow渲染，拖尾使用LightShot
+/// 藤蔓链鞭头部 - 法杖释放的藤蔓前端
+/// 飞行时在身后留下链式藤蔓段，命中后释放叶片爆发
+/// 使用链式绘制连接玩家与头部之间的藤蔓节段
 /// </summary>
-public class DivineWoodNatureBolt : ModProjectile
+public class DivineWoodVineWhipHead : ModProjectile
 {
     public override string Texture
-        => "AncientChineseMythology/Textures/Masking/BlankStar";
+        => "AncientChineseMythology/Textures/Masking/SoftGlow";
 
     public override void SetStaticDefaults() {
         ProjectileID.Sets.TrailingMode[Type] = 2;
-        ProjectileID.Sets.TrailCacheLength[Type] = 12;
+        ProjectileID.Sets.TrailCacheLength[Type] = 20;
     }
 
+    private ref float Timer => ref Projectile.ai[0];
+
     public override void SetDefaults() {
-        Projectile.width = 24;
-        Projectile.height = 24;
+        Projectile.width = 20;
+        Projectile.height = 20;
         Projectile.friendly = true;
         Projectile.DamageType = DamageClass.Magic;
-        Projectile.penetrate = 1;
-        Projectile.timeLeft = 180;
-        Projectile.tileCollide = true;
+        Projectile.penetrate = -1;
+        Projectile.timeLeft = 145;
+        Projectile.tileCollide = false;
         Projectile.ignoreWater = true;
-        Projectile.light = 0.6f;
+        Projectile.usesLocalNPCImmunity = true;
+        Projectile.localNPCHitCooldown = 6;
     }
 
     public override void AI() {
-        Projectile.rotation += 0.15f;
+        Timer++;
+        Player owner = Main.player[Projectile.owner];
+        if (!owner.active || owner.dead) { Projectile.Kill(); return; }
 
-        // 轻微追踪最近目标
-        float closestDist = 400f;
+        Projectile.rotation = Projectile.velocity.ToRotation();
+        Projectile.velocity *= 0.96f;
+
+        // 轻微追踪
+        float closestDist = 350f;
         int targetIdx = -1;
         for (int i = 0; i < Main.maxNPCs; i++) {
             NPC npc = Main.npc[i];
@@ -84,90 +95,119 @@ public class DivineWoodNatureBolt : ModProjectile
         }
         if (targetIdx >= 0) {
             Vector2 dir = Projectile.DirectionTo(Main.npc[targetIdx].Center);
-            Projectile.velocity = Vector2.Lerp(Projectile.velocity, dir * Projectile.velocity.Length(), 0.03f);
+            Projectile.velocity = Vector2.Lerp(Projectile.velocity, dir * Projectile.velocity.Length(), 0.04f);
         }
 
-        // 吸附叶片粒子
+        // 藤蔓尖端粒子
         if (Main.rand.NextBool(2)) {
-            Vector2 offset = Main.rand.NextVector2CircularEdge(40f, 40f);
-            Vector2 dustVel = (Projectile.Center - (Projectile.Center + offset)).SafeNormalize(Vector2.Zero) * 3f;
-            Dust d = Dust.NewDustPerfect(Projectile.Center + offset, DustID.JungleTorch,
-                dustVel, 60, default, 1.2f);
+            Dust d = Dust.NewDustPerfect(
+                Projectile.Center + Main.rand.NextVector2Circular(8, 8),
+                DustID.JungleTorch, -Projectile.velocity * 0.1f, 60, default, 1.3f);
             d.noGravity = true;
         }
 
-        Lighting.AddLight(Projectile.Center, 0.25f, 0.8f, 0.25f);
+        Lighting.AddLight(Projectile.Center, 0.2f, 0.7f, 0.2f);
+    }
+
+    public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+        target.AddBuff(BuffID.Poisoned, 360);
+        target.AddBuff(BuffID.Venom, 180);
+
+        // 命中释放叶片爆发
+        for (int i = 0; i < 8; i++) {
+            Dust d = Dust.NewDustPerfect(target.Center, DustID.JungleTorch,
+                Main.rand.NextVector2Circular(6f, 6f), 40, default, 2f);
+            d.noGravity = true;
+        }
+
+        // 释放4片追踪叶子
+        if (Projectile.owner == Main.myPlayer) {
+            for (int i = 0; i < 4; i++) {
+                Vector2 leafVel = Main.rand.NextVector2CircularEdge(6f, 6f);
+                Projectile.NewProjectile(Projectile.GetSource_FromThis(), target.Center,
+                    leafVel, ModContent.ProjectileType<DivineWoodVineBurstLeaf>(),
+                    Projectile.damage / 3, 1f, Projectile.owner);
+            }
+        }
+
+        SoundEngine.PlaySound(SoundID.Grass with { Volume = 0.5f, Pitch = 0.5f }, target.Center);
     }
 
     public override void OnKill(int timeLeft) {
-        SoundEngine.PlaySound(SoundID.Item17 with { Volume = 0.9f, Pitch = 0.4f }, Projectile.Center);
-
-        if (Main.myPlayer == Projectile.owner) {
-            Projectile.NewProjectile(
-                Projectile.GetSource_Death(), Projectile.Center, Vector2.Zero,
-                ModContent.ProjectileType<DivineWoodVineVortex>(),
-                Projectile.damage, Projectile.knockBack * 0.5f, Projectile.owner);
-        }
-
-        for (int i = 0; i < 20; i++) {
-            Vector2 vel = Main.rand.NextVector2CircularEdge(8f, 8f);
-            Dust d = Dust.NewDustPerfect(Projectile.Center, DustID.JungleTorch,
-                vel, 40, default, Main.rand.NextFloat(1.5f, 2.5f));
+        for (int i = 0; i < 12; i++) {
+            Dust d = Dust.NewDustPerfect(Projectile.Center, DustID.GrassBlades,
+                Main.rand.NextVector2Circular(4f, 4f), 80, default, 1.5f);
             d.noGravity = true;
         }
     }
 
     public override bool PreDraw(ref Color lightColor) {
         SpriteBatch sb = Main.spriteBatch;
+        Player owner = Main.player[Projectile.owner];
+
+        // === 链式藤蔓绘制：玩家中心到弹幕中心 ===
+        Texture2D vineTex = TextureAssets.Chains[13].Value; // Jungle/vine chain texture
+        Vector2 start = owner.MountedCenter;
+        Vector2 end = Projectile.Center;
+        Vector2 diff = end - start;
+        float totalDist = diff.Length();
+        Vector2 direction = diff.SafeNormalize(Vector2.Zero);
+        float segmentLen = vineTex.Height / 2;
+        int segmentCount = (int)(totalDist / segmentLen);
+        float chainRot = direction.ToRotation() + MathHelper.PiOver2;
+
+        for (int i = 0; i < segmentCount; i++) {
+            float progress = (float)i / segmentCount;
+            Vector2 segPos = start + direction * (i * segmentLen);
+            // 正弦偏移让藤蔓弯曲
+            float wave = MathF.Sin(progress * MathF.PI * 2f + Timer * 0.15f) * 12f * (1f - progress);
+            Vector2 perp = new(-direction.Y, direction.X);
+            Vector2 drawPos = segPos + perp * wave - Main.screenPosition;
+            Color segColor = Color.Lerp(new Color(60, 180, 60), new Color(30, 120, 30), progress);
+            sb.Draw(vineTex, drawPos, null, segColor * 0.9f, chainRot, vineTex.Size() * 0.5f,
+                1f, SpriteEffects.None, 0);
+        }
+
+        // === 头部特效绘制 ===
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
             DepthStencilState.None, RasterizerState.CullNone, null,
             Main.GameViewMatrix.TransformationMatrix);
 
-        Texture2D star = ACMAsset.BlankStar;
         Texture2D sg = ACMAsset.SoftGlow;
-        Texture2D lsh = ACMAsset.LightShot;
+        Texture2D sparkle = ACMAsset.Sparkle;
 
-        // LightShot拖尾
-        for (int i = 1; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
-            if (Projectile.oldPos[i] == Vector2.Zero) continue;
-            float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.50f;
-            sb.Draw(lsh,
-                Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition,
-                null, new Color(50, 200, 70) * a, Projectile.oldRot[i],
-                lsh.Size() * 0.5f,
-                new Vector2(0.40f + i * 0.012f, 0.12f), SpriteEffects.None, 0);
-        }
+        float pulse = 0.6f + 0.2f * MathF.Sin(Timer * 0.25f);
 
-        // SoftGlow拖尾灯带
-        for (int i = 1; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
-            if (Projectile.oldPos[i] == Vector2.Zero) continue;
-            float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.40f;
-            sb.Draw(sg,
-                Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition,
-                null, new Color(70, 220, 80) * a, 0f,
-                sg.Size() * 0.5f,
-                0.50f, SpriteEffects.None, 0);
-        }
-
-        float pulse = 0.7f + 0.2f * MathF.Sin((float)Main.timeForVisualEffects * 0.20f);
-
-        // BlankStar主体双层
-        sb.Draw(star, Projectile.Center - Main.screenPosition, null,
-            new Color(80, 255, 100) * (0.85f * pulse),
-            Projectile.rotation, star.Size() * 0.5f,
-            1.10f, SpriteEffects.None, 0);
-        sb.Draw(star, Projectile.Center - Main.screenPosition, null,
-            new Color(200, 255, 210) * (0.45f * pulse),
-            Projectile.rotation + MathHelper.PiOver4,
-            star.Size() * 0.5f,
-            0.70f, SpriteEffects.None, 0);
-
-        // SoftGlow核心
+        // 头部发光核心
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-            new Color(140, 255, 160) * (0.75f * pulse), 0f,
+            new Color(60, 220, 80) * (0.65f * pulse), 0f,
             sg.Size() * 0.5f,
-            0.70f, SpriteEffects.None, 0);
+            0.55f, SpriteEffects.None, 0);
+        sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
+            new Color(180, 255, 190) * (0.35f * pulse), 0f,
+            sg.Size() * 0.5f,
+            0.30f, SpriteEffects.None, 0);
+
+        // 头部尖端Sparkle
+        sb.Draw(sparkle, Projectile.Center - Main.screenPosition, null,
+            new Color(100, 255, 120) * (0.45f * pulse),
+            Timer * 0.08f,
+            sparkle.Size() * 0.5f,
+            0.25f, SpriteEffects.None, 0);
+
+        // 沿链身发光节点
+        for (int i = 0; i < segmentCount; i += 3) {
+            float progress = (float)i / segmentCount;
+            Vector2 segPos = start + direction * (i * segmentLen);
+            float wave = MathF.Sin(progress * MathF.PI * 2f + Timer * 0.15f) * 12f * (1f - progress);
+            Vector2 perp = new(-direction.Y, direction.X);
+            Vector2 glowPos = segPos + perp * wave - Main.screenPosition;
+            sb.Draw(sg, glowPos, null,
+                new Color(60, 200, 70) * (0.20f * pulse), 0f,
+                sg.Size() * 0.5f,
+                0.18f, SpriteEffects.None, 0);
+        }
 
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
@@ -178,135 +218,83 @@ public class DivineWoodNatureBolt : ModProjectile
 }
 
 /// <summary>
-/// 藤蔓漩涡 - 自然能量弹落点生成的持续伤害区域
-/// 牵引附近敌人并施加中毒+毒液
-/// 使用SoftGlow + Sparkle + ElectricArcSheet做旋转漩涡光效
+/// 藤蔓叶爆 - 藤蔓命中后释放的追踪叶片
+/// 使用原版Leaf纹理，追踪最近敌人
 /// </summary>
-public class DivineWoodVineVortex : ModProjectile
+public class DivineWoodVineBurstLeaf : ModProjectile
 {
-    public override string Texture
-        => "AncientChineseMythology/Textures/Masking/SoftGlow";
+    public override string Texture => "Terraria/Images/Projectile_" + ProjectileID.Leaf;
 
-    private ref float Timer => ref Projectile.ai[0];
+    private float _timer;
+
+    public override void SetStaticDefaults() {
+        Main.projFrames[Type] = 5;
+    }
 
     public override void SetDefaults() {
-        Projectile.width = 140;
-        Projectile.height = 140;
+        Projectile.width = 14;
+        Projectile.height = 14;
         Projectile.friendly = true;
         Projectile.DamageType = DamageClass.Magic;
-        Projectile.penetrate = -1;
+        Projectile.penetrate = 2;
         Projectile.timeLeft = 90;
         Projectile.tileCollide = false;
         Projectile.ignoreWater = true;
-        Projectile.usesLocalNPCImmunity = true;
-        Projectile.localNPCHitCooldown = 12;
     }
 
-    public override bool ShouldUpdatePosition() => false;
-
     public override void AI() {
-        Timer++;
-
-        float progress = Timer / 90f;
-
-        // 牵引附近敌人
-        for (int i = 0; i < Main.maxNPCs; i++) {
-            NPC npc = Main.npc[i];
-            if (!npc.CanBeChasedBy()) continue;
-            float dist = Vector2.Distance(Projectile.Center, npc.Center);
-            if (dist < 300f && dist > 20f) {
-                Vector2 pull = (Projectile.Center - npc.Center).SafeNormalize(Vector2.Zero) * 2.5f;
-                npc.velocity += pull;
-            }
+        _timer++;
+        Projectile.rotation += 0.22f * Projectile.direction;
+        Projectile.frameCounter++;
+        if (Projectile.frameCounter >= 5) {
+            Projectile.frameCounter = 0;
+            Projectile.frame = (Projectile.frame + 1) % Main.projFrames[Type];
         }
 
-        Lighting.AddLight(Projectile.Center, 0.3f * (1f - progress), 1.0f * (1f - progress), 0.3f * (1f - progress));
+        if (_timer > 15) {
+            float closestDist = 450f;
+            int targetIdx = -1;
+            for (int i = 0; i < Main.maxNPCs; i++) {
+                NPC npc = Main.npc[i];
+                if (!npc.CanBeChasedBy()) continue;
+                float d = Vector2.Distance(Projectile.Center, npc.Center);
+                if (d < closestDist) { closestDist = d; targetIdx = i; }
+            }
+            if (targetIdx >= 0) {
+                Vector2 dir = Projectile.DirectionTo(Main.npc[targetIdx].Center);
+                Projectile.velocity = Vector2.Lerp(Projectile.velocity, dir * 14f, 0.08f);
+            }
+        }
+        else {
+            Projectile.velocity *= 0.94f;
+        }
 
-        // 旋转叶片粒子
-        for (int i = 0; i < 4; i++) {
-            float angle = Main.rand.NextFloat(MathHelper.TwoPi);
-            float radius = Main.rand.NextFloat(20f, 80f) * (1f - progress * 0.4f);
-            Vector2 pos = Projectile.Center + angle.ToRotationVector2() * radius;
-            Vector2 vel = (Projectile.Center - pos).SafeNormalize(Vector2.Zero) * 2.5f;
-            vel = vel.RotatedBy(MathHelper.PiOver2 * 0.6f); // 螺旋向心
-            Dust d = Dust.NewDustPerfect(pos, DustID.JungleTorch, vel, 40, new Color(60, 200, 60), Main.rand.NextFloat(1.5f, 2.5f));
+        if (Main.rand.NextBool(4)) {
+            Dust d = Dust.NewDustPerfect(Projectile.Center, DustID.GrassBlades,
+                -Projectile.velocity * 0.05f, 100, default, 0.8f);
             d.noGravity = true;
         }
 
-        // 周期性藤蔓爆发
-        if (Timer % 12 == 0) {
-            for (int i = 0; i < 6; i++) {
-                float vineAngle = MathHelper.TwoPi * i / 6 + Timer * 0.06f;
-                Vector2 vineVel = vineAngle.ToRotationVector2() * Main.rand.NextFloat(3f, 7f);
-                Dust vine = Dust.NewDustPerfect(Projectile.Center, DustID.GrassBlades, vineVel, 60, default, 2f);
-                vine.noGravity = true;
-            }
-        }
+        Lighting.AddLight(Projectile.Center, 0.1f, 0.3f, 0.1f);
     }
 
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
-        target.AddBuff(BuffID.Poisoned, 480);
-        target.AddBuff(BuffID.Venom, 240);
+        target.AddBuff(BuffID.Poisoned, 180);
+        for (int i = 0; i < 4; i++) {
+            Dust d = Dust.NewDustPerfect(target.Center, DustID.JungleTorch,
+                Main.rand.NextVector2Circular(3f, 3f), 60, default, 1.2f);
+            d.noGravity = true;
+        }
     }
 
     public override bool PreDraw(ref Color lightColor) {
-        float progress = Timer / 90f;
-        float opacity = ACMUtils.QuadOut(1f - progress) * 0.85f;
-
-        SpriteBatch sb = Main.spriteBatch;
-        sb.End();
-        sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
-            DepthStencilState.None, RasterizerState.CullNone, null,
-            Main.GameViewMatrix.TransformationMatrix);
-
-        Texture2D sg = ACMAsset.SoftGlow;
-        Texture2D sparkle = ACMAsset.Sparkle;
-        Texture2D arc = ACMAsset.ElectricArcSheet;
-
-        // ElectricArcSheet 藤蔓漩涡旋转
-        int row = (int)(Main.timeForVisualEffects / 7) % 4;
-        Rectangle arcFrame = new(0, row * (arc.Height / 4), arc.Width, arc.Height / 4);
-        float vortexPulse = 0.7f + 0.3f * MathF.Sin(Timer * 0.15f);
-        sb.Draw(arc, Projectile.Center - Main.screenPosition, arcFrame,
-            new Color(50, 200, 70) * (opacity * 0.55f * vortexPulse),
-            Timer * 0.04f,
-            new Vector2(arcFrame.Width * 0.5f, arcFrame.Height * 0.5f),
-            1.2f, SpriteEffects.None, 0);
-        sb.Draw(arc, Projectile.Center - Main.screenPosition, arcFrame,
-            new Color(140, 255, 160) * (opacity * 0.30f * vortexPulse),
-            -Timer * 0.03f + MathHelper.PiOver4,
-            new Vector2(arcFrame.Width * 0.5f, arcFrame.Height * 0.5f),
-            0.85f, SpriteEffects.None, 0);
-
-        // SoftGlow 扩散光环
-        float scale = 1.5f + progress * 0.5f;
-        sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-            new Color(60, 220, 70) * (opacity * 0.50f), 0f,
-            sg.Size() * 0.5f,
-            scale, SpriteEffects.None, 0);
-
-        // 中心SoftGlow白核
-        sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-            new Color(200, 255, 210) * (opacity * 0.65f), 0f,
-            sg.Size() * 0.5f,
-            scale * 0.35f, SpriteEffects.None, 0);
-
-        // Sparkle花瓣旋转装饰
-        for (int i = 0; i < 4; i++) {
-            float angle = MathHelper.TwoPi * i / 4 + Timer * 0.05f;
-            Color petalColor = Color.Lerp(new Color(80, 255, 100), new Color(200, 255, 80),
-                MathF.Sin(angle) * 0.5f + 0.5f) * opacity * 0.50f;
-            petalColor.A = 0;
-            sb.Draw(sparkle, Projectile.Center - Main.screenPosition, null,
-                petalColor, angle,
-                sparkle.Size() * 0.5f,
-                0.30f + progress * 0.15f, SpriteEffects.None, 0);
-        }
-
-        sb.End();
-        sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
-            DepthStencilState.None, RasterizerState.CullNone, null,
-            Main.GameViewMatrix.TransformationMatrix);
+        Texture2D tex = TextureAssets.Projectile[Type].Value;
+        int fh = tex.Height / Main.projFrames[Type];
+        Rectangle src = new(0, Projectile.frame * fh, tex.Width, fh);
+        Vector2 origin = new(tex.Width / 2f, fh / 2f);
+        Color tint = Color.Lerp(lightColor, new Color(100, 255, 120), 0.35f);
+        Main.EntitySpriteDraw(tex, Projectile.Center - Main.screenPosition, src,
+            tint, Projectile.rotation, origin, Projectile.scale, SpriteEffects.None, 0);
         return false;
     }
 }

@@ -3,14 +3,16 @@ using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
+using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Items.Weapons.DivineWoods;
 
 /// <summary>
-/// 神木典籍 - 释放5枚花瓣环绕鼠标位置旋转收束，然后追踪最近敌人
-/// 参照CelestialCircletScepter的螺旋环绕→追踪冲刺模式
+/// 神木典籍 - 法师魔法书，每次使用释放8~12片叶片扇形散射
+/// 叶片使用原版Leaf纹理，初期扇形散射后螺旋飞行，然后追踪最近敌人
+/// 叶片命中后有概率释放次生小花瓣
 /// </summary>
 public class DivineWoodTome : ModItem
 {
@@ -20,149 +22,232 @@ public class DivineWoodTome : ModItem
         Item.DamageType = DamageClass.Magic;
         Item.width = 28;
         Item.height = 32;
-        Item.useTime = 28;
-        Item.useAnimation = 28;
+        Item.useTime = 24;
+        Item.useAnimation = 24;
         Item.useStyle = ItemUseStyleID.Shoot;
-        Item.knockBack = 6f;
+        Item.knockBack = 4f;
         Item.value = Item.buyPrice(gold: 50);
         Item.rare = ItemRarityID.Purple;
         Item.UseSound = SoundID.Item8;
         Item.autoReuse = true;
         Item.noMelee = true;
-        Item.shoot = ModContent.ProjectileType<DivineWoodPetalOrb>();
-        Item.shootSpeed = 14f;
-        Item.mana = 14;
+        Item.shoot = ModContent.ProjectileType<DivineWoodTomeLeaf>();
+        Item.shootSpeed = 12f;
+        Item.mana = 12;
     }
 
     public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
-        int count = 5;
+        int count = Main.rand.Next(8, 13);
+        float spreadHalf = MathHelper.ToRadians(35);
+        float baseAngle = velocity.ToRotation();
+
+        SoundEngine.PlaySound(SoundID.Grass with { Volume = 0.8f, Pitch = 0.3f }, player.Center);
+
         for (int i = 0; i < count; i++) {
-            float angle = MathHelper.TwoPi * i / count;
-            Vector2 vel = velocity.RotatedBy(angle - MathHelper.TwoPi * (count / 2) / count * 0.35f);
-            Projectile.NewProjectile(source, position, vel, type, damage, knockback,
-                player.whoAmI, ai0: angle, ai1: i);
+            float angle = baseAngle + MathHelper.Lerp(-spreadHalf, spreadHalf, (float)i / (count - 1));
+            angle += Main.rand.NextFloat(-0.05f, 0.05f);
+            float speed = velocity.Length() * Main.rand.NextFloat(0.85f, 1.15f);
+            Vector2 leafVel = angle.ToRotationVector2() * speed;
+            // ai[0] = 螺旋方向 (交替左右)
+            float spiralDir = i % 2 == 0 ? 1f : -1f;
+            Projectile.NewProjectile(source, position, leafVel, type, damage, knockback,
+                player.whoAmI, ai0: spiralDir);
         }
+
+        // 释放叶片尘雾
+        for (int i = 0; i < 15; i++) {
+            Vector2 dustVel = velocity.SafeNormalize(Vector2.UnitX).RotatedByRandom(0.6f) * Main.rand.NextFloat(2f, 6f);
+            Dust d = Dust.NewDustPerfect(position, DustID.GrassBlades, dustVel, 80, default, 1.5f);
+            d.noGravity = true;
+        }
+
         return false;
     }
 }
 
 /// <summary>
-/// 神木花瓣光环 - 初期绕鼠标前方旋转收束，然后追踪最近敌人
-/// 使用BlankStar + SoftGlow + ElectricArcSheet(藤蔓电弧)渲染
+/// 神木叶刃 - 使用原版Leaf纹理的叶片弹幕
+/// 初期直线飞行+螺旋偏移，然后追踪最近敌人
+/// 命中时有40%概率释放次生花瓣
 /// </summary>
-public class DivineWoodPetalOrb : ModProjectile
+public class DivineWoodTomeLeaf : ModProjectile
 {
-    public override string Texture
-        => "AncientChineseMythology/Textures/Masking/BlankStar";
+    public override string Texture => "Terraria/Images/Projectile_" + ProjectileID.Leaf;
+
+    private float _timer;
+    private const float SpiralDuration = 25f;
+    private const float HomingDuration = 120f;
 
     public override void SetStaticDefaults() {
-        ProjectileID.Sets.TrailingMode[Type] = 2;
-        ProjectileID.Sets.TrailCacheLength[Type] = 12;
+        Main.projFrames[Type] = 5;
     }
 
-    private bool _homing;
-    private float _orbitTimer;
-    private const float ORBIT_DURATION = 70f;
-
     public override void SetDefaults() {
-        Projectile.width = 28;
-        Projectile.height = 28;
+        Projectile.width = 14;
+        Projectile.height = 14;
         Projectile.friendly = true;
-        Projectile.tileCollide = false;
-        Projectile.penetrate = 5;
-        Projectile.timeLeft = 260;
         Projectile.DamageType = DamageClass.Magic;
-        Projectile.light = 0.8f;
+        Projectile.penetrate = 2;
+        Projectile.timeLeft = 180;
+        Projectile.tileCollide = false;
+        Projectile.ignoreWater = true;
         Projectile.usesLocalNPCImmunity = true;
         Projectile.localNPCHitCooldown = 10;
     }
 
     public override void AI() {
-        Player p = Main.player[Projectile.owner];
-        _orbitTimer++;
+        _timer++;
+        Projectile.rotation = Projectile.velocity.ToRotation();
+        Projectile.frameCounter++;
+        if (Projectile.frameCounter >= 5) {
+            Projectile.frameCounter = 0;
+            Projectile.frame = (Projectile.frame + 1) % Main.projFrames[Type];
+        }
 
-        if (!_homing && _orbitTimer < ORBIT_DURATION) {
-            Vector2 center = p.Center + p.DirectionTo(Main.MouseWorld) * 140f;
-            float baseAngle = Projectile.ai[0];
-            float orbitRadius = MathHelper.Lerp(160f, 40f, _orbitTimer / ORBIT_DURATION);
-            float orbitSpeed = MathHelper.Lerp(0.07f, 0.20f, _orbitTimer / ORBIT_DURATION);
-            float angle = baseAngle + _orbitTimer * orbitSpeed;
-            Vector2 target = center + new Vector2(orbitRadius, 0).RotatedBy(angle);
-            Projectile.velocity = (target - Projectile.Center) * 0.18f;
+        if (_timer < SpiralDuration) {
+            // 螺旋偏移阶段：在垂直于飞行方向上施加正弦偏移
+            float spiralDir = Projectile.ai[0];
+            float spiralForce = MathF.Sin(_timer * 0.3f) * spiralDir * 0.8f;
+            Vector2 perpendicular = new(-Projectile.velocity.Y, Projectile.velocity.X);
+            perpendicular = perpendicular.SafeNormalize(Vector2.Zero);
+            Projectile.velocity += perpendicular * spiralForce;
+            Projectile.velocity *= 0.98f;
         }
         else {
-            _homing = true;
-            float closestDist = 800f;
-            int targetNPC = -1;
+            // 追踪阶段
+            float closestDist = 500f;
+            int targetIdx = -1;
             for (int i = 0; i < Main.maxNPCs; i++) {
                 NPC npc = Main.npc[i];
-                if (!npc.active || npc.friendly || npc.dontTakeDamage) continue;
-                float dist = Vector2.Distance(Projectile.Center, npc.Center);
-                if (dist < closestDist) { closestDist = dist; targetNPC = i; }
+                if (!npc.CanBeChasedBy()) continue;
+                float d = Vector2.Distance(Projectile.Center, npc.Center);
+                if (d < closestDist) { closestDist = d; targetIdx = i; }
             }
-            if (targetNPC >= 0) {
-                Vector2 dir = Projectile.DirectionTo(Main.npc[targetNPC].Center);
-                Projectile.velocity = Vector2.Lerp(Projectile.velocity, dir * 22f, 0.12f);
+            if (targetIdx >= 0) {
+                Vector2 dir = Projectile.DirectionTo(Main.npc[targetIdx].Center);
+                Projectile.velocity = Vector2.Lerp(Projectile.velocity, dir * 16f, 0.06f);
             }
         }
 
-        Projectile.rotation += 0.18f;
+        // 叶片粒子拖尾
+        if (Main.rand.NextBool(3)) {
+            Dust trail = Dust.NewDustPerfect(Projectile.Center, DustID.GrassBlades,
+                -Projectile.velocity * 0.05f, 100, default, 0.9f);
+            trail.noGravity = true;
+        }
+
+        Lighting.AddLight(Projectile.Center, 0.1f, 0.3f, 0.1f);
     }
 
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
-        target.AddBuff(BuffID.Poisoned, 300);
-        target.AddBuff(BuffID.Venom, 120);
-        for (int i = 0; i < 8; i++) {
+        target.AddBuff(BuffID.Poisoned, 240);
+
+        for (int i = 0; i < 6; i++) {
             Dust d = Dust.NewDustPerfect(target.Center, DustID.JungleTorch,
-                Main.rand.NextVector2CircularEdge(5, 5), 0, default, 2.0f);
+                Main.rand.NextVector2Circular(4f, 4f), 60, default, 1.5f);
             d.noGravity = true;
+        }
+
+        // 40%概率释放次生花瓣
+        if (Main.rand.NextBool(5, 12) && Projectile.owner == Main.myPlayer) {
+            Vector2 petalVel = Main.rand.NextVector2CircularEdge(5f, 5f);
+            Projectile.NewProjectile(Projectile.GetSource_FromThis(), target.Center,
+                petalVel, ModContent.ProjectileType<DivineWoodTomePetal>(),
+                Projectile.damage / 2, 1f, Projectile.owner);
         }
     }
 
     public override bool PreDraw(ref Color lightColor) {
-        SpriteBatch sb = Main.spriteBatch;
-        sb.End();
-        sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
-            DepthStencilState.None, RasterizerState.CullNone, null,
-            Main.GameViewMatrix.TransformationMatrix);
+        Texture2D tex = TextureAssets.Projectile[Type].Value;
+        int fh = tex.Height / Main.projFrames[Type];
+        Rectangle src = new(0, Projectile.frame * fh, tex.Width, fh);
+        Vector2 origin = new(tex.Width / 2f, fh / 2f);
 
-        Texture2D star = ACMAsset.BlankStar;
-        Texture2D sg = ACMAsset.SoftGlow;
+        Color tint = Color.Lerp(lightColor, new Color(120, 255, 140), 0.3f);
+        Main.EntitySpriteDraw(tex, Projectile.Center - Main.screenPosition, src,
+            tint, Projectile.rotation, origin, Projectile.scale, SpriteEffects.None, 0);
 
-        float pulse = 0.75f + 0.25f * MathF.Sin((float)Main.timeForVisualEffects * 0.20f);
+        Color glow = new Color(80, 220, 100) * 0.25f;
+        glow.A = 0;
+        Main.EntitySpriteDraw(tex, Projectile.Center - Main.screenPosition, src,
+            glow, Projectile.rotation, origin, Projectile.scale * 1.3f, SpriteEffects.None, 0);
 
-        // SoftGlow拖尾
-        for (int i = 1; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
-            if (Projectile.oldPos[i] == Vector2.Zero) continue;
-            float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.55f;
-            sb.Draw(sg,
-                Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition,
-                null, new Color(70, 210, 80) * a, 0f,
-                sg.Size() * 0.5f,
-                0.65f, SpriteEffects.None, 0);
+        return false;
+    }
+}
+
+/// <summary>
+/// 次生花瓣 - 叶片命中时概率释放的小花瓣
+/// 使用原版FlowerPetal纹理，追踪附近敌人
+/// </summary>
+public class DivineWoodTomePetal : ModProjectile
+{
+    public override string Texture => "Terraria/Images/Projectile_" + ProjectileID.FlowerPetal;
+
+    private float _timer;
+
+    public override void SetStaticDefaults() {
+        Main.projFrames[Type] = 3;
+    }
+
+    public override void SetDefaults() {
+        Projectile.width = 12;
+        Projectile.height = 12;
+        Projectile.friendly = true;
+        Projectile.DamageType = DamageClass.Magic;
+        Projectile.penetrate = 1;
+        Projectile.timeLeft = 80;
+        Projectile.tileCollide = false;
+        Projectile.ignoreWater = true;
+    }
+
+    public override void AI() {
+        _timer++;
+        Projectile.rotation = Projectile.velocity.ToRotation() + MathHelper.PiOver2;
+        Projectile.frameCounter++;
+        if (Projectile.frameCounter >= 5) {
+            Projectile.frameCounter = 0;
+            Projectile.frame = (Projectile.frame + 1) % Main.projFrames[Type];
         }
 
-        // 双层星星主体
-        sb.Draw(star, Projectile.Center - Main.screenPosition, null,
-            new Color(80, 255, 100) * (0.90f * pulse),
-            Projectile.rotation, star.Size() * 0.5f,
-            1.20f, SpriteEffects.None, 0);
-        sb.Draw(star, Projectile.Center - Main.screenPosition, null,
-            new Color(200, 255, 210) * (0.45f * pulse),
-            Projectile.rotation + MathHelper.PiOver4,
-            star.Size() * 0.5f,
-            0.80f, SpriteEffects.None, 0);
+        // 前15帧减速，然后追踪
+        if (_timer < 15) {
+            Projectile.velocity *= 0.92f;
+        }
+        else {
+            float closestDist = 400f;
+            int targetIdx = -1;
+            for (int i = 0; i < Main.maxNPCs; i++) {
+                NPC npc = Main.npc[i];
+                if (!npc.CanBeChasedBy()) continue;
+                float d = Vector2.Distance(Projectile.Center, npc.Center);
+                if (d < closestDist) { closestDist = d; targetIdx = i; }
+            }
+            if (targetIdx >= 0) {
+                Vector2 dir = Projectile.DirectionTo(Main.npc[targetIdx].Center);
+                Projectile.velocity = Vector2.Lerp(Projectile.velocity, dir * 14f, 0.10f);
+            }
+        }
 
-        // SoftGlow核心
-        sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-            new Color(140, 255, 160) * (0.80f * pulse), 0f,
-            sg.Size() * 0.5f,
-            0.80f, SpriteEffects.None, 0);
+        if (Main.rand.NextBool(4)) {
+            Dust d = Dust.NewDustPerfect(Projectile.Center, DustID.JunglePlants,
+                Vector2.Zero, 100, default, 0.7f);
+            d.noGravity = true;
+        }
+    }
 
-        sb.End();
-        sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
-            DepthStencilState.None, RasterizerState.CullNone, null,
-            Main.GameViewMatrix.TransformationMatrix);
+    public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+        target.AddBuff(BuffID.Poisoned, 180);
+    }
+
+    public override bool PreDraw(ref Color lightColor) {
+        Texture2D tex = TextureAssets.Projectile[Type].Value;
+        int fh = tex.Height / Main.projFrames[Type];
+        Rectangle src = new(0, Projectile.frame * fh, tex.Width, fh);
+        Vector2 origin = new(tex.Width / 2f, fh / 2f);
+        Color tint = Color.Lerp(lightColor, new Color(180, 255, 200), 0.3f);
+        Main.EntitySpriteDraw(tex, Projectile.Center - Main.screenPosition, src,
+            tint, Projectile.rotation, origin, Projectile.scale, SpriteEffects.None, 0);
         return false;
     }
 }

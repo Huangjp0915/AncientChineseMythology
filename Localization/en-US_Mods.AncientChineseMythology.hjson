@@ -1664,6 +1664,12 @@ Projectiles: {
 	DivineWoodVineShard.DisplayName: Divine Wood Vine Shard
 	DivineWoodVineVortex.DisplayName: Divine Wood Vine Vortex
 	DivineWoodVineWave.DisplayName: Divine Wood Vine Wave
+	DivineWoodTomeLeaf.DisplayName: Divine Wood Tome Leaf
+	DivineWoodTomePetal.DisplayName: Divine Wood Tome Petal
+	DivineWoodVerdictPetal.DisplayName: Divine Wood Verdict Petal
+	DivineWoodVineBurstLeaf.DisplayName: Divine Wood Vine Burst Leaf
+	DivineWoodVineWhipHead.DisplayName: Divine Wood Vine Whip Head
+	DivineWoodWhirlLeaf.DisplayName: Divine Wood Whirl Leaf
 }
 
 HeavenBiome.DisplayName: Heaven

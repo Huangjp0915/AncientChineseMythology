@@ -1263,38 +1263,70 @@ Items: {
 	}
 
 	DivineWoodBomb: {
-		// DisplayName: Divine Wood Bomb
-		// Tooltip: ""
+		DisplayName: 神木种子弹
+		Tooltip:
+			'''
+			蕴含神木之力的爆裂种子
+			抛出后碰撞爆炸，释放追踪藤蔓碎片
+			'''
 	}
 
 	DivineWoodGreatblade: {
-		// DisplayName: Divine Wood Greatblade
-		// Tooltip: ""
+		DisplayName: 神木巨刃
+		Tooltip:
+			'''
+			以万年神木凝聚的巨型阔刀
+			挥砍时释放藤蔓剑气，暴击释放自然绽放
+			'''
 	}
 
 	DivineWoodGyratingLeaf: {
-		// DisplayName: Divine Wood Gyrating Leaf
-		// Tooltip: ""
+		DisplayName: 神木旋叶
+		Tooltip:
+			'''
+			以神木叶片凝聚的旋转飞刃
+			投掷后环绕轨道运转，冲刺时释放叶片旋风
+			每5次命中触发自然裁决，释放花瓣弹幕环
+			'''
 	}
 
 	DivineWoodLongbow: {
-		// DisplayName: Divine Wood Longbow
-		// Tooltip: ""
+		DisplayName: 神木长弓
+		Tooltip:
+			'''
+			以活木与灵藤编织的长弓
+			将箭矢转化为叶刃箭，附带螺旋叶片护卫
+			'''
 	}
 
 	DivineWoodMusket: {
-		// DisplayName: Divine Wood Musket
-		// Tooltip: ""
+		DisplayName: 神木连弩
+		Tooltip:
+			'''
+			以神木机关驱动的连射火器
+			将弹药转化为荆棘针刺三连发
+			每三轮连射发射一枚种子迫击炮弹
+			'''
 	}
 
 	DivineWoodScepter: {
-		// DisplayName: Divine Wood Scepter
-		// Tooltip: ""
+		DisplayName: 神木灵杖
+		Tooltip:
+			'''
+			以古神木之心雕琢的灵杖
+			释放一道藤蔓链鞭抽击敌人
+			命中后释放追踪叶片，施加中毒与毒液
+			'''
 	}
 
 	DivineWoodTome: {
-		// DisplayName: Divine Wood Tome
-		// Tooltip: ""
+		DisplayName: 神木典籍
+		Tooltip:
+			'''
+			记载万木灵韵的上古典籍
+			释放大量叶片扇形散射，螺旋飞行后追踪敌人
+			叶片命中时有概率释放次生花瓣
+			'''
 	}
 }
 
@@ -1390,14 +1422,14 @@ NPCs: {
 	AzureDragonBody.DisplayName: Azure Dragon Body
 	AzureDragonHead.DisplayName: Azure Dragon Head
 	AzureDragonTail.DisplayName: Azure Dragon Tail
-	// YinEmperor.DisplayName: Yin Emperor
-	// Aokin.DisplayName: Aokin
-	// Aoyuan.DisplayName: Aoyuan
-	// AoyuanBody.DisplayName: Aoyuan Body
-	// Aoshun.DisplayName: Aoshun
-	// AoshunBody.DisplayName: Aoshun Body
-	// AoshunArms.DisplayName: Aoshun Arms
-	// AoshunTail.DisplayName: Aoshun Tail
+	YinEmperor.DisplayName: Yin Emperor
+	Aokin.DisplayName: Aokin
+	Aoyuan.DisplayName: Aoyuan
+	AoyuanBody.DisplayName: Aoyuan Body
+	Aoshun.DisplayName: Aoshun
+	AoshunBody.DisplayName: Aoshun Body
+	AoshunArms.DisplayName: Aoshun Arms
+	AoshunTail.DisplayName: Aoshun Tail
 }
 
 Projectiles: {
@@ -1714,51 +1746,57 @@ Projectiles: {
 	FateMarkProj.DisplayName: 命运烙印
 	SingularityBombProj.DisplayName: 奇点炸弹
 	SingularityEcho.DisplayName: 奇点回响
-	// ArenaEdge.DisplayName: Arena Edge
-	// YinEmperorBolt.DisplayName: Yin Emperor Bolt
-	// YinEmperorLaser.DisplayName: Yin Emperor Laser
-	// AokinFireball.DisplayName: Aokin Fireball
-	// AokinFlameVortex.DisplayName: Aokin Flame Vortex
-	// AokinMeteor.DisplayName: Aokin Meteor
-	// AokinBarrierTornado.DisplayName: Aokin Barrier Tornado
-	// AoyuanFrostVortex.DisplayName: Aoyuan Frost Vortex
-	// AoyuanIceball.DisplayName: Aoyuan Iceball
-	// AoyuanIcicle.DisplayName: Aoyuan Icicle
-	// AoyuanFrostBeam.DisplayName: Aoyuan Frost Beam
-	// AoshunLightningBolt.DisplayName: Aoshun Lightning Bolt
-	// AoshunThunderball.DisplayName: Aoshun Thunderball
-	// AoshunThunderBeam.DisplayName: Aoshun Thunder Beam
-	// AoshunThunderVortex.DisplayName: Aoshun Thunder Vortex
-	// DivineWoodFlowerWave.DisplayName: Divine Wood Flower Wave
-	// DivineWoodGiantSeed.DisplayName: Divine Wood Giant Seed
-	// DivineWoodGyratingLeafProj.DisplayName: Divine Wood Gyrating Leaf Proj
-	// DivineWoodLeafArrow.DisplayName: Divine Wood Leaf Arrow
-	// DivineWoodLeafBurst.DisplayName: Divine Wood Leaf Burst
-	// DivineWoodNatureBloom.DisplayName: Divine Wood Nature Bloom
-	// DivineWoodPetalProjectile.DisplayName: Divine Wood Petal Projectile
-	// DivineWoodSeedBomb.DisplayName: Divine Wood Seed Bomb
-	// DivineWoodSlash.DisplayName: Divine Wood Slash
-	// DivineWoodSpiritVine.DisplayName: Divine Wood Spirit Vine
-	// DivineWoodSporeCloud.DisplayName: Divine Wood Spore Cloud
-	// DivineWoodThornBullet.DisplayName: Divine Wood Thorn Bullet
-	// DivineWoodThornField.DisplayName: Divine Wood Thorn Field
-	// DivineWoodThornFragment.DisplayName: Divine Wood Thorn Fragment
-	// DivineWoodThornShrapnel.DisplayName: Divine Wood Thorn Shrapnel
-	// DivineWoodTreeSpiritMinion.DisplayName: Divine Wood Tree Spirit Minion
-	// DivineWoodVineEntangle.DisplayName: Divine Wood Vine Entangle
-	// DivineWoodBloomExplosion.DisplayName: Divine Wood Bloom Explosion
-	// DivineWoodGreatbladeSwing.DisplayName: Divine Wood Greatblade Swing
-	// DivineWoodLeafBolt.DisplayName: Divine Wood Leaf Bolt
-	// DivineWoodNatureBolt.DisplayName: Divine Wood Nature Bolt
-	// DivineWoodPetalOrb.DisplayName: Divine Wood Petal Orb
-	// DivineWoodSeedGrenade.DisplayName: Divine Wood Seed Grenade
-	// DivineWoodSeedMortar.DisplayName: Divine Wood Seed Mortar
-	// DivineWoodSpiralLeaf.DisplayName: Divine Wood Spiral Leaf
-	// DivineWoodThornFieldExplosion.DisplayName: Divine Wood Thorn Field Explosion
-	// DivineWoodThornNeedle.DisplayName: Divine Wood Thorn Needle
-	// DivineWoodVineShard.DisplayName: Divine Wood Vine Shard
-	// DivineWoodVineVortex.DisplayName: Divine Wood Vine Vortex
-	// DivineWoodVineWave.DisplayName: Divine Wood Vine Wave
+	ArenaEdge.DisplayName: Arena Edge
+	YinEmperorBolt.DisplayName: Yin Emperor Bolt
+	YinEmperorLaser.DisplayName: Yin Emperor Laser
+	AokinFireball.DisplayName: Aokin Fireball
+	AokinFlameVortex.DisplayName: Aokin Flame Vortex
+	AokinMeteor.DisplayName: Aokin Meteor
+	AokinBarrierTornado.DisplayName: Aokin Barrier Tornado
+	AoyuanFrostVortex.DisplayName: Aoyuan Frost Vortex
+	AoyuanIceball.DisplayName: Aoyuan Iceball
+	AoyuanIcicle.DisplayName: Aoyuan Icicle
+	AoyuanFrostBeam.DisplayName: Aoyuan Frost Beam
+	AoshunLightningBolt.DisplayName: Aoshun Lightning Bolt
+	AoshunThunderball.DisplayName: Aoshun Thunderball
+	AoshunThunderBeam.DisplayName: Aoshun Thunder Beam
+	AoshunThunderVortex.DisplayName: Aoshun Thunder Vortex
+	DivineWoodFlowerWave.DisplayName: Divine Wood Flower Wave
+	DivineWoodGiantSeed.DisplayName: Divine Wood Giant Seed
+	DivineWoodGyratingLeafProj.DisplayName: Divine Wood Gyrating Leaf Proj
+	DivineWoodLeafArrow.DisplayName: Divine Wood Leaf Arrow
+	DivineWoodLeafBurst.DisplayName: Divine Wood Leaf Burst
+	DivineWoodNatureBloom.DisplayName: Divine Wood Nature Bloom
+	DivineWoodPetalProjectile.DisplayName: Divine Wood Petal Projectile
+	DivineWoodSeedBomb.DisplayName: Divine Wood Seed Bomb
+	DivineWoodSlash.DisplayName: Divine Wood Slash
+	DivineWoodSpiritVine.DisplayName: Divine Wood Spirit Vine
+	DivineWoodSporeCloud.DisplayName: Divine Wood Spore Cloud
+	DivineWoodThornBullet.DisplayName: Divine Wood Thorn Bullet
+	DivineWoodThornField.DisplayName: Divine Wood Thorn Field
+	DivineWoodThornFragment.DisplayName: Divine Wood Thorn Fragment
+	DivineWoodThornShrapnel.DisplayName: Divine Wood Thorn Shrapnel
+	DivineWoodTreeSpiritMinion.DisplayName: Divine Wood Tree Spirit Minion
+	DivineWoodVineEntangle.DisplayName: Divine Wood Vine Entangle
+	DivineWoodBloomExplosion.DisplayName: Divine Wood Bloom Explosion
+	DivineWoodGreatbladeSwing.DisplayName: Divine Wood Greatblade Swing
+	DivineWoodLeafBolt.DisplayName: Divine Wood Leaf Bolt
+	DivineWoodNatureBolt.DisplayName: Divine Wood Nature Bolt
+	DivineWoodPetalOrb.DisplayName: Divine Wood Petal Orb
+	DivineWoodSeedGrenade.DisplayName: Divine Wood Seed Grenade
+	DivineWoodSeedMortar.DisplayName: Divine Wood Seed Mortar
+	DivineWoodSpiralLeaf.DisplayName: Divine Wood Spiral Leaf
+	DivineWoodThornFieldExplosion.DisplayName: Divine Wood Thorn Field Explosion
+	DivineWoodThornNeedle.DisplayName: Divine Wood Thorn Needle
+	DivineWoodVineShard.DisplayName: Divine Wood Vine Shard
+	DivineWoodVineVortex.DisplayName: Divine Wood Vine Vortex
+	DivineWoodVineWave.DisplayName: Divine Wood Vine Wave
+	DivineWoodTomeLeaf.DisplayName: 神木叶刃
+	DivineWoodTomePetal.DisplayName: 神木花瓣
+	DivineWoodVerdictPetal.DisplayName: 裁决花瓣
+	DivineWoodVineBurstLeaf.DisplayName: 藤蔓叶爆
+	DivineWoodVineWhipHead.DisplayName: 藤蔓链鞭
+	DivineWoodWhirlLeaf.DisplayName: 旋风叶片
 }
 
 HeavenBiome.DisplayName: Heaven
