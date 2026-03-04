@@ -15,6 +15,9 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
     /// 0 = 列阵激光：多只眼睛排列成阵，齐射巨大柱状激光
     /// 1 = 环绕冲锋：一圈眼睛环绕后冲向玩家限制走位
     /// 2 = 守卫环绕：环绕Boss旋转，持续释放追踪弹
+    /// 3 = 环形激光阵：眼睛围成圆环，向圆心齐射激光形成牢笼
+    /// 4 = 十字激光阵：眼睛排列成十字，旋转扫射
+    /// 5 = 扫射激光：单只眼睛缓慢旋转激光扫荡
     /// </summary>
     public class ArenaEdge : ModProjectile
     {
@@ -38,6 +41,8 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         private bool hasFiredLaser;
         private float orbitAngle;
         private float chargeProgress;
+        private float sweepAngle;
+        private int sweepLaserIndex = -1;
 
         // 激光模式参数
         private const int LaserChargeTime = 80;
@@ -88,6 +93,15 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                     break;
                 case 2:
                     AI_GuardianOrbit();
+                    break;
+                case 3:
+                    AI_RingLaser();
+                    break;
+                case 4:
+                    AI_CrossLaser();
+                    break;
+                case 5:
+                    AI_SweepingLaser();
                     break;
             }
         }
@@ -214,9 +228,10 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
         /// <summary>
         /// 环绕冲锋模式：
-        /// 1. 一圈眼睛以玩家为中心快速环绕
-        /// 2. 逐渐收缩半径，限制走位
-        /// 3. 最终全部冲向玩家中心
+        /// 1. 眼睛从远处均匀飞入轨道（入场期）
+        /// 2. 稳定环绕收缩，形成可辨识的圆环（演出期）
+        /// 3. 短暂停顿蓄力，闪烁警告
+        /// 4. 全部冲向玩家中心
         /// </summary>
         private void AI_EncirclingCharge() {
             Player target = FindTarget();
@@ -226,75 +241,98 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             }
 
             orbitAngle = ModeParam;
-            float orbitSpeed = 0.04f;
-            int orbitDuration = 180;
-            int chargeDuration = 40;
+            int approachDuration = 40;
+            int orbitDuration = 120;
+            int pauseDuration = 30;
+            int chargeDuration = 35;
+            int totalOrbitEnd = approachDuration + orbitDuration + pauseDuration;
 
-            // === 环绕阶段 ===
-            if (localTimer <= orbitDuration) {
-                float progress = localTimer / (float)orbitDuration;
-
-                // 逐渐收缩半径
-                float radius = MathHelper.Lerp(350f, 120f, ACMUtils.SineInOut(progress));
-
-                // 加速旋转
-                orbitSpeed = MathHelper.Lerp(0.03f, 0.08f, progress);
-                orbitAngle += orbitSpeed;
+            // === 入场飞向轨道 ===
+            if (localTimer <= approachDuration) {
+                float t = localTimer / (float)approachDuration;
+                float radius = MathHelper.Lerp(500f, 300f, ACMUtils.SineInOut(t));
+                orbitAngle += 0.02f;
                 ModeParam = orbitAngle;
 
-                // 围绕目标旋转
+                Vector2 orbitPos = target.Center + new Vector2(MathF.Cos(orbitAngle), MathF.Sin(orbitAngle)) * radius;
+                Projectile.velocity = (orbitPos - Projectile.Center) * 0.12f;
+                Projectile.rotation = (target.Center - Projectile.Center).ToRotation() + MathHelper.PiOver2;
+                Projectile.damage = 0;
+
+                // 逐渐显现
+                Projectile.alpha = (int)(255 * (1f - t));
+            }
+            // === 稳定环绕收缩 ===
+            else if (localTimer <= approachDuration + orbitDuration) {
+                float progress = (localTimer - approachDuration) / (float)orbitDuration;
+                Projectile.alpha = 0;
+
+                float radius = MathHelper.Lerp(300f, 140f, ACMUtils.SineInOut(progress));
+                float speed = MathHelper.Lerp(0.035f, 0.06f, progress);
+                orbitAngle += speed;
+                ModeParam = orbitAngle;
+
                 Vector2 orbitPos = target.Center + new Vector2(MathF.Cos(orbitAngle), MathF.Sin(orbitAngle)) * radius;
                 Projectile.velocity = (orbitPos - Projectile.Center) * 0.15f;
-
-                // 朝向中心（纹理正向朝上）
                 Projectile.rotation = (target.Center - Projectile.Center).ToRotation() + MathHelper.PiOver2;
+                Projectile.damage = 0;
 
-                // 拖尾粒子
-                if (Main.netMode != NetmodeID.Server && localTimer % 3 == 0) {
+                // 拖尾光环
+                if (Main.netMode != NetmodeID.Server && localTimer % 4 == 0) {
                     var d = Dust.NewDustPerfect(Projectile.Center, DustID.Shadowflame);
                     d.noGravity = true;
-                    d.scale = 1.2f;
-                    d.velocity = -Projectile.velocity * 0.2f;
+                    d.scale = 1f;
+                    d.velocity = -Projectile.velocity * 0.15f;
                 }
+            }
+            // === 蓄力停顿 + 闪烁警告 ===
+            else if (localTimer <= totalOrbitEnd) {
+                float pauseT = (localTimer - approachDuration - orbitDuration) / (float)pauseDuration;
 
-                // 收缩警告音效
-                if (localTimer == orbitDuration - 30) {
-                    SoundEngine.PlaySound(SoundID.Item8 with { Pitch = 0.5f, Volume = 0.8f }, Projectile.Center);
-                }
-
-                // 不在环绕时造成伤害（避免太难躲）
+                // 停在当前位置
+                Vector2 holdPos = target.Center + new Vector2(MathF.Cos(orbitAngle), MathF.Sin(orbitAngle)) * 140f;
+                Projectile.velocity = (holdPos - Projectile.Center) * 0.2f;
+                Projectile.rotation = (target.Center - Projectile.Center).ToRotation() + MathHelper.PiOver2;
                 Projectile.damage = 0;
+
+                // 闪烁警告
+                Projectile.alpha = (int)(MathF.Sin(pauseT * MathHelper.Pi * 6f) * 80f);
+
+                // 蓄力粒子
+                if (Main.netMode != NetmodeID.Server && localTimer % 2 == 0) {
+                    Vector2 forward = (target.Center - Projectile.Center).SafeNormalize(Vector2.UnitY);
+                    var d = Dust.NewDustPerfect(Projectile.Center + forward * 15f, DustID.GoldFlame);
+                    d.noGravity = true;
+                    d.scale = 1.2f + pauseT;
+                    d.velocity = forward * (2f + pauseT * 4f);
+                }
+
+                if (localTimer == totalOrbitEnd - 10) {
+                    SoundEngine.PlaySound(SoundID.Item8 with { Pitch = 0.5f, Volume = 0.9f }, Projectile.Center);
+                }
             }
             // === 冲向玩家 ===
-            else if (localTimer == orbitDuration + 1) {
+            else if (localTimer == totalOrbitEnd + 1) {
                 Vector2 toTarget = (target.Center - Projectile.Center).SafeNormalize(Vector2.UnitY);
-                Projectile.velocity = toTarget * 22f;
+                Projectile.velocity = toTarget * 20f;
                 Projectile.damage = YinEmperorHelper.GetScaledDamage(95);
+                Projectile.alpha = 0;
 
                 SoundEngine.PlaySound(SoundID.DD2_WyvernDiveDown with { Pitch = 0.2f, Volume = 1f }, Projectile.Center);
-
-                // 冲锋能量波粒子
                 YinEmperorHelper.CreateDragonBurst(Projectile.Center, 30f, 1, 6);
             }
             // === 冲锋中 ===
-            else if (localTimer <= orbitDuration + chargeDuration) {
-                // 轻微追踪
-                if (localTimer < orbitDuration + 20) {
-                    Vector2 toTarget = (target.Center - Projectile.Center).SafeNormalize(Vector2.Zero);
-                    Projectile.velocity = Vector2.Lerp(Projectile.velocity, toTarget * 22f, 0.02f);
-                }
-
+            else if (localTimer <= totalOrbitEnd + chargeDuration) {
                 Projectile.rotation = Projectile.velocity.ToRotation() + MathHelper.PiOver2;
 
-                // 冲锋拖尾
                 if (Main.netMode != NetmodeID.Server) {
                     YinEmperorHelper.CreateImperialTrail(Projectile.Center, Projectile.velocity, 0.8f);
                 }
             }
-            // === 冲过后消散 ===
+            // === 消散 ===
             else {
-                Projectile.alpha += 10;
-                Projectile.velocity *= 0.96f;
+                Projectile.alpha += 12;
+                Projectile.velocity *= 0.95f;
                 if (Projectile.alpha >= 255)
                     Projectile.Kill();
             }
@@ -352,6 +390,340 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
             // 不造成接触伤害
             Projectile.damage = 0;
+        }
+
+        #endregion
+
+        #region 模式3：环形激光阵
+
+        /// <summary>
+        /// 环形激光阵：
+        /// 眼睛围成圆环，全部朝向圆心蓄力后齐射激光
+        /// 形成激光牢笼，玩家必须在圆心附近躲避
+        /// ModeParam = 圆环上的角度位置
+        /// </summary>
+        private void AI_RingLaser() {
+            Player target = FindTarget();
+            if (target == null) {
+                Projectile.Kill();
+                return;
+            }
+
+            int positionTime = 50;
+            int totalDuration = positionTime + LaserChargeTime + LaserFireTime + LaserFadeTime;
+
+            // === 飞向圆环位置 ===
+            if (localTimer <= positionTime) {
+                float t = localTimer / (float)positionTime;
+                float radius = 450f;
+                float angle = ModeParam;
+                Vector2 ringPos = target.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * radius;
+
+                Projectile.velocity = (ringPos - Projectile.Center) * 0.1f;
+                Projectile.rotation = (target.Center - Projectile.Center).ToRotation() + MathHelper.PiOver2;
+                Projectile.alpha = (int)(255 * (1f - ACMUtils.SineInOut(t)));
+                Projectile.damage = 0;
+            }
+            // === 到位后蓄力 ===
+            else if (localTimer <= positionTime + LaserChargeTime) {
+                Projectile.alpha = 0;
+                Projectile.velocity *= 0.9f;
+                Projectile.rotation = (target.Center - Projectile.Center).ToRotation() + MathHelper.PiOver2;
+
+                chargeProgress = (localTimer - positionTime) / (float)LaserChargeTime;
+
+                // 蓄力粒子
+                if (Main.netMode != NetmodeID.Server && localTimer % 3 == 0) {
+                    float radius = 50f * (1f - chargeProgress);
+                    Vector2 forward = (Projectile.rotation - MathHelper.PiOver2).ToRotationVector2();
+                    Vector2 chargeCenter = Projectile.Center + forward * 20f;
+
+                    var d = Dust.NewDustPerfect(
+                        chargeCenter + Main.rand.NextVector2Circular(radius, radius),
+                        DustID.GoldFlame);
+                    d.noGravity = true;
+                    d.scale = 0.8f + chargeProgress;
+                    d.velocity = (chargeCenter - d.position).SafeNormalize(Vector2.Zero) * (3f + chargeProgress * 5f);
+                }
+
+                if (localTimer == positionTime + LaserChargeTime - 15) {
+                    SoundEngine.PlaySound(SoundID.Item117 with { Pitch = 0.3f, Volume = 0.7f }, Projectile.Center);
+                }
+
+                Projectile.damage = 0;
+            }
+            // === 发射激光 ===
+            else if (localTimer == positionTime + LaserChargeTime + 1 && !hasFiredLaser) {
+                hasFiredLaser = true;
+
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    float laserAngle = (target.Center - Projectile.Center).ToRotation();
+                    int damage = YinEmperorHelper.GetScaledDamage(105);
+                    Projectile.NewProjectile(
+                        Projectile.GetSource_FromAI(), Projectile.Center, Vector2.Zero,
+                        ModContent.ProjectileType<YinEmperorLaser>(),
+                        damage, 2f, Main.myPlayer,
+                        ai0: laserAngle, ai1: LaserFireTime
+                    );
+                }
+
+                SoundEngine.PlaySound(SoundID.Item33 with { Pitch = -0.5f, Volume = 1.2f }, Projectile.Center);
+                Vector2 recoil = -(Projectile.rotation - MathHelper.PiOver2).ToRotationVector2() * 3f;
+                Projectile.velocity = recoil;
+            }
+            // === 激光持续 ===
+            else if (localTimer <= positionTime + LaserChargeTime + LaserFireTime) {
+                Projectile.velocity *= 0.9f;
+                if (Main.netMode != NetmodeID.Server) {
+                    Projectile.Center += Main.rand.NextVector2Circular(1f, 1f);
+                }
+            }
+            // === 消散 ===
+            else {
+                Projectile.alpha += 10;
+                Projectile.velocity *= 0.95f;
+                if (Projectile.alpha >= 255)
+                    Projectile.Kill();
+            }
+
+            if (localTimer > totalDuration + 30)
+                Projectile.Kill();
+        }
+
+        #endregion
+
+        #region 模式4：十字激光阵
+
+        /// <summary>
+        /// 十字激光阵：
+        /// 眼睛排列成十字形（上下左右），蓄力后齐射激光
+        /// 十字缓慢旋转，扫射大范围区域
+        /// ModeParam = 十字上的位置索引（由Boss编排）
+        /// </summary>
+        private void AI_CrossLaser() {
+            NPC owner = FindOwner();
+            if (owner == null) {
+                Projectile.Kill();
+                return;
+            }
+
+            Player target = FindTarget();
+            if (target == null) {
+                Projectile.Kill();
+                return;
+            }
+
+            int positionTime = 60;
+            int chargeTime = 70;
+            int fireTime = 90; // 较长的发射时间用于旋转扫射
+            int fadeTime = 20;
+            int totalDuration = positionTime + chargeTime + fireTime + fadeTime;
+
+            // 十字中心为Boss位置
+            Vector2 crossCenter = owner.Center;
+
+            // === 飞向十字位置 ===
+            if (localTimer <= positionTime) {
+                Projectile.velocity *= 0.9f;
+                Projectile.rotation = (crossCenter - Projectile.Center).ToRotation() + MathHelper.PiOver2;
+                Projectile.alpha = (int)(255 * (1f - localTimer / (float)positionTime));
+                Projectile.damage = 0;
+            }
+            // === 蓄力 ===
+            else if (localTimer <= positionTime + chargeTime) {
+                Projectile.alpha = 0;
+                Projectile.velocity *= 0.85f;
+
+                // 朝向远离Boss中心的方向
+                Vector2 outward = (Projectile.Center - crossCenter).SafeNormalize(Vector2.UnitY);
+                Projectile.rotation = outward.ToRotation() + MathHelper.PiOver2;
+
+                chargeProgress = (localTimer - positionTime) / (float)chargeTime;
+
+                if (Main.netMode != NetmodeID.Server && localTimer % 3 == 0) {
+                    Vector2 forward = outward;
+                    Vector2 chargePos = Projectile.Center + forward * 20f;
+                    float r = 40f * (1f - chargeProgress);
+                    var d = Dust.NewDustPerfect(
+                        chargePos + Main.rand.NextVector2Circular(r, r), DustID.GoldFlame);
+                    d.noGravity = true;
+                    d.scale = 0.8f + chargeProgress;
+                    d.velocity = (chargePos - d.position).SafeNormalize(Vector2.Zero) * (3f + chargeProgress * 5f);
+                }
+
+                if (localTimer == positionTime + chargeTime - 15) {
+                    SoundEngine.PlaySound(SoundID.Item117 with { Pitch = 0.2f, Volume = 0.7f }, Projectile.Center);
+                }
+
+                Projectile.damage = 0;
+            }
+            // === 发射 + 缓慢旋转 ===
+            else if (localTimer == positionTime + chargeTime + 1 && !hasFiredLaser) {
+                hasFiredLaser = true;
+
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    Vector2 outward = (Projectile.Center - crossCenter).SafeNormalize(Vector2.UnitY);
+                    float laserAngle = outward.ToRotation();
+                    int damage = YinEmperorHelper.GetScaledDamage(100);
+                    sweepLaserIndex = Projectile.NewProjectile(
+                        Projectile.GetSource_FromAI(), Projectile.Center, Vector2.Zero,
+                        ModContent.ProjectileType<YinEmperorLaser>(),
+                        damage, 2f, Main.myPlayer,
+                        ai0: laserAngle, ai1: fireTime
+                    );
+                }
+
+                SoundEngine.PlaySound(SoundID.Item33 with { Pitch = -0.4f, Volume = 1.2f }, Projectile.Center);
+                sweepAngle = (Projectile.Center - crossCenter).ToRotation();
+            }
+            else if (localTimer > positionTime + chargeTime + 1 && localTimer <= positionTime + chargeTime + fireTime) {
+                // 缓慢绕Boss中心旋转（整个十字一起转）
+                sweepAngle += 0.008f;
+                float dist = Vector2.Distance(Projectile.Center, crossCenter);
+                Vector2 newPos = crossCenter + sweepAngle.ToRotationVector2() * dist;
+                Projectile.velocity = (newPos - Projectile.Center) * 0.15f;
+
+                Vector2 outward = (Projectile.Center - crossCenter).SafeNormalize(Vector2.UnitY);
+                Projectile.rotation = outward.ToRotation() + MathHelper.PiOver2;
+
+                // 同步激光方向
+                if (sweepLaserIndex >= 0 && sweepLaserIndex < Main.maxProjectiles) {
+                    var laser = Main.projectile[sweepLaserIndex];
+                    if (laser.active && laser.type == ModContent.ProjectileType<YinEmperorLaser>()) {
+                        laser.Center = Projectile.Center;
+                        laser.ai[0] = outward.ToRotation();
+                    }
+                }
+
+                // 震颤
+                if (Main.netMode != NetmodeID.Server) {
+                    Projectile.Center += Main.rand.NextVector2Circular(1f, 1f);
+                }
+            }
+            // === 消散 ===
+            else {
+                Projectile.alpha += 12;
+                Projectile.velocity *= 0.95f;
+                if (Projectile.alpha >= 255)
+                    Projectile.Kill();
+            }
+
+            if (localTimer > totalDuration + 30)
+                Projectile.Kill();
+        }
+
+        #endregion
+
+        #region 模式5：扫射激光
+
+        /// <summary>
+        /// 扫射激光：
+        /// 单只眼睛飞到指定位置，释放激光并缓慢旋转扫射
+        /// ModeParam = 初始扫射角度
+        /// </summary>
+        private void AI_SweepingLaser() {
+            NPC owner = FindOwner();
+            if (owner == null) {
+                Projectile.Kill();
+                return;
+            }
+
+            int positionTime = 50;
+            int chargeTime = 60;
+            int fireTime = 120; // 长时间扫射
+            int fadeTime = 20;
+            int totalDuration = positionTime + chargeTime + fireTime + fadeTime;
+
+            // === 飞向位置 ===
+            if (localTimer <= positionTime) {
+                Projectile.velocity *= 0.92f;
+                sweepAngle = ModeParam;
+                Projectile.rotation = sweepAngle + MathHelper.PiOver2;
+                Projectile.alpha = (int)(255 * (1f - localTimer / (float)positionTime));
+                Projectile.damage = 0;
+            }
+            // === 蓄力 ===
+            else if (localTimer <= positionTime + chargeTime) {
+                Projectile.alpha = 0;
+                Projectile.velocity *= 0.85f;
+                Projectile.rotation = sweepAngle + MathHelper.PiOver2;
+
+                chargeProgress = (localTimer - positionTime) / (float)chargeTime;
+
+                if (Main.netMode != NetmodeID.Server && localTimer % 3 == 0) {
+                    Vector2 forward = sweepAngle.ToRotationVector2();
+                    Vector2 chargePos = Projectile.Center + forward * 20f;
+                    float r = 40f * (1f - chargeProgress);
+                    var d = Dust.NewDustPerfect(
+                        chargePos + Main.rand.NextVector2Circular(r, r), DustID.GoldFlame);
+                    d.noGravity = true;
+                    d.scale = 0.8f + chargeProgress;
+                    d.velocity = (chargePos - d.position).SafeNormalize(Vector2.Zero) * (3f + chargeProgress * 5f);
+                }
+
+                if (localTimer == positionTime + chargeTime - 15) {
+                    SoundEngine.PlaySound(SoundID.Item117 with { Pitch = 0.3f, Volume = 0.7f }, Projectile.Center);
+                }
+
+                Projectile.damage = 0;
+            }
+            // === 发射 + 缓慢旋转扫射 ===
+            else if (localTimer == positionTime + chargeTime + 1 && !hasFiredLaser) {
+                hasFiredLaser = true;
+
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    int damage = YinEmperorHelper.GetScaledDamage(100);
+                    sweepLaserIndex = Projectile.NewProjectile(
+                        Projectile.GetSource_FromAI(), Projectile.Center, Vector2.Zero,
+                        ModContent.ProjectileType<YinEmperorLaser>(),
+                        damage, 2f, Main.myPlayer,
+                        ai0: sweepAngle, ai1: fireTime
+                    );
+                }
+
+                SoundEngine.PlaySound(SoundID.Item33 with { Pitch = -0.5f, Volume = 1.2f }, Projectile.Center);
+            }
+            else if (localTimer > positionTime + chargeTime + 1 && localTimer <= positionTime + chargeTime + fireTime) {
+                // 缓慢旋转扫射（约扫过90度）
+                sweepAngle += 0.013f;
+                Projectile.rotation = sweepAngle + MathHelper.PiOver2;
+                Projectile.velocity *= 0.9f;
+
+                // 同步激光方向
+                if (sweepLaserIndex >= 0 && sweepLaserIndex < Main.maxProjectiles) {
+                    var laser = Main.projectile[sweepLaserIndex];
+                    if (laser.active && laser.type == ModContent.ProjectileType<YinEmperorLaser>()) {
+                        laser.Center = Projectile.Center;
+                        laser.ai[0] = sweepAngle;
+                    }
+                }
+
+                // 震颤
+                if (Main.netMode != NetmodeID.Server) {
+                    Projectile.Center += Main.rand.NextVector2Circular(1.2f, 1.2f);
+                }
+
+                // 扫射中粒子
+                if (Main.rand.NextBool(2)) {
+                    Vector2 forward = sweepAngle.ToRotationVector2();
+                    var d = Dust.NewDustPerfect(
+                        Projectile.Center + forward * 25f + Main.rand.NextVector2Circular(6, 6),
+                        DustID.GoldFlame);
+                    d.noGravity = true;
+                    d.scale = 1.3f;
+                    d.velocity = forward * 3f;
+                }
+            }
+            // === 消散 ===
+            else {
+                Projectile.alpha += 12;
+                Projectile.velocity *= 0.95f;
+                if (Projectile.alpha >= 255)
+                    Projectile.Kill();
+            }
+
+            if (localTimer > totalDuration + 30)
+                Projectile.Kill();
         }
 
         #endregion

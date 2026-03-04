@@ -1261,6 +1261,7 @@ NPCs: {
 	AzureDragonHead.DisplayName: Azure Dragon Head
 	AzureDragonTail.DisplayName: Azure Dragon Tail
 	YinEmperor.DisplayName: Yin Emperor
+	Aokin.DisplayName: Aokin
 }
 
 Projectiles: {
@@ -1580,6 +1581,9 @@ Projectiles: {
 	ArenaEdge.DisplayName: Arena Edge
 	YinEmperorBolt.DisplayName: Yin Emperor Bolt
 	YinEmperorLaser.DisplayName: Yin Emperor Laser
+	AokinFireball.DisplayName: Aokin Fireball
+	AokinFlameVortex.DisplayName: Aokin Flame Vortex
+	AokinMeteor.DisplayName: Aokin Meteor
 }
 
 HeavenBiome.DisplayName: Heaven
