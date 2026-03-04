@@ -30,7 +30,13 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         private const int PillarHoverHeight = 800;
 
         /// <summary>入侵事件完成所需击杀积分</summary>
-        public const int MaxInvasionPoints = 200;
+        public const int MaxInvasionPoints = 1500;
+
+        /// <summary>总波次数</summary>
+        public const int TotalWaves = 20;
+
+        /// <summary>每波所需积分 = MaxInvasionPoints / TotalWaves</summary>
+        public static int PointsPerWave => MaxInvasionPoints / TotalWaves;
 
         /// <summary>敌怪生成检查间隔（帧）</summary>
         private const int SpawnCheckInterval = 20;
@@ -65,6 +71,20 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
 
         /// <summary>入侵进度百分比（0-100）</summary>
         public static int InvasionProgress => InvasionActive ? (int)(InvasionPoints * 100f / MaxInvasionPoints) : 0;
+
+        /// <summary>当前波次（公开访问，供UI使用）</summary>
+        public static int CurrentWave => currentWave;
+
+        /// <summary>当前波次内的进度百分比（0-1）</summary>
+        public static float CurrentWaveProgress {
+            get {
+                if (!InvasionActive || currentWave <= 0) return 0f;
+                int waveStart = (currentWave - 1) * PointsPerWave;
+                int waveEnd = currentWave * PointsPerWave;
+                float progress = (float)(InvasionPoints - waveStart) / (waveEnd - waveStart);
+                return MathHelper.Clamp(progress, 0f, 1f);
+            }
+        }
 
         /// <summary>入侵事件中心坐标（四柱中心）</summary>
         public static Vector2 InvasionCenter { get; private set; } = Vector2.Zero;
@@ -424,24 +444,27 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
 
         /// <summary>
-        /// 波次提示
+        /// 波次提示——根据积分动态计算当前波次（共20波）
         /// </summary>
         private static void UpdateWaveMessages() {
             waveMessageTimer++;
 
-            int newWave = InvasionPoints switch {
-                >= 150 => 4,
-                >= 100 => 3,
-                >= 50 => 2,
-                _ => 1
-            };
+            // 根据积分计算当前应处的波次
+            int newWave = Math.Clamp(InvasionPoints / PointsPerWave + 1, 1, TotalWaves);
 
             if (newWave > currentWave) {
                 currentWave = newWave;
+
+                // 每波都显示提示，关键波次显示特殊消息
                 string waveMessage = currentWave switch {
-                    2 => "天庭入侵愈演愈烈！更强的天将出现了！",
-                    3 => "天庭精锐部队已经到达！",
-                    4 => "天庭最后的力量正在集结——坚持住！",
+                    <= 3 => $"第{currentWave}波：天兵先锋部队来袭！",
+                    <= 6 => $"第{currentWave}波：天庭加派增援！",
+                    <= 9 => $"第{currentWave}波：天庭精锐部队到达战场！",
+                    10 => "第10波：入侵已过半——天将们发起猛攻！",
+                    <= 13 => $"第{currentWave}波：天庭源源不断地派出天将！",
+                    <= 16 => $"第{currentWave}波：强大的天庭战力集结！",
+                    <= 19 => $"第{currentWave}波：天庭倾尽全力！坚持住！",
+                    20 => "最终波：天庭最后的力量正在集结！",
                     _ => ""
                 };
                 if (!string.IsNullOrEmpty(waveMessage)) {
@@ -466,10 +489,8 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
             int currentCount = CountInvasionEnemies();
             if (currentCount >= MaxInvasionEnemies) return;
 
-            // 根据进度调整数量上限
-            int adjustedMax = MaxInvasionEnemies;
-            if (currentWave >= 3) adjustedMax += 5;
-            if (currentWave >= 4) adjustedMax += 5;
+            // 根据波次调整数量上限——随波次递增
+            int adjustedMax = MaxInvasionEnemies + (currentWave / 4) * 5; // 每4波+5
             if (currentCount >= adjustedMax) return;
 
             // 为每个活跃玩家尝试生成（入侵是全局事件，不需要玩家在天柱范围内）
@@ -591,7 +612,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
 
         /// <summary>
         /// 根据当前波次和位置选择敌怪类型
-        /// 高波次出现更多强力敌怪
+        /// 随着波次推进，强力敌怪的出现概率逐渐增加
         /// </summary>
         private static int ChooseInvasionEnemyType(Vector2 position) {
             int tileX = (int)(position.X / 16f);
@@ -611,26 +632,19 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                 return ModContent.NPCType<OndPaladin>();
             }
 
-            // 飞行敌怪——根据波次调整概率
+            // 飞行敌怪——概率随波次线性递增
+            // 翔龙概率：10% → 40%（波次1→20）
+            // 天眼概率：20% → 30%
+            // 铜羽神鸟概率：70% → 30%
+            float waveRatio = (currentWave - 1f) / (TotalWaves - 1f); // 0~1
+            int xianglongChance = (int)MathHelper.Lerp(10, 40, waveRatio);
+            int observerChance = (int)MathHelper.Lerp(20, 30, waveRatio);
+
             int roll = Main.rand.Next(100);
 
-            if (currentWave >= 3) {
-                // 高波次：翔龙比例增加
-                if (roll < 35) return ModContent.NPCType<Xianglong>();
-                if (roll < 55) return ModContent.NPCType<HeavenObserver>();
-                return ModContent.NPCType<BronzedivineBird>();
-            }
-            else if (currentWave >= 2) {
-                if (roll < 25) return ModContent.NPCType<Xianglong>();
-                if (roll < 50) return ModContent.NPCType<HeavenObserver>();
-                return ModContent.NPCType<BronzedivineBird>();
-            }
-            else {
-                // 第一波：以铜羽神鸟为主
-                if (roll < 15) return ModContent.NPCType<Xianglong>();
-                if (roll < 35) return ModContent.NPCType<HeavenObserver>();
-                return ModContent.NPCType<BronzedivineBird>();
-            }
+            if (roll < xianglongChance) return ModContent.NPCType<Xianglong>();
+            if (roll < xianglongChance + observerChance) return ModContent.NPCType<HeavenObserver>();
+            return ModContent.NPCType<BronzedivineBird>();
         }
 
         /// <summary>
@@ -710,12 +724,6 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
 
             if (points > 0) {
                 HeavenInvasionSystem.AddInvasionPoints(points);
-
-                // 显示进度提示（每10%提示一次）
-                int progress = HeavenInvasionSystem.InvasionProgress;
-                if (progress > 0 && progress % 10 == 0) {
-                    Main.NewText($"天庭入侵进度：{progress}%", 200, 200, 255);
-                }
             }
         }
 

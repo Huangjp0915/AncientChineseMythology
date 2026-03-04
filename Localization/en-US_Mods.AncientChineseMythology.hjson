@@ -960,7 +960,7 @@ Items: {
 		DisplayName: Heavenly Court Token
 		Tooltip:
 			'''
-			Summons the Heavenly Court Invasion
+			Summons the Heavenly Court Invasion (20 waves)
 			Four heavenly pillars will descend, divine soldiers will swarm
 			Defeat all heavenly enemies to end the event
 			'''
