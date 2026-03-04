@@ -1355,6 +1355,50 @@ Items: {
 			'''
 	}
 
+	WoodenLeafPendant: {
+		DisplayName: Wooden Leaf Pendant
+		Tooltip: Radiates a faint natural aura, granting minor life regeneration
+	}
+
+	VineWovenShield: {
+		DisplayName: Vine-Woven Shield
+		Tooltip:
+			'''
+			Woven from rough branches and resilient vines
+			Increases defense by 1
+			Reflects minor thorn damage when hit by contact damage
+			'''
+	}
+
+	ForestCrystalAmulet: {
+		DisplayName: Forest Crystal Amulet
+		Tooltip:
+			'''
+			A rustic amulet infused with forest crystal magic
+			Increases maximum mana by 20
+			Reduces mana cost by 3%
+			'''
+	}
+
+	BarkReinforcedGlove: {
+		DisplayName: Bark-Reinforced Glove
+		Tooltip:
+			'''
+			A bit rough on the hands, but great for wrist protection
+			Increases melee and tool swing speed by 5%
+			'''
+	}
+
+	WoodlandBarkBoots: {
+		DisplayName: Woodland Bark Boots
+		Tooltip:
+			'''
+			Crafted from thick bark and moss, silent on any terrain
+			Increases movement speed by 5%
+			Reduces fall damage when standing on grass or dirt
+			'''
+	}
+
 	ProfaneDismemberer: {
 		DisplayName: Profane Dismemberer
 		Tooltip:

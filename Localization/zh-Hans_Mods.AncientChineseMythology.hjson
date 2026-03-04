@@ -1477,6 +1477,50 @@ Items: {
 			'''
 	}
 
+	WoodenLeafPendant: {
+		DisplayName: 木制叶纹吊坠
+		Tooltip: 散发着微弱的自然气息，为佩戴者提供少许生命恢复
+	}
+
+	VineWovenShield: {
+		DisplayName: 盘藤护盾
+		Tooltip:
+			'''
+			由粗糙的树枝和坚韧的藤蔓编织而成
+			增加1点防御力
+			受到近战接触伤害时反弹微弱的荆棘伤害
+			'''
+	}
+
+	ForestCrystalAmulet: {
+		DisplayName: 森灵晶核护符
+		Tooltip:
+			'''
+			蕴含森林绿晶魔力的古朴护符
+			增加20点最大法力值
+			降低3%的魔法消耗
+			'''
+	}
+
+	BarkReinforcedGlove: {
+		DisplayName: 树皮加固手套
+		Tooltip:
+			'''
+			虽然戴着有些磨手，但能很好地保护手腕
+			提升5%的近战与工具挥动速度
+			'''
+	}
+
+	WoodlandBarkBoots: {
+		DisplayName: 林地木靴
+		Tooltip:
+			'''
+			用厚实的树皮和苔藓制成，踩在地上异常无声
+			增加5%移动速度
+			在草地或泥土上时额外降低坠落伤害
+			'''
+	}
+
 	ProfaneDismemberer: {
 		DisplayName: 亵渎肢解刃
 		Tooltip:
