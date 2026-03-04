@@ -1,4 +1,3 @@
-using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.ID;

@@ -1,6 +1,5 @@
-using System;
-using System;
 using Microsoft.Xna.Framework.Graphics;
+using System;
 using Terraria;
 using Terraria.Graphics.Effects;
 using Terraria.ModLoader;

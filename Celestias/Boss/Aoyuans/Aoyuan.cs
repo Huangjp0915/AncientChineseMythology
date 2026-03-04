@@ -1,8 +1,6 @@
-﻿using System;
+﻿using Microsoft.Xna.Framework.Graphics;
 using System.IO;
-using Microsoft.Xna.Framework.Graphics;
 using Terraria;
-using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -87,6 +85,12 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
 
         // 俯冲冷却
         private int divebombCooldown;
+
+        // 冰柱激光冷却
+        private int beamCooldown;
+
+        // 龙息连射计数
+        private int breathBurstCount;
 
         // 视觉效果
         private float globalTime;

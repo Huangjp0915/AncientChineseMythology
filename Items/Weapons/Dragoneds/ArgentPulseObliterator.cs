@@ -186,7 +186,7 @@ namespace AncientChineseMythology.Items.Weapons.Dragoneds
         public override bool ShouldUpdatePosition() => false;
 
         public override bool PreDraw(ref Color lightColor) {
-            float prog  = 1f - Projectile.timeLeft / 28f;
+            float prog = 1f - Projectile.timeLeft / 28f;
             float alpha = MathHelper.SmoothStep(0.95f, 0f, prog);
             float scale = MathHelper.SmoothStep(0f, IsOvercharge ? 9f : 5.5f, ACMUtils.QuadOut(prog));
 
