@@ -2,7 +2,6 @@
 using System;
 using Terraria;
 using Terraria.Audio;
-using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -10,9 +9,10 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Items.Weapons.DivineWoods;
 
 /// <summary>
-/// 神木旋叶 - 投掷后进入环绕轨道的回旋叶刃
-/// 冲刺攻击时释放一圈叶片弹幕旋风
-/// 命中5次触发自然裁决：释放花瓣环形弹幕
+/// 神木旋叶 - 主动投掷的强力回旋镖
+/// 掷出后减速翻转，自动加速返回玩家手中
+/// 回程伤害×1.5，命中释放旋风叶片
+/// 每5次命中触发自然裁决：释放花瓣环形弹幕
 /// </summary>
 public class DivineWoodGyratingLeaf : ModItem
 {
@@ -22,8 +22,8 @@ public class DivineWoodGyratingLeaf : ModItem
         Item.DamageType = DamageClass.Melee;
         Item.width = 40;
         Item.height = 40;
-        Item.useTime = 16;
-        Item.useAnimation = 16;
+        Item.useTime = 28;
+        Item.useAnimation = 28;
         Item.useStyle = ItemUseStyleID.Swing;
         Item.knockBack = 7f;
         Item.value = Item.buyPrice(gold: 50);
@@ -33,42 +33,35 @@ public class DivineWoodGyratingLeaf : ModItem
         Item.noMelee = true;
         Item.noUseGraphic = true;
         Item.shoot = ModContent.ProjectileType<DivineWoodGyratingLeafProj>();
-        Item.shootSpeed = 20f;
+        Item.shootSpeed = 22f;
     }
 
     public override bool CanUseItem(Player player) {
-        return player.ownedProjectileCounts[ModContent.ProjectileType<DivineWoodGyratingLeafProj>()] < 2;
+        return player.ownedProjectileCounts[ModContent.ProjectileType<DivineWoodGyratingLeafProj>()] < 1;
     }
 }
 
 /// <summary>
-/// 神木旋叶弹幕 - 使用自身纹理，状态机驱动
-/// 冲刺时释放叶片旋风，裁决时释放花瓣弹幕
+/// 神木旋叶弹幕 - 主动投掷回旋镖
+/// 掷出→减速→翻转→加速返回，回程伤害×1.5
+/// 命中释放3片旋风叶，每5hit触发花瓣裁决
 /// </summary>
 public class DivineWoodGyratingLeafProj : ModProjectile
 {
     public override string Texture
         => "AncientChineseMythology/Items/Weapons/DivineWoods/DivineWoodGyratingLeaf";
 
-    private enum LeafState { Flying, Orbiting, Dashing, Returning }
-
-    private LeafState State {
-        get => (LeafState)Projectile.ai[0];
-        set => Projectile.ai[0] = (float)value;
-    }
-
+    // Phase: 0 = Outgoing（掷出）, 1 = Returning（回程）
+    private ref float Phase => ref Projectile.ai[0];
     private ref float Timer => ref Projectile.ai[1];
     private ref float HitCounter => ref Projectile.localAI[0];
-    private ref float OrbitAngle => ref Projectile.localAI[1];
 
-    private const float OrbitRadius = 110f;
-    private const float OrbitSpeed = 0.07f;
-    private const float DashSpeed = 30f;
-    private const int DashCooldown = 35;
-    private const float MaxFlyDistance = 500f;
+    private const int OutgoingDuration = 30;     // 飞出持续帧数
+    private const float ReturnAccel = 1.8f;      // 回程加速度
+    private const float MaxReturnSpeed = 32f;    // 回程最大速度
+    private const float CatchRadius = 40f;       // 接住判定半径
 
-    private int dashTarget = -1;
-    private int dashCooldownTimer;
+    private bool _isReturning => Phase >= 1f;
 
     public override void SetStaticDefaults() {
         ProjectileID.Sets.TrailCacheLength[Type] = 18;
@@ -81,7 +74,7 @@ public class DivineWoodGyratingLeafProj : ModProjectile
         Projectile.friendly = true;
         Projectile.DamageType = DamageClass.Melee;
         Projectile.penetrate = -1;
-        Projectile.timeLeft = 1800;
+        Projectile.timeLeft = 600;
         Projectile.ignoreWater = true;
         Projectile.tileCollide = false;
         Projectile.usesLocalNPCImmunity = true;
@@ -93,108 +86,92 @@ public class DivineWoodGyratingLeafProj : ModProjectile
         if (!owner.active || owner.dead) { Projectile.Kill(); return; }
 
         Timer++;
-        Projectile.rotation += 0.35f * (State == LeafState.Dashing ? 2.5f : 1f);
 
-        switch (State) {
-            case LeafState.Flying: HandleFlying(owner); break;
-            case LeafState.Orbiting: HandleOrbiting(owner); break;
-            case LeafState.Dashing: HandleDashing(owner); break;
-            case LeafState.Returning: HandleReturning(owner); break;
-        }
+        // 高速旋转 - 回程时更快
+        float rotSpeed = _isReturning ? 0.55f : 0.35f;
+        Projectile.rotation += rotSpeed;
 
-        // 环绕时周期性释放装饰叶片
-        if (State == LeafState.Orbiting && Timer % 20 == 0) {
-            Dust d = Dust.NewDustPerfect(
-                Projectile.Center + Main.rand.NextVector2Circular(20, 20),
-                DustID.GrassBlades, Main.rand.NextVector2Circular(1f, 1f), 80, default, 1.5f);
-            d.noGravity = true;
-        }
+        if (!_isReturning) {
+            // === 掷出阶段 ===
+            // 逐渐减速
+            float decel = MathHelper.Lerp(0.96f, 0.92f, Math.Min(Timer / OutgoingDuration, 1f));
+            Projectile.velocity *= decel;
 
-        if (Main.rand.NextBool(3)) {
-            Dust d = Dust.NewDustPerfect(
-                Projectile.Center + Main.rand.NextVector2Circular(15, 15),
-                DustID.JungleTorch, Projectile.velocity * 0.1f, 60, default,
-                Main.rand.NextFloat(1f, 1.6f));
-            d.noGravity = true;
-        }
-
-        Lighting.AddLight(Projectile.Center, 0.25f, 0.7f, 0.25f);
-    }
-
-    private void HandleFlying(Player owner) {
-        Projectile.velocity *= 0.97f;
-        float dist = Vector2.Distance(Projectile.Center, owner.Center);
-        if (dist > MaxFlyDistance || Projectile.velocity.Length() < 3f || Timer > 35) {
-            State = LeafState.Orbiting;
-            Timer = 0;
-            dashCooldownTimer = 0;
-            OrbitAngle = (Projectile.Center - owner.Center).ToRotation();
-            SoundEngine.PlaySound(SoundID.Grass with { Volume = 0.6f, Pitch = 0.5f }, Projectile.Center);
-        }
-    }
-
-    private void HandleOrbiting(Player owner) {
-        OrbitAngle += OrbitSpeed;
-        Vector2 targetPos = owner.Center + new Vector2(MathF.Cos(OrbitAngle), MathF.Sin(OrbitAngle)) * OrbitRadius;
-        Projectile.Center = Vector2.Lerp(Projectile.Center, targetPos, 0.2f);
-        Projectile.velocity = (targetPos - Projectile.Center) * 0.5f;
-        dashCooldownTimer++;
-
-        if (dashCooldownTimer >= DashCooldown) {
-            NPC target = FindClosestNPC(650f);
-            if (target != null) {
-                dashTarget = target.whoAmI;
-                State = LeafState.Dashing;
+            // 到时间或速度过低则翻转进入回程
+            if (Timer >= OutgoingDuration || Projectile.velocity.Length() < 2f) {
+                Phase = 1f;
                 Timer = 0;
-                Projectile.velocity = (target.Center - Projectile.Center).SafeNormalize(Vector2.UnitX) * DashSpeed;
-                SoundEngine.PlaySound(SoundID.Item7 with { Volume = 0.5f, Pitch = 0.6f }, Projectile.Center);
+                SoundEngine.PlaySound(SoundID.Item7 with { Volume = 0.6f, Pitch = 0.8f }, Projectile.Center);
 
-                // 冲刺时释放6片旋风叶片
+                // 翻转时释放4片旋风叶片
                 if (Projectile.owner == Main.myPlayer) {
-                    for (int i = 0; i < 6; i++) {
-                        float angle = MathHelper.TwoPi * i / 6;
-                        Vector2 leafVel = angle.ToRotationVector2() * 6f + Projectile.velocity * 0.3f;
+                    for (int i = 0; i < 4; i++) {
+                        float angle = MathHelper.TwoPi * i / 4 + Main.rand.NextFloat(0.3f);
+                        Vector2 leafVel = angle.ToRotationVector2() * 5f;
                         Projectile.NewProjectile(Projectile.GetSource_FromThis(), Projectile.Center,
                             leafVel, ModContent.ProjectileType<DivineWoodWhirlLeaf>(),
                             Projectile.damage / 3, 1f, Projectile.owner);
                     }
                 }
             }
-            dashCooldownTimer = 0;
+        }
+        else {
+            // === 回程阶段 ===
+            Vector2 toPlayer = owner.Center - Projectile.Center;
+            float dist = toPlayer.Length();
+            Vector2 dir = toPlayer.SafeNormalize(Vector2.Zero);
+
+            // 加速飞向玩家
+            Projectile.velocity = Vector2.Lerp(Projectile.velocity, dir * MaxReturnSpeed, 0.12f);
+            if (Projectile.velocity.Length() < MaxReturnSpeed)
+                Projectile.velocity += dir * ReturnAccel;
+
+            // 接住
+            if (dist < CatchRadius) {
+                Projectile.Kill();
+                return;
+            }
         }
 
-        if (Timer > 500) { State = LeafState.Returning; Timer = 0; }
+        // 粒子特效
+        if (Main.rand.NextBool(_isReturning ? 2 : 3)) {
+            Dust d = Dust.NewDustPerfect(
+                Projectile.Center + Main.rand.NextVector2Circular(15, 15),
+                DustID.JungleTorch, -Projectile.velocity * 0.15f, 60, default,
+                Main.rand.NextFloat(1f, 1.8f));
+            d.noGravity = true;
+        }
+
+        Lighting.AddLight(Projectile.Center, 0.25f, 0.7f, 0.25f);
     }
 
-    private void HandleDashing(Player owner) {
-        if (Timer > 18 || (dashTarget >= 0 && dashTarget < Main.maxNPCs && !Main.npc[dashTarget].active)) {
-            State = LeafState.Orbiting;
-            Timer = 0;
-            dashCooldownTimer = 0;
-            OrbitAngle = (Projectile.Center - owner.Center).ToRotation();
-            return;
-        }
-        if (dashTarget >= 0 && dashTarget < Main.maxNPCs && Main.npc[dashTarget].active) {
-            Vector2 toTarget = (Main.npc[dashTarget].Center - Projectile.Center).SafeNormalize(Vector2.UnitX);
-            Projectile.velocity = Vector2.Lerp(Projectile.velocity, toTarget * DashSpeed, 0.15f);
-        }
-    }
-
-    private void HandleReturning(Player owner) {
-        Vector2 toPlayer = owner.Center - Projectile.Center;
-        Vector2 direction = toPlayer.SafeNormalize(Vector2.Zero);
-        Projectile.velocity = Vector2.Lerp(Projectile.velocity, direction * 28f, 0.2f);
-        if (toPlayer.Length() < 40f) Projectile.Kill();
+    public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers) {
+        // 回程伤害×1.5
+        if (_isReturning)
+            modifiers.SourceDamage *= 1.5f;
     }
 
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
         HitCounter++;
         target.AddBuff(BuffID.Poisoned, 300);
 
-        for (int i = 0; i < 10; i++) {
+        // 命中爆发粒子
+        int dustCount = _isReturning ? 14 : 10;
+        for (int i = 0; i < dustCount; i++) {
             Dust burst = Dust.NewDustPerfect(target.Center, DustID.JungleTorch,
                 Main.rand.NextVector2Circular(6f, 6f), 60, default, 1.8f);
             burst.noGravity = true;
+        }
+
+        // 每次命中释放3片旋风叶
+        if (Projectile.owner == Main.myPlayer) {
+            for (int i = 0; i < 3; i++) {
+                float angle = MathHelper.TwoPi * i / 3 + Main.rand.NextFloat(MathHelper.TwoPi);
+                Vector2 leafVel = angle.ToRotationVector2() * Main.rand.NextFloat(4f, 7f);
+                Projectile.NewProjectile(Projectile.GetSource_FromThis(), target.Center,
+                    leafVel, ModContent.ProjectileType<DivineWoodWhirlLeaf>(),
+                    Projectile.damage / 3, 1f, Projectile.owner);
+            }
         }
 
         // 每5次命中触发自然裁决：释放花瓣弹幕环
@@ -219,14 +196,6 @@ public class DivineWoodGyratingLeafProj : ModProjectile
                 }
             }
         }
-
-        if (State == LeafState.Dashing) {
-            State = LeafState.Orbiting;
-            Timer = 0;
-            dashCooldownTimer = 0;
-            Player owner = Main.player[Projectile.owner];
-            OrbitAngle = (Projectile.Center - owner.Center).ToRotation();
-        }
     }
 
     public override bool PreDraw(ref Color lightColor) {
@@ -239,16 +208,20 @@ public class DivineWoodGyratingLeafProj : ModProjectile
             DepthStencilState.None, RasterizerState.CullNone, null,
             Main.GameViewMatrix.TransformationMatrix);
 
+        // 拖尾
         for (int i = 0; i < Projectile.oldPos.Length; i++) {
             if (Projectile.oldPos[i] == Vector2.Zero) continue;
             float progress = 1f - (float)i / Projectile.oldPos.Length;
             Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-            Color trailColor = Color.Lerp(new Color(50, 200, 60), new Color(180, 255, 190), progress) * progress * 0.45f;
+            Color trailColor = Color.Lerp(new Color(50, 200, 60), new Color(180, 255, 190), progress)
+                * progress * (_isReturning ? 0.60f : 0.45f);
             trailColor.A = 0;
-            sb.Draw(tex, drawPos, null, trailColor, Projectile.oldRot[i], origin, Projectile.scale * progress * 0.85f, SpriteEffects.None, 0);
+            float trailScale = Projectile.scale * progress * (_isReturning ? 0.95f : 0.85f);
+            sb.Draw(tex, drawPos, null, trailColor, Projectile.oldRot[i], origin, trailScale, SpriteEffects.None, 0);
         }
 
-        if (State == LeafState.Dashing) {
+        // 回程时显示冲击波
+        if (_isReturning && Projectile.velocity.Length() > 10f) {
             Texture2D wave = ACMAsset.GlaciateWave;
             sb.Draw(wave, Projectile.Center - Main.screenPosition, null,
                 new Color(60, 220, 80) * 0.50f,
@@ -261,7 +234,7 @@ public class DivineWoodGyratingLeafProj : ModProjectile
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
             new Color(80, 220, 90) * pulse, 0f,
             sg.Size() * 0.5f,
-            0.60f, SpriteEffects.None, 0);
+            _isReturning ? 0.75f : 0.60f, SpriteEffects.None, 0);
 
         Color glowColor = new Color(60, 200, 80) * 0.28f;
         glowColor.A = 0;
@@ -272,6 +245,17 @@ public class DivineWoodGyratingLeafProj : ModProjectile
         sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
             DepthStencilState.None, RasterizerState.CullNone, null,
             Main.GameViewMatrix.TransformationMatrix);
+
+        // 残影绘制 - 在AlphaBlend模式下绘制半透明完整精灵副本
+        for (int i = 1; i < Projectile.oldPos.Length; i += 2) {
+            if (Projectile.oldPos[i] == Vector2.Zero) continue;
+            float progress = 1f - (float)i / Projectile.oldPos.Length;
+            Vector2 afterimagePos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
+            float afterAlpha = progress * progress * (_isReturning ? 0.50f : 0.35f);
+            Color afterColor = Color.Lerp(lightColor, new Color(140, 255, 170), 0.25f) * afterAlpha;
+            float afterScale = Projectile.scale * MathHelper.Lerp(0.60f, 0.95f, progress);
+            sb.Draw(tex, afterimagePos, null, afterColor, Projectile.oldRot[i], origin, afterScale, SpriteEffects.None, 0);
+        }
 
         Color mainColor = Color.Lerp(lightColor, new Color(180, 255, 190), 0.3f);
         sb.Draw(tex, Projectile.Center - Main.screenPosition, null,
@@ -286,18 +270,6 @@ public class DivineWoodGyratingLeafProj : ModProjectile
                 Main.rand.NextVector2Circular(5f, 5f), 60, default, 2f);
             d.noGravity = true;
         }
-    }
-
-    private NPC FindClosestNPC(float maxRange) {
-        NPC closest = null;
-        float closestDist = maxRange;
-        for (int i = 0; i < Main.maxNPCs; i++) {
-            NPC npc = Main.npc[i];
-            if (!npc.CanBeChasedBy()) continue;
-            float dist = Vector2.Distance(Projectile.Center, npc.Center);
-            if (dist < closestDist) { closestDist = dist; closest = npc; }
-        }
-        return closest;
     }
 }
 

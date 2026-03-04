@@ -1285,7 +1285,8 @@ Items: {
 		Tooltip:
 			'''
 			以神木叶片凝聚的旋转飞刃
-			投掷后环绕轨道运转，冲刺时释放叶片旋风
+			向光标方向掷出，减速后自动高速返回
+			回程伤害×1.5，命中释放旋风叶片
 			每5次命中触发自然裁决，释放花瓣弹幕环
 			'''
 	}
@@ -1300,7 +1301,7 @@ Items: {
 	}
 
 	DivineWoodMusket: {
-		DisplayName: 神木连弩
+		DisplayName: 神木火铳
 		Tooltip:
 			'''
 			以神木机关驱动的连射火器
@@ -1326,6 +1327,88 @@ Items: {
 			记载万木灵韵的上古典籍
 			释放大量叶片扇形散射，螺旋飞行后追踪敌人
 			叶片命中时有概率释放次生花瓣
+			'''
+	}
+
+	ArrogantDivineSylvanGreatblade: {
+		DisplayName: 傲世神木·斩天巨刃
+		Tooltip:
+			'''
+			以万古神木之精华铸就的终极巨刃
+			三连击循环：横斩→上挑→天崩下劈
+			横斩释放贯穿藤蔓波，上挑扇形三道裂波
+			天崩下劈引发大地震荡，万木臣服
+			'''
+	}
+
+	ArrogantDivineSylvanBomb: {
+		DisplayName: 傲世神木·世界种
+		Tooltip:
+			'''
+			蕴含世界树之种的终极爆裂种子
+			飞行中分裂为五枚子种子，各自独立爆炸
+			每次爆炸释放大量追踪藤蛇弹幕
+			万花齐放，天地为之变色
+			'''
+	}
+
+	ArrogantDivineSylvanBow: {
+		DisplayName: 傲世神木·穿林弓
+		Tooltip:
+			'''
+			以世界树主干弯制的终极长弓
+			将箭矢转化为无限穿透的藤蔓长枪
+			每箭附带四道DNA螺旋追踪叶刃
+			每第四箭释放世界树之箭，万木穿林
+			'''
+	}
+
+	ArrogantDivineSylvanChakram: {
+		DisplayName: 傲世神木·落叶风暴
+		Tooltip:
+			'''
+			以上古神木叶脉凝聚的终极旋刃
+			掷出后在落点展开极速扩展螺旋风暴
+			按住攻击键维持风暴，松开后内爆坍缩
+			坍缩释放十道旋风叶片爆发 + 屏幕震动
+			回程伤害×2，接住时再次屏幕震动
+			每三次命中触发万木裁决：十六道花瓣爆发
+			范围藤蔓缠绕，万木肃杀
+			'''
+	}
+
+	ArrogantDivineSylvanMusket: {
+		DisplayName: 傲世神木·连天铳
+		Tooltip:
+			'''
+			以世界树机关黄金荆棘驱动的终极连射火器
+			五连发金翠荆棘针刺，命中后连锁弹射
+			每五轮连射发射三枚分裂种子迫击炮弹
+			荆棘成林，天地震荡
+			'''
+	}
+
+	ArrogantDivineSylvanStaff: {
+		DisplayName: 傲世神木·万藤杖
+		Tooltip:
+			'''
+			以万年神木之心雕琢的终极灵杖
+			释放巨型藤蔓链鞭抽击敌人
+			链身分生追踪触手独立造成伤害
+			命中后释放八片追踪叶爆
+			末端触发藤蔓新星：十六道环形爆炸
+			'''
+	}
+
+	ArrogantDivineSylvanTome: {
+		DisplayName: 傲世神木·山海典
+		Tooltip:
+			'''
+			记载天地万木灵韵的上古至宝
+			释放20~28片金翠叶刃扇形散射
+			叶片螺旋飞行后强力追踪敌人
+			命中50%概率释放双花瓣次生弹幕
+			每三次使用凝聚叶暴漩涡，引力吸拢万物
 			'''
 	}
 }
@@ -1797,6 +1880,30 @@ Projectiles: {
 	DivineWoodVineBurstLeaf.DisplayName: 藤蔓叶爆
 	DivineWoodVineWhipHead.DisplayName: 藤蔓链鞭
 	DivineWoodWhirlLeaf.DisplayName: 旋风叶片
+	ArrogantSylvanGreatbladeSwing.DisplayName: 傲世斩天挥斩
+	ArrogantSylvanVineWave.DisplayName: 傲世藤蔓波
+	ArrogantSylvanEarthquake.DisplayName: 傲世天崩震荡
+	ArrogantSylvanWorldSeed.DisplayName: 傲世世界种
+	ArrogantSylvanChildSeed.DisplayName: 傲世子种子
+	ArrogantSylvanBloomExplosion.DisplayName: 傲世万花绽放
+	ArrogantSylvanVineSerpent.DisplayName: 傲世藤蛇
+	ArrogantSylvanLeafLance.DisplayName: 傲世藤蔓长枪
+	ArrogantSylvanSpiralLeaf.DisplayName: 傲世螺旋叶刃
+	ArrogantSylvanWorldTreeArrow.DisplayName: 傲世世界树之箭
+	ArrogantSylvanChakramProj.DisplayName: 傲世旋叶
+	ArrogantSylvanWhirlLeaf.DisplayName: 傲世旋风叶片
+	ArrogantSylvanVerdictPetal.DisplayName: 傲世裁决花瓣
+	ArrogantSylvanThornNeedle.DisplayName: 傲世荆棘针弹
+	ArrogantSylvanSeedMortar.DisplayName: 傲世种子迫击弹
+	ArrogantSylvanThornFieldExplosion.DisplayName: 傲世荆棘领域
+	ArrogantSylvanMusketSerpent.DisplayName: 傲世追踪藤蛇
+	ArrogantSylvanVineWhipHead.DisplayName: 傲世藤蔓链鞭
+	ArrogantSylvanTendril.DisplayName: 傲世分支触手
+	ArrogantSylvanVineNova.DisplayName: 傲世藤蔓新星
+	ArrogantSylvanVineBurstLeaf.DisplayName: 傲世藤蔓叶爆
+	ArrogantSylvanTomeLeaf.DisplayName: 傲世叶刃
+	ArrogantSylvanTomePetal.DisplayName: 傲世花瓣
+	ArrogantSylvanLeafVortex.DisplayName: 傲世叶暴漩涡
 }
 
 HeavenBiome.DisplayName: Heaven

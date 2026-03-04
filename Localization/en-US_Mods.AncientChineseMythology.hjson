@@ -1179,7 +1179,13 @@ Items: {
 
 	DivineWoodGyratingLeaf: {
 		DisplayName: Divine Wood Gyrating Leaf
-		Tooltip: ""
+		Tooltip:
+			'''
+			A spinning blade condensed from divine wood leaves
+			Thrown toward the cursor, decelerates then returns at high speed
+			Return trip deals 1.5x damage, hits release whirlwind leaves
+			Every 5 hits triggers Nature's Verdict, releasing a petal barrage
+			'''
 	}
 
 	DivineWoodLongbow: {
@@ -1200,6 +1206,88 @@ Items: {
 	DivineWoodTome: {
 		DisplayName: Divine Wood Tome
 		Tooltip: ""
+	}
+
+	ArrogantDivineSylvanGreatblade: {
+		DisplayName: Arrogant Divine Sylvan Greatblade
+		Tooltip:
+			'''
+			The ultimate greatblade forged from the essence of the eternal Divine Sylvan
+			3-hit combo cycle: Sweep → Upswing → Heavenly Slam
+			Sweep releases a piercing vine wave, Upswing fans three rift waves
+			Heavenly Slam triggers a massive earthquake, all nature bows before it
+			'''
+	}
+
+	ArrogantDivineSylvanBomb: {
+		DisplayName: Arrogant Divine Sylvan World Seed
+		Tooltip:
+			'''
+			The ultimate explosive seed containing the essence of the World Tree
+			Splits mid-flight into five child seeds, each exploding independently
+			Each explosion releases swarms of homing vine serpent projectiles
+			A myriad of blooms erupt, changing the color of heaven and earth
+			'''
+	}
+
+	ArrogantDivineSylvanBow: {
+		DisplayName: Arrogant Divine Sylvan Bow
+		Tooltip:
+			'''
+			The ultimate longbow bent from the trunk of the World Tree
+			Converts arrows into infinitely-piercing vine lances
+			Each arrow is accompanied by four DNA-spiral homing leaves
+			Every 4th shot fires a World Tree Arrow of devastating power
+			'''
+	}
+
+	ArrogantDivineSylvanChakram: {
+		DisplayName: Arrogant Divine Sylvan Leaf Storm
+		Tooltip:
+			'''
+			The ultimate chakram condensed from ancient divine leaf veins
+			Thrown out, then unleashes a rapidly expanding spiral storm at the landing point
+			Hold attack to sustain the storm, release to trigger violent implosion
+			Implosion releases ten whirlwind leaves + screen shake
+			Return trip deals 2x damage, catching triggers another screen shake
+			Every 3 hits triggers Myriad Verdict: sixteen petal burst
+			Area vine entanglement, all nature stands in judgment
+			'''
+	}
+
+	ArrogantDivineSylvanMusket: {
+		DisplayName: Arrogant Divine Sylvan Musket
+		Tooltip:
+			'''
+			The ultimate rapid-fire weapon driven by World Tree golden thorn mechanisms
+			Five-burst golden-emerald thorn needles that chain-bounce on hit
+			Every five bursts fires three splitting seed mortars
+			Thorns grow into forests, heaven and earth tremble
+			'''
+	}
+
+	ArrogantDivineSylvanStaff: {
+		DisplayName: Arrogant Divine Sylvan Staff
+		Tooltip:
+			'''
+			The ultimate scepter carved from the heart of the ten-thousand-year Divine Sylvan
+			Releases a massive vine chain whip to lash enemies
+			Chain body sprouts homing tendrils that deal independent damage
+			Hits release eight homing leaf bursts
+			Endpoint triggers Vine Nova: sixteen-ray ring explosion
+			'''
+	}
+
+	ArrogantDivineSylvanTome: {
+		DisplayName: Arrogant Divine Sylvan Tome
+		Tooltip:
+			'''
+			An ancient supreme treasure recording the spiritual essence of all trees
+			Releases 20-28 golden-emerald leaf blades in a fan spread
+			Leaves spiral before powerfully homing on enemies
+			50% chance on hit to release twin petal sub-projectiles
+			Every 3rd use conjures a Leaf Storm Vortex with gravitational pull
+			'''
 	}
 }
 
@@ -1670,6 +1758,30 @@ Projectiles: {
 	DivineWoodVineBurstLeaf.DisplayName: Divine Wood Vine Burst Leaf
 	DivineWoodVineWhipHead.DisplayName: Divine Wood Vine Whip Head
 	DivineWoodWhirlLeaf.DisplayName: Divine Wood Whirl Leaf
+	ArrogantSylvanGreatbladeSwing.DisplayName: Arrogant Sylvan Greatblade Swing
+	ArrogantSylvanVineWave.DisplayName: Arrogant Sylvan Vine Wave
+	ArrogantSylvanEarthquake.DisplayName: Arrogant Sylvan Earthquake
+	ArrogantSylvanWorldSeed.DisplayName: Arrogant Sylvan World Seed
+	ArrogantSylvanChildSeed.DisplayName: Arrogant Sylvan Child Seed
+	ArrogantSylvanBloomExplosion.DisplayName: Arrogant Sylvan Bloom Explosion
+	ArrogantSylvanVineSerpent.DisplayName: Arrogant Sylvan Vine Serpent
+	ArrogantSylvanLeafLance.DisplayName: Arrogant Sylvan Leaf Lance
+	ArrogantSylvanSpiralLeaf.DisplayName: Arrogant Sylvan Spiral Leaf
+	ArrogantSylvanWorldTreeArrow.DisplayName: Arrogant Sylvan World Tree Arrow
+	ArrogantSylvanChakramProj.DisplayName: Arrogant Sylvan Chakram
+	ArrogantSylvanWhirlLeaf.DisplayName: Arrogant Sylvan Whirl Leaf
+	ArrogantSylvanVerdictPetal.DisplayName: Arrogant Sylvan Verdict Petal
+	ArrogantSylvanThornNeedle.DisplayName: Arrogant Sylvan Thorn Needle
+	ArrogantSylvanSeedMortar.DisplayName: Arrogant Sylvan Seed Mortar
+	ArrogantSylvanThornFieldExplosion.DisplayName: Arrogant Sylvan Thorn Field Explosion
+	ArrogantSylvanMusketSerpent.DisplayName: Arrogant Sylvan Musket Serpent
+	ArrogantSylvanVineWhipHead.DisplayName: Arrogant Sylvan Vine Whip Head
+	ArrogantSylvanTendril.DisplayName: Arrogant Sylvan Tendril
+	ArrogantSylvanVineNova.DisplayName: Arrogant Sylvan Vine Nova
+	ArrogantSylvanVineBurstLeaf.DisplayName: Arrogant Sylvan Vine Burst Leaf
+	ArrogantSylvanTomeLeaf.DisplayName: Arrogant Sylvan Tome Leaf
+	ArrogantSylvanTomePetal.DisplayName: Arrogant Sylvan Tome Petal
+	ArrogantSylvanLeafVortex.DisplayName: Arrogant Sylvan Leaf Vortex
 }
 
 HeavenBiome.DisplayName: Heaven

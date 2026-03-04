@@ -1,5 +1,4 @@
-﻿using AncientChineseMythology.Celestias.PillarofTheHeavenes.Items;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
