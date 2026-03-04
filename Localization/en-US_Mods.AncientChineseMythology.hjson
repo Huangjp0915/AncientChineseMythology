@@ -1266,6 +1266,8 @@ NPCs: {
 	AoyuanBody.DisplayName: Aoyuan Body
 	Aoshun.DisplayName: Aoshun
 	AoshunBody.DisplayName: Aoshun Body
+	AoshunArms.DisplayName: Aoshun Arms
+	AoshunTail.DisplayName: Aoshun Tail
 }
 
 Projectiles: {

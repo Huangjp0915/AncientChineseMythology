@@ -1,5 +1,4 @@
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.GameContent;
@@ -9,19 +8,19 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 {
     /// <summary>
-    /// 敖顺身体段NPC - 链接到头部形成蠕虫结构
-    /// 纹理AoshunBody.png: 54×54, 单帧
-    /// 参考AncientWyrmBody: 方向相关origin绘制，跟随前一段
+    /// 敖顺爪臂段NPC - 与Body交替排列形成蠕虫结构
+    /// 纹理AoshunArms.png: 54×54, 单帧
+    /// 参考AncientWyrmArms: 方向相关origin绘制，跟随前一段
     /// ai[1]: 前一段NPC索引
     /// ai[3]: 头部NPC索引（realLife指向）
     /// </summary>
-    public class AoshunBody : ModNPC
+    public class AoshunArms : ModNPC
     {
         public override void SetDefaults() {
             NPC.width = 34;
             NPC.height = 32;
-            NPC.damage = 50;
-            NPC.defense = 45;
+            NPC.damage = 20;
+            NPC.defense = 25;
             NPC.lifeMax = 100000;
             NPC.knockBackResist = 0f;
             NPC.HitSound = SoundID.NPCHit56;
@@ -40,7 +39,6 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
             Texture2D texture = TextureAssets.Npc[NPC.type].Value;
-            // 参考原型: 基于朝向的origin，防止转向时精灵跳动
             Vector2 origin = NPC.spriteDirection == -1
                 ? new Vector2(texture.Width * 0.5f, texture.Height * 0.5f)
                 : new Vector2(texture.Width, texture.Height);

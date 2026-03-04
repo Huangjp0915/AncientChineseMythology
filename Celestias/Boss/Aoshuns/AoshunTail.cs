@@ -1,5 +1,4 @@
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.GameContent;
@@ -9,27 +8,28 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 {
     /// <summary>
-    /// 敖顺身体段NPC - 链接到头部形成蠕虫结构
-    /// 纹理AoshunBody.png: 54×54, 单帧
-    /// 参考AncientWyrmBody: 方向相关origin绘制，跟随前一段
+    /// 敖顺尾部NPC - 蠕虫末端
+    /// 纹理AoshunTail.png: 54×52, 单帧
+    /// 参考AncientWyrmTail: 方向相关origin绘制，跟随前一段
     /// ai[1]: 前一段NPC索引
     /// ai[3]: 头部NPC索引（realLife指向）
     /// </summary>
-    public class AoshunBody : ModNPC
+    public class AoshunTail : ModNPC
     {
         public override void SetDefaults() {
-            NPC.width = 34;
+            NPC.width = 40;
             NPC.height = 32;
             NPC.damage = 50;
             NPC.defense = 45;
             NPC.lifeMax = 100000;
             NPC.knockBackResist = 0f;
-            NPC.HitSound = SoundID.NPCHit56;
-            NPC.DeathSound = SoundID.NPCDeath60;
-            NPC.behindTiles = true;
+            NPC.HitSound = SoundID.NPCHit2;
+            NPC.DeathSound = SoundID.NPCDeath20;
             NPC.noTileCollide = true;
             NPC.netAlways = true;
             NPC.noGravity = true;
+            NPC.dontCountMe = true;
+            NPC.behindTiles = true;
 
             for (int k = 0; k < NPC.buffImmune.Length; k++) {
                 NPC.buffImmune[k] = true;
@@ -40,7 +40,6 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
             Texture2D texture = TextureAssets.Npc[NPC.type].Value;
-            // 参考原型: 基于朝向的origin，防止转向时精灵跳动
             Vector2 origin = NPC.spriteDirection == -1
                 ? new Vector2(texture.Width * 0.5f, texture.Height * 0.5f)
                 : new Vector2(texture.Width, texture.Height);

@@ -21,11 +21,11 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
         /// <summary>二阶段血量百分比阈值</summary>
         public const float Phase2Threshold = 0.50f;
 
-        /// <summary>蠕虫身体段帧序列（对应AoshunBody纹理5帧中的帧号）</summary>
-        public static readonly int[] BodyFrameSequence = [1, 2, 0, 1, 2, 1, 2, 0, 1, 2, 1, 2, 0, 1, 2, 3, 4];
+        /// <summary>蠕虫身体段数（Body+Arms交替，不含尾部）</summary>
+        private const int WormBodyLength = 30;
 
-        /// <summary>头部纹理帧数</summary>
-        private const int HeadFrameCount = 3;
+        /// <summary>头部纹理帧数（52×140, 2帧, 每帧52×70）</summary>
+        private const int HeadFrameCount = 2;
 
         #endregion
 
@@ -72,6 +72,9 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
         // internalAI[3]: 子状态
 
         // 私有状态
+        private bool despawn;
+        private bool close;
+        private bool chargePlayer;
         private bool fireAttack;
         private int attackFrame;
         private int attackCounter;
@@ -111,21 +114,22 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 
         public override void SetDefaults() {
             NPC.boss = true;
-            NPC.width = 80;
-            NPC.height = 80;
-            NPC.damage = 140;
-            NPC.defense = 80;
+            NPC.width = 30;
+            NPC.height = 28;
+            NPC.damage = 150;
+            NPC.defense = 45;
             NPC.lifeMax = 430000;
             NPC.HitSound = SoundID.NPCHit56;
-            NPC.DeathSound = SoundID.NPCDeath62;
+            NPC.DeathSound = SoundID.NPCDeath60;
             NPC.value = Item.buyPrice(platinum: 1, gold: 30);
             NPC.knockBackResist = 0f;
+            NPC.lavaImmune = true;
             NPC.noTileCollide = true;
             NPC.noGravity = true;
             NPC.behindTiles = true;
-            NPC.npcSlots = 20f;
+            NPC.netAlways = true;
+            NPC.npcSlots = 1f;
             NPC.aiStyle = -1;
-            NPC.alpha = 255;
 
             if (Main.expertMode) {
                 NPC.lifeMax = (int)(NPC.lifeMax * 1.35f);

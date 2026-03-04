@@ -41,20 +41,48 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
                     SkyManager.Instance.Activate(AoshunSky.name, NPC.Center);
             }
 
+            // 先选定目标再判定脱战
+            NPC.TargetClosest(true);
             Player player = Main.player[NPC.target];
 
-            // 攻击帧动画（龙息/大招时张嘴）
-            if (fireAttack || internalAI[0] >= 450) {
-                attackCounter++;
-                if (attackCounter > 10) {
-                    attackFrame++;
-                    attackCounter = 0;
+            // 玩家死亡则脱战（不限制白天/黑夜）
+            if (!player.active || player.dead) {
+                despawn = true;
+            }
+            if (despawn) {
+                NPC.velocity.Y += 0.11f;
+                NPC.ai[3]++;
+                if (NPC.ai[3] >= 300) {
+                    NPC.active = false;
+                    if (!VaultUtils.isServer && AoshunSky.name != null) {
+                        SkyManager.Instance.Deactivate(AoshunSky.name);
+                    }
                 }
-                if (attackFrame >= 3)
-                    attackFrame = 2;
+                return false;
             }
 
-            float dist = NPC.Distance(player.Center);
+            // 参考原型: 近距离判定（close时张嘴+喷息）
+            if (Vector2.Distance(NPC.Center, player.Center) <= 400) {
+                close = true;
+            }
+            else {
+                close = false;
+            }
+
+            // 近距离时喷射龙息弹幕（参考原型的breath逻辑）
+            if (close) {
+                Vector2 mouthPos = new Vector2(NPC.position.X + NPC.width / 2, NPC.position.Y + NPC.height / 2);
+                if (Main.rand.NextBool(7)) {
+                    int damage = Main.expertMode ? 35 : 50;
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), mouthPos.X + NPC.velocity.X, mouthPos.Y + NPC.velocity.Y,
+                        NPC.velocity.X * 0.8f + Main.rand.NextFloat(-0.7f, 0.7f) * 3,
+                        NPC.velocity.Y * 0.8f + Main.rand.NextFloat(-0.7f, 0.7f) * 3,
+                        ModContent.ProjectileType<AoshunThunderball>(), damage, 0f, Main.myPlayer);
+                    if (Main.rand.NextBool(2)) {
+                        SoundEngine.PlaySound(SoundID.DD2_BetsyFlameBreath, NPC.position);
+                    }
+                }
+            }
 
             // 攻击计时器循环
             internalAI[0]++;
@@ -62,16 +90,15 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
             // 选择下一次攻击类型
             if (internalAI[0] == 350) {
                 if (IsPhase2) {
-                    // 二阶段：激光大招有冷却
                     if (beamCooldown <= 0 && Main.rand.NextBool(4)) {
-                        internalAI[1] = 7; // 雷柱激光
+                        internalAI[1] = 7;
                     }
                     else {
-                        internalAI[1] = Main.rand.Next(Phase2AttackCount - 1); // 0-6
+                        internalAI[1] = Main.rand.Next(Phase2AttackCount - 1);
                     }
                 }
                 else {
-                    internalAI[1] = Main.rand.Next(Phase1AttackCount); // 0-4
+                    internalAI[1] = Main.rand.Next(Phase1AttackCount);
                 }
             }
 
@@ -84,90 +111,77 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
                 breathBurstCount = 0;
             }
 
-            // 龙息攻击（距离远时触发张嘴喷雷）
-            if (dist > 300 && Main.rand.NextBool(20) && !fireAttack && internalAI[0] < 300) {
-                fireAttack = true;
-            }
-
-            if (fireAttack) {
-                attackTimer++;
-                // 雷电粒子
-                if (!VaultUtils.isServer && attackTimer % 3 == 0) {
-                    Vector2 breathDir = NPC.velocity.SafeNormalize(Vector2.UnitY);
-                    for (int i = 0; i < 4; i++) {
-                        Vector2 dustVel = breathDir.RotatedByRandom(0.5f) * Main.rand.NextFloat(4, 8);
-                        int d = Dust.NewDust(NPC.Center + breathDir * 40f, 0, 0, DustID.Electric, dustVel.X, dustVel.Y, 180, default, 2f);
-                        Main.dust[d].noGravity = true;
-                    }
-                }
-                // 龙息期间发射雷锥
-                if (attackTimer % 12 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    AoshunAttacks.BreathLightning(NPC, Main.expertMode ? 4 : 2);
-                }
-                if (attackTimer >= 80) {
-                    fireAttack = false;
-                    attackTimer = 0;
-                    attackFrame = 0;
-                    attackCounter = 0;
-                }
-            }
-
-            // 出生粒子
-            if (NPC.alpha > 0) {
-                for (int spawnDust = 0; spawnDust < 2; spawnDust++) {
-                    int d = Dust.NewDust(new Vector2(NPC.position.X, NPC.position.Y), NPC.width, NPC.height,
-                        DustID.Electric, 0f, 0f, 100, default, 2f);
-                    Main.dust[d].noGravity = true;
-                }
-                NPC.alpha -= 12;
-                if (NPC.alpha < 0) NPC.alpha = 0;
-            }
-
-            // 朝向
-            NPC.spriteDirection = NPC.velocity.X > 0 ? -1 : 1;
-
-            NPC.ai[1]++;
-            if (NPC.ai[1] >= 1200)
-                NPC.ai[1] = 0;
-
-            NPC.TargetClosest(true);
-            if (!Main.player[NPC.target].active || Main.player[NPC.target].dead) {
-                NPC.TargetClosest(true);
-                if (!Main.player[NPC.target].active || Main.player[NPC.target].dead) {
-                    if (!VaultUtils.isServer && AoshunSky.name != null) {
-                        SkyManager.Instance.Deactivate(AoshunSky.name);
-                    }
-                    NPC.ai[3]++;
-                    NPC.velocity.Y += 0.11f;
-                    if (NPC.ai[3] >= 300)
-                        NPC.active = false;
-                }
-                else {
-                    NPC.ai[3] = 0;
-                }
-            }
-
-            // 蠕虫身体链生成
+            // 参考原型: 蠕虫身体链生成（Body和Arms交替 + Tail结尾）
             if (Main.netMode != NetmodeID.MultiplayerClient) {
                 if (NPC.ai[0] == 0) {
                     NPC.realLife = NPC.whoAmI;
                     int latestNPC = NPC.whoAmI;
-                    for (int i = 0; i < BodyFrameSequence.Length; ++i) {
-                        latestNPC = NPC.NewNPC(NPC.GetSource_FromAI(), (int)NPC.Center.X, (int)NPC.Center.Y,
-                            ModContent.NPCType<AoshunBody>(), NPC.whoAmI, 0, latestNPC);
+                    int randomWormLength = Main.rand.Next(25, 35);
+                    for (int i = 0; i < randomWormLength; i++) {
+                        int bodyType;
+                        if (i % 2 == 0) {
+                            bodyType = ModContent.NPCType<AoshunArms>();
+                        }
+                        else {
+                            bodyType = ModContent.NPCType<AoshunBody>();
+                        }
+                        latestNPC = NPC.NewNPC(NPC.GetSource_FromAI(), (int)NPC.position.X + NPC.width / 2, (int)NPC.position.Y + NPC.height / 2,
+                            bodyType, NPC.whoAmI, 0, latestNPC);
                         Main.npc[latestNPC].realLife = NPC.whoAmI;
                         Main.npc[latestNPC].ai[3] = NPC.whoAmI;
-                        Main.npc[latestNPC].netUpdate = true;
-                        Main.npc[latestNPC].ai[2] = BodyFrameSequence[i];
                     }
+                    // 尾部
+                    latestNPC = NPC.NewNPC(NPC.GetSource_FromAI(), (int)NPC.position.X + NPC.width / 2, (int)NPC.position.Y + NPC.height / 2,
+                        ModContent.NPCType<AoshunTail>(), NPC.whoAmI, 0, latestNPC);
+                    Main.npc[latestNPC].realLife = NPC.whoAmI;
+                    Main.npc[latestNPC].ai[3] = NPC.whoAmI;
+
                     NPC.ai[0] = 1;
-                    NPC.netUpdate2 = true;
+                    NPC.netUpdate = true;
                 }
             }
 
-            // 蠕虫移动AI - 二阶段加速
-            float speed = IsPhase2 ? 16f : 12f;
-            float acceleration = IsPhase2 ? 0.18f : 0.13f;
+            // 参考原型: 地形碰撞检测
+            int minTilePosX = (int)(NPC.position.X / 16.0) - 1;
+            int maxTilePosX = (int)((NPC.position.X + NPC.width) / 16.0) + 2;
+            int minTilePosY = (int)(NPC.position.Y / 16.0) - 1;
+            int maxTilePosY = (int)((NPC.position.Y + NPC.height) / 16.0) + 2;
+            if (minTilePosX < 0) minTilePosX = 0;
+            if (maxTilePosX > Main.maxTilesX) maxTilePosX = Main.maxTilesX;
+            if (minTilePosY < 0) minTilePosY = 0;
+            if (maxTilePosY > Main.maxTilesY) maxTilePosY = Main.maxTilesY;
+
+            bool collision = false;
+            for (int i = minTilePosX; i < maxTilePosX; ++i) {
+                for (int j = minTilePosY; j < maxTilePosY; ++j) {
+                    if (Main.tile[i, j] != null && (Main.tile[i, j].HasUnactuatedTile && (Main.tileSolid[Main.tile[i, j].TileType] ||
+                        Main.tileSolidTop[Main.tile[i, j].TileType] && Main.tile[i, j].TileFrameY == 0) ||
+                        Main.tile[i, j].LiquidAmount > 64)) {
+                        Vector2 tilePos;
+                        tilePos.X = i * 16;
+                        tilePos.Y = j * 16;
+                        if (NPC.position.X + NPC.width > tilePos.X && NPC.position.X < tilePos.X + 16.0 &&
+                            NPC.position.Y + NPC.height > (double)tilePos.Y && NPC.position.Y < tilePos.Y + 16.0) {
+                            collision = true;
+                            if (Main.rand.NextBool(100) && Main.tile[i, j].HasUnactuatedTile)
+                                WorldGen.KillTile(i, j, true, true, false);
+                        }
+                    }
+                }
+            }
+
+            // 参考原型: 远距离冲锋标记
+            if (Vector2.Distance(NPC.Center, player.Center) >= 500) {
+                chargePlayer = true;
+            }
+            if (Vector2.Distance(NPC.Center, player.Center) <= 350) {
+                chargePlayer = false;
+            }
+
+            // 蠕虫移动速度
+            float speed = 18f;
+            if (IsPhase2) speed = 25f;
+            float acceleration = 0.6f;
 
             Vector2 npcCenter = new Vector2(NPC.position.X + NPC.width * 0.5f, NPC.position.Y + NPC.height * 0.5f);
             float targetXPos = Main.player[NPC.target].position.X + Main.player[NPC.target].width / 2;
@@ -179,80 +193,106 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
             npcCenter.Y = (int)(npcCenter.Y / 16.0) * 16;
             float dirX = targetRoundedPosX - npcCenter.X;
             float dirY = targetRoundedPosY - npcCenter.Y;
-
             float length = (float)Math.Sqrt(dirX * dirX + dirY * dirY);
 
-            if (NPC.soundDelay == 0) {
-                float num1 = length / 40f;
-                if (num1 < 10.0) num1 = 10f;
-                if (num1 > 20.0) num1 = 20f;
-                NPC.soundDelay = (int)num1;
-            }
-
-            float absDirX = Math.Abs(dirX);
-            float absDirY = Math.Abs(dirY);
-            float newSpeed = speed / length;
-            dirX *= newSpeed;
-            dirY *= newSpeed;
-
-            if ((NPC.velocity.X > 0.0 && dirX > 0.0) || (NPC.velocity.X < 0.0 && dirX < 0.0) ||
-                (NPC.velocity.Y > 0.0 && dirY > 0.0) || (NPC.velocity.Y < 0.0 && dirY < 0.0)) {
-                if (NPC.velocity.X < dirX) NPC.velocity.X += acceleration;
-                else if (NPC.velocity.X > dirX) NPC.velocity.X -= acceleration;
-                if (NPC.velocity.Y < dirY) NPC.velocity.Y += acceleration;
-                else if (NPC.velocity.Y > dirY) NPC.velocity.Y -= acceleration;
-
-                if (Math.Abs(dirY) < speed * 0.2 && ((NPC.velocity.X > 0.0 && dirX < 0.0) || (NPC.velocity.X < 0.0 && dirX > 0.0))) {
-                    if (NPC.velocity.Y > 0.0) NPC.velocity.Y += acceleration * 2f;
-                    else NPC.velocity.Y -= acceleration * 2f;
+            // 参考原型: 非碰撞时下坠式蠕虫AI
+            if (!collision) {
+                NPC.TargetClosest(true);
+                NPC.velocity.Y += 0.11f;
+                if (NPC.velocity.Y > speed)
+                    NPC.velocity.Y = speed;
+                if (Math.Abs(NPC.velocity.X) + Math.Abs(NPC.velocity.Y) < speed * 0.4) {
+                    if (NPC.velocity.X < 0.0)
+                        NPC.velocity.X -= acceleration * 1.1f;
+                    else
+                        NPC.velocity.X += acceleration * 1.1f;
                 }
-                if (Math.Abs(dirX) < speed * 0.2 && ((NPC.velocity.Y > 0.0 && dirY < 0.0) || (NPC.velocity.Y < 0.0 && dirY > 0.0))) {
-                    if (NPC.velocity.X > 0.0) NPC.velocity.X += acceleration * 2f;
-                    else NPC.velocity.X -= acceleration * 2f;
+                else if (NPC.velocity.Y == speed) {
+                    if (NPC.velocity.X < dirX)
+                        NPC.velocity.X += acceleration;
+                    else if (NPC.velocity.X > dirX)
+                        NPC.velocity.X -= acceleration;
+                }
+                else if (NPC.velocity.Y > 4.0) {
+                    if (NPC.velocity.X < 0.0)
+                        NPC.velocity.X += acceleration * 0.9f;
+                    else
+                        NPC.velocity.X -= acceleration * 0.9f;
                 }
             }
-            else if (absDirX > absDirY) {
-                if (NPC.velocity.X < dirX) NPC.velocity.X += acceleration * 1.1f;
-                else if (NPC.velocity.X > dirX) NPC.velocity.X -= acceleration * 1.1f;
-                if (Math.Abs(NPC.velocity.X) + Math.Abs(NPC.velocity.Y) < speed * 0.5) {
-                    if (NPC.velocity.Y > 0.0) NPC.velocity.Y += acceleration;
-                    else NPC.velocity.Y -= acceleration;
+
+            // 参考原型: 碰撞或冲锋时挖掘式蠕虫AI
+            if (collision || chargePlayer) {
+                if (NPC.soundDelay == 0) {
+                    float num1 = length / 40f;
+                    if (num1 < 10.0) num1 = 10f;
+                    if (num1 > 20.0) num1 = 20f;
+                    NPC.soundDelay = (int)num1;
+                    SoundEngine.PlaySound(SoundID.WormDig, NPC.position);
                 }
-            }
-            else {
-                if (NPC.velocity.Y < dirY) NPC.velocity.Y += acceleration * 1.1f;
-                else if (NPC.velocity.Y > dirY) NPC.velocity.Y -= acceleration * 1.1f;
-                if (Math.Abs(NPC.velocity.X) + Math.Abs(NPC.velocity.Y) < speed * 0.5) {
-                    if (NPC.velocity.X > 0.0) NPC.velocity.X += acceleration;
-                    else NPC.velocity.X -= acceleration;
+
+                float absDirX = Math.Abs(dirX);
+                float absDirY = Math.Abs(dirY);
+                float newSpeed = speed / length;
+                dirX *= newSpeed;
+                dirY *= newSpeed;
+
+                if ((NPC.velocity.X > 0.0 && dirX > 0.0) || (NPC.velocity.X < 0.0 && dirX < 0.0) ||
+                    (NPC.velocity.Y > 0.0 && dirY > 0.0) || (NPC.velocity.Y < 0.0 && dirY < 0.0)) {
+                    if (NPC.velocity.X < dirX) NPC.velocity.X += acceleration;
+                    else if (NPC.velocity.X > dirX) NPC.velocity.X -= acceleration;
+                    if (NPC.velocity.Y < dirY) NPC.velocity.Y += acceleration;
+                    else if (NPC.velocity.Y > dirY) NPC.velocity.Y -= acceleration;
+
+                    if (Math.Abs(dirY) < speed * 0.2 && ((NPC.velocity.X > 0.0 && dirX < 0.0) || (NPC.velocity.X < 0.0 && dirX > 0.0))) {
+                        if (NPC.velocity.Y > 0.0) NPC.velocity.Y += acceleration * 2f;
+                        else NPC.velocity.Y -= acceleration * 2f;
+                    }
+                    if (Math.Abs(dirX) < speed * 0.2 && ((NPC.velocity.Y > 0.0 && dirY < 0.0) || (NPC.velocity.Y < 0.0 && dirY > 0.0))) {
+                        if (NPC.velocity.X > 0.0) NPC.velocity.X += acceleration * 2f;
+                        else NPC.velocity.X -= acceleration * 2f;
+                    }
+                }
+                else if (absDirX > absDirY) {
+                    if (NPC.velocity.X < dirX) NPC.velocity.X += acceleration * 1.1f;
+                    else if (NPC.velocity.X > dirX) NPC.velocity.X -= acceleration * 1.1f;
+                    if (Math.Abs(NPC.velocity.X) + Math.Abs(NPC.velocity.Y) < speed * 0.5) {
+                        if (NPC.velocity.Y > 0.0) NPC.velocity.Y += acceleration;
+                        else NPC.velocity.Y -= acceleration;
+                    }
+                }
+                else {
+                    if (NPC.velocity.Y < dirY) NPC.velocity.Y += acceleration * 1.1f;
+                    else if (NPC.velocity.Y > dirY) NPC.velocity.Y -= acceleration * 1.1f;
+                    if (Math.Abs(NPC.velocity.X) + Math.Abs(NPC.velocity.Y) < speed * 0.5) {
+                        if (NPC.velocity.X > 0.0) NPC.velocity.X += acceleration;
+                        else NPC.velocity.X -= acceleration;
+                    }
                 }
             }
 
             NPC.rotation = (float)Math.Atan2(NPC.velocity.Y, NPC.velocity.X) + 1.57f;
 
-            // 脱战
-            if (Main.player[NPC.target].dead ||
-                Math.Abs(NPC.position.X - Main.player[NPC.target].position.X) > 6000f ||
-                Math.Abs(NPC.position.Y - Main.player[NPC.target].position.Y) > 6000f) {
-                NPC.velocity.Y -= 1f;
-                if (NPC.position.Y < 0) {
-                    NPC.velocity.Y -= 1f;
-                }
-                if (NPC.position.Y < 0) {
-                    for (int i = 0; i < 200; i++) {
-                        if (Main.npc[i].aiStyle == NPC.aiStyle)
-                            Main.npc[i].active = false;
-                    }
-                }
+            // 参考原型: 朝向
+            if (NPC.velocity.X < 0f)
+                NPC.spriteDirection = 1;
+            else
+                NPC.spriteDirection = -1;
+
+            if (collision) {
+                if (NPC.localAI[0] != 1)
+                    NPC.netUpdate = true;
+                NPC.localAI[0] = 1f;
+            }
+            else {
+                if (NPC.localAI[0] != 0.0)
+                    NPC.netUpdate = true;
+                NPC.localAI[0] = 0.0f;
             }
 
             if ((NPC.velocity.X > 0.0 && NPC.oldVelocity.X < 0.0 || NPC.velocity.X < 0.0 && NPC.oldVelocity.X > 0.0 ||
                  NPC.velocity.Y > 0.0 && NPC.oldVelocity.Y < 0.0 || NPC.velocity.Y < 0.0 && NPC.oldVelocity.Y > 0.0) && !NPC.justHit)
                 NPC.netUpdate = true;
-
-            // 雷电光照（二阶段更亮）
-            float lightMul = IsPhase2 ? 1.5f : 1f;
-            Lighting.AddLight(NPC.Center, new Vector3(0.4f, 0.3f, 0.8f) * glowIntensity * lightMul);
 
             return false;
         }
@@ -308,7 +348,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 
                 case 4:
                     // 追踪雷球连射（3波）
-                    if ((internalAI[0] == 320 || internalAI[0] == 350 || internalAI[0] == 380)) {
+                    if (internalAI[0] == 320 || internalAI[0] == 350 || internalAI[0] == 380) {
                         int count = Main.expertMode ? 6 : 4;
                         if (IsPhase2) count += 2;
                         AoshunAttacks.HomingThunderBurst(npc, count);
