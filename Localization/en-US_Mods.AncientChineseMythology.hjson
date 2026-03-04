@@ -1289,6 +1289,83 @@ Items: {
 			Every 3rd use conjures a Leaf Storm Vortex with gravitational pull
 			'''
 	}
+
+	ProfaneDismemberer: {
+		DisplayName: Profane Dismemberer
+		Tooltip:
+			'''
+			A horrific greatsword forged from profane flesh
+			Three-hit combo: horizontal slash, upswing, down-chop
+			Releases dark blood-flesh waves along swing arc
+			Down-chop deals 30% more damage and shakes the ground
+			'''
+	}
+
+	GluttonousFleshrang: {
+		DisplayName: Gluttonous Fleshrang
+		Tooltip:
+			'''
+			A boomerang wrapped in living flesh
+			Return hit deals 80% more damage
+			Leeches a small amount of life on hit
+			Every 4 hits releases homing flesh tendrils
+			'''
+	}
+
+	TwitchingTendonBow: {
+		DisplayName: Twitching Tendon Bow
+		Tooltip:
+			'''
+			An eerie longbow woven from twitching tendons
+			Fires penetrating spine bolts with spiral fragments
+			Every 3rd shot conjures a homing aberrant eyeball
+			Eyeball bursts into homing flesh tendrils on impact
+			'''
+	}
+
+	VisceraSpitter: {
+		DisplayName: Viscera Spitter
+		Tooltip:
+			'''
+			A writhing flesh-barrel gun spitting high-speed blood bullets
+			Five-round burst of penetrating blood projectiles
+			Every 25th shot conjures a massive viscera glob
+			Viscera glob explodes into homing flesh tendrils
+			'''
+	}
+
+	BurstingTumorBomb: {
+		DisplayName: Bursting Tumor Bomb
+		Tooltip:
+			'''
+			A pressurized swollen tumor throwable
+			Arcs through the air and bounces once
+			Explodes into 8 homing flesh fragments
+			Deals massive area blood-blast damage
+			'''
+	}
+
+	GazingFleshGrimoire: {
+		DisplayName: Gazing Flesh Grimoire
+		Tooltip:
+			'''
+			A forbidden tome sealed in flesh
+			Fan-sprays 10 blood bolts in a spread
+			Every 4th cast releases a homing gazing eyeball
+			Eyeball bursts into 8 homing tendrils on impact
+			'''
+	}
+
+	AberrantEyeStaff: {
+		DisplayName: Aberrant Eye Staff
+		Tooltip:
+			'''
+			A grotesque staff formed from countless aberrant eyes
+			Continuously releases homing flesh tendrils
+			Every 6th release conjures a homing aberrant eyeball
+			Eyeball bursts into a ring of blood projectiles
+			'''
+	}
 }
 
 NPCs: {
@@ -1782,6 +1859,23 @@ Projectiles: {
 	ArrogantSylvanTomeLeaf.DisplayName: Arrogant Sylvan Tome Leaf
 	ArrogantSylvanTomePetal.DisplayName: Arrogant Sylvan Tome Petal
 	ArrogantSylvanLeafVortex.DisplayName: Arrogant Sylvan Leaf Vortex
+	ProfaneDismembererSwing.DisplayName: Profane Dismemberer Swing
+	ProfaneFleshWave.DisplayName: Profane Flesh Wave
+	GluttonousFleshrangProj.DisplayName: Gluttonous Fleshrang
+	ProfaneTendrilChaser.DisplayName: Profane Tendril Chaser
+	TendonSpineBolt.DisplayName: Tendon Spine Bolt
+	TendonSpiralBlade.DisplayName: Tendon Spiral Blade
+	TendonEyeballShot.DisplayName: Tendon Eyeball Shot
+	VisceraBloodBullet.DisplayName: Viscera Blood Bullet
+	VisceraGlobShot.DisplayName: Viscera Glob Shot
+	VisceraBlastExplosion.DisplayName: Viscera Blast Explosion
+	TumorBombProj.DisplayName: Tumor Bomb
+	TumorBlastVFX.DisplayName: Tumor Blast
+	TumorFragment.DisplayName: Tumor Fragment
+	GrimoireBloodBolt.DisplayName: Grimoire Blood Bolt
+	GrimoireGazingEye.DisplayName: Grimoire Gazing Eye
+	AberrantEyeballProj.DisplayName: Aberrant Eyeball
+	AberrantBloodBurst.DisplayName: Aberrant Blood Burst
 }
 
 HeavenBiome.DisplayName: Heaven

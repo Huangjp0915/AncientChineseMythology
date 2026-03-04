@@ -1411,6 +1411,83 @@ Items: {
 			每三次使用凝聚叶暴漩涡，引力吸拢万物
 			'''
 	}
+
+	ProfaneDismemberer: {
+		DisplayName: 亵渎肢解刃
+		Tooltip:
+			'''
+			由亵渎血肉凝聚而成的恐怖巨剑
+			三段连击：横斩→上挑→下劈
+			挥斩沿途释放暗红血肉波
+			下劈威力提升30%并震撼地面
+			'''
+	}
+
+	GluttonousFleshrang: {
+		DisplayName: 贪噬肉旋
+		Tooltip:
+			'''
+			被活物血肉包裹的回旋利器
+			返回时伤害提升80%
+			命中敌人吸取少量生命值
+			每累积4次命中释放追踪血肉触手
+			'''
+	}
+
+	TwitchingTendonBow: {
+		DisplayName: 搐筋弓
+		Tooltip:
+			'''
+			由跳动筋腱编织的诡异长弓
+			发射穿透脊椎箭矢，附带旋转碎片
+			每三发凝聚一颗追踪畸变眼球
+			眼球碰撞后爆裂为追踪血肉触手
+			'''
+	}
+
+	VisceraSpitter: {
+		DisplayName: 脏器喷吐枪
+		Tooltip:
+			'''
+			蠕动的血肉枪管喷射高速血弹
+			五连发高速穿透血液弹丸
+			每25发凝聚一颗巨型脏器弹
+			脏器弹爆炸释放追踪血肉触手
+			'''
+	}
+
+	BurstingTumorBomb: {
+		DisplayName: 爆裂肉瘤
+		Tooltip:
+			'''
+			充满压力的肿胀肉瘤投掷物
+			弧线飞行并可弹跳一次
+			爆炸释放8道追踪血肉碎片
+			造成大范围血液爆破伤害
+			'''
+	}
+
+	GazingFleshGrimoire: {
+		DisplayName: 凝视肉典
+		Tooltip:
+			'''
+			以血肉封印的禁忌魔法书
+			扇形散射10道血液弹幕
+			每四次施法释放追踪巨型凝视眼球
+			眼球爆裂释放8道追踪触手
+			'''
+	}
+
+	AberrantEyeStaff: {
+		DisplayName: 畸变眼球杖
+		Tooltip:
+			'''
+			由无数畸变眼球凝聚的诡异法杖
+			连续释放追踪血肉触手
+			每6次释放追踪畸变眼球弹
+			眼球爆裂释放环形血液弹幕
+			'''
+	}
 }
 
 NPCs: {
@@ -1904,6 +1981,23 @@ Projectiles: {
 	ArrogantSylvanTomeLeaf.DisplayName: 傲世叶刃
 	ArrogantSylvanTomePetal.DisplayName: 傲世花瓣
 	ArrogantSylvanLeafVortex.DisplayName: 傲世叶暴漩涡
+	ProfaneDismembererSwing.DisplayName: 亵渎肢解刃挥斩
+	ProfaneFleshWave.DisplayName: 亵渎血肉波
+	GluttonousFleshrangProj.DisplayName: 贪噬肉旋
+	ProfaneTendrilChaser.DisplayName: 亵渎血肉触手
+	TendonSpineBolt.DisplayName: 搐筋脊椎箭
+	TendonSpiralBlade.DisplayName: 搐筋旋转碎片
+	TendonEyeballShot.DisplayName: 畸变眼球弹
+	VisceraBloodBullet.DisplayName: 血液弹丸
+	VisceraGlobShot.DisplayName: 脏器弹
+	VisceraBlastExplosion.DisplayName: 脏器爆炸
+	TumorBombProj.DisplayName: 爆裂肉瘤
+	TumorBlastVFX.DisplayName: 肉瘤爆炸
+	TumorFragment.DisplayName: 血肉碎片
+	GrimoireBloodBolt.DisplayName: 血液弹
+	GrimoireGazingEye.DisplayName: 凝视之眼
+	AberrantEyeballProj.DisplayName: 畸变眼球
+	AberrantBloodBurst.DisplayName: 血液爆射
 }
 
 HeavenBiome.DisplayName: Heaven
