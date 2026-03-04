@@ -1,7 +1,11 @@
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Graphics;
+using ReLogic.Content;
 using System;
 using Terraria;
+using Terraria.GameContent;
 using Terraria.ID;
+using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 {
@@ -11,6 +15,17 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
     /// </summary>
     public static class YinEmperorHelper
     {
+        public static string Path => typeof(YinEmperorHelper).Namespace.Replace(".", "/") + "/";
+
+        #region 纹理资源
+
+        private static Asset<Texture2D> _ringTexture;
+
+        /// <summary>帝冥法环纹理</summary>
+        public static Texture2D RingTexture => (_ringTexture ??= ModContent.Request<Texture2D>(Path + "YinEmperorRing")).Value;
+
+        #endregion
+
         #region 帝冥配色方案
 
         /// <summary>帝冥金 - 腐朽皇权</summary>
@@ -333,6 +348,52 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         }
 
         #endregion
+
+        /// <summary>
+        /// 绘制帝冥法环 - Boss背后旋转的巨大圆环
+        /// 使用YinEmperorRing.png纹理，多层叠加营造威压感
+        /// </summary>
+        public static void DrawImperialRing(SpriteBatch sb, Vector2 center, float scale,
+            float rotation, float pulsePhase, float alpha) {
+            var tex = RingTexture;
+            if (tex == null) return;
+
+            Vector2 origin = tex.Size() / 2f;
+
+            // === 第1层：最外层暗紫晕染 ===
+            Color outerGlow = AbyssPurple;
+            outerGlow.A = 0;
+            float outerPulse = 1f + MathF.Sin(pulsePhase * 0.8f) * 0.05f;
+            sb.Draw(tex, center - Main.screenPosition, null, outerGlow * alpha * 0.15f,
+                rotation * 0.3f, origin, scale * 1.15f * outerPulse, SpriteEffects.None, 0);
+
+            // === 第2层：金色主环 ===
+            Color goldRing = ImperialGold;
+            goldRing.A = 0;
+            float mainPulse = 1f + MathF.Sin(pulsePhase) * 0.03f;
+            sb.Draw(tex, center - Main.screenPosition, null, goldRing * alpha * 0.6f,
+                rotation, origin, scale * mainPulse, SpriteEffects.None, 0);
+
+            // === 第3层：反向旋转的幽暗层 ===
+            Color darkRing = ShadowBlack;
+            darkRing.A = 0;
+            sb.Draw(tex, center - Main.screenPosition, null, darkRing * alpha * 0.25f,
+                -rotation * 0.6f, origin, scale * 0.95f, SpriteEffects.None, 0);
+
+            // === 第4层：内层高亮边缘 ===
+            Color highlight = DragonVeinGold;
+            highlight.A = 0;
+            float innerPulse = 1f + MathF.Sin(pulsePhase * 1.5f) * 0.06f;
+            sb.Draw(tex, center - Main.screenPosition, null, highlight * alpha * 0.3f,
+                rotation * 1.2f, origin, scale * 0.88f * innerPulse, SpriteEffects.None, 0);
+
+            // === 第5层：白色呼吸高光 ===
+            Color white = Color.White;
+            white.A = 0;
+            float breathAlpha = (MathF.Sin(pulsePhase * 0.6f) * 0.5f + 0.5f) * 0.08f;
+            sb.Draw(tex, center - Main.screenPosition, null, white * alpha * breathAlpha,
+                rotation, origin, scale * mainPulse, SpriteEffects.None, 0);
+        }
 
         #region 工具方法
 

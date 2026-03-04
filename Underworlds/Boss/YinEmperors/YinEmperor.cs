@@ -38,9 +38,9 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             Intro,              // 出场演出
             ImperialHover,      // 帝冥悬浮（基础移动+弹幕）
             DragonSweep,        // 龙气横扫（冲刺攻击）
-            NetherDecree,       // 冥谕降罚（天降雷柱）
-            SoulSeal,           // 镇魂封印（范围控制）
-            ImperialWrath       // 帝怒（狂暴连击，阶段1特殊技）
+            NetherDecree,       // 冥谕降罚（天降雷柱+冥眼列阵激光）
+            SoulSeal,           // 镇魂封印（冥眼环绕冲锋限制走位）
+            ImperialWrath       // 帝怒（狂暴连击+冥眼守卫环绕）
         }
 
         private AIState CurrentState {
@@ -80,6 +80,11 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         private int dashCount;
         private Vector2 dashTarget;
         private int sweepDirection;
+
+        // 法环
+        private float ringRotation;
+        private float ringScale;
+        private float ringAlpha;
 
         #endregion
 
@@ -197,8 +202,15 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             // 视觉效果更新
             pulsePhase += 0.06f;
             auraRotation += 0.015f;
+            ringRotation += 0.008f;
             hoverOffset = MathF.Sin(pulsePhase * 0.4f) * 8f;
             UpdateEnergyWaves();
+
+            // 法环逐渐显现（出场后）
+            if (CurrentState != AIState.Intro) {
+                ringScale = MathHelper.Lerp(ringScale, 2.5f, 0.01f);
+                ringAlpha = MathHelper.Lerp(ringAlpha, 0.7f, 0.015f);
+            }
 
             // 目标验证
             NPC.TargetClosest();
@@ -526,8 +538,9 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         }
 
         /// <summary>
-        /// 冥谕降罚 - 天降帝冥雷柱
-        /// 悬浮在高处，在玩家周围降下多道冥雷柱
+        /// 冥谕降罚 - 召唤冥眼列阵释放柱状激光
+        /// 在玩家两侧排列冥眼，蓄力后齐射巨大激光柱
+        /// 同时伴随冥雷粒子效果
         /// </summary>
         private void RunNetherDecree(Player target) {
             // 飞到高处
@@ -544,57 +557,38 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 }
             }
 
-            // 释放冥雷柱
-            if (PhaseTimer >= 60 && PhaseTimer <= 180 && PhaseTimer % 30 == 0) {
-                int pillarCount = 2;
-                for (int i = 0; i < pillarCount; i++) {
-                    Vector2 strikePos = target.Center + Main.rand.NextVector2Circular(250f, 100f);
-                    strikePos.Y = target.Center.Y + 50f; // 地面位置
-
-                    // 冥雷粒子效果
-                    if (Main.netMode != NetmodeID.Server) {
-                        Vector2 top = strikePos - new Vector2(0, 700f);
-                        YinEmperorHelper.CreateNetherLightningPillar(top, strikePos, 1f);
-                    }
-
-                    // 落点爆炸
-                    YinEmperorHelper.CreateDragonBurst(strikePos, 80f, 2, 12);
-
-                    SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.4f, Volume = 1.1f }, strikePos);
-
-                    // 发射弹幕（标记落点）
-                    if (Main.netMode != NetmodeID.MultiplayerClient) {
-                        // TODO: 创建冥雷柱弹幕类后替换
-                        // 暂用地面扩散弹模拟
-                        int damage = YinEmperorHelper.GetScaledDamage(100);
-                        for (int j = 0; j < 4; j++) {
-                            float angle = MathHelper.PiOver2 + (j - 1.5f) * 0.4f;
-                            Vector2 dir = angle.ToRotationVector2();
-                            Projectile.NewProjectile(
-                                NPC.GetSource_FromAI(), strikePos, dir * 8f,
-                                ProjectileID.CultistBossLightningOrb, damage, 2f,
-                                Main.myPlayer
-                            );
-                        }
-                    }
-                }
+            // 召唤冥眼列阵（两波）
+            if (PhaseTimer == 60 && Main.netMode != NetmodeID.MultiplayerClient) {
+                SpawnEyeLaserFormation(target, -1); // 左侧列阵
+            }
+            if (PhaseTimer == 120 && Main.netMode != NetmodeID.MultiplayerClient) {
+                SpawnEyeLaserFormation(target, 1);  // 右侧列阵
             }
 
-            // 持续施放环绕弹幕
+            // 冥雷粒子装饰
+            if (PhaseTimer >= 60 && PhaseTimer <= 180 && PhaseTimer % 30 == 0 && Main.netMode != NetmodeID.Server) {
+                float lightningX = target.Center.X + Main.rand.NextFloat(-300f, 300f);
+                Vector2 top = new Vector2(lightningX, target.Center.Y - 600f);
+                Vector2 bottom = new Vector2(lightningX, target.Center.Y + 100f);
+                YinEmperorHelper.CreateNetherLightningPillar(top, bottom, 0.8f);
+                SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.4f, Volume = 0.8f }, new Vector2(lightningX, target.Center.Y));
+            }
+
+            // 持续施放追踪弹
             if (PhaseTimer >= 80 && AttackTimer % 60 == 0) {
                 ShootImperialBolts(target);
             }
 
             auraIntensity = MathHelper.Lerp(auraIntensity, 1f, 0.01f);
 
-            if (PhaseTimer > 220) {
+            if (PhaseTimer > 250) {
                 ChooseNextPhase1State();
             }
         }
 
         /// <summary>
-        /// 镇魂封印 - 范围控制攻击
-        /// 以自身为中心释放封印法阵，对范围内玩家造成持续伤害
+        /// 镇魂封印 - 冥眼环绕冲锋
+        /// 召唤一圈冥眼环绕玩家旋转收缩，限制走位后同时冲向玩家
         /// </summary>
         private void RunSoulSeal(Player target) {
             // 缓慢逼近玩家
@@ -621,51 +615,29 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                     SoundEngine.PlaySound(SoundID.Item117 with { Pitch = 0.2f, Volume = 1.2f }, NPC.Center);
                 }
             }
-            // 封印激活 - 释放环形弹幕波
+            // 封印激活 - 召唤冥眼环绕冲锋
             else if (PhaseTimer == 60) {
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
-                    int sealProjectiles = 16;
-                    int damage = YinEmperorHelper.GetScaledDamage(85);
-                    for (int i = 0; i < sealProjectiles; i++) {
-                        float angle = MathHelper.TwoPi * i / sealProjectiles;
-                        Vector2 dir = angle.ToRotationVector2();
-                        Projectile.NewProjectile(
-                            NPC.GetSource_FromAI(), NPC.Center, dir * 10f,
-                            ProjectileID.CultistBossFireBall, damage, 1f,
-                            Main.myPlayer
-                        );
-                    }
+                    SpawnEncirclingEyes(target, 8);
                 }
 
                 YinEmperorHelper.CreateDragonBurst(NPC.Center, 120f, 3, 20);
                 TriggerEnergyWave();
                 SoundEngine.PlaySound(SoundID.Item71 with { Pitch = -0.2f, Volume = 1.3f }, NPC.Center);
             }
-            // 封印持续中 - 缓慢追踪弹
-            else if (PhaseTimer < 160 && AttackTimer % 40 == 0) {
-                if (Main.netMode != NetmodeID.MultiplayerClient) {
-                    int damage = YinEmperorHelper.GetScaledDamage(70);
-                    Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
-                    for (int i = 0; i < 3; i++) {
-                        float spreadAngle = (i - 1) * 0.3f;
-                        Vector2 dir = toPlayer.RotatedBy(spreadAngle);
-                        Projectile.NewProjectile(
-                            NPC.GetSource_FromAI(), NPC.Center + dir * 50f, dir * 12f,
-                            ProjectileID.CultistBossFireBall, damage, 1f,
-                            Main.myPlayer
-                        );
-                    }
-                }
+            // 封印持续中 - 从Boss射出追踪弹补充压力
+            else if (PhaseTimer > 100 && PhaseTimer < 200 && AttackTimer % 50 == 0) {
+                ShootImperialBolts(target);
             }
 
-            if (PhaseTimer > 200) {
+            if (PhaseTimer > 280) {
                 ChooseNextPhase1State();
             }
         }
 
         /// <summary>
         /// 帝怒 - 阶段1特殊技能
-        /// 快速连续攻击，冲刺+弹幕交替
+        /// 快速连续攻击，召唤守卫冥眼+帝冥追踪弹交替
         /// </summary>
         private void RunImperialWrath(Player target) {
             // 追踪逼近
@@ -676,22 +648,27 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             // 帝王拖尾
             YinEmperorHelper.CreateImperialTrail(NPC.Center, NPC.velocity, 1.5f);
 
-            // 高频弹幕
-            if (AttackTimer % 20 == 0) {
+            // 开始时召唤守卫冥眼环绕
+            if (PhaseTimer == 1 && Main.netMode != NetmodeID.MultiplayerClient) {
+                SpawnGuardianEyes(4);
+            }
+
+            // 高频帝冥追踪弹
+            if (AttackTimer % 25 == 0) {
                 ShootImperialBolts(target);
             }
 
-            // 间歇性龙气冲击波
-            if (AttackTimer % 60 == 30) {
+            // 间歇性环形帝冥追踪弹波
+            if (AttackTimer % 70 == 35) {
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
-                    int count = 12;
-                    int damage = YinEmperorHelper.GetScaledDamage(80);
+                    int count = 10;
+                    int damage = YinEmperorHelper.GetScaledDamage(75);
                     for (int i = 0; i < count; i++) {
                         float angle = MathHelper.TwoPi * i / count;
                         Vector2 dir = angle.ToRotationVector2();
                         Projectile.NewProjectile(
                             NPC.GetSource_FromAI(), NPC.Center, dir * 9f,
-                            ProjectileID.CultistBossFireBall, damage, 1f,
+                            ModContent.ProjectileType<YinEmperorBolt>(), damage, 1f,
                             Main.myPlayer
                         );
                     }
@@ -719,7 +696,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
         #region 攻击方法
 
-        /// <summary>帝冥弹 - 扇形金紫能量弹</summary>
+        /// <summary>帝冥弹 - 扇形金紫追踪能量弹</summary>
         private void ShootImperialBolts(Player target) {
             if (Main.netMode == NetmodeID.MultiplayerClient)
                 return;
@@ -738,7 +715,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                     NPC.GetSource_FromAI(),
                     NPC.Center + direction * 60f,
                     direction * speed,
-                    ProjectileID.CultistBossFireBall,
+                    ModContent.ProjectileType<YinEmperorBolt>(),
                     damage, 1f, Main.myPlayer
                 );
             }
@@ -747,7 +724,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             YinEmperorHelper.CreateDragonBurst(NPC.Center, 40f, 1, 6);
         }
 
-        /// <summary>地面符文 - 在玩家脚下标记封印区域</summary>
+        /// <summary>地面符文 - 在玩家脚下召唤冥眼从地下射出激光柱</summary>
         private void ShootGroundSeals(Player target) {
             if (Main.netMode == NetmodeID.MultiplayerClient)
                 return;
@@ -770,18 +747,96 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                     }
                 }
 
-                // 从下方射出弹幕
+                // 从下方射出帝冥追踪弹
                 Projectile.NewProjectile(
                     NPC.GetSource_FromAI(),
                     sealPos + new Vector2(0, 300f),
                     new Vector2(0, -12f),
-                    ProjectileID.CultistBossLightningOrb,
+                    ModContent.ProjectileType<YinEmperorBolt>(),
                     damage, 1f, Main.myPlayer
                 );
             }
 
             SoundEngine.PlaySound(SoundID.Item117 with { Pitch = -0.2f, Volume = 0.9f }, target.Center);
         }
+
+        #region 冥眼召唤方法
+
+        /// <summary>召唤冥眼列阵（激光模式）- 在玩家侧面排列眼睛</summary>
+        private void SpawnEyeLaserFormation(Player target, int side) {
+            int eyeCount = 4;
+            float spacing = 120f;
+            float sideOffset = 400f * side;
+            int damage = YinEmperorHelper.GetScaledDamage(110);
+
+            for (int i = 0; i < eyeCount; i++) {
+                float yOffset = (i - (eyeCount - 1) / 2f) * spacing;
+                Vector2 spawnPos = target.Center + new Vector2(sideOffset, yOffset);
+
+                // 飞向目标位置的初速度
+                Vector2 toPos = (spawnPos - NPC.Center).SafeNormalize(Vector2.UnitX) * 8f;
+
+                Projectile.NewProjectile(
+                    NPC.GetSource_FromAI(),
+                    NPC.Center,
+                    toPos,
+                    ModContent.ProjectileType<ArenaEdge>(),
+                    damage, 2f, Main.myPlayer,
+                    ai0: 0, // 激光模式
+                    ai1: i  // 阵列索引
+                );
+            }
+
+            SoundEngine.PlaySound(SoundID.Item117 with { Pitch = 0.1f, Volume = 1f }, NPC.Center);
+            YinEmperorHelper.CreateDragonBurst(NPC.Center, 60f, 2, 10);
+        }
+
+        /// <summary>召唤冥眼环绕冲锋 - 一圈眼睛围住玩家后冲向中心</summary>
+        private void SpawnEncirclingEyes(Player target, int count) {
+            int damage = YinEmperorHelper.GetScaledDamage(95);
+
+            for (int i = 0; i < count; i++) {
+                float angle = MathHelper.TwoPi * i / count;
+                Vector2 spawnPos = target.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 400f;
+                Vector2 toTarget = (target.Center - spawnPos).SafeNormalize(Vector2.Zero) * 6f;
+
+                Projectile.NewProjectile(
+                    NPC.GetSource_FromAI(),
+                    spawnPos,
+                    toTarget,
+                    ModContent.ProjectileType<ArenaEdge>(),
+                    damage, 2f, Main.myPlayer,
+                    ai0: 1,    // 环绕冲锋模式
+                    ai1: angle // 初始角度偏移
+                );
+            }
+
+            SoundEngine.PlaySound(SoundID.Item71 with { Pitch = -0.2f, Volume = 1.2f }, target.Center);
+        }
+
+        /// <summary>召唤守卫冥眼 - 环绕Boss旋转并发射追踪弹</summary>
+        private void SpawnGuardianEyes(int count) {
+            int damage = YinEmperorHelper.GetScaledDamage(65);
+
+            for (int i = 0; i < count; i++) {
+                float angle = MathHelper.TwoPi * i / count;
+                Vector2 spawnPos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 130f;
+
+                Projectile.NewProjectile(
+                    NPC.GetSource_FromAI(),
+                    spawnPos,
+                    Vector2.Zero,
+                    ModContent.ProjectileType<ArenaEdge>(),
+                    damage, 1f, Main.myPlayer,
+                    ai0: 2,    // 守卫环绕模式
+                    ai1: angle // 初始角度偏移
+                );
+            }
+
+            SoundEngine.PlaySound(SoundID.Item8 with { Pitch = 0.4f, Volume = 0.9f }, NPC.Center);
+        }
+
+        #endregion
 
         #endregion
 
@@ -876,6 +931,12 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             if (introPillarAlpha > 0.01f) {
                 YinEmperorHelper.DrawDragonPillar(spriteBatch, NPC.Center + new Vector2(0, frameHeight * 0.4f),
                     800f, 60f, pulsePhase, introPillarAlpha);
+            }
+
+            // 帝冥法环（Boss背后的旋转巨环）
+            if (ringAlpha > 0.01f) {
+                YinEmperorHelper.DrawImperialRing(spriteBatch, NPC.Center, ringScale,
+                    ringRotation, pulsePhase, ringAlpha * ((255 - NPC.alpha) / 255f));
             }
 
             // 帝冥光环

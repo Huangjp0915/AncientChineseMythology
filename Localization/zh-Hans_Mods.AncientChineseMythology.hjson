@@ -1672,6 +1672,9 @@ Projectiles: {
 	FateMarkProj.DisplayName: 命运烙印
 	SingularityBombProj.DisplayName: 奇点炸弹
 	SingularityEcho.DisplayName: 奇点回响
+	// ArenaEdge.DisplayName: Arena Edge
+	// YinEmperorBolt.DisplayName: Yin Emperor Bolt
+	// YinEmperorLaser.DisplayName: Yin Emperor Laser
 }
 
 HeavenBiome.DisplayName: Heaven
