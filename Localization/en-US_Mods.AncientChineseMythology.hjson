@@ -956,6 +956,16 @@ Items: {
 		Tooltip: ""
 	}
 
+	HeavenInvasionSummon: {
+		DisplayName: Heavenly Court Token
+		Tooltip:
+			'''
+			Summons the Heavenly Court Invasion
+			Four heavenly pillars will descend, divine soldiers will swarm
+			Defeat all heavenly enemies to end the event
+			'''
+	}
+
 	SoulFragment: {
 		DisplayName: Soul Fragment
 		Tooltip: ""

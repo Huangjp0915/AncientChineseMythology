@@ -1005,6 +1005,16 @@ Items: {
 		Tooltip: ""
 	}
 
+	HeavenInvasionSummon: {
+		DisplayName: 天庭令牌
+		Tooltip:
+			'''
+			召唤天庭入侵事件
+			四方天柱将降临于你身边，神兵天将蜂拥而至
+			击退所有天庭敌怪以结束事件
+			'''
+	}
+
 	SoulFragment: {
 		DisplayName: 残魂
 		Tooltip: ""

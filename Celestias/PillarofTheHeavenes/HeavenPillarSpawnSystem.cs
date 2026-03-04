@@ -1,6 +1,7 @@
 ﻿using AncientChineseMythology.Celestias.PillarofTheHeavenes.Enemys;
 using System;
 using Terraria;
+using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -96,7 +97,8 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                 if (npcType == -1) continue;
 
                 // 生成敌怪
-                int npcIndex = NPC.NewNPC(null, (int)spawnPos.X, (int)spawnPos.Y, npcType);
+                var source = new EntitySource_SpawnNPC();
+                int npcIndex = NPC.NewNPC(source, (int)spawnPos.X, (int)spawnPos.Y, npcType);
                 if (npcIndex >= 0 && npcIndex < Main.maxNPCs) {
                     NPC npc = Main.npc[npcIndex];
                     npc.target = player.whoAmI;
