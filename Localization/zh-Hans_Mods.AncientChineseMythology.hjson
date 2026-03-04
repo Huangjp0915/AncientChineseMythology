@@ -1357,6 +1357,8 @@ NPCs: {
 	AzureDragonTail.DisplayName: Azure Dragon Tail
 	// YinEmperor.DisplayName: Yin Emperor
 	// Aokin.DisplayName: Aokin
+	// Aoyuan.DisplayName: Aoyuan
+	// AoyuanBody.DisplayName: Aoyuan Body
 }
 
 Projectiles: {
@@ -1680,6 +1682,9 @@ Projectiles: {
 	// AokinFlameVortex.DisplayName: Aokin Flame Vortex
 	// AokinMeteor.DisplayName: Aokin Meteor
 	// AokinBarrierTornado.DisplayName: Aokin Barrier Tornado
+	// AoyuanFrostVortex.DisplayName: Aoyuan Frost Vortex
+	// AoyuanIceball.DisplayName: Aoyuan Iceball
+	// AoyuanIcicle.DisplayName: Aoyuan Icicle
 }
 
 HeavenBiome.DisplayName: Heaven
