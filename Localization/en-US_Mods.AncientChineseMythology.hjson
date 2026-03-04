@@ -1166,6 +1166,41 @@ Items: {
 			Killed enemies spawn chain-reaction singularities
 			'''
 	}
+
+	DivineWoodBomb: {
+		DisplayName: Divine Wood Bomb
+		Tooltip: ""
+	}
+
+	DivineWoodGreatblade: {
+		DisplayName: Divine Wood Greatblade
+		Tooltip: ""
+	}
+
+	DivineWoodGyratingLeaf: {
+		DisplayName: Divine Wood Gyrating Leaf
+		Tooltip: ""
+	}
+
+	DivineWoodLongbow: {
+		DisplayName: Divine Wood Longbow
+		Tooltip: ""
+	}
+
+	DivineWoodMusket: {
+		DisplayName: Divine Wood Musket
+		Tooltip: ""
+	}
+
+	DivineWoodScepter: {
+		DisplayName: Divine Wood Scepter
+		Tooltip: ""
+	}
+
+	DivineWoodTome: {
+		DisplayName: Divine Wood Tome
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -1599,6 +1634,36 @@ Projectiles: {
 	AoshunThunderball.DisplayName: Aoshun Thunderball
 	AoshunThunderBeam.DisplayName: Aoshun Thunder Beam
 	AoshunThunderVortex.DisplayName: Aoshun Thunder Vortex
+	DivineWoodFlowerWave.DisplayName: Divine Wood Flower Wave
+	DivineWoodGiantSeed.DisplayName: Divine Wood Giant Seed
+	DivineWoodGyratingLeafProj.DisplayName: Divine Wood Gyrating Leaf Proj
+	DivineWoodLeafArrow.DisplayName: Divine Wood Leaf Arrow
+	DivineWoodLeafBurst.DisplayName: Divine Wood Leaf Burst
+	DivineWoodNatureBloom.DisplayName: Divine Wood Nature Bloom
+	DivineWoodPetalProjectile.DisplayName: Divine Wood Petal Projectile
+	DivineWoodSeedBomb.DisplayName: Divine Wood Seed Bomb
+	DivineWoodSlash.DisplayName: Divine Wood Slash
+	DivineWoodSpiritVine.DisplayName: Divine Wood Spirit Vine
+	DivineWoodSporeCloud.DisplayName: Divine Wood Spore Cloud
+	DivineWoodThornBullet.DisplayName: Divine Wood Thorn Bullet
+	DivineWoodThornField.DisplayName: Divine Wood Thorn Field
+	DivineWoodThornFragment.DisplayName: Divine Wood Thorn Fragment
+	DivineWoodThornShrapnel.DisplayName: Divine Wood Thorn Shrapnel
+	DivineWoodTreeSpiritMinion.DisplayName: Divine Wood Tree Spirit Minion
+	DivineWoodVineEntangle.DisplayName: Divine Wood Vine Entangle
+	DivineWoodBloomExplosion.DisplayName: Divine Wood Bloom Explosion
+	DivineWoodGreatbladeSwing.DisplayName: Divine Wood Greatblade Swing
+	DivineWoodLeafBolt.DisplayName: Divine Wood Leaf Bolt
+	DivineWoodNatureBolt.DisplayName: Divine Wood Nature Bolt
+	DivineWoodPetalOrb.DisplayName: Divine Wood Petal Orb
+	DivineWoodSeedGrenade.DisplayName: Divine Wood Seed Grenade
+	DivineWoodSeedMortar.DisplayName: Divine Wood Seed Mortar
+	DivineWoodSpiralLeaf.DisplayName: Divine Wood Spiral Leaf
+	DivineWoodThornFieldExplosion.DisplayName: Divine Wood Thorn Field Explosion
+	DivineWoodThornNeedle.DisplayName: Divine Wood Thorn Needle
+	DivineWoodVineShard.DisplayName: Divine Wood Vine Shard
+	DivineWoodVineVortex.DisplayName: Divine Wood Vine Vortex
+	DivineWoodVineWave.DisplayName: Divine Wood Vine Wave
 }
 
 HeavenBiome.DisplayName: Heaven
