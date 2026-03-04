@@ -1590,6 +1590,7 @@ Projectiles: {
 	AoyuanFrostVortex.DisplayName: Aoyuan Frost Vortex
 	AoyuanIceball.DisplayName: Aoyuan Iceball
 	AoyuanIcicle.DisplayName: Aoyuan Icicle
+	AoyuanFrostBeam.DisplayName: Aoyuan Frost Beam
 }
 
 HeavenBiome.DisplayName: Heaven
