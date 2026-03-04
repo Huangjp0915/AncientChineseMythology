@@ -64,7 +64,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            Texture2D tex = ACMAsset.LightShot ?? TextureAssets.Projectile[Type].Value;
+            Texture2D tex = ACMAsset.SoftGlow ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = tex.Size() / 2f;
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
 
@@ -79,18 +79,23 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                 trailColor.A = 0;
 
                 Vector2 pos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                Main.spriteBatch.Draw(tex, pos, null, trailColor, Projectile.rotation, origin, 0.5f * progress, SpriteEffects.None, 0f);
+                Main.spriteBatch.Draw(tex, pos, null, trailColor, 0f, origin, 0.5f * progress * pulse, SpriteEffects.None, 0f);
             }
 
-            // 光晕
-            Color outerColor = AokinHelper.MoltenOrange * 0.5f * pulse;
+            // 外层光晕
+            Color outerColor = AokinHelper.DragonFlameRed * 0.35f * pulse;
             outerColor.A = 0;
-            Main.spriteBatch.Draw(tex, drawPos, null, outerColor, Projectile.rotation, origin, 0.8f * pulse, SpriteEffects.None, 0f);
+            Main.spriteBatch.Draw(tex, drawPos, null, outerColor, 0f, origin, 0.9f * pulse, SpriteEffects.None, 0f);
+
+            // 中层
+            Color midColor = AokinHelper.MoltenOrange * 0.5f * pulse;
+            midColor.A = 0;
+            Main.spriteBatch.Draw(tex, drawPos, null, midColor, 0f, origin, 0.55f * pulse, SpriteEffects.None, 0f);
 
             // 核心
             Color coreColor = AokinHelper.BlazingGold * 0.8f;
             coreColor.A = 0;
-            Main.spriteBatch.Draw(tex, drawPos, null, coreColor, Projectile.rotation, origin, 0.5f * pulse, SpriteEffects.None, 0f);
+            Main.spriteBatch.Draw(tex, drawPos, null, coreColor, 0f, origin, 0.3f * pulse, SpriteEffects.None, 0f);
 
             return false;
         }
@@ -159,7 +164,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            Texture2D tex = ACMAsset.LightShot ?? TextureAssets.Projectile[Type].Value;
+            Texture2D tex = ACMAsset.SoftGlow ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = tex.Size() / 2f;
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
 
@@ -174,18 +179,23 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                 trailColor.A = 0;
 
                 Vector2 pos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                Main.spriteBatch.Draw(tex, pos, null, trailColor, Projectile.rotation, origin, (0.8f + progress * 0.3f) * pulse, SpriteEffects.None, 0f);
+                Main.spriteBatch.Draw(tex, pos, null, trailColor, 0f, origin, (0.6f + progress * 0.4f) * pulse, SpriteEffects.None, 0f);
             }
 
-            // 外光晕
-            Color outerColor = AokinHelper.MoltenOrange * 0.6f * pulse;
+            // 外层光晕
+            Color outerColor = AokinHelper.DragonFlameRed * 0.4f * pulse;
             outerColor.A = 0;
-            Main.spriteBatch.Draw(tex, drawPos, null, outerColor, Projectile.rotation, origin, 1.2f * pulse, SpriteEffects.None, 0f);
+            Main.spriteBatch.Draw(tex, drawPos, null, outerColor, 0f, origin, 1.4f * pulse, SpriteEffects.None, 0f);
+
+            // 中层
+            Color midColor = AokinHelper.MoltenOrange * 0.6f * pulse;
+            midColor.A = 0;
+            Main.spriteBatch.Draw(tex, drawPos, null, midColor, 0f, origin, 0.9f * pulse, SpriteEffects.None, 0f);
 
             // 核心
             Color coreColor = AokinHelper.BlazingGold * 0.9f;
             coreColor.A = 0;
-            Main.spriteBatch.Draw(tex, drawPos, null, coreColor, Projectile.rotation, origin, 0.7f * pulse, SpriteEffects.None, 0f);
+            Main.spriteBatch.Draw(tex, drawPos, null, coreColor, 0f, origin, 0.5f * pulse, SpriteEffects.None, 0f);
 
             return false;
         }

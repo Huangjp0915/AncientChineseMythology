@@ -118,9 +118,9 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
         /// 绘制火焰光环
         /// </summary>
         public static void DrawFlameAura(SpriteBatch sb, Vector2 center, float radius, float rotation, float alpha) {
-            if (ACMAsset.LightShot == null) return;
+            if (ACMAsset.SoftGlow == null) return;
 
-            Texture2D tex = ACMAsset.LightShot;
+            Texture2D tex = ACMAsset.SoftGlow;
             Vector2 origin = tex.Size() / 2f;
             Vector2 screenPos = center - Main.screenPosition;
 
@@ -139,16 +139,11 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                     color *= particleAlpha;
                     color.A = 0;
 
-                    float particleScale = (0.4f - ring * 0.08f) * (1f + MathF.Sin(angle * 3f + rotation * 5f) * 0.2f);
-                    sb.Draw(tex, pos, null, color, angle, origin, particleScale, SpriteEffects.None, 0);
+                    float particleScale = (0.5f - ring * 0.1f) * (1f + MathF.Sin(angle * 3f + rotation * 5f) * 0.2f);
+                    sb.Draw(tex, pos, null, color, 0f, origin, particleScale, SpriteEffects.None, 0);
                 }
             }
         }
-
-        /// <summary>
-        /// 获取LightShot的旋转角度
-        /// </summary>
-        public static float GetLightShotRotation(float targetDirection) => targetDirection;
 
         #endregion
     }
