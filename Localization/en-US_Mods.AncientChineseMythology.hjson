@@ -1260,6 +1260,7 @@ NPCs: {
 	AzureDragonBody.DisplayName: Azure Dragon Body
 	AzureDragonHead.DisplayName: Azure Dragon Head
 	AzureDragonTail.DisplayName: Azure Dragon Tail
+	YinEmperor.DisplayName: Yin Emperor
 }
 
 Projectiles: {
