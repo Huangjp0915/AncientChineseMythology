@@ -1262,6 +1262,71 @@ Items: {
 			'''
 	}
 
+	WoodlandGreatsword: {
+		DisplayName: 林地巨剑
+		Tooltip:
+			'''
+			以林地枝木与藤蔓编织的巨剑
+			命中敌人有概率施加中毒
+			'''
+	}
+
+	RootBoomerang: {
+		DisplayName: 树根回力镖
+		Tooltip:
+			'''
+			弯曲的树根制成的回力镖
+			投掷后自动返回，可穿透多个敌人
+			'''
+	}
+
+	VineHunterBow: {
+		DisplayName: 藤蔓猎弓
+		Tooltip:
+			'''
+			以活藤编织的猎弓
+			箭矢命中有概率施加中毒
+			'''
+	}
+
+	DeadwoodMusket: {
+		DisplayName: 枯木火铳
+		Tooltip:
+			'''
+			以枯木制成的简易火铳
+			发射橡子弹丸，不消耗弹药
+			'''
+	}
+
+	EmeraldTwigStaff: {
+		DisplayName: 翡翠树枝杖
+		Tooltip:
+			'''
+			嵌有翡翠的树枝法杖
+			释放翠绿色的魔法弹丸
+			'''
+	}
+
+	NatureGrimoire: {
+		DisplayName: 自然秘典
+		Tooltip:
+			'''
+			记载自然之力的古老典籍
+			翻页释放三片螺旋叶刃
+			命中有概率施加中毒
+			'''
+	}
+
+	MossBomb: {
+		DisplayName: 苔藓爆弹
+		Tooltip:
+			'''
+			包裹着发光苔藓的爆裂弹
+			投掷后爆炸释放绿色蘑菇云
+			对范围内敌人造成伤害并施加中毒
+			'''
+	}
+
 	DivineWoodBomb: {
 		DisplayName: 神木种子弹
 		Tooltip:
@@ -1951,6 +2016,12 @@ Projectiles: {
 	DivineWoodVineShard.DisplayName: Divine Wood Vine Shard
 	DivineWoodVineVortex.DisplayName: Divine Wood Vine Vortex
 	DivineWoodVineWave.DisplayName: Divine Wood Vine Wave
+	RootBoomerangProj.DisplayName: 树根回力镖
+	DeadwoodAcornProj.DisplayName: 橡子弹丸
+	EmeraldTwigBolt.DisplayName: 翡翠树枝弹
+	NatureGrimoireLeaf.DisplayName: 自然叶刃
+	MossBombProj.DisplayName: 苔藓爆弹
+	MossExplosion.DisplayName: 苔藓爆炸
 	DivineWoodTomeLeaf.DisplayName: 神木叶刃
 	DivineWoodTomePetal.DisplayName: 神木花瓣
 	DivineWoodVerdictPetal.DisplayName: 裁决花瓣

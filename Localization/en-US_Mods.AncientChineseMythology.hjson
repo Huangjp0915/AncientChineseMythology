@@ -1167,6 +1167,71 @@ Items: {
 			'''
 	}
 
+	WoodlandGreatsword: {
+		DisplayName: Woodland Greatsword
+		Tooltip:
+			'''
+			A greatsword woven from woodland branches and vines
+			Has a chance to inflict Poisoned on hit
+			'''
+	}
+
+	RootBoomerang: {
+		DisplayName: Root Boomerang
+		Tooltip:
+			'''
+			A boomerang crafted from twisted tree roots
+			Returns after being thrown, pierces multiple enemies
+			'''
+	}
+
+	VineHunterBow: {
+		DisplayName: Vine Hunter Bow
+		Tooltip:
+			'''
+			A bow woven from living vines
+			Arrows have a chance to inflict Poisoned
+			'''
+	}
+
+	DeadwoodMusket: {
+		DisplayName: Deadwood Musket
+		Tooltip:
+			'''
+			A crude musket made from deadwood
+			Fires acorn projectiles, consumes no ammo
+			'''
+	}
+
+	EmeraldTwigStaff: {
+		DisplayName: Emerald Twig Staff
+		Tooltip:
+			'''
+			A twig staff inlaid with emeralds
+			Releases emerald magic bolts
+			'''
+	}
+
+	NatureGrimoire: {
+		DisplayName: Nature Grimoire
+		Tooltip:
+			'''
+			An ancient grimoire recording nature's power
+			Releases three spiraling leaf blades
+			Hits have a chance to inflict Poisoned
+			'''
+	}
+
+	MossBomb: {
+		DisplayName: Moss Bomb
+		Tooltip:
+			'''
+			An explosive wrapped in glowing moss
+			Explodes on impact, releasing a green mushroom cloud
+			Deals area damage and inflicts Poisoned
+			'''
+	}
+
 	DivineWoodBomb: {
 		DisplayName: Divine Wood Bomb
 		Tooltip: ""
@@ -1829,6 +1894,12 @@ Projectiles: {
 	DivineWoodVineShard.DisplayName: Divine Wood Vine Shard
 	DivineWoodVineVortex.DisplayName: Divine Wood Vine Vortex
 	DivineWoodVineWave.DisplayName: Divine Wood Vine Wave
+	RootBoomerangProj.DisplayName: Root Boomerang
+	DeadwoodAcornProj.DisplayName: Deadwood Acorn
+	EmeraldTwigBolt.DisplayName: Emerald Twig Bolt
+	NatureGrimoireLeaf.DisplayName: Nature Leaf Blade
+	MossBombProj.DisplayName: Moss Bomb
+	MossExplosion.DisplayName: Moss Explosion
 	DivineWoodTomeLeaf.DisplayName: Divine Wood Tome Leaf
 	DivineWoodTomePetal.DisplayName: Divine Wood Tome Petal
 	DivineWoodVerdictPetal.DisplayName: Divine Wood Verdict Petal
