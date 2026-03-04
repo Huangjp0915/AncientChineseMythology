@@ -1584,6 +1584,7 @@ Projectiles: {
 	AokinFireball.DisplayName: Aokin Fireball
 	AokinFlameVortex.DisplayName: Aokin Flame Vortex
 	AokinMeteor.DisplayName: Aokin Meteor
+	AokinBarrierTornado.DisplayName: Aokin Barrier Tornado
 }
 
 HeavenBiome.DisplayName: Heaven

@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.GameContent;
@@ -294,6 +295,144 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                 int dust = Dust.NewDust(Projectile.Center, 0, 0, DustID.Torch, vel.X, vel.Y, 100, default, 2f);
                 Main.dust[dust].noGravity = true;
             }
+        }
+    }
+
+    #endregion
+
+    #region 火焰封路龙卷
+
+    /// <summary>
+    /// 敖钦火焰封路龙卷 - 战场边界，使用原版沙尘暴纹理
+    /// 跟随Boss存在，限制玩家活动范围
+    /// </summary>
+    public class AokinBarrierTornado : ModProjectile
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+
+        private ref float OwnerIndex => ref Projectile.ai[0];
+        private ref float Side => ref Projectile.ai[1]; // -1左, 1右
+
+        private float tornadoRotation;
+        private float tornadoAlpha;
+        private float tornadoHeight;
+        private const float MaxHeight = 1200f;
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.DrawScreenCheckFluff[Type] = 2000;
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = 100;
+            Projectile.height = 100;
+            Projectile.friendly = false;
+            Projectile.hostile = true;
+            Projectile.penetrate = -1;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.timeLeft = 99999;
+        }
+
+        public override void AI() {
+            // 检查Boss是否存活
+            NPC owner = Main.npc[(int)OwnerIndex];
+            if (!owner.active || owner.type != ModContent.NPCType<Aokin>()) {
+                tornadoAlpha -= 0.02f;
+                if (tornadoAlpha <= 0f) {
+                    Projectile.Kill();
+                }
+                return;
+            }
+
+            // 跟随玩家位置（两侧固定距离）
+            Player target = Main.player[owner.target];
+            if (target.active && !target.dead) {
+                float targetX = target.Center.X + Side * 800f;
+                Projectile.Center = new Vector2(
+                    MathHelper.Lerp(Projectile.Center.X, targetX, 0.02f),
+                    target.Center.Y
+                );
+            }
+
+            // 渐入效果
+            tornadoAlpha = MathHelper.Lerp(tornadoAlpha, 1f, 0.02f);
+            tornadoHeight = MathHelper.Lerp(tornadoHeight, MaxHeight, 0.03f);
+            tornadoRotation += 0.15f;
+
+            // 火焰粒子效果
+            if (Main.netMode != NetmodeID.Server) {
+                for (int i = 0; i < 8; i++) {
+                    float heightOffset = Main.rand.NextFloat(-tornadoHeight / 2, tornadoHeight / 2);
+                    float angle = tornadoRotation + Main.rand.NextFloat(MathHelper.TwoPi);
+                    float radius = 40f + MathF.Abs(heightOffset / tornadoHeight) * 60f;
+
+                    Vector2 dustPos = Projectile.Center + new Vector2(MathF.Cos(angle) * radius, heightOffset);
+                    int dustType = Main.rand.Next(3) switch {
+                        0 => DustID.Torch,
+                        1 => DustID.SolarFlare,
+                        _ => DustID.Smoke
+                    };
+                    int dust = Dust.NewDust(dustPos, 0, 0, dustType, 0, 0, 150, default, 2f);
+                    Main.dust[dust].noGravity = true;
+                    Main.dust[dust].velocity = new Vector2(MathF.Cos(angle + MathHelper.PiOver2) * 6f, Main.rand.NextFloat(-2, 2));
+                }
+            }
+
+            // 推开玩家
+            foreach (Player player in Main.player) {
+                if (!player.active || player.dead) continue;
+                float distance = MathF.Abs(player.Center.X - Projectile.Center.X);
+                if (distance < 120f) {
+                    float pushDirection = player.Center.X > Projectile.Center.X ? 1 : -1;
+                    player.velocity.X += pushDirection * 1.5f;
+                }
+            }
+
+            Lighting.AddLight(Projectile.Center, AokinHelper.DragonFlameRed.ToVector3() * tornadoAlpha * 0.8f);
+        }
+
+        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
+            float targetX = targetHitbox.Center.X;
+            float distance = MathF.Abs(targetX - Projectile.Center.X);
+            float targetY = targetHitbox.Center.Y;
+            float heightDiff = MathF.Abs(targetY - Projectile.Center.Y);
+            return distance < 60f && heightDiff < tornadoHeight / 2;
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            SpriteBatch sb = Main.spriteBatch;
+            Vector2 screenPos = Projectile.Center - Main.screenPosition;
+            Main.instance.LoadProjectile(ProjectileID.SandnadoHostile);
+            Texture2D tornadoTex = TextureAssets.Projectile[ProjectileID.SandnadoHostile].Value;
+            Vector2 origin = new Vector2(tornadoTex.Width / 2f, tornadoTex.Height / 2f);
+
+            // 绘制多层火龙卷
+            int segments = 162;
+            for (int seg = 0; seg < segments; seg++) {
+                float heightPercent = (float)seg / segments;
+                float yOffset = (heightPercent - 0.5f) * tornadoHeight;
+                float segRadius = 2.6f + MathF.Abs(heightPercent - 0.5f) * 0.8f - seg * 0.01f;
+                float segRot = tornadoRotation + seg * 0.3f;
+
+                Vector2 segPos = screenPos + new Vector2(0, yOffset);
+
+                // 外层 - 暗红
+                Color outerColor = AokinHelper.DragonFlameRed * tornadoAlpha * 0.4f;
+                outerColor.A = 0;
+                sb.Draw(tornadoTex, segPos, null, outerColor, segRot, origin, segRadius * 1.3f, SpriteEffects.None, 0f);
+
+                // 中层 - 熔岩橙
+                Color midColor = AokinHelper.MoltenOrange * tornadoAlpha * 0.6f;
+                midColor.A = 0;
+                sb.Draw(tornadoTex, segPos, null, midColor, segRot * 1.2f, origin, segRadius, SpriteEffects.None, 0f);
+
+                // 内层 - 烈焰金
+                Color innerColor = AokinHelper.BlazingGold * tornadoAlpha * 0.3f;
+                innerColor.A = 0;
+                sb.Draw(tornadoTex, segPos, null, innerColor, segRot * 1.5f, origin, segRadius * 0.7f, SpriteEffects.None, 0f);
+            }
+
+            return false;
         }
     }
 

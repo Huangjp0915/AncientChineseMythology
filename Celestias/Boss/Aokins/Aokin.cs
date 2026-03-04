@@ -34,6 +34,8 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
         public enum BossPhase
         {
             Intro,
+            // 开场封路
+            Intro_SummonBarriers,
             // 一阶段
             Phase1_Patrol,
             Phase1_FireBarrage,
@@ -86,6 +88,10 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
 
         // 俯冲冷却
         private int divebombCooldown;
+
+        // 封路龙卷控制
+        private int[] barrierTornadoIds;
+        private bool hasSpawnedBarriers;
 
         // 视觉效果
         private float flameAuraAlpha;
@@ -192,6 +198,15 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
         }
 
         public override bool CheckActive() => false;
+
+        public override void OnKill() {
+            // 关闭天空背景
+            if (!VaultUtils.isServer && AokinSky.name != null) {
+                Terraria.Graphics.Effects.SkyManager.Instance.Deactivate(AokinSky.name);
+            }
+
+            Systems.DownedBossSystem.downedAokin = true;
+        }
 
         #endregion
     }

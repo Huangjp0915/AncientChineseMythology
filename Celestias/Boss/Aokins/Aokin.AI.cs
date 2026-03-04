@@ -2,6 +2,7 @@ using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
+using Terraria.Graphics.Effects;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -18,6 +19,12 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
             if (divebombCooldown > 0)
                 divebombCooldown--;
 
+            // ¼¤»îÌì¿Õ±³¾°
+            if (!VaultUtils.isServer && AokinSky.name != null) {
+                if (!SkyManager.Instance[AokinSky.name].IsActive())
+                    SkyManager.Instance.Activate(AokinSky.name, NPC.Center);
+            }
+
             NPC.TargetClosest();
             Player target = Main.player[NPC.target];
 
@@ -25,6 +32,10 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                 NPC.TargetClosest();
                 target = Main.player[NPC.target];
                 if (!target.active || target.dead) {
+                    // ¹Ø±ÕÌì¿Õ±³¾°
+                    if (!VaultUtils.isServer && AokinSky.name != null) {
+                        SkyManager.Instance.Deactivate(AokinSky.name);
+                    }
                     NPC.velocity.Y -= 0.8f;
                     NPC.EncourageDespawn(30);
                     return;
@@ -49,6 +60,9 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
             switch (Phase) {
                 case BossPhase.Intro:
                     RunIntro(target);
+                    break;
+                case BossPhase.Intro_SummonBarriers:
+                    RunIntroSummonBarriers(target);
                     break;
                 // Ò»½×¶Î
                 case BossPhase.Phase1_Patrol:
@@ -263,6 +277,66 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
             }
 
             if (PhaseTimer > 180) {
+                TransitionTo(BossPhase.Intro_SummonBarriers);
+            }
+        }
+
+        /// <summary>
+        /// ³ö³¡ºóÕÙ»½Á½²à»ðÁú¾í·âÂ·
+        /// </summary>
+        private void RunIntroSummonBarriers(Player target) {
+            NPC.velocity *= 0.9f;
+
+            Vector2 hoverPos = target.Center + new Vector2(0, -350);
+            NPC.velocity += (hoverPos - NPC.Center) * 0.003f;
+
+            // ÕÙ»½Á½²à»ðÑæÁú¾í
+            if (PhaseTimer == 30 && Main.netMode != NetmodeID.MultiplayerClient) {
+                hasSpawnedBarriers = true;
+                barrierTornadoIds = new int[2];
+
+                // ×ó²àÁú¾í
+                int leftTornado = Projectile.NewProjectile(
+                    NPC.GetSource_FromAI(),
+                    target.Center + new Vector2(-800, 0),
+                    Vector2.Zero,
+                    ModContent.ProjectileType<AokinBarrierTornado>(),
+                    NPC.damage / 4,
+                    0f,
+                    ai0: NPC.whoAmI,
+                    ai1: -1
+                );
+                barrierTornadoIds[0] = leftTornado;
+
+                // ÓÒ²àÁú¾í
+                int rightTornado = Projectile.NewProjectile(
+                    NPC.GetSource_FromAI(),
+                    target.Center + new Vector2(800, 0),
+                    Vector2.Zero,
+                    ModContent.ProjectileType<AokinBarrierTornado>(),
+                    NPC.damage / 4,
+                    0f,
+                    ai0: NPC.whoAmI,
+                    ai1: 1
+                );
+                barrierTornadoIds[1] = rightTornado;
+
+                SoundEngine.PlaySound(SoundID.Item73 with { Pitch = -0.5f, Volume = 1.5f }, NPC.Center);
+                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(15, 40);
+            }
+
+            // »ðÑæÑ¹ÆÈÁ£×Ó
+            if (!VaultUtils.isServer && PhaseTimer > 30) {
+                for (int i = 0; i < 8; i++) {
+                    float angle = MathHelper.TwoPi * i / 8 + PhaseTimer * 0.03f;
+                    Vector2 dustPos = NPC.Center + angle.ToRotationVector2() * (120 + MathF.Sin(PhaseTimer * 0.1f) * 30);
+                    int dust = Dust.NewDust(dustPos, 0, 0, DustID.Torch, 0, 0, 150, default, 2f);
+                    Main.dust[dust].noGravity = true;
+                    Main.dust[dust].velocity = (angle + MathHelper.PiOver2).ToRotationVector2() * 4f;
+                }
+            }
+
+            if (PhaseTimer > 90) {
                 TransitionTo(BossPhase.Phase1_Patrol);
             }
         }
