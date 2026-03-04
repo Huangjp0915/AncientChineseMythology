@@ -1264,6 +1264,8 @@ NPCs: {
 	Aokin.DisplayName: Aokin
 	Aoyuan.DisplayName: Aoyuan
 	AoyuanBody.DisplayName: Aoyuan Body
+	Aoshun.DisplayName: Aoshun
+	AoshunBody.DisplayName: Aoshun Body
 }
 
 Projectiles: {
@@ -1591,6 +1593,10 @@ Projectiles: {
 	AoyuanIceball.DisplayName: Aoyuan Iceball
 	AoyuanIcicle.DisplayName: Aoyuan Icicle
 	AoyuanFrostBeam.DisplayName: Aoyuan Frost Beam
+	AoshunLightningBolt.DisplayName: Aoshun Lightning Bolt
+	AoshunThunderball.DisplayName: Aoshun Thunderball
+	AoshunThunderBeam.DisplayName: Aoshun Thunder Beam
+	AoshunThunderVortex.DisplayName: Aoshun Thunder Vortex
 }
 
 HeavenBiome.DisplayName: Heaven

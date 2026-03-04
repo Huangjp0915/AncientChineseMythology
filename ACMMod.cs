@@ -1,6 +1,7 @@
 ﻿global using InnoVault;
 global using Microsoft.Xna.Framework;
 using AncientChineseMythology.Celestias.Boss.Aokins;
+using AncientChineseMythology.Celestias.Boss.Aoshuns;
 using AncientChineseMythology.Celestias.Boss.Aoyuans;
 using AncientChineseMythology.NPCs.Boss.Hanbas;
 using AncientChineseMythology.NPCs.Boss.Hoqings;
@@ -31,6 +32,7 @@ namespace AncientChineseMythology
             JiangcenSky.LoadInstance();
             AokinSky.LoadInstance();
             AoyuanSky.LoadInstance();
+            AoshunSky.LoadInstance();
         }
         public override void PostSetupContent() {
             foreach (var load in ILoaders) {
