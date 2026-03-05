@@ -1020,6 +1020,16 @@ Items: {
 		Tooltip: ""
 	}
 
+	UnderworldInvasionSummon: {
+		DisplayName: 冥府令牌
+		Tooltip:
+			'''
+			召唤地府入侵事件（共20波）
+			四方鬼门将开启，亡灵邪魅蜂拥而出
+			击退所有地府敌怪以结束事件
+			'''
+	}
+
 	CodexofFate: {
 		DisplayName: 生死冥罗录
 		Tooltip:

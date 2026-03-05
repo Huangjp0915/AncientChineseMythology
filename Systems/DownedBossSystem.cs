@@ -12,6 +12,7 @@ namespace AncientChineseMythology.Systems
         public static bool downedAoyuan = false; //跟踪西海龙王敖闰是否已被击败
         public static bool downedAoshun = false; //跟踪北海龙王敖顺是否已被击败
         public static bool downedHeavenInvasion = false; //跟踪天庭入侵事件是否已被击退
+        public static bool downedUnderworldInvasion = false; //跟踪地府入侵事件是否已被击退
 
         public override void SaveWorldData(TagCompound tag) {
             tag["downedBlackBear"] = downedBlackBear; //保存状态
@@ -21,6 +22,7 @@ namespace AncientChineseMythology.Systems
             tag["downedAoyuan"] = downedAoyuan; //保存西海龙王状态
             tag["downedAoshun"] = downedAoshun; //保存北海龙王状态
             tag["downedHeavenInvasion"] = downedHeavenInvasion; //保存天庭入侵状态
+            tag["downedUnderworldInvasion"] = downedUnderworldInvasion; //保存地府入侵状态
         }
 
         public override void LoadWorldData(TagCompound tag) {
@@ -31,6 +33,7 @@ namespace AncientChineseMythology.Systems
             downedAoyuan = tag.GetBool("downedAoyuan"); //加载西海龙王状态
             downedAoshun = tag.GetBool("downedAoshun"); //加载北海龙王状态
             downedHeavenInvasion = tag.GetBool("downedHeavenInvasion"); //加载天庭入侵状态
+            downedUnderworldInvasion = tag.GetBool("downedUnderworldInvasion"); //加载地府入侵状态
         }
 
         public override void OnWorldLoad() {
@@ -42,6 +45,7 @@ namespace AncientChineseMythology.Systems
             downedAoyuan = false;
             downedAoshun = false;
             downedHeavenInvasion = false;
+            downedUnderworldInvasion = false;
         }
     }
 }

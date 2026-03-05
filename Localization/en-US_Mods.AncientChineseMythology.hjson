@@ -971,6 +971,16 @@ Items: {
 		Tooltip: ""
 	}
 
+	UnderworldInvasionSummon: {
+		DisplayName: Nether Realm Token
+		Tooltip:
+			'''
+			Summons the Underworld Invasion (20 waves)
+			Four ghost gates will open, undead spirits swarm forth
+			Defeat all underworld enemies to end the event
+			'''
+	}
+
 	CodexofFate: {
 		DisplayName: Codexof Fate
 		Tooltip: ""

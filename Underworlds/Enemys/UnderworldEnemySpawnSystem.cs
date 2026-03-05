@@ -7,28 +7,28 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Enemys
 {
     /// <summary>
-    /// µØ¸®µÐ¹ÖÉú³ÉÏµÍ³
-    /// ¹ÜÀíµØ¸®ÇøÓòÄÚÌØÊâµÐ¹ÖµÄÉú³É
+    /// ï¿½Ø¸ï¿½ï¿½Ð¹ï¿½ï¿½ï¿½ï¿½ï¿½ÏµÍ³
+    /// ï¿½ï¿½ï¿½ï¿½ï¿½Ø¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¹Öµï¿½ï¿½ï¿½ï¿½ï¿½
     /// </summary>
     public class UnderworldEnemySpawnSystem : ModSystem
     {
-        #region ³£Á¿ÅäÖÃ
-        /// <summary>Éú³É¼ì²é¼ä¸ô£¨Ö¡£©</summary>
+        #region ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+        /// <summary>ï¿½ï¿½ï¿½É¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¡ï¿½ï¿½</summary>
         private const int SpawnCheckInterval = 90;
 
-        /// <summary>×î´óÍ¬Ê±´æÔÚµÄµØ¸®µÐ¹ÖÊýÁ¿</summary>
+        /// <summary>ï¿½ï¿½ï¿½Í¬Ê±ï¿½ï¿½ï¿½ÚµÄµØ¸ï¿½ï¿½Ð¹ï¿½ï¿½ï¿½ï¿½ï¿½</summary>
         private const int MaxUnderworldEnemies = 10;
 
-        /// <summary>Ã¿´ÎÉú³ÉµÄ×î´óÊýÁ¿</summary>
+        /// <summary>Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½Éµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½</summary>
         private const int MaxSpawnPerCheck = 2;
 
-        /// <summary>Éú³É¾àÀë·¶Î§£¨×îÐ¡£©</summary>
+        /// <summary>ï¿½ï¿½ï¿½É¾ï¿½ï¿½ë·¶Î§ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½</summary>
         private const float MinSpawnDistance = 500f;
 
-        /// <summary>Éú³É¾àÀë·¶Î§£¨×î´ó£©</summary>
+        /// <summary>ï¿½ï¿½ï¿½É¾ï¿½ï¿½ë·¶Î§ï¿½ï¿½ï¿½ï¿½ï¿½</summary>
         private const float MaxSpawnDistance = 1000f;
 
-        /// <summary>µØ¸®Éî¶ÈãÐÖµ£¨ÒÔÊÀ½çµ×²¿Îª»ù×¼£©</summary>
+        /// <summary>ï¿½Ø¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×²ï¿½Îªï¿½ï¿½×¼ï¿½ï¿½</summary>
         private const int UnderworldDepthFromBottom = 200;
         #endregion
 
@@ -37,36 +37,36 @@ namespace AncientChineseMythology.Underworlds.Enemys
         #endregion
 
         public override void PostUpdateWorld() {
-            // ·þÎñÆ÷¶Ë´¦ÀíÉú³É
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
             if (Main.netMode == NetmodeID.MultiplayerClient) return;
 
             spawnTimer++;
             if (spawnTimer < SpawnCheckInterval) return;
             spawnTimer = 0;
 
-            // ¶ÔÃ¿¸öÍæ¼Ò¼ì²éÉú³É
+            // ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½ï¿½Ò¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
             foreach (Player player in Main.ActivePlayers) {
                 if (player.dead || !player.active) continue;
 
-                // ¼ì²éÍæ¼ÒÊÇ·ñÔÚµØ¸®ÇøÓòÄÚ
+                // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ÚµØ¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
                 if (!IsInUnderworldRegion(player)) continue;
 
-                // ¼ì²éµ±Ç°µØ¸®µÐ¹ÖÊýÁ¿
+                // ï¿½ï¿½éµ±Ç°ï¿½Ø¸ï¿½ï¿½Ð¹ï¿½ï¿½ï¿½ï¿½ï¿½
                 int currentEnemyCount = CountUnderworldEnemies();
                 if (currentEnemyCount >= MaxUnderworldEnemies) continue;
 
-                // ³¢ÊÔÉú³ÉµÐ¹Ö
+                // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÉµÐ¹ï¿½
                 TrySpawnEnemies(player, MaxUnderworldEnemies - currentEnemyCount);
             }
         }
 
         /// <summary>
-        /// ¼ì²éÎ»ÖÃÊÇ·ñÔÚµØ¸®ÇøÓò
+        /// ï¿½ï¿½ï¿½Î»ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ÚµØ¸ï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         public static bool IsInUnderworldRegion(Player player) => UnderworldFogEffect.IsActive(player);
 
         /// <summary>
-        /// Í³¼Æµ±Ç°´æÔÚµÄµØ¸®µÐ¹ÖÊýÁ¿
+        /// Í³ï¿½Æµï¿½Ç°ï¿½ï¿½ï¿½ÚµÄµØ¸ï¿½ï¿½Ð¹ï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         private static int CountUnderworldEnemies() {
             int count = 0;
@@ -86,27 +86,28 @@ namespace AncientChineseMythology.Underworlds.Enemys
         }
 
         /// <summary>
-        /// ³¢ÊÔÎªÖ¸¶¨Íæ¼ÒÉú³ÉµÐ¹Ö
+        /// ï¿½ï¿½ï¿½ï¿½ÎªÖ¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÉµÐ¹ï¿½
         /// </summary>
         private static void TrySpawnEnemies(Player player, int maxCount) {
             int spawned = 0;
 
             for (int attempt = 0; attempt < 15 && spawned < Math.Min(maxCount, MaxSpawnPerCheck); attempt++) {
-                // Ëæ»úÑ¡ÔñÉú³ÉÎ»ÖÃ
+                // ï¿½ï¿½ï¿½Ñ¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
                 Vector2 spawnPos = FindSpawnPosition(player);
                 if (spawnPos == Vector2.Zero) continue;
 
-                // Ëæ»úÑ¡ÔñµÐ¹ÖÀàÐÍ
+                // ï¿½ï¿½ï¿½Ñ¡ï¿½ï¿½Ð¹ï¿½ï¿½ï¿½ï¿½ï¿½
                 int npcType = ChooseEnemyType(player);
                 if (npcType == -1) continue;
 
-                // Éú³ÉµÐ¹Ö
-                int npcIndex = NPC.NewNPC(null, (int)spawnPos.X, (int)spawnPos.Y, npcType);
+                // ï¿½ï¿½ï¿½ÉµÐ¹ï¿½
+                var source = new Terraria.DataStructures.EntitySource_SpawnNPC();
+                int npcIndex = NPC.NewNPC(source, (int)spawnPos.X, (int)spawnPos.Y, npcType);
                 if (npcIndex >= 0 && npcIndex < Main.maxNPCs) {
                     NPC npc = Main.npc[npcIndex];
                     npc.target = player.whoAmI;
 
-                    // Éú³ÉÁ£×ÓÐ§¹û
+                    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð§ï¿½ï¿½
                     SpawnEffect(spawnPos, npcType);
 
                     spawned++;
@@ -119,31 +120,31 @@ namespace AncientChineseMythology.Underworlds.Enemys
         }
 
         /// <summary>
-        /// Ñ°ÕÒºÏÊÊµÄÉú³ÉÎ»ÖÃ
+        /// Ñ°ï¿½Òºï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
         /// </summary>
         private static Vector2 FindSpawnPosition(Player player) {
             for (int i = 0; i < 25; i++) {
-                // Ëæ»ú·½ÏòºÍ¾àÀë
+                // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¾ï¿½ï¿½ï¿½
                 float angle = Main.rand.NextFloat(MathHelper.TwoPi);
                 float distance = Main.rand.NextFloat(MinSpawnDistance, MaxSpawnDistance);
                 Vector2 offset = angle.ToRotationVector2() * distance;
                 Vector2 testPos = player.Center + offset;
 
-                // ¼ì²éÊÇ·ñÔÚÊÀ½ç·¶Î§ÄÚ
+                // ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ç·¶Î§ï¿½ï¿½
                 int tileX = (int)(testPos.X / 16f);
                 int tileY = (int)(testPos.Y / 16f);
 
                 if (tileX < 50 || tileX > Main.maxTilesX - 50) continue;
                 if (tileY < 50 || tileY > Main.maxTilesY - 50) continue;
 
-                // ¼ì²éÊÇ·ñÔÚµØ¸®ÇøÓòÄÚ
+                // ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ÚµØ¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
                 if (!IsInUnderworldRegion(player)) continue;
 
-                // ¼ì²éÉú³ÉµãÊÇ·ñÓÐÐ§£¨²»ÔÚ·½¿éÄÚ£©
+                // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Éµï¿½ï¿½Ç·ï¿½ï¿½ï¿½Ð§ï¿½ï¿½ï¿½ï¿½ï¿½Ú·ï¿½ï¿½ï¿½ï¿½Ú£ï¿½
                 Tile tile = Main.tile[tileX, tileY];
                 if (tile.HasTile && Main.tileSolid[tile.TileType]) continue;
 
-                // È·±£ÓÐÒ»¶¨¿Õ¼ä
+                // È·ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Õ¼ï¿½
                 bool hasSpace = true;
                 for (int checkY = -2; checkY <= 2; checkY++) {
                     for (int checkX = -1; checkX <= 1; checkX++) {
@@ -171,10 +172,10 @@ namespace AncientChineseMythology.Underworlds.Enemys
         }
 
         /// <summary>
-        /// ¸ù¾ÝÍæ¼Ò½ø¶ÈÑ¡ÔñµÐ¹ÖÀàÐÍ
+        /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò½ï¿½ï¿½ï¿½Ñ¡ï¿½ï¿½Ð¹ï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         private static int ChooseEnemyType(Player player) {
-            // ¸ù¾ÝÓÎÏ·½ø¶Èµ÷ÕûÉú³É¸ÅÂÊ
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï·ï¿½ï¿½ï¿½Èµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É¸ï¿½ï¿½ï¿½
             bool hardMode = Main.hardMode;
             bool postPlantera = NPC.downedPlantBoss;
             bool postMoonLord = NPC.downedMoonlord;
@@ -182,7 +183,7 @@ namespace AncientChineseMythology.Underworlds.Enemys
             int roll = Main.rand.Next(100);
 
             if (postMoonLord) {
-                // ÔÂÇòÁìÖ÷ºó£ºÉã»êÊ¹Õß¸ü³£¼û
+                // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ß¸ï¿½ï¿½ï¿½ï¿½ï¿½
                 if (roll < 30) {
                     return ModContent.NPCType<SoulHarvester>();
                 }
@@ -197,7 +198,7 @@ namespace AncientChineseMythology.Underworlds.Enemys
                 }
             }
             else if (postPlantera) {
-                // ÊÀ¼ÍÖ®»¨ºó£º¾ùºâ·Ö²¼
+                // ï¿½ï¿½ï¿½ï¿½Ö®ï¿½ï¿½ï¿½ó£º¾ï¿½ï¿½ï¿½Ö²ï¿½
                 if (roll < 25) {
                     return ModContent.NPCType<SoulHarvester>();
                 }
@@ -212,7 +213,7 @@ namespace AncientChineseMythology.Underworlds.Enemys
                 }
             }
             else if (hardMode) {
-                // À§ÄÑÄ£Ê½£º»ù´¡µÐ¹ÖÎªÖ÷
+                // ï¿½ï¿½ï¿½ï¿½Ä£Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¹ï¿½Îªï¿½ï¿½
                 if (roll < 10) {
                     return ModContent.NPCType<SoulHarvester>();
                 }
@@ -227,7 +228,7 @@ namespace AncientChineseMythology.Underworlds.Enemys
                 }
             }
             else {
-                // ÆÕÍ¨Ä£Ê½£ºÖ»Éú³É½ÏÈõµÄµÐ¹Ö
+                // ï¿½ï¿½Í¨Ä£Ê½ï¿½ï¿½Ö»ï¿½ï¿½ï¿½É½ï¿½ï¿½ï¿½ï¿½ÄµÐ¹ï¿½
                 if (roll < 40) {
                     return ModContent.NPCType<TheDeceasedPerson>();
                 }
@@ -241,7 +242,7 @@ namespace AncientChineseMythology.Underworlds.Enemys
         }
 
         /// <summary>
-        /// Éú³ÉÊÓ¾õÐ§¹û
+        /// ï¿½ï¿½ï¿½ï¿½ï¿½Ó¾ï¿½Ð§ï¿½ï¿½
         /// </summary>
         private static void SpawnEffect(Vector2 position, int npcType) {
             int dustType;
@@ -264,14 +265,14 @@ namespace AncientChineseMythology.Underworlds.Enemys
                 dustColor = new Color(150, 80, 200);
             }
 
-            // ÓÄ°µ¹âÐ§
+            // ï¿½Ä°ï¿½ï¿½ï¿½Ð§
             for (int i = 0; i < 12; i++) {
                 Vector2 vel = Main.rand.NextVector2CircularEdge(4f, 4f);
                 int dust = Dust.NewDust(position, 0, 0, dustType, vel.X, vel.Y, 100, dustColor, 1.5f);
                 Main.dust[dust].noGravity = true;
             }
 
-            // ºÚ°µÑÌÎíÐ§¹û
+            // ï¿½Ú°ï¿½ï¿½ï¿½ï¿½ï¿½Ð§ï¿½ï¿½
             for (int i = 0; i < 4; i++) {
                 Vector2 smokeVel = Main.rand.NextVector2Circular(2f, 2f);
                 int smoke = Dust.NewDust(position, 0, 0, DustID.Smoke, smokeVel.X, smokeVel.Y, 150, Color.Black, 2f);
@@ -281,29 +282,29 @@ namespace AncientChineseMythology.Underworlds.Enemys
     }
 
     /// <summary>
-    /// µØ¸®ÇøÓòÈ«¾ÖNPCÐÞ¸Ä
-    /// Ôö¼ÓµØ¸®ÇøÓòµÐ¹ÖµÄ»ù´¡Éú³ÉÂÊ
+    /// ï¿½Ø¸ï¿½ï¿½ï¿½ï¿½ï¿½È«ï¿½ï¿½NPCï¿½Þ¸ï¿½
+    /// ï¿½ï¿½ï¿½ÓµØ¸ï¿½ï¿½ï¿½ï¿½ï¿½Ð¹ÖµÄ»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     /// </summary>
     public class UnderworldEnemyGlobalNPC : GlobalNPC
     {
         public override void EditSpawnRate(Player player, ref int spawnRate, ref int maxSpawns) {
-            // ÔÚµØ¸®ÇøÓòÔö¼ÓµÐ¹ÖÉú³ÉÂÊ
+            // ï¿½ÚµØ¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÓµÐ¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
             if (UnderworldEnemySpawnSystem.IsInUnderworldRegion(player)) {
-                // ½µµÍÉú³É¼ä¸ô£¨Ôö¼ÓÉú³ÉÂÊ£©
+                // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê£ï¿½
                 spawnRate = (int)(spawnRate * 0.7f);
-                // Ôö¼Ó×î´óÉú³ÉÊýÁ¿
+                // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
                 maxSpawns = (int)(maxSpawns * 1.3f);
             }
         }
 
         public override void EditSpawnPool(IDictionary<int, float> pool, NPCSpawnInfo spawnInfo) {
-            // ÔÚµØ¸®ÇøÓòÌí¼ÓµØ¸®µÐ¹Öµ½Éú³É³Ø
+            // ï¿½ÚµØ¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÓµØ¸ï¿½ï¿½Ð¹Öµï¿½ï¿½ï¿½ï¿½É³ï¿½
             if (UnderworldEnemySpawnSystem.IsInUnderworldRegion(spawnInfo.Player)) {
-                // ¸ù¾ÝÓÎÏ·½ø¶Èµ÷Õû
+                // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï·ï¿½ï¿½ï¿½Èµï¿½ï¿½ï¿½
                 bool hardMode = Main.hardMode;
                 bool postPlantera = NPC.downedPlantBoss;
 
-                // Ìí¼ÓµØ¸®µÐ¹Ö
+                // ï¿½ï¿½ï¿½ÓµØ¸ï¿½ï¿½Ð¹ï¿½
                 float baseRate = hardMode ? 0.15f : 0.08f;
                 float rareRate = postPlantera ? 0.1f : 0.03f;
 
@@ -322,8 +323,8 @@ namespace AncientChineseMythology.Underworlds.Enemys
     }
 
     /// <summary>
-    /// µØ¸®µÐ¹ÖÔöÒæÐ§¹û
-    /// µØ¸®µÐ¹ÖÔÚµØ¸®ÇøÓòÄÚ»ñµÃÔöÒæ
+    /// ï¿½Ø¸ï¿½ï¿½Ð¹ï¿½ï¿½ï¿½ï¿½ï¿½Ð§ï¿½ï¿½
+    /// ï¿½Ø¸ï¿½ï¿½Ð¹ï¿½ï¿½ÚµØ¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     /// </summary>
     public class UnderworldEnemyBuff : GlobalNPC
     {
@@ -352,7 +353,7 @@ namespace AncientChineseMythology.Underworlds.Enemys
         public override void ModifyHitPlayer(NPC npc, Player target, ref Player.HurtModifiers modifiers) {
             if (!isUnderworldEnemy) return;
 
-            // ÔÚµØ¸®ÇøÓòÄÚÔì³É¶îÍâÉËº¦
+            // ï¿½ÚµØ¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É¶ï¿½ï¿½ï¿½ï¿½Ëºï¿½
             if (UnderworldEnemySpawnSystem.IsInUnderworldRegion(Main.player[npc.target])) {
                 modifiers.FinalDamage *= 1.1f;
             }
@@ -361,9 +362,9 @@ namespace AncientChineseMythology.Underworlds.Enemys
         public override void OnKill(NPC npc) {
             if (!isUnderworldEnemy) return;
 
-            // »÷É±µØ¸®µÐ¹ÖµÄ¶îÍâ½±Àø
+            // ï¿½ï¿½É±ï¿½Ø¸ï¿½ï¿½Ð¹ÖµÄ¶ï¿½ï¿½â½±ï¿½ï¿½
             if (UnderworldEnemySpawnSystem.IsInUnderworldRegion(Main.player[npc.target])) {
-                // ¶îÍâ¾­ÑéÁ£×ÓÐ§¹û
+                // ï¿½ï¿½ï¿½â¾­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð§ï¿½ï¿½
                 int dustType = DustID.Shadowflame;
                 if (npc.type == ModContent.NPCType<Yaksha>()) {
                     dustType = DustID.Torch;
