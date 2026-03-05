@@ -2046,10 +2046,13 @@ Projectiles: {
 	AoyuanIceball.DisplayName: Aoyuan Iceball
 	AoyuanIcicle.DisplayName: Aoyuan Icicle
 	AoyuanFrostBeam.DisplayName: Aoyuan Frost Beam
-	AoshunLightningBolt.DisplayName: Aoshun Lightning Bolt
-	AoshunThunderball.DisplayName: Aoshun Thunderball
-	AoshunThunderBeam.DisplayName: Aoshun Thunder Beam
-	AoshunThunderVortex.DisplayName: Aoshun Thunder Vortex
+	AoshunLightningNode.DisplayName: 闪电节点
+	AoshunDragonScale.DisplayName: 带电龙鳞
+	AoshunTornado.DisplayName: 龙卷风
+	AoshunThunderSeal.DisplayName: 天雷印
+	AoshunShockwave.DisplayName: 冲击波
+	AoshunStormEye.DisplayName: 风暴之眼
+	AoshunElectricTrail.DisplayName: 电弧痕迹
 	DivineWoodFlowerWave.DisplayName: Divine Wood Flower Wave
 	DivineWoodGiantSeed.DisplayName: Divine Wood Giant Seed
 	DivineWoodGyratingLeafProj.DisplayName: Divine Wood Gyrating Leaf Proj

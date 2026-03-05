@@ -8,60 +8,117 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 {
-    #region 雷球
+    #region 1. 闪电节点 - 雷链穿刺核心弹幕
 
     /// <summary>
-    /// 敖顺雷球 - 带微弱追踪的雷电弹幕
+    /// 闪电节点 - 固定在空中，延迟后与相邻节点间产生电弧伤害
+    /// ai[0] = 节点编号, ai[1] = 总节点数
+    /// 机制：节点存活期间，每隔一段时间对附近玩家/节点间区域放电
     /// </summary>
-    public class AoshunThunderball : ModProjectile
+    public class AoshunLightningNode : ModProjectile
     {
         public override string Texture => "InnoVault/Assets/placeholder";
 
-        private float thunderPhase;
-
-        public override void SetStaticDefaults() {
-            ProjectileID.Sets.TrailingMode[Type] = 2;
-            ProjectileID.Sets.TrailCacheLength[Type] = 12;
-        }
+        private float nodePhase;
+        private bool activated;
+        private const int ActivationDelay = 40;
+        private const int Duration = 180;
 
         public override void SetDefaults() {
-            Projectile.width = 24;
-            Projectile.height = 24;
+            Projectile.width = 20;
+            Projectile.height = 20;
             Projectile.friendly = false;
             Projectile.hostile = true;
-            Projectile.penetrate = 2;
+            Projectile.penetrate = -1;
             Projectile.tileCollide = false;
             Projectile.ignoreWater = true;
-            Projectile.timeLeft = 300;
-            Projectile.alpha = 0;
+            Projectile.timeLeft = ActivationDelay + Duration;
         }
 
         public override void AI() {
-            thunderPhase += 0.12f;
+            nodePhase += 0.08f;
+            Projectile.velocity = Vector2.Zero;
 
-            // 微弱追踪
-            if (Projectile.timeLeft > 220) {
-                Player target = Main.player[Player.FindClosest(Projectile.position, Projectile.width, Projectile.height)];
-                if (target.active && !target.dead) {
-                    Vector2 toTarget = target.Center - Projectile.Center;
-                    float targetAngle = toTarget.ToRotation();
-                    float currentAngle = Projectile.velocity.ToRotation();
-                    float newAngle = MathHelper.Lerp(currentAngle, targetAngle, 0.015f);
-                    Projectile.velocity = newAngle.ToRotationVector2() * Projectile.velocity.Length();
+            int timer = (ActivationDelay + Duration) - Projectile.timeLeft;
+
+            if (timer < ActivationDelay) {
+                // 预警阶段 - 闪烁增强
+                if (!VaultUtils.isServer && timer % 6 == 0) {
+                    var d = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(15, 15),
+                        DustID.Electric);
+                    d.noGravity = true;
+                    d.scale = 1.2f;
+                    d.velocity = Main.rand.NextVector2Circular(1, 1);
+                }
+            }
+            else {
+                activated = true;
+
+                // 激活后持续放电 - 寻找相邻节点并绘制电弧
+                if (!VaultUtils.isServer && timer % 8 == 0) {
+                    // 电弧粒子
+                    FindAndArcToNeighbors();
                 }
             }
 
-            Projectile.rotation = Projectile.velocity.ToRotation();
+            float breathe = 0.5f + MathF.Sin(nodePhase * 2f) * 0.3f;
+            Lighting.AddLight(Projectile.Center, AoshunHelper.LightningBlue.ToVector3() * breathe);
+        }
 
-            // 雷电粒子
-            if (Main.netMode != NetmodeID.Server && Main.rand.NextBool(2)) {
-                int dustType = Main.rand.NextBool() ? DustID.Electric : DustID.PurpleTorch;
-                int dust = Dust.NewDust(Projectile.Center, 0, 0, dustType, 0, 0, 180, default, 1.5f);
-                Main.dust[dust].noGravity = true;
-                Main.dust[dust].velocity = -Projectile.velocity * 0.12f + Main.rand.NextVector2Circular(0.5f, 0.5f);
+        private void FindAndArcToNeighbors() {
+            int nodeIndex = (int)Projectile.ai[0];
+            int totalNodes = (int)Projectile.ai[1];
+            int nextIndex = (nodeIndex + 1) % totalNodes;
+
+            // 查找相邻节点
+            for (int i = 0; i < Main.maxProjectiles; i++) {
+                var p = Main.projectile[i];
+                if (!p.active || p.type != Type || p.whoAmI == Projectile.whoAmI) continue;
+                if ((int)p.ai[0] == nextIndex && (int)p.ai[1] == totalNodes) {
+                    // 在两节点间生成电弧粒子
+                    Vector2 start = Projectile.Center;
+                    Vector2 end = p.Center;
+                    int steps = (int)(Vector2.Distance(start, end) / 20f);
+                    for (int s = 0; s < steps; s++) {
+                        float t = (float)s / steps;
+                        Vector2 pos = Vector2.Lerp(start, end, t);
+                        pos += Main.rand.NextVector2Circular(10, 10);
+                        var d = Dust.NewDustPerfect(pos, Main.rand.NextBool() ? DustID.Electric : DustID.PurpleTorch);
+                        d.noGravity = true;
+                        d.scale = 1.5f;
+                        d.velocity = Main.rand.NextVector2Circular(1, 1);
+                    }
+                    break;
+                }
             }
+        }
 
-            Lighting.AddLight(Projectile.Center, AoshunHelper.LightningBlue.ToVector3() * 0.6f);
+        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
+            if (!activated) return false;
+
+            // 节点本体碰撞
+            Vector2 targetCenter = targetHitbox.Center.ToVector2();
+            if (Vector2.Distance(Projectile.Center, targetCenter) < 50f)
+                return true;
+
+            // 与相邻节点的连线碰撞
+            int nodeIndex = (int)Projectile.ai[0];
+            int totalNodes = (int)Projectile.ai[1];
+            int nextIndex = (nodeIndex + 1) % totalNodes;
+
+            for (int i = 0; i < Main.maxProjectiles; i++) {
+                var p = Main.projectile[i];
+                if (!p.active || p.type != Type || p.whoAmI == Projectile.whoAmI) continue;
+                if ((int)p.ai[0] == nextIndex && (int)p.ai[1] == totalNodes) {
+                    float point = 0f;
+                    if (Collision.CheckAABBvLineCollision(
+                        targetHitbox.TopLeft(), targetHitbox.Size(),
+                        Projectile.Center, p.Center, 20f, ref point))
+                        return true;
+                    break;
+                }
+            }
+            return false;
         }
 
         public override bool PreDraw(ref Color lightColor) {
@@ -69,62 +126,86 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
             Vector2 origin = tex.Size() / 2f;
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
 
-            float pulse = 1f + MathF.Sin(thunderPhase * 2f) * 0.2f;
-
-            // 拖尾
-            for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                if (Projectile.oldPos[i] == Vector2.Zero) continue;
-                float progress = 1f - (float)i / Projectile.oldPos.Length;
-                Color trailColor = Color.Lerp(AoshunHelper.LightningBlue, AoshunHelper.ThunderPurple, 1f - progress);
-                trailColor *= progress * 0.4f;
-                trailColor.A = 0;
-
-                Vector2 pos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                Main.spriteBatch.Draw(tex, pos, null, trailColor, 0f, origin, 0.5f * progress * pulse, SpriteEffects.None, 0f);
-            }
+            float pulse = 1f + MathF.Sin(nodePhase * 3f) * 0.25f;
+            float alpha = activated ? 0.8f : (0.3f + MathF.Sin(nodePhase * 5f) * 0.2f);
 
             // 外层光晕
-            Color outerColor = AoshunHelper.ThunderPurple * 0.35f * pulse;
+            Color outerColor = AoshunHelper.ThunderPurple * 0.3f * alpha * pulse;
             outerColor.A = 0;
-            Main.spriteBatch.Draw(tex, drawPos, null, outerColor, 0f, origin, 0.9f * pulse, SpriteEffects.None, 0f);
-
-            // 中层
-            Color midColor = AoshunHelper.LightningBlue * 0.5f * pulse;
-            midColor.A = 0;
-            Main.spriteBatch.Draw(tex, drawPos, null, midColor, 0f, origin, 0.55f * pulse, SpriteEffects.None, 0f);
+            Main.spriteBatch.Draw(tex, drawPos, null, outerColor, 0f, origin, 1.2f * pulse, SpriteEffects.None, 0f);
 
             // 核心
-            Color coreColor = AoshunHelper.ElectricWhite * 0.8f;
+            Color coreColor = AoshunHelper.ElectricWhite * 0.7f * alpha;
             coreColor.A = 0;
-            Main.spriteBatch.Draw(tex, drawPos, null, coreColor, 0f, origin, 0.3f * pulse, SpriteEffects.None, 0f);
+            Main.spriteBatch.Draw(tex, drawPos, null, coreColor, 0f, origin, 0.5f * pulse, SpriteEffects.None, 0f);
+
+            // 如果激活且有相邻节点，绘制连线
+            if (activated) {
+                DrawArcToNeighbor(tex, origin);
+            }
 
             return false;
         }
 
-        public override void OnKill(int timeLeft) {
-            if (Main.netMode == NetmodeID.Server) return;
+        private void DrawArcToNeighbor(Texture2D tex, Vector2 origin) {
+            int nodeIndex = (int)Projectile.ai[0];
+            int totalNodes = (int)Projectile.ai[1];
+            int nextIndex = (nodeIndex + 1) % totalNodes;
 
-            for (int i = 0; i < 10; i++) {
-                Vector2 vel = Main.rand.NextVector2Circular(4, 4);
-                int dustType = Main.rand.NextBool() ? DustID.Electric : DustID.PurpleTorch;
-                int dust = Dust.NewDust(Projectile.Center, 0, 0, dustType, vel.X, vel.Y, 150, default, 1.5f);
-                Main.dust[dust].noGravity = true;
+            for (int i = 0; i < Main.maxProjectiles; i++) {
+                var p = Main.projectile[i];
+                if (!p.active || p.type != Type || p.whoAmI == Projectile.whoAmI) continue;
+                if ((int)p.ai[0] == nextIndex && (int)p.ai[1] == totalNodes) {
+                    // 在两点间绘制光点连线
+                    Vector2 start = Projectile.Center - Main.screenPosition;
+                    Vector2 end = p.Center - Main.screenPosition;
+                    int segments = (int)(Vector2.Distance(start, end) / 25f);
+                    float flicker = MathF.Sin(nodePhase * 4f + Projectile.whoAmI) * 0.3f;
+
+                    for (int s = 0; s <= segments; s++) {
+                        float t = (float)s / Math.Max(segments, 1);
+                        Vector2 pos = Vector2.Lerp(start, end, t);
+                        // 锯齿偏移
+                        float zigzag = MathF.Sin(t * MathF.PI * 4f + nodePhase * 3f) * 12f;
+                        Vector2 perp = (end - start).SafeNormalize(Vector2.UnitY);
+                        perp = new Vector2(-perp.Y, perp.X);
+                        pos += perp * zigzag;
+
+                        Color arcColor = Color.Lerp(AoshunHelper.LightningBlue, AoshunHelper.ElectricWhite, 0.5f + flicker);
+                        arcColor *= 0.5f;
+                        arcColor.A = 0;
+                        Main.spriteBatch.Draw(tex, pos, null, arcColor, 0f, origin, 0.3f, SpriteEffects.None, 0f);
+                    }
+                    break;
+                }
+            }
+        }
+
+        public override void OnKill(int timeLeft) {
+            if (VaultUtils.isServer) return;
+            for (int i = 0; i < 8; i++) {
+                var d = Dust.NewDustPerfect(Projectile.Center, DustID.Electric);
+                d.noGravity = true;
+                d.scale = 1.5f;
+                d.velocity = Main.rand.NextVector2Circular(4, 4);
             }
         }
     }
 
     #endregion
 
-    #region 雷柱
+    #region 2. 龙鳞弹幕 - 龙鳞风暴的投射物
 
     /// <summary>
-    /// 敖顺雷柱 - 从空中下落的雷电柱
+    /// 带电龙鳞 - 从蠕虫身体段抛射，带重力和弹跳
+    /// 碰到地面不消失而是弹跳一次并留下短暂电场
     /// </summary>
-    public class AoshunLightningBolt : ModProjectile
+    public class AoshunDragonScale : ModProjectile
     {
         public override string Texture => "InnoVault/Assets/placeholder";
 
-        private float thunderPhase;
+        private int bounceCount;
+        private float scalePhase;
 
         public override void SetStaticDefaults() {
             ProjectileID.Sets.TrailingMode[Type] = 2;
@@ -132,36 +213,56 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
         }
 
         public override void SetDefaults() {
-            Projectile.width = 32;
-            Projectile.height = 32;
+            Projectile.width = 16;
+            Projectile.height = 16;
             Projectile.friendly = false;
             Projectile.hostile = true;
-            Projectile.penetrate = 1;
+            Projectile.penetrate = 2;
             Projectile.tileCollide = true;
             Projectile.ignoreWater = true;
-            Projectile.timeLeft = 300;
+            Projectile.timeLeft = 240;
         }
 
         public override void AI() {
-            thunderPhase += 0.1f;
-            Projectile.rotation += 0.1f;
+            scalePhase += 0.15f;
 
-            // 加速下落
-            if (Projectile.velocity.Y < 18f)
-                Projectile.velocity.Y += 0.3f;
+            // 带重力
+            Projectile.velocity.Y += 0.15f;
+            Projectile.rotation += Projectile.velocity.X * 0.05f;
 
-            // 雷电尾迹
-            if (Main.netMode != NetmodeID.Server) {
-                for (int i = 0; i < 2; i++) {
-                    Vector2 dustPos = Projectile.Center + Main.rand.NextVector2Circular(10, 10);
-                    int dustType = Main.rand.NextBool() ? DustID.Electric : DustID.PurpleTorch;
-                    int dust = Dust.NewDust(dustPos, 0, 0, dustType, 0, -2, 100, default, 2f);
-                    Main.dust[dust].noGravity = true;
-                    Main.dust[dust].velocity = -Projectile.velocity * 0.1f;
-                }
+            // 电弧尾迹
+            if (!VaultUtils.isServer && Main.rand.NextBool(3)) {
+                int dustType = Main.rand.NextBool() ? DustID.Electric : DustID.PurpleTorch;
+                var d = Dust.NewDustPerfect(Projectile.Center, dustType);
+                d.noGravity = true;
+                d.scale = 1.2f;
+                d.velocity = -Projectile.velocity * 0.1f;
             }
 
-            Lighting.AddLight(Projectile.Center, AoshunHelper.LightningBlue.ToVector3() * 0.8f);
+            Lighting.AddLight(Projectile.Center, AoshunHelper.NorthSeaCyan.ToVector3() * 0.4f);
+        }
+
+        public override bool OnTileCollide(Vector2 oldVelocity) {
+            bounceCount++;
+            if (bounceCount >= 2) return true;
+
+            // 弹跳
+            if (Math.Abs(Projectile.velocity.Y - oldVelocity.Y) > 1f)
+                Projectile.velocity.Y = -oldVelocity.Y * 0.5f;
+            if (Math.Abs(Projectile.velocity.X - oldVelocity.X) > 1f)
+                Projectile.velocity.X = -oldVelocity.X * 0.5f;
+
+            // 弹跳时放出电火花
+            if (!VaultUtils.isServer) {
+                for (int i = 0; i < 6; i++) {
+                    var d = Dust.NewDustPerfect(Projectile.Center, DustID.Electric);
+                    d.noGravity = true;
+                    d.velocity = Main.rand.NextVector2Circular(3, 3);
+                    d.scale = 1.5f;
+                }
+            }
+            SoundEngine.PlaySound(SoundID.Item10 with { Pitch = 0.5f, Volume = 0.5f }, Projectile.Center);
+            return false;
         }
 
         public override bool PreDraw(ref Color lightColor) {
@@ -169,155 +270,410 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
             Vector2 origin = tex.Size() / 2f;
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
 
-            float pulse = 1f + MathF.Sin(thunderPhase * 3f) * 0.15f;
+            float pulse = 1f + MathF.Sin(scalePhase * 2f) * 0.15f;
 
             // 拖尾
             for (int i = 0; i < Projectile.oldPos.Length; i++) {
                 if (Projectile.oldPos[i] == Vector2.Zero) continue;
                 float progress = 1f - (float)i / Projectile.oldPos.Length;
-                Color trailColor = Color.Lerp(AoshunHelper.ElectricWhite, AoshunHelper.ThunderPurple, 1f - progress);
-                trailColor *= progress * 0.5f;
+                Color trailColor = Color.Lerp(AoshunHelper.NorthSeaCyan, AoshunHelper.ThunderPurple, 1f - progress);
+                trailColor *= progress * 0.4f;
                 trailColor.A = 0;
-
                 Vector2 pos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                Main.spriteBatch.Draw(tex, pos, null, trailColor, 0f, origin, (0.6f + progress * 0.4f) * pulse, SpriteEffects.None, 0f);
+                Main.spriteBatch.Draw(tex, pos, null, trailColor, 0f, origin, 0.35f * progress * pulse, SpriteEffects.None, 0f);
             }
 
-            // 外层光晕
-            Color outerColor = AoshunHelper.ThunderPurple * 0.4f * pulse;
-            outerColor.A = 0;
-            Main.spriteBatch.Draw(tex, drawPos, null, outerColor, 0f, origin, 1.4f * pulse, SpriteEffects.None, 0f);
-
-            // 中层
-            Color midColor = AoshunHelper.LightningBlue * 0.6f * pulse;
-            midColor.A = 0;
-            Main.spriteBatch.Draw(tex, drawPos, null, midColor, 0f, origin, 0.9f * pulse, SpriteEffects.None, 0f);
-
             // 核心
-            Color coreColor = AoshunHelper.ElectricWhite * 0.9f;
+            Color coreColor = AoshunHelper.NorthSeaCyan * 0.7f * pulse;
             coreColor.A = 0;
-            Main.spriteBatch.Draw(tex, drawPos, null, coreColor, 0f, origin, 0.5f * pulse, SpriteEffects.None, 0f);
+            Main.spriteBatch.Draw(tex, drawPos, null, coreColor, Projectile.rotation, origin, 0.45f * pulse, SpriteEffects.None, 0f);
+
+            Color innerColor = AoshunHelper.ElectricWhite * 0.6f;
+            innerColor.A = 0;
+            Main.spriteBatch.Draw(tex, drawPos, null, innerColor, Projectile.rotation, origin, 0.25f, SpriteEffects.None, 0f);
 
             return false;
         }
 
         public override void OnKill(int timeLeft) {
-            if (Main.netMode == NetmodeID.Server) return;
-
-            // 落地雷电爆发
-            for (int i = 0; i < 20; i++) {
-                Vector2 vel = Main.rand.NextVector2Circular(6, 6);
-                int dustType = Main.rand.NextBool() ? DustID.Electric : DustID.PurpleTorch;
-                int dust = Dust.NewDust(Projectile.Center, 0, 0, dustType, vel.X, vel.Y, 100, default, 2.5f);
-                Main.dust[dust].noGravity = true;
-            }
-
-            // 电弧飞溅
+            if (VaultUtils.isServer) return;
             for (int i = 0; i < 8; i++) {
-                float angle = MathHelper.TwoPi * i / 8;
-                Vector2 vel = angle.ToRotationVector2() * Main.rand.NextFloat(3, 6);
-                var d = Dust.NewDustPerfect(Projectile.Center, DustID.Electric);
-                d.noGravity = false;
-                d.scale = 1.5f;
-                d.velocity = vel;
+                var d = Dust.NewDustPerfect(Projectile.Center,
+                    Main.rand.NextBool() ? DustID.Electric : DustID.PurpleTorch);
+                d.noGravity = true;
+                d.velocity = Main.rand.NextVector2Circular(3, 3);
             }
         }
     }
 
     #endregion
 
-    #region 雷电旋涡
+    #region 3. 龙卷风 - 龙卷缠绕的追踪弹幕
 
     /// <summary>
-    /// 敖顺雷电旋涡 - 停留在原地的旋转雷电区域
+    /// 龙卷风弹幕 - 缓慢追踪玩家，大范围碰撞，带击退
+    /// 存活期间持续产生旋风粒子和吸引效果
     /// </summary>
-    public class AoshunThunderVortex : ModProjectile
+    public class AoshunTornado : ModProjectile
     {
         public override string Texture => "InnoVault/Assets/placeholder";
 
-        private float vortexAngle;
-        private float vortexAlpha;
+        private float spinAngle;
+        private float tornadoAlpha;
 
         public override void SetStaticDefaults() {
             ProjectileID.Sets.DrawScreenCheckFluff[Type] = 1000;
         }
 
         public override void SetDefaults() {
-            Projectile.width = 80;
-            Projectile.height = 80;
+            Projectile.width = 60;
+            Projectile.height = 60;
             Projectile.friendly = false;
             Projectile.hostile = true;
             Projectile.penetrate = -1;
             Projectile.tileCollide = false;
             Projectile.ignoreWater = true;
-            Projectile.timeLeft = 240;
+            Projectile.timeLeft = 360;
         }
 
         public override void AI() {
-            vortexAngle += 0.15f;
-            vortexAlpha = MathHelper.Lerp(vortexAlpha, 1f, 0.05f);
+            spinAngle += 0.2f;
+            tornadoAlpha = MathHelper.Lerp(tornadoAlpha, 1f, 0.03f);
 
-            Projectile.velocity *= 0.95f;
+            // 缓慢追踪玩家
+            Player target = Main.player[Player.FindClosest(Projectile.position, Projectile.width, Projectile.height)];
+            if (target.active && !target.dead) {
+                Vector2 toTarget = target.Center - Projectile.Center;
+                float targetAngle = toTarget.ToRotation();
+                float currentAngle = Projectile.velocity.ToRotation();
+                float newAngle = MathHelper.Lerp(currentAngle, targetAngle, 0.02f);
+                float speed = Math.Min(Projectile.velocity.Length(), 4f);
+                if (speed < 2f) speed = 2f;
+                Projectile.velocity = newAngle.ToRotationVector2() * speed;
+            }
 
-            // 旋转雷电粒子
-            if (Main.netMode != NetmodeID.Server) {
-                for (int i = 0; i < 4; i++) {
-                    float angle = vortexAngle + MathHelper.TwoPi * i / 4;
-                    float radius = 60f + MathF.Sin(vortexAngle * 2f + i) * 20f;
-                    Vector2 dustPos = Projectile.Center + angle.ToRotationVector2() * radius;
-                    int dustType = Main.rand.NextBool() ? DustID.Electric : DustID.PurpleTorch;
-                    int dust = Dust.NewDust(dustPos, 0, 0, dustType, 0, 0, 150, default, 2f);
-                    Main.dust[dust].noGravity = true;
-                    Main.dust[dust].velocity = (angle + MathHelper.PiOver2).ToRotationVector2() * 5f;
+            // 轻微吸引附近玩家
+            for (int i = 0; i < Main.maxPlayers; i++) {
+                Player p = Main.player[i];
+                if (!p.active || p.dead) continue;
+                float dist = Vector2.Distance(Projectile.Center, p.Center);
+                if (dist < 200f && dist > 30f) {
+                    Vector2 pull = (Projectile.Center - p.Center).SafeNormalize(Vector2.Zero) * 0.3f;
+                    p.velocity += pull;
                 }
             }
 
-            Lighting.AddLight(Projectile.Center, AoshunHelper.LightningBlue.ToVector3() * 0.6f * vortexAlpha);
+            // 旋风粒子
+            if (!VaultUtils.isServer) {
+                for (int i = 0; i < 3; i++) {
+                    float angle = spinAngle + MathHelper.TwoPi * i / 3;
+                    float radius = 30f + MathF.Sin(spinAngle + i) * 15f;
+                    Vector2 dustPos = Projectile.Center + angle.ToRotationVector2() * radius;
+                    dustPos.Y += Main.rand.NextFloat(-40, 0); // 向上延伸
+
+                    int dustType = Main.rand.NextBool(3) ? DustID.Electric : DustID.Cloud;
+                    var d = Dust.NewDustPerfect(dustPos, dustType);
+                    d.noGravity = true;
+                    d.scale = 1.5f + Main.rand.NextFloat(0.5f);
+                    d.velocity = (angle + MathHelper.PiOver2).ToRotationVector2() * 4f + new Vector2(0, -2);
+                }
+            }
+
+            Lighting.AddLight(Projectile.Center, AoshunHelper.StormGray.ToVector3() * 0.5f * tornadoAlpha);
         }
 
         public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
-            Vector2 targetCenter = targetHitbox.Center.ToVector2();
-            float distance = Vector2.Distance(Projectile.Center, targetCenter);
-            return distance < 70f;
+            float dist = Vector2.Distance(Projectile.Center, targetHitbox.Center.ToVector2());
+            return dist < 55f;
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            AoshunHelper.DrawThunderAura(Main.spriteBatch, Projectile.Center, 70f, vortexAngle, vortexAlpha);
+            Texture2D tex = ACMAsset.SoftGlow ?? TextureAssets.Projectile[Type].Value;
+            Vector2 origin = tex.Size() / 2f;
+            Vector2 drawPos = Projectile.Center - Main.screenPosition;
+
+            // 多层旋转光效模拟龙卷
+            for (int ring = 0; ring < 4; ring++) {
+                float ringY = -ring * 20f;
+                float ringScale = 0.8f - ring * 0.12f;
+                float ringRot = spinAngle * (1f + ring * 0.4f);
+                int particles = 6;
+
+                for (int i = 0; i < particles; i++) {
+                    float angle = ringRot + MathHelper.TwoPi * i / particles;
+                    float radius = (30f - ring * 5f) * ringScale;
+                    Vector2 pos = drawPos + angle.ToRotationVector2() * radius + new Vector2(0, ringY);
+
+                    Color color = Color.Lerp(AoshunHelper.StormGray, AoshunHelper.LightningBlue, ring / 3f);
+                    color *= tornadoAlpha * (0.5f - ring * 0.08f);
+                    color.A = 0;
+                    Main.spriteBatch.Draw(tex, pos, null, color, 0f, origin, ringScale * 0.5f, SpriteEffects.None, 0f);
+                }
+            }
+
+            // 底部涡流
+            Color vortexColor = AoshunHelper.ThunderPurple * 0.3f * tornadoAlpha;
+            vortexColor.A = 0;
+            Main.spriteBatch.Draw(tex, drawPos, null, vortexColor, spinAngle, origin, 0.9f, SpriteEffects.None, 0f);
+
             return false;
         }
 
         public override void OnKill(int timeLeft) {
-            if (Main.netMode == NetmodeID.Server) return;
-
-            for (int i = 0; i < 20; i++) {
-                float angle = MathHelper.TwoPi * i / 20;
-                Vector2 vel = angle.ToRotationVector2() * 5f;
-                int dust = Dust.NewDust(Projectile.Center, 0, 0, DustID.Electric, vel.X, vel.Y, 100, default, 2f);
-                Main.dust[dust].noGravity = true;
+            if (VaultUtils.isServer) return;
+            for (int i = 0; i < 15; i++) {
+                float angle = MathHelper.TwoPi * i / 15;
+                var d = Dust.NewDustPerfect(Projectile.Center, DustID.Cloud);
+                d.noGravity = true;
+                d.velocity = angle.ToRotationVector2() * 5f;
+                d.scale = 2f;
             }
         }
     }
 
     #endregion
 
-    #region 雷柱激光
+    #region 4. 天雷印 - 延迟落雷标记
 
     /// <summary>
-    /// 敖顺雷柱激光 - 从Boss口中射出的柱状雷束大招
-    /// 蓄力后释放持续雷束，缓慢追踪玩家方向扫射
-    /// ai[0]: 持续时间计数, ai[1]: 目标角度
+    /// 天雷印标记 - 固定在地面/空中，倒计时后引爆为巨大雷击柱
+    /// ai[0] = 延迟帧数（倒计时）
+    /// 预警阶段显示地面电弧标记，到时间后变为高伤雷柱
     /// </summary>
-    public class AoshunThunderBeam : ModProjectile
+    public class AoshunThunderSeal : ModProjectile
     {
         public override string Texture => "InnoVault/Assets/placeholder";
 
-        private const float BeamLength = 1800f;
-        private const float BeamWidth = 40f;
-        private const int ChargeTime = 60;
-        private const int BeamDuration = 180;
+        private float sealPhase;
+        private bool detonated;
 
-        private float beamAlpha;
-        private float beamPhase;
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.DrawScreenCheckFluff[Type] = 800;
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = 40;
+            Projectile.height = 40;
+            Projectile.friendly = false;
+            Projectile.hostile = false; // 预警阶段不伤害
+            Projectile.penetrate = -1;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.timeLeft = 300; // 会在AI中自我管理
+        }
+
+        public override void AI() {
+            sealPhase += 0.1f;
+            Projectile.velocity = Vector2.Zero;
+
+            Projectile.ai[0]--;
+
+            if (Projectile.ai[0] > 0) {
+                // 预警阶段 - 电弧标记越来越密集
+                float urgency = 1f - Projectile.ai[0] / 90f; // 原延迟比例
+                urgency = Math.Clamp(urgency, 0f, 1f);
+
+                if (!VaultUtils.isServer) {
+                    int particleCount = (int)(urgency * 6) + 1;
+                    for (int i = 0; i < particleCount; i++) {
+                        Vector2 dustPos = Projectile.Center + Main.rand.NextVector2Circular(30 + urgency * 20, 30 + urgency * 20);
+                        var d = Dust.NewDustPerfect(dustPos, DustID.Electric);
+                        d.noGravity = true;
+                        d.scale = 1f + urgency;
+                        d.velocity = (Projectile.Center - dustPos).SafeNormalize(Vector2.Zero) * (2f + urgency * 3f);
+                    }
+                }
+
+                // 倒计时音效
+                if (Projectile.ai[0] == 10) {
+                    SoundEngine.PlaySound(SoundID.Item15 with { Pitch = 0.3f, Volume = 0.8f }, Projectile.Center);
+                }
+
+                Lighting.AddLight(Projectile.Center, AoshunHelper.LightningBlue.ToVector3() * 0.4f * urgency);
+            }
+            else if (!detonated) {
+                // 引爆！
+                detonated = true;
+                Projectile.hostile = true;
+                Projectile.width = 80;
+                Projectile.height = 800;
+                Projectile.position.X -= 20; // 居中扩展后的碰撞箱
+                Projectile.position.Y -= 700; // 雷柱向上延伸
+                Projectile.timeLeft = 15; // 短暂存在
+
+                SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.2f, Volume = 1.5f }, Projectile.Center);
+
+                // 爆发粒子
+                if (!VaultUtils.isServer) {
+                    for (int i = 0; i < 30; i++) {
+                        Vector2 dustPos = Projectile.Center + new Vector2(Main.rand.NextFloat(-40, 40), Main.rand.NextFloat(-400, 0));
+                        int dustType = Main.rand.NextBool() ? DustID.Electric : DustID.PurpleTorch;
+                        var d = Dust.NewDustPerfect(dustPos, dustType);
+                        d.noGravity = true;
+                        d.scale = 2.5f;
+                        d.velocity = new Vector2(Main.rand.NextFloat(-3, 3), Main.rand.NextFloat(-8, -2));
+                    }
+
+                    // 地面碎裂粒子
+                    for (int i = 0; i < 10; i++) {
+                        Vector2 pos = Projectile.Center + new Vector2(Main.rand.NextFloat(-50, 50), 0);
+                        var d = Dust.NewDustPerfect(pos, DustID.Smoke);
+                        d.noGravity = false;
+                        d.scale = 2f;
+                        d.velocity = new Vector2(Main.rand.NextFloat(-4, 4), Main.rand.NextFloat(-6, -1));
+                    }
+                }
+
+                Lighting.AddLight(Projectile.Center, AoshunHelper.ElectricWhite.ToVector3() * 2f);
+            }
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            Texture2D tex = ACMAsset.SoftGlow ?? TextureAssets.Projectile[Type].Value;
+            Vector2 origin = tex.Size() / 2f;
+            Vector2 drawPos = Projectile.Center - Main.screenPosition;
+
+            if (!detonated) {
+                // 预警标记 - 地面旋转电弧圈
+                float urgency = Math.Clamp(1f - Projectile.ai[0] / 90f, 0f, 1f);
+                float pulse = 1f + MathF.Sin(sealPhase * 4f) * 0.3f * urgency;
+
+                Color markColor = Color.Lerp(AoshunHelper.LightningBlue, AoshunHelper.ElectricWhite, urgency) * (0.3f + urgency * 0.5f);
+                markColor.A = 0;
+                Main.spriteBatch.Draw(tex, drawPos, null, markColor, sealPhase * 2f, origin, (0.8f + urgency * 0.5f) * pulse, SpriteEffects.None, 0f);
+
+                // 内圈
+                Color innerColor = AoshunHelper.ThunderPurple * (0.2f + urgency * 0.3f);
+                innerColor.A = 0;
+                Main.spriteBatch.Draw(tex, drawPos, null, innerColor, -sealPhase * 3f, origin, 0.4f * pulse, SpriteEffects.None, 0f);
+            }
+            else {
+                // 雷柱 - 从标记点向上延伸的光柱
+                float fade = Projectile.timeLeft / 15f;
+
+                for (int y = 0; y < 20; y++) {
+                    Vector2 pillarPos = drawPos + new Vector2(0, -y * 40f);
+                    float wave = MathF.Sin(sealPhase * 3f + y * 0.5f) * 8f;
+                    pillarPos.X += wave;
+
+                    Color pillarColor = Color.Lerp(AoshunHelper.LightningBlue, AoshunHelper.ElectricWhite, y / 20f);
+                    pillarColor *= fade * 0.6f;
+                    pillarColor.A = 0;
+                    Main.spriteBatch.Draw(tex, pillarPos, null, pillarColor, 0f, origin, new Vector2(1.5f, 2f), SpriteEffects.None, 0f);
+                }
+
+                // 底部爆发光
+                Color burstColor = AoshunHelper.ElectricWhite * fade;
+                burstColor.A = 0;
+                Main.spriteBatch.Draw(tex, drawPos, null, burstColor, 0f, origin, 3f * fade, SpriteEffects.None, 0f);
+            }
+
+            return false;
+        }
+    }
+
+    #endregion
+
+    #region 5. 冲击波 - 环形扩散弹幕
+
+    /// <summary>
+    /// 冲击波 - 从Boss向外扩散的环形弹幕
+    /// 用于深渊伏击和龙王怒啸
+    /// </summary>
+    public class AoshunShockwave : ModProjectile
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+
+        private float wavePhase;
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.TrailingMode[Type] = 2;
+            ProjectileID.Sets.TrailCacheLength[Type] = 6;
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = 30;
+            Projectile.height = 30;
+            Projectile.friendly = false;
+            Projectile.hostile = true;
+            Projectile.penetrate = 1;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.timeLeft = 120;
+        }
+
+        public override void AI() {
+            wavePhase += 0.1f;
+            Projectile.rotation = Projectile.velocity.ToRotation();
+
+            // 逐渐减速
+            Projectile.velocity *= 0.98f;
+
+            if (!VaultUtils.isServer && Main.rand.NextBool(2)) {
+                int dustType = Main.rand.NextBool() ? DustID.Electric : DustID.PurpleTorch;
+                var d = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(10, 10), dustType);
+                d.noGravity = true;
+                d.scale = 1.5f;
+                d.velocity = -Projectile.velocity * 0.2f;
+            }
+
+            Lighting.AddLight(Projectile.Center, AoshunHelper.LightningBlue.ToVector3() * 0.5f);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            Texture2D tex = ACMAsset.SoftGlow ?? TextureAssets.Projectile[Type].Value;
+            Vector2 origin = tex.Size() / 2f;
+            Vector2 drawPos = Projectile.Center - Main.screenPosition;
+
+            float pulse = 1f + MathF.Sin(wavePhase * 3f) * 0.2f;
+
+            // 拖尾
+            for (int i = 0; i < Projectile.oldPos.Length; i++) {
+                if (Projectile.oldPos[i] == Vector2.Zero) continue;
+                float progress = 1f - (float)i / Projectile.oldPos.Length;
+                Color trailColor = AoshunHelper.LightningBlue * progress * 0.3f;
+                trailColor.A = 0;
+                Vector2 pos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
+                Main.spriteBatch.Draw(tex, pos, null, trailColor, 0f, origin, 0.6f * progress, SpriteEffects.None, 0f);
+            }
+
+            // 主体
+            Color coreColor = AoshunHelper.ElectricWhite * 0.7f * pulse;
+            coreColor.A = 0;
+            Main.spriteBatch.Draw(tex, drawPos, null, coreColor, Projectile.rotation, origin, 0.5f * pulse, SpriteEffects.None, 0f);
+
+            return false;
+        }
+
+        public override void OnKill(int timeLeft) {
+            if (VaultUtils.isServer) return;
+            for (int i = 0; i < 6; i++) {
+                var d = Dust.NewDustPerfect(Projectile.Center, DustID.Electric);
+                d.noGravity = true;
+                d.velocity = Main.rand.NextVector2Circular(3, 3);
+            }
+        }
+    }
+
+    #endregion
+
+    #region 6. 风暴之眼 - 缩小安全区
+
+    /// <summary>
+    /// 风暴之眼 - 以固定位置为中心的缩小安全区
+    /// ai[0] = 总持续时间
+    /// 安全区内部不伤害，外部持续伤害
+    /// 半径从700逐渐缩小到200，然后消散
+    /// </summary>
+    public class AoshunStormEye : ModProjectile
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+
+        private const float MaxRadius = 700f;
+        private const float MinRadius = 200f;
+
+        private float stormPhase;
+        private float currentRadius;
 
         public override void SetStaticDefaults() {
             ProjectileID.Sets.DrawScreenCheckFluff[Type] = 2000;
@@ -327,198 +683,189 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
             Projectile.width = 10;
             Projectile.height = 10;
             Projectile.friendly = false;
-            Projectile.hostile = true;
+            Projectile.hostile = false; // 手动碰撞检测
             Projectile.penetrate = -1;
             Projectile.tileCollide = false;
             Projectile.ignoreWater = true;
-            Projectile.timeLeft = ChargeTime + BeamDuration;
+            Projectile.timeLeft = 400;
         }
 
         public override void AI() {
-            beamPhase += 0.1f;
-            int timer = (ChargeTime + BeamDuration) - Projectile.timeLeft;
+            stormPhase += 0.05f;
+            Projectile.velocity = Vector2.Zero;
 
-            // 找到头部NPC保持位置
-            bool foundOwner = false;
-            for (int i = 0; i < Main.maxNPCs; i++) {
-                if (Main.npc[i].active && Main.npc[i].type == ModContent.NPCType<Aoshun>()) {
-                    Projectile.Center = Main.npc[i].Center;
-                    foundOwner = true;
-                    break;
+            int totalDuration = (int)Projectile.ai[0];
+            if (totalDuration <= 0) totalDuration = 240;
+            int elapsed = totalDuration - Projectile.timeLeft + (400 - totalDuration);
+
+            // 半径缩小曲线
+            float progress = Math.Clamp((float)elapsed / totalDuration, 0f, 1f);
+            currentRadius = MathHelper.Lerp(MaxRadius, MinRadius, AoshunHelper.SineInOut(progress));
+
+            // 对安全区外的玩家造成伤害
+            for (int i = 0; i < Main.maxPlayers; i++) {
+                Player p = Main.player[i];
+                if (!p.active || p.dead) continue;
+
+                float dist = Vector2.Distance(Projectile.Center, p.Center);
+                if (dist > currentRadius) {
+                    // 惩罚伤害 - 越远越痛
+                    float overflowRatio = (dist - currentRadius) / 200f;
+                    overflowRatio = Math.Clamp(overflowRatio, 0f, 1f);
+                    int dmg = (int)(10 + overflowRatio * 30);
+                    if (Main.GameUpdateCount % 15 == 0) {
+                        p.Hurt(Terraria.DataStructures.PlayerDeathReason.ByCustomReason(
+                            p.name + " 被北海风暴吞噬"),
+                            dmg, 0);
+                    }
+
+                    // 推向中心的力
+                    Vector2 push = (Projectile.Center - p.Center).SafeNormalize(Vector2.Zero) * 0.5f;
+                    p.velocity += push;
                 }
             }
-            if (!foundOwner) {
+
+            // 风暴壁粒子
+            if (!VaultUtils.isServer) {
+                int particleCount = (int)(currentRadius / 30f);
+                for (int i = 0; i < particleCount; i++) {
+                    float angle = stormPhase * 2f + MathHelper.TwoPi * i / particleCount;
+                    Vector2 dustPos = Projectile.Center + angle.ToRotationVector2() * currentRadius;
+                    dustPos += Main.rand.NextVector2Circular(15, 15);
+
+                    int dustType = Main.rand.NextBool(3) ? DustID.Electric : DustID.Cloud;
+                    var d = Dust.NewDustPerfect(dustPos, dustType);
+                    d.noGravity = true;
+                    d.scale = 2f;
+                    d.velocity = (angle + MathHelper.PiOver2).ToRotationVector2() * 5f;
+                }
+            }
+
+            Lighting.AddLight(Projectile.Center, AoshunHelper.LightningBlue.ToVector3() * 0.3f);
+
+            // 超时销毁
+            if (Projectile.timeLeft <= 400 - totalDuration) {
                 Projectile.Kill();
-                return;
             }
-
-            if (timer < ChargeTime) {
-                // 蓄力阶段 - 雷电汇聚粒子
-                beamAlpha = (float)timer / ChargeTime * 0.5f;
-
-                // 缓慢追踪玩家
-                Player target = Main.player[Player.FindClosest(Projectile.position, Projectile.width, Projectile.height)];
-                if (target.active && !target.dead) {
-                    float targetAngle = (target.Center - Projectile.Center).ToRotation();
-                    Projectile.ai[1] = MathHelper.Lerp(Projectile.ai[1], targetAngle, 0.08f);
-                }
-
-                if (Main.netMode != NetmodeID.Server && timer % 3 == 0) {
-                    Vector2 dir = Projectile.ai[1].ToRotationVector2();
-                    for (int i = 0; i < 6; i++) {
-                        float dist = Main.rand.NextFloat(100, 300);
-                        Vector2 offset = dir.RotatedByRandom(1.2f) * dist;
-                        Vector2 dustPos = Projectile.Center + offset;
-                        Vector2 dustVel = (Projectile.Center - dustPos).SafeNormalize(Vector2.Zero) * (6f + dist * 0.02f);
-                        int d = Dust.NewDust(dustPos, 0, 0, DustID.Electric, dustVel.X, dustVel.Y, 150, default, 2f);
-                        Main.dust[d].noGravity = true;
-                    }
-                }
-
-                // 蓄力音效
-                if (timer == 10) {
-                    SoundEngine.PlaySound(SoundID.Item15 with { Pitch = -0.5f, Volume = 1.5f }, Projectile.Center);
-                }
-            }
-            else {
-                // 激光阶段
-                int beamTimer = timer - ChargeTime;
-                float fadeIn = Math.Min(beamTimer / 15f, 1f);
-                float fadeOut = Math.Min((BeamDuration - beamTimer) / 20f, 1f);
-                beamAlpha = fadeIn * fadeOut;
-
-                // 缓慢扫射追踪
-                Player target = Main.player[Player.FindClosest(Projectile.position, Projectile.width, Projectile.height)];
-                if (target.active && !target.dead) {
-                    float targetAngle = (target.Center - Projectile.Center).ToRotation();
-                    Projectile.ai[1] = MathHelper.Lerp(Projectile.ai[1], targetAngle, 0.012f);
-                }
-
-                // 激光沿线粒子
-                if (Main.netMode != NetmodeID.Server) {
-                    Vector2 dir = Projectile.ai[1].ToRotationVector2();
-                    for (int i = 0; i < 8; i++) {
-                        float dist = Main.rand.NextFloat(0, BeamLength);
-                        Vector2 dustPos = Projectile.Center + dir * dist;
-                        dustPos += dir.RotatedBy(MathHelper.PiOver2) * Main.rand.NextFloat(-BeamWidth * 0.5f, BeamWidth * 0.5f);
-                        int dustType = Main.rand.NextBool() ? DustID.Electric : DustID.PurpleTorch;
-                        int d = Dust.NewDust(dustPos, 0, 0, dustType, 0, -1, 100, default, 2.5f);
-                        Main.dust[d].noGravity = true;
-                        Main.dust[d].velocity *= 0.3f;
-                    }
-
-                    // 起点爆花
-                    for (int i = 0; i < 3; i++) {
-                        Vector2 dustVel = dir.RotatedByRandom(0.8f) * Main.rand.NextFloat(3, 8);
-                        int d = Dust.NewDust(Projectile.Center, 0, 0, DustID.Electric, dustVel.X, dustVel.Y, 100, default, 3f);
-                        Main.dust[d].noGravity = true;
-                    }
-                }
-
-                // 激光音效
-                if (beamTimer == 0) {
-                    SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.3f, Volume = 1.5f }, Projectile.Center);
-                }
-
-                Lighting.AddLight(Projectile.Center, AoshunHelper.LightningBlue.ToVector3() * 2f * beamAlpha);
-            }
-
-            Projectile.rotation = Projectile.ai[1];
-        }
-
-        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
-            int timer = (ChargeTime + BeamDuration) - Projectile.timeLeft;
-            if (timer < ChargeTime) return false;
-
-            Vector2 dir = Projectile.ai[1].ToRotationVector2();
-            Vector2 start = Projectile.Center;
-            Vector2 end = start + dir * BeamLength;
-            float point = 0f;
-            return Collision.CheckAABBvLineCollision(
-                targetHitbox.TopLeft(), targetHitbox.Size(),
-                start, end, BeamWidth * 0.6f, ref point);
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            if (beamAlpha <= 0.01f) return false;
-
             Texture2D tex = ACMAsset.SoftGlow ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = tex.Size() / 2f;
-            Vector2 dir = Projectile.ai[1].ToRotationVector2();
-            float rot = Projectile.ai[1] + MathHelper.PiOver2;
+            Vector2 drawPos = Projectile.Center - Main.screenPosition;
 
-            int timer = (ChargeTime + BeamDuration) - Projectile.timeLeft;
-            bool isCharging = timer < ChargeTime;
+            // 绘制风暴壁（多层环形光点）
+            for (int ring = 0; ring < 3; ring++) {
+                float ringRadius = currentRadius + ring * 15f;
+                float ringAlpha = 0.4f - ring * 0.1f;
+                int pointCount = (int)(ringRadius / 20f);
+                float ringRot = stormPhase * (2f + ring * 0.5f) * (ring % 2 == 0 ? 1 : -1);
 
-            if (isCharging) {
-                // 蓄力光球
-                float chargeProgress = (float)timer / ChargeTime;
-                float pulse = 1f + MathF.Sin(beamPhase * 4f) * 0.3f;
+                for (int i = 0; i < pointCount; i++) {
+                    float angle = ringRot + MathHelper.TwoPi * i / pointCount;
+                    Vector2 pos = drawPos + angle.ToRotationVector2() * ringRadius;
 
-                Color chargeColor = AoshunHelper.LightningBlue * chargeProgress * 0.6f * pulse;
-                chargeColor.A = 0;
-                Vector2 drawPos = Projectile.Center - Main.screenPosition;
-                Main.spriteBatch.Draw(tex, drawPos, null, chargeColor, 0f, origin, 2f * chargeProgress * pulse, SpriteEffects.None, 0f);
-
-                Color innerColor = AoshunHelper.ElectricWhite * chargeProgress * 0.4f;
-                innerColor.A = 0;
-                Main.spriteBatch.Draw(tex, drawPos, null, innerColor, 0f, origin, 1f * chargeProgress, SpriteEffects.None, 0f);
-            }
-            else {
-                // 激光柱绘制 - 沿射线方向铺设多层光点
-                float pulse = 1f + MathF.Sin(beamPhase * 3f) * 0.15f;
-                float segmentStep = 30f;
-                int segments = (int)(BeamLength / segmentStep);
-
-                for (int layer = 2; layer >= 0; layer--) {
-                    float layerScale;
-                    Color layerColor;
-                    switch (layer) {
-                        case 2:
-                            layerScale = 2.8f * pulse;
-                            layerColor = AoshunHelper.ThunderPurple * 0.2f * beamAlpha;
-                            break;
-                        case 1:
-                            layerScale = 1.8f * pulse;
-                            layerColor = AoshunHelper.LightningBlue * 0.5f * beamAlpha;
-                            break;
-                        default:
-                            layerScale = 0.9f;
-                            layerColor = AoshunHelper.ElectricWhite * 0.8f * beamAlpha;
-                            break;
-                    }
-                    layerColor.A = 0;
-
-                    for (int s = 0; s < segments; s++) {
-                        Vector2 segPos = Projectile.Center + dir * (s * segmentStep) - Main.screenPosition;
-                        float wave = MathF.Sin(beamPhase * 2f + s * 0.3f + layer) * 3f;
-                        segPos += dir.RotatedBy(MathHelper.PiOver2) * wave;
-                        Main.spriteBatch.Draw(tex, segPos, null, layerColor, rot, origin, layerScale, SpriteEffects.None, 0f);
-                    }
+                    Color color = Color.Lerp(AoshunHelper.StormGray, AoshunHelper.LightningBlue, ring / 2f);
+                    color *= ringAlpha;
+                    color.A = 0;
+                    Main.spriteBatch.Draw(tex, pos, null, color, 0f, origin, 0.4f - ring * 0.08f, SpriteEffects.None, 0f);
                 }
-
-                // 起点高亮光球
-                Vector2 startDraw = Projectile.Center - Main.screenPosition;
-                Color startGlow = AoshunHelper.ElectricWhite * beamAlpha;
-                startGlow.A = 0;
-                Main.spriteBatch.Draw(tex, startDraw, null, startGlow, 0f, origin, 3f * pulse, SpriteEffects.None, 0f);
             }
+
+            // 中心安全区指示
+            Color safeColor = AoshunHelper.NorthSeaCyan * 0.1f;
+            safeColor.A = 0;
+            float safeScale = currentRadius / (tex.Width * 0.5f);
+            Main.spriteBatch.Draw(tex, drawPos, null, safeColor, 0f, origin, safeScale, SpriteEffects.None, 0f);
 
             return false;
         }
 
         public override void OnKill(int timeLeft) {
-            if (Main.netMode == NetmodeID.Server) return;
-
-            Vector2 dir = Projectile.ai[1].ToRotationVector2();
+            if (VaultUtils.isServer) return;
+            // 消散粒子
             for (int i = 0; i < 40; i++) {
-                float dist = Main.rand.NextFloat(0, 400);
-                Vector2 dustPos = Projectile.Center + dir * dist + Main.rand.NextVector2Circular(30, 30);
-                int dustType = Main.rand.NextBool() ? DustID.Electric : DustID.PurpleTorch;
-                int d = Dust.NewDust(dustPos, 0, 0, dustType, 0, 0, 100, default, 2.5f);
-                Main.dust[d].noGravity = true;
-                Main.dust[d].velocity = Main.rand.NextVector2Circular(5, 5);
+                float angle = MathHelper.TwoPi * i / 40;
+                Vector2 pos = Projectile.Center + angle.ToRotationVector2() * currentRadius;
+                var d = Dust.NewDustPerfect(pos, DustID.Cloud);
+                d.noGravity = true;
+                d.velocity = angle.ToRotationVector2() * 8f;
+                d.scale = 2.5f;
             }
+        }
+    }
+
+    #endregion
+
+    #region 7. 电痕 - 雷霆连环冲留下的持续伤害
+
+    /// <summary>
+    /// 持续电痕 - 留在地面的静态伤害区域
+    /// 持续4秒，接触即伤
+    /// </summary>
+    public class AoshunElectricTrail : ModProjectile
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+
+        private float trailPhase;
+
+        public override void SetDefaults() {
+            Projectile.width = 30;
+            Projectile.height = 30;
+            Projectile.friendly = false;
+            Projectile.hostile = true;
+            Projectile.penetrate = -1;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.timeLeft = 240;
+        }
+
+        public override void AI() {
+            trailPhase += 0.08f;
+            Projectile.velocity = Vector2.Zero;
+
+            // 电弧粒子
+            if (!VaultUtils.isServer && Main.rand.NextBool(3)) {
+                Vector2 dustPos = Projectile.Center + Main.rand.NextVector2Circular(15, 15);
+                var d = Dust.NewDustPerfect(dustPos, Main.rand.NextBool() ? DustID.Electric : DustID.PurpleTorch);
+                d.noGravity = true;
+                d.scale = 1f + Main.rand.NextFloat(0.5f);
+                d.velocity = Main.rand.NextVector2Circular(1, 1);
+            }
+
+            float fade = Math.Min(Projectile.timeLeft / 30f, 1f);
+            Lighting.AddLight(Projectile.Center, AoshunHelper.LightningBlue.ToVector3() * 0.3f * fade);
+        }
+
+        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
+            float dist = Vector2.Distance(Projectile.Center, targetHitbox.Center.ToVector2());
+            return dist < 30f;
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            Texture2D tex = ACMAsset.SoftGlow ?? TextureAssets.Projectile[Type].Value;
+            Vector2 origin = tex.Size() / 2f;
+            Vector2 drawPos = Projectile.Center - Main.screenPosition;
+
+            float fade = Math.Min(Projectile.timeLeft / 30f, 1f);
+            float pulse = 1f + MathF.Sin(trailPhase * 4f) * 0.2f;
+
+            // 底层光晕
+            Color baseColor = AoshunHelper.ThunderPurple * 0.2f * fade;
+            baseColor.A = 0;
+            Main.spriteBatch.Draw(tex, drawPos, null, baseColor, trailPhase, origin, 0.8f * pulse, SpriteEffects.None, 0f);
+
+            // 上层电弧
+            Color arcColor = AoshunHelper.LightningBlue * 0.4f * fade * pulse;
+            arcColor.A = 0;
+            Main.spriteBatch.Draw(tex, drawPos, null, arcColor, -trailPhase * 1.5f, origin, 0.5f, SpriteEffects.None, 0f);
+
+            // 核心
+            Color coreColor = AoshunHelper.ElectricWhite * 0.3f * fade;
+            coreColor.A = 0;
+            Main.spriteBatch.Draw(tex, drawPos, null, coreColor, 0f, origin, 0.25f, SpriteEffects.None, 0f);
+
+            return false;
         }
     }
 
