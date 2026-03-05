@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Graphics.Effects;
@@ -7,8 +7,8 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 {
     /// <summary>
-    /// ±±º£ÁúÍõ°½Ë³Ìì¿ÕĞ§¹û - À×±©Ñ¹ÆÈÌìÄ»
-    /// °µ×ÏÉ«Ìì¿Õ£¬ËæBossÑªÁ¿½µµÍ¼ÓÉî£¬´øÓĞÀ×µçÂö³å
+    /// åŒ—æµ·é¾™ç‹æ•–é¡ºå¤©ç©ºæ•ˆæœ - é›·æš´å‹è¿«å¤©å¹•
+    /// æš—ç´«è‰²å¤©ç©ºï¼ŒéšBossè¡€é‡é™ä½åŠ æ·±ï¼Œå¸¦æœ‰é›·ç”µè„‰å†²
     /// </summary>
     internal class AoshunSky : CustomSky
     {
@@ -42,16 +42,16 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
                 float distance = Main.LocalPlayer.Distance(boss.Center);
                 float t = MathHelper.Clamp(distance / 1600f, 0f, 1f);
 
-                // À×±©É«½×£ºÉî×Ï -> °µÀ¶×Ï -> Ä«ºÚ
+                // é›·æš´è‰²é˜¶ï¼šæ·±ç´« -> æš—è“ç´« -> å¢¨é»‘
                 skyColor = VaultUtils.MultiStepColorLerp(t,
-                    new Color(25, 10, 50),    // Éî×Ï£¨×îÑ¹ÆÈ£©
-                    new Color(15, 20, 60),    // °µÀ¶×Ï
-                    new Color(8, 8, 20));      // Ä«ºÚ£¨Ô¶¾àÀë£©
+                    new Color(25, 10, 50),    // æ·±ç´«ï¼ˆæœ€å‹è¿«ï¼‰
+                    new Color(15, 20, 60),    // æš—è“ç´«
+                    new Color(8, 8, 20));      // å¢¨é»‘ï¼ˆè¿œè·ç¦»ï¼‰
 
                 if (intensity < maxIntensity)
                     intensity += 0.01f;
 
-                // ¶ş½×¶ÎÌì¿Õ¸ü°µ¸üÑ¹ÆÈ
+                // äºŒé˜¶æ®µå¤©ç©ºæ›´æš—æ›´å‹è¿«
                 float lifePercent = (float)boss.life / boss.lifeMax;
                 if (lifePercent < 0.5f) {
                     maxIntensity = 0.85f;
@@ -72,30 +72,30 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
         public override void Draw(SpriteBatch spriteBatch, float minDepth, float maxDepth) {
             if (intensity <= 0f) return;
 
-            // À×µçÂö³åÎ¢²ü
+            // é›·ç”µè„‰å†²å¾®é¢¤
             float pulse = MathF.Sin(pulsePhase) * 0.8f * intensity;
             Vector2 shake = Main.rand.NextVector2Circular(pulse, pulse);
 
-            // ÌìÄ»µ×É«
+            // å¤©å¹•åº•è‰²
             spriteBatch.Draw(VaultAsset.placeholder2.Value,
                 new Rectangle((int)shake.X, (int)shake.Y, Main.screenWidth, Main.screenHeight),
                 skyColor * intensity);
 
-            // À×µçÂö³åµş¼Ó²ã - ×ÏÉ«ºôÎü¸Ğ
+            // é›·ç”µè„‰å†²å åŠ å±‚ - ç´«è‰²å‘¼å¸æ„Ÿ
             float breathAlpha = (0.5f + MathF.Sin(pulsePhase * 1.5f) * 0.5f) * intensity * 0.15f;
             Color breathColor = new Color(60, 20, 100) * breathAlpha;
             spriteBatch.Draw(VaultAsset.placeholder2.Value,
                 new Rectangle(0, 0, Main.screenWidth, Main.screenHeight),
                 breathColor);
 
-            // ¶¥²¿À×ÔÆ½¥±ä£¨Ä£ÄâÌì¼ÊÀ×±©Ó³ÕÕ£©
+            // é¡¶éƒ¨é›·äº‘æ¸å˜ï¼ˆæ¨¡æ‹Ÿå¤©é™…é›·æš´æ˜ ç…§ï¼‰
             Color topGlow = new Color(40, 30, 90) * intensity * 0.25f;
             int glowHeight = Main.screenHeight / 4;
             spriteBatch.Draw(VaultAsset.placeholder2.Value,
                 new Rectangle(0, 0, Main.screenWidth, glowHeight),
                 topGlow);
 
-            // Å¼¶ûÉÁµçÉÁ¹â
+            // å¶å°”é—ªç”µé—ªå…‰
             if (Main.rand.NextBool(120)) {
                 float flashAlpha = Main.rand.NextFloat(0.1f, 0.3f) * intensity;
                 Color flashColor = new Color(180, 160, 255) * flashAlpha;
@@ -106,7 +106,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
         }
 
         public override Color OnTileColor(Color inColor) {
-            // ËùÓĞµØ±íÑÕÉ«Æ«×Ï/±ä°µ
+            // æ‰€æœ‰åœ°è¡¨é¢œè‰²åç´«/å˜æš—
             Color desaturated = Color.Lerp(inColor, new Color(40, 30, 60), 0.3f);
             return Color.Lerp(inColor, desaturated, intensity);
         }

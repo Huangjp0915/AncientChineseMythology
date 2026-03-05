@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.GameContent;
@@ -8,11 +8,11 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 {
     /// <summary>
-    /// °½Ë³Î²²¿NPC - Èä³æÄ©¶Ë
-    /// ÎÆÀíAoshunTail.png: 54¡Á52, µ¥Ö¡
-    /// ²Î¿¼AncientWyrmTail: ·½ÏòÏà¹Øorigin»æÖÆ£¬¸úËæÇ°Ò»¶Î
-    /// ai[1]: Ç°Ò»¶ÎNPCË÷Òı
-    /// ai[3]: Í·²¿NPCË÷Òı£¨realLifeÖ¸Ïò£©
+    /// æ•–é¡ºå°¾éƒ¨NPC - è •è™«æœ«ç«¯
+    /// çº¹ç†AoshunTail.png: 54Ã—52, å•å¸§
+    /// å‚è€ƒAncientWyrmTail: æ–¹å‘ç›¸å…³originç»˜åˆ¶ï¼Œè·Ÿéšå‰ä¸€æ®µ
+    /// ai[1]: å‰ä¸€æ®µNPCç´¢å¼•
+    /// ai[3]: å¤´éƒ¨NPCç´¢å¼•ï¼ˆrealLifeæŒ‡å‘ï¼‰
     /// </summary>
     public class AoshunTail : ModNPC
     {

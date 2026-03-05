@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.GameContent;
 
@@ -6,11 +6,11 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 {
     internal partial class Aoshun
     {
-        #region »æÖÆ
+        #region ç»˜åˆ¶
 
         /// <summary>
-        /// Í·²¿»æÖÆ - ÎÆÀíAoshun.png: 52¡Á140, 2Ö¡, Ã¿Ö¡52¡Á70
-        /// ²Î¿¼AncientWyrmHead: »ùÓÚspriteDirectionµÄoriginÆ«ÒÆ·ÀÖ¹×ªÏòÌø¶¯
+        /// å¤´éƒ¨ç»˜åˆ¶ - çº¹ç†Aoshun.png: 52Ã—140, 2å¸§, æ¯å¸§52Ã—70
+        /// å‚è€ƒAncientWyrmHead: åŸºäºspriteDirectionçš„originåç§»é˜²æ­¢è½¬å‘è·³åŠ¨
         /// </summary>
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
             Texture2D texture = TextureAssets.Npc[NPC.type].Value;
@@ -20,7 +20,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
             int yPos = frameHeight * NPC.frame.Y;
             Rectangle sourceRectangle = new Rectangle(0, yPos, texture.Width, frameHeight);
 
-            // ²Î¿¼Ô­ĞÍ: »ùÓÚ³¯ÏòµÄoriginÆ«ÒÆ£¬·ÀÖ¹×ªÏòÊ±¾«ÁéÌø¶¯
+            // å‚è€ƒåŸå‹: åŸºäºæœå‘çš„originåç§»ï¼Œé˜²æ­¢è½¬å‘æ—¶ç²¾çµè·³åŠ¨
             Vector2 origin = NPC.spriteDirection == -1
                 ? new Vector2(texture.Width * 0.5f + 10, frameHeight * 0.5f + 16)
                 : new Vector2(texture.Width - 10, frameHeight + 16);
@@ -31,7 +31,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
         }
 
         public override void FindFrame(int frameHeight) {
-            // ²Î¿¼Ô­ĞÍ: closeÊ±ÇĞ»»Ö¡£¨½ü¾àÀëÕÅ×ì£©
+            // å‚è€ƒåŸå‹: closeæ—¶åˆ‡æ¢å¸§ï¼ˆè¿‘è·ç¦»å¼ å˜´ï¼‰
             if (close) {
                 NPC.frame.Y = 1;
             }

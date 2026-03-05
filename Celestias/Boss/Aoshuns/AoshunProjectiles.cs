@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -8,10 +8,10 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 {
-    #region À×Çò
+    #region é›·çƒ
 
     /// <summary>
-    /// °½Ë³À×Çò - ´øÎ¢Èõ×·×ÙµÄÀ×µçµ¯Ä»
+    /// æ•–é¡ºé›·çƒ - å¸¦å¾®å¼±è¿½è¸ªçš„é›·ç”µå¼¹å¹•
     /// </summary>
     public class AoshunThunderball : ModProjectile
     {
@@ -39,7 +39,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
         public override void AI() {
             thunderPhase += 0.12f;
 
-            // Î¢Èõ×·×Ù
+            // å¾®å¼±è¿½è¸ª
             if (Projectile.timeLeft > 220) {
                 Player target = Main.player[Player.FindClosest(Projectile.position, Projectile.width, Projectile.height)];
                 if (target.active && !target.dead) {
@@ -53,7 +53,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 
             Projectile.rotation = Projectile.velocity.ToRotation();
 
-            // À×µçÁ£×Ó
+            // é›·ç”µç²’å­
             if (Main.netMode != NetmodeID.Server && Main.rand.NextBool(2)) {
                 int dustType = Main.rand.NextBool() ? DustID.Electric : DustID.PurpleTorch;
                 int dust = Dust.NewDust(Projectile.Center, 0, 0, dustType, 0, 0, 180, default, 1.5f);
@@ -71,7 +71,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 
             float pulse = 1f + MathF.Sin(thunderPhase * 2f) * 0.2f;
 
-            // ÍÏÎ²
+            // æ‹–å°¾
             for (int i = 0; i < Projectile.oldPos.Length; i++) {
                 if (Projectile.oldPos[i] == Vector2.Zero) continue;
                 float progress = 1f - (float)i / Projectile.oldPos.Length;
@@ -83,17 +83,17 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
                 Main.spriteBatch.Draw(tex, pos, null, trailColor, 0f, origin, 0.5f * progress * pulse, SpriteEffects.None, 0f);
             }
 
-            // Íâ²ã¹âÔÎ
+            // å¤–å±‚å…‰æ™•
             Color outerColor = AoshunHelper.ThunderPurple * 0.35f * pulse;
             outerColor.A = 0;
             Main.spriteBatch.Draw(tex, drawPos, null, outerColor, 0f, origin, 0.9f * pulse, SpriteEffects.None, 0f);
 
-            // ÖĞ²ã
+            // ä¸­å±‚
             Color midColor = AoshunHelper.LightningBlue * 0.5f * pulse;
             midColor.A = 0;
             Main.spriteBatch.Draw(tex, drawPos, null, midColor, 0f, origin, 0.55f * pulse, SpriteEffects.None, 0f);
 
-            // ºËĞÄ
+            // æ ¸å¿ƒ
             Color coreColor = AoshunHelper.ElectricWhite * 0.8f;
             coreColor.A = 0;
             Main.spriteBatch.Draw(tex, drawPos, null, coreColor, 0f, origin, 0.3f * pulse, SpriteEffects.None, 0f);
@@ -115,10 +115,10 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 
     #endregion
 
-    #region À×Öù
+    #region é›·æŸ±
 
     /// <summary>
-    /// °½Ë³À×Öù - ´Ó¿ÕÖĞÏÂÂäµÄÀ×µçÖù
+    /// æ•–é¡ºé›·æŸ± - ä»ç©ºä¸­ä¸‹è½çš„é›·ç”µæŸ±
     /// </summary>
     public class AoshunLightningBolt : ModProjectile
     {
@@ -146,11 +146,11 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
             thunderPhase += 0.1f;
             Projectile.rotation += 0.1f;
 
-            // ¼ÓËÙÏÂÂä
+            // åŠ é€Ÿä¸‹è½
             if (Projectile.velocity.Y < 18f)
                 Projectile.velocity.Y += 0.3f;
 
-            // À×µçÎ²¼£
+            // é›·ç”µå°¾è¿¹
             if (Main.netMode != NetmodeID.Server) {
                 for (int i = 0; i < 2; i++) {
                     Vector2 dustPos = Projectile.Center + Main.rand.NextVector2Circular(10, 10);
@@ -171,7 +171,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 
             float pulse = 1f + MathF.Sin(thunderPhase * 3f) * 0.15f;
 
-            // ÍÏÎ²
+            // æ‹–å°¾
             for (int i = 0; i < Projectile.oldPos.Length; i++) {
                 if (Projectile.oldPos[i] == Vector2.Zero) continue;
                 float progress = 1f - (float)i / Projectile.oldPos.Length;
@@ -183,17 +183,17 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
                 Main.spriteBatch.Draw(tex, pos, null, trailColor, 0f, origin, (0.6f + progress * 0.4f) * pulse, SpriteEffects.None, 0f);
             }
 
-            // Íâ²ã¹âÔÎ
+            // å¤–å±‚å…‰æ™•
             Color outerColor = AoshunHelper.ThunderPurple * 0.4f * pulse;
             outerColor.A = 0;
             Main.spriteBatch.Draw(tex, drawPos, null, outerColor, 0f, origin, 1.4f * pulse, SpriteEffects.None, 0f);
 
-            // ÖĞ²ã
+            // ä¸­å±‚
             Color midColor = AoshunHelper.LightningBlue * 0.6f * pulse;
             midColor.A = 0;
             Main.spriteBatch.Draw(tex, drawPos, null, midColor, 0f, origin, 0.9f * pulse, SpriteEffects.None, 0f);
 
-            // ºËĞÄ
+            // æ ¸å¿ƒ
             Color coreColor = AoshunHelper.ElectricWhite * 0.9f;
             coreColor.A = 0;
             Main.spriteBatch.Draw(tex, drawPos, null, coreColor, 0f, origin, 0.5f * pulse, SpriteEffects.None, 0f);
@@ -204,7 +204,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
         public override void OnKill(int timeLeft) {
             if (Main.netMode == NetmodeID.Server) return;
 
-            // ÂäµØÀ×µç±¬·¢
+            // è½åœ°é›·ç”µçˆ†å‘
             for (int i = 0; i < 20; i++) {
                 Vector2 vel = Main.rand.NextVector2Circular(6, 6);
                 int dustType = Main.rand.NextBool() ? DustID.Electric : DustID.PurpleTorch;
@@ -212,7 +212,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
                 Main.dust[dust].noGravity = true;
             }
 
-            // µç»¡·É½¦
+            // ç”µå¼§é£æº…
             for (int i = 0; i < 8; i++) {
                 float angle = MathHelper.TwoPi * i / 8;
                 Vector2 vel = angle.ToRotationVector2() * Main.rand.NextFloat(3, 6);
@@ -226,10 +226,10 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 
     #endregion
 
-    #region À×µçĞıÎĞ
+    #region é›·ç”µæ—‹æ¶¡
 
     /// <summary>
-    /// °½Ë³À×µçĞıÎĞ - Í£ÁôÔÚÔ­µØµÄĞı×ªÀ×µçÇøÓò
+    /// æ•–é¡ºé›·ç”µæ—‹æ¶¡ - åœç•™åœ¨åŸåœ°çš„æ—‹è½¬é›·ç”µåŒºåŸŸ
     /// </summary>
     public class AoshunThunderVortex : ModProjectile
     {
@@ -259,7 +259,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 
             Projectile.velocity *= 0.95f;
 
-            // Ğı×ªÀ×µçÁ£×Ó
+            // æ—‹è½¬é›·ç”µç²’å­
             if (Main.netMode != NetmodeID.Server) {
                 for (int i = 0; i < 4; i++) {
                     float angle = vortexAngle + MathHelper.TwoPi * i / 4;
@@ -300,12 +300,12 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 
     #endregion
 
-    #region À×Öù¼¤¹â
+    #region é›·æŸ±æ¿€å…‰
 
     /// <summary>
-    /// °½Ë³À×Öù¼¤¹â - ´ÓBoss¿ÚÖĞÉä³öµÄÖù×´À×Êø´óÕĞ
-    /// ĞîÁ¦ºóÊÍ·Å³ÖĞøÀ×Êø£¬»ºÂı×·×ÙÍæ¼Ò·½ÏòÉ¨Éä
-    /// ai[0]: ³ÖĞøÊ±¼ä¼ÆÊı, ai[1]: Ä¿±ê½Ç¶È
+    /// æ•–é¡ºé›·æŸ±æ¿€å…‰ - ä»Bosså£ä¸­å°„å‡ºçš„æŸ±çŠ¶é›·æŸå¤§æ‹›
+    /// è“„åŠ›åé‡Šæ”¾æŒç»­é›·æŸï¼Œç¼“æ…¢è¿½è¸ªç©å®¶æ–¹å‘æ‰«å°„
+    /// ai[0]: æŒç»­æ—¶é—´è®¡æ•°, ai[1]: ç›®æ ‡è§’åº¦
     /// </summary>
     public class AoshunThunderBeam : ModProjectile
     {
@@ -338,7 +338,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
             beamPhase += 0.1f;
             int timer = (ChargeTime + BeamDuration) - Projectile.timeLeft;
 
-            // ÕÒµ½Í·²¿NPC±£³ÖÎ»ÖÃ
+            // æ‰¾åˆ°å¤´éƒ¨NPCä¿æŒä½ç½®
             bool foundOwner = false;
             for (int i = 0; i < Main.maxNPCs; i++) {
                 if (Main.npc[i].active && Main.npc[i].type == ModContent.NPCType<Aoshun>()) {
@@ -353,10 +353,10 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
             }
 
             if (timer < ChargeTime) {
-                // ĞîÁ¦½×¶Î - À×µç»ã¾ÛÁ£×Ó
+                // è“„åŠ›é˜¶æ®µ - é›·ç”µæ±‡èšç²’å­
                 beamAlpha = (float)timer / ChargeTime * 0.5f;
 
-                // »ºÂı×·×ÙÍæ¼Ò
+                // ç¼“æ…¢è¿½è¸ªç©å®¶
                 Player target = Main.player[Player.FindClosest(Projectile.position, Projectile.width, Projectile.height)];
                 if (target.active && !target.dead) {
                     float targetAngle = (target.Center - Projectile.Center).ToRotation();
@@ -375,26 +375,26 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
                     }
                 }
 
-                // ĞîÁ¦ÒôĞ§
+                // è“„åŠ›éŸ³æ•ˆ
                 if (timer == 10) {
                     SoundEngine.PlaySound(SoundID.Item15 with { Pitch = -0.5f, Volume = 1.5f }, Projectile.Center);
                 }
             }
             else {
-                // ¼¤¹â½×¶Î
+                // æ¿€å…‰é˜¶æ®µ
                 int beamTimer = timer - ChargeTime;
                 float fadeIn = Math.Min(beamTimer / 15f, 1f);
                 float fadeOut = Math.Min((BeamDuration - beamTimer) / 20f, 1f);
                 beamAlpha = fadeIn * fadeOut;
 
-                // »ºÂıÉ¨Éä×·×Ù
+                // ç¼“æ…¢æ‰«å°„è¿½è¸ª
                 Player target = Main.player[Player.FindClosest(Projectile.position, Projectile.width, Projectile.height)];
                 if (target.active && !target.dead) {
                     float targetAngle = (target.Center - Projectile.Center).ToRotation();
                     Projectile.ai[1] = MathHelper.Lerp(Projectile.ai[1], targetAngle, 0.012f);
                 }
 
-                // ¼¤¹âÑØÏßÁ£×Ó
+                // æ¿€å…‰æ²¿çº¿ç²’å­
                 if (Main.netMode != NetmodeID.Server) {
                     Vector2 dir = Projectile.ai[1].ToRotationVector2();
                     for (int i = 0; i < 8; i++) {
@@ -407,7 +407,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
                         Main.dust[d].velocity *= 0.3f;
                     }
 
-                    // Æğµã±¬»¨
+                    // èµ·ç‚¹çˆ†èŠ±
                     for (int i = 0; i < 3; i++) {
                         Vector2 dustVel = dir.RotatedByRandom(0.8f) * Main.rand.NextFloat(3, 8);
                         int d = Dust.NewDust(Projectile.Center, 0, 0, DustID.Electric, dustVel.X, dustVel.Y, 100, default, 3f);
@@ -415,7 +415,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
                     }
                 }
 
-                // ¼¤¹âÒôĞ§
+                // æ¿€å…‰éŸ³æ•ˆ
                 if (beamTimer == 0) {
                     SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.3f, Volume = 1.5f }, Projectile.Center);
                 }
@@ -451,7 +451,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
             bool isCharging = timer < ChargeTime;
 
             if (isCharging) {
-                // ĞîÁ¦¹âÇò
+                // è“„åŠ›å…‰çƒ
                 float chargeProgress = (float)timer / ChargeTime;
                 float pulse = 1f + MathF.Sin(beamPhase * 4f) * 0.3f;
 
@@ -465,7 +465,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
                 Main.spriteBatch.Draw(tex, drawPos, null, innerColor, 0f, origin, 1f * chargeProgress, SpriteEffects.None, 0f);
             }
             else {
-                // ¼¤¹âÖù»æÖÆ - ÑØÉäÏß·½ÏòÆÌÉè¶à²ã¹âµã
+                // æ¿€å…‰æŸ±ç»˜åˆ¶ - æ²¿å°„çº¿æ–¹å‘é“ºè®¾å¤šå±‚å…‰ç‚¹
                 float pulse = 1f + MathF.Sin(beamPhase * 3f) * 0.15f;
                 float segmentStep = 30f;
                 int segments = (int)(BeamLength / segmentStep);
@@ -497,7 +497,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
                     }
                 }
 
-                // Æğµã¸ßÁÁ¹âÇò
+                // èµ·ç‚¹é«˜äº®å…‰çƒ
                 Vector2 startDraw = Projectile.Center - Main.screenPosition;
                 Color startGlow = AoshunHelper.ElectricWhite * beamAlpha;
                 startGlow.A = 0;

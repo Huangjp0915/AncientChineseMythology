@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System.IO;
 using Terraria;
 using Terraria.ID;
@@ -7,42 +7,42 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 {
     /// <summary>
-    /// ±±º£ÁúÍõ°½Ë³ - ÔÂºó³õÆÚBoss
-    /// À×µç/·ç±©ÊôĞÔÁúÍõÖ÷Ìâ£¬Èä³æ¶à¶ÎNPCÉíÌå½á¹¹
-    /// Í·²¿ÎÆÀí3Ö¡£¨112¡Á438£©£¬ÉíÌåÎÆÀí5Ö¡£¨112¡Á320£©
-    /// Ò»½×¶Î£ºÁúÍõÑ²ÓÎ£¬À×ÇòºÍÀ×Ï¢
-    /// ¶ş½×¶Î£º¿ñ±©³å´Ì£¬À×±©Áú¾íºÍÀ×ÖùÓê
+    /// åŒ—æµ·é¾™ç‹æ•–é¡º - æœˆååˆæœŸBoss
+    /// é›·ç”µ/é£æš´å±æ€§é¾™ç‹ä¸»é¢˜ï¼Œè •è™«å¤šæ®µNPCèº«ä½“ç»“æ„
+    /// å¤´éƒ¨çº¹ç†3å¸§ï¼ˆ112Ã—438ï¼‰ï¼Œèº«ä½“çº¹ç†5å¸§ï¼ˆ112Ã—320ï¼‰
+    /// ä¸€é˜¶æ®µï¼šé¾™ç‹å·¡æ¸¸ï¼Œé›·çƒå’Œé›·æ¯
+    /// äºŒé˜¶æ®µï¼šç‹‚æš´å†²åˆºï¼Œé›·æš´é¾™å·å’Œé›·æŸ±é›¨
     /// </summary>
     [AutoloadBossHead]
     internal partial class Aoshun : ModNPC
     {
-        #region ³£Á¿¶¨Òå
+        #region å¸¸é‡å®šä¹‰
 
-        /// <summary>¶ş½×¶ÎÑªÁ¿°Ù·Ö±ÈãĞÖµ</summary>
+        /// <summary>äºŒé˜¶æ®µè¡€é‡ç™¾åˆ†æ¯”é˜ˆå€¼</summary>
         public const float Phase2Threshold = 0.50f;
 
-        /// <summary>Èä³æÉíÌå¶ÎÊı£¨Body+Arms½»Ìæ£¬²»º¬Î²²¿£©</summary>
+        /// <summary>è •è™«èº«ä½“æ®µæ•°ï¼ˆBody+Armsäº¤æ›¿ï¼Œä¸å«å°¾éƒ¨ï¼‰</summary>
         private const int WormBodyLength = 30;
 
-        /// <summary>Í·²¿ÎÆÀíÖ¡Êı£¨52¡Á140, 2Ö¡, Ã¿Ö¡52¡Á70£©</summary>
+        /// <summary>å¤´éƒ¨çº¹ç†å¸§æ•°ï¼ˆ52Ã—140, 2å¸§, æ¯å¸§52Ã—70ï¼‰</summary>
         private const int HeadFrameCount = 2;
 
         #endregion
 
-        #region ×´Ì¬Ã¶¾Ù
+        #region çŠ¶æ€æšä¸¾
 
         public enum BossPhase
         {
             Intro,
-            // Ò»½×¶Î
+            // ä¸€é˜¶æ®µ
             Phase1_Patrol,
             Phase1_ThunderBarrage,
             Phase1_LightningBreath,
             Phase1_TailWhip,
             Phase1_ThunderRain,
-            // ½×¶Î×ª»»
+            // é˜¶æ®µè½¬æ¢
             PhaseTransition_2,
-            // ¶ş½×¶Î
+            // äºŒé˜¶æ®µ
             Phase2_FuryCharge,
             Phase2_ThunderVortex,
             Phase2_StormBreath,
@@ -53,25 +53,25 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 
         #endregion
 
-        #region ×´Ì¬×Ö¶Î
+        #region çŠ¶æ€å­—æ®µ
 
-        // Ê¹ÓÃlocalAI´æ´¢½×¶Î×´Ì¬£¬ai[0]ÓÃÓÚÈä³æ³õÊ¼»¯±ê¼Ç
-        // ai[0]: Èä³æÊÇ·ñÒÑ³õÊ¼»¯£¨0=Î´³õÊ¼»¯£¬1=ÒÑ³õÊ¼»¯£©
-        // ai[1]: Í¨ÓÃ¼ÆÊ±Æ÷
-        // ai[2]: Î´Ê¹ÓÃ
-        // ai[3]: ÍÑÕ½¼ÆÊ±Æ÷
+        // ä½¿ç”¨localAIå­˜å‚¨é˜¶æ®µçŠ¶æ€ï¼Œai[0]ç”¨äºè •è™«åˆå§‹åŒ–æ ‡è®°
+        // ai[0]: è •è™«æ˜¯å¦å·²åˆå§‹åŒ–ï¼ˆ0=æœªåˆå§‹åŒ–ï¼Œ1=å·²åˆå§‹åŒ–ï¼‰
+        // ai[1]: é€šç”¨è®¡æ—¶å™¨
+        // ai[2]: æœªä½¿ç”¨
+        // ai[3]: è„±æˆ˜è®¡æ—¶å™¨
 
-        /// <summary>ÊÇ·ñ´¦ÓÚ¶ş½×¶Î</summary>
+        /// <summary>æ˜¯å¦å¤„äºäºŒé˜¶æ®µ</summary>
         public bool IsPhase2 => NPC.life < NPC.lifeMax * Phase2Threshold;
 
-        // ½×¶Î×´Ì¬£¨ÓÃinternalAIÍøÂçÍ¬²½£©
+        // é˜¶æ®µçŠ¶æ€ï¼ˆç”¨internalAIç½‘ç»œåŒæ­¥ï¼‰
         public float[] internalAI = new float[4];
-        // internalAI[0]: ¹¥»÷×Ü¼ÆÊ±Æ÷
-        // internalAI[1]: ¹¥»÷ÀàĞÍÑ¡Ôñ
-        // internalAI[2]: ½×¶Î±ê¼Ç
-        // internalAI[3]: ×Ó×´Ì¬
+        // internalAI[0]: æ”»å‡»æ€»è®¡æ—¶å™¨
+        // internalAI[1]: æ”»å‡»ç±»å‹é€‰æ‹©
+        // internalAI[2]: é˜¶æ®µæ ‡è®°
+        // internalAI[3]: å­çŠ¶æ€
 
-        // Ë½ÓĞ×´Ì¬
+        // ç§æœ‰çŠ¶æ€
         private bool despawn;
         private bool close;
         private bool chargePlayer;
@@ -81,28 +81,28 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
         private int attackTimer;
         private bool didPhase2Transition;
 
-        // ³å´Ì¿ØÖÆ
+        // å†²åˆºæ§åˆ¶
         private Vector2 chargeTarget;
         private int chargeCount;
         private int maxChargeCount;
 
-        // ¸©³åÀäÈ´
+        // ä¿¯å†²å†·å´
         private int divebombCooldown;
 
-        // À×Öù¼¤¹âÀäÈ´
+        // é›·æŸ±æ¿€å…‰å†·å´
         private int beamCooldown;
 
-        // ÁúÏ¢Á¬Éä¼ÆÊı
+        // é¾™æ¯è¿å°„è®¡æ•°
         private int breathBurstCount;
 
-        // ÊÓ¾õĞ§¹û
+        // è§†è§‰æ•ˆæœ
         private float globalTime;
         private float thunderAuraAlpha;
         private float glowIntensity = 1f;
 
         #endregion
 
-        #region ModNPCÖØĞ´
+        #region ModNPCé‡å†™
 
         public override void SetStaticDefaults() {
             Main.npcFrameCount[Type] = HeadFrameCount;
