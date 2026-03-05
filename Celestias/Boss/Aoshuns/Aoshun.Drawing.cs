@@ -58,6 +58,36 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
                         spriteBatch.Draw(glowTex, drawPos, null, whiteFlash, 0f, glowOrigin, auraScale * 0.6f, SpriteEffects.None, 0f);
                     }
                 }
+
+                // === ElectricArcSheet帧动画电弧装饰 - 围绕头部 ===
+                Texture2D arcSheet = ACMAsset.ElectricArcSheet;
+                if (arcSheet != null && chargeRatio > 0.5f) {
+                    int arcIndex = ((int)(globalTime * 8f)) % 4;
+                    int arcHeight = arcSheet.Height / 4;
+                    Rectangle arcSourceRect = new Rectangle(0, arcIndex * arcHeight, arcSheet.Width, arcHeight);
+                    Vector2 arcOrigin = new Vector2(arcSourceRect.Width / 2f, arcSourceRect.Height / 2f);
+
+                    float arcAlpha = (chargeRatio - 0.5f) * 2f * 0.35f;
+                    Color arcColor = AoshunHelper.LightningBlue * arcAlpha;
+                    arcColor.A = 0;
+
+                    // 左侧电弧
+                    spriteBatch.Draw(arcSheet, drawPos + new Vector2(-20, -5), arcSourceRect, arcColor,
+                        NPC.rotation + MathHelper.PiOver4, arcOrigin, 0.1f, SpriteEffects.None, 0f);
+                    // 右侧电弧
+                    spriteBatch.Draw(arcSheet, drawPos + new Vector2(20, -5), arcSourceRect, arcColor * 0.8f,
+                        NPC.rotation - MathHelper.PiOver4, arcOrigin, 0.1f, SpriteEffects.FlipHorizontally, 0f);
+
+                    // 满电时额外一层
+                    if (IsFullyCharged) {
+                        int arcIndex2 = ((int)(globalTime * 12f + 2)) % 4;
+                        Rectangle arcRect2 = new Rectangle(0, arcIndex2 * arcHeight, arcSheet.Width, arcHeight);
+                        Color arcColor2 = AoshunHelper.ElectricWhite * 0.2f;
+                        arcColor2.A = 0;
+                        spriteBatch.Draw(arcSheet, drawPos + new Vector2(0, -15), arcRect2, arcColor2,
+                            NPC.rotation, arcOrigin, 0.08f, SpriteEffects.None, 0f);
+                    }
+                }
             }
 
             // === 阶段转换时的强光效果 ===

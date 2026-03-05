@@ -1,7 +1,6 @@
 ﻿using System;
 using Terraria;
 using Terraria.Audio;
-using Terraria.Graphics.Effects;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -13,12 +12,6 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 
         public override bool PreAI() {
             globalTime += 1f / 60f;
-
-            // 激活天空背景
-            if (!VaultUtils.isServer && AoshunSky.name != null) {
-                if (!SkyManager.Instance[AoshunSky.name].IsActive())
-                    SkyManager.Instance.Activate(AoshunSky.name, NPC.Center);
-            }
 
             // 目标与脱战
             NPC.TargetClosest(true);
@@ -32,8 +25,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
                 NPC.ai[3]++;
                 if (NPC.ai[3] >= 300) {
                     NPC.active = false;
-                    if (!VaultUtils.isServer && AoshunSky.name != null)
-                        SkyManager.Instance.Deactivate(AoshunSky.name);
+
                 }
                 return false;
             }
