@@ -100,7 +100,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
             NPC.height = 200;
             NPC.damage = 200;
             NPC.defense = 120;
-            NPC.lifeMax = 5500000;
+            NPC.lifeMax = 2500000;
             NPC.HitSound = SoundID.NPCHit42;
             NPC.DeathSound = SoundID.NPCDeath62;
             NPC.value = Item.buyPrice(platinum: 5);
@@ -372,49 +372,61 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
         #region 一阶段：镇龟
 
         private void RunPhase1Guard(Player target) {
-            // 缓慢漂浮，龟甲旋转
             driftAngle += 0.015f;
             float radius = 280f + MathF.Sin(globalTime) * 40f;
             Vector2 orbitPos = target.Center + new Vector2(MathF.Cos(driftAngle) * radius, MathF.Sin(driftAngle) * radius * 0.4f - 200);
             NPC.velocity = Vector2.Lerp(NPC.velocity, (orbitPos - NPC.Center) * 0.04f, 0.06f);
 
-            // 冰雾粒子
             if (Main.netMode != NetmodeID.Server && Main.rand.NextBool(3)) {
                 Dust d = Dust.NewDustDirect(NPC.Center + Main.rand.NextVector2Circular(80, 80), 0, 0, DustID.Ice, 0, -1f, 150, default, 1.2f);
                 d.noGravity = true;
             }
 
-            if (PhaseTimer > 140) TransitionTo(GetRandomPhase1Attack());
+            // 巡航冰弹压制
+            if (PhaseTimer % 20 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                float a = PhaseTimer * 0.15f;
+                for (int arm = 0; arm < 2; arm++) {
+                    float angle = a + arm * MathHelper.Pi;
+                    IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 7f, NPC.damage / 6);
+                }
+            }
+
+            if (PhaseTimer > 110) TransitionTo(GetRandomPhase1Attack());
         }
 
         private void RunPhase1IceBarrage(Player target) {
-            // 冰弹扩散
             Vector2 hoverPos = target.Center + new Vector2(MathF.Sin(globalTime) * 200f, -300);
             NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.03f, 0.06f);
 
-            int interval = Main.expertMode ? 12 : 18;
+            int interval = Main.expertMode ? 8 : 12;
             if (AttackTimer % interval == 0) {
                 Vector2 dir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
-                int count = Main.expertMode ? 5 : 3;
-                float spread = MathHelper.ToRadians(40f);
+                int count = Main.expertMode ? 7 : 5;
+                float spread = MathHelper.ToRadians(50f);
                 for (int i = 0; i < count; i++) {
                     float angle = -spread / 2 + spread / (count - 1) * i;
-                    Vector2 vel = dir.RotatedBy(angle) * 12f;
+                    Vector2 vel = dir.RotatedBy(angle) * 14f;
                     IceProjectile(NPC.Center, vel, NPC.damage / 4);
                 }
                 SoundEngine.PlaySound(SoundID.Item28 with { Volume = 0.6f }, NPC.Center);
             }
 
-            if (AttackTimer > 140) TransitionTo(BossPhase.Phase1_Guard);
+            // 同步蜒毒追踪
+            if (AttackTimer % 18 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                Vector2 snakePos = NPC.Center + new Vector2(0, -80);
+                Vector2 vel = (target.Center - snakePos).SafeNormalize(Vector2.Zero) * 12f;
+                Projectile.NewProjectile(NPC.GetSource_FromAI(), snakePos, vel,
+                    ModContent.ProjectileType<XuanwuVenomFang>(), NPC.damage / 5, 0f, Main.myPlayer);
+            }
+
+            if (AttackTimer > 110) TransitionTo(BossPhase.Phase1_Guard);
         }
 
         private void RunPhase1WaterShield(Player target) {
-            // 水盾：提高防御并释放环绕水弹
             NPC.velocity *= 0.9f;
             NPC.defense += 50;
 
             if (Main.netMode != NetmodeID.Server) {
-                // 水盾可视化
                 for (int i = 0; i < 4; i++) {
                     float angle = globalTime * 3f + MathHelper.TwoPi / 4 * i;
                     Vector2 shieldPos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 120f;
@@ -424,30 +436,35 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                 }
             }
 
-            // 间歇释放水弹向玩家
-            if (AttackTimer % 25 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int count = 8;
+            // 双层水盾弹幕
+            if (AttackTimer % 18 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                int count = 10;
                 for (int i = 0; i < count; i++) {
                     float angle = MathHelper.TwoPi / count * i + globalTime * 2f;
                     Vector2 pos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 120f;
-                    Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.Zero) * 8f;
+                    Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.Zero) * 10f;
                     WaterProjectile(pos, vel, NPC.damage / 5);
                 }
             }
+            // 内层冰弹环
+            if (AttackTimer % 25 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                int count = 6;
+                for (int i = 0; i < count; i++) {
+                    float angle = MathHelper.TwoPi / count * i + globalTime * 3f;
+                    IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 8f, NPC.damage / 5);
+                }
+            }
 
-            if (AttackTimer > 150) {
+            if (AttackTimer > 120) {
                 NPC.defense -= 50;
                 TransitionTo(BossPhase.Phase1_Guard);
             }
         }
 
         private void RunPhase1GravityWell(Player target) {
-            // 引力场：制造吸附区域
             NPC.velocity = Vector2.Lerp(NPC.velocity, (target.Center + new Vector2(0, -250) - NPC.Center) * 0.03f, 0.05f);
 
-            // 引力中心在玩家附近
-            if (AttackTimer >= 30 && AttackTimer <= 120) {
-                // 给玩家施加引力
+            if (AttackTimer >= 25 && AttackTimer <= 110) {
                 float pullStr = 3f;
                 Vector2 pullDir = (NPC.Center - target.Center).SafeNormalize(Vector2.Zero);
                 target.velocity += pullDir * pullStr * (1f / 60f) * 30f;
@@ -463,22 +480,29 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                     }
                 }
 
-                // 同时发射一些冰弹
-                if (AttackTimer % 20 == 0) {
-                    int count = 6;
+                // 双型弹幕压制
+                if (AttackTimer % 14 == 0) {
+                    int count = 8;
                     for (int i = 0; i < count; i++) {
-                        float angle = MathHelper.TwoPi / count * i;
-                        Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 7f;
+                        float angle = MathHelper.TwoPi / count * i + AttackTimer * 0.1f;
+                        Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 8f;
                         IceProjectile(NPC.Center, vel, NPC.damage / 5);
+                    }
+                }
+                // 同步蛇毒追踪
+                if (AttackTimer % 22 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 11f;
+                    for (int i = -1; i <= 1; i += 2) {
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel.RotatedBy(i * MathHelper.ToRadians(12)), 
+                            ModContent.ProjectileType<XuanwuVenomFang>(), NPC.damage / 5, 0f, Main.myPlayer);
                     }
                 }
             }
 
-            if (AttackTimer > 150) TransitionTo(BossPhase.Phase1_Guard);
+            if (AttackTimer > 130) TransitionTo(BossPhase.Phase1_Guard);
         }
 
         private void RunPhase1ShellSpin(Player target) {
-            // 龟甲旋转弹射
             if (SubState == 0) {
                 shellRotation += 0.05f;
                 NPC.velocity *= 0.9f;
@@ -489,10 +513,19 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                     d.velocity = (NPC.Center - d.position).SafeNormalize(Vector2.Zero) * 4f;
                 }
 
-                if (AttackTimer > 50) {
+                // 蓄力时旋转冰弹臂
+                if (AttackTimer % 12 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    float a = AttackTimer * 0.2f;
+                    for (int arm = 0; arm < 2; arm++) {
+                        float angle = a + arm * MathHelper.Pi;
+                        IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 6f, NPC.damage / 6);
+                    }
+                }
+
+                if (AttackTimer > 40) {
                     SubState = 1;
                     AttackTimer = 0;
-                    NPC.velocity = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX) * 22f;
+                    NPC.velocity = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX) * 26f;
                     SoundEngine.PlaySound(SoundID.Item28 with { Pitch = -0.5f }, NPC.Center);
                     NPC.netUpdate = true;
                 }
@@ -508,17 +541,29 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                     }
                 }
 
-                // 旋转中释放冰碎片
-                if (AttackTimer % 6 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                // 旋转中释放双型碎片
+                if (AttackTimer % 4 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                     float angle = shellRotation * 2f;
-                    Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 8f;
-                    IceProjectile(NPC.Center, vel, NPC.damage / 5, 120);
+                    IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 9f, NPC.damage / 5, 120);
+                }
+                // 垂直蛇毒尾迹
+                if (AttackTimer % 6 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    Vector2 perpDir = new Vector2(-NPC.velocity.Y, NPC.velocity.X).SafeNormalize(Vector2.Zero);
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, perpDir * 5f,
+                        ModContent.ProjectileType<XuanwuVenomFang>(), NPC.damage / 6, 0f, Main.myPlayer);
                 }
 
-                if (AttackTimer > 25) NPC.velocity *= 0.92f;
-                if (AttackTimer > 45) {
+                if (AttackTimer > 22) NPC.velocity *= 0.92f;
+                if (AttackTimer > 38) {
+                    // 落地冰环
+                    if (Main.netMode != NetmodeID.MultiplayerClient) {
+                        for (int i = 0; i < 8; i++) {
+                            float angle = MathHelper.TwoPi / 8 * i;
+                            IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 7f, NPC.damage / 5);
+                        }
+                    }
                     strikeCount++;
-                    if (strikeCount < 3) {
+                    if (strikeCount < 4) {
                         SubState = 0;
                         AttackTimer = 0;
                     }
@@ -623,30 +668,29 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
         #region 二阶段：灵蛇觉醒
 
         private void RunPhase2SnakeStrike(Player target) {
-            // 蛇击：快速蛇头冲刺
             if (SubState == 0) {
-                // 蓄力
                 NPC.velocity *= 0.85f;
                 if (Main.netMode != NetmodeID.Server) {
                     Dust d = Dust.NewDustDirect(NPC.Center + new Vector2(0, -80) + Main.rand.NextVector2Circular(30, 30), 0, 0, DustID.CursedTorch, 0, 0, 100, default, 2f);
                     d.noGravity = true;
                 }
 
-                if (AttackTimer > 25) {
+                if (AttackTimer > 20) {
                     SubState = 1;
                     AttackTimer = 0;
 
-                    // 顶部蛇头弹射弹幕
                     if (Main.netMode != NetmodeID.MultiplayerClient) {
                         Vector2 snakePos = NPC.Center + new Vector2(0, -80);
-                        Vector2 vel = (target.Center - snakePos).SafeNormalize(Vector2.UnitX) * 20f;
-                        for (int i = -1; i <= 1; i++) {
-                            Vector2 v = vel.RotatedBy(i * MathHelper.ToRadians(8f));
-                            int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), snakePos, v,
+                        Vector2 vel = (target.Center - snakePos).SafeNormalize(Vector2.UnitX) * 22f;
+                        for (int i = -2; i <= 2; i++) {
+                            Vector2 v = vel.RotatedBy(i * MathHelper.ToRadians(6f));
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(), snakePos, v,
                                 ModContent.ProjectileType<XuanwuVenomFang>(), NPC.damage / 4, 0f, Main.myPlayer);
-                            if (proj >= 0 && proj < Main.maxProjectiles) {
-                                Main.projectile[proj].timeLeft = 120;
-                            }
+                        }
+                        // 同步冰爆
+                        for (int i = 0; i < 6; i++) {
+                            float angle = MathHelper.TwoPi / 6 * i;
+                            IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 8f, NPC.damage / 5);
                         }
                     }
                     SoundEngine.PlaySound(SoundID.Item103 with { Pitch = 0.3f }, NPC.Center);
@@ -655,9 +699,9 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
             }
             else {
                 NPC.velocity *= 0.9f;
-                if (AttackTimer > 30) {
+                if (AttackTimer > 25) {
                     strikeCount++;
-                    if (strikeCount < 5) {
+                    if (strikeCount < 6) {
                         SubState = 0;
                         AttackTimer = 0;
                     }
@@ -667,56 +711,74 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
         }
 
         private void RunPhase2VenomSpray(Player target) {
-            // 毒雾喷射：扇形蛇毒弹幕
             Vector2 hoverPos = target.Center + new Vector2(0, -250);
             NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.03f, 0.05f);
 
-            if (AttackTimer % 15 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+            if (AttackTimer % 10 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                 Vector2 dir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
-                int count = Main.expertMode ? 7 : 5;
-                float spread = MathHelper.ToRadians(60f);
+                int count = Main.expertMode ? 9 : 7;
+                float spread = MathHelper.ToRadians(70f);
                 for (int i = 0; i < count; i++) {
                     float angle = -spread / 2 + spread / (count - 1) * i;
-                    Vector2 vel = dir.RotatedBy(angle) * Main.rand.NextFloat(10f, 14f);
-                    int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                    Vector2 vel = dir.RotatedBy(angle) * Main.rand.NextFloat(12f, 16f);
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
                         ModContent.ProjectileType<XuanwuVenomFang>(), NPC.damage / 4, 0f, Main.myPlayer);
-                    if (proj >= 0 && proj < Main.maxProjectiles) {
-                        Main.projectile[proj].timeLeft = 150;
-                    }
                 }
                 SoundEngine.PlaySound(SoundID.Item103 with { Volume = 0.5f }, NPC.Center);
+            }
+
+            // 同步冰弹追踪
+            if (AttackTimer % 16 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 12f;
+                IceProjectile(NPC.Center, vel, NPC.damage / 5);
+                IceProjectile(NPC.Center, vel.RotatedBy(MathHelper.ToRadians(20)), NPC.damage / 5);
+                IceProjectile(NPC.Center, vel.RotatedBy(-MathHelper.ToRadians(20)), NPC.damage / 5);
+            }
+
+            if (AttackTimer > 90) TransitionTo(GetRandomPhase2Attack());
+        }
+
+        private void RunPhase2IceStorm(Player target) {
+            Vector2 hoverPos = target.Center + new Vector2(0, -500);
+            NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.03f, 0.06f);
+
+            int interval = Main.expertMode ? 3 : 5;
+            if (AttackTimer % interval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                int count = Main.expertMode ? 4 : 3;
+                for (int i = 0; i < count; i++) {
+                    float x = target.Center.X + Main.rand.NextFloat(-550, 550);
+                    Vector2 pos = new Vector2(x, target.Center.Y - 650);
+                    Vector2 vel = new Vector2(Main.rand.NextFloat(-3f, 3f), Main.rand.NextFloat(14f, 20f));
+                    IceProjectile(pos, vel, NPC.damage / 4);
+                }
+            }
+
+            // 同步双侧蛇毒柱
+            if (AttackTimer % 22 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                for (int side = -1; side <= 1; side += 2) {
+                    for (int i = 0; i < 4; i++) {
+                        Vector2 pos = target.Center + new Vector2(side * 600, -200 + i * 120);
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, new Vector2(-side * 12f, 0),
+                            ModContent.ProjectileType<XuanwuVenomFang>(), NPC.damage / 5, 0f, Main.myPlayer);
+                    }
+                }
             }
 
             if (AttackTimer > 120) TransitionTo(GetRandomPhase2Attack());
         }
 
-        private void RunPhase2IceStorm(Player target) {
-            // 冰暴：大量冰弹从天而降
-            Vector2 hoverPos = target.Center + new Vector2(0, -500);
-            NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.03f, 0.06f);
-
-            int interval = Main.expertMode ? 4 : 6;
-            if (AttackTimer % interval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int count = Main.expertMode ? 3 : 2;
-                for (int i = 0; i < count; i++) {
-                    float x = target.Center.X + Main.rand.NextFloat(-500, 500);
-                    Vector2 pos = new Vector2(x, target.Center.Y - 600);
-                    Vector2 vel = new Vector2(Main.rand.NextFloat(-3f, 3f), Main.rand.NextFloat(12f, 18f));
-                    IceProjectile(pos, vel, NPC.damage / 4);
-                }
-            }
-
-            if (AttackTimer > 150) TransitionTo(GetRandomPhase2Attack());
-        }
-
         private void RunPhase2DualAssault(Player target) {
-            // 龟蛇合击：玄武冲刺同时蛇头四射弹幕
             if (SubState == 0) {
                 NPC.velocity *= 0.85f;
-                if (AttackTimer > 30) {
+                // 蓄力时旋转冰臂
+                if (AttackTimer % 10 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    float a = AttackTimer * 0.2f;
+                    IceProjectile(NPC.Center, new Vector2(MathF.Cos(a), MathF.Sin(a)) * 7f, NPC.damage / 6);
+                }
+                if (AttackTimer > 22) {
                     SubState = 1;
                     AttackTimer = 0;
-                    NPC.velocity = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX) * 18f;
+                    NPC.velocity = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX) * 22f;
                     SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.5f }, NPC.Center);
                     NPC.netUpdate = true;
                 }
@@ -725,21 +787,21 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                 shellRotation += 0.1f;
 
                 // 滑行中蛇头连续射击
-                if (AttackTimer % 8 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                if (AttackTimer % 5 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                     Vector2 snakePos = NPC.Center + new Vector2(0, -80);
-                    Vector2 vel = (target.Center - snakePos).SafeNormalize(Vector2.Zero) * 14f;
-                    vel = vel.RotatedByRandom(MathHelper.ToRadians(10f));
-                    int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), snakePos, vel,
+                    Vector2 vel = (target.Center - snakePos).SafeNormalize(Vector2.Zero) * 16f;
+                    vel = vel.RotatedByRandom(MathHelper.ToRadians(8f));
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), snakePos, vel,
                         ModContent.ProjectileType<XuanwuVenomFang>(), NPC.damage / 4, 0f, Main.myPlayer);
-                    if (proj >= 0 && proj < Main.maxProjectiles) {
-                        Main.projectile[proj].timeLeft = 120;
-                    }
                 }
 
-                // 龟甲释放冰碎
-                if (AttackTimer % 10 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                // 龟甲释放冰碎 + 垂直冰尾迹
+                if (AttackTimer % 6 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                     float angle = shellRotation;
-                    IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 8f, NPC.damage / 5, 120);
+                    IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 9f, NPC.damage / 5, 120);
+                    // 垂直尾迹
+                    Vector2 perpDir = new Vector2(-NPC.velocity.Y, NPC.velocity.X).SafeNormalize(Vector2.Zero);
+                    IceProjectile(NPC.Center + perpDir * 40f, perpDir * 5f, NPC.damage / 6, 100);
                 }
 
                 if (Main.netMode != NetmodeID.Server) {
@@ -750,10 +812,17 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                     }
                 }
 
-                if (AttackTimer > 25) NPC.velocity *= 0.92f;
-                if (AttackTimer > 50) {
+                if (AttackTimer > 22) NPC.velocity *= 0.92f;
+                if (AttackTimer > 40) {
+                    // 结束时放冰环
+                    if (Main.netMode != NetmodeID.MultiplayerClient) {
+                        for (int i = 0; i < 8; i++) {
+                            float angle = MathHelper.TwoPi / 8 * i;
+                            IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 7f, NPC.damage / 5);
+                        }
+                    }
                     strikeCount++;
-                    if (strikeCount < 3) {
+                    if (strikeCount < 4) {
                         SubState = 0;
                         AttackTimer = 0;
                     }
@@ -763,18 +832,19 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
         }
 
         private void RunPhase2FrostWave(Player target) {
-            // 寒霜波动：向外扩展的冰环
             NPC.velocity *= 0.9f;
 
-            if (AttackTimer == 30 || AttackTimer == 60) {
+            // 3层冰环 + 同步蛇毒追踪
+            if (AttackTimer == 25 || AttackTimer == 50 || AttackTimer == 75) {
                 SoundEngine.PlaySound(SoundID.Item28 with { Volume = 1.2f }, NPC.Center);
 
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
-                    int count = Main.expertMode ? 24 : 16;
-                    float offset = (AttackTimer == 60) ? MathHelper.ToRadians(7.5f) : 0f;
+                    int count = Main.expertMode ? 28 : 20;
+                    float offset = (AttackTimer - 25) / 25f * MathHelper.ToRadians(6f);
+                    float speed = 8f + (AttackTimer - 25) / 25f * 3f;
                     for (int i = 0; i < count; i++) {
                         float angle = MathHelper.TwoPi / count * i + offset;
-                        Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 9f;
+                        Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * speed;
                         IceProjectile(NPC.Center, vel, NPC.damage / 4);
                     }
                 }
@@ -788,7 +858,16 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                 }
             }
 
-            if (AttackTimer > 100) TransitionTo(GetRandomPhase2Attack());
+            // 同步蛇毒追踪
+            if (AttackTimer % 18 == 0 && AttackTimer > 20 && Main.netMode != NetmodeID.MultiplayerClient) {
+                Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 13f;
+                for (int i = -1; i <= 1; i++) {
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel.RotatedBy(i * MathHelper.ToRadians(10)),
+                        ModContent.ProjectileType<XuanwuVenomFang>(), NPC.damage / 5, 0f, Main.myPlayer);
+                }
+            }
+
+            if (AttackTimer > 90) TransitionTo(GetRandomPhase2Attack());
         }
 
         #endregion
@@ -807,17 +886,29 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                 d.noGravity = true;
             }
 
-            if (PhaseTimer > 100) TransitionTo(GetRandomPhase3Attack());
+            // 玄天巡航双型压制
+            if (PhaseTimer % 10 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                float a = PhaseTimer * 0.18f;
+                for (int arm = 0; arm < 3; arm++) {
+                    float angle = a + arm * MathHelper.TwoPi / 3f;
+                    IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 8f, NPC.damage / 6);
+                }
+            }
+            if (PhaseTimer % 18 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 12f;
+                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                    ModContent.ProjectileType<XuanwuVenomFang>(), NPC.damage / 6, 0f, Main.myPlayer);
+            }
+
+            if (PhaseTimer > 75) TransitionTo(GetRandomPhase3Attack());
         }
 
         private void RunPhase3AbsoluteDefense(Player target) {
-            // 绝对防御：短时间无敌并释放反击弹幕
             NPC.velocity *= 0.9f;
             absoluteDefenseActive = true;
             NPC.dontTakeDamage = true;
 
             if (Main.netMode != NetmodeID.Server) {
-                // 玄甲护体可视化
                 for (int i = 0; i < 8; i++) {
                     float angle = globalTime * 4f + MathHelper.TwoPi / 8 * i;
                     float dist = 130f + MathF.Sin(globalTime * 6f) * 20f;
@@ -828,17 +919,24 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                 }
             }
 
-            // 防御期间释放反击弹幕
-            if (AttackTimer % 20 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int count = 12;
+            // 双型反击: 冰环 + 蛇毒追踪
+            if (AttackTimer % 14 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                int count = 14;
                 for (int i = 0; i < count; i++) {
                     float angle = MathHelper.TwoPi / count * i + globalTime * 2f;
-                    Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 10f;
+                    Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 11f;
                     IceProjectile(NPC.Center, vel, NPC.damage / 4);
                 }
             }
+            if (AttackTimer % 20 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 14f;
+                for (int i = -1; i <= 1; i++) {
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel.RotatedBy(i * MathHelper.ToRadians(12)),
+                        ModContent.ProjectileType<XuanwuVenomFang>(), NPC.damage / 4, 0f, Main.myPlayer);
+                }
+            }
 
-            if (AttackTimer > 120) {
+            if (AttackTimer > 100) {
                 absoluteDefenseActive = false;
                 NPC.dontTakeDamage = false;
                 TransitionTo(BossPhase.Phase3_Drift);
@@ -846,9 +944,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
         }
 
         private void RunPhase3TidalCrush(Player target) {
-            // 潮汐碾压：巨大水浪横扫
             if (SubState == 0) {
-                // 蓄力
                 NPC.velocity *= 0.9f;
                 NPC.Center += Main.rand.NextVector2Circular(3, 3);
 
@@ -860,19 +956,35 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                     }
                 }
 
-                if (AttackTimer > 60) {
+                // 蓄力时旋转冰臂
+                if (AttackTimer % 10 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    float a = AttackTimer * 0.2f;
+                    for (int arm = 0; arm < 2; arm++) {
+                        float angle = a + arm * MathHelper.Pi;
+                        IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 7f, NPC.damage / 6);
+                    }
+                }
+
+                if (AttackTimer > 50) {
                     SubState = 1;
                     AttackTimer = 0;
                     SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.5f, Volume = 1.5f }, NPC.Center);
 
-                    // 双向水浪
+                    // 4层双向水浪 + 蛇毒雨
                     if (Main.netMode != NetmodeID.MultiplayerClient) {
-                        for (int wave = 0; wave < 3; wave++) {
-                            for (int i = 0; i < 8; i++) {
-                                float speed = 6f + i * 2f + wave * 3f;
-                                WaterProjectile(NPC.Center, new Vector2(speed, -2f + wave), NPC.damage / 3);
-                                WaterProjectile(NPC.Center, new Vector2(-speed, -2f + wave), NPC.damage / 3);
+                        for (int wave = 0; wave < 4; wave++) {
+                            for (int i = 0; i < 10; i++) {
+                                float speed = 5f + i * 2f + wave * 2.5f;
+                                WaterProjectile(NPC.Center, new Vector2(speed, -2f + wave * 0.8f), NPC.damage / 3);
+                                WaterProjectile(NPC.Center, new Vector2(-speed, -2f + wave * 0.8f), NPC.damage / 3);
                             }
+                        }
+                        // 蛇毒雨
+                        for (int i = 0; i < 10; i++) {
+                            float x = target.Center.X + Main.rand.NextFloat(-500, 500);
+                            Vector2 pos = new Vector2(x, target.Center.Y - 600);
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, new Vector2(0, Main.rand.NextFloat(12f, 18f)),
+                                ModContent.ProjectileType<XuanwuVenomFang>(), NPC.damage / 4, 0f, Main.myPlayer);
                         }
                     }
 
@@ -885,31 +997,40 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
             }
             else {
                 NPC.velocity *= 0.92f;
-                if (AttackTimer > 60) TransitionTo(BossPhase.Phase3_Drift);
+                if (AttackTimer > 50) TransitionTo(BossPhase.Phase3_Drift);
             }
         }
 
         private void RunPhase3Blizzard(Player target) {
-            // 暴风雪：全屏冰弹
             Vector2 hoverPos = target.Center + new Vector2(0, -400);
             NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.03f, 0.06f);
 
-            int interval = Main.expertMode ? 2 : 4;
+            int interval = Main.expertMode ? 2 : 3;
             if (AttackTimer % interval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int count = Main.expertMode ? 4 : 3;
+                int count = Main.expertMode ? 5 : 4;
                 for (int i = 0; i < count; i++) {
                     float x = target.Center.X + Main.rand.NextFloat(-700, 700);
                     Vector2 pos = new Vector2(x, target.Center.Y - 700);
-                    Vector2 vel = new Vector2(Main.rand.NextFloat(-4f, 4f), Main.rand.NextFloat(10f, 16f));
+                    Vector2 vel = new Vector2(Main.rand.NextFloat(-4f, 4f), Main.rand.NextFloat(12f, 18f));
                     IceProjectile(pos, vel, NPC.damage / 4);
                 }
             }
 
-            if (AttackTimer > 200) TransitionTo(BossPhase.Phase3_Drift);
+            // 同步双侧蛇毒墙
+            if (AttackTimer % 22 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                for (int side = -1; side <= 1; side += 2) {
+                    for (int i = 0; i < 5; i++) {
+                        Vector2 pos = target.Center + new Vector2(side * 650, -250 + i * 120);
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, new Vector2(-side * 14f, 0),
+                            ModContent.ProjectileType<XuanwuVenomFang>(), NPC.damage / 5, 0f, Main.myPlayer);
+                    }
+                }
+            }
+
+            if (AttackTimer > 150) TransitionTo(BossPhase.Phase3_Drift);
         }
 
         private void RunPhase3NorthStarJudgment(Player target) {
-            // 北辰审判：终极天象攻击
             if (SubState == 0) {
                 NPC.velocity *= 0.88f;
                 NPC.dontTakeDamage = true;
@@ -927,7 +1048,16 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                     }
                 }
 
-                if (AttackTimer > 100) {
+                // 蓄力时旋转双型弹幕臂
+                if (AttackTimer % 8 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    float a = AttackTimer * 0.15f;
+                    for (int arm = 0; arm < 3; arm++) {
+                        float angle = a + arm * MathHelper.TwoPi / 3f;
+                        IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 8f, NPC.damage / 5);
+                    }
+                }
+
+                if (AttackTimer > 80) {
                     SubState = 1;
                     AttackTimer = 0;
                     NPC.dontTakeDamage = false;
@@ -938,22 +1068,25 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                         Main.instance.CameraModifiers.Add(modifier);
                     }
 
-                    // 北辰星柱：从玄武向6个方向放射冰柱弹幕
+                    // 北辰星柱: 8方向冰柱
                     if (Main.netMode != NetmodeID.MultiplayerClient) {
-                        for (int dir = 0; dir < 6; dir++) {
-                            float angle = MathHelper.TwoPi / 6 * dir;
-                            for (int i = 0; i < 10; i++) {
-                                Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * (5f + i * 3f);
-                                IceProjectile(NPC.Center, vel, NPC.damage / 3);
+                        for (int dir = 0; dir < 8; dir++) {
+                            float angle = MathHelper.TwoPi / 8 * dir;
+                            for (int i = 0; i < 12; i++) {
+                                IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * (4f + i * 3f), NPC.damage / 3);
                             }
                         }
-                        // 额外环形水弹
-                        for (int wave = 0; wave < 3; wave++) {
-                            int count = 20;
+                        // 4环蛇毒水弹
+                        for (int wave = 0; wave < 4; wave++) {
+                            int count = 18 + wave * 4;
                             for (int i = 0; i < count; i++) {
-                                float angle = MathHelper.TwoPi / count * i + wave * MathHelper.ToRadians(9f);
-                                Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * (8f + wave * 4f);
-                                WaterProjectile(NPC.Center, vel, NPC.damage / 3);
+                                float angle = MathHelper.TwoPi / count * i + wave * MathHelper.ToRadians(8f);
+                                Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * (7f + wave * 4f);
+                                if (wave % 2 == 0)
+                                    WaterProjectile(NPC.Center, vel, NPC.damage / 3);
+                                else
+                                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                                        ModContent.ProjectileType<XuanwuVenomFang>(), NPC.damage / 3, 0f, Main.myPlayer);
                             }
                         }
                     }
@@ -962,54 +1095,57 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
             }
             else {
                 NPC.velocity *= 0.9f;
-                if (AttackTimer > 80) TransitionTo(BossPhase.Phase3_Drift);
+
+                // 爆发后追踪压制
+                if (AttackTimer % 10 == 0 && AttackTimer < 50 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 13f;
+                    for (int i = -1; i <= 1; i++) {
+                        IceProjectile(NPC.Center, vel.RotatedBy(i * MathHelper.ToRadians(10)), NPC.damage / 5);
+                    }
+                }
+
+                if (AttackTimer > 60) TransitionTo(BossPhase.Phase3_Drift);
             }
         }
 
         private void RunPhase3YinYangBalance(Player target) {
-            // 阴阳平衡：交替释放冰与蛇毒弹幕
             Vector2 hoverPos = target.Center + new Vector2(MathF.Sin(globalTime * 1.5f) * 200f, -300);
             NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.04f, 0.06f);
 
-            // 交替冰弹和毒弹
-            bool isIceTurn = ((int)(AttackTimer / 20)) % 2 == 0;
-
-            int interval = Main.expertMode ? 6 : 10;
+            // 同时双型攻击，不再交替
+            int interval = Main.expertMode ? 5 : 8;
             if (AttackTimer % interval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                 Vector2 dir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
-                int count = 4;
-                float spread = MathHelper.ToRadians(30f);
+                int count = 5;
+                float spread = MathHelper.ToRadians(40f);
 
                 for (int i = 0; i < count; i++) {
                     float angle = -spread / 2 + spread / (count - 1) * i;
-                    Vector2 vel = dir.RotatedBy(angle) * 14f;
-
-                    if (isIceTurn) {
-                        IceProjectile(NPC.Center, vel, NPC.damage / 4);
-                    } else {
-                        int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                            ModContent.ProjectileType<XuanwuVenomFang>(), NPC.damage / 4, 0f, Main.myPlayer);
-                        if (proj >= 0 && proj < Main.maxProjectiles) {
-                            Main.projectile[proj].timeLeft = 150;
-                        }
-                    }
+                    Vector2 vel = dir.RotatedBy(angle) * 15f;
+                    IceProjectile(NPC.Center, vel, NPC.damage / 4);
+                }
+                // 同步蛇毒窄扇
+                for (int i = -1; i <= 1; i += 2) {
+                    Vector2 venomVel = dir.RotatedBy(i * MathHelper.ToRadians(25)) * 13f;
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, venomVel,
+                        ModContent.ProjectileType<XuanwuVenomFang>(), NPC.damage / 4, 0f, Main.myPlayer);
                 }
             }
 
-            // 背景环射
-            if (AttackTimer % 30 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int count = 8;
+            // 双型环射
+            if (AttackTimer % 20 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                int count = 10;
                 for (int i = 0; i < count; i++) {
-                    float angle = MathHelper.TwoPi / count * i + AttackTimer * 0.05f;
-                    Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 6f;
-                    if (isIceTurn)
-                        WaterProjectile(NPC.Center, vel, NPC.damage / 5);
-                    else
-                        IceProjectile(NPC.Center, vel, NPC.damage / 5, 120);
+                    float angle = MathHelper.TwoPi / count * i + AttackTimer * 0.08f;
+                    IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 7f, NPC.damage / 5, 120);
+                    float venomAngle = angle + MathHelper.Pi / count;
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, 
+                        new Vector2(MathF.Cos(venomAngle), MathF.Sin(venomAngle)) * 9f,
+                        ModContent.ProjectileType<XuanwuVenomFang>(), NPC.damage / 5, 0f, Main.myPlayer);
                 }
             }
 
-            if (AttackTimer > 200) TransitionTo(BossPhase.Phase3_Drift);
+            if (AttackTimer > 150) TransitionTo(BossPhase.Phase3_Drift);
         }
 
         #endregion

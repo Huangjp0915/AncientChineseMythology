@@ -101,7 +101,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
             NPC.height = 170;
             NPC.damage = 240;
             NPC.defense = 65;
-            NPC.lifeMax = 5000000;
+            NPC.lifeMax = 2000000;
             NPC.HitSound = SoundID.NPCHit1;
             NPC.DeathSound = SoundID.NPCDeath62;
             NPC.value = Item.buyPrice(platinum: 5);
@@ -379,90 +379,116 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
         #region 一阶段：炎鸟
 
         private void RunPhase1Soar(Player target) {
-            // 优雅的8字翱翔
-            soarAngle += 0.02f;
-            float xRadius = 400f;
-            float yRadius = 200f;
+            soarAngle += 0.025f;
+            float xRadius = 380f;
+            float yRadius = 180f;
             Vector2 soarPos = target.Center + new Vector2(MathF.Sin(soarAngle * 2f) * xRadius, MathF.Sin(soarAngle) * yRadius - 300);
             NPC.velocity = Vector2.Lerp(NPC.velocity, (soarPos - NPC.Center) * 0.06f, 0.08f);
 
-            if (PhaseTimer > 130) TransitionTo(GetRandomPhase1Attack());
+            // 翔翔期间持续释放火焰弹幕
+            if (PhaseTimer % 18 == 0) {
+                Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 12f;
+                FireProjectile(NPC.Center, toTarget, NPC.damage / 5);
+            }
+
+            if (PhaseTimer > 100) TransitionTo(GetRandomPhase1Attack());
         }
 
         private void RunPhase1FireballBarrage(Player target) {
-            // 火球连射：朝玩家连续发射火球
-            Vector2 hoverPos = target.Center + new Vector2(MathF.Sin(globalTime * 2f) * 250f, -350);
-            NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.04f, 0.08f);
+            Vector2 hoverPos = target.Center + new Vector2(MathF.Sin(globalTime * 2.5f) * 250f, -330);
+            NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.05f, 0.1f);
 
-            int interval = Main.expertMode ? 8 : 12;
+            int interval = Main.expertMode ? 5 : 8;
             if (AttackTimer % interval == 0) {
                 Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
-                float speed = 14f + Main.rand.NextFloat(0f, 3f);
-                Vector2 vel = toPlayer.RotatedByRandom(MathHelper.ToRadians(8f)) * speed;
-                FireProjectile(NPC.Center, vel, NPC.damage / 4);
+                // 多散射火球
+                for (int i = -1; i <= 1; i++) {
+                    float speed = 15f + Main.rand.NextFloat(0f, 4f);
+                    Vector2 vel = toPlayer.RotatedBy(i * MathHelper.ToRadians(10f) + Main.rand.NextFloat(-0.05f, 0.05f)) * speed;
+                    FireProjectile(NPC.Center, vel, NPC.damage / 4);
+                }
                 SoundEngine.PlaySound(SoundID.Item34 with { Pitch = 0.3f, Volume = 0.6f }, NPC.Center);
             }
 
-            if (AttackTimer > 120) TransitionTo(BossPhase.Phase1_Soar);
+            // 同步地面火柱
+            if (AttackTimer % 20 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                float xOff = Main.rand.NextFloat(-350, 350);
+                Vector2 pos = target.Center + new Vector2(xOff, 400);
+                FireProjectile(pos, new Vector2(0, -16f), NPC.damage / 5);
+            }
+
+            if (AttackTimer > 90) TransitionTo(BossPhase.Phase1_Soar);
         }
 
         private void RunPhase1FlamePillar(Player target) {
-            // 火柱：在玩家周围从下方升起火柱
             NPC.velocity = Vector2.Lerp(NPC.velocity, (target.Center + new Vector2(0, -400) - NPC.Center) * 0.03f, 0.06f);
 
-            if (AttackTimer % 25 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int pillarCount = Main.expertMode ? 5 : 3;
+            if (AttackTimer % 18 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                int pillarCount = Main.expertMode ? 6 : 4;
                 for (int i = 0; i < pillarCount; i++) {
-                    float xOff = Main.rand.NextFloat(-400, 400);
-                    Vector2 pos = target.Center + new Vector2(xOff, 400);
-                    Vector2 vel = new Vector2(0, -18f);
-                    int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, vel,
-                        ProjectileID.InfernoFriendlyBlast, NPC.damage / 4, 0f, Main.myPlayer);
-                    if (proj >= 0 && proj < Main.maxProjectiles) {
-                        Main.projectile[proj].friendly = false;
-                        Main.projectile[proj].hostile = true;
-                        Main.projectile[proj].tileCollide = false;
-                        Main.projectile[proj].timeLeft = 120;
-                    }
+                    float xOff = Main.rand.NextFloat(-450, 450);
+                    // 上下火柱夺击
+                    Vector2 posBottom = target.Center + new Vector2(xOff, 400);
+                    FireProjectile(posBottom, new Vector2(0, -20f), NPC.damage / 4);
+                    Vector2 posTop = target.Center + new Vector2(xOff + Main.rand.NextFloat(-100, 100), -600);
+                    FireProjectile(posTop, new Vector2(0, 16f), NPC.damage / 5);
                 }
                 SoundEngine.PlaySound(SoundID.Item45 with { Pitch = -0.2f }, target.Center);
             }
 
-            if (AttackTimer > 130) TransitionTo(BossPhase.Phase1_Soar);
+            // 同步追踪火球
+            if (AttackTimer % 25 == 0) {
+                Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 12f;
+                FireProjectile(NPC.Center, toTarget, NPC.damage / 5);
+            }
+
+            if (AttackTimer > 100) TransitionTo(BossPhase.Phase1_Soar);
         }
 
         private void RunPhase1FeatherRain(Player target) {
-            // 羽雨：燃烧的羽毛从朱雀身上散落
-            Vector2 hoverPos = target.Center + new Vector2(0, -450);
+            Vector2 hoverPos = target.Center + new Vector2(0, -430);
             NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.04f, 0.08f);
             NPC.velocity.X += MathF.Sin(globalTime * 3f) * 2f;
 
-            int interval = Main.expertMode ? 6 : 10;
+            int interval = Main.expertMode ? 4 : 7;
             if (AttackTimer % interval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int featherCount = Main.expertMode ? 4 : 2;
+                int featherCount = Main.expertMode ? 5 : 3;
                 for (int i = 0; i < featherCount; i++) {
-                    Vector2 pos = NPC.Center + Main.rand.NextVector2Circular(100, 40);
-                    Vector2 vel = new Vector2(Main.rand.NextFloat(-4f, 4f), Main.rand.NextFloat(6f, 12f));
+                    Vector2 pos = NPC.Center + Main.rand.NextVector2Circular(120, 40);
+                    Vector2 vel = new Vector2(Main.rand.NextFloat(-5f, 5f), Main.rand.NextFloat(8f, 15f));
                     FireProjectile(pos, vel, NPC.damage / 5);
                 }
             }
 
-            if (AttackTimer > 140) TransitionTo(BossPhase.Phase1_Soar);
+            // 每30帧释放扩散环
+            if (AttackTimer % 30 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                int count = 10;
+                for (int i = 0; i < count; i++) {
+                    float angle = MathHelper.TwoPi / count * i;
+                    FireProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 7f, NPC.damage / 5);
+                }
+            }
+
+            if (AttackTimer > 110) TransitionTo(BossPhase.Phase1_Soar);
         }
 
         private void RunPhase1HeatWave(Player target) {
-            // 热浪：向外扩展的火焰环
             NPC.velocity *= 0.92f;
 
-            if (AttackTimer == 20) {
+            if (AttackTimer == 15) {
                 SoundEngine.PlaySound(SoundID.Item45 with { Volume = 1.3f }, NPC.Center);
 
+                // 双层火焰环
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
-                    int count = Main.expertMode ? 20 : 14;
-                    for (int i = 0; i < count; i++) {
-                        float angle = MathHelper.TwoPi / count * i;
-                        Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 8f;
-                        FireProjectile(NPC.Center, vel, NPC.damage / 5);
+                    int count1 = Main.expertMode ? 22 : 16;
+                    for (int i = 0; i < count1; i++) {
+                        float angle = MathHelper.TwoPi / count1 * i;
+                        FireProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 9f, NPC.damage / 5);
+                    }
+                    int count2 = Main.expertMode ? 18 : 12;
+                    for (int i = 0; i < count2; i++) {
+                        float angle = MathHelper.TwoPi / count2 * i + MathHelper.ToRadians(10f);
+                        FireProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 14f, NPC.damage / 5);
                     }
                 }
 
@@ -475,7 +501,13 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
                 }
             }
 
-            if (AttackTimer > 70) TransitionTo(BossPhase.Phase1_Soar);
+            // 后续瞄准火球
+            if (AttackTimer > 25 && AttackTimer % 10 == 0 && AttackTimer < 55) {
+                Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 14f;
+                FireProjectile(NPC.Center, toTarget, NPC.damage / 5);
+            }
+
+            if (AttackTimer > 60) TransitionTo(BossPhase.Phase1_Soar);
         }
 
         #endregion
@@ -564,11 +596,9 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
         #region 二阶段：太阳之翼
 
         private void RunPhase2PhoenixDive(Player target) {
-            // 凤凰俯冲：从空中急速俯冲玩家，留下火焰轨迹
             if (SubState == 0) {
-                // 飞高蓄力
-                Vector2 highPos = target.Center + new Vector2(Main.rand.NextFloat(-200, 200), -600);
-                NPC.velocity = Vector2.Lerp(NPC.velocity, (highPos - NPC.Center) * 0.06f, 0.1f);
+                Vector2 highPos = target.Center + new Vector2(Main.rand.NextFloat(-200, 200), -550);
+                NPC.velocity = Vector2.Lerp(NPC.velocity, (highPos - NPC.Center) * 0.07f, 0.12f);
 
                 if (Main.netMode != NetmodeID.Server) {
                     Dust d = Dust.NewDustDirect(NPC.Center, 0, 0, DustID.SolarFlare, 0, 0, 100, default, 2f);
@@ -576,16 +606,23 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
                     d.velocity = (NPC.Center - d.position).SafeNormalize(Vector2.Zero) * 3f;
                 }
 
-                if (AttackTimer > 40) {
+                // 蓄力时旋转火焰压制
+                if (AttackTimer % 10 == 0) {
+                    float a = AttackTimer * 0.15f;
+                    for (int arm = 0; arm < 2; arm++) {
+                        FireProjectile(NPC.Center, new Vector2(MathF.Cos(a + arm * MathHelper.Pi), MathF.Sin(a + arm * MathHelper.Pi)) * 8f, NPC.damage / 5);
+                    }
+                }
+
+                if (AttackTimer > 30) {
                     SubState = 1;
                     AttackTimer = 0;
-                    NPC.velocity = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 35f;
+                    NPC.velocity = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 40f;
                     SoundEngine.PlaySound(SoundID.Roar with { Pitch = 1f }, NPC.Center);
                     NPC.netUpdate = true;
                 }
             }
             else {
-                // 俯冲中，释放火焰尾迹
                 if (Main.netMode != NetmodeID.Server) {
                     for (int i = 0; i < 5; i++) {
                         Dust d = Dust.NewDustDirect(NPC.Center, 0, 0, DustID.SolarFlare, 0, 0, 80, default, 3f);
@@ -594,17 +631,27 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
                     }
                 }
 
-                // 沿途释放火弹
-                if (AttackTimer % 4 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                // 两侧火焰尾迹 + 后方散射
+                if (AttackTimer % 3 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                     Vector2 perpDir = new Vector2(-NPC.velocity.Y, NPC.velocity.X).SafeNormalize(Vector2.Zero);
-                    FireProjectile(NPC.Center + perpDir * 30f, perpDir * 6f, NPC.damage / 5);
-                    FireProjectile(NPC.Center - perpDir * 30f, -perpDir * 6f, NPC.damage / 5);
+                    FireProjectile(NPC.Center + perpDir * 40f, perpDir * 7f, NPC.damage / 5);
+                    FireProjectile(NPC.Center - perpDir * 40f, -perpDir * 7f, NPC.damage / 5);
+                    // 后方散射
+                    Vector2 backVel = -NPC.velocity.SafeNormalize(Vector2.Zero) * 5f;
+                    FireProjectile(NPC.Center, backVel.RotatedByRandom(MathHelper.ToRadians(30)), NPC.damage / 6);
                 }
 
-                if (AttackTimer > 25) NPC.velocity *= 0.9f;
-                if (AttackTimer > 40) {
+                if (AttackTimer > 22) NPC.velocity *= 0.9f;
+                if (AttackTimer > 35) {
+                    // 落地火焰环
+                    if (Main.netMode != NetmodeID.MultiplayerClient) {
+                        for (int i = 0; i < 10; i++) {
+                            float angle = MathHelper.TwoPi / 10 * i;
+                            FireProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 8f, NPC.damage / 5);
+                        }
+                    }
                     diveCount++;
-                    if (diveCount < 4) {
+                    if (diveCount < 5) {
                         SubState = 0;
                         AttackTimer = 0;
                     }
@@ -614,98 +661,116 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
         }
 
         private void RunPhase2SunCircle(Player target) {
-            // 太阳环：围绕玩家创造一圈火焰
-            NPC.velocity = Vector2.Lerp(NPC.velocity, (target.Center + new Vector2(0, -400) - NPC.Center) * 0.03f, 0.06f);
+            NPC.velocity = Vector2.Lerp(NPC.velocity, (target.Center + new Vector2(0, -400) - NPC.Center) * 0.04f, 0.08f);
 
-            if (AttackTimer == 30 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int count = Main.expertMode ? 24 : 16;
-                float radius = 300f;
-                for (int i = 0; i < count; i++) {
-                    float angle = MathHelper.TwoPi / count * i;
-                    Vector2 pos = target.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * radius;
-                    Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.Zero) * 6f;
-                    int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, vel,
-                        ProjectileID.InfernoFriendlyBlast, NPC.damage / 4, 0f, Main.myPlayer);
-                    if (proj >= 0 && proj < Main.maxProjectiles) {
-                        Main.projectile[proj].friendly = false;
-                        Main.projectile[proj].hostile = true;
-                        Main.projectile[proj].tileCollide = false;
-                        Main.projectile[proj].timeLeft = 120;
+            // 3层收缩火焰环
+            if (AttackTimer == 25 && Main.netMode != NetmodeID.MultiplayerClient) {
+                float[] radii = { 450f, 320f, 200f };
+                int[] counts = { 28, 22, 16 };
+                for (int ring = 0; ring < 3; ring++) {
+                    for (int i = 0; i < counts[ring]; i++) {
+                        float angle = MathHelper.TwoPi / counts[ring] * i + ring * MathHelper.ToRadians(8f);
+                        Vector2 pos = target.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * radii[ring];
+                        Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.Zero) * (5f + ring * 3f);
+                        FireProjectile(pos, vel, NPC.damage / 4);
                     }
                 }
                 SoundEngine.PlaySound(SoundID.Item45 with { Volume = 1.2f }, target.Center);
             }
 
-            // 第二波更紧密的环
-            if (AttackTimer == 70 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int count = Main.expertMode ? 24 : 16;
-                float radius = 180f;
-                for (int i = 0; i < count; i++) {
-                    float angle = MathHelper.TwoPi / count * i + MathHelper.ToRadians(7.5f);
-                    Vector2 pos = target.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * radius;
-                    Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.Zero) * 8f;
-                    FireProjectile(pos, vel, NPC.damage / 4);
+            // 同步瞄准火球
+            if (AttackTimer > 30 && AttackTimer % 8 == 0 && AttackTimer < 80) {
+                Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 14f;
+                for (int i = -1; i <= 1; i += 2) {
+                    FireProjectile(NPC.Center, toTarget.RotatedBy(i * MathHelper.ToRadians(15)), NPC.damage / 5);
                 }
             }
 
-            if (AttackTimer > 130) TransitionTo(GetRandomPhase2Attack());
+            if (AttackTimer > 100) TransitionTo(GetRandomPhase2Attack());
         }
 
         private void RunPhase2SolarFlare(Player target) {
-            // 太阳耀斑：释放追踪火球
-            Vector2 hoverPos = target.Center + new Vector2(MathF.Sin(globalTime * 2f) * 300f, -350);
-            NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.04f, 0.08f);
+            Vector2 hoverPos = target.Center + new Vector2(MathF.Sin(globalTime * 2.5f) * 280f, -330);
+            NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.05f, 0.1f);
 
-            if (AttackTimer % 20 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int flareCount = Main.expertMode ? 3 : 2;
+            // 密集追踪火球
+            if (AttackTimer % 12 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                int flareCount = Main.expertMode ? 5 : 3;
                 for (int i = 0; i < flareCount; i++) {
                     float angle = Main.rand.NextFloat(MathHelper.TwoPi);
                     Vector2 pos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 80f;
-                    Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.Zero) * 10f;
-                    vel = vel.RotatedByRandom(MathHelper.ToRadians(15f));
+                    Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.Zero) * 12f;
+                    vel = vel.RotatedByRandom(MathHelper.ToRadians(10f));
                     FireProjectile(pos, vel, NPC.damage / 4);
                 }
                 SoundEngine.PlaySound(SoundID.Item34 with { Volume = 0.5f }, NPC.Center);
             }
 
-            if (AttackTimer > 120) TransitionTo(GetRandomPhase2Attack());
+            // 同步旋转火焰臂
+            if (AttackTimer % 6 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                float spiralAngle = AttackTimer * 0.12f;
+                for (int arm = 0; arm < 2; arm++) {
+                    float a = spiralAngle + arm * MathHelper.Pi;
+                    FireProjectile(NPC.Center, new Vector2(MathF.Cos(a), MathF.Sin(a)) * 10f, NPC.damage / 5);
+                }
+            }
+
+            if (AttackTimer > 100) TransitionTo(GetRandomPhase2Attack());
         }
 
         private void RunPhase2FlameTornado(Player target) {
-            // 火焰漩涡：在玩家方向释放旋转的火焰柱
-            Vector2 hoverPos = target.Center + new Vector2(0, -400);
-            NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.03f, 0.06f);
+            Vector2 hoverPos = target.Center + new Vector2(0, -380);
+            NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.04f, 0.08f);
 
+            // 双旋转火焰螺旋，反向
             if (AttackTimer % 3 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                float spiralAngle = AttackTimer * 0.12f;
-                float radius = 50f + AttackTimer * 2f;
-                Vector2 pos = target.Center + new Vector2(MathF.Cos(spiralAngle), MathF.Sin(spiralAngle)) * radius;
-                Vector2 vel = new Vector2(MathF.Cos(spiralAngle + MathHelper.PiOver2), MathF.Sin(spiralAngle + MathHelper.PiOver2)) * 3f;
-                FireProjectile(pos, vel, NPC.damage / 5);
+                float spiralAngle1 = AttackTimer * 0.14f;
+                float spiralAngle2 = -AttackTimer * 0.10f;
+                float radius1 = 50f + AttackTimer * 2.5f;
+                float radius2 = 80f + AttackTimer * 1.8f;
+
+                Vector2 pos1 = target.Center + new Vector2(MathF.Cos(spiralAngle1), MathF.Sin(spiralAngle1)) * radius1;
+                FireProjectile(pos1, new Vector2(MathF.Cos(spiralAngle1 + MathHelper.PiOver2), MathF.Sin(spiralAngle1 + MathHelper.PiOver2)) * 4f, NPC.damage / 5);
+
+                Vector2 pos2 = target.Center + new Vector2(MathF.Cos(spiralAngle2), MathF.Sin(spiralAngle2)) * radius2;
+                FireProjectile(pos2, new Vector2(MathF.Cos(spiralAngle2 + MathHelper.PiOver2), MathF.Sin(spiralAngle2 + MathHelper.PiOver2)) * 3f, NPC.damage / 5);
             }
 
-            if (AttackTimer > 150) TransitionTo(GetRandomPhase2Attack());
+            // 同步瞄准火球
+            if (AttackTimer % 20 == 0) {
+                Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 13f;
+                FireProjectile(NPC.Center, toTarget, NPC.damage / 5);
+            }
+
+            if (AttackTimer > 130) TransitionTo(GetRandomPhase2Attack());
         }
 
         private void RunPhase2WingStorm(Player target) {
-            // 翼风暴：快速扇动翅膀释放大量火焰弹幕
             NPC.velocity *= 0.92f;
             NPC.Center += Main.rand.NextVector2Circular(3, 3);
 
-            int interval = Main.expertMode ? 5 : 8;
+            int interval = Main.expertMode ? 4 : 6;
             if (AttackTimer % interval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                 Vector2 dir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
-                int count = 5;
-                float spread = MathHelper.ToRadians(40f);
+                int count = 7;
+                float spread = MathHelper.ToRadians(50f);
                 for (int i = 0; i < count; i++) {
                     float angle = -spread / 2 + spread / (count - 1) * i;
-                    Vector2 vel = dir.RotatedBy(angle) * Main.rand.NextFloat(12f, 18f);
+                    Vector2 vel = dir.RotatedBy(angle) * Main.rand.NextFloat(14f, 20f);
                     FireProjectile(NPC.Center, vel, NPC.damage / 4);
                 }
                 SoundEngine.PlaySound(SoundID.Item34 with { Pitch = 0.5f, Volume = 0.4f }, NPC.Center);
             }
 
-            if (AttackTimer > 100) TransitionTo(GetRandomPhase2Attack());
+            // 同步地面火柱
+            if (AttackTimer % 15 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                for (int i = 0; i < 3; i++) {
+                    Vector2 pos = target.Center + new Vector2(Main.rand.NextFloat(-400, 400), 400);
+                    FireProjectile(pos, new Vector2(0, -18f), NPC.damage / 5);
+                }
+            }
+
+            if (AttackTimer > 80) TransitionTo(GetRandomPhase2Attack());
         }
 
         #endregion
@@ -727,30 +792,51 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
                 }
             }
 
-            if (PhaseTimer > 90) TransitionTo(GetRandomPhase3Attack());
+            // 涅槃巡航火压制
+            if (PhaseTimer % 12 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                float a = PhaseTimer * 0.2f;
+                for (int arm = 0; arm < 3; arm++) {
+                    float angle = a + arm * MathHelper.TwoPi / 3f;
+                    FireProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 9f, NPC.damage / 6);
+                }
+            }
+            if (PhaseTimer % 20 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 14f;
+                FireProjectile(NPC.Center, toTarget, NPC.damage / 5);
+            }
+
+            if (PhaseTimer > 70) TransitionTo(GetRandomPhase3Attack());
         }
 
         private void RunPhase3VermillionRain(Player target) {
-            // 朱雀火雨：全屏火焰倾泻
             Vector2 hoverPos = target.Center + new Vector2(0, -500);
             NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.04f, 0.08f);
 
-            int interval = Main.expertMode ? 3 : 5;
+            int interval = Main.expertMode ? 2 : 4;
             if (AttackTimer % interval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int count = Main.expertMode ? 4 : 3;
+                int count = Main.expertMode ? 5 : 3;
                 for (int i = 0; i < count; i++) {
                     float x = target.Center.X + Main.rand.NextFloat(-600, 600);
                     Vector2 pos = new Vector2(x, target.Center.Y - 700);
-                    Vector2 vel = new Vector2(Main.rand.NextFloat(-2f, 2f), Main.rand.NextFloat(14f, 20f));
+                    Vector2 vel = new Vector2(Main.rand.NextFloat(-2f, 2f), Main.rand.NextFloat(16f, 22f));
                     FireProjectile(pos, vel, NPC.damage / 4);
                 }
             }
 
-            if (AttackTimer > 180) TransitionTo(BossPhase.Phase3_NirvanaFlight);
+            // 同步两侧水平火墙
+            if (AttackTimer % 25 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                for (int side = -1; side <= 1; side += 2) {
+                    for (int i = 0; i < 6; i++) {
+                        Vector2 pos = target.Center + new Vector2(side * 700, -300 + i * 100);
+                        FireProjectile(pos, new Vector2(-side * 14f, 0), NPC.damage / 5);
+                    }
+                }
+            }
+
+            if (AttackTimer > 140) TransitionTo(BossPhase.Phase3_NirvanaFlight);
         }
 
         private void RunPhase3SolarJudgment(Player target) {
-            // 太阳审判：生成巨型火球压向玩家
             if (SubState == 0) {
                 NPC.velocity *= 0.9f;
                 NPC.Center += Main.rand.NextVector2Circular(3, 3);
@@ -763,20 +849,29 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
                     }
                 }
 
-                if (AttackTimer > 70) {
+                // 蓄力时旋转火焰臂
+                if (AttackTimer % 8 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    float a = AttackTimer * 0.18f;
+                    for (int arm = 0; arm < 3; arm++) {
+                        float angle = a + arm * MathHelper.TwoPi / 3f;
+                        FireProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 7f, NPC.damage / 5);
+                    }
+                }
+
+                if (AttackTimer > 55) {
                     SubState = 1;
                     AttackTimer = 0;
 
                     SoundEngine.PlaySound(SoundID.Item45 with { Pitch = -0.5f, Volume = 1.5f }, NPC.Center);
 
-                    // 大量火球向玩家方向发射
+                    // 5环层叠火球爆发
                     if (Main.netMode != NetmodeID.MultiplayerClient) {
                         Vector2 dir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
-                        for (int ring = 0; ring < 3; ring++) {
-                            int count = 12;
+                        for (int ring = 0; ring < 5; ring++) {
+                            int count = 10 + ring * 3;
                             for (int i = 0; i < count; i++) {
-                                float angle = MathHelper.TwoPi / count * i + ring * MathHelper.ToRadians(15f);
-                                Vector2 vel = dir * (10f + ring * 5f) + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 4f;
+                                float angle = MathHelper.TwoPi / count * i + ring * MathHelper.ToRadians(12f);
+                                Vector2 vel = dir * (8f + ring * 4f) + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 5f;
                                 FireProjectile(NPC.Center, vel, NPC.damage / 3);
                             }
                         }
@@ -791,18 +886,31 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
             }
             else {
                 NPC.velocity *= 0.9f;
-                if (AttackTimer > 60) TransitionTo(BossPhase.Phase3_NirvanaFlight);
+
+                // 爆发后追踪火球持续压制
+                if (AttackTimer % 10 == 0 && AttackTimer < 40 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 12f;
+                    for (int i = -1; i <= 1; i++) {
+                        FireProjectile(NPC.Center, toTarget.RotatedBy(i * MathHelper.ToRadians(12)), NPC.damage / 5);
+                    }
+                }
+
+                if (AttackTimer > 50) TransitionTo(BossPhase.Phase3_NirvanaFlight);
             }
         }
 
         private void RunPhase3PhoenixDance(Player target) {
-            // 凤凰之舞：高速连续俯冲，每次留下火焰十字弹幕
             if (SubState == 0) {
                 NPC.velocity *= 0.8f;
-                if (AttackTimer > 15) {
+                // 蓄力时向外放火焰
+                if (AttackTimer % 5 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    float a = AttackTimer * 0.3f;
+                    FireProjectile(NPC.Center, new Vector2(MathF.Cos(a), MathF.Sin(a)) * 8f, NPC.damage / 6);
+                }
+                if (AttackTimer > 12) {
                     SubState = 1;
                     AttackTimer = 0;
-                    NPC.velocity = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX) * 40f;
+                    NPC.velocity = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX) * 45f;
                     SoundEngine.PlaySound(SoundID.Roar with { Pitch = 1.2f, Volume = 0.8f }, NPC.Center);
                     NPC.netUpdate = true;
                 }
@@ -816,20 +924,27 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
                     }
                 }
 
-                // 冲刺中途释放十字弹幕
-                if (AttackTimer == 12 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    Vector2[] crossDirs = { Vector2.UnitX, -Vector2.UnitX, Vector2.UnitY, -Vector2.UnitY };
-                    foreach (Vector2 d in crossDirs) {
-                        for (int i = 1; i <= 3; i++) {
-                            FireProjectile(NPC.Center, d * (6f + i * 3f), NPC.damage / 4);
+                // 冲刺火焰尾迹
+                if (AttackTimer % 3 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    Vector2 perpDir = new Vector2(-NPC.velocity.Y, NPC.velocity.X).SafeNormalize(Vector2.Zero);
+                    FireProjectile(NPC.Center + perpDir * 30f, perpDir * 5f, NPC.damage / 6);
+                    FireProjectile(NPC.Center - perpDir * 30f, -perpDir * 5f, NPC.damage / 6);
+                }
+
+                // 冲刺中释放星形弹幕
+                if (AttackTimer == 10 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    for (int i = 0; i < 6; i++) {
+                        float angle = MathHelper.TwoPi / 6 * i;
+                        for (int j = 1; j <= 4; j++) {
+                            FireProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * (5f + j * 3f), NPC.damage / 4);
                         }
                     }
                 }
 
-                if (AttackTimer > 20) NPC.velocity *= 0.9f;
-                if (AttackTimer > 30) {
+                if (AttackTimer > 18) NPC.velocity *= 0.9f;
+                if (AttackTimer > 25) {
                     diveCount++;
-                    if (diveCount < 6) {
+                    if (diveCount < 7) {
                         SubState = 0;
                         AttackTimer = 0;
                     }
@@ -839,7 +954,6 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
         }
 
         private void RunPhase3NirvanaFlames(Player target) {
-            // 涅槃之焰：终极攻击
             if (SubState == 0) {
                 NPC.velocity *= 0.88f;
                 NPC.dontTakeDamage = true;
@@ -856,7 +970,16 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
                     }
                 }
 
-                if (AttackTimer > 90) {
+                // 蓄力时旋转火焰臂压制
+                if (AttackTimer % 8 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    float a = AttackTimer * 0.15f;
+                    for (int arm = 0; arm < 3; arm++) {
+                        float angle = a + arm * MathHelper.TwoPi / 3f;
+                        FireProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 10f, NPC.damage / 5);
+                    }
+                }
+
+                if (AttackTimer > 75) {
                     SubState = 1;
                     AttackTimer = 0;
                     NPC.dontTakeDamage = false;
@@ -868,21 +991,28 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
                         Main.instance.CameraModifiers.Add(modifier);
                     }
 
-                    // 四波旋转火焰弹幕 + 火雨
+                    // 6波旋转火焰弹幕
                     if (Main.netMode != NetmodeID.MultiplayerClient) {
-                        for (int wave = 0; wave < 5; wave++) {
-                            int count = 18;
+                        for (int wave = 0; wave < 6; wave++) {
+                            int count = 16 + wave * 4;
                             for (int i = 0; i < count; i++) {
-                                float angle = MathHelper.TwoPi / count * i + wave * MathHelper.ToRadians(10f);
-                                Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * (6f + wave * 3f);
+                                float angle = MathHelper.TwoPi / count * i + wave * MathHelper.ToRadians(8f);
+                                Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * (5f + wave * 3f);
                                 FireProjectile(NPC.Center, vel, NPC.damage / 3);
                             }
                         }
-                        // 额外火雨
-                        for (int i = 0; i < 15; i++) {
-                            float x = target.Center.X + Main.rand.NextFloat(-500, 500);
-                            Vector2 pos = new Vector2(x, target.Center.Y - 600);
-                            Vector2 vel = new Vector2(0, Main.rand.NextFloat(12f, 18f));
+                        // 双侧火墙
+                        for (int side = -1; side <= 1; side += 2) {
+                            for (int i = 0; i < 8; i++) {
+                                Vector2 pos = target.Center + new Vector2(side * 700, -350 + i * 100);
+                                FireProjectile(pos, new Vector2(-side * 16f, 0), NPC.damage / 4);
+                            }
+                        }
+                        // 火雨
+                        for (int i = 0; i < 20; i++) {
+                            float x = target.Center.X + Main.rand.NextFloat(-600, 600);
+                            Vector2 pos = new Vector2(x, target.Center.Y - 700);
+                            Vector2 vel = new Vector2(0, Main.rand.NextFloat(14f, 22f));
                             FireProjectile(pos, vel, NPC.damage / 4);
                         }
                     }
@@ -891,12 +1021,20 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
             }
             else {
                 NPC.velocity *= 0.92f;
-                if (AttackTimer > 80) TransitionTo(BossPhase.Phase3_NirvanaFlight);
+
+                // 爆发后追踪火球持续压制
+                if (AttackTimer % 8 == 0 && AttackTimer < 50 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 13f;
+                    for (int i = -1; i <= 1; i++) {
+                        FireProjectile(NPC.Center, toTarget.RotatedBy(i * MathHelper.ToRadians(10)), NPC.damage / 5);
+                    }
+                }
+
+                if (AttackTimer > 60) TransitionTo(BossPhase.Phase3_NirvanaFlight);
             }
         }
 
         private void RunPhase3Rebirth(Player target) {
-            // 涅槃重生动画
             NPC.velocity *= 0.9f;
             NPC.dontTakeDamage = true;
             NPC.Center += Main.rand.NextVector2Circular(4, 4);
@@ -927,12 +1065,15 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
                     }
                 }
 
-                // 重生爆发弹幕
+                // 重生爆发: 双层同心圆
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
-                    for (int i = 0; i < 30; i++) {
-                        float angle = MathHelper.TwoPi / 30 * i;
-                        Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 14f;
-                        FireProjectile(NPC.Center, vel, NPC.damage / 3);
+                    for (int i = 0; i < 36; i++) {
+                        float angle = MathHelper.TwoPi / 36 * i;
+                        FireProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 16f, NPC.damage / 3);
+                    }
+                    for (int i = 0; i < 24; i++) {
+                        float angle = MathHelper.TwoPi / 24 * i + MathHelper.ToRadians(7.5f);
+                        FireProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 10f, NPC.damage / 3);
                     }
                 }
             }

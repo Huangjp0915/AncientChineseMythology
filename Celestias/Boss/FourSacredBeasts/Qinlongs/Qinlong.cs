@@ -99,7 +99,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
             NPC.height = 160;
             NPC.damage = 220;
             NPC.defense = 80;
-            NPC.lifeMax = 5000000;
+            NPC.lifeMax = 2000000;
             NPC.HitSound = SoundID.NPCHit56;
             NPC.DeathSound = SoundID.NPCDeath62;
             NPC.value = Item.buyPrice(platinum: 5);
@@ -349,25 +349,42 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                 d.velocity = -NPC.velocity * 0.2f;
             }
 
-            if (PhaseTimer > 150) TransitionTo(GetRandomPhase1Attack());
+            // 巡游时持续散落风刃施压
+            if (PhaseTimer % 25 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 10f;
+                vel = vel.RotatedByRandom(MathHelper.ToRadians(20f));
+                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                    ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 5, 0f, Main.myPlayer);
+            }
+
+            if (PhaseTimer > 100) TransitionTo(GetRandomPhase1Attack());
         }
 
         private void RunPhase1WindBlade(Player target) {
             Vector2 hoverPos = target.Center + new Vector2(MathF.Sin(globalTime * 1.5f) * 150f, -400);
             NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.04f, 0.1f);
 
-            int fireInterval = Main.expertMode ? 10 : 14;
+            int fireInterval = Main.expertMode ? 6 : 10;
             if (AttackTimer % fireInterval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                 Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
-                int bladeCount = Main.expertMode ? 5 : 3;
-                float spread = MathHelper.ToRadians(12f);
+                int bladeCount = Main.expertMode ? 7 : 5;
+                float spread = MathHelper.ToRadians(10f);
 
+                // 主扇形风刃
                 for (int i = -bladeCount / 2; i <= bladeCount / 2; i++) {
-                    Vector2 vel = toPlayer.RotatedBy(i * spread) * 14f;
+                    Vector2 vel = toPlayer.RotatedBy(i * spread) * 16f;
                     Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
                         ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 4, 1f, Main.myPlayer);
                 }
                 SoundEngine.PlaySound(SoundID.Item71 with { Pitch = 0.3f }, NPC.Center);
+            }
+
+            // 同步雷击施压
+            if (AttackTimer % 35 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                Vector2 strikePos = target.Center + new Vector2(Main.rand.NextFloat(-250, 250), -500);
+                int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), strikePos, new Vector2(0, 20f),
+                    ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 5, 0f, Main.myPlayer);
+                if (proj >= 0 && proj < Main.maxProjectiles) Main.projectile[proj].timeLeft = 120;
             }
 
             if (AttackTimer > 120) TransitionTo(BossPhase.Phase1_Patrol);
@@ -377,15 +394,38 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
             Vector2 hoverPos = target.Center + new Vector2(0, -500);
             NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.03f, 0.08f);
 
-            if (AttackTimer % 40 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int thunderCount = Main.expertMode ? 5 : 3;
+            // 双重雷击：纵向天雷 + 横向闪电墙
+            if (AttackTimer % 25 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                int thunderCount = Main.expertMode ? 7 : 5;
                 for (int i = 0; i < thunderCount; i++) {
-                    Vector2 strikePos = target.Center + new Vector2(Main.rand.NextFloat(-300, 300), -600);
-                    Vector2 vel = new Vector2(0, 18f);
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), strikePos, vel,
+                    Vector2 strikePos = target.Center + new Vector2(Main.rand.NextFloat(-350, 350), -600);
+                    Vector2 vel = new Vector2(0, 20f);
+                    int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), strikePos, vel,
                         ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 4, 0f, Main.myPlayer);
+                    if (proj >= 0 && proj < Main.maxProjectiles) Main.projectile[proj].timeLeft = 150;
                 }
                 SoundEngine.PlaySound(SoundID.Thunder with { Volume = 0.8f }, target.Center);
+            }
+
+            // 横向闪电墙
+            if (AttackTimer % 40 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                float side = Main.rand.NextBool() ? -1f : 1f;
+                for (int i = 0; i < 5; i++) {
+                    Vector2 wallPos = target.Center + new Vector2(side * 600, -200 + i * 100);
+                    Vector2 vel = new Vector2(-side * 14f, 0);
+                    int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), wallPos, vel,
+                        ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 4, 0f, Main.myPlayer);
+                    if (proj >= 0 && proj < Main.maxProjectiles) Main.projectile[proj].timeLeft = 120;
+                }
+            }
+
+            // 风刃背景压力
+            if (AttackTimer % 18 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                float angle = Main.rand.NextFloat(MathHelper.TwoPi);
+                Vector2 spawnPos = target.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 500f;
+                Vector2 vel = (target.Center - spawnPos).SafeNormalize(Vector2.Zero) * 10f;
+                Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
+                    ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 5, 0f, Main.myPlayer);
             }
 
             if (Main.netMode != NetmodeID.Server && AttackTimer % 10 == 0) {
@@ -400,18 +440,38 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
         }
 
         private void RunPhase1DragonCoil(Player target) {
-            coilAngle += 0.06f;
-            float radius = 300f - PhaseTimer * 0.5f;
-            if (radius < 150f) radius = 150f;
+            coilAngle += 0.08f;
+            float radius = 300f - PhaseTimer * 0.8f;
+            if (radius < 120f) radius = 120f;
 
             Vector2 orbitPos = target.Center + new Vector2(MathF.Cos(coilAngle), MathF.Sin(coilAngle)) * radius;
-            NPC.velocity = (orbitPos - NPC.Center) * 0.12f;
+            NPC.velocity = (orbitPos - NPC.Center) * 0.14f;
 
-            if (AttackTimer % 8 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+            // 高频风刃尾迹
+            if (AttackTimer % 5 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                 int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
                     ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 5, 0f, Main.myPlayer);
                 if (proj >= 0 && proj < Main.maxProjectiles) {
-                    Main.projectile[proj].timeLeft = 120;
+                    Main.projectile[proj].timeLeft = 150;
+                }
+            }
+
+            // 收缩时向玩家射出雷弹
+            if (AttackTimer % 20 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 12f;
+                int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                    ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 4, 0f, Main.myPlayer);
+                if (proj >= 0 && proj < Main.maxProjectiles) Main.projectile[proj].timeLeft = 150;
+            }
+
+            // 螺旋收缩到最紧时爆发环形弹
+            if (radius <= 120f && AttackTimer % 30 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                int count = 12;
+                for (int i = 0; i < count; i++) {
+                    float angle = MathHelper.TwoPi / count * i;
+                    Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 8f;
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                        ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 5, 0f, Main.myPlayer);
                 }
             }
 
@@ -438,15 +498,24 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                     }
                 }
 
-                if (AttackTimer > 40) {
+                if (AttackTimer > 30) {
                     SubState = 1;
                     AttackTimer = 0;
-                    NPC.velocity = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX) * 28f;
+                    NPC.velocity = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX) * 32f;
                     SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.5f }, NPC.Center);
                     NPC.netUpdate = true;
                 }
             }
             else {
+                // 冲刺中释放风刃尾迹
+                if (AttackTimer % 3 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    Vector2 perpDir = new Vector2(-NPC.velocity.Y, NPC.velocity.X).SafeNormalize(Vector2.Zero);
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center + perpDir * 40f, perpDir * 6f,
+                        ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 5, 0f, Main.myPlayer);
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center - perpDir * 40f, -perpDir * 6f,
+                        ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 5, 0f, Main.myPlayer);
+                }
+
                 if (AttackTimer > 30) NPC.velocity *= 0.92f;
 
                 if (Main.netMode != NetmodeID.Server) {
@@ -458,8 +527,20 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                 }
 
                 chargeCount++;
-                if (AttackTimer > 50) {
-                    if (chargeCount < 3) {
+                if (AttackTimer > 45) {
+                    // 每次冲刺结束释放雷击爆发
+                    if (Main.netMode != NetmodeID.MultiplayerClient) {
+                        int burstCount = 8;
+                        for (int i = 0; i < burstCount; i++) {
+                            float angle = MathHelper.TwoPi / burstCount * i;
+                            Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 10f;
+                            int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                                ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 5, 0f, Main.myPlayer);
+                            if (proj >= 0 && proj < Main.maxProjectiles) Main.projectile[proj].timeLeft = 100;
+                        }
+                    }
+
+                    if (chargeCount < 4) {
                         SubState = 0;
                         AttackTimer = 0;
                     }
@@ -558,47 +639,70 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
             Vector2 hoverPos = target.Center + new Vector2(0, -450);
             NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.03f, 0.08f);
 
-            if (AttackTimer % 60 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int tornadoCount = Main.expertMode ? 4 : 3;
+            // 龙卷风柱：密集风刃柱从四方向逼近
+            if (AttackTimer % 40 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                int tornadoCount = Main.expertMode ? 5 : 4;
                 for (int i = 0; i < tornadoCount; i++) {
-                    Vector2 spawnPos = target.Center + new Vector2(Main.rand.NextFloat(-400, 400), 300);
-                    int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, new Vector2(0, -3f),
-                        ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 4, 0f, Main.myPlayer);
-                    if (proj >= 0 && proj < Main.maxProjectiles) {
-                        Main.projectile[proj].timeLeft = 300;
+                    Vector2 spawnPos = target.Center + new Vector2(Main.rand.NextFloat(-500, 500), 400);
+                    for (int j = 0; j < 3; j++) {
+                        Vector2 vel = new Vector2(Main.rand.NextFloat(-2f, 2f), -5f - j * 2f);
+                        int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos + new Vector2(j * 20, 0), vel,
+                            ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 4, 0f, Main.myPlayer);
+                        if (proj >= 0 && proj < Main.maxProjectiles) Main.projectile[proj].timeLeft = 250;
                     }
                 }
                 SoundEngine.PlaySound(SoundID.Item122, NPC.Center);
             }
 
-            if (AttackTimer > 180) TransitionTo(BossPhase.Phase2_ThunderBarrage);
+            // 同步雷击
+            if (AttackTimer % 20 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                Vector2 strikePos = target.Center + new Vector2(Main.rand.NextFloat(-300, 300), -600);
+                int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), strikePos, new Vector2(0, 22f),
+                    ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 4, 0f, Main.myPlayer);
+                if (proj >= 0 && proj < Main.maxProjectiles) Main.projectile[proj].timeLeft = 120;
+                SoundEngine.PlaySound(SoundID.Thunder with { Volume = 0.4f }, target.Center);
+            }
+
+            if (AttackTimer > 160) TransitionTo(GetRandomPhase2Attack());
         }
 
         private void RunPhase2ThunderBarrage(Player target) {
-            NPC.localAI[1] += 0.04f;
-            float radius = 350f;
+            NPC.localAI[1] += 0.05f;
+            float radius = 320f;
             Vector2 orbitPos = target.Center + new Vector2(MathF.Cos(NPC.localAI[1]), MathF.Sin(NPC.localAI[1])) * radius;
-            NPC.velocity = (orbitPos - NPC.Center) * 0.1f;
+            NPC.velocity = (orbitPos - NPC.Center) * 0.12f;
 
-            int interval = Main.expertMode ? 8 : 12;
+            // 高频追踪雷弹
+            int interval = Main.expertMode ? 5 : 8;
             if (AttackTimer % interval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 16f;
-                toPlayer = toPlayer.RotatedByRandom(MathHelper.ToRadians(15));
+                Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 18f;
+                toPlayer = toPlayer.RotatedByRandom(MathHelper.ToRadians(10));
                 int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, toPlayer,
                     ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 4, 0f, Main.myPlayer);
-                if (proj >= 0 && proj < Main.maxProjectiles) {
-                    Main.projectile[proj].timeLeft = 180;
-                }
+                if (proj >= 0 && proj < Main.maxProjectiles) Main.projectile[proj].timeLeft = 180;
             }
 
-            if (AttackTimer % 30 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                Vector2 strikePos = target.Center + new Vector2(Main.rand.NextFloat(-200, 200), -600);
-                int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), strikePos, new Vector2(0, 22f),
-                    ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 3, 0f, Main.myPlayer);
-                if (proj >= 0 && proj < Main.maxProjectiles) {
-                    Main.projectile[proj].timeLeft = 120;
+            // 天降雷柱（多列）
+            if (AttackTimer % 18 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                for (int i = 0; i < 3; i++) {
+                    Vector2 strikePos = target.Center + new Vector2(Main.rand.NextFloat(-350, 350), -700);
+                    int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), strikePos, new Vector2(0, 24f),
+                        ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 3, 0f, Main.myPlayer);
+                    if (proj >= 0 && proj < Main.maxProjectiles) Main.projectile[proj].timeLeft = 120;
                 }
                 SoundEngine.PlaySound(SoundID.Thunder with { Volume = 0.5f, Pitch = Main.rand.NextFloat(-0.3f, 0.3f) }, target.Center);
+            }
+
+            // 旋转风刃环路
+            if (AttackTimer % 30 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                int wCount = 6;
+                float baseAngle = globalTime * 3f;
+                for (int i = 0; i < wCount; i++) {
+                    float angle = baseAngle + MathHelper.TwoPi / wCount * i;
+                    Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 8f;
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                        ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 5, 0f, Main.myPlayer);
+                }
             }
 
             if (AttackTimer > 180) TransitionTo(GetRandomPhase2Attack());
@@ -608,15 +712,33 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
             if (SubState == 0) {
                 NPC.velocity *= 0.85f;
                 NPC.Center += Main.rand.NextVector2Circular(2, 2);
-                if (AttackTimer > 30) {
+
+                // 蓄力期间释放旋转风刃压缩空间
+                if (AttackTimer % 8 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    float angle = AttackTimer * 0.3f;
+                    Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 7f;
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                        ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 5, 0f, Main.myPlayer);
+                }
+
+                if (AttackTimer > 25) {
                     SubState = 1;
                     AttackTimer = 0;
-                    NPC.velocity = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX) * 35f;
+                    NPC.velocity = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX) * 38f;
                     SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.3f }, NPC.Center);
                     NPC.netUpdate = true;
                 }
             }
             else {
+                // 冲刺中双侧释放风刃+雷弹
+                if (AttackTimer % 4 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    Vector2 perpDir = new Vector2(-NPC.velocity.Y, NPC.velocity.X).SafeNormalize(Vector2.Zero);
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, perpDir * 7f,
+                        ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 5, 0f, Main.myPlayer);
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, -perpDir * 7f,
+                        ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 5, 0f, Main.myPlayer);
+                }
+
                 if (Main.netMode != NetmodeID.Server) {
                     for (int i = 0; i < 5; i++) {
                         Dust d = Dust.NewDustDirect(NPC.Center + Main.rand.NextVector2Circular(30, 30), 0, 0, DustID.GreenTorch, 0, 0, 100, default, 2.5f);
@@ -624,10 +746,21 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                         d.velocity = -NPC.velocity * Main.rand.NextFloat(0.1f, 0.2f);
                     }
                 }
-                if (AttackTimer > 25) NPC.velocity *= 0.9f;
-                if (AttackTimer > 40) {
+                if (AttackTimer > 22) NPC.velocity *= 0.9f;
+                if (AttackTimer > 35) {
+                    // 每次冲刺结束雷弹爆发
+                    if (Main.netMode != NetmodeID.MultiplayerClient) {
+                        for (int i = 0; i < 6; i++) {
+                            float angle = MathHelper.TwoPi / 6 * i;
+                            Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 10f;
+                            int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                                ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 4, 0f, Main.myPlayer);
+                            if (proj >= 0 && proj < Main.maxProjectiles) Main.projectile[proj].timeLeft = 120;
+                        }
+                    }
+
                     chargeCount++;
-                    if (chargeCount < 5) {
+                    if (chargeCount < 6) {
                         SubState = 0;
                         AttackTimer = 0;
                     }
@@ -640,25 +773,38 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
             Vector2 hoverPos = target.Center + new Vector2(0, -350);
             NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.04f, 0.1f);
 
-            if (AttackTimer == 30 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int wallCount = 24;
-                for (int i = 0; i < wallCount; i++) {
-                    float angle = MathHelper.TwoPi / wallCount * i;
-                    Vector2 pos = target.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 350f;
-                    Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.Zero) * 4f;
-                    int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, vel,
-                        ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 5, 0f, Main.myPlayer);
-                    if (proj >= 0 && proj < Main.maxProjectiles) {
-                        Main.projectile[proj].timeLeft = 200;
+            // 三层收缩风墙
+            if (AttackTimer == 20 && Main.netMode != NetmodeID.MultiplayerClient) {
+                for (int ring = 0; ring < 3; ring++) {
+                    int wallCount = 20 + ring * 4;
+                    float ringRadius = 400f + ring * 80f;
+                    for (int i = 0; i < wallCount; i++) {
+                        float angle = MathHelper.TwoPi / wallCount * i + ring * MathHelper.ToRadians(9f);
+                        Vector2 pos = target.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * ringRadius;
+                        Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.Zero) * (3f + ring * 1.5f);
+                        int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, vel,
+                            ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 5, 0f, Main.myPlayer);
+                        if (proj >= 0 && proj < Main.maxProjectiles) Main.projectile[proj].timeLeft = 250;
                     }
                 }
                 SoundEngine.PlaySound(SoundID.Item122, target.Center);
             }
 
-            if (AttackTimer > 60 && AttackTimer % 15 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 16f;
-                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, toPlayer,
-                    ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 4, 0f, Main.myPlayer);
+            // 同步追踪雷弹+风刃交替射击
+            if (AttackTimer > 40 && AttackTimer % 8 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 18f;
+                if (AttackTimer % 16 == 0) {
+                    // 雷弹
+                    for (int i = -1; i <= 1; i++) {
+                        Vector2 vel = toPlayer.RotatedBy(i * MathHelper.ToRadians(10f));
+                        int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                            ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 4, 0f, Main.myPlayer);
+                        if (proj >= 0 && proj < Main.maxProjectiles) Main.projectile[proj].timeLeft = 150;
+                    }
+                } else {
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, toPlayer,
+                        ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 4, 0f, Main.myPlayer);
+                }
             }
 
             if (AttackTimer > 150) TransitionTo(GetRandomPhase2Attack());
@@ -668,21 +814,31 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
             Vector2 hoverPos = target.Center + new Vector2(NPC.Center.X > target.Center.X ? 400 : -400, -100);
             NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.04f, 0.08f);
 
-            if (AttackTimer > 30 && AttackTimer < 120) {
-                int breathInterval = Main.expertMode ? 3 : 5;
+            if (AttackTimer > 20 && AttackTimer < 130) {
+                int breathInterval = Main.expertMode ? 2 : 3;
                 if (AttackTimer % breathInterval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                     Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
-                    int spreadCount = 5;
-                    float totalSpread = MathHelper.ToRadians(40f);
+                    int spreadCount = 7;
+                    float totalSpread = MathHelper.ToRadians(50f);
                     for (int i = 0; i < spreadCount; i++) {
                         float angle = -totalSpread / 2 + totalSpread / (spreadCount - 1) * i;
                         angle += Main.rand.NextFloat(-0.05f, 0.05f);
-                        Vector2 vel = toPlayer.RotatedBy(angle) * Main.rand.NextFloat(12f, 18f);
+                        Vector2 vel = toPlayer.RotatedBy(angle) * Main.rand.NextFloat(14f, 22f);
                         int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center + toPlayer * 40f, vel,
                             ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 4, 0f, Main.myPlayer);
-                        if (proj >= 0 && proj < Main.maxProjectiles) {
-                            Main.projectile[proj].timeLeft = 120;
-                        }
+                        if (proj >= 0 && proj < Main.maxProjectiles) Main.projectile[proj].timeLeft = 100;
+                    }
+                }
+
+                // 吐息过程中同步释放雷弹螺旋
+                if (AttackTimer % 12 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    float spiralAngle = AttackTimer * 0.2f;
+                    for (int i = 0; i < 2; i++) {
+                        float a = spiralAngle + i * MathHelper.Pi;
+                        Vector2 vel = new Vector2(MathF.Cos(a), MathF.Sin(a)) * 10f;
+                        int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                            ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 4, 0f, Main.myPlayer);
+                        if (proj >= 0 && proj < Main.maxProjectiles) Main.projectile[proj].timeLeft = 150;
                     }
                 }
             }
@@ -695,8 +851,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
         #region 三阶段：苍龙降世
 
         private void RunPhase3FuryPatrol(Player target) {
-            float orbitSpeed = 0.04f;
-            float orbitRadius = 350f;
+            float orbitSpeed = 0.05f;
+            float orbitRadius = 320f;
             NPC.localAI[1] += orbitSpeed;
             Vector2 targetPos = target.Center + new Vector2(
                 MathF.Cos(NPC.localAI[1]) * orbitRadius,
@@ -710,31 +866,69 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                 d.noGravity = true;
             }
 
-            if (PhaseTimer > 100) TransitionTo(GetRandomPhase3Attack());
+            // 三阶段巡逻持续施压：风刃+雷弹交替
+            if (PhaseTimer % 12 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 14f;
+                vel = vel.RotatedByRandom(MathHelper.ToRadians(15f));
+                if (PhaseTimer % 24 == 0) {
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                        ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 4, 0f, Main.myPlayer);
+                } else {
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                        ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 5, 0f, Main.myPlayer);
+                }
+            }
+
+            if (PhaseTimer > 70) TransitionTo(GetRandomPhase3Attack());
         }
 
         private void RunPhase3AzureJudgment(Player target) {
             NPC.velocity *= 0.95f;
             NPC.Center += Main.rand.NextVector2Circular(3, 3);
 
-            if (AttackTimer == 40) {
+            if (AttackTimer == 30) {
                 SoundEngine.PlaySound(SoundID.Thunder with { Volume = 1.5f }, target.Center);
                 if (Main.netMode != NetmodeID.Server) {
-                    PunchCameraModifier modifier = new(target.Center, Vector2.UnitY, 15f, 8f, 30, 2000f, FullName);
+                    PunchCameraModifier modifier = new(target.Center, Vector2.UnitY, 18f, 10f, 35, 2000f, FullName);
                     Main.instance.CameraModifiers.Add(modifier);
                 }
             }
 
-            if (AttackTimer == 50 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int wave = 0; wave < 3; wave++) {
-                    for (int i = 0; i < 8; i++) {
-                        Vector2 strikePos = target.Center + new Vector2(-280 + i * 80, -800 - wave * 100);
-                        int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), strikePos, new Vector2(0, 25f),
+            // 多波次天雷交叉网
+            if (AttackTimer == 40 && Main.netMode != NetmodeID.MultiplayerClient) {
+                for (int wave = 0; wave < 4; wave++) {
+                    for (int i = 0; i < 10; i++) {
+                        Vector2 strikePos = target.Center + new Vector2(-360 + i * 80, -800 - wave * 120);
+                        int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), strikePos, new Vector2(0, 28f),
                             ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 3, 0f, Main.myPlayer);
-                        if (proj >= 0 && proj < Main.maxProjectiles) {
-                            Main.projectile[proj].timeLeft = 150;
-                        }
+                        if (proj >= 0 && proj < Main.maxProjectiles) Main.projectile[proj].timeLeft = 150;
                     }
+                }
+            }
+
+            // 延迟横向闪电墙
+            if (AttackTimer == 60 && Main.netMode != NetmodeID.MultiplayerClient) {
+                for (int side = -1; side <= 1; side += 2) {
+                    for (int i = 0; i < 8; i++) {
+                        Vector2 wallPos = target.Center + new Vector2(side * 700, -350 + i * 100);
+                        Vector2 vel = new Vector2(-side * 16f, 0);
+                        int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), wallPos, vel,
+                            ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 3, 0f, Main.myPlayer);
+                        if (proj >= 0 && proj < Main.maxProjectiles) Main.projectile[proj].timeLeft = 150;
+                    }
+                }
+                SoundEngine.PlaySound(SoundID.Thunder with { Volume = 1f }, target.Center);
+            }
+
+            // 同步风刃螺旋
+            if (AttackTimer >= 30 && AttackTimer % 10 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                int wCount = 4;
+                float baseAngle = AttackTimer * 0.15f;
+                for (int i = 0; i < wCount; i++) {
+                    float angle = baseAngle + MathHelper.TwoPi / wCount * i;
+                    Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 10f;
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                        ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 4, 0f, Main.myPlayer);
                 }
             }
 
@@ -750,19 +944,36 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
         }
 
         private void RunPhase3DragonDance(Player target) {
-            coilAngle += 0.08f;
-            float radius = 250f + MathF.Sin(coilAngle * 0.5f) * 100f;
+            coilAngle += 0.1f;
+            float radius = 220f + MathF.Sin(coilAngle * 0.5f) * 120f;
             Vector2 orbitPos = target.Center + new Vector2(MathF.Cos(coilAngle), MathF.Sin(coilAngle)) * radius;
             orbitPos.Y -= 100f;
-            NPC.velocity = (orbitPos - NPC.Center) * 0.15f;
+            NPC.velocity = (orbitPos - NPC.Center) * 0.18f;
 
-            if (AttackTimer % 6 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 14f;
-                int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, toPlayer,
+            // 高频风刃射击
+            if (AttackTimer % 4 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 16f;
+                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, toPlayer,
                     ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 4, 0f, Main.myPlayer);
-                if (proj >= 0 && proj < Main.maxProjectiles) {
-                    Main.projectile[proj].timeLeft = 150;
+            }
+
+            // 同步旋转雷弹臂
+            if (AttackTimer % 15 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                int armCount = 3;
+                for (int i = 0; i < armCount; i++) {
+                    float angle = coilAngle + MathHelper.TwoPi / armCount * i;
+                    Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 12f;
+                    int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                        ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 4, 0f, Main.myPlayer);
+                    if (proj >= 0 && proj < Main.maxProjectiles) Main.projectile[proj].timeLeft = 150;
                 }
+            }
+
+            // 尾迹风刃地雷
+            if (AttackTimer % 8 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
+                    ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 5, 0f, Main.myPlayer);
+                if (proj >= 0 && proj < Main.maxProjectiles) Main.projectile[proj].timeLeft = 200;
             }
 
             if (Main.netMode != NetmodeID.Server) {
@@ -773,7 +984,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                 }
             }
 
-            if (AttackTimer > 200) {
+            if (AttackTimer > 180) {
                 coilAngle = 0;
                 TransitionTo(BossPhase.Phase3_FuryPatrol);
             }
@@ -783,31 +994,40 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
             Vector2 hoverPos = target.Center + new Vector2(0, -400);
             NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.03f, 0.06f);
 
-            if (AttackTimer % 10 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int burstCount = 8;
-                float baseAngle = MathHelper.TwoPi / burstCount * (AttackTimer / 10);
+            // 外圈收缩风刃轮
+            if (AttackTimer % 8 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                int burstCount = 10;
+                float baseAngle = MathHelper.TwoPi / burstCount * (AttackTimer / 8);
                 for (int i = 0; i < burstCount; i++) {
                     float angle = baseAngle + MathHelper.TwoPi / burstCount * i;
                     Vector2 pos = target.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 600f;
-                    Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.Zero) * 12f;
+                    Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.Zero) * 14f;
                     int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, vel,
                         ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 4, 0f, Main.myPlayer);
-                    if (proj >= 0 && proj < Main.maxProjectiles) {
-                        Main.projectile[proj].timeLeft = 150;
-                    }
+                    if (proj >= 0 && proj < Main.maxProjectiles) Main.projectile[proj].timeLeft = 120;
                 }
             }
 
-            if (AttackTimer % 20 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int i = 0; i < 3; i++) {
-                    Vector2 strikePos = target.Center + new Vector2(Main.rand.NextFloat(-400, 400), -700);
-                    int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), strikePos, new Vector2(0, 20f),
+            // 天降多列雷弹
+            if (AttackTimer % 12 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                for (int i = 0; i < 5; i++) {
+                    Vector2 strikePos = target.Center + new Vector2(Main.rand.NextFloat(-500, 500), -700);
+                    int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), strikePos, new Vector2(Main.rand.NextFloat(-3f, 3f), 22f),
                         ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 3, 0f, Main.myPlayer);
-                    if (proj >= 0 && proj < Main.maxProjectiles) {
-                        Main.projectile[proj].timeLeft = 150;
-                    }
+                    if (proj >= 0 && proj < Main.maxProjectiles) Main.projectile[proj].timeLeft = 150;
                 }
                 SoundEngine.PlaySound(SoundID.Thunder with { Volume = 0.6f }, target.Center);
+            }
+
+            // Boss自身旋转双臂螺旋弹
+            if (AttackTimer % 6 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                float spiralAngle = AttackTimer * 0.12f;
+                for (int arm = 0; arm < 2; arm++) {
+                    float a = spiralAngle + arm * MathHelper.Pi;
+                    Vector2 vel = new Vector2(MathF.Cos(a), MathF.Sin(a)) * 9f;
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                        ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 4, 0f, Main.myPlayer);
+                }
             }
 
             if (AttackTimer > 200) TransitionTo(BossPhase.Phase3_FuryPatrol);
@@ -820,47 +1040,70 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                 NPC.Center += Main.rand.NextVector2Circular(4, 4);
 
                 if (Main.netMode != NetmodeID.Server) {
-                    for (int i = 0; i < 10; i++) {
+                    for (int i = 0; i < 15; i++) {
                         float angle = Main.rand.NextFloat(MathHelper.TwoPi);
-                        float dist = Main.rand.NextFloat(100, 400);
+                        float dist = Main.rand.NextFloat(100, 500);
                         Vector2 dustPos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * dist;
                         Dust d = Dust.NewDustDirect(dustPos, 0, 0, DustID.GreenTorch, 0, 0, 50, default, 3f);
                         d.noGravity = true;
-                        d.velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 8f;
+                        d.velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 10f;
                     }
                 }
 
-                if (AttackTimer > 90) {
+                // 蓄力阶段就释放旋转风刃压制
+                if (AttackTimer % 10 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    float spiralAngle = AttackTimer * 0.15f;
+                    for (int arm = 0; arm < 3; arm++) {
+                        float a = spiralAngle + arm * MathHelper.TwoPi / 3f;
+                        Vector2 vel = new Vector2(MathF.Cos(a), MathF.Sin(a)) * 8f;
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                            ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 5, 0f, Main.myPlayer);
+                    }
+                }
+
+                if (AttackTimer > 80) {
                     SubState = 1;
                     AttackTimer = 0;
                     NPC.dontTakeDamage = false;
                     SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.5f, Volume = 1.5f }, NPC.Center);
 
                     if (Main.netMode != NetmodeID.Server) {
-                        PunchCameraModifier modifier = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 25f, 15f, 60, 3000f, FullName);
+                        PunchCameraModifier modifier = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 30f, 15f, 60, 3000f, FullName);
                         Main.instance.CameraModifiers.Add(modifier);
                     }
 
                     if (Main.netMode != NetmodeID.MultiplayerClient) {
-                        for (int wave = 0; wave < 3; wave++) {
-                            for (int i = 0; i < 24; i++) {
-                                float angle = MathHelper.TwoPi / 24 * i + wave * MathHelper.ToRadians(7.5f);
-                                Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * (10f + wave * 3f);
+                        // 5波交错风刃环
+                        for (int wave = 0; wave < 5; wave++) {
+                            int bladeCount = 20 + wave * 4;
+                            for (int i = 0; i < bladeCount; i++) {
+                                float angle = MathHelper.TwoPi / bladeCount * i + wave * MathHelper.ToRadians(9f);
+                                Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * (8f + wave * 3f);
                                 int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
                                     ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 3, 0f, Main.myPlayer);
-                                if (proj >= 0 && proj < Main.maxProjectiles) {
-                                    Main.projectile[proj].timeLeft = 200;
-                                }
+                                if (proj >= 0 && proj < Main.maxProjectiles)
+                                    Main.projectile[proj].timeLeft = 220;
                             }
                         }
 
-                        for (int i = 0; i < 12; i++) {
-                            Vector2 strikePos = target.Center + new Vector2(-440 + i * 80, -800);
-                            int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), strikePos, new Vector2(0, 28f),
-                                ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 3, 0f, Main.myPlayer);
-                            if (proj >= 0 && proj < Main.maxProjectiles) {
-                                Main.projectile[proj].timeLeft = 180;
+                        // 双侧雷柱夹击
+                        for (int side = -1; side <= 1; side += 2) {
+                            for (int i = 0; i < 8; i++) {
+                                Vector2 strikePos = target.Center + new Vector2(side * 800, -300 + i * 80);
+                                int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), strikePos, new Vector2(-side * 24f, 0),
+                                    ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 3, 0f, Main.myPlayer);
+                                if (proj >= 0 && proj < Main.maxProjectiles)
+                                    Main.projectile[proj].timeLeft = 180;
                             }
+                        }
+
+                        // 天降雷幕
+                        for (int i = 0; i < 16; i++) {
+                            Vector2 strikePos = target.Center + new Vector2(-600 + i * 80, -800);
+                            int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), strikePos, new Vector2(Main.rand.NextFloat(-2f, 2f), 28f),
+                                ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 3, 0f, Main.myPlayer);
+                            if (proj >= 0 && proj < Main.maxProjectiles)
+                                Main.projectile[proj].timeLeft = 180;
                         }
                     }
                     NPC.netUpdate = true;
@@ -868,7 +1111,18 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
             }
             else {
                 NPC.velocity *= 0.92f;
-                if (AttackTimer > 60) TransitionTo(BossPhase.Phase3_FuryPatrol);
+
+                // 爆发后持续施压：追踪风刃
+                if (AttackTimer % 8 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero);
+                    for (int i = -1; i <= 1; i++) {
+                        Vector2 vel = toTarget.RotatedBy(i * MathHelper.ToRadians(20)) * 16f;
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                            ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 4, 0f, Main.myPlayer);
+                    }
+                }
+
+                if (AttackTimer > 50) TransitionTo(BossPhase.Phase3_FuryPatrol);
             }
         }
 
