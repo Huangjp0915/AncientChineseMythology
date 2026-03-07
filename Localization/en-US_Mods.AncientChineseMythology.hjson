@@ -1583,6 +1583,10 @@ NPCs: {
 	OndPaladin.DisplayName: Ond Paladin
 	Xianglong.DisplayName: Xianglong
 	AoGuang.DisplayName: Ao Guang
+	Qinlong.DisplayName: Qinglong
+	Baihu.DisplayName: Baihu
+	Suzaku.DisplayName: Suzaku
+	Xuanwu.DisplayName: Xuanwu
 	SoulHarvester.DisplayName: Soul Harvester
 	ThebonesinTheTomb.DisplayName: Thebonesin The Tomb
 	TheDeceasedPerson.DisplayName: The Deceased Person

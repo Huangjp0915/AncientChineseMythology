@@ -1705,6 +1705,10 @@ NPCs: {
 	OndPaladin.DisplayName: 仙剑
 	Xianglong.DisplayName: 祥龙
 	AoGuang.DisplayName: 敖广
+	Qinlong.DisplayName: 青龙
+	Baihu.DisplayName: 白虎
+	Suzaku.DisplayName: 朱雀
+	Xuanwu.DisplayName: 玄武
 	SoulHarvester.DisplayName: Soul Harvester
 	ThebonesinTheTomb.DisplayName: Thebonesin The Tomb
 	TheDeceasedPerson.DisplayName: The Deceased Person
