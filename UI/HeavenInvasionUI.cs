@@ -9,32 +9,33 @@ using Terraria.UI.Chat;
 namespace AncientChineseMythology.UI
 {
     /// <summary>
-    /// 天庭入侵事件进度UI
-    /// 在屏幕顶部显示：事件名称、当前波次/总波次、总进度条、波次进度条
-    /// 风格模仿原版入侵事件但带有金色天庭主题
+    /// 天庭入侵事件进度UI —— 紧凑古卷轴风格
+    /// 屏幕顶部居中：金色「 」角饰边框 + 一行文字 + 薄进度条
     /// </summary>
     public class HeavenInvasionUI : UIState
     {
-        // 布局常量
-        private const int PanelWidth = 400;
-        private const int PanelHeight = 80;
-        private const int BarHeight = 14;
-        private const int BarPadding = 6;
-        private const int TextPadding = 4;
+        // 布局常量——紧凑尺寸
+        private const int PanelWidth = 300;
+        private const int PanelHeight = 38;
+        private const int BarHeight = 6;
+        private const int BarSidePad = 8;
+        private const int CornerLen = 10;   // 角饰长度
+        private const int CornerThick = 2;  // 角饰粗细
 
         // 颜色主题
-        private static readonly Color PanelBg = new(20, 10, 40, 200);
-        private static readonly Color PanelBorder = new(200, 170, 60, 220);
-        private static readonly Color BarBg = new(10, 5, 20, 180);
-        private static readonly Color BarTotalFill = new(220, 180, 40); // 金色总进度
-        private static readonly Color BarWaveFill = new(180, 220, 255); // 浅蓝波次进度
-        private static readonly Color TitleColor = new(255, 215, 80);
-        private static readonly Color WaveTextColor = new(230, 230, 255);
-        private static readonly Color ProgressTextColor = new(200, 200, 200);
+        private static readonly Color PanelBg = new(12, 6, 28, 160);
+        private static readonly Color Gold = new(218, 185, 68);
+        private static readonly Color GoldDim = new(160, 135, 50);
+        private static readonly Color BarBg = new(8, 4, 16, 180);
+        private static readonly Color BarFill = new(220, 180, 40);
+        private static readonly Color BarWaveMark = new(180, 220, 255, 180);
+        private static readonly Color TitleColor = new(255, 220, 90);
+        private static readonly Color InfoColor = new(210, 210, 230);
 
-        // 动画
+        // 动画状态
         private float displayAlpha = 0f;
-        private float glowPulse = 0f;
+        private float glowPhase = 0f;
+        private float smoothProgress = 0f;
 
         private Texture2D pixel;
 
@@ -45,132 +46,119 @@ namespace AncientChineseMythology.UI
         public override void Update(GameTime gameTime) {
             base.Update(gameTime);
 
-            // 淡入淡出
             float targetAlpha = HeavenInvasionSystem.InvasionActive ? 1f : 0f;
             displayAlpha = MathHelper.Lerp(displayAlpha, targetAlpha, 0.08f);
             if (displayAlpha < 0.01f) displayAlpha = 0f;
 
-            // 光晕脉动
-            glowPulse += 0.03f;
-            if (glowPulse > MathHelper.TwoPi) glowPulse -= MathHelper.TwoPi;
+            // 平滑进度动画
+            float targetProgress = HeavenInvasionSystem.InvasionProgress / 100f;
+            smoothProgress = MathHelper.Lerp(smoothProgress, targetProgress, 0.06f);
+
+            glowPhase += 0.04f;
+            if (glowPhase > MathHelper.TwoPi) glowPhase -= MathHelper.TwoPi;
         }
 
-        protected override void DrawSelf(SpriteBatch spriteBatch) {
+        protected override void DrawSelf(SpriteBatch sb) {
             if (displayAlpha <= 0.01f) return;
-            if (pixel == null) pixel = TextureAssets.MagicPixel.Value;
+            pixel ??= TextureAssets.MagicPixel.Value;
 
-            // 面板位置：屏幕顶部居中
-            int screenW = Main.screenWidth;
-            int panelX = (screenW - PanelWidth) / 2;
-            int panelY = 20;
+            float a = displayAlpha;
+            int px = (Main.screenWidth - PanelWidth) / 2;
+            int py = 10;
 
-            float alpha = displayAlpha;
+            // ── 背景 ──
+            sb.Draw(pixel, new Rectangle(px, py, PanelWidth, PanelHeight), PanelBg * a);
 
-            // === 绘制面板背景 ===
-            DrawPanel(spriteBatch, panelX, panelY, alpha);
+            // ── 金色「 」角饰 ──
+            float glowA = 0.7f + 0.3f * (float)Math.Sin(glowPhase);
+            Color cGold = Gold * a * glowA;
+            DrawCornerBrackets(sb, px, py, PanelWidth, PanelHeight, cGold);
 
-            // === 绘制标题 ===
-            string title = "天庭入侵";
-            Vector2 titleSize = FontAssets.DeathText.Value.MeasureString(title) * 0.5f;
-            Vector2 titlePos = new(panelX + PanelWidth / 2f - titleSize.X / 2f, panelY + TextPadding);
-            // 金色光晕效果
-            float glow = 0.15f + 0.1f * (float)Math.Sin(glowPulse);
-            ChatManager.DrawColorCodedStringWithShadow(spriteBatch, FontAssets.DeathText.Value,
-                title, titlePos, TitleColor * alpha, 0f, Vector2.Zero, new Vector2(0.5f));
+            // ── 顶部 / 底部细金线 ──
+            sb.Draw(pixel, new Rectangle(px + CornerLen, py, PanelWidth - CornerLen * 2, 1), GoldDim * a * 0.4f);
+            sb.Draw(pixel, new Rectangle(px + CornerLen, py + PanelHeight - 1, PanelWidth - CornerLen * 2, 1), GoldDim * a * 0.4f);
 
-            // === 绘制波次信息 ===
+            // ── 文字行：标题 · 波次 · 百分比 ──
             int currentWave = HeavenInvasionSystem.CurrentWave;
             int totalWaves = HeavenInvasionSystem.TotalWaves;
             int progress = HeavenInvasionSystem.InvasionProgress;
 
-            string waveText = $"第 {currentWave} / {totalWaves} 波";
-            string progressText = $"{progress}%";
-            Vector2 waveSize = FontAssets.MouseText.Value.MeasureString(waveText);
-            Vector2 progressSize = FontAssets.MouseText.Value.MeasureString(progressText);
+            string title = "天庭入侵";
+            string info = $"  {currentWave}/{totalWaves}波  {progress}%";
 
-            float waveY = panelY + TextPadding + titleSize.Y + 2;
+            var font = FontAssets.MouseText.Value;
+            Vector2 titleSize = font.MeasureString(title) * 0.82f;
+            Vector2 infoSize = font.MeasureString(info) * 0.72f;
+            float totalTextW = titleSize.X + infoSize.X;
+            float textX = px + (PanelWidth - totalTextW) / 2f;
+            float textY = py + 3;
 
-            // 波次文字（左侧）
-            ChatManager.DrawColorCodedStringWithShadow(spriteBatch, FontAssets.MouseText.Value,
-                waveText, new Vector2(panelX + BarPadding + 2, waveY),
-                WaveTextColor * alpha, 0f, Vector2.Zero, Vector2.One * 0.85f);
+            ChatManager.DrawColorCodedStringWithShadow(sb, font, title,
+                new Vector2(textX, textY), TitleColor * a, 0f, Vector2.Zero, new Vector2(0.82f));
+            ChatManager.DrawColorCodedStringWithShadow(sb, font, info,
+                new Vector2(textX + titleSize.X, textY + (titleSize.Y - infoSize.Y) * 0.5f),
+                InfoColor * a, 0f, Vector2.Zero, new Vector2(0.72f));
 
-            // 进度百分比（右侧）
-            ChatManager.DrawColorCodedStringWithShadow(spriteBatch, FontAssets.MouseText.Value,
-                progressText, new Vector2(panelX + PanelWidth - BarPadding - progressSize.X * 0.85f - 2, waveY),
-                ProgressTextColor * alpha, 0f, Vector2.Zero, Vector2.One * 0.85f);
+            // ── 进度条 ──
+            int barX = px + BarSidePad;
+            int barY = py + PanelHeight - BarHeight - 5;
+            int barW = PanelWidth - BarSidePad * 2;
+            DrawBar(sb, barX, barY, barW, BarHeight, smoothProgress, a);
 
-            // === 绘制总进度条 ===
-            float barY = waveY + waveSize.Y * 0.85f + 3;
-            int barWidth = PanelWidth - BarPadding * 2;
-            DrawProgressBar(spriteBatch, panelX + BarPadding, (int)barY, barWidth, BarHeight,
-                (float)progress / 100f, BarTotalFill, alpha);
+            // ── 波次分隔刻度线 ──
+            DrawWaveTicks(sb, barX, barY, barW, BarHeight, totalWaves, a);
 
-            // === 绘制波次进度条（细条） ===
-            float waveBarY = barY + BarHeight + 3;
-            float waveProgress = HeavenInvasionSystem.CurrentWaveProgress;
-            DrawProgressBar(spriteBatch, panelX + BarPadding, (int)waveBarY, barWidth, BarHeight - 4,
-                waveProgress, BarWaveFill, alpha);
-
-            // 波次进度条上的标签
-            string waveLabel = "当前波次";
-            ChatManager.DrawColorCodedStringWithShadow(spriteBatch, FontAssets.MouseText.Value,
-                waveLabel, new Vector2(panelX + BarPadding + 4, waveBarY - 1),
-                Color.White * alpha * 0.8f, 0f, Vector2.Zero, Vector2.One * 0.6f);
+            // ── 进度条末端发光点 ──
+            int fillW = (int)((barW - 2) * MathHelper.Clamp(smoothProgress, 0f, 1f));
+            if (fillW > 2) {
+                float glow = 0.5f + 0.5f * (float)Math.Sin(glowPhase * 2f);
+                int dotX = barX + 1 + fillW;
+                sb.Draw(pixel, new Rectangle(dotX - 2, barY - 1, 4, BarHeight + 2), Color.White * a * glow * 0.6f);
+                sb.Draw(pixel, new Rectangle(dotX - 1, barY, 2, BarHeight), BarFill * a * glow);
+            }
         }
 
-        /// <summary>
-        /// 绘制带边框的半透明面板
-        /// </summary>
-        private void DrawPanel(SpriteBatch sb, int x, int y, float alpha) {
-            // 外层光晕
-            float glowAlpha = 0.3f + 0.1f * (float)Math.Sin(glowPulse);
-            Rectangle glowRect = new(x - 3, y - 3, PanelWidth + 6, PanelHeight + 6);
-            sb.Draw(pixel, glowRect, PanelBorder * alpha * glowAlpha);
-
-            // 边框
-            int border = 2;
-            Rectangle borderRect = new(x - border, y - border, PanelWidth + border * 2, PanelHeight + border * 2);
-            sb.Draw(pixel, borderRect, PanelBorder * alpha * 0.8f);
-
-            // 背景
-            Rectangle bgRect = new(x, y, PanelWidth, PanelHeight);
-            sb.Draw(pixel, bgRect, PanelBg * alpha);
-
-            // 顶部装饰线
-            Rectangle topLine = new(x + 4, y + 1, PanelWidth - 8, 1);
-            sb.Draw(pixel, topLine, TitleColor * alpha * 0.5f);
+        /// <summary>绘制四角「 」形金色角饰</summary>
+        private void DrawCornerBrackets(SpriteBatch sb, int x, int y, int w, int h, Color c) {
+            int cl = CornerLen, ct = CornerThick;
+            // 左上 ┌
+            sb.Draw(pixel, new Rectangle(x, y, cl, ct), c);
+            sb.Draw(pixel, new Rectangle(x, y, ct, cl), c);
+            // 右上 ┐
+            sb.Draw(pixel, new Rectangle(x + w - cl, y, cl, ct), c);
+            sb.Draw(pixel, new Rectangle(x + w - ct, y, ct, cl), c);
+            // 左下 └
+            sb.Draw(pixel, new Rectangle(x, y + h - ct, cl, ct), c);
+            sb.Draw(pixel, new Rectangle(x, y + h - cl, ct, cl), c);
+            // 右下 ┘
+            sb.Draw(pixel, new Rectangle(x + w - cl, y + h - ct, cl, ct), c);
+            sb.Draw(pixel, new Rectangle(x + w - ct, y + h - cl, ct, cl), c);
         }
 
-        /// <summary>
-        /// 绘制进度条
-        /// </summary>
-        private void DrawProgressBar(SpriteBatch sb, int x, int y, int width, int height,
-            float percent, Color fillColor, float alpha) {
-            // 进度条背景
-            Rectangle bgRect = new(x, y, width, height);
-            sb.Draw(pixel, bgRect, BarBg * alpha);
-
-            // 进度条边框
-            Rectangle borderTop = new(x, y, width, 1);
-            Rectangle borderBot = new(x, y + height - 1, width, 1);
-            Rectangle borderLeft = new(x, y, 1, height);
-            Rectangle borderRight = new(x + width - 1, y, 1, height);
-            Color borderColor = PanelBorder * alpha * 0.5f;
-            sb.Draw(pixel, borderTop, borderColor);
-            sb.Draw(pixel, borderBot, borderColor);
-            sb.Draw(pixel, borderLeft, borderColor);
-            sb.Draw(pixel, borderRight, borderColor);
+        /// <summary>绘制薄进度条</summary>
+        private void DrawBar(SpriteBatch sb, int x, int y, int w, int h, float pct, float a) {
+            // 底色
+            sb.Draw(pixel, new Rectangle(x, y, w, h), BarBg * a);
 
             // 填充
-            int fillWidth = (int)((width - 4) * MathHelper.Clamp(percent, 0f, 1f));
-            if (fillWidth > 0) {
-                Rectangle fillRect = new(x + 2, y + 2, fillWidth, height - 4);
-                sb.Draw(pixel, fillRect, fillColor * alpha);
+            int fw = (int)((w - 2) * MathHelper.Clamp(pct, 0f, 1f));
+            if (fw > 0) {
+                sb.Draw(pixel, new Rectangle(x + 1, y + 1, fw, h - 2), BarFill * a * 0.9f);
+                // 上高光
+                sb.Draw(pixel, new Rectangle(x + 1, y + 1, fw, 1), Color.White * a * 0.2f);
+            }
 
-                // 填充高光
-                Rectangle highlightRect = new(x + 2, y + 2, fillWidth, (height - 4) / 3);
-                sb.Draw(pixel, highlightRect, Color.White * alpha * 0.15f);
+            // 左右边
+            sb.Draw(pixel, new Rectangle(x, y, 1, h), GoldDim * a * 0.5f);
+            sb.Draw(pixel, new Rectangle(x + w - 1, y, 1, h), GoldDim * a * 0.5f);
+        }
+
+        /// <summary>在进度条上绘制波次分隔刻度线</summary>
+        private void DrawWaveTicks(SpriteBatch sb, int x, int y, int w, int h, int waves, float a) {
+            if (waves <= 1) return;
+            for (int i = 1; i < waves; i++) {
+                int tickX = x + (int)((w - 2) * ((float)i / waves)) + 1;
+                sb.Draw(pixel, new Rectangle(tickX, y, 1, h), BarWaveMark * a * 0.25f);
             }
         }
     }
