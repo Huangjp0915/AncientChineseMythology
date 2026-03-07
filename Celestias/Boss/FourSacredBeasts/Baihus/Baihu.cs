@@ -7,6 +7,7 @@ using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.Graphics.CameraModifiers;
+using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -371,11 +372,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
                             float angle = -totalSpread / 2 + totalSpread / (clawCount - 1) * i;
                             Vector2 vel = dir.RotatedBy(angle) * 16f;
                             int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                                ProjectileID.DD2SquireSonicBoom, NPC.damage / 4, 2f, Main.myPlayer);
+                                ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 4, 2f, Main.myPlayer);
                             if (proj >= 0 && proj < Main.maxProjectiles) {
-                                Main.projectile[proj].friendly = false;
-                                Main.projectile[proj].hostile = true;
-                                Main.projectile[proj].tileCollide = false;
                                 Main.projectile[proj].timeLeft = 80;
                             }
                         }
@@ -448,11 +446,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
                     float angle = baseAngle + MathHelper.TwoPi / bladeCount * i;
                     Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 10f;
                     int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                        ProjectileID.DD2SquireSonicBoom, NPC.damage / 4, 1f, Main.myPlayer);
+                        ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 4, 1f, Main.myPlayer);
                     if (proj >= 0 && proj < Main.maxProjectiles) {
-                        Main.projectile[proj].friendly = false;
-                        Main.projectile[proj].hostile = true;
-                        Main.projectile[proj].tileCollide = false;
                         Main.projectile[proj].timeLeft = 150;
                     }
                 }
@@ -481,11 +476,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
                             float angle = MathHelper.TwoPi / count * i + ring * MathHelper.ToRadians(11.25f);
                             Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * (8f + ring * 4f);
                             int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                                ProjectileID.DD2SquireSonicBoom, NPC.damage / 5, 0f, Main.myPlayer);
+                                ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 5, 0f, Main.myPlayer);
                             if (proj >= 0 && proj < Main.maxProjectiles) {
-                                Main.projectile[proj].friendly = false;
-                                Main.projectile[proj].hostile = true;
-                                Main.projectile[proj].tileCollide = false;
                                 Main.projectile[proj].timeLeft = 120;
                             }
                         }
@@ -575,11 +567,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
                         float angle = MathHelper.TwoPi / 20 * i;
                         Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 14f;
                         int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                            ProjectileID.DD2SquireSonicBoom, NPC.damage / 3, 0f, Main.myPlayer);
+                            ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 3, 0f, Main.myPlayer);
                         if (proj >= 0 && proj < Main.maxProjectiles) {
-                            Main.projectile[proj].friendly = false;
-                            Main.projectile[proj].hostile = true;
-                            Main.projectile[proj].tileCollide = false;
                             Main.projectile[proj].timeLeft = 150;
                         }
                     }
@@ -644,11 +633,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
                     Vector2 spawnPos = target.Center + new Vector2(Main.rand.NextFloat(-500, 500), -600);
                     Vector2 vel = new Vector2(Main.rand.NextFloat(-2f, 2f), Main.rand.NextFloat(15f, 22f));
                     int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
-                        ProjectileID.DD2SquireSonicBoom, NPC.damage / 4, 0f, Main.myPlayer);
+                        ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 4, 0f, Main.myPlayer);
                     if (proj >= 0 && proj < Main.maxProjectiles) {
-                        Main.projectile[proj].friendly = false;
-                        Main.projectile[proj].hostile = true;
-                        Main.projectile[proj].tileCollide = false;
                         Main.projectile[proj].timeLeft = 180;
                     }
                 }
@@ -683,14 +669,11 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
                         for (int i = 0; i < 10; i++) {
                             float speed = 8f + i * 1.5f;
                             int projR = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, new Vector2(speed, -4f),
-                                ProjectileID.DD2SquireSonicBoom, NPC.damage / 3, 0f, Main.myPlayer);
+                                ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 3, 0f, Main.myPlayer);
                             int projL = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, new Vector2(-speed, -4f),
-                                ProjectileID.DD2SquireSonicBoom, NPC.damage / 3, 0f, Main.myPlayer);
+                                ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 3, 0f, Main.myPlayer);
                             void SetupProj(int p) {
                                 if (p >= 0 && p < Main.maxProjectiles) {
-                                    Main.projectile[p].friendly = false;
-                                    Main.projectile[p].hostile = true;
-                                    Main.projectile[p].tileCollide = false;
                                     Main.projectile[p].timeLeft = 120;
                                 }
                             }
@@ -730,11 +713,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
                     Vector2 pos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 150f;
                     Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.Zero) * 10f;
                     int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, vel,
-                        ProjectileID.DD2SquireSonicBoom, NPC.damage / 4, 0f, Main.myPlayer);
+                        ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 4, 0f, Main.myPlayer);
                     if (proj >= 0 && proj < Main.maxProjectiles) {
-                        Main.projectile[proj].friendly = false;
-                        Main.projectile[proj].hostile = true;
-                        Main.projectile[proj].tileCollide = false;
                         Main.projectile[proj].timeLeft = 120;
                     }
                 }
@@ -780,11 +760,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
                         for (int i = -3; i <= 3; i++) {
                             Vector2 vel = dir.RotatedBy(i * MathHelper.ToRadians(10f)) * 18f;
                             int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                                ProjectileID.DD2SquireSonicBoom, NPC.damage / 4, 0f, Main.myPlayer);
+                                ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 4, 0f, Main.myPlayer);
                             if (proj >= 0 && proj < Main.maxProjectiles) {
-                                Main.projectile[proj].friendly = false;
-                                Main.projectile[proj].hostile = true;
-                                Main.projectile[proj].tileCollide = false;
                                 Main.projectile[proj].timeLeft = 90;
                             }
                         }
@@ -805,11 +782,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
                                 float angle = MathHelper.TwoPi / 20 * i;
                                 Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 10f;
                                 int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                                    ProjectileID.DD2SquireSonicBoom, NPC.damage / 4, 0f, Main.myPlayer);
+                                    ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 4, 0f, Main.myPlayer);
                                 if (proj >= 0 && proj < Main.maxProjectiles) {
-                                    Main.projectile[proj].friendly = false;
-                                    Main.projectile[proj].hostile = true;
-                                    Main.projectile[proj].tileCollide = false;
                                     Main.projectile[proj].timeLeft = 120;
                                 }
                             }
@@ -855,11 +829,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
                     float angle = baseAngle + MathHelper.TwoPi / count * i;
                     Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 12f;
                     int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                        ProjectileID.DD2SquireSonicBoom, NPC.damage / 4, 0f, Main.myPlayer);
+                        ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 4, 0f, Main.myPlayer);
                     if (proj >= 0 && proj < Main.maxProjectiles) {
-                        Main.projectile[proj].friendly = false;
-                        Main.projectile[proj].hostile = true;
-                        Main.projectile[proj].tileCollide = false;
                         Main.projectile[proj].timeLeft = 180;
                     }
                 }
@@ -898,11 +869,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
                     Vector2 vel = toPlayer * 22f;
                     vel = vel.RotatedByRandom(MathHelper.ToRadians(5f));
                     int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center + toPlayer * 50f, vel,
-                        ProjectileID.DD2SquireSonicBoom, NPC.damage / 3, 0f, Main.myPlayer);
+                        ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 3, 0f, Main.myPlayer);
                     if (proj >= 0 && proj < Main.maxProjectiles) {
-                        Main.projectile[proj].friendly = false;
-                        Main.projectile[proj].hostile = true;
-                        Main.projectile[proj].tileCollide = false;
                         Main.projectile[proj].timeLeft = 120;
                     }
                 }
@@ -939,11 +907,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
                                 Vector2 vel = dir.RotatedBy(a) * (12f + i * 2f);
                                 vel = vel.RotatedByRandom(MathHelper.ToRadians(3f));
                                 int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                                    ProjectileID.DD2SquireSonicBoom, NPC.damage / 3, 2f, Main.myPlayer);
+                                    ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 3, 2f, Main.myPlayer);
                                 if (proj >= 0 && proj < Main.maxProjectiles) {
-                                    Main.projectile[proj].friendly = false;
-                                    Main.projectile[proj].hostile = true;
-                                    Main.projectile[proj].tileCollide = false;
                                     Main.projectile[proj].timeLeft = 150;
                                 }
                             }
@@ -1001,11 +966,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
                                 float angle = MathHelper.TwoPi / count * i + wave * MathHelper.ToRadians(11.25f);
                                 Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * (8f + wave * 4f);
                                 int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                                    ProjectileID.DD2SquireSonicBoom, NPC.damage / 3, 0f, Main.myPlayer);
+                                    ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 3, 0f, Main.myPlayer);
                                 if (proj >= 0 && proj < Main.maxProjectiles) {
-                                    Main.projectile[proj].friendly = false;
-                                    Main.projectile[proj].hostile = true;
-                                    Main.projectile[proj].tileCollide = false;
                                     Main.projectile[proj].timeLeft = 180;
                                 }
                             }
@@ -1029,6 +991,36 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
                 NPC.velocity *= 0.92f;
                 if (AttackTimer > 40) TransitionTo(BossPhase.Phase3_FuryProwl);
             }
+        }
+
+        #endregion
+
+        #region 绘制
+
+        public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+            Texture2D texture = TextureAssets.Npc[Type].Value;
+            Rectangle frame = NPC.frame;
+            Vector2 origin = frame.Size() / 2f;
+
+            // 纹理正向朝右，面朝左时水平翻转
+            bool facingRight = NPC.spriteDirection == 1;
+            SpriteEffects effects = facingRight ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
+            float drawRotation = facingRight ? NPC.rotation : -NPC.rotation;
+
+            // 虎影残像
+            for (int i = NPCID.Sets.TrailCacheLength[Type] - 1; i > 0; i--) {
+                Vector2 trailPos = NPC.oldPos[i] + NPC.Size / 2f - screenPos;
+                float trailRot = NPC.oldRot[i];
+                bool trailRight = trailRot >= 0;
+                float trailDrawRot = trailRight ? trailRot : -trailRot;
+                float alpha = 0.35f * (1f - (float)i / NPCID.Sets.TrailCacheLength[Type]);
+                Color trailColor = drawColor * alpha;
+                spriteBatch.Draw(texture, trailPos, frame, trailColor, trailDrawRot, origin, NPC.scale, effects, 0f);
+            }
+
+            Vector2 drawPos = NPC.Center - screenPos;
+            spriteBatch.Draw(texture, drawPos, frame, drawColor, drawRotation, origin, NPC.scale, effects, 0f);
+            return false;
         }
 
         #endregion

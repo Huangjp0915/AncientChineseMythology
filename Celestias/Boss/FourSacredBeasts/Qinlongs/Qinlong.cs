@@ -364,13 +364,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
 
                 for (int i = -bladeCount / 2; i <= bladeCount / 2; i++) {
                     Vector2 vel = toPlayer.RotatedBy(i * spread) * 14f;
-                    int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                        ProjectileID.CultistBossLightningOrbArc, NPC.damage / 4, 1f, Main.myPlayer);
-                    if (proj >= 0 && proj < Main.maxProjectiles) {
-                        Main.projectile[proj].friendly = false;
-                        Main.projectile[proj].hostile = true;
-                        Main.projectile[proj].tileCollide = false;
-                    }
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                        ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 4, 1f, Main.myPlayer);
                 }
                 SoundEngine.PlaySound(SoundID.Item71 with { Pitch = 0.3f }, NPC.Center);
             }
@@ -387,14 +382,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                 for (int i = 0; i < thunderCount; i++) {
                     Vector2 strikePos = target.Center + new Vector2(Main.rand.NextFloat(-300, 300), -600);
                     Vector2 vel = new Vector2(0, 18f);
-                    int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), strikePos, vel,
-                        ProjectileID.ThunderStaffShot, NPC.damage / 4, 0f, Main.myPlayer);
-                    if (proj >= 0 && proj < Main.maxProjectiles) {
-                        Main.projectile[proj].friendly = false;
-                        Main.projectile[proj].hostile = true;
-                        Main.projectile[proj].tileCollide = false;
-                        Main.projectile[proj].timeLeft = 180;
-                    }
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), strikePos, vel,
+                        ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 4, 0f, Main.myPlayer);
                 }
                 SoundEngine.PlaySound(SoundID.Thunder with { Volume = 0.8f }, target.Center);
             }
@@ -420,10 +409,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
 
             if (AttackTimer % 8 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                 int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
-                    ProjectileID.SandnadoHostileMark, NPC.damage / 5, 0f, Main.myPlayer);
+                    ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 5, 0f, Main.myPlayer);
                 if (proj >= 0 && proj < Main.maxProjectiles) {
-                    Main.projectile[proj].friendly = false;
-                    Main.projectile[proj].hostile = true;
                     Main.projectile[proj].timeLeft = 120;
                 }
             }
@@ -546,11 +533,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                         float angle = MathHelper.TwoPi / 16 * i;
                         Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 12f;
                         int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                            ProjectileID.ThunderStaffShot, NPC.damage / 3, 0f, Main.myPlayer);
+                            ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 3, 0f, Main.myPlayer);
                         if (proj >= 0 && proj < Main.maxProjectiles) {
-                            Main.projectile[proj].friendly = false;
-                            Main.projectile[proj].hostile = true;
-                            Main.projectile[proj].tileCollide = false;
                             Main.projectile[proj].timeLeft = 120;
                         }
                     }
@@ -579,10 +563,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                 for (int i = 0; i < tornadoCount; i++) {
                     Vector2 spawnPos = target.Center + new Vector2(Main.rand.NextFloat(-400, 400), 300);
                     int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, new Vector2(0, -3f),
-                        ProjectileID.SandnadoHostile, NPC.damage / 4, 0f, Main.myPlayer);
+                        ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 4, 0f, Main.myPlayer);
                     if (proj >= 0 && proj < Main.maxProjectiles) {
-                        Main.projectile[proj].friendly = false;
-                        Main.projectile[proj].hostile = true;
                         Main.projectile[proj].timeLeft = 300;
                     }
                 }
@@ -603,11 +585,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                 Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 16f;
                 toPlayer = toPlayer.RotatedByRandom(MathHelper.ToRadians(15));
                 int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, toPlayer,
-                    ProjectileID.ThunderStaffShot, NPC.damage / 4, 0f, Main.myPlayer);
+                    ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 4, 0f, Main.myPlayer);
                 if (proj >= 0 && proj < Main.maxProjectiles) {
-                    Main.projectile[proj].friendly = false;
-                    Main.projectile[proj].hostile = true;
-                    Main.projectile[proj].tileCollide = false;
                     Main.projectile[proj].timeLeft = 180;
                 }
             }
@@ -615,11 +594,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
             if (AttackTimer % 30 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                 Vector2 strikePos = target.Center + new Vector2(Main.rand.NextFloat(-200, 200), -600);
                 int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), strikePos, new Vector2(0, 22f),
-                    ProjectileID.ThunderStaffShot, NPC.damage / 3, 0f, Main.myPlayer);
+                    ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 3, 0f, Main.myPlayer);
                 if (proj >= 0 && proj < Main.maxProjectiles) {
-                    Main.projectile[proj].friendly = false;
-                    Main.projectile[proj].hostile = true;
-                    Main.projectile[proj].tileCollide = false;
                     Main.projectile[proj].timeLeft = 120;
                 }
                 SoundEngine.PlaySound(SoundID.Thunder with { Volume = 0.5f, Pitch = Main.rand.NextFloat(-0.3f, 0.3f) }, target.Center);
@@ -671,11 +647,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                     Vector2 pos = target.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 350f;
                     Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.Zero) * 4f;
                     int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, vel,
-                        ProjectileID.CultistBossLightningOrbArc, NPC.damage / 5, 0f, Main.myPlayer);
+                        ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 5, 0f, Main.myPlayer);
                     if (proj >= 0 && proj < Main.maxProjectiles) {
-                        Main.projectile[proj].friendly = false;
-                        Main.projectile[proj].hostile = true;
-                        Main.projectile[proj].tileCollide = false;
                         Main.projectile[proj].timeLeft = 200;
                     }
                 }
@@ -684,13 +657,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
 
             if (AttackTimer > 60 && AttackTimer % 15 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                 Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 16f;
-                int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, toPlayer,
-                    ProjectileID.CultistBossLightningOrbArc, NPC.damage / 4, 0f, Main.myPlayer);
-                if (proj >= 0 && proj < Main.maxProjectiles) {
-                    Main.projectile[proj].friendly = false;
-                    Main.projectile[proj].hostile = true;
-                    Main.projectile[proj].tileCollide = false;
-                }
+                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, toPlayer,
+                    ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 4, 0f, Main.myPlayer);
             }
 
             if (AttackTimer > 150) TransitionTo(GetRandomPhase2Attack());
@@ -711,11 +679,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                         angle += Main.rand.NextFloat(-0.05f, 0.05f);
                         Vector2 vel = toPlayer.RotatedBy(angle) * Main.rand.NextFloat(12f, 18f);
                         int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center + toPlayer * 40f, vel,
-                            ProjectileID.CultistBossLightningOrbArc, NPC.damage / 4, 0f, Main.myPlayer);
+                            ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 4, 0f, Main.myPlayer);
                         if (proj >= 0 && proj < Main.maxProjectiles) {
-                            Main.projectile[proj].friendly = false;
-                            Main.projectile[proj].hostile = true;
-                            Main.projectile[proj].tileCollide = false;
                             Main.projectile[proj].timeLeft = 120;
                         }
                     }
@@ -765,11 +730,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                     for (int i = 0; i < 8; i++) {
                         Vector2 strikePos = target.Center + new Vector2(-280 + i * 80, -800 - wave * 100);
                         int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), strikePos, new Vector2(0, 25f),
-                            ProjectileID.ThunderStaffShot, NPC.damage / 3, 0f, Main.myPlayer);
+                            ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 3, 0f, Main.myPlayer);
                         if (proj >= 0 && proj < Main.maxProjectiles) {
-                            Main.projectile[proj].friendly = false;
-                            Main.projectile[proj].hostile = true;
-                            Main.projectile[proj].tileCollide = false;
                             Main.projectile[proj].timeLeft = 150;
                         }
                     }
@@ -797,11 +759,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
             if (AttackTimer % 6 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                 Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 14f;
                 int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, toPlayer,
-                    ProjectileID.CultistBossLightningOrbArc, NPC.damage / 4, 0f, Main.myPlayer);
+                    ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 4, 0f, Main.myPlayer);
                 if (proj >= 0 && proj < Main.maxProjectiles) {
-                    Main.projectile[proj].friendly = false;
-                    Main.projectile[proj].hostile = true;
-                    Main.projectile[proj].tileCollide = false;
                     Main.projectile[proj].timeLeft = 150;
                 }
             }
@@ -832,11 +791,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                     Vector2 pos = target.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 600f;
                     Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.Zero) * 12f;
                     int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, vel,
-                        ProjectileID.CultistBossLightningOrbArc, NPC.damage / 4, 0f, Main.myPlayer);
+                        ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 4, 0f, Main.myPlayer);
                     if (proj >= 0 && proj < Main.maxProjectiles) {
-                        Main.projectile[proj].friendly = false;
-                        Main.projectile[proj].hostile = true;
-                        Main.projectile[proj].tileCollide = false;
                         Main.projectile[proj].timeLeft = 150;
                     }
                 }
@@ -846,11 +802,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                 for (int i = 0; i < 3; i++) {
                     Vector2 strikePos = target.Center + new Vector2(Main.rand.NextFloat(-400, 400), -700);
                     int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), strikePos, new Vector2(0, 20f),
-                        ProjectileID.ThunderStaffShot, NPC.damage / 3, 0f, Main.myPlayer);
+                        ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 3, 0f, Main.myPlayer);
                     if (proj >= 0 && proj < Main.maxProjectiles) {
-                        Main.projectile[proj].friendly = false;
-                        Main.projectile[proj].hostile = true;
-                        Main.projectile[proj].tileCollide = false;
                         Main.projectile[proj].timeLeft = 150;
                     }
                 }
@@ -894,11 +847,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                                 float angle = MathHelper.TwoPi / 24 * i + wave * MathHelper.ToRadians(7.5f);
                                 Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * (10f + wave * 3f);
                                 int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                                    ProjectileID.CultistBossLightningOrbArc, NPC.damage / 3, 0f, Main.myPlayer);
+                                    ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 3, 0f, Main.myPlayer);
                                 if (proj >= 0 && proj < Main.maxProjectiles) {
-                                    Main.projectile[proj].friendly = false;
-                                    Main.projectile[proj].hostile = true;
-                                    Main.projectile[proj].tileCollide = false;
                                     Main.projectile[proj].timeLeft = 200;
                                 }
                             }
@@ -907,11 +857,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                         for (int i = 0; i < 12; i++) {
                             Vector2 strikePos = target.Center + new Vector2(-440 + i * 80, -800);
                             int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), strikePos, new Vector2(0, 28f),
-                                ProjectileID.ThunderStaffShot, NPC.damage / 3, 0f, Main.myPlayer);
+                                ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 3, 0f, Main.myPlayer);
                             if (proj >= 0 && proj < Main.maxProjectiles) {
-                                Main.projectile[proj].friendly = false;
-                                Main.projectile[proj].hostile = true;
-                                Main.projectile[proj].tileCollide = false;
                                 Main.projectile[proj].timeLeft = 180;
                             }
                         }
@@ -923,6 +870,37 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                 NPC.velocity *= 0.92f;
                 if (AttackTimer > 60) TransitionTo(BossPhase.Phase3_FuryPatrol);
             }
+        }
+
+        #endregion
+
+        #region 绘制
+
+        public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+            Texture2D texture = TextureAssets.Npc[Type].Value;
+            Rectangle frame = NPC.frame;
+            Vector2 origin = frame.Size() / 2f;
+
+            // 纹理正向朝右，朝左飞行时使用垂直翻转来修正旋转导致的上下颠倒
+            bool facingLeft = MathF.Abs(NPC.rotation) > MathHelper.PiOver2;
+            SpriteEffects effects = facingLeft ? SpriteEffects.FlipVertically : SpriteEffects.None;
+
+            // 龙形残影
+            for (int i = NPCID.Sets.TrailCacheLength[Type] - 1; i > 0; i--) {
+                Vector2 trailPos = NPC.oldPos[i] + NPC.Size / 2f - screenPos;
+                float trailRot = NPC.oldRot[i];
+                bool trailLeft = MathF.Abs(trailRot) > MathHelper.PiOver2;
+                SpriteEffects trailFx = effects;
+                float alpha = 0.5f * (1f - (float)i / NPCID.Sets.TrailCacheLength[Type]);
+                Color trailColor = drawColor * alpha;
+                trailColor.G = (byte)Math.Min(trailColor.G * 1.3f, 255);
+                spriteBatch.Draw(texture, trailPos, frame, trailColor, NPC.rotation, origin,
+                    NPC.scale * (1f - i * 0.015f), trailFx, 0f);
+            }
+
+            Vector2 drawPos = NPC.Center - screenPos;
+            spriteBatch.Draw(texture, drawPos, frame, drawColor, NPC.rotation, origin, NPC.scale, effects, 0f);
+            return false;
         }
 
         #endregion

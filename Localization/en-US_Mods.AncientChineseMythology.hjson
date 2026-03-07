@@ -2018,6 +2018,14 @@ Projectiles: {
 	GrimoireGazingEye.DisplayName: Grimoire Gazing Eye
 	AberrantEyeballProj.DisplayName: Aberrant Eyeball
 	AberrantBloodBurst.DisplayName: Aberrant Blood Burst
+	BaihuMetalShard.DisplayName: Baihu Metal Shard
+	BaihuSonicRoar.DisplayName: Baihu Sonic Roar
+	QinglongThunderBolt.DisplayName: Qinglong Thunder Bolt
+	QinglongWindBlade.DisplayName: Qinglong Wind Blade
+	SuzakuFireball.DisplayName: Suzaku Fireball
+	SuzakuFlamePillar.DisplayName: Suzaku Flame Pillar
+	XuanwuIceShard.DisplayName: Xuanwu Ice Shard
+	XuanwuVenomFang.DisplayName: Xuanwu Venom Fang
 }
 
 HeavenBiome.DisplayName: Heaven

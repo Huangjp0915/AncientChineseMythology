@@ -7,6 +7,7 @@ using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.Graphics.CameraModifiers;
+using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -197,8 +198,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
         #region AI主循环
 
         public override void AI() {
+            NPC.defense = 120;
             globalTime += 1f / 60f;
-            shellRotation += 0.005f;
 
             NPC.TargetClosest();
             Player target = Main.player[NPC.target];
@@ -239,7 +240,15 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                 case BossPhase.Phase3_Drift: RunPhase3Drift(target); break;
             }
 
-            NPC.rotation = shellRotation;
+            // 旋转攻击时使用shellRotation，普通状态使用轻微倾斜
+            bool isSpinning = Phase == BossPhase.Phase1_ShellSpin ||
+                              (Phase == BossPhase.Phase2_DualAssault && SubState == 1);
+            if (isSpinning)
+                NPC.rotation = shellRotation;
+            else
+                NPC.rotation = NPC.velocity.X * 0.005f;
+
+            NPC.spriteDirection = target.Center.X > NPC.Center.X ? 1 : -1;
 
             // 冰水光源
             float iceGlow = absoluteDefenseActive ? 2f : (IsPhase3 ? 1.5f : 1f);
@@ -302,11 +311,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
         private int IceProjectile(Vector2 pos, Vector2 vel, int damage, int timeLeft = 180) {
             if (Main.netMode == NetmodeID.MultiplayerClient) return -1;
             int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, vel,
-                ProjectileID.FrostWave, damage, 0f, Main.myPlayer);
+                ModContent.ProjectileType<XuanwuIceShard>(), damage, 0f, Main.myPlayer);
             if (proj >= 0 && proj < Main.maxProjectiles) {
-                Main.projectile[proj].friendly = false;
-                Main.projectile[proj].hostile = true;
-                Main.projectile[proj].tileCollide = false;
                 Main.projectile[proj].timeLeft = timeLeft;
             }
             return proj;
@@ -315,13 +321,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
         private int WaterProjectile(Vector2 pos, Vector2 vel, int damage) {
             if (Main.netMode == NetmodeID.MultiplayerClient) return -1;
             int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, vel,
-                ProjectileID.WaterBolt, damage, 0f, Main.myPlayer);
-            if (proj >= 0 && proj < Main.maxProjectiles) {
-                Main.projectile[proj].friendly = false;
-                Main.projectile[proj].hostile = true;
-                Main.projectile[proj].tileCollide = false;
-                Main.projectile[proj].timeLeft = 180;
-            }
+                ModContent.ProjectileType<XuanwuIceShard>(), damage, 0f, Main.myPlayer);
             return proj;
         }
 
@@ -643,11 +643,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                         for (int i = -1; i <= 1; i++) {
                             Vector2 v = vel.RotatedBy(i * MathHelper.ToRadians(8f));
                             int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), snakePos, v,
-                                ProjectileID.CursedFlameHostile, NPC.damage / 4, 0f, Main.myPlayer);
+                                ModContent.ProjectileType<XuanwuVenomFang>(), NPC.damage / 4, 0f, Main.myPlayer);
                             if (proj >= 0 && proj < Main.maxProjectiles) {
-                                Main.projectile[proj].friendly = false;
-                                Main.projectile[proj].hostile = true;
-                                Main.projectile[proj].tileCollide = false;
                                 Main.projectile[proj].timeLeft = 120;
                             }
                         }
@@ -682,11 +679,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                     float angle = -spread / 2 + spread / (count - 1) * i;
                     Vector2 vel = dir.RotatedBy(angle) * Main.rand.NextFloat(10f, 14f);
                     int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                        ProjectileID.CursedFlameHostile, NPC.damage / 4, 0f, Main.myPlayer);
+                        ModContent.ProjectileType<XuanwuVenomFang>(), NPC.damage / 4, 0f, Main.myPlayer);
                     if (proj >= 0 && proj < Main.maxProjectiles) {
-                        Main.projectile[proj].friendly = false;
-                        Main.projectile[proj].hostile = true;
-                        Main.projectile[proj].tileCollide = false;
                         Main.projectile[proj].timeLeft = 150;
                     }
                 }
@@ -736,11 +730,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                     Vector2 vel = (target.Center - snakePos).SafeNormalize(Vector2.Zero) * 14f;
                     vel = vel.RotatedByRandom(MathHelper.ToRadians(10f));
                     int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), snakePos, vel,
-                        ProjectileID.CursedFlameHostile, NPC.damage / 4, 0f, Main.myPlayer);
+                        ModContent.ProjectileType<XuanwuVenomFang>(), NPC.damage / 4, 0f, Main.myPlayer);
                     if (proj >= 0 && proj < Main.maxProjectiles) {
-                        Main.projectile[proj].friendly = false;
-                        Main.projectile[proj].hostile = true;
-                        Main.projectile[proj].tileCollide = false;
                         Main.projectile[proj].timeLeft = 120;
                     }
                 }
@@ -997,11 +988,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                         IceProjectile(NPC.Center, vel, NPC.damage / 4);
                     } else {
                         int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                            ProjectileID.CursedFlameHostile, NPC.damage / 4, 0f, Main.myPlayer);
+                            ModContent.ProjectileType<XuanwuVenomFang>(), NPC.damage / 4, 0f, Main.myPlayer);
                         if (proj >= 0 && proj < Main.maxProjectiles) {
-                            Main.projectile[proj].friendly = false;
-                            Main.projectile[proj].hostile = true;
-                            Main.projectile[proj].tileCollide = false;
                             Main.projectile[proj].timeLeft = 150;
                         }
                     }
@@ -1022,6 +1010,41 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
             }
 
             if (AttackTimer > 200) TransitionTo(BossPhase.Phase3_Drift);
+        }
+
+        #endregion
+
+        #region 绘制
+
+        public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+            Texture2D texture = TextureAssets.Npc[Type].Value;
+            Rectangle frame = NPC.frame;
+            Vector2 origin = frame.Size() / 2f;
+
+            bool isSpinning = Phase == BossPhase.Phase1_ShellSpin ||
+                              (Phase == BossPhase.Phase2_DualAssault && SubState == 1);
+
+            SpriteEffects effects = SpriteEffects.None;
+            float drawRotation = NPC.rotation;
+
+            if (!isSpinning) {
+                // 普通状态：纹理朝右，面朝左时水平翻转
+                bool facingRight = NPC.spriteDirection == 1;
+                effects = facingRight ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
+                drawRotation = facingRight ? NPC.rotation : -NPC.rotation;
+            }
+
+            // 玄武水冰残影
+            for (int i = NPCID.Sets.TrailCacheLength[Type] - 1; i > 0; i--) {
+                Vector2 trailPos = NPC.oldPos[i] + NPC.Size / 2f - screenPos;
+                float alpha = 0.3f * (1f - (float)i / NPCID.Sets.TrailCacheLength[Type]);
+                Color trailColor = new Color(0.3f, 0.5f + alpha, 1f) * alpha;
+                spriteBatch.Draw(texture, trailPos, frame, trailColor, drawRotation, origin, NPC.scale, effects, 0f);
+            }
+
+            Vector2 drawPos = NPC.Center - screenPos;
+            spriteBatch.Draw(texture, drawPos, frame, drawColor, drawRotation, origin, NPC.scale, effects, 0f);
+            return false;
         }
 
         #endregion

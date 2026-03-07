@@ -6,6 +6,7 @@ using System.IO;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
+using Terraria.GameContent;
 using Terraria.Graphics.CameraModifiers;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -944,5 +945,32 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
         }
 
         #endregion
+
+        public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+            Texture2D texture = TextureAssets.Npc[Type].Value;
+            Rectangle frame = NPC.frame;
+            Vector2 origin = frame.Size() / 2f;
+
+            // 纹理正向朝右，朝左飞行时使用垂直翻转来修正旋转导致的上下颠倒
+            bool facingLeft = MathF.Abs(NPC.rotation) > MathHelper.PiOver2;
+            SpriteEffects effects = NPC.spriteDirection < 0 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
+
+            // 龙形残影
+            for (int i = NPCID.Sets.TrailCacheLength[Type] - 1; i > 0; i--) {
+                Vector2 trailPos = NPC.oldPos[i] + NPC.Size / 2f - screenPos;
+                float trailRot = NPC.oldRot[i];
+                bool trailLeft = MathF.Abs(trailRot) > MathHelper.PiOver2;
+                SpriteEffects trailFx = effects;
+                float alpha = 0.5f * (1f - (float)i / NPCID.Sets.TrailCacheLength[Type]);
+                Color trailColor = drawColor * alpha;
+                trailColor.G = (byte)Math.Min(trailColor.G * 1.3f, 255);
+                spriteBatch.Draw(texture, trailPos, frame, trailColor, NPC.rotation, origin,
+                    NPC.scale * (1f - i * 0.015f), trailFx, 0f);
+            }
+
+            Vector2 drawPos = NPC.Center - screenPos;
+            spriteBatch.Draw(texture, drawPos, frame, drawColor, NPC.rotation, origin, NPC.scale, effects, 0f);
+            return false;
+        }
     }
 }
