@@ -1,5 +1,4 @@
 ﻿using AncientChineseMythology.Systems;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.IO;
@@ -801,7 +800,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                             ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 4, 0f, Main.myPlayer);
                         if (proj >= 0 && proj < Main.maxProjectiles) Main.projectile[proj].timeLeft = 150;
                     }
-                } else {
+                }
+                else {
                     Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, toPlayer,
                         ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 4, 0f, Main.myPlayer);
                 }
@@ -873,7 +873,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                 if (PhaseTimer % 24 == 0) {
                     Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
                         ModContent.ProjectileType<QinglongThunderBolt>(), NPC.damage / 4, 0f, Main.myPlayer);
-                } else {
+                }
+                else {
                     Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
                         ModContent.ProjectileType<QinglongWindBlade>(), NPC.damage / 5, 0f, Main.myPlayer);
                 }

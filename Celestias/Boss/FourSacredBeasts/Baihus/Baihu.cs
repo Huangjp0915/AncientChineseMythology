@@ -1,13 +1,12 @@
 ﻿using AncientChineseMythology.Systems;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.IO;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
-using Terraria.Graphics.CameraModifiers;
 using Terraria.GameContent;
+using Terraria.Graphics.CameraModifiers;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -484,7 +483,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
                 Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 14f;
                 for (int i = -1; i <= 1; i++) {
                     Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center,
-                        toTarget.RotatedBy(i * MathHelper.ToRadians(12)), 
+                        toTarget.RotatedBy(i * MathHelper.ToRadians(12)),
                         ModContent.ProjectileType<BaihuSonicRoar>(), NPC.damage / 5, 0f, Main.myPlayer);
                 }
             }

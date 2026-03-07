@@ -121,7 +121,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
 
                 float target = isPhase3 ? MaxIntensity * 1.2f : isPhase2 ? MaxIntensity * 1.1f : MaxIntensity;
                 intensity = MathHelper.Lerp(intensity, target, FadeInSpeed);
-            } else {
+            }
+            else {
                 intensity -= FadeOutSpeed;
                 if (intensity <= 0f) { intensity = 0f; if (active) Deactivate(); }
             }
@@ -466,11 +467,13 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                         float p = pos / flashDuration;
                         FlashAlpha = p < 0.3f ? p / 0.3f : 1f - (p - 0.3f) / 0.7f;
                         FlashAlpha = MathHelper.Clamp(FlashAlpha, 0f, 1f);
-                    } else {
+                    }
+                    else {
                         flashing = false;
                         FlashAlpha = 0f;
                     }
-                } else {
+                }
+                else {
                     FlashAlpha = MathHelper.Lerp(FlashAlpha, 0f, 0.15f);
                 }
             }

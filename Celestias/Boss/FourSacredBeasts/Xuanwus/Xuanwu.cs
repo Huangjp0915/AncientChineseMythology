@@ -1,13 +1,12 @@
 ﻿using AncientChineseMythology.Systems;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.IO;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
-using Terraria.Graphics.CameraModifiers;
 using Terraria.GameContent;
+using Terraria.Graphics.CameraModifiers;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -493,7 +492,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                 if (AttackTimer % 22 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                     Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 11f;
                     for (int i = -1; i <= 1; i += 2) {
-                        Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel.RotatedBy(i * MathHelper.ToRadians(12)), 
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel.RotatedBy(i * MathHelper.ToRadians(12)),
                             ModContent.ProjectileType<XuanwuVenomFang>(), NPC.damage / 5, 0f, Main.myPlayer);
                     }
                 }
@@ -1139,7 +1138,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                     float angle = MathHelper.TwoPi / count * i + AttackTimer * 0.08f;
                     IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 7f, NPC.damage / 5, 120);
                     float venomAngle = angle + MathHelper.Pi / count;
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, 
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center,
                         new Vector2(MathF.Cos(venomAngle), MathF.Sin(venomAngle)) * 9f,
                         ModContent.ProjectileType<XuanwuVenomFang>(), NPC.damage / 5, 0f, Main.myPlayer);
                 }

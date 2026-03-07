@@ -123,7 +123,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
 
                 float target = isPhase3 ? MaxIntensity * 1.25f : isPhase2 ? MaxIntensity * 1.1f : MaxIntensity;
                 intensity = MathHelper.Lerp(intensity, target, FadeInSpeed);
-            } else {
+            }
+            else {
                 intensity -= FadeOutSpeed;
                 if (intensity <= 0f) { intensity = 0f; if (active) Deactivate(); }
             }

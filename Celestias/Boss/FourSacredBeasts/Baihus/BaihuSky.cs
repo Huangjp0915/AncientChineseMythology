@@ -121,7 +121,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
 
                 float target = isPhase3 ? MaxIntensity * 1.25f : isPhase2 ? MaxIntensity * 1.1f : MaxIntensity;
                 intensity = MathHelper.Lerp(intensity, target, FadeInSpeed);
-            } else {
+            }
+            else {
                 intensity -= FadeOutSpeed;
                 if (intensity <= 0f) { intensity = 0f; if (active) Deactivate(); }
             }
@@ -422,11 +423,13 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
                         float p = pos / flashDuration;
                         FlashAlpha = p < 0.2f ? p / 0.2f : 1f - (p - 0.2f) / 0.8f;
                         FlashAlpha = MathHelper.Clamp(FlashAlpha, 0f, 1f);
-                    } else {
+                    }
+                    else {
                         flashing = false;
                         FlashAlpha = 0f;
                     }
-                } else {
+                }
+                else {
                     FlashAlpha = MathHelper.Lerp(FlashAlpha, 0f, 0.12f);
                 }
             }

@@ -2,7 +2,6 @@
 using System;
 using Terraria;
 using Terraria.GameContent;
-using Terraria.ID;
 
 namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 {
