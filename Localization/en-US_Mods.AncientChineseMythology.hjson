@@ -1,4 +1,4 @@
-﻿Items: {
+Items: {
 	RuyiJinguBang: {
 		DisplayName: RuyiJinguBang
 		Tooltip: ""
@@ -649,6 +649,16 @@
 	CoffinNail: {
 		DisplayName: Coffin Nail
 		Tooltip: ""
+	}
+
+	SoulBanner: {
+		DisplayName: Soul Banner of Ten Thousand Spirits
+		Tooltip:
+			'''
+			Harness the power of countless lost souls through this banner
+			Left click swings the banner, absorbing enemy souls for magic damage
+			Right click deploys the banner above your head for continuous soul absorption
+			'''
 	}
 
 	YingouSummon: {
@@ -2043,6 +2053,8 @@ Projectiles: {
 	SuzakuFlamePillar.DisplayName: Suzaku Flame Pillar
 	XuanwuIceShard.DisplayName: Xuanwu Ice Shard
 	XuanwuVenomFang.DisplayName: Xuanwu Venom Fang
+	SoulBannerHeldProj.DisplayName: Soul Banner Held Proj
+	SoulBannerMinion.DisplayName: Soul Banner Minion
 }
 
 HeavenBiome.DisplayName: Heaven
@@ -2169,6 +2181,11 @@ Buffs: {
 	MingCrowMinionBuff: {
 		DisplayName: Ming Crow Minion Buff
 		Description: Mods.AncientChineseMythology.Buffs.MingCrowMinionBuff.Description
+	}
+
+	SoulBannerMinionBuff: {
+		DisplayName: Soul Banner
+		Description: The Soul Banner floats above, continuously absorbing enemy souls
 	}
 
 	ChengYingBuff: {

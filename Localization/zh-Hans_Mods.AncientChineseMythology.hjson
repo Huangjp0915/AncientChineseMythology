@@ -1,4 +1,4 @@
-﻿Items: {
+Items: {
 	RuyiJinguBang: {
 		DisplayName: 如意金箍棒
 		Tooltip:
@@ -698,6 +698,16 @@
 	CoffinNail: {
 		DisplayName: 棺材钉
 		Tooltip: ""
+	}
+
+	SoulBanner: {
+		DisplayName: 万魂幡
+		Tooltip:
+			'''
+			以幡旗收束万千亡魂之力
+			左键挥舞幡旗，吸取敌人灵魂造成魔法伤害
+			右键释放万魂幡悬浮于头顶，对周围敌人持续吸魂
+			'''
 	}
 
 	YingouSummon: {
@@ -2165,6 +2175,8 @@ Projectiles: {
 	// SuzakuFlamePillar.DisplayName: Suzaku Flame Pillar
 	// XuanwuIceShard.DisplayName: Xuanwu Ice Shard
 	// XuanwuVenomFang.DisplayName: Xuanwu Venom Fang
+	// SoulBannerHeldProj.DisplayName: Soul Banner Held Proj
+	// SoulBannerMinion.DisplayName: Soul Banner Minion
 }
 
 HeavenBiome.DisplayName: Heaven
@@ -2291,6 +2303,11 @@ Buffs: {
 	MingCrowMinionBuff: {
 		DisplayName: 召唤冥鸦
 		Description: 有一只无畜无害的冥鸦为你战斗
+	}
+
+	SoulBannerMinionBuff: {
+		DisplayName: 万魂幡
+		Description: 万魂幡悬浮于头顶，持续吸取周围敌人的灵魂
 	}
 
 	ChengYingBuff: {
