@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -13,51 +12,58 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Items.Weapons.SoulBanners
 {
     /// <summary>
-    /// 万魂幡左键手持弹幕 —— 三段式仪式动作：
-    /// 1. 竖幡：玩家将幡旗高高竖起（蓄力感）
-    /// 2. 展幡：幡旗向前挥出，大弧度展开吸收灵魂
-    /// 3. 收幡：幡旗收回，吸入的灵魂凝聚爆发
-    /// 纹理：竖直旗帜，顶端为握持端，底端自然飘垂
+    /// 万魂幡左键手持弹幕 —— 祭幡法器动作（非挥剑）：
+    /// 1. 举幡（Raise）：从身侧将幡旗缓缓提起
+    /// 2. 祭幡（Thrust）：向前方猛力直刺，幡旗直插前方
+    /// 3. 引魂（Channel）：幡旗驻留原地，释放吸魂漩涡
+    /// 4. 收魂（Retract）：收回幡旗，积蓄灵魂凝聚爆发
+    /// 核心区别：直线刺出+驻留引魂，不是弧形横扫
     /// </summary>
     public class SoulBannerHeldProj : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Items/Weapons/SoulBanners/SoulBanner";
 
-        // ── 动作参数 ──
-        private const float SwingRange = 1.67f * MathF.PI; // 挥舞角度（300度大弧）
-        private const float FirstHalfSwing = 0.45f;         // 到达目标角度前的挥舞比例
-        private const float Unwind = 0.4f;                   // 收回阶段比例
-        private const float MaxReach = 60f;                   // 幡旗延伸距离
-        private const float AbsorbRadius = 250f;              // 吸魂范围
+        // ── 动画参数 ──
+        private const float MaxExtend = 90f;       // 最大伸出距离
+        private const float StartOffset = -30f;    // 起始偏移（幡旗从身后开始）
+        private const float AbsorbRadius = 260f;   // 引魂漩涡半径
+
+        // 各阶段基准帧数（受攻速影响）
+        private const float BaseRaise = 10f;
+        private const float BaseThrust = 7f;
+        private const float BaseChannel = 20f;
+        private const float BaseRetract = 8f;
+
+        private enum BannerPhase { Raise, Thrust, Channel, Retract }
 
         private Player Owner => Main.player[Projectile.owner];
 
-        private enum AttackStage { Prepare, Execute, Unwind }
+        // ai slots
+        private ref float AimAngle => ref Projectile.ai[0];
+        private ref float GlobalTimer => ref Projectile.ai[1];
 
-        private AttackStage CurrentStage
+        // localAI slots
+        private BannerPhase CurrentPhase
         {
-            get => (AttackStage)Projectile.localAI[0];
-            set { Projectile.localAI[0] = (float)value; Timer = 0; }
+            get => (BannerPhase)(int)Projectile.localAI[0];
+            set { Projectile.localAI[0] = (int)value; phaseTimer = 0; }
         }
 
-        private ref float InitialAngle => ref Projectile.ai[1];
-        private ref float Timer => ref Projectile.ai[2];
-        private ref float Progress => ref Projectile.localAI[1];
-        private ref float Size => ref Projectile.localAI[2];
+        // 运行时状态（客户端）
+        private float phaseTimer;
+        private float currentExtend;
+        private float bannerScale;
+        private bool hasBurstPlayed;
 
-        // 阶段时长（受攻速影响）
-        private float PrepTime => 10f / Owner.GetTotalAttackSpeed(Projectile.DamageType);
-        private float ExecTime => 12f / Owner.GetTotalAttackSpeed(Projectile.DamageType);
-        private float HideTime => 8f / Owner.GetTotalAttackSpeed(Projectile.DamageType);
-
-        private bool hasPlayedSound;
-        private bool hasAbsorbBurst;
+        // 受攻速影响的阶段时长
+        private float RaiseTime => BaseRaise / Owner.GetTotalAttackSpeed(Projectile.DamageType);
+        private float ThrustTime => BaseThrust / Owner.GetTotalAttackSpeed(Projectile.DamageType);
+        private float ChannelTime => BaseChannel / Owner.GetTotalAttackSpeed(Projectile.DamageType);
+        private float RetractTime => BaseRetract / Owner.GetTotalAttackSpeed(Projectile.DamageType);
 
         public override void SetStaticDefaults()
         {
             ProjectileID.Sets.HeldProjDoesNotUsePlayerGfxOffY[Type] = true;
-            ProjectileID.Sets.TrailingMode[Type] = 2;
-            ProjectileID.Sets.TrailCacheLength[Type] = 10;
         }
 
         public override void SetDefaults()
@@ -71,51 +77,34 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             Projectile.ignoreWater = true;
             Projectile.ownerHitCheck = true;
             Projectile.usesLocalNPCImmunity = true;
-            Projectile.localNPCHitCooldown = -1;
+            Projectile.localNPCHitCooldown = 12;
             Projectile.timeLeft = 10000;
         }
 
         public override void OnSpawn(IEntitySource source)
         {
-            Projectile.spriteDirection = Main.MouseWorld.X > Owner.MountedCenter.X ? 1 : -1;
-            float targetAngle = (Main.MouseWorld - Owner.MountedCenter).ToRotation();
-
-            // 限制瞄准方向不要过于极端
-            if (Projectile.spriteDirection == 1)
-            {
-                targetAngle = MathHelper.Clamp(targetAngle, -MathF.PI / 3f, MathF.PI / 6f);
-            }
-            else
-            {
-                if (targetAngle < 0) targetAngle += MathF.PI * 2f;
-                targetAngle = MathHelper.Clamp(targetAngle, MathF.PI * 5f / 6f, MathF.PI * 4f / 3f);
-            }
-
-            InitialAngle = targetAngle - FirstHalfSwing * SwingRange * Projectile.spriteDirection * 1.2f;
-            Size = 0f;
+            AimAngle = Projectile.velocity.ToRotation();
+            Projectile.velocity = Vector2.Zero;
+            Projectile.spriteDirection = MathF.Cos(AimAngle) >= 0 ? 1 : -1;
+            bannerScale = 0f;
+            currentExtend = StartOffset;
         }
 
         public override void SendExtraAI(BinaryWriter writer)
         {
             writer.Write((sbyte)Projectile.spriteDirection);
+            writer.Write(AimAngle);
         }
 
         public override void ReceiveExtraAI(BinaryReader reader)
         {
             Projectile.spriteDirection = reader.ReadSByte();
+            AimAngle = reader.ReadSingle();
         }
 
         public override void AI()
         {
-            // 手动更新拖尾位置
-            for (int i = Projectile.oldPos.Length - 1; i > 0; i--)
-            {
-                Projectile.oldPos[i] = Projectile.oldPos[i - 1];
-                Projectile.oldRot[i] = Projectile.oldRot[i - 1];
-            }
-            Projectile.oldPos[0] = Projectile.position;
-            Projectile.oldRot[0] = Projectile.rotation;
-
+            Owner.heldProj = Projectile.whoAmI;
             Owner.itemAnimation = 2;
             Owner.itemTime = 2;
 
@@ -125,185 +114,317 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
                 return;
             }
 
-            switch (CurrentStage)
+            Owner.direction = Projectile.spriteDirection;
+            GlobalTimer++;
+            phaseTimer++;
+
+            switch (CurrentPhase)
             {
-                case AttackStage.Prepare:
-                    PrepareStrike();
-                    break;
-                case AttackStage.Execute:
-                    ExecuteStrike();
-                    break;
-                default:
-                    UnwindStrike();
-                    break;
+                case BannerPhase.Raise: RaisePhase(); break;
+                case BannerPhase.Thrust: ThrustPhase(); break;
+                case BannerPhase.Channel: ChannelPhase(); break;
+                case BannerPhase.Retract: RetractPhase(); break;
             }
 
-            SetBannerPosition();
-            Timer++;
+            PositionBanner();
+        }
 
-            // ── 吸魂粒子效果 ──
-            if (CurrentStage == AttackStage.Execute)
-            {
-                SpawnSoulAbsorbEffect();
-            }
+        // ── 举幡：从身后缓缓提起幡旗 ──
+        private void RaisePhase()
+        {
+            float t = Math.Clamp(phaseTimer / RaiseTime, 0f, 1f);
 
-            // ── 幡旗飘动粒子 ──
+            // 幡旗从身后浮现，逐渐显形
+            bannerScale = ACMUtils.QuadOut(t);
+            currentExtend = MathHelper.Lerp(StartOffset, 15f, ACMUtils.SineInOut(t));
+
+            // 举幡时幽灵粒子上升
             if (Main.rand.NextBool(3))
             {
-                Vector2 tipPos = Owner.MountedCenter + Projectile.rotation.ToRotationVector2() * (Projectile.Size.Length() * Projectile.scale * 0.7f);
-                Dust dust = Dust.NewDustDirect(tipPos, 1, 1, DustID.DungeonSpirit, 0f, 0f, 150, default, 0.7f);
+                Vector2 dustPos = Owner.Center + Main.rand.NextVector2Circular(20f, 30f);
+                Dust dust = Dust.NewDustDirect(dustPos, 1, 1, DustID.DungeonSpirit,
+                    0f, -2f, 150, default, 0.6f);
                 dust.noGravity = true;
-                dust.velocity = Main.rand.NextVector2Circular(1.5f, 1.5f);
-                dust.velocity.Y -= 0.5f;
             }
+
+            if (phaseTimer == 3)
+                SoundEngine.PlaySound(SoundID.Item29 with { Volume = 0.4f, Pitch = -0.3f }, Owner.Center);
+
+            if (phaseTimer >= RaiseTime)
+                CurrentPhase = BannerPhase.Thrust;
         }
 
-        // ── 竖幡阶段：缓慢举起幡旗 ──
-        private void PrepareStrike()
+        // ── 祭幡：猛力向前直刺（不是弧扫！） ──
+        private void ThrustPhase()
         {
-            Size = MathHelper.SmoothStep(0f, 1f, Timer / PrepTime);
+            float t = Math.Clamp(phaseTimer / ThrustTime, 0f, 1f);
 
-            if (Timer >= PrepTime)
+            bannerScale = 1f;
+            // QuadOut：快速刺出，到达终点时减速 —— 类似戮枪的爽快感
+            currentExtend = MathHelper.Lerp(15f, MaxExtend, ACMUtils.QuadOut(t));
+
+            if (phaseTimer == 1)
+                SoundEngine.PlaySound(SoundID.Item71 with { Volume = 0.7f, Pitch = 0.2f }, Projectile.Center);
+
+            // 刺出过程中沿前方产生冲击粒子
+            if (t > 0.4f && Main.rand.NextBool(2))
             {
-                SoundEngine.PlaySound(SoundID.Item71, Projectile.Center);
-                CurrentStage = AttackStage.Execute;
+                Vector2 dir = AimAngle.ToRotationVector2();
+                Vector2 tipPos = Owner.MountedCenter + dir * currentExtend;
+                Dust dust = Dust.NewDustDirect(tipPos, 1, 1, DustID.PurpleTorch,
+                    dir.X * 4f, dir.Y * 4f, 100, default, 1.2f);
+                dust.noGravity = true;
             }
+
+            // 到达终点的冲击波
+            if (phaseTimer >= ThrustTime - 1)
+                ThrustImpact();
+
+            if (phaseTimer >= ThrustTime)
+                CurrentPhase = BannerPhase.Channel;
         }
 
-        // ── 展幡阶段：大弧度挥出吸魂 ──
-        private void ExecuteStrike()
+        // ── 引魂：幡旗驻留原地，释放吸魂漩涡 ──
+        // 这是万魂幡独有的核心阶段——没有任何剑会"停在前方持续吸魂"
+        private void ChannelPhase()
         {
-            Progress = MathHelper.SmoothStep(0, SwingRange, (1f - Unwind / 2f) * Timer / (ExecTime * 2f));
+            float t = Math.Clamp(phaseTimer / ChannelTime, 0f, 1f);
 
-            // 挥舞中段释放吸魂音效
-            if (!hasPlayedSound && Timer > ExecTime * 0.3f)
+            bannerScale = 1f;
+            // 驻留时轻微前后呼吸感（幡旗受灵力涌动而微微晃动）
+            float breathe = MathF.Sin(phaseTimer * 0.35f) * 4f;
+            currentExtend = MaxExtend + breathe;
+
+            // 吸魂漩涡粒子系统
+            SpawnSoulVortex(t);
+
+            // 引魂低沉音效
+            if (phaseTimer == 4)
+                SoundEngine.PlaySound(SoundID.NPCDeath52 with { Volume = 0.5f, Pitch = -0.5f }, Projectile.Center);
+
+            // 幡旗末端飘荡粒子
+            if (Main.rand.NextBool(2))
             {
-                hasPlayedSound = true;
-                SoundEngine.PlaySound(SoundID.NPCDeath52 with { Volume = 0.6f, Pitch = -0.3f }, Projectile.Center);
+                Vector2 dir = AimAngle.ToRotationVector2();
+                Vector2 tipPos = Owner.MountedCenter + dir * currentExtend;
+                Vector2 perp = new(-dir.Y, dir.X);
+                Dust dust = Dust.NewDustDirect(
+                    tipPos + perp * Main.rand.NextFloat(-20f, 20f),
+                    1, 1, DustID.DungeonSpirit,
+                    perp.X * Main.rand.NextFloat(-1f, 1f),
+                    -Main.rand.NextFloat(0.5f, 2f),
+                    120, default, 0.8f);
+                dust.noGravity = true;
             }
 
-            if (Timer >= ExecTime * 3f)
-            {
-                CurrentStage = AttackStage.Unwind;
-            }
+            if (phaseTimer >= ChannelTime)
+                CurrentPhase = BannerPhase.Retract;
         }
 
-        // ── 收幡阶段：收回并爆发灵魂 ──
-        private void UnwindStrike()
+        // ── 收魂：收回幡旗，灵魂凝聚爆发 ──
+        private void RetractPhase()
         {
-            Progress = MathHelper.SmoothStep(0, SwingRange, (1f - Unwind / 10f) + Unwind * Timer / HideTime);
+            float t = Math.Clamp(phaseTimer / RetractTime, 0f, 1f);
 
-            // 收回时灵魂爆发效果
-            if (!hasAbsorbBurst && Timer > HideTime * 0.2f)
+            bannerScale = 1f - ACMUtils.QuadIn(t) * 0.3f;
+            // QuadIn：缓慢开始收回，末尾猛地抽回
+            currentExtend = MathHelper.Lerp(MaxExtend, 0f, ACMUtils.QuadIn(t));
+
+            // 收回起始瞬间的灵魂爆发
+            if (!hasBurstPlayed)
             {
-                hasAbsorbBurst = true;
+                hasBurstPlayed = true;
                 SoulBurst();
             }
 
-            if (Timer >= HideTime)
-            {
+            if (phaseTimer >= RetractTime)
                 Projectile.Kill();
+        }
+
+        /// <summary>
+        /// 定位幡旗 —— 沿固定瞄准方向的直线延伸，不做弧形旋转
+        /// 参考 HalberdThrust 的直刺定位方式
+        /// </summary>
+        private void PositionBanner()
+        {
+            Vector2 aimDir = AimAngle.ToRotationVector2();
+            float armAngle = AimAngle - MathHelper.PiOver2;
+
+            // 举幡阶段：手臂从偏下方抬到瞄准方向
+            if (CurrentPhase == BannerPhase.Raise)
+            {
+                float raiseT = Math.Clamp(phaseTimer / RaiseTime, 0f, 1f);
+                float startOffset = MathHelper.ToRadians(40f) * Projectile.spriteDirection;
+                armAngle = MathHelper.Lerp(armAngle + startOffset, armAngle, ACMUtils.SineInOut(raiseT));
+            }
+
+            // 引魂阶段：手臂轻微颤抖（灵力涌动）
+            if (CurrentPhase == BannerPhase.Channel)
+                armAngle += MathF.Sin(phaseTimer * 0.5f) * 0.025f;
+
+            Owner.SetCompositeArmFront(true, Player.CompositeArmStretchAmount.Full, armAngle);
+            Vector2 handPos = Owner.GetFrontHandPosition(
+                Player.CompositeArmStretchAmount.Full, armAngle);
+            handPos.Y += Owner.gfxOffY;
+
+            // 幡旗沿瞄准方向直线延伸（不是绕中心旋转！）
+            Projectile.Center = handPos + aimDir * Math.Max(currentExtend, 0f);
+
+            // 幡旗朝向 = 固定瞄准方向 + 引魂时的轻微飘动
+            float flutter = 0f;
+            if (CurrentPhase == BannerPhase.Channel)
+                flutter = MathF.Sin(phaseTimer * 0.4f) * 0.06f;
+            Projectile.rotation = AimAngle + flutter;
+
+            Projectile.scale = bannerScale * 1.1f * Owner.GetAdjustedItemScale(Owner.HeldItem);
+            Owner.heldProj = Projectile.whoAmI;
+
+            // 光照
+            float lightMul = CurrentPhase == BannerPhase.Channel ? 1.5f : 0.5f;
+            Lighting.AddLight(Projectile.Center, new Vector3(0.35f, 0.12f, 0.55f) * lightMul);
+        }
+
+        /// <summary>
+        /// 刺出到达终点时的冲击波效果
+        /// </summary>
+        private void ThrustImpact()
+        {
+            Vector2 dir = AimAngle.ToRotationVector2();
+            Vector2 impactPos = Owner.MountedCenter + dir * MaxExtend;
+
+            SoundEngine.PlaySound(SoundID.Item103 with { Volume = 0.4f, Pitch = 0.3f }, impactPos);
+
+            // 环形冲击粒子
+            for (int i = 0; i < 12; i++)
+            {
+                float angle = MathHelper.TwoPi * i / 12f;
+                Vector2 vel = angle.ToRotationVector2() * Main.rand.NextFloat(3f, 6f);
+                Dust dust = Dust.NewDustDirect(impactPos, 1, 1, DustID.PurpleTorch,
+                    vel.X, vel.Y, 80, default, 1.3f);
+                dust.noGravity = true;
+            }
+
+            // 前向冲击粒子
+            for (int i = 0; i < 6; i++)
+            {
+                Vector2 vel = dir * Main.rand.NextFloat(5f, 10f) + Main.rand.NextVector2Circular(2f, 2f);
+                Dust dust = Dust.NewDustDirect(impactPos, 1, 1, DustID.DungeonSpirit,
+                    vel.X, vel.Y, 60, default, 1.5f);
+                dust.noGravity = true;
+                dust.fadeIn = 1.6f;
             }
         }
 
         /// <summary>
-        /// 设置幡旗的位置和手臂姿态
-        /// 万魂幡是竖直旗帜：顶端握持，旗面向外延伸
+        /// 引魂漩涡 —— 万魂幡的核心视觉效果
+        /// 灵魂从周围敌人身上被抽离，螺旋飞向幡旗末端的漩涡中心
         /// </summary>
-        private void SetBannerPosition()
+        private void SpawnSoulVortex(float channelProgress)
         {
-            Projectile.rotation = InitialAngle + Projectile.spriteDirection * Progress;
+            Vector2 dir = AimAngle.ToRotationVector2();
+            Vector2 vortexCenter = Owner.MountedCenter + dir * currentExtend;
+            float expandedRadius = AbsorbRadius * ACMUtils.QuadOut(Math.Min(channelProgress * 3f, 1f));
 
-            Owner.SetCompositeArmFront(true, Player.CompositeArmStretchAmount.Full,
-                Projectile.rotation - MathHelper.ToRadians(90f));
-
-            Vector2 armPosition = Owner.GetFrontHandPosition(
-                Player.CompositeArmStretchAmount.Full,
-                Projectile.rotation - MathF.PI / 2f);
-            armPosition.Y += Owner.gfxOffY;
-
-            Projectile.Center = armPosition + Projectile.rotation.ToRotationVector2() * MaxReach * Math.Max(Size, 0.3f);
-            Projectile.scale = Size * 1.2f * Owner.GetAdjustedItemScale(Owner.HeldItem);
-
-            Owner.heldProj = Projectile.whoAmI;
-        }
-
-        /// <summary>
-        /// 展幡时的吸魂效果：范围内敌人灵魂被抽离飞向幡旗
-        /// </summary>
-        private void SpawnSoulAbsorbEffect()
-        {
-            Vector2 bannerTip = Owner.MountedCenter + Projectile.rotation.ToRotationVector2() * (Projectile.Size.Length() * Projectile.scale * 0.6f);
-
+            // ── 从敌人身上抽取灵魂粒子 ──
             for (int i = 0; i < Main.maxNPCs; i++)
             {
                 NPC npc = Main.npc[i];
-                if (!npc.CanBeChasedBy(this))
-                    continue;
+                if (!npc.CanBeChasedBy(this)) continue;
 
-                float dist = Vector2.Distance(npc.Center, bannerTip);
-                if (dist < AbsorbRadius && Main.rand.NextBool(4))
+                float dist = Vector2.Distance(npc.Center, vortexCenter);
+                if (dist > expandedRadius) continue;
+
+                if (Main.rand.NextBool(3))
                 {
-                    Vector2 dustPos = npc.Center + Main.rand.NextVector2Circular(npc.width * 0.4f, npc.height * 0.4f);
-                    Vector2 toSelf = (bannerTip - dustPos).SafeNormalize(Vector2.Zero);
+                    Vector2 soulPos = npc.Center + Main.rand.NextVector2Circular(npc.width * 0.4f, npc.height * 0.4f);
+                    Vector2 toVortex = (vortexCenter - soulPos).SafeNormalize(Vector2.Zero);
+                    Vector2 tangent = new(-toVortex.Y, toVortex.X);
+                    // 灵魂以螺旋轨迹飞向漩涡中心
+                    Vector2 soulVel = toVortex * Main.rand.NextFloat(6f, 11f)
+                        + tangent * Main.rand.NextFloat(-3f, 3f);
 
-                    // 灵魂粒子带有弧形轨迹感
-                    Vector2 tangent = new(-toSelf.Y, toSelf.X);
-                    Vector2 dustVel = toSelf * 7f + tangent * Main.rand.NextFloat(-2f, 2f);
-
-                    Dust dust = Dust.NewDustDirect(dustPos, 1, 1, DustID.DungeonSpirit,
-                        dustVel.X, dustVel.Y, 80, default, 1.2f);
+                    Dust dust = Dust.NewDustDirect(soulPos, 1, 1, DustID.DungeonSpirit,
+                        soulVel.X, soulVel.Y, 60, default, 1.3f);
                     dust.noGravity = true;
-                    dust.fadeIn = 1.5f;
+                    dust.fadeIn = 1.8f;
                 }
+            }
+
+            // ── 漩涡中心旋转粒子 ──
+            int vortexCount = (int)(4 + 6 * ACMUtils.QuadOut(Math.Min(channelProgress * 2f, 1f)));
+            for (int j = 0; j < vortexCount; j++)
+            {
+                float angle = Main.rand.NextFloat(MathHelper.TwoPi);
+                float radius = Main.rand.NextFloat(15f, 50f);
+                Vector2 pos = vortexCenter + angle.ToRotationVector2() * radius;
+                Vector2 toC = (vortexCenter - pos).SafeNormalize(Vector2.Zero);
+                Vector2 tang = new(-toC.Y, toC.X);
+                Vector2 vel = tang * 3f + toC * 1.5f;
+
+                Dust dust = Dust.NewDustDirect(pos, 1, 1, DustID.PurpleTorch,
+                    vel.X, vel.Y, 100, default, 0.7f + 0.3f * channelProgress);
+                dust.noGravity = true;
+            }
+
+            // ── 外圈引气粒子环 ──
+            if (channelProgress > 0.2f && Main.rand.NextBool(3))
+            {
+                float ringAngle = Main.rand.NextFloat(MathHelper.TwoPi);
+                float ringR = expandedRadius * Main.rand.NextFloat(0.6f, 1f);
+                Vector2 ringPos = vortexCenter + ringAngle.ToRotationVector2() * ringR;
+                Vector2 inward = (vortexCenter - ringPos).SafeNormalize(Vector2.Zero) * 4f;
+
+                Dust dust = Dust.NewDustPerfect(ringPos, DustID.PurpleTorch, inward, 100, default, 0.5f);
+                dust.noGravity = true;
             }
         }
 
         /// <summary>
-        /// 收幡时灵魂凝聚爆发
+        /// 收魂时灵魂凝聚爆发
         /// </summary>
         private void SoulBurst()
         {
-            Vector2 center = Projectile.Center;
-            SoundEngine.PlaySound(SoundID.Item103 with { Volume = 0.5f, Pitch = 0.4f }, center);
+            Vector2 burstCenter = Projectile.Center;
+            SoundEngine.PlaySound(SoundID.Item103 with { Volume = 0.6f, Pitch = 0.5f }, burstCenter);
 
-            for (int i = 0; i < 16; i++)
+            // 向外爆发的灵魂
+            for (int i = 0; i < 20; i++)
             {
-                float angle = MathHelper.TwoPi * i / 16f;
-                Vector2 vel = angle.ToRotationVector2() * Main.rand.NextFloat(3f, 7f);
-                Dust dust = Dust.NewDustDirect(center, 1, 1, DustID.DungeonSpirit,
-                    vel.X, vel.Y, 60, default, 1.4f);
+                float angle = MathHelper.TwoPi * i / 20f;
+                Vector2 vel = angle.ToRotationVector2() * Main.rand.NextFloat(4f, 9f);
+                Dust dust = Dust.NewDustDirect(burstCenter, 1, 1, DustID.DungeonSpirit,
+                    vel.X, vel.Y, 50, default, 1.5f);
                 dust.noGravity = true;
                 dust.fadeIn = 1.8f;
             }
 
-            // 内圈紫色火焰
-            for (int i = 0; i < 10; i++)
+            // 紫色内爆
+            for (int i = 0; i < 12; i++)
             {
-                Vector2 vel = Main.rand.NextVector2CircularEdge(2f, 2f);
-                Dust dust = Dust.NewDustDirect(center, 1, 1, DustID.PurpleTorch,
-                    vel.X, vel.Y, 100, default, 1.6f);
+                Vector2 vel = Main.rand.NextVector2CircularEdge(3f, 3f);
+                Dust dust = Dust.NewDustDirect(burstCenter, 1, 1, DustID.PurpleTorch,
+                    vel.X, vel.Y, 80, default, 1.6f);
                 dust.noGravity = true;
             }
         }
 
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
         {
-            // 击中时产生灵魂被吸走的效果
-            for (int i = 0; i < 10; i++)
+            // 灵魂从敌人身上飞向幡旗
+            for (int i = 0; i < 8; i++)
             {
-                Vector2 toOwner = (Owner.Center - target.Center).SafeNormalize(Vector2.Zero);
-                Vector2 vel = toOwner * Main.rand.NextFloat(3f, 8f) + Main.rand.NextVector2Circular(2f, 2f);
+                Vector2 toOwner = (Projectile.Center - target.Center).SafeNormalize(Vector2.Zero);
+                Vector2 vel = toOwner * Main.rand.NextFloat(4f, 9f) + Main.rand.NextVector2Circular(2f, 2f);
                 Dust dust = Dust.NewDustDirect(target.Center, 1, 1, DustID.DungeonSpirit,
-                    vel.X, vel.Y, 80, default, 1.3f);
+                    vel.X, vel.Y, 70, default, 1.3f);
                 dust.noGravity = true;
-                dust.fadeIn = 1.6f;
+                dust.fadeIn = 1.5f;
             }
 
-            // 吸取生命：每次命中少量回血
-            if (Main.rand.NextBool(3))
+            // 吸取少量生命
+            if (Main.rand.NextBool(4))
             {
-                int healAmount = Math.Max(1, damageDone / 20);
+                int healAmount = Math.Max(1, damageDone / 25);
                 Main.player[Projectile.owner].Heal(healAmount);
             }
         }
@@ -315,94 +436,88 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
 
         public override bool? CanDamage()
         {
-            if (CurrentStage == AttackStage.Prepare)
+            // 举幡阶段不造成伤害
+            if (CurrentPhase == BannerPhase.Raise)
                 return false;
             return base.CanDamage();
         }
 
         public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox)
         {
-            Vector2 start = Owner.MountedCenter;
-            Vector2 end = start + Projectile.rotation.ToRotationVector2() * (Projectile.Size.Length() * Projectile.scale * 0.8f);
-            float collisionPoint = 0f;
-            return Collision.CheckAABBvLineCollision(targetHitbox.TopLeft(), targetHitbox.Size(), start, end, 25f * Projectile.scale, ref collisionPoint);
+            Vector2 dir = AimAngle.ToRotationVector2();
+
+            if (CurrentPhase == BannerPhase.Channel)
+            {
+                // 引魂阶段：以漩涡为中心的范围攻击（比视效略小）
+                Vector2 vortexCenter = Owner.MountedCenter + dir * currentExtend;
+                float checkRadius = AbsorbRadius * 0.45f;
+                Vector2 closest = new(
+                    MathHelper.Clamp(vortexCenter.X, targetHitbox.Left, targetHitbox.Right),
+                    MathHelper.Clamp(vortexCenter.Y, targetHitbox.Top, targetHitbox.Bottom));
+                return Vector2.Distance(vortexCenter, closest) < checkRadius;
+            }
+            else
+            {
+                // 刺出/收回阶段：沿幡旗杆身的线段碰撞
+                Vector2 start = Owner.MountedCenter;
+                Vector2 end = start + dir * Math.Max(currentExtend, 0f);
+                float collisionPoint = 0f;
+                return Collision.CheckAABBvLineCollision(targetHitbox.TopLeft(), targetHitbox.Size(),
+                    start, end, 25f * Projectile.scale, ref collisionPoint);
+            }
         }
 
         public override void CutTiles()
         {
+            Vector2 dir = AimAngle.ToRotationVector2();
             Vector2 start = Owner.MountedCenter;
-            Vector2 end = start + Projectile.rotation.ToRotationVector2() * (Projectile.Size.Length() * Projectile.scale * 0.9f);
+            Vector2 end = start + dir * Math.Max(currentExtend, 0f);
             Utils.PlotTileLine(start, end, 15 * Projectile.scale, DelegateMethods.CutTiles);
         }
 
-        // ── 自定义绘制：拖尾 + 幡旗本体 ──
+        // ── 自定义绘制 ──
         public override bool PreDraw(ref Color lightColor)
         {
-            Vector2 origin;
-            float rotationOffset;
-            SpriteEffects effects;
-
-            // 万魂幡是竖直旗帜：
-            //   朝右（spriteDirection > 0）：原点在中心，旋转偏移45°
-            //   朝左（spriteDirection < 0）：镜像翻转，旋转偏移135°
-            if (Projectile.spriteDirection > 0)
-            {
-                origin = new Vector2(Projectile.width / 2f, Projectile.height / 2);
-                rotationOffset = MathHelper.ToRadians(90);
-                effects = SpriteEffects.None;
-            }
-            else
-            {
-                origin = new Vector2(Projectile.width / 2f, Projectile.height / 2);
-                rotationOffset = MathHelper.ToRadians(90);
-                effects = SpriteEffects.FlipHorizontally;
-            }
-
-            // ── 幡旗光晕层 ──
             Texture2D texture = TextureAssets.Projectile[Type].Value;
-            float glowPulse = 0.25f + 0.2f * MathF.Sin(Main.GameUpdateCount * 0.15f);
+            Vector2 origin = new(texture.Width / 2f, texture.Height / 2f);
+            SpriteEffects effects = Projectile.spriteDirection < 0
+                ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
+            float drawRotation = Projectile.rotation + MathHelper.PiOver2;
 
-            if (CurrentStage == AttackStage.Execute)
-                glowPulse += 0.3f;
+            // ── 阶段光晕强度 ──
+            float glowIntensity = CurrentPhase switch
+            {
+                BannerPhase.Channel => 0.5f + 0.25f * MathF.Sin(phaseTimer * 0.3f),
+                BannerPhase.Thrust => 0.35f + 0.35f * Math.Clamp(phaseTimer / ThrustTime, 0f, 1f),
+                BannerPhase.Retract => 0.6f * (1f - Math.Clamp(phaseTimer / RetractTime, 0f, 1f)),
+                _ => 0.15f + 0.1f * MathF.Sin(GlobalTimer * 0.15f),
+            };
 
-            Color glowColor = new Color(120, 40, 200) * glowPulse;
-            Main.spriteBatch.Draw(texture,
+            Color glowColor = new Color(130, 40, 210) * glowIntensity;
+
+            // 引魂阶段额外光环层（法阵感）
+            if (CurrentPhase == BannerPhase.Channel)
+            {
+                Color auraColor = new Color(180, 80, 255) * (glowIntensity * 0.3f);
+                Main.EntitySpriteDraw(texture,
+                    Projectile.Center - Main.screenPosition,
+                    null, auraColor, drawRotation, origin,
+                    Projectile.scale * 1.35f, effects, 0);
+            }
+
+            // 光晕层
+            Main.EntitySpriteDraw(texture,
                 Projectile.Center - Main.screenPosition,
-                default, glowColor * Projectile.Opacity,
-                Projectile.rotation + rotationOffset,
-                origin, Projectile.scale * 1.12f, effects, 0);
+                null, glowColor, drawRotation, origin,
+                Projectile.scale * 1.12f, effects, 0);
 
-            // ── 幡旗本体 ──
-            Main.spriteBatch.Draw(texture,
+            // 本体
+            Main.EntitySpriteDraw(texture,
                 Projectile.Center - Main.screenPosition,
-                default, lightColor * Projectile.Opacity,
-                Projectile.rotation + rotationOffset,
-                origin, Projectile.scale, effects, 0);
+                null, lightColor * Projectile.Opacity, drawRotation, origin,
+                Projectile.scale, effects, 0);
 
             return false;
-        }
-
-        // 拖尾顶点结构（复用项目已有模式）
-        public struct ColoredVertex : IVertexType
-        {
-            public Vector3 Position;
-            public Vector3 TexCoord;
-            public Color Color;
-
-            public static readonly VertexDeclaration _VertexDeclaration = new(
-                new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 0),
-                new VertexElement(12, VertexElementFormat.Vector3, VertexElementUsage.TextureCoordinate, 0),
-                new VertexElement(24, VertexElementFormat.Color, VertexElementUsage.Color, 0)
-            );
-
-            VertexDeclaration IVertexType.VertexDeclaration => _VertexDeclaration;
-
-            public ColoredVertex(Vector2 position, Vector3 texCoord, Color color)
-            {
-                Position = new Vector3(position, 0f);
-                TexCoord = texCoord;
-                Color = color;
-            }
         }
     }
 }
