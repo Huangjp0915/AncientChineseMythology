@@ -26,7 +26,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
         // ── 动画参数 ──
         private const float MaxExtend = 90f;       // 最大伸出距离
         private const float StartOffset = -30f;    // 起始偏移（幡旗从身后开始）
-        private const float AbsorbRadius = 260f;   // 引魂漩涡半径
+        private const float BaseAbsorbRadius = 260f; // 基础引魂漩涡半径
 
         // 各阶段基准帧数（受攻速影响）
         private const float BaseRaise = 10f;
@@ -58,8 +58,14 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
         // 受攻速影响的阶段时长
         private float RaiseTime => BaseRaise / Owner.GetTotalAttackSpeed(Projectile.DamageType);
         private float ThrustTime => BaseThrust / Owner.GetTotalAttackSpeed(Projectile.DamageType);
-        private float ChannelTime => BaseChannel / Owner.GetTotalAttackSpeed(Projectile.DamageType);
         private float RetractTime => BaseRetract / Owner.GetTotalAttackSpeed(Projectile.DamageType);
+
+        // 成长系统缓存（每次释放时读取一次）
+        private float growthAbsorbRadius;
+        private float growthChannelMul;
+        private float growthHealMul;
+        private float ChannelTime => BaseChannel * growthChannelMul / Owner.GetTotalAttackSpeed(Projectile.DamageType);
+        private float AbsorbRadius => growthAbsorbRadius;
 
         public override void SetStaticDefaults()
         {
@@ -88,6 +94,12 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             Projectile.spriteDirection = MathF.Cos(AimAngle) >= 0 ? 1 : -1;
             bannerScale = 0f;
             currentExtend = StartOffset;
+
+            // 缓存成长系统数值
+            var sbPlayer = Owner.GetModPlayer<SoulBannerPlayer>();
+            growthAbsorbRadius = BaseAbsorbRadius * sbPlayer.AbsorbRadiusMultiplier;
+            growthChannelMul = sbPlayer.ChannelTimeMultiplier;
+            growthHealMul = sbPlayer.HealMultiplier;
         }
 
         public override void SendExtraAI(BinaryWriter writer)
@@ -421,10 +433,10 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
                 dust.fadeIn = 1.5f;
             }
 
-            // 吸取少量生命
-            if (Main.rand.NextBool(4))
+            // 吸取生命（受成长影响）
+            if (Main.rand.NextBool(3))
             {
-                int healAmount = Math.Max(1, damageDone / 25);
+                int healAmount = Math.Max(1, (int)(damageDone / 20f * growthHealMul));
                 Main.player[Projectile.owner].Heal(healAmount);
             }
         }

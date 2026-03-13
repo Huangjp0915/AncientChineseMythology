@@ -1,0 +1,203 @@
+using System;
+using System.Collections.Generic;
+using Terraria;
+using Terraria.ID;
+using Terraria.ModLoader;
+using Terraria.ModLoader.IO;
+
+namespace AncientChineseMythology.Items.Weapons.SoulBanners
+{
+    /// <summary>
+    /// 万魂幡成长系统 —— 存储在玩家身上的灵魂数据
+    /// · soulCount：已吸收的灵魂数量（通过吸魂攻击击杀获得）
+    /// · soulCap：灵魂上限（通过击败 Boss 提升）
+    /// · defeatedBossTiers：已击败的 Boss 阶层记录
+    /// </summary>
+    public class SoulBannerPlayer : ModPlayer
+    {
+        /// <summary>当前吸收的灵魂数量</summary>
+        public int soulCount;
+
+        /// <summary>灵魂上限（由 Boss 击杀解锁）</summary>
+        public int soulCap;
+
+        /// <summary>已解锁的 Boss 阶层（用于防止重复计算）</summary>
+        public HashSet<int> defeatedBossTiers = new();
+
+        // ══════════════════════════════════════════════
+        //  Boss 阶层定义
+        // ══════════════════════════════════════════════
+
+        public struct BossTier
+        {
+            public int TierId;
+            public int CapValue;
+            public Func<int> GetNPCType;
+            /// <summary>可选的替代 NPC（如世界吞噬者/克苏鲁之脑，双子魔眼双体）</summary>
+            public Func<int> GetAltNPCType;
+            /// <summary>中文显示名（UI 直接读取）</summary>
+            public string NameZh;
+
+            public BossTier(int tierId, int capValue, Func<int> getNPCType, string nameZh,
+                Func<int> getAltNPCType = null) {
+                TierId = tierId;
+                CapValue = capValue;
+                GetNPCType = getNPCType;
+                GetAltNPCType = getAltNPCType;
+                NameZh = nameZh;
+            }
+
+            public bool MatchesNPC(int npcType) {
+                if (GetNPCType() == npcType) return true;
+                return GetAltNPCType != null && GetAltNPCType() == npcType;
+            }
+        }
+
+        // 延迟初始化，避免在静态构造期调用 ModContent
+        private static BossTier[] _tiers;
+
+        public static BossTier[] Tiers {
+            get {
+                _tiers ??= new BossTier[]
+                {
+                    // ── 肉山前 ──
+                    new( 1,    50, () => NPCID.KingSlime,        "史莱姆王"),
+                    new( 2,   120, () => NPCID.EyeofCthulhu,    "克苏鲁之眼"),
+                    new( 3,   200, () => ModContent.NPCType<NPCs.Boss.BlackBear.BlackBear>(), "黑熊精"),
+                    new( 4,   300, () => NPCID.EaterofWorldsHead,"世吞/克脑",  () => NPCID.BrainofCthulhu),
+                    new( 5,   420, () => NPCID.QueenBee,         "蜂后"),
+                    new( 6,   560, () => NPCID.SkeletronHead,    "骷髅王"),
+                    new( 7,   720, () => ModContent.NPCType<NPCs.Boss.Yingous.Yingou>(), "犬戎"),
+                    new( 8,   880, () => NPCID.Deerclops,        "鹿角怪"),
+                    new( 9,  1100, () => NPCID.WallofFlesh,      "血肉墙"),
+
+                    // ── 困难模式 ──
+                    new(10,  1350, () => ModContent.NPCType<NPCs.Boss.NiutouMamian.NiuTou>(), "牛头马面"),
+                    new(11,  1600, () => NPCID.QueenSlimeBoss,   "史莱姆皇后"),
+                    new(12,  1900, () => NPCID.TheDestroyer,     "毁灭者"),
+                    new(13,  2200, () => NPCID.Retinazer,        "双子魔眼",   () => NPCID.Spazmatism),
+                    new(14,  2550, () => NPCID.SkeletronPrime,   "机械骷髅王"),
+                    new(15,  2900, () => ModContent.NPCType<NPCs.Boss.Hanbas.Hanba>(), "旱魃"),
+                    new(16,  3300, () => NPCID.Plantera,         "世纪之花"),
+                    new(17,  3700, () => ModContent.NPCType<NPCs.Boss.Hoqings.Hoqing>(), "后卿"),
+                    new(18,  4150, () => NPCID.Golem,            "石巨人"),
+                    new(19,  4600, () => NPCID.HallowBoss,       "光之女皇"),
+                    new(20,  5100, () => NPCID.DukeFishron,      "猪龙鱼公爵"),
+                    new(21,  5600, () => ModContent.NPCType<NPCs.Boss.Jiangcens.Jiangcen>(), "蛟尘"),
+                    new(22,  6150, () => NPCID.CultistBoss,      "拜月教邪教徒"),
+                    new(23,  6700, () => NPCID.MoonLordCore,     "月亮领主"),
+
+                    // ── 月后（模组终局）──
+                    new(24,  7400, () => ModContent.NPCType<NPCs.Boss.KyuubiKitsunes.KyuubiKitsune>(), "九尾狐"),
+                    new(25,  8100, () => ModContent.NPCType<Celestias.Boss.Vigors.Vigor>(), "神威"),
+                    new(26,  8900, () => ModContent.NPCType<Celestias.Boss.Arguses.Argus>(), "百目"),
+                    new(27,  9700, () => ModContent.NPCType<Celestias.Boss.Vaisravanas.Vaisravana>(), "毗沙门天"),
+                    new(28, 10500, () => ModContent.NPCType<Celestias.Boss.Aoshuns.Aoshun>(), "敖顺"),
+                };
+                return _tiers;
+            }
+        }
+
+        // ══════════════════════════════════════════════
+        //  成长收益计算
+        // ══════════════════════════════════════════════
+
+        /// <summary>成长比例：soulCount / 当前最高可达上限（0~1，上限解锁前按已有上限计）</summary>
+        public float GrowthRatio => soulCap > 0 ? Math.Clamp((float)soulCount / soulCap, 0f, 1f) : 0f;
+
+        /// <summary>成长等级（方便做离散化的阶段判断）：0~10</summary>
+        public int GrowthLevel {
+            get {
+                if (soulCap <= 0) return 0;
+                // 找到当前 cap 对应的最高阶层
+                int level = 0;
+                foreach (var tier in Tiers) {
+                    if (defeatedBossTiers.Contains(tier.TierId))
+                        level = tier.TierId + 1;
+                }
+                return level;
+            }
+        }
+
+        /// <summary>伤害倍率加成：0% ~ +200%（上限8000灵魂时）</summary>
+        public float DamageMultiplier => 1f + 2f * GrowthRatio;
+
+        /// <summary>吸魂范围倍率：1x ~ 2.5x</summary>
+        public float AbsorbRadiusMultiplier => 1f + 1.5f * GrowthRatio;
+
+        /// <summary>引魂阶段持续时间倍率：1x ~ 1.8x</summary>
+        public float ChannelTimeMultiplier => 1f + 0.8f * GrowthRatio;
+
+        /// <summary>生命回复量倍率：1x ~ 4x</summary>
+        public float HealMultiplier => 1f + 3f * GrowthRatio;
+
+        /// <summary>击退倍率：1x ~ 2x</summary>
+        public float KnockbackMultiplier => 1f + 1f * GrowthRatio;
+
+        /// <summary>额外穿透数（引魂阶段碰撞范围内可命中的额外目标）</summary>
+        public int BonusAbsorbTargets => (int)(GrowthRatio * 5);
+
+        // ══════════════════════════════════════════════
+        //  灵魂吸收
+        // ══════════════════════════════════════════════
+
+        /// <summary>
+        /// 击杀敌人时调用，返回实际获得的灵魂数
+        /// </summary>
+        public int AbsorbSoul(NPC npc) {
+            if (soulCap <= 0 || soulCount >= soulCap)
+                return 0;
+
+            // 灵魂获取量与敌人强度挂钩
+            int gain = Math.Max(1, (int)(npc.lifeMax / 200f));
+            // Boss 给大量灵魂
+            if (npc.boss)
+                gain = Math.Max(10, npc.lifeMax / 50);
+
+            int before = soulCount;
+            soulCount = Math.Min(soulCount + gain, soulCap);
+            return soulCount - before;
+        }
+
+        /// <summary>
+        /// Boss 击杀时调用——解锁对应阶层上限
+        /// 返回新解锁的上限值，0 表示未匹配或已解锁
+        /// </summary>
+        public int TryUnlockBossTier(int npcType) {
+            foreach (var tier in Tiers) {
+                if (tier.MatchesNPC(npcType) && !defeatedBossTiers.Contains(tier.TierId)) {
+                    defeatedBossTiers.Add(tier.TierId);
+                    RecalculateCap();
+                    return tier.CapValue;
+                }
+            }
+            return 0;
+        }
+
+        private void RecalculateCap() {
+            int maxCap = 0;
+            foreach (var tier in Tiers) {
+                if (defeatedBossTiers.Contains(tier.TierId) && tier.CapValue > maxCap)
+                    maxCap = tier.CapValue;
+            }
+            soulCap = maxCap;
+        }
+
+        // ══════════════════════════════════════════════
+        //  存档
+        // ══════════════════════════════════════════════
+
+        public override void SaveData(TagCompound tag) {
+            tag["soulBanner_soulCount"] = soulCount;
+            tag["soulBanner_soulCap"] = soulCap;
+            tag["soulBanner_tiers"] = new List<int>(defeatedBossTiers);
+        }
+
+        public override void LoadData(TagCompound tag) {
+            soulCount = tag.GetInt("soulBanner_soulCount");
+            soulCap = tag.GetInt("soulBanner_soulCap");
+            var tiers = tag.Get<List<int>>("soulBanner_tiers");
+            defeatedBossTiers = tiers != null ? new HashSet<int>(tiers) : new HashSet<int>();
+        }
+    }
+}

@@ -656,8 +656,9 @@ Items: {
 		Tooltip:
 			'''
 			Harness the power of countless lost souls through this banner
-			Left click swings the banner, absorbing enemy souls for magic damage
+			Left click thrusts the banner forward, channeling a soul vortex
 			Right click deploys the banner above your head for continuous soul absorption
+			Killing enemies absorbs souls to strengthen the banner; defeat bosses to raise the limit
 			'''
 	}
 
