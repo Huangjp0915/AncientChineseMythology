@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using System;
 using Terraria;
@@ -7,33 +7,33 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 {
     /// <summary>
-    /// ºÚ°×ÎŞ³£Boss¸¨ÖúÀà
+    /// é»‘ç™½æ— å¸¸Bossè¾…åŠ©ç±»
     /// </summary>
     public static class BAWHelper
     {
         public static string Path = typeof(BAWHelper).Namespace.Replace(".", "/") + "/";
 
-        #region ÎÆÀí×ÊÔ´
+        #region çº¹ç†èµ„æº
 
         private static Asset<Texture2D> _chainTexture;
         private static Asset<Texture2D> _sickleTexture;
         private static Asset<Texture2D> _dustTexture;
 
-        /// <summary>ËøÁ´Ìå½ÚÎÆÀí</summary>
+        /// <summary>é”é“¾ä½“èŠ‚çº¹ç†</summary>
         public static Texture2D ChainTexture => (_chainTexture ??= ModContent.Request<Texture2D>(Path + "Chain")).Value;
 
-        /// <summary>Á­µ¶ÎÆÀí</summary>
+        /// <summary>é•°åˆ€çº¹ç†</summary>
         public static Texture2D SickleTexture => (_sickleTexture ??= ModContent.Request<Texture2D>(Path + "Sickle")).Value;
 
-        /// <summary>Á£×ÓÎÆÀí</summary>
+        /// <summary>ç²’å­çº¹ç†</summary>
         public static Texture2D DustTexture => (_dustTexture ??= ModContent.Request<Texture2D>(Path + "BAWDust")).Value;
 
         #endregion
 
-        #region Ëæ»ú¹¤¾ß
+        #region éšæœºå·¥å…·
 
         /// <summary>
-        /// »ñÈ¡Ëæ»ú¸¡µãÊı
+        /// è·å–éšæœºæµ®ç‚¹æ•°
         /// </summary>
         public static float RandFloat(double a, double b = 0) {
             var max = (float)Math.Max(a, b);
@@ -42,7 +42,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         }
 
         /// <summary>
-        /// »ñÈ¡Ëæ»úÕûÊı
+        /// è·å–éšæœºæ•´æ•°
         /// </summary>
         public static int RandInt(double a, double b = 0, int? withOut = null) {
             var max = (int)Math.Max(a, b);
@@ -55,7 +55,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         }
 
         /// <summary>
-        /// °²È«¹éÒ»»¯ÏòÁ¿
+        /// å®‰å…¨å½’ä¸€åŒ–å‘é‡
         /// </summary>
         public static Vector2 NormalizeVector(this Vector2 v, Vector2 safe = default) {
             return v.SafeNormalize(safe);
@@ -63,10 +63,10 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 
         #endregion
 
-        #region Boss¸¨Öú
+        #region Bossè¾…åŠ©
 
         /// <summary>
-        /// »ñÈ¡»ï°éNPC£¨ºÚÎŞ³£ÕÒ°×ÎŞ³££¬°×ÎŞ³£ÕÒºÚÎŞ³££©
+        /// è·å–ä¼™ä¼´NPCï¼ˆé»‘æ— å¸¸æ‰¾ç™½æ— å¸¸ï¼Œç™½æ— å¸¸æ‰¾é»‘æ— å¸¸ï¼‰
         /// </summary>
         public static NPC FindPartner(NPC self, int partnerType) {
             foreach (var npc in Main.npc) {
@@ -78,7 +78,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         }
 
         /// <summary>
-        /// ¼ì²éÁ½¸öBossÊÇ·ñ¶¼´¦ÓÚ°ëÑªÒÔÏÂ
+        /// æ£€æŸ¥ä¸¤ä¸ªBossæ˜¯å¦éƒ½å¤„äºåŠè¡€ä»¥ä¸‹
         /// </summary>
         public static bool BothHalfHealth(NPC black, NPC white) {
             if (black == null || white == null || !black.active || !white.active)
@@ -87,7 +87,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         }
 
         /// <summary>
-        /// »ñÈ¡Á½¸öBossµÄÖĞµã
+        /// è·å–ä¸¤ä¸ªBossçš„ä¸­ç‚¹
         /// </summary>
         public static Vector2 GetMidpoint(NPC npc1, NPC npc2) {
             if (npc1 == null || npc2 == null)
@@ -97,19 +97,19 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 
         #endregion
 
-        #region ¸ß¼¶»æÖÆ¹¤¾ß
+        #region é«˜çº§ç»˜åˆ¶å·¥å…·
 
         /// <summary>
-        /// »æÖÆÆ´½ÓÊ½ËøÁ´£¨Ê¹ÓÃÌå½ÚÎÆÀí£©
+        /// ç»˜åˆ¶æ‹¼æ¥å¼é”é“¾ï¼ˆä½¿ç”¨ä½“èŠ‚çº¹ç†ï¼‰
         /// </summary>
         /// <param name="sb">SpriteBatch</param>
-        /// <param name="start">ÆğÊ¼Î»ÖÃ£¨ÊÀ½ç×ø±ê£©</param>
-        /// <param name="end">½áÊøÎ»ÖÃ£¨ÊÀ½ç×ø±ê£©</param>
-        /// <param name="color">ÑÕÉ«</param>
-        /// <param name="scale">Ëõ·Å</param>
-        /// <param name="waveAmplitude">²¨¶¯·ù¶È£¨0ÎªÖ±Ïß£©</param>
-        /// <param name="waveFrequency">²¨¶¯ÆµÂÊ</param>
-        /// <param name="timeOffset">Ê±¼äÆ«ÒÆ£¨ÓÃÓÚ¶¯»­£©</param>
+        /// <param name="start">èµ·å§‹ä½ç½®ï¼ˆä¸–ç•Œåæ ‡ï¼‰</param>
+        /// <param name="end">ç»“æŸä½ç½®ï¼ˆä¸–ç•Œåæ ‡ï¼‰</param>
+        /// <param name="color">é¢œè‰²</param>
+        /// <param name="scale">ç¼©æ”¾</param>
+        /// <param name="waveAmplitude">æ³¢åŠ¨å¹…åº¦ï¼ˆ0ä¸ºç›´çº¿ï¼‰</param>
+        /// <param name="waveFrequency">æ³¢åŠ¨é¢‘ç‡</param>
+        /// <param name="timeOffset">æ—¶é—´åç§»ï¼ˆç”¨äºåŠ¨ç”»ï¼‰</param>
         public static void DrawSegmentedChain(SpriteBatch sb, Vector2 start, Vector2 end, Color color,
             float scale = 1f, float waveAmplitude = 0f, float waveFrequency = 0.1f, float timeOffset = 0f) {
             var chainTex = ChainTexture;
@@ -130,17 +130,17 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 float progress = i / (float)segmentCount;
                 float actualDist = i * segmentHeight;
 
-                // ²¨¶¯Ğ§¹û
+                // æ³¢åŠ¨æ•ˆæœ
                 float wave = waveAmplitude * MathF.Sin((progress * MathHelper.TwoPi * 3f) + timeOffset * waveFrequency);
                 Vector2 waveOffset = perpendicular * wave;
 
                 Vector2 pos = start + direction * actualDist + waveOffset;
 
-                // ÑÕÉ«½¥±ä£¨Á½¶ËÂÔ°µ£©
+                // é¢œè‰²æ¸å˜ï¼ˆä¸¤ç«¯ç•¥æš—ï¼‰
                 float colorMod = 1f - MathF.Abs(progress - 0.5f) * 0.3f;
                 Color segColor = color * colorMod;
 
-                // ÇáÎ¢Ğı×ª±ä»¯
+                // è½»å¾®æ—‹è½¬å˜åŒ–
                 float rotOffset = wave * 0.02f;
 
                 sb.Draw(chainTex, pos - Main.screenPosition, null, segColor,
@@ -151,30 +151,30 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         }
 
         /// <summary>
-        /// »æÖÆ´ø·¢¹âĞ§¹ûµÄËøÁ´
+        /// ç»˜åˆ¶å¸¦å‘å…‰æ•ˆæœçš„é”é“¾
         /// </summary>
         public static void DrawGlowingChain(SpriteBatch sb, Vector2 start, Vector2 end, Color chainColor, Color glowColor,
             float scale = 1f, float glowScale = 1.5f, float waveAmplitude = 0f, float timeOffset = 0f) {
-            // ÏÈ»æÖÆ·¢¹â²ã
+            // å…ˆç»˜åˆ¶å‘å…‰å±‚
             Color glow = glowColor;
             glow.A = 0;
             DrawSegmentedChain(sb, start, end, glow * 0.4f, scale * glowScale, waveAmplitude * 1.2f, 0.1f, timeOffset);
             DrawSegmentedChain(sb, start, end, glow * 0.2f, scale * glowScale * 1.3f, waveAmplitude * 1.5f, 0.1f, timeOffset);
 
-            // ÔÙ»æÖÆÖ÷Ìå
+            // å†ç»˜åˆ¶ä¸»ä½“
             DrawSegmentedChain(sb, start, end, chainColor, scale, waveAmplitude, 0.1f, timeOffset);
         }
 
         /// <summary>
-        /// »æÖÆÁ­µ¶µ¯Ä»£¨´øÍÏÎ²£©
+        /// ç»˜åˆ¶é•°åˆ€å¼¹å¹•ï¼ˆå¸¦æ‹–å°¾ï¼‰
         /// </summary>
         /// <param name="sb">SpriteBatch</param>
-        /// <param name="position">Î»ÖÃ£¨ÊÀ½ç×ø±ê£©</param>
-        /// <param name="rotation">Ğı×ª½Ç¶È</param>
-        /// <param name="color">ÑÕÉ«</param>
-        /// <param name="scale">Ëõ·Å</param>
-        /// <param name="oldPositions">ÀúÊ·Î»ÖÃÊı×é£¨ÓÃÓÚÍÏÎ²£©</param>
-        /// <param name="oldRotations">ÀúÊ·Ğı×ªÊı×é</param>
+        /// <param name="position">ä½ç½®ï¼ˆä¸–ç•Œåæ ‡ï¼‰</param>
+        /// <param name="rotation">æ—‹è½¬è§’åº¦</param>
+        /// <param name="color">é¢œè‰²</param>
+        /// <param name="scale">ç¼©æ”¾</param>
+        /// <param name="oldPositions">å†å²ä½ç½®æ•°ç»„ï¼ˆç”¨äºæ‹–å°¾ï¼‰</param>
+        /// <param name="oldRotations">å†å²æ—‹è½¬æ•°ç»„</param>
         public static void DrawSickleWithTrail(SpriteBatch sb, Vector2 position, float rotation, Color color, float scale,
             Vector2[] oldPositions, float[] oldRotations) {
             var sickleTex = SickleTexture;
@@ -182,7 +182,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 
             Vector2 origin = sickleTex.Size() / 2f;
 
-            // »æÖÆÍÏÎ²
+            // ç»˜åˆ¶æ‹–å°¾
             if (oldPositions != null) {
                 for (int i = oldPositions.Length - 1; i >= 0; i--) {
                     if (oldPositions[i] == Vector2.Zero) continue;
@@ -191,7 +191,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                     float trailAlpha = progress * 0.5f;
                     float trailScale = scale * (0.6f + progress * 0.4f);
 
-                    // ÍÏÎ²ÑÕÉ«£¨½¥±äÎª°µÉ«£©
+                    // æ‹–å°¾é¢œè‰²ï¼ˆæ¸å˜ä¸ºæš—è‰²ï¼‰
                     Color trailColor = Color.Lerp(Color.DarkSlateGray, color, progress) * trailAlpha;
                     trailColor.A = 0;
 
@@ -202,7 +202,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 }
             }
 
-            // ·¢¹âĞ§¹û
+            // å‘å…‰æ•ˆæœ
             Color glowColor = color;
             glowColor.A = 0;
             sb.Draw(sickleTex, position - Main.screenPosition, null, glowColor * 0.3f,
@@ -210,13 +210,13 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
             sb.Draw(sickleTex, position - Main.screenPosition, null, glowColor * 0.15f,
                 rotation, origin, scale * 1.5f, SpriteEffects.None, 0);
 
-            // Ö÷Ìå
+            // ä¸»ä½“
             sb.Draw(sickleTex, position - Main.screenPosition, null, color,
                 rotation, origin, scale, SpriteEffects.None, 0);
         }
 
         /// <summary>
-        /// »æÖÆÓÄÁé¹âÇòĞ§¹û
+        /// ç»˜åˆ¶å¹½çµå…‰çƒæ•ˆæœ
         /// </summary>
         public static void DrawGhostOrb(SpriteBatch sb, Vector2 position, Color coreColor, Color glowColor,
             float scale, float pulsePhase) {
@@ -225,10 +225,10 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 
             Vector2 origin = tex.Size() / 2f;
 
-            // Âö¶¯Ğ§¹û
+            // è„‰åŠ¨æ•ˆæœ
             float pulse = 1f + MathF.Sin(pulsePhase) * 0.15f;
 
-            // Íâ²ã¹âÔÎ£¨¶à²ãµş¼Ó£©
+            // å¤–å±‚å…‰æ™•ï¼ˆå¤šå±‚å åŠ ï¼‰
             Color glow = glowColor;
             glow.A = 0;
             for (int i = 3; i >= 0; i--) {
@@ -238,11 +238,11 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                     0f, origin, layerScale, SpriteEffects.None, 0);
             }
 
-            // ºËĞÄ
+            // æ ¸å¿ƒ
             sb.Draw(tex, position - Main.screenPosition, null, coreColor,
                 0f, origin, scale * pulse, SpriteEffects.None, 0);
 
-            // ºËĞÄ¸ß¹â
+            // æ ¸å¿ƒé«˜å…‰
             Color highlight = Color.White;
             highlight.A = 0;
             sb.Draw(tex, position - Main.screenPosition, null, highlight * 0.4f,
@@ -250,7 +250,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         }
 
         /// <summary>
-        /// »æÖÆÄÜÁ¿ÉäÏß£¨ÓÃÓÚÁé»êÎüÈ¡µÈĞ§¹û£©
+        /// ç»˜åˆ¶èƒ½é‡å°„çº¿ï¼ˆç”¨äºçµé­‚å¸å–ç­‰æ•ˆæœï¼‰
         /// </summary>
         public static void DrawEnergyBeam(SpriteBatch sb, Vector2 start, Vector2 end, Color color,
             float width, float timeOffset) {
@@ -268,14 +268,14 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 float progress = i / (float)segments;
                 Vector2 basePos = start + direction * (progress * distance);
 
-                // ²¨¶¯Ğ§¹û
+                // æ³¢åŠ¨æ•ˆæœ
                 float wave = MathF.Sin(progress * MathHelper.TwoPi * 2f + timeOffset * 0.2f) * width * 0.3f;
                 Vector2 pos = basePos + perpendicular * wave;
 
-                // Âö³åÁÁ¶È
+                // è„‰å†²äº®åº¦
                 float pulse = 0.6f + MathF.Sin(progress * MathHelper.Pi * 4f + timeOffset * 0.3f) * 0.4f;
 
-                // ¿í¶È½¥±ä£¨Á½¶ËÏ¸£¬ÖĞ¼ä´Ö£©
+                // å®½åº¦æ¸å˜ï¼ˆä¸¤ç«¯ç»†ï¼Œä¸­é—´ç²—ï¼‰
                 float widthMod = MathF.Sin(progress * MathHelper.Pi);
                 float currentWidth = width * (0.3f + widthMod * 0.7f);
 
@@ -288,7 +288,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         }
 
         /// <summary>
-        /// »æÖÆĞı×ª·¨ÕóĞ§¹û
+        /// ç»˜åˆ¶æ—‹è½¬æ³•é˜µæ•ˆæœ
         /// </summary>
         public static void DrawMagicCircle(SpriteBatch sb, Vector2 center, float radius, Color color,
             float rotation, int segments = 12) {
@@ -297,7 +297,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 
             Vector2 origin = tex.Size() / 2f;
 
-            // ÍâÈ¦·ûÎÄ
+            // å¤–åœˆç¬¦æ–‡
             for (int i = 0; i < segments; i++) {
                 float angle = rotation + MathHelper.TwoPi * i / segments;
                 Vector2 pos = center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * radius;
@@ -310,7 +310,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                     angle + MathHelper.PiOver2, origin, runeScale, SpriteEffects.None, 0);
             }
 
-            // ÄÚÈ¦Á¬½ÓÏß
+            // å†…åœˆè¿æ¥çº¿
             for (int i = 0; i < segments; i++) {
                 float angle1 = rotation + MathHelper.TwoPi * i / segments;
                 float angle2 = rotation + MathHelper.TwoPi * ((i + segments / 3) % segments) / segments;
@@ -327,24 +327,24 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 
         #endregion
 
-        #region »º¶¯º¯Êı
+        #region ç¼“åŠ¨å‡½æ•°
 
         /// <summary>
-        /// ÏßĞÔ²åÖµ
+        /// çº¿æ€§æ’å€¼
         /// </summary>
         public static float Lerp(float a, float b, float t) {
             return MathHelper.Lerp(a, b, t);
         }
 
         /// <summary>
-        /// Æ½»¬»º¶¯
+        /// å¹³æ»‘ç¼“åŠ¨
         /// </summary>
         public static float SmoothStep(float t) {
             return t * t * (3f - 2f * t);
         }
 
         /// <summary>
-        /// µ¯ĞÔ»º¶¯
+        /// å¼¹æ€§ç¼“åŠ¨
         /// </summary>
         public static float ElasticOut(float t) {
             if (t == 0 || t == 1) return t;
@@ -353,17 +353,17 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         }
 
         /// <summary>
-        /// ¶ş´Î»ºÈë
+        /// äºŒæ¬¡ç¼“å…¥
         /// </summary>
         public static float QuadIn(float t) => t * t;
 
         /// <summary>
-        /// ¶ş´Î»º³ö
+        /// äºŒæ¬¡ç¼“å‡º
         /// </summary>
         public static float QuadOut(float t) => 1f - (1f - t) * (1f - t);
 
         /// <summary>
-        /// ·´µ¯»º¶¯
+        /// åå¼¹ç¼“åŠ¨
         /// </summary>
         public static float BounceOut(float t) {
             const float n1 = 7.5625f;
@@ -383,7 +383,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
     }
 
     /// <summary>
-    /// ºÚ°×ÎŞ³£×¨ÓÃÁ£×ÓĞ§¹û
+    /// é»‘ç™½æ— å¸¸ä¸“ç”¨ç²’å­æ•ˆæœ
     /// </summary>
     public class BAWDust : ModDust
     {
@@ -411,7 +411,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
     }
 
     /// <summary>
-    /// ºÚÎŞ³£ËøÁ´Á£×Ó
+    /// é»‘æ— å¸¸é”é“¾ç²’å­
     /// </summary>
     public class BlackChainDust : ModDust
     {
@@ -441,7 +441,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
     }
 
     /// <summary>
-    /// °×ÎŞ³£ÓÄÁéÁ£×Ó
+    /// ç™½æ— å¸¸å¹½çµç²’å­
     /// </summary>
     public class WhiteGhostDust : ModDust
     {
@@ -461,7 +461,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
             dust.velocity *= 0.98f;
             dust.alpha -= 3;
 
-            // ÓÄÁé°ãµÄÉÏÏÂÆ®¶¯
+            // å¹½çµèˆ¬çš„ä¸Šä¸‹é£˜åŠ¨
             dust.velocity.Y += MathF.Sin(Main.GameUpdateCount * 0.1f + dust.position.X * 0.01f) * 0.05f;
 
             Lighting.AddLight(dust.position, new Vector3(0.4f, 0.4f, 0.5f));

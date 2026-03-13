@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.ID;
@@ -8,14 +8,14 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
 {
     internal partial class AoGuang
     {
-        #region AIÖ÷Ñ­»·
+        #region AIä¸»å¾ªç¯
 
         public override void AI() {
             random ??= new Random(seed);
             globalTime += 1f / 60f;
             tailSwayPhase += 0.05f;
 
-            // ¼ì²âÄ¿±ê
+            // æ£€æµ‹ç›®æ ‡
             NPC.TargetClosest();
             Player target = Main.player[NPC.target];
 
@@ -23,23 +23,23 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 NPC.TargetClosest();
                 target = Main.player[NPC.target];
                 if (!target.active || target.dead) {
-                    // Ã»ÓĞÓĞĞ§Ä¿±ê£¬·ÉÏòÌì¿ÕÀë¿ª
+                    // æ²¡æœ‰æœ‰æ•ˆç›®æ ‡ï¼Œé£å‘å¤©ç©ºç¦»å¼€
                     NPC.velocity.Y -= 0.8f;
                     NPC.EncourageDespawn(30);
                     return;
                 }
             }
 
-            // ¼ì²é½×¶Î×ª»»
+            // æ£€æŸ¥é˜¶æ®µè½¬æ¢
             CheckPhaseTransition();
 
-            // ¸üĞÂÊÓ¾õĞ§¹û
+            // æ›´æ–°è§†è§‰æ•ˆæœ
             UpdateVisualEffects();
 
             PhaseTimer++;
             AttackTimer++;
 
-            // ¸ù¾İµ±Ç°½×¶ÎÖ´ĞĞAI
+            // æ ¹æ®å½“å‰é˜¶æ®µæ‰§è¡ŒAI
             switch (Phase) {
                 case BossPhase.Intro:
                     RunIntro(target);
@@ -47,7 +47,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 case BossPhase.Intro_SummonBarriers:
                     RunIntroSummonBarriers(target);
                     break;
-                // Ò»½×¶Î
+                // ä¸€é˜¶æ®µ
                 case BossPhase.Phase1_Patrol:
                     RunPhase1Patrol(target);
                     break;
@@ -66,11 +66,11 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 case BossPhase.Phase1_CoralSpike:
                     RunPhase1CoralSpike(target);
                     break;
-                // ½×¶Î×ª»»
+                // é˜¶æ®µè½¬æ¢
                 case BossPhase.PhaseTransition_2:
                     RunPhaseTransition2(target);
                     break;
-                // ¶ş½×¶Î
+                // äºŒé˜¶æ®µ
                 case BossPhase.Phase2_Charge:
                     RunPhase2Charge(target);
                     break;
@@ -92,11 +92,11 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 case BossPhase.Phase2_DragonClaw:
                     RunPhase2DragonClaw(target);
                     break;
-                // ½×¶Î×ª»»
+                // é˜¶æ®µè½¬æ¢
                 case BossPhase.PhaseTransition_3:
                     RunPhaseTransition3(target);
                     break;
-                // Èı½×¶Î
+                // ä¸‰é˜¶æ®µ
                 case BossPhase.Phase3_FuryCharge:
                     RunPhase3FuryCharge(target);
                     break;
@@ -120,10 +120,10 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                     break;
             }
 
-            // ¸üĞÂ³¯Ïò
+            // æ›´æ–°æœå‘
             UpdateRotation();
 
-            // Ë®¹âÕÕÃ÷ - ÇàÀ¶É«
+            // æ°´å…‰ç…§æ˜ - é’è“è‰²
             Lighting.AddLight(NPC.Center, new Vector3(0.3f, 0.7f, 0.9f) * glowIntensity);
         }
 
@@ -136,10 +136,10 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
         }
 
         private void UpdateVisualEffects() {
-            // Ë®²¨Ğı×ª
+            // æ°´æ³¢æ—‹è½¬
             waveRotation += 0.008f;
 
-            // ¸ù¾İ½×¶Îµ÷ÕûĞ§¹û
+            // æ ¹æ®é˜¶æ®µè°ƒæ•´æ•ˆæœ
             if (IsPhase3) {
                 waveScale = 1.5f + MathF.Sin(globalTime * 3.5f) * 0.2f;
                 glowIntensity = 1.6f;
@@ -215,19 +215,19 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
 
         #endregion
 
-        #region ³ö³¡Ñİ³ö
+        #region å‡ºåœºæ¼”å‡º
 
         private void RunIntro(Player target) {
             introProgress = MathHelper.Clamp(PhaseTimer / 180f, 0f, 1f);
 
-            // ´ÓË®ÖĞÉıÆğµÄĞ§¹û
+            // ä»æ°´ä¸­å‡èµ·çš„æ•ˆæœ
             Vector2 introOffset = new Vector2(0, 400) * (1f - ACMUtils.SineInOut(introProgress));
             Vector2 desiredPos = target.Center + new Vector2(0, -300) + introOffset;
 
             NPC.Center = Vector2.Lerp(NPC.Center, desiredPos, 0.03f);
             NPC.velocity *= 0.9f;
 
-            // Ë®»¨Á£×ÓĞ§¹û
+            // æ°´èŠ±ç²’å­æ•ˆæœ
             if (!VaultUtils.isServer && PhaseTimer % 2 == 0) {
                 for (int i = 0; i < 5; i++) {
                     Vector2 dustPos = NPC.Center + Main.rand.NextVector2CircularEdge(180, 180) * (1f - introProgress);
@@ -236,7 +236,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                     Main.dust[dust].velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 4f;
                 }
 
-                // ÆøÅİÁ£×Ó
+                // æ°”æ³¡ç²’å­
                 for (int i = 0; i < 2; i++) {
                     Vector2 dustPos = NPC.Center + Main.rand.NextVector2Circular(100, 100);
                     int dust = Dust.NewDust(dustPos, 0, 0, DustID.Wet, 0, -1.5f, 150, default, 1.3f);
@@ -244,7 +244,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 }
             }
 
-            // ÁúºğÒôĞ§
+            // é¾™å¼éŸ³æ•ˆ
             if (PhaseTimer == 60) {
                 SoundEngine.PlaySound(SoundID.Zombie20 with { Pitch = -0.3f, Volume = 1.5f }, NPC.Center);
             }
@@ -260,21 +260,21 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
         }
 
         /// <summary>
-        /// ¿ª³¡ÕÙ»½Á½²à·âÂ·Áú¾í
+        /// å¼€åœºå¬å”¤ä¸¤ä¾§å°è·¯é¾™å·
         /// </summary>
         private void RunIntroSummonBarriers(Player target) {
             NPC.velocity *= 0.9f;
 
-            // ±£³ÖÔÚÍæ¼ÒÉÏ·½
+            // ä¿æŒåœ¨ç©å®¶ä¸Šæ–¹
             Vector2 hoverPos = target.Center + new Vector2(0, -350);
             NPC.velocity += (hoverPos - NPC.Center) * 0.003f;
 
-            // ÕÙ»½Á½²à¾ŞĞÍË®Áú¾í×÷ÎªÕ½³¡±ß½ç
+            // å¬å”¤ä¸¤ä¾§å·¨å‹æ°´é¾™å·ä½œä¸ºæˆ˜åœºè¾¹ç•Œ
             if (PhaseTimer == 30 && Main.netMode != NetmodeID.MultiplayerClient) {
                 hasSpawnedBarriers = true;
                 barrierTornadoIds = new int[2];
 
-                // ×ó²àÁú¾í
+                // å·¦ä¾§é¾™å·
                 int leftTornado = Projectile.NewProjectile(
                     NPC.GetSource_FromAI(),
                     target.Center + new Vector2(-800, 0),
@@ -283,11 +283,11 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                     NPC.damage / 4,
                     0f,
                     ai0: NPC.whoAmI,
-                    ai1: -1 // ×ó²à
+                    ai1: -1 // å·¦ä¾§
                 );
                 barrierTornadoIds[0] = leftTornado;
 
-                // ÓÒ²àÁú¾í
+                // å³ä¾§é¾™å·
                 int rightTornado = Projectile.NewProjectile(
                     NPC.GetSource_FromAI(),
                     target.Center + new Vector2(800, 0),
@@ -296,7 +296,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                     NPC.damage / 4,
                     0f,
                     ai0: NPC.whoAmI,
-                    ai1: 1 // ÓÒ²à
+                    ai1: 1 // å³ä¾§
                 );
                 barrierTornadoIds[1] = rightTornado;
 
@@ -304,7 +304,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(20, 60);
             }
 
-            // ÁúÍõÍşÑ¹Á£×Ó
+            // é¾™ç‹å¨å‹ç²’å­
             if (!VaultUtils.isServer && PhaseTimer > 30) {
                 for (int i = 0; i < 8; i++) {
                     float angle = MathHelper.TwoPi * i / 8 + PhaseTimer * 0.03f;
@@ -322,17 +322,17 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
 
         #endregion
 
-        #region ½×¶Î×ª»»
+        #region é˜¶æ®µè½¬æ¢
 
         private void RunPhaseTransition2(Player target) {
             NPC.velocity *= 0.92f;
             NPC.dontTakeDamage = true;
 
-            // ±£³ÖÔÚÍæ¼ÒÉÏ·½
+            // ä¿æŒåœ¨ç©å®¶ä¸Šæ–¹
             Vector2 hoverPos = target.Center + new Vector2(0, -350);
             NPC.velocity += (hoverPos - NPC.Center) * 0.002f;
 
-            // ½×¶Î×ª»»ÌØĞ§ - Ë®Áú¾í
+            // é˜¶æ®µè½¬æ¢ç‰¹æ•ˆ - æ°´é¾™å·
             if (!VaultUtils.isServer) {
                 for (int i = 0; i < 12; i++) {
                     float angle = MathHelper.TwoPi * i / 12 + PhaseTimer * 0.05f;
@@ -348,7 +348,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.1f, Volume = 1.5f }, NPC.Center);
                 Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(20, 60);
 
-                // ±¬·¢Ë®»¨
+                // çˆ†å‘æ°´èŠ±
                 if (!VaultUtils.isServer) {
                     for (int i = 0; i < 50; i++) {
                         float angle = MathHelper.TwoPi * i / 50;
@@ -369,11 +369,11 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             NPC.velocity *= 0.9f;
             NPC.dontTakeDamage = true;
 
-            // ±£³ÖÎ»ÖÃ
+            // ä¿æŒä½ç½®
             Vector2 hoverPos = target.Center + new Vector2(0, -400);
             NPC.velocity += (hoverPos - NPC.Center) * 0.003f;
 
-            // ¸üÇ¿ÁÒµÄË®Áú¾íĞ§¹û
+            // æ›´å¼ºçƒˆçš„æ°´é¾™å·æ•ˆæœ
             if (!VaultUtils.isServer) {
                 for (int i = 0; i < 20; i++) {
                     float angle = MathHelper.TwoPi * i / 20 + PhaseTimer * 0.08f;
@@ -394,7 +394,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.3f, Volume = 2f }, NPC.Center);
                 Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(25, 80);
 
-                // ±¬·¢º£Ğ¥
+                // çˆ†å‘æµ·å•¸
                 if (!VaultUtils.isServer) {
                     for (int i = 0; i < 80; i++) {
                         float angle = MathHelper.TwoPi * i / 80;

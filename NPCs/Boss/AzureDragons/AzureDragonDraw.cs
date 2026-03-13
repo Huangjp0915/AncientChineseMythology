@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.GameContent;
@@ -6,8 +6,8 @@ using Terraria.GameContent;
 namespace AncientChineseMythology.NPCs.Boss.AzureDragons
 {
     /// <summary>
-    /// ÇàÁúÍ·²¿ - »æÖÆÓëÊÓ¾õÌØĞ§
-    /// ÀûÓÃACMAssetÖĞµÄÎÆÀíÊµÏÖµş¼Ó¹âĞ§
+    /// é’é¾™å¤´éƒ¨ - ç»˜åˆ¶ä¸è§†è§‰ç‰¹æ•ˆ
+    /// åˆ©ç”¨ACMAssetä¸­çš„çº¹ç†å®ç°å åŠ å…‰æ•ˆ
     /// </summary>
     public partial class AzureDragonHead
     {
@@ -15,37 +15,37 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
             Texture2D tex = TextureAssets.Npc[Type].Value;
             Vector2 origin = tex.Size() / 2f;
 
-            // ÌùÍ¼³¯ÓÒÎªÕı·½Ïò£¬Ïò×ó·ÉĞĞÊ±´¹Ö±·­×ª
+            // è´´å›¾æœå³ä¸ºæ­£æ–¹å‘ï¼Œå‘å·¦é£è¡Œæ—¶å‚ç›´ç¿»è½¬
             SpriteEffects effects = NPC.velocity.X < 0 ? SpriteEffects.FlipVertically : SpriteEffects.None;
 
-            // ÍÏÎ²²ĞÓ°
+            // æ‹–å°¾æ®‹å½±
             float ghostAlpha = 0.2f;
             for (int i = 0; i < NPC.oldPos.Length; i++) {
                 if (NPC.oldPos[i] == Vector2.Zero) continue;
                 float t = i / (float)NPC.oldPos.Length;
                 float alpha = ghostAlpha * (1f - t);
                 Color ghostColor = Color.Lerp(DragonLightning, DragonDeep, t) * alpha;
-                float rot = NPC.oldRot[i]; // ÒÑÊÇÔ­Ê¼ËÙ¶È½Ç¶È£¬ÎŞĞè¶îÍâĞı×ª
+                float rot = NPC.oldRot[i]; // å·²æ˜¯åŸå§‹é€Ÿåº¦è§’åº¦ï¼Œæ— éœ€é¢å¤–æ—‹è½¬
                 float scale = 1f - t * 0.15f;
 
                 Main.EntitySpriteDraw(tex, NPC.oldPos[i] + NPC.Size / 2f - screenPos, null,
                     ghostColor, rot, origin, scale, effects);
             }
 
-            // Ö÷Ìå»æÖÆ - rotationÒÑÊÇÔ­Ê¼ËÙ¶È½Ç¶È
+            // ä¸»ä½“ç»˜åˆ¶ - rotationå·²æ˜¯åŸå§‹é€Ÿåº¦è§’åº¦
             Main.EntitySpriteDraw(tex, NPC.Center - screenPos, null, drawColor, NPC.rotation, origin, 1f, effects);
 
-            // µş¼ÓÇàÀ¶¹âĞ§£¨Ê¹ÓÃSoftGlowÎÆÀíAdditiveµş¼Ó£©
+            // å åŠ é’è“å…‰æ•ˆï¼ˆä½¿ç”¨SoftGlowçº¹ç†Additiveå åŠ ï¼‰
             DrawHeadGlow(spriteBatch, screenPos);
 
-            // ÉÁµçµç»¡×°ÊÎ£¨Ê¹ÓÃElectricArcSheetÎÆÀí£©
+            // é—ªç”µç”µå¼§è£…é¥°ï¼ˆä½¿ç”¨ElectricArcSheetçº¹ç†ï¼‰
             DrawHeadElectricArc(spriteBatch, screenPos);
 
             return false;
         }
 
         /// <summary>
-        /// Í·²¿ÇàÀ¶Èá¹âµş¼Ó
+        /// å¤´éƒ¨é’è“æŸ”å…‰å åŠ 
         /// </summary>
         private void DrawHeadGlow(SpriteBatch spriteBatch, Vector2 screenPos) {
             if (ACMAsset.SoftGlow == null) return;
@@ -57,21 +57,21 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
             float pulse = 0.7f + 0.3f * MathF.Sin(globalTime * 4f);
             float scale = 2.0f + 0.5f * auraIntensity;
 
-            // Ö÷¹âÔÎ
+            // ä¸»å…‰æ™•
             Color glowColor = DragonCyan * (0.5f * pulse * auraIntensity);
             glowColor.A = 0;
             spriteBatch.Draw(ACMAsset.SoftGlow, NPC.Center - screenPos, null, glowColor,
                 0f, new Vector2(ACMAsset.SoftGlow.Width / 2f, ACMAsset.SoftGlow.Height / 2f),
                 scale, SpriteEffects.None, 0f);
 
-            // ÄÚ²ã¸üÁÁµÄ°×¹âºËĞÄ
+            // å†…å±‚æ›´äº®çš„ç™½å…‰æ ¸å¿ƒ
             Color coreColor = Color.White * (0.3f * pulse * auraIntensity);
             coreColor.A = 0;
             spriteBatch.Draw(ACMAsset.SoftGlow, NPC.Center - screenPos, null, coreColor,
                 0f, new Vector2(ACMAsset.SoftGlow.Width / 2f, ACMAsset.SoftGlow.Height / 2f),
                 scale * 0.5f, SpriteEffects.None, 0f);
 
-            // ĞÇĞÇ¹âĞ§£¨Ê¹ÓÃBlankStarÎÆÀí£©
+            // æ˜Ÿæ˜Ÿå…‰æ•ˆï¼ˆä½¿ç”¨BlankStarçº¹ç†ï¼‰
             if (ACMAsset.BlankStar != null && auraIntensity > 0.8f) {
                 Color starColor = DragonLightning * (0.35f * pulse);
                 starColor.A = 0;
@@ -80,7 +80,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                     1.8f * auraIntensity, SpriteEffects.None, 0f);
             }
 
-            // Sparkle±¬Õ¨ÏßĞ§¹û£¨½×¶Î×ª»»ºÍ³å´ÌÊ±ÔöÇ¿£©
+            // Sparkleçˆ†ç‚¸çº¿æ•ˆæœï¼ˆé˜¶æ®µè½¬æ¢å’Œå†²åˆºæ—¶å¢å¼ºï¼‰
             if (ACMAsset.Sparkle != null && (State == AIState.PhaseTransition_2 || State == AIState.PhaseTransition_3)) {
                 float sparkPulse = MathF.Sin(globalTime * 8f) * 0.5f + 0.5f;
                 Color sparkColor = Color.White * (0.6f * sparkPulse);
@@ -96,7 +96,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
         }
 
         /// <summary>
-        /// Í·²¿ÉÁµçµç»¡×°ÊÎ
+        /// å¤´éƒ¨é—ªç”µç”µå¼§è£…é¥°
         /// </summary>
         private void DrawHeadElectricArc(SpriteBatch spriteBatch, Vector2 screenPos) {
             if (ACMAsset.ElectricArcSheet == null || auraIntensity < 0.5f) return;
@@ -106,7 +106,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                 DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
 
             Texture2D arcTex = ACMAsset.ElectricArcSheet;
-            // È¡ÆäÖĞÒ»¶Îµç»¡£¨Í¨¹ıUVÆ«ÒÆ£©
+            // å–å…¶ä¸­ä¸€æ®µç”µå¼§ï¼ˆé€šè¿‡UVåç§»ï¼‰
             int arcIndex = ((int)(globalTime * 8f)) % 4;
             int arcHeight = arcTex.Height / 4;
             Rectangle sourceRect = new(0, arcIndex * arcHeight, arcTex.Width, arcHeight);
@@ -122,7 +122,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
             spriteBatch.Draw(arcTex, NPC.Center - screenPos, sourceRect, arcColor,
                 arcRot, arcOrigin, arcScale, SpriteEffects.None, 0f);
 
-            // ¶Ô³ÆÁíÒ»²à
+            // å¯¹ç§°å¦ä¸€ä¾§
             spriteBatch.Draw(arcTex, NPC.Center - screenPos, sourceRect, arcColor * 0.6f,
                 arcRot + MathHelper.Pi, arcOrigin, arcScale * 0.8f, SpriteEffects.FlipHorizontally, 0f);
 

@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.GameContent;
@@ -8,11 +8,11 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 {
     /// <summary>
-    /// °½Ë³ÉíÌå¶ÎNPC - Á´½Óµ½Í·²¿ĞÎ³ÉÈä³æ½á¹¹
-    /// ÎÆÀíAoshunBody.png: 54¡Á54, µ¥Ö¡
-    /// ²Î¿¼AncientWyrmBody: ·½ÏòÏà¹Øorigin»æÖÆ£¬¸úËæÇ°Ò»¶Î
-    /// ai[1]: Ç°Ò»¶ÎNPCË÷Òı
-    /// ai[3]: Í·²¿NPCË÷Òı£¨realLifeÖ¸Ïò£©
+    /// æ•–é¡ºèº«ä½“æ®µNPC - é“¾æ¥åˆ°å¤´éƒ¨å½¢æˆè •è™«ç»“æ„
+    /// çº¹ç†AoshunBody.png: 54Ã—54, å•å¸§
+    /// å‚è€ƒAncientWyrmBody: æ–¹å‘ç›¸å…³originç»˜åˆ¶ï¼Œè·Ÿéšå‰ä¸€æ®µ
+    /// ai[1]: å‰ä¸€æ®µNPCç´¢å¼•
+    /// ai[3]: å¤´éƒ¨NPCç´¢å¼•ï¼ˆrealLifeæŒ‡å‘ï¼‰
     /// </summary>
     public class AoshunBody : ModNPC
     {
@@ -39,7 +39,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
             Texture2D texture = TextureAssets.Npc[NPC.type].Value;
-            // ²Î¿¼Ô­ĞÍ: »ùÓÚ³¯ÏòµÄorigin£¬·ÀÖ¹×ªÏòÊ±¾«ÁéÌø¶¯
+            // å‚è€ƒåŸå‹: åŸºäºæœå‘çš„originï¼Œé˜²æ­¢è½¬å‘æ—¶ç²¾çµè·³åŠ¨
             Vector2 origin = NPC.spriteDirection == -1
                 ? new Vector2(texture.Width * 0.5f, texture.Height * 0.5f)
                 : new Vector2(texture.Width, texture.Height);

@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Graphics.Effects;
@@ -8,7 +8,7 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds
 {
     /// <summary>
-    /// µØ¸®³¡¾°Ğ§¹û
+    /// åœ°åºœåœºæ™¯æ•ˆæœ
     /// </summary>
     internal class UnderworldSceneEffect : ModSceneEffect
     {
@@ -23,7 +23,7 @@ namespace AncientChineseMythology.Underworlds
     }
 
     /// <summary>
-    /// µØ¸®ÃÔÎíÌì¿ÕĞ§¹û
+    /// åœ°åºœè¿·é›¾å¤©ç©ºæ•ˆæœ
     /// </summary>
     internal class UnderworldFogSky : CustomSky, IACMLoader
     {
@@ -31,40 +31,40 @@ namespace AncientChineseMythology.Underworlds
         private bool active;
         private float intensity;
 
-        // ÎíÆøĞ§¹û²ÎÊı
+        // é›¾æ°”æ•ˆæœå‚æ•°
         private float fogPulseTimer = 0f;
         private float soulDriftTimer = 0f;
 
-        // ÃÔÎí²ã
+        // è¿·é›¾å±‚
         private readonly GhostlyFog[] fogs = new GhostlyFog[120];
 
-        // ÓÄ»êĞ§¹û
+        // å¹½é­‚æ•ˆæœ
         private readonly WanderingSoul[] souls = new WanderingSoul[20];
 
-        // µØ¸®ÌØÓĞÑÕÉ« - Òõ°µµÄÇà»ÒÉ«µ÷
+        // åœ°åºœç‰¹æœ‰é¢œè‰² - é˜´æš—çš„é’ç°è‰²è°ƒ
         private readonly Color[] underworldColors = new Color[]
         {
-            new Color(40, 50, 60),      // ÉîÇà»Ò
-            new Color(50, 60, 70),      // »ÒÀ¶
-            new Color(35, 45, 55),      // °µÇà
-            new Color(45, 55, 65),      // Òõ»Ò
-            new Color(30, 40, 50),      // ÓÄ°µ
-            new Color(55, 65, 75),      // Àä»Ò
+            new Color(40, 50, 60),      // æ·±é’ç°
+            new Color(50, 60, 70),      // ç°è“
+            new Color(35, 45, 55),      // æš—é’
+            new Color(45, 55, 65),      // é˜´ç°
+            new Color(30, 40, 50),      // å¹½æš—
+            new Color(55, 65, 75),      // å†·ç°
         };
 
         void IACMLoader.LoadData() {
             SkyManager.Instance[Name] = this;
-            //´´½¨Ä§·¨×ÏÉ«ÂË¾µ
+            //åˆ›å»ºé­”æ³•ç´«è‰²æ»¤é•œ
             Filters.Scene[Name] = new Filter(new ScreenShaderData("FilterMiniTower")
-                .UseColor(0.2f, 0.1f, 0.3f)//×ÏÉ«Ä§·¨µ÷
+                .UseColor(0.2f, 0.1f, 0.3f)//ç´«è‰²é­”æ³•è°ƒ
                 .UseOpacity(0.5f), EffectPriority.High);
 
-            // ³õÊ¼»¯ÃÔÎí
+            // åˆå§‹åŒ–è¿·é›¾
             for (int i = 0; i < fogs.Length; i++) {
                 fogs[i] = new GhostlyFog();
             }
 
-            // ³õÊ¼»¯ÓÄ»ê
+            // åˆå§‹åŒ–å¹½é­‚
             for (int i = 0; i < souls.Length; i++) {
                 souls[i] = new WanderingSoul();
             }
@@ -76,12 +76,12 @@ namespace AncientChineseMythology.Underworlds
             fogPulseTimer = 0f;
             soulDriftTimer = 0f;
 
-            // ÖØÖÃÃÔÎí
+            // é‡ç½®è¿·é›¾
             for (int i = 0; i < fogs.Length; i++) {
                 fogs[i].Reset();
             }
 
-            // ÖØÖÃÓÄ»ê
+            // é‡ç½®å¹½é­‚
             for (int i = 0; i < souls.Length; i++) {
                 souls[i].Reset();
             }
@@ -96,11 +96,11 @@ namespace AncientChineseMythology.Underworlds
                 return;
             }
 
-            // Òõ°µµÄ±³¾°É«
+            // é˜´æš—çš„èƒŒæ™¯è‰²
             Color bgColor = new Color(20, 25, 30);
             Rectangle screenRect = new Rectangle(0, 0, Main.screenWidth, Main.screenHeight);
 
-            // Ê¹ÓÃMagicPixel×÷Îª´¿É«ÎÆÀí
+            // ä½¿ç”¨MagicPixelä½œä¸ºçº¯è‰²çº¹ç†
             Texture2D pixel = Terraria.GameContent.TextureAssets.MagicPixel.Value;
 
             spriteBatch.Draw(
@@ -110,13 +110,13 @@ namespace AncientChineseMythology.Underworlds
                 bgColor * intensity * 0.6f
             );
 
-            // »æÖÆÓÄÚ¤ÃÔÎí²ã
+            // ç»˜åˆ¶å¹½å†¥è¿·é›¾å±‚
             DrawGhostlyFogsSky(spriteBatch);
 
-            // »æÖÆÓÎµ´ÓÄ»ê
+            // ç»˜åˆ¶æ¸¸è¡å¹½é­‚
             DrawWanderingSoulsSky(spriteBatch);
 
-            // »æÖÆÎíÆøÁ°äô
+            // ç»˜åˆ¶é›¾æ°”æ¶Ÿæ¼ª
             DrawFogRipplesSky(spriteBatch, pixel);
         }
 
@@ -128,7 +128,7 @@ namespace AncientChineseMythology.Underworlds
         }
 
         public override void Update(GameTime gameTime) {
-            // ¼ì²éÍæ¼ÒÊÇ·ñÔÚµØ¸®ÇøÓò
+            // æ£€æŸ¥ç©å®¶æ˜¯å¦åœ¨åœ°åºœåŒºåŸŸ
             bool shouldBeActive = false;
             foreach (Player player in Main.ActivePlayers) {
                 if (UnderworldFogEffect.IsInUnderworldZone(player)) {
@@ -137,7 +137,7 @@ namespace AncientChineseMythology.Underworlds
                 }
             }
 
-            // Ç¿¶È±ä»¯
+            // å¼ºåº¦å˜åŒ–
             if (shouldBeActive) {
                 if (intensity < 1f) {
                     intensity += 0.01f;
@@ -153,24 +153,24 @@ namespace AncientChineseMythology.Underworlds
                 }
             }
 
-            // ¸üĞÂÎíÆøÂö¶¯
+            // æ›´æ–°é›¾æ°”è„‰åŠ¨
             fogPulseTimer += 0.015f;
             if (fogPulseTimer > MathHelper.TwoPi) {
                 fogPulseTimer -= MathHelper.TwoPi;
             }
 
-            // ¸üĞÂÓÄ»êÆ¯ÒÆ
+            // æ›´æ–°å¹½é­‚æ¼‚ç§»
             soulDriftTimer += 0.01f;
             if (soulDriftTimer > MathHelper.TwoPi * 2) {
                 soulDriftTimer -= MathHelper.TwoPi * 2;
             }
 
-            // ¸üĞÂÃÔÎí
+            // æ›´æ–°è¿·é›¾
             for (int i = 0; i < fogs.Length; i++) {
                 fogs[i].Update();
             }
 
-            // ¸üĞÂÓÄ»ê
+            // æ›´æ–°å¹½é­‚
             for (int i = 0; i < souls.Length; i++) {
 
                 souls[i].Update();
@@ -178,7 +178,7 @@ namespace AncientChineseMythology.Underworlds
         }
 
         public override Color OnTileColor(Color inColor) {
-            // Ó¦ÓÃÒõÀäµÄÇà»ÒÉ«µ÷
+            // åº”ç”¨é˜´å†·çš„é’ç°è‰²è°ƒ
             if (intensity > 0.1f) {
                 float coldR = 0.85f;
                 float coldG = 0.90f;
@@ -196,7 +196,7 @@ namespace AncientChineseMythology.Underworlds
             return inColor;
         }
 
-        #region »æÖÆÌØĞ§·½·¨
+        #region ç»˜åˆ¶ç‰¹æ•ˆæ–¹æ³•
         private void DrawGhostlyFogsSky(SpriteBatch sb) {
             if (Underworld.Fog == null) {
                 return;
@@ -212,7 +212,7 @@ namespace AncientChineseMythology.Underworlds
 
                 Vector2 drawPos = fog.Position - Main.screenPosition;
 
-                // »ºÂı±ä»»µÄÒõÀäÉ«µ÷
+                // ç¼“æ…¢å˜æ¢çš„é˜´å†·è‰²è°ƒ
                 int colorIndex = (int)(soulDriftTimer * 1.5f + i * 0.3f) % underworldColors.Length;
                 Color fogColor = Color.Lerp(
                     underworldColors[colorIndex],
@@ -222,7 +222,7 @@ namespace AncientChineseMythology.Underworlds
 
                 float alpha = (float)Math.Sin(fog.AnimProgress * MathHelper.Pi) * intensity * 0.4f;
 
-                // Ö÷ÎíÆø²ã
+                // ä¸»é›¾æ°”å±‚
                 sb.Draw(
                     fogTex,
                     drawPos,
@@ -235,7 +235,7 @@ namespace AncientChineseMythology.Underworlds
                     0f
                 );
 
-                // ÓÄ°µ¹âÔÎ²ã
+                // å¹½æš—å…‰æ™•å±‚
                 sb.Draw(
                     fogTex,
                     drawPos,
@@ -265,11 +265,11 @@ namespace AncientChineseMythology.Underworlds
 
                 Vector2 drawPos = soul.Position - Main.screenPosition;
 
-                // ÓÄ»êµÄ²Ô°×É«
+                // å¹½é­‚çš„è‹ç™½è‰²
                 Color soulColor = new Color(200, 220, 230);
                 float alpha = (float)Math.Sin(soul.AnimProgress * MathHelper.Pi) * intensity * 0.25f;
 
-                // Ö÷Ìå
+                // ä¸»ä½“
                 sb.Draw(
                     soulTex,
                     drawPos,
@@ -282,7 +282,7 @@ namespace AncientChineseMythology.Underworlds
                     0f
                 );
 
-                // ÓÄ¹â
+                // å¹½å…‰
                 for (int j = 0; j < 3; j++) {
                     float offset = j * 0.3f;
                     sb.Draw(
@@ -301,7 +301,7 @@ namespace AncientChineseMythology.Underworlds
         }
 
         private void DrawFogRipplesSky(SpriteBatch sb, Texture2D pixel) {
-            // »æÖÆÎíÆøÁ°äôĞ§¹û
+            // ç»˜åˆ¶é›¾æ°”æ¶Ÿæ¼ªæ•ˆæœ
             int rippleCount = 2;
             for (int i = 0; i < rippleCount; i++) {
                 float phase = (fogPulseTimer + i * MathHelper.Pi) % MathHelper.TwoPi;
@@ -310,7 +310,7 @@ namespace AncientChineseMythology.Underworlds
                 int colorIndex = (int)(phase * 2f) % underworldColors.Length;
                 Color rippleColor = underworldColors[colorIndex];
 
-                // ´¹Ö±Îí´ø
+                // å‚ç›´é›¾å¸¦
                 int y = (int)(Main.screenHeight * (0.2f + i * 0.3f));
                 sb.Draw(
                     pixel,
@@ -322,7 +322,7 @@ namespace AncientChineseMythology.Underworlds
         }
         #endregion
 
-        #region ÓÄÚ¤ÃÔÎíÀà
+        #region å¹½å†¥è¿·é›¾ç±»
         private class GhostlyFog
         {
             public Vector2 Position;
@@ -380,7 +380,7 @@ namespace AncientChineseMythology.Underworlds
         }
         #endregion
 
-        #region ÓÎµ´ÓÄ»êÀà
+        #region æ¸¸è¡å¹½é­‚ç±»
         private class WanderingSoul
         {
             public Vector2 Position;
@@ -414,7 +414,7 @@ namespace AncientChineseMythology.Underworlds
 
                 AnimProgress += AnimSpeed;
 
-                // Æ®ºö²»¶¨µÄÒÆ¶¯
+                // é£˜å¿½ä¸å®šçš„ç§»åŠ¨
                 float wave = (float)Math.Sin(AnimProgress * MathHelper.TwoPi * 3f);
                 Velocity.X += wave * 0.02f;
                 Velocity.Y += (float)Math.Cos(AnimProgress * MathHelper.TwoPi * 2f) * 0.02f;
@@ -447,42 +447,42 @@ namespace AncientChineseMythology.Underworlds
 
     internal class UnderworldFogSystem : ModSystem
     {
-        // ÎíÆøĞ§¹û²ÎÊı
+        // é›¾æ°”æ•ˆæœå‚æ•°
         private float fogPulseTimer = 0f;
         private float soulDriftTimer = 0f;
         private float intensity = 0f;
 
-        // ÃÔÎí²ã
+        // è¿·é›¾å±‚
         private readonly GhostlyFog[] fogs = new GhostlyFog[80];
 
-        // ÓÄ»êĞ§¹û
+        // å¹½é­‚æ•ˆæœ
         private readonly WanderingSoul[] souls = new WanderingSoul[15];
 
-        // µØ¸®ÌØÓĞÑÕÉ« - Òõ°µµÄÇà»ÒÉ«µ÷
+        // åœ°åºœç‰¹æœ‰é¢œè‰² - é˜´æš—çš„é’ç°è‰²è°ƒ
         private readonly Color[] underworldColors = new Color[]
         {
-            new Color(40, 50, 60),      // ÉîÇà»Ò
-            new Color(50, 60, 70),      // »ÒÀ¶
-            new Color(35, 45, 55),      // °µÇà
-            new Color(45, 55, 65),      // Òõ»Ò
-            new Color(30, 40, 50),      // ÓÄ°µ
-            new Color(55, 65, 75),      // Àä»Ò
+            new Color(40, 50, 60),      // æ·±é’ç°
+            new Color(50, 60, 70),      // ç°è“
+            new Color(35, 45, 55),      // æš—é’
+            new Color(45, 55, 65),      // é˜´ç°
+            new Color(30, 40, 50),      // å¹½æš—
+            new Color(55, 65, 75),      // å†·ç°
         };
 
         public override void OnModLoad() {
-            // ³õÊ¼»¯ÃÔÎí
+            // åˆå§‹åŒ–è¿·é›¾
             for (int i = 0; i < fogs.Length; i++) {
                 fogs[i] = new GhostlyFog();
             }
 
-            // ³õÊ¼»¯ÓÄ»ê
+            // åˆå§‹åŒ–å¹½é­‚
             for (int i = 0; i < souls.Length; i++) {
                 souls[i] = new WanderingSoul();
             }
         }
 
         public override void PostUpdateEverything() {
-            // ¼ì²éÍæ¼ÒÊÇ·ñÔÚµØ¸®ÇøÓò
+            // æ£€æŸ¥ç©å®¶æ˜¯å¦åœ¨åœ°åºœåŒºåŸŸ
             bool shouldBeActive = false;
             foreach (Player player in Main.ActivePlayers) {
                 if (UnderworldFogEffect.IsInUnderworldZone(player)) {
@@ -491,7 +491,7 @@ namespace AncientChineseMythology.Underworlds
                 }
             }
 
-            // Ç¿¶È±ä»¯
+            // å¼ºåº¦å˜åŒ–
             if (shouldBeActive) {
                 if (intensity < 1f) {
                     intensity += 0.01f;
@@ -507,24 +507,24 @@ namespace AncientChineseMythology.Underworlds
             if (intensity <= 0.01f)
                 return;
 
-            // ¸üĞÂÎíÆøÂö¶¯
+            // æ›´æ–°é›¾æ°”è„‰åŠ¨
             fogPulseTimer += 0.015f;
             if (fogPulseTimer > MathHelper.TwoPi) {
                 fogPulseTimer -= MathHelper.TwoPi;
             }
 
-            // ¸üĞÂÓÄ»êÆ¯ÒÆ
+            // æ›´æ–°å¹½é­‚æ¼‚ç§»
             soulDriftTimer += 0.01f;
             if (soulDriftTimer > MathHelper.TwoPi * 2) {
                 soulDriftTimer -= MathHelper.TwoPi * 2;
             }
 
-            // ¸üĞÂÃÔÎí
+            // æ›´æ–°è¿·é›¾
             for (int i = 0; i < fogs.Length; i++) {
                 fogs[i].Update();
             }
 
-            // ¸üĞÂÓÄ»ê
+            // æ›´æ–°å¹½é­‚
             for (int i = 0; i < souls.Length; i++) {
                 souls[i].Update();
             }
@@ -534,7 +534,7 @@ namespace AncientChineseMythology.Underworlds
             if (Main.gameMenu || intensity <= 0.01f || Underworld.Fog == null)
                 return;
 
-            // ¼ì²éµ±Ç°Íæ¼ÒÊÇ·ñÔÚµØ¸®ÇøÓò
+            // æ£€æŸ¥å½“å‰ç©å®¶æ˜¯å¦åœ¨åœ°åºœåŒºåŸŸ
             if (!UnderworldFogEffect.IsInUnderworldZone(Main.LocalPlayer))
                 return;
 
@@ -543,19 +543,19 @@ namespace AncientChineseMythology.Underworlds
             spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp,
                 DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
 
-            // »æÖÆÒõ°µ±³¾°²ã
+            // ç»˜åˆ¶é˜´æš—èƒŒæ™¯å±‚
             DrawDarkOverlay(spriteBatch);
 
-            // »æÖÆÓÄÚ¤ÃÔÎí²ã
+            // ç»˜åˆ¶å¹½å†¥è¿·é›¾å±‚
             DrawGhostlyFogs(spriteBatch);
 
-            // »æÖÆÓÎµ´ÓÄ»ê
+            // ç»˜åˆ¶æ¸¸è¡å¹½é­‚
             DrawWanderingSouls(spriteBatch);
 
             spriteBatch.End();
         }
 
-        #region »æÖÆ·½·¨
+        #region ç»˜åˆ¶æ–¹æ³•
 
         private void DrawDarkOverlay(SpriteBatch sb) {
             Texture2D pixel = Terraria.GameContent.TextureAssets.MagicPixel.Value;
@@ -588,12 +588,12 @@ namespace AncientChineseMythology.Underworlds
 
                 Vector2 drawPos = fog.Position - Main.screenPosition;
 
-                // Ö»»æÖÆÔÚÆÁÄ»·¶Î§ÄÚµÄÎíÆø
+                // åªç»˜åˆ¶åœ¨å±å¹•èŒƒå›´å†…çš„é›¾æ°”
                 if (drawPos.X < -200 || drawPos.X > Main.screenWidth + 200 ||
                     drawPos.Y < -200 || drawPos.Y > Main.screenHeight + 200)
                     continue;
 
-                // »ºÂı±ä»»µÄÒõÀäÉ«µ÷
+                // ç¼“æ…¢å˜æ¢çš„é˜´å†·è‰²è°ƒ
                 int colorIndex = (int)(soulDriftTimer * 1.5f + i * 0.3f) % underworldColors.Length;
                 Color fogColor = Color.Lerp(
                     underworldColors[colorIndex],
@@ -603,7 +603,7 @@ namespace AncientChineseMythology.Underworlds
 
                 float alpha = (float)Math.Sin(fog.AnimProgress * MathHelper.Pi) * intensity * 0.5f;
 
-                // Ö÷ÎíÆø²ã
+                // ä¸»é›¾æ°”å±‚
                 sb.Draw(
                     fogTex,
                     drawPos,
@@ -616,7 +616,7 @@ namespace AncientChineseMythology.Underworlds
                     0f
                 );
 
-                // ÓÄ°µ¹âÔÎ²ã
+                // å¹½æš—å…‰æ™•å±‚
                 sb.Draw(
                     fogTex,
                     drawPos,
@@ -644,16 +644,16 @@ namespace AncientChineseMythology.Underworlds
 
                 Vector2 drawPos = soul.Position - Main.screenPosition;
 
-                // Ö»»æÖÆÔÚÆÁÄ»·¶Î§ÄÚµÄÓÄ»ê
+                // åªç»˜åˆ¶åœ¨å±å¹•èŒƒå›´å†…çš„å¹½é­‚
                 if (drawPos.X < -200 || drawPos.X > Main.screenWidth + 200 ||
                     drawPos.Y < -200 || drawPos.Y > Main.screenHeight + 200)
                     continue;
 
-                // ÓÄ»êµÄ²Ô°×É«
+                // å¹½é­‚çš„è‹ç™½è‰²
                 Color soulColor = new Color(200, 220, 230);
                 float alpha = (float)Math.Sin(soul.AnimProgress * MathHelper.Pi) * intensity * 0.35f;
 
-                // Ö÷Ìå
+                // ä¸»ä½“
                 sb.Draw(
                     soulTex,
                     drawPos,
@@ -666,7 +666,7 @@ namespace AncientChineseMythology.Underworlds
                     0f
                 );
 
-                // ÓÄ¹â
+                // å¹½å…‰
                 for (int j = 0; j < 3; j++) {
                     float offset = j * 0.3f;
                     sb.Draw(
@@ -686,7 +686,7 @@ namespace AncientChineseMythology.Underworlds
 
         #endregion
 
-        #region ÓÄÚ¤ÃÔÎíÀà
+        #region å¹½å†¥è¿·é›¾ç±»
         private class GhostlyFog
         {
             public Vector2 Position;
@@ -744,7 +744,7 @@ namespace AncientChineseMythology.Underworlds
         }
         #endregion
 
-        #region ÓÎµ´ÓÄ»êÀà
+        #region æ¸¸è¡å¹½é­‚ç±»
         private class WanderingSoul
         {
             public Vector2 Position;
@@ -778,7 +778,7 @@ namespace AncientChineseMythology.Underworlds
 
                 AnimProgress += AnimSpeed;
 
-                // Æ®ºö²»¶¨µÄÒÆ¶¯
+                // é£˜å¿½ä¸å®šçš„ç§»åŠ¨
                 float wave = (float)Math.Sin(AnimProgress * MathHelper.TwoPi * 3f);
                 Velocity.X += wave * 0.02f;
                 Velocity.Y += (float)Math.Cos(AnimProgress * MathHelper.TwoPi * 2f) * 0.02f;
@@ -810,28 +810,28 @@ namespace AncientChineseMythology.Underworlds
     }
 
     /// <summary>
-    /// µØ¸®ÎíÆøĞ§¹û¹ÜÀíÆ÷
+    /// åœ°åºœé›¾æ°”æ•ˆæœç®¡ç†å™¨
     /// </summary>
     public static class UnderworldFogEffect
     {
         /// <summary>
-        /// ¼ì²éÍæ¼ÒÊÇ·ñÔÚµØ¸®ÇøÓò
+        /// æ£€æŸ¥ç©å®¶æ˜¯å¦åœ¨åœ°åºœåŒºåŸŸ
         /// </summary>
         public static bool IsInUnderworldZone(Player player) {
             if (UnderworldPlayer.UnderworldEffect) {
                 return true;
             }
-            // ¼ì²éÊÇ·ñÔÚµØÓü²ã»òÑÒÊ¯²ã£¨µØ¸®·¶Î§£©
+            // æ£€æŸ¥æ˜¯å¦åœ¨åœ°ç‹±å±‚æˆ–å²©çŸ³å±‚ï¼ˆåœ°åºœèŒƒå›´ï¼‰
             int tileX = (int)(player.Center.X / 16f);
             int tileY = (int)(player.Center.Y / 16f);
 
-            // ¼ì²éÊÇ·ñÔÚµØÍ¼ÓÒ°ë±ß
+            // æ£€æŸ¥æ˜¯å¦åœ¨åœ°å›¾å³åŠè¾¹
             bool isRightSide = tileX > Main.maxTilesX / 2;
 
-            // ¼ì²éÊÇ·ñÔÚµØ¸®¸ß¶È·¶Î§£¨ÑÒÊ¯²ãµ½µØÍ¼µ×²¿£©
+            // æ£€æŸ¥æ˜¯å¦åœ¨åœ°åºœé«˜åº¦èŒƒå›´ï¼ˆå²©çŸ³å±‚åˆ°åœ°å›¾åº•éƒ¨ï¼‰
             bool isInDepth = tileY > Main.rockLayer && tileY < Main.maxTilesY;
 
-            // ¼ì²éÖÜÎ§ÊÇ·ñÓĞÓÄÚ¤Ê¯»òÁé»êÉ³
+            // æ£€æŸ¥å‘¨å›´æ˜¯å¦æœ‰å¹½å†¥çŸ³æˆ–çµé­‚æ²™
             bool hasUnderworldTiles = false;
             int checkRadius = 20;
 
@@ -858,7 +858,7 @@ namespace AncientChineseMythology.Underworlds
         }
 
         /// <summary>
-        /// ¼ì²éĞ§¹ûÊÇ·ñÓ¦¸Ã¼¤»î
+        /// æ£€æŸ¥æ•ˆæœæ˜¯å¦åº”è¯¥æ¿€æ´»
         /// </summary>
         public static bool IsActive(Player player) {
             if (Main.gameMenu)

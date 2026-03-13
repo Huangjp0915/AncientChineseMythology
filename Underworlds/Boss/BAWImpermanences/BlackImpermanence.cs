@@ -1,4 +1,4 @@
-using AncientChineseMythology.Underworlds.Boss.BAWImpermanences.Items;
+ï»¿using AncientChineseMythology.Underworlds.Boss.BAWImpermanences.Items;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -12,14 +12,14 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 {
     /// <summary>
-    /// ºÚÎŞ³£ - ËøÁ´½üÕ½¹¥»÷·ç¸ñ
-    /// Óë°×ÎŞ³£ÅäºÏµÄË«ÌåBossÖ®Ò»
-    /// ¹¥»÷·½Ê½£ºËøÁ´ºáÉ¨¡¢ËøÁ´×¥È¡¡¢ËøÁ´Í»´Ì¡¢ËøÁ´Ç£Òı
+    /// é»‘æ— å¸¸ - é”é“¾è¿‘æˆ˜æ”»å‡»é£æ ¼
+    /// ä¸ç™½æ— å¸¸é…åˆçš„åŒä½“Bossä¹‹ä¸€
+    /// æ”»å‡»æ–¹å¼ï¼šé”é“¾æ¨ªæ‰«ã€é”é“¾æŠ“å–ã€é”é“¾çªåˆºã€é”é“¾ç‰µå¼•
     /// </summary>
     [AutoloadBossHead]
     public class BlackImpermanence : ModNPC
     {
-        #region ÉùÒô×ÊÔ´
+        #region å£°éŸ³èµ„æº
 
         private static readonly SoundStyle RoarSound = SoundID.Roar with { PitchVariance = 0.2f };
         private static readonly SoundStyle ChainSound = SoundID.Item20 with { Volume = 0.7f };
@@ -28,35 +28,35 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 
         #endregion
 
-        #region ÊôĞÔ
+        #region å±æ€§
 
         public Player Target => Main.player[NPC.target];
         public BAWPlayer ScreenPlayer => Target?.GetModPlayer<BAWPlayer>();
 
-        /// <summary>°×ÎŞ³£»ï°éË÷Òı</summary>
+        /// <summary>ç™½æ— å¸¸ä¼™ä¼´ç´¢å¼•</summary>
         public int PartnerIndex { get; set; } = -1;
 
-        /// <summary>°×ÎŞ³£NPCÒıÓÃ</summary>
+        /// <summary>ç™½æ— å¸¸NPCå¼•ç”¨</summary>
         public NPC Partner => PartnerIndex >= 0 && PartnerIndex < Main.npc.Length ? Main.npc[PartnerIndex] : null;
 
-        /// <summary>ÊÇ·ñÒÑ¸´»î¹ı</summary>
+        /// <summary>æ˜¯å¦å·²å¤æ´»è¿‡</summary>
         private bool hasRespawned = false;
 
-        /// <summary>»æÖÆÍ¸Ã÷¶È</summary>
+        /// <summary>ç»˜åˆ¶é€æ˜åº¦</summary>
         private float drawAlpha = 1f;
 
-        /// <summary>ÊÇ·ñ»æÖÆÍÏÎ²</summary>
+        /// <summary>æ˜¯å¦ç»˜åˆ¶æ‹–å°¾</summary>
         private bool drawTail = false;
 
-        /// <summary>ËøÁ´Ä¿±êÎ»ÖÃ</summary>
+        /// <summary>é”é“¾ç›®æ ‡ä½ç½®</summary>
         private Vector2 chainTargetPos;
 
-        /// <summary>ÊÇ·ñ´¦ÓÚĞ­Í¬¹¥»÷×´Ì¬</summary>
+        /// <summary>æ˜¯å¦å¤„äºååŒæ”»å‡»çŠ¶æ€</summary>
         public bool InSynergyAttack { get; set; } = false;
 
         #endregion
 
-        #region ³õÊ¼»¯
+        #region åˆå§‹åŒ–
 
         public override void SetStaticDefaults() {
             NPCID.Sets.TrailingMode[Type] = 3;
@@ -100,10 +100,10 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         }
 
         public override void OnSpawn(IEntitySource source) {
-            // Ñ°ÕÒ°×ÎŞ³£»ï°é
+            // å¯»æ‰¾ç™½æ— å¸¸ä¼™ä¼´
             FindPartner();
 
-            // ³ö³¡Ñİ³ö
+            // å‡ºåœºæ¼”å‡º
             NPC.ai[3] = -1;
             NPC.dontTakeDamage = true;
             drawAlpha = 0f;
@@ -112,13 +112,13 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         }
 
         /// <summary>
-        /// Ñ°ÕÒ°×ÎŞ³£»ï°é
+        /// å¯»æ‰¾ç™½æ— å¸¸ä¼™ä¼´
         /// </summary>
         private void FindPartner() {
             foreach (var npc in Main.npc) {
                 if (npc != null && npc.active && npc.type == ModContent.NPCType<WhiteImpermanence>()) {
                     PartnerIndex = npc.whoAmI;
-                    // Í¬Ê±ÉèÖÃ°×ÎŞ³£µÄ»ï°éÎª×Ô¼º
+                    // åŒæ—¶è®¾ç½®ç™½æ— å¸¸çš„ä¼™ä¼´ä¸ºè‡ªå·±
                     if (npc.ModNPC is WhiteImpermanence white) {
                         white.PartnerIndex = NPC.whoAmI;
                     }
@@ -129,7 +129,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 
         #endregion
 
-        #region AI×´Ì¬ÖØÖÃ
+        #region AIçŠ¶æ€é‡ç½®
 
         public void ResetAI() {
             for (int i = 0; i <= 2; i++) {
@@ -141,7 +141,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 
         #endregion
 
-        #region Ö÷AIÑ­»·
+        #region ä¸»AIå¾ªç¯
 
         public override bool PreAI() {
             drawTail = false;
@@ -150,26 +150,26 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 
         public override void AI() {
             UnderworldPlayer.UnderworldEffect = true;
-            // Ìí¼Ó¹âÕÕ
+            // æ·»åŠ å…‰ç…§
             Lighting.AddLight(NPC.Center, new Color(30, 30, 40).ToVector3());
 
-            // Ä¿±êÑ¡Ôñ
+            // ç›®æ ‡é€‰æ‹©
             if (Target == null || NPC.target < 0 || NPC.target == 255 || Main.player[NPC.target].dead || !Main.player[NPC.target].active) {
                 NPC.TargetClosest();
             }
 
-            // È·±£ÓĞ»ï°é
+            // ç¡®ä¿æœ‰ä¼™ä¼´
             if (PartnerIndex < 0 || Partner == null || !Partner.active) {
                 FindPartner();
             }
 
-            // ÌØÊâ×´Ì¬£¨³ö³¡/¸´»îÑİ³ö£©
+            // ç‰¹æ®ŠçŠ¶æ€ï¼ˆå‡ºåœº/å¤æ´»æ¼”å‡ºï¼‰
             if (NPC.ai[3] < 0) {
                 HandleSpecialState();
                 return;
             }
 
-            // Õı³£Õ½¶·AI
+            // æ­£å¸¸æˆ˜æ–—AI
             if (Target != null) {
                 ExecuteCombatAI();
             }
@@ -181,12 +181,12 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         }
 
         /// <summary>
-        /// ´¦ÀíÌØÊâ×´Ì¬£¨³ö³¡/¸´»î£©
+        /// å¤„ç†ç‰¹æ®ŠçŠ¶æ€ï¼ˆå‡ºåœº/å¤æ´»ï¼‰
         /// </summary>
         private void HandleSpecialState() {
             var screenPlayer = Main.LocalPlayer.GetModPlayer<BAWPlayer>();
 
-            if (NPC.ai[3] == -1) // ³ö³¡Ñİ³ö
+            if (NPC.ai[3] == -1) // å‡ºåœºæ¼”å‡º
             {
                 screenPlayer.SetScreenPos(NPC.Center + new Vector2(0, -100));
                 screenPlayer.SetZoom(1.4f);
@@ -197,7 +197,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 }
                 else {
                     NPC.velocity *= 0.9f;
-                    // ºÚÉ«ÓÄ»êÁ£×Ó
+                    // é»‘è‰²å¹½é­‚ç²’å­
                     for (int i = 0; i < 5; i++) {
                         var d = Dust.NewDustDirect(NPC.position, NPC.width, 10, DustID.Shadowflame);
                         d.noGravity = true;
@@ -216,7 +216,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 
                 drawAlpha = MathHelper.Lerp(drawAlpha, 1, 0.05f);
             }
-            else if (NPC.ai[3] == -2) // ±»¸´»îÑİ³ö
+            else if (NPC.ai[3] == -2) // è¢«å¤æ´»æ¼”å‡º
             {
                 if (Partner != null && Partner.active) {
                     NPC.Center = Partner.Center + new Vector2(0, -200);
@@ -234,45 +234,45 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         }
 
         /// <summary>
-        /// Ö´ĞĞÕ½¶·AI
+        /// æ‰§è¡Œæˆ˜æ–—AI
         /// </summary>
         private void ExecuteCombatAI() {
             bool isPhase2 = NPC.life < NPC.lifeMax * 0.5f;
             bool bothHalfHealth = Partner != null && Partner.active &&
                                   Partner.life < Partner.lifeMax * 0.5f && isPhase2;
 
-            // Ò»½×¶ÎAI
+            // ä¸€é˜¶æ®µAI
             if (!isPhase2) {
                 switch ((int)NPC.ai[3]) {
                     case 0:
-                        AI_ChainDash(5, 150); // ËøÁ´³å´Ì
+                        AI_ChainDash(5, 150); // é”é“¾å†²åˆº
                         break;
                     case 1:
-                        AI_ChainGrab(); // ËøÁ´×¥È¡
+                        AI_ChainGrab(); // é”é“¾æŠ“å–
                         break;
                     case 2:
-                        AI_ChainSweep(); // ËøÁ´ºáÉ¨
+                        AI_ChainSweep(); // é”é“¾æ¨ªæ‰«
                         break;
                 }
             }
-            // ¶ş½×¶ÎAI
+            // äºŒé˜¶æ®µAI
             else {
                 switch ((int)NPC.ai[3]) {
                     case 0:
-                        AI_ChainDash(8, 200); // ¼ÓÇ¿°æËøÁ´³å´Ì
+                        AI_ChainDash(8, 200); // åŠ å¼ºç‰ˆé”é“¾å†²åˆº
                         break;
                     case 1:
-                        AI_ChainGrab(); // ËøÁ´×¥È¡
+                        AI_ChainGrab(); // é”é“¾æŠ“å–
                         break;
                     case 2:
-                        AI_ChainPull(); // ËøÁ´Ç£Òı
+                        AI_ChainPull(); // é”é“¾ç‰µå¼•
                         break;
                     case 3:
-                        AI_SynergyAttack(); // Ğ­Í¬¹¥»÷£¨Ë«·½¶¼°ëÑªÊ±£©
+                        AI_SynergyAttack(); // ååŒæ”»å‡»ï¼ˆåŒæ–¹éƒ½åŠè¡€æ—¶ï¼‰
                         break;
                 }
 
-                // Ë«·½¶¼°ëÑªÊ±´¥·¢Ğ­Í¬¹¥»÷
+                // åŒæ–¹éƒ½åŠè¡€æ—¶è§¦å‘ååŒæ”»å‡»
                 if (bothHalfHealth && NPC.ai[3] == 0 && NPC.ai[0] % 300 == 0) {
                     NPC.ai[3] = 3;
                     ResetAI();
@@ -282,31 +282,31 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 
         #endregion
 
-        #region ¹¥»÷AI
+        #region æ”»å‡»AI
 
         /// <summary>
-        /// ËøÁ´³å´Ì¹¥»÷
+        /// é”é“¾å†²åˆºæ”»å‡»
         /// </summary>
         private void AI_ChainDash(float timeScale, int damage) {
             NPC.ai[0]++;
             int chainProjType = ModContent.ProjectileType<ChainProjectile>();
 
             if (GetAI(0) < 50) {
-                // ×¼±¸½×¶Î
+                // å‡†å¤‡é˜¶æ®µ
                 NPC.rotation = 0;
                 if (GetAI(0) == 1)
                     SoundEngine.PlaySound(ChargeSound, NPC.Center);
 
-                // Æ®ÏòÍæ¼Ò·½Ïò
+                // é£˜å‘ç©å®¶æ–¹å‘
                 Vector2 targetPos = Target.Center + new Vector2(-300 * NPC.direction, -100);
                 NPC.velocity = Vector2.Lerp(NPC.velocity, (targetPos - NPC.Center).NormalizeVector() * 8, 0.05f);
             }
             else if (GetAI(0) < 80) {
-                // µ­³ö×¼±¸Ë²ÒÆ
+                // æ·¡å‡ºå‡†å¤‡ç¬ç§»
                 drawAlpha = MathHelper.Lerp(drawAlpha, 0, 0.08f);
             }
             else if (GetAI(0) < 100) {
-                // Ë²ÒÆµ½Íæ¼Ò²àÃæ
+                // ç¬ç§»åˆ°ç©å®¶ä¾§é¢
                 if (GetAI(0) == 80) {
                     NPC.direction = BAWHelper.RandInt(-1, 1, 0);
                     NPC.Center = Target.Center + new Vector2(500, 0) * -NPC.direction;
@@ -316,10 +316,10 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 drawAlpha = MathHelper.Lerp(drawAlpha, 1, 0.15f);
             }
             else if (GetAI(0) < 140) {
-                // ³å´Ì½×¶Î
+                // å†²åˆºé˜¶æ®µ
                 drawTail = true;
                 if (GetAI(0) == 100) {
-                    // ³å´ÌÁ£×Ó
+                    // å†²åˆºç²’å­
                     for (int i = 0; i < 8; i++) {
                         var d = Dust.NewDustPerfect(NPC.Center, DustID.Shadowflame);
                         d.scale = 2f;
@@ -330,7 +330,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                     ScreenPlayer?.SetScreenShake(5, 15);
                 }
 
-                // ³å´ÌÖĞ·¢ÉäËøÁ´
+                // å†²åˆºä¸­å‘å°„é”é“¾
                 if (GetAI(0) % 4 == 0 && NPC.velocity.Length() > 8) {
                     for (int i = 0; i < 2; i++) {
                         var vel = new Vector2(NPC.direction, -1).RotatedByRandom(0.8f);
@@ -347,7 +347,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                     NPC.velocity *= 1.15f;
             }
             else if (GetAI(0) < 200) {
-                // ¼õËÙ
+                // å‡é€Ÿ
                 if (GetAI(0) % 4 == 0 && NPC.velocity.Length() > 10) {
                     var vel = new Vector2(NPC.direction, -1).RotatedByRandom(0.8f);
                     var pos = Vector2.Lerp(NPC.oldPos[3] + new Vector2(35) * NPC.scale, NPC.Center, BAWHelper.RandFloat(1));
@@ -369,7 +369,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         }
 
         /// <summary>
-        /// ËøÁ´×¥È¡¹¥»÷
+        /// é”é“¾æŠ“å–æ”»å‡»
         /// </summary>
         private void AI_ChainGrab() {
             NPC.ai[0]++;
@@ -378,7 +378,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
             int forStep = (chainCount - 1) / 2;
 
             if (GetAI(0) < 70) {
-                // ÒÆ¶¯µ½¹¥»÷Î»ÖÃ
+                // ç§»åŠ¨åˆ°æ”»å‡»ä½ç½®
                 Vector2 targetPos = Target.Center + new Vector2(-400 * NPC.direction, -80);
                 NPC.velocity = Vector2.Lerp(NPC.velocity, (targetPos - NPC.Center).NormalizeVector() * 10 * Math.Clamp(dis * 0.03f, 0, 1), 0.07f);
 
@@ -389,7 +389,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 NPC.velocity *= 0f;
             }
 
-            // Ô¤ÅĞÏßÏÔÊ¾
+            // é¢„åˆ¤çº¿æ˜¾ç¤º
             if (GetAI(0) < 60) {
                 chainTargetPos = (Target.Center - NPC.Center).NormalizeVector() * 60;
 
@@ -403,7 +403,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 }
             }
 
-            // ·¢ÉäËøÁ´
+            // å‘å°„é”é“¾
             if (GetAI(0) == 70) {
                 var v = chainTargetPos;
                 for (int i = -forStep; i <= forStep; i++) {
@@ -422,23 +422,23 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         }
 
         /// <summary>
-        /// ËøÁ´ºáÉ¨¹¥»÷
+        /// é”é“¾æ¨ªæ‰«æ”»å‡»
         /// </summary>
         private void AI_ChainSweep() {
             NPC.ai[0]++;
             int sweepProjType = ModContent.ProjectileType<ChainSweepProjectile>();
 
             if (GetAI(0) < 60) {
-                // ÒÆ¶¯µ½Íæ¼ÒÉÏ·½
+                // ç§»åŠ¨åˆ°ç©å®¶ä¸Šæ–¹
                 Vector2 targetPos = Target.Center + new Vector2(0, -300);
                 NPC.velocity = Vector2.Lerp(NPC.velocity, (targetPos - NPC.Center).NormalizeVector() * 12, 0.06f);
             }
             else if (GetAI(0) == 60) {
-                // ·¢ÉäºáÉ¨ËøÁ´
+                // å‘å°„æ¨ªæ‰«é”é“¾
                 SoundEngine.PlaySound(ChainSound, NPC.Center);
                 ScreenPlayer?.SetScreenShake(8, 15);
 
-                // ×óÓÒÁ½µÀºáÉ¨
+                // å·¦å³ä¸¤é“æ¨ªæ‰«
                 Projectile.NewProjectile(NPC.GetSource_FromThis(), NPC.Center, new Vector2(-15, 5), sweepProjType, 100, 2, -1, NPC.whoAmI);
                 Projectile.NewProjectile(NPC.GetSource_FromThis(), NPC.Center, new Vector2(15, 5), sweepProjType, 100, 2, -1, NPC.whoAmI);
             }
@@ -452,19 +452,19 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         }
 
         /// <summary>
-        /// ËøÁ´Ç£Òı¹¥»÷£¨¶ş½×¶Î£©
+        /// é”é“¾ç‰µå¼•æ”»å‡»ï¼ˆäºŒé˜¶æ®µï¼‰
         /// </summary>
         private void AI_ChainPull() {
             NPC.ai[0]++;
 
             if (GetAI(0) < 40) {
-                // ×¼±¸
+                // å‡†å¤‡
                 NPC.velocity *= 0.9f;
                 if (GetAI(0) == 1)
                     SoundEngine.PlaySound(ChargeSound, NPC.Center);
             }
             else if (GetAI(0) == 40) {
-                // ·¢ÉäÇ£ÒıËøÁ´
+                // å‘å°„ç‰µå¼•é”é“¾
                 var p = Projectile.NewProjectileDirect(NPC.GetSource_FromThis(), NPC.Center,
                     (Target.Center - NPC.Center).NormalizeVector() * 20,
                     ModContent.ProjectileType<ChainPullProjectile>(), 60, 0);
@@ -472,7 +472,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 SoundEngine.PlaySound(ChainSound, NPC.Center);
             }
             else if (GetAI(0) < 150) {
-                // µÈ´ıËøÁ´Ğ§¹û
+                // ç­‰å¾…é”é“¾æ•ˆæœ
                 NPC.velocity *= 0.95f;
             }
             else {
@@ -482,21 +482,21 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         }
 
         /// <summary>
-        /// Ğ­Í¬¹¥»÷£¨Óë°×ÎŞ³£ÅäºÏ£©
+        /// ååŒæ”»å‡»ï¼ˆä¸ç™½æ— å¸¸é…åˆï¼‰
         /// </summary>
         private void AI_SynergyAttack() {
             NPC.ai[0]++;
             InSynergyAttack = true;
 
             if (NPC.ai[0] < 60) {
-                // ĞîÁ¦
+                // è“„åŠ›
                 NPC.velocity *= 0.9f;
                 if (NPC.ai[0] == 1) {
                     SoundEngine.PlaySound(RoarSound, NPC.Center);
                     ScreenPlayer?.SetZoom(2f);
                 }
 
-                // ĞîÁ¦Á£×Ó
+                // è“„åŠ›ç²’å­
                 if (NPC.ai[0] % 5 == 0) {
                     var d = Dust.NewDustPerfect(NPC.Center + new Vector2(100).RotatedByRandom(MathHelper.TwoPi), DustID.Shadowflame);
                     d.scale = 2f;
@@ -505,7 +505,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 }
             }
             else if (NPC.ai[0] < 180) {
-                // ¶à¶Î³å´Ì
+                // å¤šæ®µå†²åˆº
                 drawTail = true;
                 if (NPC.ai[0] % 15 == 0) {
                     SoundEngine.PlaySound(DashSound, NPC.Center);
@@ -513,7 +513,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                     NPC.direction = Target.Center.X > NPC.Center.X ? 1 : -1;
                     NPC.velocity = (Target.Center + new Vector2(BAWHelper.RandFloat(-100, 100), BAWHelper.RandFloat(-50, 50)) - NPC.Center).NormalizeVector() * 28;
 
-                    // ³å´ÌÁ£×Ó
+                    // å†²åˆºç²’å­
                     for (int i = 0; i < 6; i++) {
                         var dust = Dust.NewDustPerfect(NPC.Center, DustID.Shadowflame);
                         dust.scale = 2f;
@@ -524,10 +524,10 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 NPC.velocity *= 1.01f;
             }
             else if (NPC.ai[0] < 220) {
-                // ·¢ÉäĞ­Í¬ËøÁ´
+                // å‘å°„ååŒé”é“¾
                 NPC.velocity *= 0.92f;
                 if (NPC.ai[0] == 190) {
-                    // ·¢ÉäÁé»êËøÁ´£¨Á¬½ÓºÚ°×ÎŞ³££©
+                    // å‘å°„çµé­‚é”é“¾ï¼ˆè¿æ¥é»‘ç™½æ— å¸¸ï¼‰
                     if (Partner != null && Partner.active) {
                         var p = Projectile.NewProjectileDirect(NPC.GetSource_FromThis(), NPC.Center,
                             (Partner.Center - NPC.Center).NormalizeVector() * 15,
@@ -550,10 +550,10 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 
         #endregion
 
-        #region ËÀÍöÓë¸´»î
+        #region æ­»äº¡ä¸å¤æ´»
 
         public override bool CheckDead() {
-            // Èç¹û°×ÎŞ³£»¹ÓĞ½Ï¶àÉúÃüÖµ£¬Ôò¸´»î
+            // å¦‚æœç™½æ— å¸¸è¿˜æœ‰è¾ƒå¤šç”Ÿå‘½å€¼ï¼Œåˆ™å¤æ´»
             if (!hasRespawned && Partner != null && Partner.active && Partner.life > Partner.lifeMax * 0.3f) {
                 hasRespawned = true;
                 drawAlpha = 0;
@@ -561,7 +561,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 NPC.ai[3] = -2;
                 NPC.velocity *= 0;
 
-                // ´¥·¢°×ÎŞ³£µÄ¸´»îÑİ³ö
+                // è§¦å‘ç™½æ— å¸¸çš„å¤æ´»æ¼”å‡º
                 Partner.dontTakeDamage = true;
                 Partner.velocity *= 0;
                 Partner.ai[3] = -1;
@@ -580,14 +580,14 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 
         #endregion
 
-        #region »æÖÆ
+        #region ç»˜åˆ¶
 
         public override bool PreDraw(SpriteBatch sb, Vector2 scrPos, Color col) {
             var tex = TextureAssets.Npc[Type].Value;
             var rec = NPC.frame;
             var spe = NPC.direction == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
 
-            // »æÖÆÍÏÎ²
+            // ç»˜åˆ¶æ‹–å°¾
             if (drawTail) {
                 var tailCol = Color.DarkSlateGray * 0.5f;
                 tailCol.A = 0;
@@ -598,10 +598,10 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 }
             }
 
-            // »æÖÆÖ÷Ìå
+            // ç»˜åˆ¶ä¸»ä½“
             sb.Draw(tex, NPC.Center - scrPos, rec, col * drawAlpha, NPC.rotation, rec.Size() * 0.5f, NPC.scale, spe, 0);
 
-            // Íâ·¢¹â
+            // å¤–å‘å…‰
             var glowCol = new Color(30, 30, 50);
             glowCol.A = 0;
             sb.Draw(tex, NPC.Center - scrPos, rec, glowCol * 0.4f * drawAlpha, NPC.rotation,

@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -8,15 +8,15 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 {
     /// <summary>
-    /// ÓÄÚ¤¼¤¹âÊø - ºáÏòÉ¨ÉäµÄ³ÖĞø¼¤¹â
+    /// å¹½å†¥æ¿€å…‰æŸ - æ¨ªå‘æ‰«å°„çš„æŒç»­æ¿€å…‰
     /// </summary>
     internal class NetherLaserBeam : ModProjectile
     {
         public override string Texture => "InnoVault/Assets/placeholder";
 
-        private ref float LaserDirection => ref Projectile.ai[0]; // ¼¤¹â·½Ïò½Ç¶È
+        private ref float LaserDirection => ref Projectile.ai[0]; // æ¿€å…‰æ–¹å‘è§’åº¦
         private ref float LaserTimer => ref Projectile.ai[1];
-        private ref float MaxLength => ref Projectile.ai[2]; // ×î´ó³¤¶È
+        private ref float MaxLength => ref Projectile.ai[2]; // æœ€å¤§é•¿åº¦
 
         private float currentLength = 0f;
         private const float TargetLength = 1500f;
@@ -39,26 +39,26 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         public override void AI() {
             LaserTimer++;
 
-            // ¼¤¹â³¤¶È±ä»¯
+            // æ¿€å…‰é•¿åº¦å˜åŒ–
             if (LaserTimer < 10f) {
-                // ¿ìËÙÉìÕ¹
+                // å¿«é€Ÿä¼¸å±•
                 currentLength = MathHelper.Lerp(0f, TargetLength, LaserTimer / 10f);
             }
             else if (Projectile.timeLeft < 20) {
-                // ÊÕËõ
+                // æ”¶ç¼©
                 currentLength = MathHelper.Lerp(TargetLength, 0f, 1f - Projectile.timeLeft / 20f);
             }
             else {
                 currentLength = TargetLength;
             }
 
-            // Åö×²¼ì²â³¤¶È£¨¿¼ÂÇÇ½±Ú£©
+            // ç¢°æ’æ£€æµ‹é•¿åº¦ï¼ˆè€ƒè™‘å¢™å£ï¼‰
             MaxLength = GetLaserLength();
 
-            // Ğı×ªĞ§¹û£¨Î¢Ğ¡°Ú¶¯£©
+            // æ—‹è½¬æ•ˆæœï¼ˆå¾®å°æ‘†åŠ¨ï¼‰
             LaserDirection += MathF.Sin(LaserTimer * 0.1f) * 0.002f;
 
-            // Á£×ÓĞ§¹û
+            // ç²’å­æ•ˆæœ
             if (Main.rand.NextBool(2)) {
                 Vector2 laserEnd = Projectile.Center + new Vector2(MathF.Cos(LaserDirection), MathF.Sin(LaserDirection)) * MaxLength;
                 Vector2 dustPos = Vector2.Lerp(Projectile.Center, laserEnd, Main.rand.NextFloat(0.2f, 1f));
@@ -68,10 +68,10 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                 Main.dust[dust].velocity = Main.rand.NextVector2Circular(2f, 2f);
             }
 
-            // ·¢¹â
+            // å‘å…‰
             Lighting.AddLight(Projectile.Center, 0.4f, 0.6f, 1f);
 
-            // ÒôĞ§
+            // éŸ³æ•ˆ
             if (LaserTimer == 1) {
                 SoundEngine.PlaySound(SoundID.Item33, Projectile.Center);
             }
@@ -95,7 +95,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         }
 
         public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
-            // ¼¤¹âÊøÅö×²¼ì²â
+            // æ¿€å…‰æŸç¢°æ’æ£€æµ‹
             Vector2 start = Projectile.Center;
             Vector2 end = start + new Vector2(MathF.Cos(LaserDirection), MathF.Sin(LaserDirection)) * MaxLength;
 
@@ -121,12 +121,12 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 
             Color beamColor = new Color(100, 150, 255);
 
-            // »æÖÆ¼¤¹â¶Î
+            // ç»˜åˆ¶æ¿€å…‰æ®µ
             for (int i = 0; i < segments; i++) {
                 float progress = i / (float)segments;
                 Vector2 segmentPos = start + direction * (i * 20f);
 
-                // µ­Èëµ­³öĞ§¹û
+                // æ·¡å…¥æ·¡å‡ºæ•ˆæœ
                 float alpha = 0.6f;
                 if (progress < 0.1f)
                     alpha *= progress / 0.1f;
@@ -135,7 +135,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 
                 float scale = BeamWidth / beamTexture.Width * 0.03f;
 
-                // Ö÷¹âÊø
+                // ä¸»å…‰æŸ
                 Main.spriteBatch.Draw(
                     beamTexture,
                     segmentPos,
@@ -148,7 +148,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                     0f
                 );
 
-                // Íâ²ã¹âÔÎ
+                // å¤–å±‚å…‰æ™•
                 Main.spriteBatch.Draw(
                     beamTexture,
                     segmentPos,
@@ -162,10 +162,10 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                 );
             }
 
-            // »æÖÆ¼¤¹âÆğµã
+            // ç»˜åˆ¶æ¿€å…‰èµ·ç‚¹
             DrawLaserStart(start);
 
-            // »æÖÆ¼¤¹âÖÕµã
+            // ç»˜åˆ¶æ¿€å…‰ç»ˆç‚¹
             Vector2 endPos = start + direction * drawLength;
             DrawLaserEnd(endPos);
         }
@@ -195,7 +195,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 
             float pulseScale = 1f + MathF.Sin(LaserTimer * 0.15f) * 0.3f;
 
-            // ±¬ÁÑĞ§¹û
+            // çˆ†è£‚æ•ˆæœ
             for (int i = 0; i < 3; i++) {
                 float rotation = this.rotation + i * MathHelper.TwoPi / 3f;
                 Main.spriteBatch.Draw(

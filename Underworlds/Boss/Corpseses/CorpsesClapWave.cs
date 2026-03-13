@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -9,11 +9,11 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.Corpseses
 {
     /// <summary>
-    /// ÅÄÕÆ³å»÷²¨µ¯Ä» - Ë«ÊÖºÏ»÷²úÉúµÄ»·ĞÎÉäµ¯
+    /// æ‹æŒå†²å‡»æ³¢å¼¹å¹• - åŒæ‰‹åˆå‡»äº§ç”Ÿçš„ç¯å½¢å°„å¼¹
     /// </summary>
     public class CorpsesClapWave : ModProjectile
     {
-        // Ê¹ÓÃÔ­°æÎÆÀí
+        // ä½¿ç”¨åŸç‰ˆçº¹ç†
         public override string Texture => "Terraria/Images/Projectile_" + ProjectileID.ShadowFlame;
 
         public override void SetStaticDefaults() {
@@ -34,16 +34,16 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
         }
 
         public override void AI() {
-            // ³õÊ¼¼ÓËÙ
+            // åˆå§‹åŠ é€Ÿ
             if (Projectile.ai[0] < 30f) {
                 Projectile.velocity *= 1.02f;
                 Projectile.ai[0]++;
             }
 
-            // Ğı×ª
+            // æ—‹è½¬
             Projectile.rotation += 0.3f;
 
-            // ×ÏÉ«ÄÜÁ¿Á£×Ó
+            // ç´«è‰²èƒ½é‡ç²’å­
             if (Main.rand.NextBool(3)) {
                 int dust = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height,
                     DustID.PurpleTorch, 0, 0, 150, default, 1.5f);
@@ -51,10 +51,10 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
                 Main.dust[dust].velocity = -Projectile.velocity * 0.2f;
             }
 
-            // ·¢¹âĞ§¹û
+            // å‘å…‰æ•ˆæœ
             Lighting.AddLight(Projectile.Center, 0.5f, 0.2f, 0.8f);
 
-            // ×·×ÙĞ§¹û£¨ÇáÎ¢£©
+            // è¿½è¸ªæ•ˆæœï¼ˆè½»å¾®ï¼‰
             if (Projectile.ai[1] == 1f && Projectile.ai[0] > 30f) {
                 Player target = Main.player[Player.FindClosest(Projectile.position, Projectile.width, Projectile.height)];
                 if (target.active && !target.dead) {
@@ -68,7 +68,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
         public override void OnKill(int timeLeft) {
             SoundEngine.PlaySound(SoundID.NPCHit54, Projectile.position);
 
-            // ±¬·¢Ğ§¹û
+            // çˆ†å‘æ•ˆæœ
             for (int i = 0; i < 15; i++) {
                 int dust = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height,
                     DustID.PurpleTorch, 0, 0, 100, default, 2f);
@@ -78,11 +78,11 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            // Ö±½ÓÊ¹ÓÃÒÑ¾­Ö¸¶¨µÄTexture
+            // ç›´æ¥ä½¿ç”¨å·²ç»æŒ‡å®šçš„Texture
             Texture2D texture = TextureAssets.Projectile[Projectile.type].Value;
             Vector2 origin = texture.Size() / 2f;
 
-            // »æÖÆ·¢¹â²ã
+            // ç»˜åˆ¶å‘å…‰å±‚
             for (int i = 0; i < 3; i++) {
                 Vector2 offset = new Vector2(MathF.Cos(Main.GlobalTimeWrappedHourly * 3f + i * MathHelper.TwoPi / 3f),
                                             MathF.Sin(Main.GlobalTimeWrappedHourly * 3f + i * MathHelper.TwoPi / 3f)) * 4f;
@@ -91,7 +91,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
                     glowColor, Projectile.rotation, origin, Projectile.scale * 1.2f, SpriteEffects.None);
             }
 
-            // »æÖÆÍÏÎ²
+            // ç»˜åˆ¶æ‹–å°¾
             for (int i = 0; i < Projectile.oldPos.Length; i++) {
                 float progress = 1f - (i / (float)Projectile.oldPos.Length);
                 Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
@@ -101,7 +101,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
                     Projectile.oldRot[i], origin, Projectile.scale * 0.8f, SpriteEffects.None);
             }
 
-            // »æÖÆÖ÷Ìå
+            // ç»˜åˆ¶ä¸»ä½“
             Color mainColor = new Color(180, 80, 255);
             Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null,
                 mainColor, Projectile.rotation, origin, Projectile.scale, SpriteEffects.None);

@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -6,12 +6,12 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.Boss.Aoyuans
 {
     /// <summary>
-    /// °½Èò¹¥»÷¸¨Öú - ±ùËª/º®Ë®Ö÷Ìâ¹¥»÷Éú³ÉÂß¼­
+    /// æ•–é—°æ”»å‡»è¾…åŠ© - å†°éœœ/å¯’æ°´ä¸»é¢˜æ”»å‡»ç”Ÿæˆé€»è¾‘
     /// </summary>
     public static class AoyuanAttacks
     {
         /// <summary>
-        /// ±ùÖùÓê - ±ùÖù´ÓÍæ¼ÒÉÏ·½Ëæ»úÎ»ÖÃ½µÂä
+        /// å†°æŸ±é›¨ - å†°æŸ±ä»ç©å®¶ä¸Šæ–¹éšæœºä½ç½®é™è½
         /// </summary>
         public static void IcicleRain(NPC npc) {
             if (Main.netMode == NetmodeID.MultiplayerClient) return;
@@ -41,7 +41,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
         }
 
         /// <summary>
-        /// ±ù¾§É¢Éä - ´ÓBossÎ»ÖÃÏòÍâ·¢ÉäÉÈĞÎ±ùµ¯
+        /// å†°æ™¶æ•£å°„ - ä»Bossä½ç½®å‘å¤–å‘å°„æ‰‡å½¢å†°å¼¹
         /// </summary>
         public static void IceBurst(NPC npc, int count, float spreadDegrees = 70f) {
             if (Main.netMode == NetmodeID.MultiplayerClient) return;
@@ -70,7 +70,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
         }
 
         /// <summary>
-        /// ÂİĞı±ùµ¯ - ´ÓBossÎ»ÖÃ·¢ÉäÂİĞıÅÅÁĞµÄ±ùµ¯
+        /// èºæ—‹å†°å¼¹ - ä»Bossä½ç½®å‘å°„èºæ—‹æ’åˆ—çš„å†°å¼¹
         /// </summary>
         public static void SpiralIce(NPC npc, float baseAngle, int arms = 3, float speed = 8f) {
             if (Main.netMode == NetmodeID.MultiplayerClient) return;
@@ -90,7 +90,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
         }
 
         /// <summary>
-        /// ×·×Ù±ùµ¯Á¬Éä - ·¢Éä¶à·¢¸ß×·×Ù±ùµ¯
+        /// è¿½è¸ªå†°å¼¹è¿å°„ - å‘å°„å¤šå‘é«˜è¿½è¸ªå†°å¼¹
         /// </summary>
         public static void HomingBurst(NPC npc, int count = 5) {
             if (Main.netMode == NetmodeID.MultiplayerClient) return;
@@ -108,13 +108,13 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
                     npc.damage / 4,
                     1f
                 );
-                // ÑÓ³¤×·×ÙÊ±¼ä
+                // å»¶é•¿è¿½è¸ªæ—¶é—´
                 Main.projectile[p].timeLeft = 400;
             }
         }
 
         /// <summary>
-        /// ±ùËª»· - ´ÓBossÎ»ÖÃÏòÈ«·½Î»·¢Éä±ùµ¯»·
+        /// å†°éœœç¯ - ä»Bossä½ç½®å‘å…¨æ–¹ä½å‘å°„å†°å¼¹ç¯
         /// </summary>
         public static void FrostRing(NPC npc, int count = 16, float speed = 6f) {
             if (Main.netMode == NetmodeID.MultiplayerClient) return;
@@ -134,7 +134,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
         }
 
         /// <summary>
-        /// ÁúÏ¢±ù×¶ - ³¯Ç°·½ÃÜ¼¯·¢Éä±ùÖù
+        /// é¾™æ¯å†°é”¥ - æœå‰æ–¹å¯†é›†å‘å°„å†°æŸ±
         /// </summary>
         public static void BreathIcicles(NPC npc, int count = 3) {
             if (Main.netMode == NetmodeID.MultiplayerClient) return;
@@ -156,7 +156,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
         }
 
         /// <summary>
-        /// Öù×´¼¤¹â´óÕĞ - ÊÍ·Å±ùÊø
+        /// æŸ±çŠ¶æ¿€å…‰å¤§æ‹› - é‡Šæ”¾å†°æŸ
         /// </summary>
         public static void FrostBeam(NPC npc) {
             if (Main.netMode == NetmodeID.MultiplayerClient) return;
@@ -175,7 +175,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
         }
 
         /// <summary>
-        /// ÃÜ¼¯±ùÖùÓêÉı¼¶°æ - ¼ÓËÙÁ¬Ğø½µÂä
+        /// å¯†é›†å†°æŸ±é›¨å‡çº§ç‰ˆ - åŠ é€Ÿè¿ç»­é™è½
         /// </summary>
         public static void IcicleStorm(NPC npc, int count = 3) {
             if (Main.netMode == NetmodeID.MultiplayerClient) return;

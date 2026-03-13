@@ -1,4 +1,4 @@
-using AncientChineseMythology.Players;
+﻿using AncientChineseMythology.Players;
 using System.Linq;
 using Terraria;
 using Terraria.ID;

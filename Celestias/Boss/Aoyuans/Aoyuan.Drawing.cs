@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.GameContent;
 
@@ -6,23 +6,23 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
 {
     internal partial class Aoyuan
     {
-        #region »æÖÆ
+        #region ç»˜åˆ¶
 
         /// <summary>
-        /// Í·²¿»æÖÆ - ÎÆÀíAoyuan.png: 112¡Á438, 3Ö¡, Ã¿Ö¡112¡Á146
-        /// ·Ç¹¥»÷×´Ì¬Ê¹ÓÃNPC.frame£¨µÚ0Ö¡£©£¬¹¥»÷×´Ì¬ÊÖ¶¯ÇĞÖ¡¶¯»­
+        /// å¤´éƒ¨ç»˜åˆ¶ - çº¹ç†Aoyuan.png: 112Ã—438, 3å¸§, æ¯å¸§112Ã—146
+        /// éæ”»å‡»çŠ¶æ€ä½¿ç”¨NPC.frameï¼ˆç¬¬0å¸§ï¼‰ï¼Œæ”»å‡»çŠ¶æ€æ‰‹åŠ¨åˆ‡å¸§åŠ¨ç”»
         /// </summary>
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
             Texture2D texture = TextureAssets.Npc[NPC.type].Value;
             SpriteEffects effects = NPC.spriteDirection == -1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
 
             if (!fireAttack) {
-                // ÆÕÍ¨×´Ì¬£ºÊ¹ÓÃNPC.frame»æÖÆµ±Ç°Ö¡
+                // æ™®é€šçŠ¶æ€ï¼šä½¿ç”¨NPC.frameç»˜åˆ¶å½“å‰å¸§
                 spriteBatch.Draw(texture, NPC.Center - screenPos, NPC.frame, drawColor,
                     NPC.rotation, NPC.frame.Size() / 2, NPC.scale, effects, 0f);
             }
             else {
-                // ¹¥»÷×´Ì¬£ºÊÖ¶¯¼ÆËã¹¥»÷Ö¡¾ØĞÎ
+                // æ”»å‡»çŠ¶æ€ï¼šæ‰‹åŠ¨è®¡ç®—æ”»å‡»å¸§çŸ©å½¢
                 int frameHeight = texture.Height / HeadFrameCount;
                 int frameY = frameHeight * attackFrame;
                 Rectangle sourceRect = new Rectangle(0, frameY, texture.Width, frameHeight);

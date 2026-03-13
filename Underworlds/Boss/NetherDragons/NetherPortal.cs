@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -8,13 +8,13 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 {
     /// <summary>
-    /// ÓÄÚ¤´«ËÍÃÅ - Boss½ø³öµÄ´«ËÍÃÅ
+    /// å¹½å†¥ä¼ é€é—¨ - Bossè¿›å‡ºçš„ä¼ é€é—¨
     /// </summary>
     internal class NetherPortal : ModProjectile
     {
         public override string Texture => "InnoVault/Assets/placeholder";
 
-        private ref float PortalState => ref Projectile.ai[0]; // 0=Õ¹¿ªÖĞ, 1=ÎÈ¶¨, 2=ÊÕËõÖĞ
+        private ref float PortalState => ref Projectile.ai[0]; // 0=å±•å¼€ä¸­, 1=ç¨³å®š, 2=æ”¶ç¼©ä¸­
         private ref float PortalTimer => ref Projectile.ai[1];
 
         private float scale = 0f;
@@ -22,7 +22,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         private float innerRotation = 0f;
         private const float MaxScale = 3.5f;
 
-        // ÄÜÁ¿»·Ğ§¹û
+        // èƒ½é‡ç¯æ•ˆæœ
         private float[] energyRings = new float[3];
         private float pulsePhase = 0f;
 
@@ -41,7 +41,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             Projectile.ignoreWater = true;
             Projectile.tileCollide = false;
 
-            // ³õÊ¼»¯ÄÜÁ¿»·
+            // åˆå§‹åŒ–èƒ½é‡ç¯
             for (int i = 0; i < energyRings.Length; i++) {
                 energyRings[i] = i * MathHelper.TwoPi / energyRings.Length;
             }
@@ -51,22 +51,22 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             PortalTimer++;
             pulsePhase += 0.08f;
 
-            // Ğı×ªĞ§¹û - Ë«²ã·´ÏòĞı×ª
+            // æ—‹è½¬æ•ˆæœ - åŒå±‚åå‘æ—‹è½¬
             rotation += 0.04f;
             innerRotation -= 0.06f;
 
-            // ¸üĞÂÄÜÁ¿»·
+            // æ›´æ–°èƒ½é‡ç¯
             for (int i = 0; i < energyRings.Length; i++) {
                 energyRings[i] += 0.05f;
             }
 
             switch (PortalState) {
-                case 0: // Õ¹¿ªÖĞ - ¿ìËÙÕ¹¿ª
+                case 0: // å±•å¼€ä¸­ - å¿«é€Ÿå±•å¼€
                     if (scale < MaxScale) {
                         scale += 0.15f;
                         Projectile.alpha = Math.Max(0, 255 - (int)(scale / MaxScale * 255));
 
-                        // Õ¹¿ªÊ±µÄ±¬Õ¨ĞÔÁ£×Ó
+                        // å±•å¼€æ—¶çš„çˆ†ç‚¸æ€§ç²’å­
                         if (Main.rand.NextBool(2)) {
                             float angle = Main.rand.NextFloat(MathHelper.TwoPi);
                             Vector2 velocity = angle.ToRotationVector2() * Main.rand.NextFloat(3f, 8f);
@@ -75,7 +75,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                             Main.dust[dust].noGravity = true;
                         }
 
-                        // Õ¹¿ªÒôĞ§
+                        // å±•å¼€éŸ³æ•ˆ
                         if (PortalTimer % 3 == 0) {
                             SoundEngine.PlaySound(SoundID.Item9 with {
                                 Volume = 0.3f,
@@ -88,7 +88,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                         PortalState = 1;
                         Projectile.alpha = 0;
 
-                        // ÍêÈ«Õ¹¿ªÊ±µÄ±¬·¢
+                        // å®Œå…¨å±•å¼€æ—¶çš„çˆ†å‘
                         SoundEngine.PlaySound(SoundID.Item8 with { Volume = 0.8f }, Projectile.Center);
                         for (int i = 0; i < 30; i++) {
                             float angle = i * MathHelper.TwoPi / 30f;
@@ -100,11 +100,11 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                     }
                     break;
 
-                case 1: // ÎÈ¶¨×´Ì¬ - Âö¶¯Ğ§¹û
+                case 1: // ç¨³å®šçŠ¶æ€ - è„‰åŠ¨æ•ˆæœ
                     float pulse = MathF.Sin(pulsePhase) * 0.15f;
                     scale = MaxScale + pulse;
 
-                    // ³ÖĞøµÄÄÜÁ¿Á£×ÓÁ÷
+                    // æŒç»­çš„èƒ½é‡ç²’å­æµ
                     if (Main.rand.NextBool(3)) {
                         Vector2 offset = Main.rand.NextVector2Circular(80f, 80f) * scale;
                         Vector2 velocity = -offset.SafeNormalize(Vector2.Zero) * 3f;
@@ -115,19 +115,19 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                         Main.dust[dust].fadeIn = 1.5f;
                     }
 
-                    // ÎÈ¶¨³¬¹ı140Ö¡ºó¿ªÊ¼ÊÕËõ
+                    // ç¨³å®šè¶…è¿‡140å¸§åå¼€å§‹æ”¶ç¼©
                     if (PortalTimer > 140) {
                         PortalState = 2;
                         PortalTimer = 0;
                     }
                     break;
 
-                case 2: // ÊÕËõÖĞ - ¿ìËÙÄÚ±¬
+                case 2: // æ”¶ç¼©ä¸­ - å¿«é€Ÿå†…çˆ†
                     if (scale > 0f) {
                         scale -= 0.18f;
                         Projectile.alpha = Math.Min(255, (int)((1f - scale / MaxScale) * 255));
 
-                        // ÊÕËõÊ±ÏòÄÚÎüÒıÁ£×Ó
+                        // æ”¶ç¼©æ—¶å‘å†…å¸å¼•ç²’å­
                         if (Main.rand.NextBool()) {
                             Vector2 offset = Main.rand.NextVector2Circular(100f, 100f);
                             Vector2 velocity = -offset.SafeNormalize(Vector2.Zero) * 4f;
@@ -138,7 +138,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                         }
                     }
                     else {
-                        // ÍêÈ«ÊÕËõ£¬×îºóµÄÄÚ±¬Ğ§¹û
+                        // å®Œå…¨æ”¶ç¼©ï¼Œæœ€åçš„å†…çˆ†æ•ˆæœ
                         if (Main.netMode != NetmodeID.Server) {
                             for (int i = 0; i < 20; i++) {
                                 Vector2 velocity = Main.rand.NextVector2Circular(4f, 4f);
@@ -153,7 +153,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                     break;
             }
 
-            // Ç¿»¯·¢¹âĞ§¹û
+            // å¼ºåŒ–å‘å…‰æ•ˆæœ
             float lightIntensity = scale / MaxScale;
             Lighting.AddLight(Projectile.Center, 0.4f * lightIntensity, 0.7f * lightIntensity, 1.2f * lightIntensity);
         }
@@ -169,7 +169,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             Color portalColor = new Color(80, 140, 220);
             Color coreColor = new Color(150, 200, 255);
 
-            // »æÖÆÍâ²ã¹â»·
+            // ç»˜åˆ¶å¤–å±‚å…‰ç¯
             for (int i = 0; i < 3; i++) {
                 float ringScale = scale * (1.2f + i * 0.3f);
                 float ringAlpha = 0.15f - i * 0.04f;
@@ -187,7 +187,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                 );
             }
 
-            // »æÖÆÄÜÁ¿»·
+            // ç»˜åˆ¶èƒ½é‡ç¯
             for (int i = 0; i < energyRings.Length; i++) {
                 float angle = energyRings[i];
                 float ringScale = scale * (0.8f + MathF.Sin(angle * 2f) * 0.2f);
@@ -205,7 +205,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                 );
             }
 
-            // »æÖÆÖ÷´«ËÍÃÅ²ã - ¶à²ãĞı×ªĞ§¹û
+            // ç»˜åˆ¶ä¸»ä¼ é€é—¨å±‚ - å¤šå±‚æ—‹è½¬æ•ˆæœ
             for (int i = 0; i < 5; i++) {
                 float layerScale = scale * (1f - i * 0.12f);
                 float layerRotation = rotation * (1f + i * 0.2f);
@@ -224,7 +224,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                 );
             }
 
-            // ÄÚ²ã·´ÏòĞı×ª
+            // å†…å±‚åå‘æ—‹è½¬
             for (int i = 0; i < 3; i++) {
                 float layerScale = scale * (0.6f - i * 0.15f);
                 float layerAlpha = 0.4f - i * 0.1f;
@@ -242,7 +242,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                 );
             }
 
-            // ÖĞĞÄ·¢¹âºËĞÄ - Âö¶¯
+            // ä¸­å¿ƒå‘å…‰æ ¸å¿ƒ - è„‰åŠ¨
             float corePulse = 1f + MathF.Sin(pulsePhase * 2f) * 0.3f;
             Main.spriteBatch.Draw(
                 fogTex,
@@ -260,7 +260,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         }
 
         /// <summary>
-        /// ¿ªÊ¼ÊÕËõ´«ËÍÃÅ
+        /// å¼€å§‹æ”¶ç¼©ä¼ é€é—¨
         /// </summary>
         public void StartClosing() {
             PortalState = 2;

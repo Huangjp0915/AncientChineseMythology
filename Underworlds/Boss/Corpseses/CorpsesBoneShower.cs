@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -8,7 +8,7 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.Corpseses
 {
     /// <summary>
-    /// ¹ÇÍ·µ¯Ä» - ÊÜÖØÁ¦Ó°ÏìµÄÆÃÈ÷¹¥»÷
+    /// éª¨å¤´å¼¹å¹• - å—é‡åŠ›å½±å“çš„æ³¼æ´’æ”»å‡»
     /// </summary>
     public class CorpsesBoneShower : ModProjectile
     {
@@ -32,15 +32,15 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
         }
 
         public override void AI() {
-            // ÖØÁ¦Ğ§¹û
+            // é‡åŠ›æ•ˆæœ
             Projectile.velocity.Y += 0.3f;
             if (Projectile.velocity.Y > 16f)
                 Projectile.velocity.Y = 16f;
 
-            // Ğı×ª
+            // æ—‹è½¬
             Projectile.rotation += Projectile.velocity.X * 0.05f;
 
-            // ¶¯»­
+            // åŠ¨ç”»
             Projectile.frameCounter++;
             if (Projectile.frameCounter >= 8) {
                 Projectile.frameCounter = 0;
@@ -49,7 +49,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
                     Projectile.frame = 0;
             }
 
-            // ×ÏÉ«Á£×ÓĞ§¹û
+            // ç´«è‰²ç²’å­æ•ˆæœ
             if (Main.rand.NextBool(4)) {
                 int dust = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height,
                     DustID.Shadowflame, 0, 0, 100, default, 1.2f);
@@ -57,20 +57,20 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
                 Main.dust[dust].velocity = Projectile.velocity * 0.3f;
             }
 
-            // ÇáÎ¢µÄ×óÓÒÒ¡°Ú
+            // è½»å¾®çš„å·¦å³æ‘‡æ‘†
             Projectile.ai[0] += 0.1f;
             Projectile.velocity.X += MathF.Sin(Projectile.ai[0]) * 0.1f;
             Projectile.scale += 0.01f;
 
-            // ·¢¹â
+            // å‘å…‰
             Lighting.AddLight(Projectile.Center, Color.BlueViolet.ToVector3() * 3);
         }
 
         public override void OnKill(int timeLeft) {
-            // ÂäµØÒôĞ§
+            // è½åœ°éŸ³æ•ˆ
             SoundEngine.PlaySound(SoundID.Dig, Projectile.position);
 
-            // ±¬·¢Á£×Ó
+            // çˆ†å‘ç²’å­
             for (int i = 0; i < 10; i++) {
                 int dust = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height,
                     DustID.Shadowflame, 0, 0, 100, default, 1.5f);
@@ -80,7 +80,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            // »æÖÆÍÏÎ²
+            // ç»˜åˆ¶æ‹–å°¾
             Texture2D texture = ModContent.Request<Texture2D>("Terraria/Images/Projectile_" + ProjectileID.Bone).Value;
             Vector2 origin = texture.Size() / 2f;
 
@@ -93,7 +93,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
                     Projectile.oldRot[i], origin, Projectile.scale * 0.9f, SpriteEffects.None);
             }
 
-            // »æÖÆÖ÷Ìå£¨Ê¹ÓÃÔ­°æ¹ÇÍ·ÎÆÀí²¢È¾³É×ÏÉ«£©
+            // ç»˜åˆ¶ä¸»ä½“ï¼ˆä½¿ç”¨åŸç‰ˆéª¨å¤´çº¹ç†å¹¶æŸ“æˆç´«è‰²ï¼‰
             Color mainColor = Color.Lerp(lightColor, new Color(150, 50, 200), 0.6f);
             Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null,
                 mainColor, Projectile.rotation, origin, Projectile.scale, SpriteEffects.None);

@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -8,17 +8,17 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Celestias.Boss.AoGuangs
 {
-    #region ·âÂ·Ë®Áú¾í
+    #region å°è·¯æ°´é¾™å·
 
     /// <summary>
-    /// ·âÂ·Ë®Áú¾í - Õ½³¡±ß½ç£¬Ê¹ÓÃÔ­°æÁú¾íÎÆÀí
+    /// å°è·¯æ°´é¾™å· - æˆ˜åœºè¾¹ç•Œï¼Œä½¿ç”¨åŸç‰ˆé¾™å·çº¹ç†
     /// </summary>
     public class BarrierWaterTornado : ModProjectile
     {
         public override string Texture => "InnoVault/Assets/placeholder";
 
         private ref float OwnerIndex => ref Projectile.ai[0];
-        private ref float Side => ref Projectile.ai[1]; // -1×ó²à, 1ÓÒ²à
+        private ref float Side => ref Projectile.ai[1]; // -1å·¦ä¾§, 1å³ä¾§
 
         private float tornadoRotation;
         private float tornadoAlpha = 0f;
@@ -37,11 +37,11 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             Projectile.penetrate = -1;
             Projectile.tileCollide = false;
             Projectile.ignoreWater = true;
-            Projectile.timeLeft = 99999; // ³ÖĞøµ½BossËÀÍö
+            Projectile.timeLeft = 99999; // æŒç»­åˆ°Bossæ­»äº¡
         }
 
         public override void AI() {
-            // ¼ì²éBossÊÇ·ñ´æ»î
+            // æ£€æŸ¥Bossæ˜¯å¦å­˜æ´»
             NPC owner = Main.npc[(int)OwnerIndex];
             if (!owner.active || owner.type != ModContent.NPCType<AoGuang>()) {
                 tornadoAlpha -= 0.02f;
@@ -51,7 +51,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 return;
             }
 
-            // ¸úËæÍæ¼ÒÎ»ÖÃ£¨±£³ÖÏà¶Ô¾àÀë£©
+            // è·Ÿéšç©å®¶ä½ç½®ï¼ˆä¿æŒç›¸å¯¹è·ç¦»ï¼‰
             Player target = Main.player[owner.target];
             if (target.active && !target.dead) {
                 float targetX = target.Center.X + Side * 800f;
@@ -61,12 +61,12 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 );
             }
 
-            // Öğ½¥ÏÔÏÖ
+            // é€æ¸æ˜¾ç°
             tornadoAlpha = MathHelper.Lerp(tornadoAlpha, 1f, 0.02f);
             tornadoHeight = MathHelper.Lerp(tornadoHeight, MaxHeight, 0.03f);
             tornadoRotation += 0.15f;
 
-            // Áú¾íÁ£×ÓĞ§¹û
+            // é¾™å·ç²’å­æ•ˆæœ
             if (Main.netMode != NetmodeID.Server) {
                 for (int i = 0; i < 8; i++) {
                     float heightOffset = Main.rand.NextFloat(-tornadoHeight / 2, tornadoHeight / 2);
@@ -85,7 +85,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 }
             }
 
-            // ÍÆ¿ªÍæ¼Ò
+            // æ¨å¼€ç©å®¶
             foreach (Player player in Main.player) {
                 if (!player.active || player.dead) continue;
                 float distance = MathF.Abs(player.Center.X - Projectile.Center.X);
@@ -99,7 +99,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
         }
 
         public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
-            // ÖùĞÎÅö×²
+            // æŸ±å½¢ç¢°æ’
             float targetX = targetHitbox.Center.X;
             float distance = MathF.Abs(targetX - Projectile.Center.X);
             float targetY = targetHitbox.Center.Y;
@@ -111,11 +111,11 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             SpriteBatch sb = Main.spriteBatch;
             Vector2 screenPos = Projectile.Center - Main.screenPosition;
             Main.instance.LoadProjectile(ProjectileID.SandnadoHostile);
-            // Ê¹ÓÃÔ­°æÁú¾í·çÎÆÀí
+            // ä½¿ç”¨åŸç‰ˆé¾™å·é£çº¹ç†
             Texture2D tornadoTex = TextureAssets.Projectile[ProjectileID.SandnadoHostile].Value;
             Vector2 origin = new Vector2(tornadoTex.Width / 2f, tornadoTex.Height / 2f);
 
-            // »æÖÆ¶à²ãÁú¾í·ç
+            // ç»˜åˆ¶å¤šå±‚é¾™å·é£
             int segments = 162;
             for (int seg = 0; seg < segments; seg++) {
                 float heightPercent = (float)seg / segments;
@@ -125,17 +125,17 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
 
                 Vector2 segPos = screenPos + new Vector2(0, yOffset);
 
-                // Íâ²ã - ÇàÀ¶É«
+                // å¤–å±‚ - é’è“è‰²
                 Color outerColor = AoGuangHelper.OceanTeal * tornadoAlpha * 0.4f;
                 outerColor.A = 0;
                 sb.Draw(tornadoTex, segPos, null, outerColor, segRot, origin, segRadius * 1.3f, SpriteEffects.None, 0f);
 
-                // ÖĞ²ã - ÁúÍõÀ¶
+                // ä¸­å±‚ - é¾™ç‹è“
                 Color midColor = AoGuangHelper.DragonBlue * tornadoAlpha * 0.6f;
                 midColor.A = 0;
                 sb.Draw(tornadoTex, segPos, null, midColor, segRot * 1.2f, origin, segRadius, SpriteEffects.None, 0f);
 
-                // ÄÚ²ã - Ë®¹â
+                // å†…å±‚ - æ°´å…‰
                 Color innerColor = AoGuangHelper.WaterGlow * tornadoAlpha * 0.3f;
                 innerColor.A = 0;
                 sb.Draw(tornadoTex, segPos, null, innerColor, segRot * 1.5f, origin, segRadius * 0.7f, SpriteEffects.None, 0f);
@@ -147,10 +147,10 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
 
     #endregion
 
-    #region ÆøÅİµ¯Ä»
+    #region æ°”æ³¡å¼¹å¹•
 
     /// <summary>
-    /// ÁúÍõÆøÅİ - Æ¯¸¡×·×ÙÆøÅİ
+    /// é¾™ç‹æ°”æ³¡ - æ¼‚æµ®è¿½è¸ªæ°”æ³¡
     /// </summary>
     public class DragonBubble : ModProjectile
     {
@@ -179,7 +179,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             bubblePhase += 0.08f;
             bubbleScale = MathHelper.Lerp(bubbleScale, 1f, 0.03f);
 
-            // ÇáÎ¢×·×Ù
+            // è½»å¾®è¿½è¸ª
             if (Projectile.timeLeft > 200) {
                 Player target = Main.player[Player.FindClosest(Projectile.position, Projectile.width, Projectile.height)];
                 if (target.active && !target.dead) {
@@ -191,10 +191,10 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 }
             }
 
-            // Æ¯¸¡Ğ§¹û
+            // æ¼‚æµ®æ•ˆæœ
             Projectile.velocity.Y += MathF.Sin(bubblePhase) * 0.05f;
 
-            // ÆøÅİÁ£×Ó
+            // æ°”æ³¡ç²’å­
             if (Main.netMode != NetmodeID.Server && Main.rand.NextBool(4)) {
                 int dust = Dust.NewDust(Projectile.Center, 0, 0, DustID.Wet, 0, 0, 200, default, 0.8f);
                 Main.dust[dust].noGravity = true;
@@ -211,12 +211,12 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
 
             float pulse = 1f + MathF.Sin(bubblePhase * 2f) * 0.1f;
 
-            // ÆøÅİÍâ¿Ç
+            // æ°”æ³¡å¤–å£³
             Color shellColor = AoGuangHelper.WaterGlow * 0.3f * bubbleScale;
             shellColor.A = 0;
             sb_Draw(Main.spriteBatch, tex, drawPos, null, shellColor, 0f, origin, 0.8f * bubbleScale * pulse, SpriteEffects.None, 0f);
 
-            // ÆøÅİ¸ß¹â - ×¢ÒâLightShot³¯ÓÒ£¬ĞèÒªĞı×ª
+            // æ°”æ³¡é«˜å…‰ - æ³¨æ„LightShotæœå³ï¼Œéœ€è¦æ—‹è½¬
             Color highlightColor = AoGuangHelper.PureWhite * 0.5f * bubbleScale;
             highlightColor.A = 0;
             Main.spriteBatch.Draw(tex, drawPos + new Vector2(-8, -8) * bubbleScale, null, highlightColor,
@@ -232,7 +232,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
         public override void OnKill(int timeLeft) {
             if (Main.netMode == NetmodeID.Server) return;
 
-            // ÆøÅİÆÆÁÑ
+            // æ°”æ³¡ç ´è£‚
             for (int i = 0; i < 8; i++) {
                 Vector2 vel = Main.rand.NextVector2Circular(4, 4);
                 int dust = Dust.NewDust(Projectile.Center, 0, 0, DustID.Wet, vel.X, vel.Y, 150, default, 1.2f);
@@ -245,10 +245,10 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
 
     #endregion
 
-    #region Ë®Öù¹¥»÷
+    #region æ°´æŸ±æ”»å‡»
 
     /// <summary>
-    /// Ë®Öù¼â´Ì - ´ÓµØÃæÅç·¢µÄË®Öù
+    /// æ°´æŸ±å°–åˆº - ä»åœ°é¢å–·å‘çš„æ°´æŸ±
     /// </summary>
     public class WaterSpike : ModProjectile
     {
@@ -275,17 +275,17 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
         }
 
         public override void AI() {
-            // Ô¤¾¯½×¶Î
+            // é¢„è­¦é˜¶æ®µ
             if (Projectile.timeLeft > 90) {
                 spikeAlpha = MathHelper.Lerp(spikeAlpha, 0.5f, 0.1f);
 
-                // Ô¤¾¯Á£×Ó
+                // é¢„è­¦ç²’å­
                 if (Main.netMode != NetmodeID.Server && Projectile.timeLeft % 3 == 0) {
                     int dust = Dust.NewDust(Projectile.Center, 0, 0, DustID.BlueTorch, 0, -3f, 150, default, 1.5f);
                     Main.dust[dust].noGravity = true;
                 }
             }
-            // Åç·¢½×¶Î
+            // å–·å‘é˜¶æ®µ
             else if (Projectile.timeLeft > 40) {
                 if (!hasErupted) {
                     hasErupted = true;
@@ -297,7 +297,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 spikeHeight = MaxHeight * ACMUtils.QuadOut(progress);
                 spikeAlpha = 1f;
 
-                // Åç·¢Á£×Ó
+                // å–·å‘ç²’å­
                 if (Main.netMode != NetmodeID.Server) {
                     for (int i = 0; i < 4; i++) {
                         Vector2 dustPos = Projectile.Center + new Vector2(Main.rand.NextFloat(-20, 20), -spikeHeight * Main.rand.NextFloat(0.2f, 1f));
@@ -307,7 +307,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                     }
                 }
             }
-            // ÏûÉ¢½×¶Î
+            // æ¶ˆæ•£é˜¶æ®µ
             else {
                 spikeAlpha = Projectile.timeLeft / 40f;
             }
@@ -318,7 +318,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
         public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
             if (!hasErupted) return false;
 
-            // ÖùĞÎÅö×²
+            // æŸ±å½¢ç¢°æ’
             float targetX = targetHitbox.Center.X;
             float distance = MathF.Abs(targetX - Projectile.Center.X);
             float targetY = targetHitbox.Center.Y;
@@ -332,7 +332,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             Texture2D tex = ACMAsset.GlaciateWave;
             Vector2 screenPos = Projectile.Center - Main.screenPosition;
 
-            // »æÖÆË®Öù - ´ÓÏÂÍùÉÏ£¬Ğı×ª90¶È
+            // ç»˜åˆ¶æ°´æŸ± - ä»ä¸‹å¾€ä¸Šï¼Œæ—‹è½¬90åº¦
             Vector2 origin = new Vector2(0, tex.Height / 2f);
 
             for (int layer = 2; layer >= 0; layer--) {
@@ -347,7 +347,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 layerColor *= layerAlpha * spikeAlpha;
                 layerColor.A = 0;
 
-                // Ğı×ª-90¶ÈÊ¹Æä³¯ÉÏ
+                // æ—‹è½¬-90åº¦ä½¿å…¶æœä¸Š
                 Vector2 scale = new Vector2(spikeHeight / tex.Width, layerWidth);
                 Main.spriteBatch.Draw(tex, screenPos, null, layerColor, -MathHelper.PiOver2, origin, scale, SpriteEffects.None, 0f);
             }
@@ -358,10 +358,10 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
 
     #endregion
 
-    #region º£Ğ¥Ç½
+    #region æµ·å•¸å¢™
 
     /// <summary>
-    /// º£Ğ¥Ç½ - ºáÏòÒÆ¶¯µÄË®Ç½
+    /// æµ·å•¸å¢™ - æ¨ªå‘ç§»åŠ¨çš„æ°´å¢™
     /// </summary>
     public class TsunamiWall : ModProjectile
     {
@@ -389,10 +389,10 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
         public override void AI() {
             wavePhase += 0.15f + WaveOffset;
 
-            // ²¨ÀËÆğ·ü
+            // æ³¢æµªèµ·ä¼
             Projectile.position.Y += MathF.Sin(wavePhase) * 2f;
 
-            // Ë®Ç½Á£×Ó
+            // æ°´å¢™ç²’å­
             if (Main.netMode != NetmodeID.Server && Main.rand.NextBool(2)) {
                 Vector2 dustPos = Projectile.Center + new Vector2(Main.rand.NextFloat(-20, 20), Main.rand.NextFloat(-wallHeight / 2, wallHeight / 2));
                 int dustType = Main.rand.NextBool() ? DustID.Water : DustID.BlueTorch;
@@ -404,7 +404,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
         }
 
         public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
-            // Ç½ĞÎÅö×²
+            // å¢™å½¢ç¢°æ’
             float targetX = targetHitbox.Center.X;
             float distance = MathF.Abs(targetX - Projectile.Center.X);
             float targetY = targetHitbox.Center.Y;
@@ -419,7 +419,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             Vector2 screenPos = Projectile.Center - Main.screenPosition;
             Vector2 origin = new Vector2(0, tex.Height / 2f);
 
-            // »æÖÆ´¹Ö±Ë®Ç½
+            // ç»˜åˆ¶å‚ç›´æ°´å¢™
             for (int layer = 2; layer >= 0; layer--) {
                 float layerWidth = (0.2f + layer * 0.1f);
 
@@ -432,7 +432,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 layerColor.A = 0;
 
                 Vector2 scale = new Vector2(wallHeight / tex.Width, layerWidth);
-                // Ğı×ª90¶ÈÊ¹Æä´¹Ö±
+                // æ—‹è½¬90åº¦ä½¿å…¶å‚ç›´
                 Main.spriteBatch.Draw(tex, screenPos, null, layerColor, -MathHelper.PiOver2, origin, scale, SpriteEffects.None, 0f);
             }
 
@@ -442,10 +442,10 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
 
     #endregion
 
-    #region Áú×¦Õ¶»÷
+    #region é¾™çˆªæ–©å‡»
 
     /// <summary>
-    /// Áú×¦Õ¶»÷ - »¡ĞÎÕ¶»÷µ¯Ä»
+    /// é¾™çˆªæ–©å‡» - å¼§å½¢æ–©å‡»å¼¹å¹•
     /// </summary>
     public class DragonClawSlash : ModProjectile
     {
@@ -473,7 +473,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             slashPhase += 0.2f;
             Projectile.rotation = Projectile.velocity.ToRotation();
 
-            // Õ¶»÷Á£×Ó
+            // æ–©å‡»ç²’å­
             if (Main.netMode != NetmodeID.Server) {
                 for (int i = 0; i < 3; i++) {
                     Vector2 dustPos = Projectile.Center - Projectile.velocity.SafeNormalize(Vector2.Zero) * 20f;
@@ -496,7 +496,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
 
             float fadeAlpha = Projectile.timeLeft / 60f;
 
-            // ÍÏÎ²
+            // æ‹–å°¾
             for (int i = 0; i < Projectile.oldPos.Length; i++) {
                 if (Projectile.oldPos[i] == Vector2.Zero) continue;
                 float progress = 1f - (float)i / Projectile.oldPos.Length;
@@ -508,7 +508,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 Main.spriteBatch.Draw(tex, pos, null, trailColor, Projectile.oldRot[i], origin, scale, SpriteEffects.None, 0f);
             }
 
-            // Ö÷ÌåÕ¶»÷ - LightShot³¯ÓÒ£¬ÕâÀïÊ¹ÓÃGlaciateWave¸üÊÊºÏ
+            // ä¸»ä½“æ–©å‡» - LightShotæœå³ï¼Œè¿™é‡Œä½¿ç”¨GlaciateWaveæ›´é€‚åˆ
             Color mainColor = AoGuangHelper.WaterGlow * fadeAlpha;
             mainColor.A = 0;
             Main.spriteBatch.Draw(tex, drawPos, null, mainColor, Projectile.rotation, origin, new Vector2(0.8f, 0.2f), SpriteEffects.None, 0f);

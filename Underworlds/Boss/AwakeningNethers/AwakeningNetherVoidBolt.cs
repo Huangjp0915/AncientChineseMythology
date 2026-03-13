@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -8,8 +8,8 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
 {
     /// <summary>
-    /// ¾õĞÑÓÄÚ¤Áú - Ğé¿Õµ¯
-    /// ÖÕ¾Ö¼¶×·×Ùµ¯Ä»£¬´øÓĞÇ¿ÁÒµÄÊÓ¾õÍÏÎ²ºÍÄÜÁ¿Ğ§¹û
+    /// è§‰é†’å¹½å†¥é¾™ - è™šç©ºå¼¹
+    /// ç»ˆå±€çº§è¿½è¸ªå¼¹å¹•ï¼Œå¸¦æœ‰å¼ºçƒˆçš„è§†è§‰æ‹–å°¾å’Œèƒ½é‡æ•ˆæœ
     /// </summary>
     public class AwakeningNetherVoidBolt : ModProjectile
     {
@@ -20,9 +20,9 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         private float chargeLevel = 0f;
         private float wobblePhase = 0f;
 
-        // ÊÇ·ñÎªÇ¿»¯°æ±¾
+        // æ˜¯å¦ä¸ºå¼ºåŒ–ç‰ˆæœ¬
         private bool IsEnhanced => Projectile.ai[0] > 0;
-        // ×·×ÙÇ¿¶ÈµÈ¼¶
+        // è¿½è¸ªå¼ºåº¦ç­‰çº§
         private int TrackingLevel => (int)Projectile.ai[1];
 
         public override void SetStaticDefaults() {
@@ -42,15 +42,15 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         public override void AI() {
-            // Öğ½¥³äÄÜ
+            // é€æ¸å……èƒ½
             chargeLevel = MathHelper.Lerp(chargeLevel, 1f, 0.03f);
             pulsePhase += 0.15f;
             wobblePhase += 0.1f;
 
-            // Ğı×ªĞ§¹û
+            // æ—‹è½¬æ•ˆæœ
             Projectile.rotation += MathF.Sin(wobblePhase) * 0.08f + 0.05f;
 
-            // ×·×ÙÍæ¼Ò
+            // è¿½è¸ªç©å®¶
             Player target = FindTarget();
             if (target != null) {
                 float trackingMod = 1f + TrackingLevel * 0.3f;
@@ -60,7 +60,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 float targetSpeed = IsEnhanced ? 16f : 12f;
                 float distance = Vector2.Distance(target.Center, Projectile.Center);
 
-                // ¾àÀëÔ½½ü×·×ÙÔ½Ç¿
+                // è·ç¦»è¶Šè¿‘è¿½è¸ªè¶Šå¼º
                 if (distance < 400f) {
                     currentHomingStrength *= 1f + (1f - distance / 400f) * 0.5f;
                 }
@@ -68,15 +68,15 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 Projectile.velocity = Vector2.Lerp(Projectile.velocity, toTarget * targetSpeed, currentHomingStrength);
             }
 
-            // ²àÏòÆ®ÒÆÔö¼Ó²»¿ÉÔ¤²âĞÔ
+            // ä¾§å‘é£˜ç§»å¢åŠ ä¸å¯é¢„æµ‹æ€§
             Vector2 perpendicular = Projectile.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
             float drift = MathF.Sin(wobblePhase * 1.8f + Projectile.whoAmI * 0.7f) * 2.5f;
             Projectile.position += perpendicular * drift;
 
-            // Á£×ÓĞ§¹û
+            // ç²’å­æ•ˆæœ
             CreateParticleEffects();
 
-            // ·¢¹â
+            // å‘å…‰
             float lightIntensity = 0.5f + chargeLevel * 0.5f;
             Lighting.AddLight(Projectile.Center, AwakeningNetherHelper.AwakeningPurple.ToVector3() * lightIntensity);
         }
@@ -97,7 +97,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         private void CreateParticleEffects() {
-            // Ö÷ÍÏÎ²Á£×Ó
+            // ä¸»æ‹–å°¾ç²’å­
             if (Main.rand.NextBool(2)) {
                 Vector2 dustOffset = Main.rand.NextVector2Circular(15, 15);
                 var d = Dust.NewDustPerfect(Projectile.Center + dustOffset, DustID.Shadowflame);
@@ -107,7 +107,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 d.alpha = 80;
             }
 
-            // ÄÜÁ¿Á£×Ó
+            // èƒ½é‡ç²’å­
             if (Main.rand.NextBool(3)) {
                 var d = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(20, 20), DustID.PurpleTorch);
                 d.noGravity = true;
@@ -115,7 +115,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 d.velocity = Main.rand.NextVector2Circular(2, 2);
             }
 
-            // Ç¿»¯°æ¶îÍâÁ£×Ó
+            // å¼ºåŒ–ç‰ˆé¢å¤–ç²’å­
             if (IsEnhanced && Main.rand.NextBool(2)) {
                 var d = Dust.NewDustPerfect(Projectile.Center, DustID.PurpleCrystalShard);
                 d.noGravity = true;
@@ -123,7 +123,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 d.velocity = -Projectile.velocity * 0.2f;
             }
 
-            // Î²¼£Á£×Ó
+            // å°¾è¿¹ç²’å­
             if (Projectile.oldPos.Length > 5 && Projectile.oldPos[5] != Vector2.Zero) {
                 Vector2 tailPos = Projectile.oldPos[5] + Projectile.Size / 2;
                 if (Main.rand.NextBool(3)) {
@@ -139,10 +139,10 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         public override bool PreDraw(ref Color lightColor) {
             SpriteBatch sb = Main.spriteBatch;
 
-            // »æÖÆ¶à²ãÍÏÎ²
+            // ç»˜åˆ¶å¤šå±‚æ‹–å°¾
             DrawMultiLayerTrail(sb);
 
-            // »æÖÆºËĞÄ
+            // ç»˜åˆ¶æ ¸å¿ƒ
             DrawCore(sb);
 
             return false;
@@ -154,7 +154,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
 
             Vector2 origin = tex.Size() / 2f;
 
-            // Íâ²ã¹âÔÎÍÏÎ²
+            // å¤–å±‚å…‰æ™•æ‹–å°¾
             for (int layer = 0; layer < 2; layer++) {
                 for (int i = Projectile.oldPos.Length - 1; i >= 0; i--) {
                     if (Projectile.oldPos[i] == Vector2.Zero) continue;
@@ -170,7 +170,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
 
                     Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
 
-                    // ²¨¶¯Æ«ÒÆ
+                    // æ³¢åŠ¨åç§»
                     float wobble = MathF.Sin(wobblePhase + i * 0.4f) * 4f;
                     drawPos.Y += wobble;
 
@@ -178,7 +178,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 }
             }
 
-            // ÄÜÁ¿ÏßÍÏÎ²£¨Á¬½Ó¸÷µã£©
+            // èƒ½é‡çº¿æ‹–å°¾ï¼ˆè¿æ¥å„ç‚¹ï¼‰
             for (int i = 1; i < Projectile.oldPos.Length; i++) {
                 if (Projectile.oldPos[i] == Vector2.Zero || Projectile.oldPos[i - 1] == Vector2.Zero) continue;
 
@@ -195,13 +195,13 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         private void DrawCore(SpriteBatch sb) {
             float coreScale = (IsEnhanced ? 1.5f : 1.2f) * chargeLevel;
 
-            // Ê¹ÓÃ¸ß¼¶ºËĞÄ»æÖÆ
+            // ä½¿ç”¨é«˜çº§æ ¸å¿ƒç»˜åˆ¶
             AwakeningNetherHelper.DrawVoidCore(sb, Projectile.Center,
                 AwakeningNetherHelper.AwakeningPurple,
                 AwakeningNetherHelper.NetherCyan,
                 coreScale, pulsePhase, IsEnhanced);
 
-            // Ç¿»¯°æ¶îÍâµÄÄÜÁ¿»·
+            // å¼ºåŒ–ç‰ˆé¢å¤–çš„èƒ½é‡ç¯
             if (IsEnhanced) {
                 var tex = BAWImpermanences.BAWHelper.DustTexture;
                 if (tex == null) return;
@@ -221,21 +221,21 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         public override void OnHitPlayer(Player target, Player.HurtInfo info) {
-            // Ğé¿ÕÇÖÊ´Ğ§¹û
+            // è™šç©ºä¾µèš€æ•ˆæœ
             target.AddBuff(BuffID.Darkness, 180);
             target.AddBuff(BuffID.Blackout, 120);
 
-            // ÃüÖĞÒôĞ§
+            // å‘½ä¸­éŸ³æ•ˆ
             SoundEngine.PlaySound(SoundID.NPCHit54 with { Pitch = 0.2f, Volume = 1.1f }, Projectile.Center);
 
-            // ÃüÖĞÌØĞ§
+            // å‘½ä¸­ç‰¹æ•ˆ
             AwakeningNetherHelper.CreateSoulBurst(target.Center, 60f, 2, 12);
         }
 
         public override void OnKill(int timeLeft) {
             SoundEngine.PlaySound(SoundID.Item10 with { Pitch = 0.4f, Volume = 0.9f }, Projectile.Center);
 
-            // ÏûÉ¢ÌØĞ§
+            // æ¶ˆæ•£ç‰¹æ•ˆ
             AwakeningNetherHelper.CreateVoidVortex(Projectile.Center, 50f, 0.5f, 15);
 
             for (int i = 0; i < 20; i++) {
@@ -249,8 +249,8 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
     }
 
     /// <summary>
-    /// ¾õĞÑÓÄÚ¤Áú - Áé»êµ¯
-    /// »·ĞÎÀ©É¢µÄÁé»êµ¯Ä»
+    /// è§‰é†’å¹½å†¥é¾™ - çµé­‚å¼¹
+    /// ç¯å½¢æ‰©æ•£çš„çµé­‚å¼¹å¹•
     /// </summary>
     public class AwakeningNetherSoulOrb : ModProjectile
     {
@@ -260,9 +260,9 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         private float spiralAngle = 0f;
         private Color orbColor;
 
-        // À©É¢Ä£Ê½£º0=Ö±Ïß£¬1=ÂİĞı
+        // æ‰©æ•£æ¨¡å¼ï¼š0=ç›´çº¿ï¼Œ1=èºæ—‹
         private int SpreadMode => (int)Projectile.ai[0];
-        // ÑÕÉ«Ë÷Òı
+        // é¢œè‰²ç´¢å¼•
         private int ColorIndex => (int)Projectile.ai[1];
 
         public override void SetStaticDefaults() {
@@ -282,7 +282,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         public override void AI() {
-            // ³õÊ¼»¯ÑÕÉ«
+            // åˆå§‹åŒ–é¢œè‰²
             if (pulsePhase == 0f) {
                 Color[] colors = [
                     AwakeningNetherHelper.AwakeningPurple,
@@ -295,22 +295,22 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
             pulsePhase += 0.12f;
             spiralAngle += 0.05f;
 
-            // ÂİĞıÄ£Ê½
+            // èºæ—‹æ¨¡å¼
             if (SpreadMode == 1) {
                 Vector2 perpendicular = Projectile.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
                 float spiral = MathF.Sin(spiralAngle) * 3f;
                 Projectile.position += perpendicular * spiral;
             }
 
-            // Ğı×ª
+            // æ—‹è½¬
             Projectile.rotation = Projectile.velocity.ToRotation();
 
-            // ¼ÓËÙ
+            // åŠ é€Ÿ
             if (Projectile.velocity.Length() < 14f) {
                 Projectile.velocity *= 1.015f;
             }
 
-            // Á£×ÓĞ§¹û
+            // ç²’å­æ•ˆæœ
             if (Main.rand.NextBool(2)) {
                 var d = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(10, 10), DustID.SpectreStaff);
                 d.noGravity = true;
@@ -319,7 +319,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 d.color = orbColor;
             }
 
-            // ÄÜÁ¿»·ÈÆ
+            // èƒ½é‡ç¯ç»•
             if (Main.rand.NextBool(4)) {
                 float angle = Main.rand.NextFloat(MathHelper.TwoPi);
                 Vector2 offset = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 15f;
@@ -339,7 +339,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
 
             Vector2 origin = tex.Size() / 2f;
 
-            // ÍÏÎ²
+            // æ‹–å°¾
             for (int i = Projectile.oldPos.Length - 1; i >= 0; i--) {
                 if (Projectile.oldPos[i] == Vector2.Zero) continue;
 
@@ -355,7 +355,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 sb.Draw(tex, drawPos, null, trailColor, Projectile.oldRot[i], origin, trailScale, SpriteEffects.None, 0);
             }
 
-            // ºËĞÄ
+            // æ ¸å¿ƒ
             float pulse = 1f + MathF.Sin(pulsePhase) * 0.2f;
             AwakeningNetherHelper.DrawVoidCore(sb, Projectile.Center, orbColor,
                 Color.Lerp(orbColor, Color.White, 0.3f), pulse, pulsePhase);

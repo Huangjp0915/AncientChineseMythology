@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.GameContent;
@@ -8,8 +8,8 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 {
     /// <summary>
-    /// ÒõÌì×ÓÌì¿ÕĞ§¹û - µÛÚ¤ºÚ½ğÉ«µ÷µÄÑ¹ÆÈĞÔÌì¿Õ
-    /// Õ½¶·Ê±Ìì¿ÕÁıÕÖÔÚ¸¯ĞàµÛÍõµÄÚ¤ÓòÖ®ÖĞ
+    /// é˜´å¤©å­å¤©ç©ºæ•ˆæœ - å¸å†¥é»‘é‡‘è‰²è°ƒçš„å‹è¿«æ€§å¤©ç©º
+    /// æˆ˜æ–—æ—¶å¤©ç©ºç¬¼ç½©åœ¨è…æœ½å¸ç‹çš„å†¥åŸŸä¹‹ä¸­
     /// </summary>
     public class YinEmperorSky : CustomSky
     {
@@ -18,7 +18,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         private float maxIntensity = 0.85f;
         private Color skyColor;
 
-        // ¶¯Ì¬Ğ§¹û²ÎÊı
+        // åŠ¨æ€æ•ˆæœå‚æ•°
         private float dragonPulse;
         private float lightningTimer;
 
@@ -62,21 +62,21 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                     float distance = Main.LocalPlayer.Distance(boss.Center);
                     float t = MathHelper.Clamp(distance / 1600f, 0f, 1f);
 
-                    // µÛÚ¤·ç¸ñ¶àÖØÉ«½×£ºÉîºÚ½ğ -> ¸¯Ğà×Ï -> ÓÄ°µÀ¶
+                    // å¸å†¥é£æ ¼å¤šé‡è‰²é˜¶ï¼šæ·±é»‘é‡‘ -> è…æœ½ç´« -> å¹½æš—è“
                     skyColor = VaultUtils.MultiStepColorLerp(t,
-                        new Color(10, 8, 15),     // ÉîÔ¨ºÚ£¨×îÑ¹ÆÈ£©
-                        new Color(30, 15, 50),    // µÛÚ¤×Ï
-                        new Color(50, 35, 20),    // ¸¯Ğà½ğ
-                        new Color(20, 25, 40));   // ÓÄ°µÀ¶
+                        new Color(10, 8, 15),     // æ·±æ¸Šé»‘ï¼ˆæœ€å‹è¿«ï¼‰
+                        new Color(30, 15, 50),    // å¸å†¥ç´«
+                        new Color(50, 35, 20),    // è…æœ½é‡‘
+                        new Color(20, 25, 40));   // å¹½æš—è“
 
                     if (intensity < maxIntensity)
                         intensity += 0.008f;
 
-                    // ½×¶Î±ä»¯ÔöÇ¿Ìì¿ÕĞ§¹û
+                    // é˜¶æ®µå˜åŒ–å¢å¼ºå¤©ç©ºæ•ˆæœ
                     float lifePercent = (float)boss.life / boss.lifeMax;
                     if (lifePercent < 0.5f) {
                         maxIntensity = 0.92f;
-                        // µÍÑªÁ¿Ê±Ìì¿Õ·ººì
+                        // ä½è¡€é‡æ—¶å¤©ç©ºæ³›çº¢
                         if (lifePercent < 0.25f) {
                             skyColor = Color.Lerp(skyColor, new Color(50, 10, 15), 0.3f);
                         }
@@ -98,26 +98,26 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             if (maxDepth >= 0 && minDepth < 0) {
                 Vector2 shake = Main.rand.NextVector2Circular(1f * intensity, 1f * intensity);
 
-                // Ö÷É«µ÷±³¾°
+                // ä¸»è‰²è°ƒèƒŒæ™¯
                 spriteBatch.Draw(
                     TextureAssets.MagicPixel.Value,
                     new Rectangle((int)shake.X, (int)shake.Y, Main.screenWidth, Main.screenHeight),
                     skyColor * intensity
                 );
 
-                // ÁúÆøÂö¶¯²ã
+                // é¾™æ°”è„‰åŠ¨å±‚
                 DrawDragonVeinLayer(spriteBatch);
 
-                // µÛÚ¤·ûÎÄÁ£×Ó
+                // å¸å†¥ç¬¦æ–‡ç²’å­
                 DrawImperialParticles(spriteBatch);
 
-                // Ú¤À×ÉÁË¸
+                // å†¥é›·é—ªçƒ
                 DrawNetherLightning(spriteBatch);
             }
         }
 
         /// <summary>
-        /// ÁúÆøÂö¶¯ - Ìì¿ÕÖĞÒşÔ¼¿É¼ûµÄÁúÆøÁ÷¶¯
+        /// é¾™æ°”è„‰åŠ¨ - å¤©ç©ºä¸­éšçº¦å¯è§çš„é¾™æ°”æµåŠ¨
         /// </summary>
         private void DrawDragonVeinLayer(SpriteBatch sb) {
             if (intensity < 0.3f) return;
@@ -130,7 +130,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 float baseY = Main.screenHeight * (0.1f + 0.8f * i / veinCount);
                 float wave = MathF.Sin(time * 0.5f + seed) * 40f;
 
-                // ÁúÆø¹â´ø
+                // é¾™æ°”å…‰å¸¦
                 Color veinColor = Color.Lerp(YinEmperorHelper.ImperialGold, YinEmperorHelper.AbyssPurple, 0.6f);
                 veinColor *= intensity * 0.08f;
                 veinColor.A = 0;
@@ -152,7 +152,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         }
 
         /// <summary>
-        /// µÛÚ¤·ûÎÄÁ£×Ó - Ìì¿ÕÖĞÆ®¸¡µÄ¹ÅÀÏ·ûÎÄËéÆ¬
+        /// å¸å†¥ç¬¦æ–‡ç²’å­ - å¤©ç©ºä¸­é£˜æµ®çš„å¤è€ç¬¦æ–‡ç¢ç‰‡
         /// </summary>
         private void DrawImperialParticles(SpriteBatch sb) {
             if (intensity < 0.2f) return;
@@ -168,7 +168,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 float pulse = MathF.Sin(time * 1.5f + seed * 0.1f) * 0.4f + 0.6f;
                 float alpha = pulse * intensity * 0.25f;
 
-                // ½ğÉ«Óë×ÏÉ«½»Ìæ
+                // é‡‘è‰²ä¸ç´«è‰²äº¤æ›¿
                 Color particleColor = i % 3 == 0
                     ? YinEmperorHelper.ImperialGold
                     : (i % 3 == 1 ? YinEmperorHelper.AbyssPurple : YinEmperorHelper.SoulLanternCyan);
@@ -185,12 +185,12 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         }
 
         /// <summary>
-        /// Ú¤À×ÉÁË¸ - Ìì¿ÕÖĞÅ¼¶û³öÏÖµÄÓÄ°µÀ×¹â
+        /// å†¥é›·é—ªçƒ - å¤©ç©ºä¸­å¶å°”å‡ºç°çš„å¹½æš—é›·å…‰
         /// </summary>
         private void DrawNetherLightning(SpriteBatch sb) {
             if (intensity < 0.4f) return;
 
-            // µÍ¸ÅÂÊÉÁË¸
+            // ä½æ¦‚ç‡é—ªçƒ
             float flashChance = MathF.Sin(lightningTimer * 7f) * MathF.Sin(lightningTimer * 13f);
             if (flashChance > 0.85f) {
                 Color flashColor = Color.Lerp(YinEmperorHelper.ImperialGold, YinEmperorHelper.AbyssPurple, 0.3f);
@@ -216,7 +216,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
     }
 
     /// <summary>
-    /// ¼ÓÔØÒõÌì×ÓÌì¿ÕĞ§¹û
+    /// åŠ è½½é˜´å¤©å­å¤©ç©ºæ•ˆæœ
     /// </summary>
     public class YinEmperorSkyLoader : ModSystem
     {
@@ -227,7 +227,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
     }
 
     /// <summary>
-    /// ÒõÌì×ÓBossÕ½¶·ÏµÍ³ - ¹ÜÀíÌì¿ÕĞ§¹û¼¤»î/¹Ø±Õ
+    /// é˜´å¤©å­Bossæˆ˜æ–—ç³»ç»Ÿ - ç®¡ç†å¤©ç©ºæ•ˆæœæ¿€æ´»/å…³é—­
     /// </summary>
     public class YinEmperorBossSystem : ModSystem
     {

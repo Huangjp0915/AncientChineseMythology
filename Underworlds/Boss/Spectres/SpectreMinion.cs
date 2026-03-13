@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -9,7 +9,7 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.Spectres
 {
     /// <summary>
-    /// Ğ¡Ô¹Áé - Ô¹ÁéBossÕÙ»½µÄ¸¨Öú¹ÖÎï
+    /// å°æ€¨çµ - æ€¨çµBosså¬å”¤çš„è¾…åŠ©æ€ªç‰©
     /// </summary>
     public class SpectreMinion : ModNPC
     {
@@ -19,10 +19,10 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
         private float orbitAngle = 0f;
         private int attackTimer = 0;
 
-        // ËŞÖ÷BossË÷Òı
+        // å®¿ä¸»Bossç´¢å¼•
         private int OwnerIndex => (int)NPC.ai[0];
 
-        // »ñÈ¡ËŞÖ÷
+        // è·å–å®¿ä¸»
         private NPC Owner {
             get {
                 if (OwnerIndex >= 0 && OwnerIndex < Main.maxNPCs && Main.npc[OwnerIndex].active) {
@@ -53,7 +53,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
         }
 
         public override void AI() {
-            // Èç¹ûËŞÖ÷ËÀÍö£¬×Ô¼ºÒ²ÏûÉ¢
+            // å¦‚æœå®¿ä¸»æ­»äº¡ï¼Œè‡ªå·±ä¹Ÿæ¶ˆæ•£
             if (Owner == null || !Owner.active) {
                 NPC.life = 0;
                 NPC.active = false;
@@ -65,29 +65,29 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
             orbitAngle += 0.03f;
             attackTimer++;
 
-            // Ä¿±êÑ¡Ôñ
+            // ç›®æ ‡é€‰æ‹©
             NPC.TargetClosest();
             Player target = Main.player[NPC.target];
 
             if (!target.active || target.dead) {
-                // »Øµ½ËŞÖ÷Éí±ß
+                // å›åˆ°å®¿ä¸»èº«è¾¹
                 Vector2 toOwner = (Owner.Center - NPC.Center).SafeNormalize(Vector2.Zero);
                 NPC.velocity = Vector2.Lerp(NPC.velocity, toOwner * 8f, 0.05f);
             }
             else {
-                // ĞĞÎªÄ£Ê½£º»·ÈÆ²¢¹¥»÷
+                // è¡Œä¸ºæ¨¡å¼ï¼šç¯ç»•å¹¶æ”»å‡»
                 RunCombatAI(target);
             }
 
-            // Á£×ÓĞ§¹û
+            // ç²’å­æ•ˆæœ
             CreateAmbientParticles();
 
-            // ·¢¹â
+            // å‘å…‰
             Lighting.AddLight(NPC.Center, SpectreHelper.SpectreCyan.ToVector3() * 0.3f);
         }
 
         private void RunCombatAI(Player target) {
-            // ÔÚÍæ¼ÒÖÜÎ§ÓÎµ´
+            // åœ¨ç©å®¶å‘¨å›´æ¸¸è¡
             float orbitRadius = 180f + MathF.Sin(pulsePhase * 0.5f) * 30f;
             Vector2 targetPos = target.Center + new Vector2(
                 MathF.Cos(orbitAngle + NPC.whoAmI * MathHelper.PiOver2) * orbitRadius,
@@ -97,7 +97,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
             Vector2 toTarget = targetPos - NPC.Center;
             NPC.velocity = Vector2.Lerp(NPC.velocity, toTarget * 0.08f, 0.06f);
 
-            // ¹¥»÷
+            // æ”»å‡»
             if (attackTimer % 90 == 0) {
                 ShootAtTarget(target);
             }
@@ -136,7 +136,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
             Texture2D tex = TextureAssets.Npc[NPC.type].Value;
             Vector2 origin = tex.Size() / 2f;
 
-            // ÍÏÎ²
+            // æ‹–å°¾
             for (int i = 0; i < NPC.oldPos.Length; i++) {
                 if (NPC.oldPos[i] == Vector2.Zero) continue;
 
@@ -152,11 +152,11 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
                     NPC.scale * (0.5f + progress * 0.5f), SpriteEffects.None, 0);
             }
 
-            // Ö÷Ìå
+            // ä¸»ä½“
             float pulse = 1f + MathF.Sin(pulsePhase) * 0.1f;
             Color mainColor = Color.Lerp(SpectreHelper.SpectreCyan, SpectreHelper.SpectreYellow, 0.3f);
 
-            // ¹âÔÎ
+            // å…‰æ™•
             Color glowColor = mainColor;
             glowColor.A = 0;
             for (int i = 2; i >= 0; i--) {
@@ -185,7 +185,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
         }
 
         public override bool CheckActive() {
-            // Èç¹ûËŞÖ÷´æÔÚ£¬²»Òª×Ô¶¯ÏûÊ§
+            // å¦‚æœå®¿ä¸»å­˜åœ¨ï¼Œä¸è¦è‡ªåŠ¨æ¶ˆå¤±
             return Owner == null || !Owner.active;
         }
     }

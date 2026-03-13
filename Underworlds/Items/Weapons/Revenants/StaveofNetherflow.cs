@@ -1,4 +1,4 @@
-using AncientChineseMythology.Underworlds.Tiles;
+ï»¿using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -10,8 +10,8 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
 {
     /// <summary>
-    /// »ÆÈªÓÄÚ¤ÕÈ - Äı¾Û»ÆÈªÓÄÚ¤Ö®Á¦µÄ·¨ÕÈ£¬Ä§·¨ÕÈÀàÎäÆ÷
-    /// ÈâºóÖĞÆÚ£¬ÊÍ·ÅÓÄÚ¤ÄÜÁ¿µ¯£¬ÃüÖĞºó²úÉúÓÄÚ¤äöÎĞ³ÖĞøÉËº¦
+    /// é»„æ³‰å¹½å†¥æ– - å‡èšé»„æ³‰å¹½å†¥ä¹‹åŠ›çš„æ³•æ–ï¼Œé­”æ³•æ–ç±»æ­¦å™¨
+    /// è‚‰åä¸­æœŸï¼Œé‡Šæ”¾å¹½å†¥èƒ½é‡å¼¹ï¼Œå‘½ä¸­åäº§ç”Ÿå¹½å†¥æ¼©æ¶¡æŒç»­ä¼¤å®³
     /// </summary>
     public class StaveofNetherflow : ModItem
     {
@@ -37,11 +37,11 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
         }
 
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
-            //´ÓÕÈ¼âÊÍ·ÅÓÄÚ¤ÄÜÁ¿µ¯
+            //ä»æ–å°–é‡Šæ”¾å¹½å†¥èƒ½é‡å¼¹
             Vector2 staffTip = player.Center + velocity.SafeNormalize(Vector2.Zero) * 50f;
             Projectile.NewProjectile(source, staffTip, velocity, type, damage, knockback, player.whoAmI);
 
-            //Ê©·¨Á£×Ó
+            //æ–½æ³•ç²’å­
             for (int i = 0; i < 8; i++) {
                 Vector2 vel = velocity.SafeNormalize(Vector2.Zero).RotatedByRandom(MathHelper.ToRadians(30)) * Main.rand.NextFloat(2f, 5f);
                 Dust cast = Dust.NewDustPerfect(
@@ -65,8 +65,8 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
     }
 
     /// <summary>
-    /// ÓÄÚ¤ÄÜÁ¿µ¯µ¯Ä» - »ºÂı·ÉĞĞµÄÓÄÚ¤ÄÜÁ¿Çò£¬ÃüÖĞºóÔÚµĞÈËÎ»ÖÃÉú³ÉÓÄÚ¤äöÎĞ
-    /// Ê¹ÓÃACMAsset.SoftGlowµş¼Ó¹âÇòĞ§¹û£¬ACMAsset.SlashBurst»æÖÆÃüÖĞ±¬·¢
+    /// å¹½å†¥èƒ½é‡å¼¹å¼¹å¹• - ç¼“æ…¢é£è¡Œçš„å¹½å†¥èƒ½é‡çƒï¼Œå‘½ä¸­ååœ¨æ•Œäººä½ç½®ç”Ÿæˆå¹½å†¥æ¼©æ¶¡
+    /// ä½¿ç”¨ACMAsset.SoftGlowå åŠ å…‰çƒæ•ˆæœï¼ŒACMAsset.SlashBurstç»˜åˆ¶å‘½ä¸­çˆ†å‘
     /// </summary>
     public class NetherflowOrb : ModProjectile
     {
@@ -95,7 +95,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
             Timer++;
             Projectile.rotation += 0.1f;
 
-            //ÇáÎ¢×·×Ù
+            //è½»å¾®è¿½è¸ª
             if (Timer > 20f) {
                 NPC target = FindClosestNPC(300f);
                 if (target != null) {
@@ -104,11 +104,11 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 }
             }
 
-            //ÓÄÚ¤À¶ÂÌÉ«¹âÕÕ
+            //å¹½å†¥è“ç»¿è‰²å…‰ç…§
             float pulse = 0.5f + MathF.Sin(Timer * 0.15f) * 0.15f;
             Lighting.AddLight(Projectile.Center, 0.2f * pulse, 0.5f * pulse, 0.6f * pulse);
 
-            //ÓÄ»êäöÎĞÁ£×Ó
+            //å¹½é­‚æ¼©æ¶¡ç²’å­
             if (Main.rand.NextBool(2)) {
                 float angle = Timer * 0.3f + Main.rand.NextFloat(MathHelper.TwoPi);
                 Vector2 offset = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * Main.rand.NextFloat(8f, 16f);
@@ -120,7 +120,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 vortex.noGravity = true;
             }
 
-            //°µÓ°ÍÏÎ²
+            //æš—å½±æ‹–å°¾
             if (Main.rand.NextBool(3)) {
                 Dust trail = Dust.NewDustDirect(
                     Projectile.Center - Projectile.velocity * 0.5f,
@@ -148,11 +148,11 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
         }
 
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
-            //¸½¼ÓÚ¤¸®¼õÒæ
+            //é™„åŠ å†¥åºœå‡ç›Š
             target.AddBuff(BuffID.ShadowFlame, 180);
             target.AddBuff(BuffID.Slow, 120);
 
-            //ÃüÖĞ±¬·¢£ºÓÄÚ¤äöÎĞ
+            //å‘½ä¸­çˆ†å‘ï¼šå¹½å†¥æ¼©æ¶¡
             for (int i = 0; i < 20; i++) {
                 float angle = MathHelper.TwoPi / 20f * i;
                 Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * Main.rand.NextFloat(4f, 7f);
@@ -163,7 +163,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 vortex.noGravity = true;
             }
 
-            //°µÓ°Ñæ»·
+            //æš—å½±ç„°ç¯
             for (int i = 0; i < 10; i++) {
                 Vector2 vel = Main.rand.NextVector2CircularEdge(6f, 6f);
                 Dust ring = Dust.NewDustPerfect(
@@ -177,12 +177,12 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            //Ê¹ÓÃSoftGlow»æÖÆÓÄÚ¤ÄÜÁ¿Çò
+            //ä½¿ç”¨SoftGlowç»˜åˆ¶å¹½å†¥èƒ½é‡çƒ
             Texture2D softGlow = ACMAsset.SoftGlow;
             if (softGlow != null) {
                 Vector2 glowOrigin = softGlow.Size() / 2f;
 
-                //ÍÏÎ²¹âÇò
+                //æ‹–å°¾å…‰çƒ
                 for (int i = 0; i < Projectile.oldPos.Length; i++) {
                     if (Projectile.oldPos[i] == Vector2.Zero) continue;
                     float progress = 1f - (float)i / Projectile.oldPos.Length;
@@ -192,7 +192,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                     Main.EntitySpriteDraw(softGlow, drawPos, null, trailColor, 0f, glowOrigin, 0.5f * progress, SpriteEffects.None, 0);
                 }
 
-                //Ö÷Ìå¹âÇò£¨Ë«²ãºôÎü¹âĞ§£©
+                //ä¸»ä½“å…‰çƒï¼ˆåŒå±‚å‘¼å¸å…‰æ•ˆï¼‰
                 float pulse1 = 0.7f + MathF.Sin(Timer * 0.15f) * 0.1f;
                 Color innerGlow = new Color(80, 220, 240) * 0.6f;
                 innerGlow.A = 0;
@@ -204,7 +204,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, outerGlow, 0f, glowOrigin, pulse2, SpriteEffects.None, 0);
             }
 
-            //Ê¹ÓÃSmokeÎÆÀíµş¼ÓÓÄÚ¤ÑÌÎí¸Ğ£¨È¡Ò»Ö¡£©
+            //ä½¿ç”¨Smokeçº¹ç†å åŠ å¹½å†¥çƒŸé›¾æ„Ÿï¼ˆå–ä¸€å¸§ï¼‰
             Texture2D smoke = ACMAsset.Smoke;
             if (smoke != null) {
                 int frame = (int)(Timer * 0.3f) % 16;
@@ -224,15 +224,15 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
         }
 
         public override void OnKill(int timeLeft) {
-            //Ê¹ÓÃSlashBurstµş¼ÓÏûÍö±¬·¢Ğ§¹û
+            //ä½¿ç”¨SlashBurstå åŠ æ¶ˆäº¡çˆ†å‘æ•ˆæœ
             Texture2D slashBurst = ACMAsset.SlashBurst;
             if (slashBurst != null) {
-                //SlashBurstµÄÊÓ¾õĞ§¹ûÍ¨¹ıÁ£×ÓÄ£Äâ
+                //SlashBurstçš„è§†è§‰æ•ˆæœé€šè¿‡ç²’å­æ¨¡æ‹Ÿ
             }
 
             SoundEngine.PlaySound(SoundID.NPCDeath6 with { Volume = 0.4f, Pitch = 0.3f }, Projectile.Center);
 
-            //ÓÄÚ¤±¬É¢
+            //å¹½å†¥çˆ†æ•£
             for (int i = 0; i < 15; i++) {
                 Vector2 vel = Main.rand.NextVector2Circular(5f, 5f);
                 Dust death = Dust.NewDustPerfect(
@@ -242,7 +242,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 death.noGravity = true;
             }
 
-            //°µÓ°ÑæËéÆ¬
+            //æš—å½±ç„°ç¢ç‰‡
             for (int i = 0; i < 8; i++) {
                 Dust shadow = Dust.NewDustDirect(
                     Projectile.position, Projectile.width, Projectile.height,

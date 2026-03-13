@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.GameContent;
@@ -6,29 +6,29 @@ using Terraria.GameContent;
 namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 {
     /// <summary>
-    /// ÅşÉ³ÃÅÌìÍõ - »æÖÆ·½·¨£¨·ÖÀëÎÄ¼ş£©
+    /// æ¯—æ²™é—¨å¤©ç‹ - ç»˜åˆ¶æ–¹æ³•ï¼ˆåˆ†ç¦»æ–‡ä»¶ï¼‰
     /// </summary>
     internal partial class Vaisravana
     {
-        #region »æÖÆ
+        #region ç»˜åˆ¶
 
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
-            // »æÖÆÉñÊ¥¹â»·£¨µ×²ã£©
+            // ç»˜åˆ¶ç¥åœ£å…‰ç¯ï¼ˆåº•å±‚ï¼‰
             DrawDivineAura(spriteBatch, screenPos);
 
-            // »æÖÆÍÏÎ²
+            // ç»˜åˆ¶æ‹–å°¾
             DrawTrail(spriteBatch, screenPos);
 
-            // »æÖÆ±¦Ëş
+            // ç»˜åˆ¶å®å¡”
             DrawTowers(spriteBatch, screenPos, drawColor);
 
-            // »æÖÆ¹âÔÎ£¨ÔÚ±¾ÌåÖ®Ç°£©
+            // ç»˜åˆ¶å…‰æ™•ï¼ˆåœ¨æœ¬ä½“ä¹‹å‰ï¼‰
             DrawHalo(spriteBatch, screenPos);
 
-            // »æÖÆ±¾Ìå
+            // ç»˜åˆ¶æœ¬ä½“
             DrawMainBody(spriteBatch, screenPos, drawColor);
 
-            // »æÖÆÍâ²ã¹âĞ§
+            // ç»˜åˆ¶å¤–å±‚å…‰æ•ˆ
             DrawOuterGlow(spriteBatch, screenPos);
 
             return false;
@@ -40,7 +40,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             Texture2D auraTexture = ACMAsset.LightShot;
             Vector2 drawPos = NPC.Center - screenPos;
 
-            // ÏÉÆø°×É«¹â»·
+            // ä»™æ°”ç™½è‰²å…‰ç¯
             Color auraColor = VaisravanaHelper.PureWhite * divineAuraAlpha;
             auraColor.A = 0;
 
@@ -58,7 +58,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                 0f
             );
 
-            // µÚ¶ş²ãµ­À¶¹â»·
+            // ç¬¬äºŒå±‚æ·¡è“å…‰ç¯
             Color azureAura = VaisravanaHelper.CelestialAzure * divineAuraAlpha * 0.5f;
             azureAura.A = 0;
 
@@ -104,14 +104,14 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
         private void DrawTowers(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
             if (towerAngles == null) return;
 
-            // Ê¹ÓÃBlankStar»æÖÆ±¦ËşĞ§¹û£¨¿ÉÌæ»»Îª×¨ÓÃÎÆÀí£©
+            // ä½¿ç”¨BlankStarç»˜åˆ¶å®å¡”æ•ˆæœï¼ˆå¯æ›¿æ¢ä¸ºä¸“ç”¨çº¹ç†ï¼‰
             Texture2D towerTexture = ACMAsset.BlankStar;
             if (towerTexture == null) return;
 
             for (int i = 0; i < TowerCount; i++) {
                 Vector2 towerPos = GetTowerPosition(i) - screenPos;
 
-                // Íâ²ã½ğ¹âÔÎ
+                // å¤–å±‚é‡‘å…‰æ™•
                 Color outerGlow = VaisravanaHelper.TowerGold * 0.5f;
                 outerGlow.A = 0;
                 spriteBatch.Draw(
@@ -126,7 +126,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                     0f
                 );
 
-                // ºËĞÄ°×¹â
+                // æ ¸å¿ƒç™½å…‰
                 Color coreColor = VaisravanaHelper.PureWhite;
                 coreColor.A = 0;
                 spriteBatch.Draw(
@@ -141,7 +141,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                     0f
                 );
 
-                // ÄÚºË¸ß¹â
+                // å†…æ ¸é«˜å…‰
                 Color innerCore = VaisravanaHelper.DivineWhite;
                 innerCore.A = 0;
                 spriteBatch.Draw(
@@ -156,7 +156,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                     0f
                 );
 
-                // ±¦ËşÁ¬½ÓÏßĞ§¹û
+                // å®å¡”è¿æ¥çº¿æ•ˆæœ
                 if (ACMAsset.GlaciateWave != null) {
                     Vector2 toCenter = NPC.Center - GetTowerPosition(i);
                     float distance = toCenter.Length();
@@ -189,7 +189,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             Texture2D haloTexture = ACMAsset.BlankStar;
             Vector2 drawPos = NPC.Center - screenPos;
 
-            // ¶à²ã¹â»·
+            // å¤šå±‚å…‰ç¯
             for (int i = 0; i < 3; i++) {
                 float layerRotation = haloRotation + i * MathHelper.TwoPi / 3f;
                 float layerScale = (1.6f + i * 0.35f) * haloScale;
@@ -209,7 +209,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                 );
             }
 
-            // ·´ÏòĞı×ªµÄµ­À¶¹â»·
+            // åå‘æ—‹è½¬çš„æ·¡è“å…‰ç¯
             Color azureHalo = VaisravanaHelper.CelestialAzure * 0.25f;
             azureHalo.A = 0;
             spriteBatch.Draw(
@@ -229,7 +229,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             Texture2D texture = TextureAssets.Npc[Type].Value;
             Vector2 drawPos = NPC.Center - screenPos;
 
-            // ÄÚ²ã·¢¹â
+            // å†…å±‚å‘å…‰
             Color glowColor = VaisravanaHelper.PureWhite * 0.35f * NPC.Opacity;
             glowColor.A = 0;
 
@@ -249,7 +249,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                 );
             }
 
-            // ±¾Ìå
+            // æœ¬ä½“
             Color bodyColor = drawColor * NPC.Opacity;
             spriteBatch.Draw(
                 texture,
@@ -263,7 +263,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                 0f
             );
 
-            // ¸ß¹âµş¼Ó
+            // é«˜å…‰å åŠ 
             Color highlightColor = VaisravanaHelper.DivineWhite * 0.2f * NPC.Opacity;
             highlightColor.A = 0;
             spriteBatch.Draw(
@@ -288,7 +288,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             Color sparkleColor = VaisravanaHelper.PureWhite * 0.28f * glowIntensity;
             sparkleColor.A = 0;
 
-            // Ğı×ªµÄĞÇÃ¢
+            // æ—‹è½¬çš„æ˜ŸèŠ’
             spriteBatch.Draw(
                 sparkleTexture,
                 drawPos,
@@ -301,7 +301,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                 0f
             );
 
-            // ·´ÏòĞı×ªµÄĞÇÃ¢
+            // åå‘æ—‹è½¬çš„æ˜ŸèŠ’
             Color secondarySparkle = VaisravanaHelper.CelestialAzure * 0.18f * glowIntensity;
             secondarySparkle.A = 0;
             spriteBatch.Draw(
@@ -316,7 +316,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                 0f
             );
 
-            // Èı½×¶Î¶îÍâ¹âĞ§
+            // ä¸‰é˜¶æ®µé¢å¤–å…‰æ•ˆ
             if (IsPhase3 && ACMAsset.LightShot != null) {
                 float pulseAlpha = 0.15f + MathF.Sin(globalTime * 4f) * 0.08f;
                 Color pulseColor = VaisravanaHelper.DivineWhite * pulseAlpha;

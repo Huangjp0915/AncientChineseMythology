@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using Terraria;
@@ -7,8 +7,8 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 {
     /// <summary>
-    /// ÓÄÚ¤ÇàÇğºüÕ½¶·ÃÔÎíÏµÍ³ - ´´Ôì¹îÒìµÄµØ¸®·ÕÎ§
-    /// ÓëÓÄÚ¤ÁúµÄÃÔÎíÏµÍ³ÀàËÆµ«ÓĞ¶ÀÌØµÄºüÑı·ç¸ñ
+    /// å¹½å†¥é’ä¸˜ç‹æˆ˜æ–—è¿·é›¾ç³»ç»Ÿ - åˆ›é€ è¯¡å¼‚çš„åœ°åºœæ°›å›´
+    /// ä¸å¹½å†¥é¾™çš„è¿·é›¾ç³»ç»Ÿç±»ä¼¼ä½†æœ‰ç‹¬ç‰¹çš„ç‹å¦–é£æ ¼
     /// </summary>
     internal class NetherKitsuneFogSystem : ModSystem
     {
@@ -16,15 +16,15 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         private static float intensity = 0f;
         private static int bossNPCIndex = -1;
 
-        // ÓÄ»êÃÔÎí²ã
+        // å¹½é­‚è¿·é›¾å±‚
         private static readonly List<SoulFogLayer> soulFogs = new();
         private const int MaxSoulFogs = 50;
 
-        // ºü»ğÓÎÀëÁ£×Ó
+        // ç‹ç«æ¸¸ç¦»ç²’å­
         private static readonly List<FoxfireWisp> wisps = new();
         private const int MaxWisps = 25;
 
-        // »êÆÇÁ°äôĞ§¹û
+        // é­‚é­„æ¶Ÿæ¼ªæ•ˆæœ
         private static readonly List<SoulRipple> ripples = new();
         private const int MaxRipples = 12;
 
@@ -37,7 +37,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         public static float Intensity => intensity;
 
         /// <summary>
-        /// ¼¤»îÃÔÎíĞ§¹û
+        /// æ¿€æ´»è¿·é›¾æ•ˆæœ
         /// </summary>
         public static void Activate(int bossIndex) {
             if (bossIndex < 0 || bossIndex >= Main.maxNPCs)
@@ -51,7 +51,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             battlefieldCenter = boss.Center;
             bossLastPosition = boss.Center;
 
-            // ³õÊ¼»¯ÓÄ»êÃÔÎí
+            // åˆå§‹åŒ–å¹½é­‚è¿·é›¾
             soulFogs.Clear();
             for (int i = 0; i < MaxSoulFogs; i++) {
                 soulFogs.Add(new SoulFogLayer(battlefieldCenter, battlefieldRadius));
@@ -62,7 +62,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         }
 
         /// <summary>
-        /// Í£ÓÃÃÔÎíĞ§¹û
+        /// åœç”¨è¿·é›¾æ•ˆæœ
         /// </summary>
         public static void Deactivate() {
             isActive = false;
@@ -70,7 +70,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         }
 
         /// <summary>
-        /// ´´½¨»êÆÇÁ°äô£¨Boss¹¥»÷Ê±µ÷ÓÃ£©
+        /// åˆ›å»ºé­‚é­„æ¶Ÿæ¼ªï¼ˆBossæ”»å‡»æ—¶è°ƒç”¨ï¼‰
         /// </summary>
         public static void CreateRipple(Vector2 position, float strength = 1f) {
             if (ripples.Count < MaxRipples) {
@@ -79,7 +79,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         }
 
         /// <summary>
-        /// ´´½¨ºü»ğÓÎÀë
+        /// åˆ›å»ºç‹ç«æ¸¸ç¦»
         /// </summary>
         private static void CreateWisp(Vector2 position, Vector2 velocity) {
             if (wisps.Count < MaxWisps) {
@@ -101,7 +101,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                 return;
             }
 
-            // ÑéÖ¤BossÊÇ·ñ´æ»î
+            // éªŒè¯Bossæ˜¯å¦å­˜æ´»
             if (bossNPCIndex < 0 || bossNPCIndex >= Main.maxNPCs ||
                 !Main.npc[bossNPCIndex].active || Main.npc[bossNPCIndex].type != ModContent.NPCType<NetherKitsune>()) {
                 Deactivate();
@@ -110,7 +110,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 
             NPC boss = Main.npc[bossNPCIndex];
 
-            // Ç¿¶È½¥Èë
+            // å¼ºåº¦æ¸å…¥
             if (intensity < 1f) {
                 intensity = Math.Min(intensity + 0.006f, 1f);
             }
@@ -120,10 +120,10 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                 globalTimer -= MathHelper.TwoPi * 10f;
             }
 
-            // ¸üĞÂÕ½³¡ÖĞĞÄ
+            // æ›´æ–°æˆ˜åœºä¸­å¿ƒ
             battlefieldCenter = Vector2.Lerp(battlefieldCenter, boss.Center, 0.015f);
 
-            // BossÒÆ¶¯Ê±²úÉúºü»ğ
+            // Bossç§»åŠ¨æ—¶äº§ç”Ÿç‹ç«
             Vector2 bossVelocity = boss.Center - bossLastPosition;
             float bossSpeed = bossVelocity.Length();
 
@@ -135,12 +135,12 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 
             bossLastPosition = boss.Center;
 
-            // ¸üĞÂÓÄ»êÃÔÎí
+            // æ›´æ–°å¹½é­‚è¿·é›¾
             foreach (var fog in soulFogs) {
                 fog.Update(boss, battlefieldCenter, globalTimer);
             }
 
-            // ¸üĞÂºü»ğ
+            // æ›´æ–°ç‹ç«
             for (int i = wisps.Count - 1; i >= 0; i--) {
                 wisps[i].Update();
                 if (wisps[i].IsDead) {
@@ -148,7 +148,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                 }
             }
 
-            // ¸üĞÂÁ°äô
+            // æ›´æ–°æ¶Ÿæ¼ª
             for (int i = ripples.Count - 1; i >= 0; i--) {
                 ripples[i].Update();
                 if (ripples[i].IsDead) {
@@ -169,13 +169,13 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp,
                 DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
 
-            // »æÖÆÓÄ»êÃÔÎí
+            // ç»˜åˆ¶å¹½é­‚è¿·é›¾
             DrawSoulFogs(spriteBatch);
 
-            // »æÖÆºü»ğ
+            // ç»˜åˆ¶ç‹ç«
             DrawWisps(spriteBatch);
 
-            // »æÖÆÁ°äô
+            // ç»˜åˆ¶æ¶Ÿæ¼ª
             DrawRipples(spriteBatch);
 
             spriteBatch.End();
@@ -194,7 +194,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                 Color fogColor = fog.GetColor();
                 float alpha = fog.GetAlpha() * intensity;
 
-                // Ö÷ÃÔÎí²ã
+                // ä¸»è¿·é›¾å±‚
                 sb.Draw(
                     fogTex,
                     drawPos,
@@ -207,7 +207,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                     0f
                 );
 
-                // ÓÄ¹â²ã
+                // å¹½å…‰å±‚
                 Color glowColor = new Color(100, 180, 255) * alpha * 0.2f;
                 glowColor.A = 0;
                 sb.Draw(
@@ -230,12 +230,12 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             foreach (var wisp in wisps) {
                 Vector2 drawPos = wisp.Position - Main.screenPosition;
 
-                // ºü»ğÑÕÉ« - ÓÄÀ¶´ø°×
+                // ç‹ç«é¢œè‰² - å¹½è“å¸¦ç™½
                 Color wispColor = Color.Lerp(new Color(80, 160, 220), new Color(150, 200, 255), wisp.GetPulse());
                 float alpha = wisp.GetAlpha() * intensity;
                 wispColor.A = 0;
 
-                // ÄÚºË
+                // å†…æ ¸
                 sb.Draw(
                     fogTex,
                     drawPos,
@@ -248,7 +248,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                     0f
                 );
 
-                // ÍâÔÎ
+                // å¤–æ™•
                 Color outerColor = new Color(60, 120, 180) * alpha * 0.4f;
                 outerColor.A = 0;
                 sb.Draw(
@@ -271,7 +271,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             foreach (var ripple in ripples) {
                 Vector2 drawPos = ripple.Position - Main.screenPosition;
 
-                // »êÆÇÁ°äô - ÓÄÀ¶É«
+                // é­‚é­„æ¶Ÿæ¼ª - å¹½è“è‰²
                 Color rippleColor = new Color(90, 170, 240);
                 float alpha = ripple.GetAlpha() * intensity;
 
@@ -298,7 +298,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         }
 
         /// <summary>
-        /// »ñÈ¡Ö¸¶¨Î»ÖÃµÄÃÔÎíÃÜ¶È
+        /// è·å–æŒ‡å®šä½ç½®çš„è¿·é›¾å¯†åº¦
         /// </summary>
         public static float GetFogDensityAt(Vector2 position) {
             if (!isActive || intensity <= 0f)
@@ -326,7 +326,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
     }
 
     /// <summary>
-    /// ÓÄ»êÃÔÎí²ã - Æ®ÃìµÄ»êÆÇÆøÏ¢
+    /// å¹½é­‚è¿·é›¾å±‚ - é£˜æ¸ºçš„é­‚é­„æ°”æ¯
     /// </summary>
     internal class SoulFogLayer
     {
@@ -358,7 +358,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             RotationSpeed = Main.rand.NextFloat(-0.003f, 0.003f);
             PulsePhase = Main.rand.NextFloat(MathHelper.TwoPi);
 
-            // ÓÄÀ¶É«µ÷
+            // å¹½è“è‰²è°ƒ
             Color[] colors = new Color[]
             {
                 new Color(30, 50, 70),
@@ -376,7 +376,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             Rotation += RotationSpeed;
             PulsePhase += 0.012f;
 
-            // ±£³ÖÔÚÕ½³¡·¶Î§ÄÚ
+            // ä¿æŒåœ¨æˆ˜åœºèŒƒå›´å†…
             Vector2 toCenter = battlefieldCenter - Position;
             float distanceFromCenter = toCenter.Length();
             if (distanceFromCenter > battlefieldRadius * 0.75f) {
@@ -387,18 +387,18 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                 Velocity = Vector2.Normalize(Velocity) * 0.6f;
             }
 
-            // BossÓ°Ïì
+            // Bosså½±å“
             Vector2 toBoss = boss.Center - Position;
             float distanceToBoss = toBoss.Length();
 
             IsNearBoss = distanceToBoss < BossInfluenceRadius;
 
             if (IsNearBoss) {
-                // ±»BossÎüÒı
+                // è¢«Bosså¸å¼•
                 float attractStrength = (1f - distanceToBoss / BossInfluenceRadius) * 0.8f;
                 Velocity += toBoss.SafeNormalize(Vector2.Zero) * attractStrength * 0.05f;
 
-                // ¸úËæBossÒÆ¶¯
+                // è·ŸéšBossç§»åŠ¨
                 Velocity += boss.velocity * 0.02f;
             }
         }
@@ -423,7 +423,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
     }
 
     /// <summary>
-    /// ºü»ğÓÎÀë - ÓÄÀ¶É«µÄ¹í»ğ
+    /// ç‹ç«æ¸¸ç¦» - å¹½è“è‰²çš„é¬¼ç«
     /// </summary>
     internal class FoxfireWisp
     {
@@ -450,10 +450,10 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             Position += Velocity;
             Velocity *= 0.97f;
 
-            // ÇáÎ¢ÉÏ¸¡
+            // è½»å¾®ä¸Šæµ®
             Velocity.Y -= 0.03f;
 
-            // Ëæ»úÆ®¶¯
+            // éšæœºé£˜åŠ¨
             Velocity += Main.rand.NextVector2Circular(0.1f, 0.1f);
 
             Rotation += 0.02f;
@@ -472,7 +472,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
     }
 
     /// <summary>
-    /// »êÆÇÁ°äô - Boss¹¥»÷Ê±µÄ²¨¶¯Ğ§¹û
+    /// é­‚é­„æ¶Ÿæ¼ª - Bossæ”»å‡»æ—¶çš„æ³¢åŠ¨æ•ˆæœ
     /// </summary>
     internal class SoulRipple
     {

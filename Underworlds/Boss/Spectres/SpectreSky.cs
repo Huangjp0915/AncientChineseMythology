@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.GameContent;
@@ -8,7 +8,7 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.Spectres
 {
     /// <summary>
-    /// Ô¹ÁéÌì¿ÕĞ§¹û - Çà»ÆÉ«µ÷µÄÓÄ°µÌì¿Õ
+    /// æ€¨çµå¤©ç©ºæ•ˆæœ - é’é»„è‰²è°ƒçš„å¹½æš—å¤©ç©º
     /// </summary>
     public class SpectreSky : CustomSky
     {
@@ -54,21 +54,21 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
                     float distance = Main.LocalPlayer.Distance(boss.Center);
                     float t = MathHelper.Clamp(distance / 1400f, 0f, 1f);
 
-                    // Ô¹Áé·ç¸ñ¶àÖØÉ«½×£ºÉîÇà -> Çà»Æ»ìºÏ -> °µ½ğ
+                    // æ€¨çµé£æ ¼å¤šé‡è‰²é˜¶ï¼šæ·±é’ -> é’é»„æ··åˆ -> æš—é‡‘
                     skyColor = VaultUtils.MultiStepColorLerp(t,
-                        new Color(15, 35, 35),   // Éî°µÇà£¨×îÑ¹ÆÈ£©
-                        new Color(30, 70, 65),   // ÉîÇàÂÌ
-                        new Color(60, 90, 70),   // Çà»Æ¹ı¶É
-                        new Color(80, 85, 50));  // °µ½ğ»Æ£¨Ô¶´¦£©
+                        new Color(15, 35, 35),   // æ·±æš—é’ï¼ˆæœ€å‹è¿«ï¼‰
+                        new Color(30, 70, 65),   // æ·±é’ç»¿
+                        new Color(60, 90, 70),   // é’é»„è¿‡æ¸¡
+                        new Color(80, 85, 50));  // æš—é‡‘é»„ï¼ˆè¿œå¤„ï¼‰
 
                     if (intensity < maxIntensity)
                         intensity += 0.012f;
 
-                    // ½×¶Î2ºÍ½×¶Î3Ê±ÔöÇ¿Ğ§¹û
+                    // é˜¶æ®µ2å’Œé˜¶æ®µ3æ—¶å¢å¼ºæ•ˆæœ
                     float lifePercent = (float)boss.life / boss.lifeMax;
                     if (lifePercent < 0.5f) {
                         maxIntensity = 0.85f;
-                        // Ìí¼ÓºìÉ«µ÷
+                        // æ·»åŠ çº¢è‰²è°ƒ
                         if (lifePercent < 0.25f) {
                             skyColor = Color.Lerp(skyColor, new Color(60, 30, 30), 0.2f);
                         }
@@ -88,10 +88,10 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
 
         public override void Draw(SpriteBatch spriteBatch, float minDepth, float maxDepth) {
             if (maxDepth >= 0 && minDepth < 0) {
-                // ¼ÆËãÇáÎ¢Õğ²ü
+                // è®¡ç®—è½»å¾®éœ‡é¢¤
                 Vector2 shake = Main.rand.NextVector2Circular(1.2f * intensity, 1.2f * intensity);
 
-                // »æÖÆÌì¿Õ±³¾°
+                // ç»˜åˆ¶å¤©ç©ºèƒŒæ™¯
                 spriteBatch.Draw(
                     TextureAssets.MagicPixel.Value,
                     new Rectangle(
@@ -103,7 +103,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
                     skyColor * intensity
                 );
 
-                // »æÖÆ·ÕÎ§Á£×ÓĞ§¹û
+                // ç»˜åˆ¶æ°›å›´ç²’å­æ•ˆæœ
                 DrawAtmosphereParticles(spriteBatch);
             }
         }
@@ -111,26 +111,26 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
         private void DrawAtmosphereParticles(SpriteBatch spriteBatch) {
             if (intensity < 0.3f) return;
 
-            // Æ¯¸¡µÄÓÄ»êÁ£×Ó
+            // æ¼‚æµ®çš„å¹½é­‚ç²’å­
             float time = Main.GlobalTimeWrappedHourly;
             int particleCount = (int)(15 * intensity);
 
             for (int i = 0; i < particleCount; i++) {
-                // »ùÓÚË÷ÒıºÍÊ±¼äµÄÎ±Ëæ»úÎ»ÖÃ
+                // åŸºäºç´¢å¼•å’Œæ—¶é—´çš„ä¼ªéšæœºä½ç½®
                 float seed = i * 137.5f;
                 float x = ((seed + time * 20f) % Main.screenWidth);
                 float y = ((seed * 2.3f + time * 15f) % Main.screenHeight);
 
-                // Á£×Ó´óĞ¡ºÍÍ¸Ã÷¶ÈµÄ²¨¶¯
+                // ç²’å­å¤§å°å’Œé€æ˜åº¦çš„æ³¢åŠ¨
                 float pulse = MathF.Sin(time * 2f + seed * 0.1f) * 0.3f + 0.7f;
                 float alpha = pulse * intensity * 0.3f;
 
-                // ½»ÌæÇàÉ«ºÍ»ÆÉ«
+                // äº¤æ›¿é’è‰²å’Œé»„è‰²
                 Color particleColor = i % 2 == 0 ? SpectreHelper.SpectreCyan : SpectreHelper.SpectreYellow;
                 particleColor *= alpha;
                 particleColor.A = 0;
 
-                // »æÖÆÁ£×Ó
+                // ç»˜åˆ¶ç²’å­
                 Vector2 pos = new Vector2(x, y);
                 float size = 2f + pulse * 2f;
 
@@ -143,7 +143,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
         }
 
         public override Color OnTileColor(Color inColor) {
-            // ¸øµØĞÎÌí¼ÓÇà»ÆÉ«µ÷
+            // ç»™åœ°å½¢æ·»åŠ é’é»„è‰²è°ƒ
             Color tint = Color.Lerp(SpectreHelper.SpectreCyan, SpectreHelper.SpectreYellow, 0.3f);
             return Color.Lerp(inColor, tint, intensity * 0.4f);
         }
@@ -154,7 +154,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
     }
 
     /// <summary>
-    /// ¼ÓÔØÔ¹ÁéÌì¿ÕĞ§¹û
+    /// åŠ è½½æ€¨çµå¤©ç©ºæ•ˆæœ
     /// </summary>
     public class SpectreSkyLoader : ModSystem
     {
@@ -165,12 +165,12 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
     }
 
     /// <summary>
-    /// Ô¹ÁéBossÕ½¶·¹ÜÀí
+    /// æ€¨çµBossæˆ˜æ–—ç®¡ç†
     /// </summary>
     public class SpectreBossSystem : ModSystem
     {
         public override void PostUpdateNPCs() {
-            // µ±Ô¹ÁéBoss´æÔÚÊ±¼¤»îÌì¿ÕĞ§¹û
+            // å½“æ€¨çµBosså­˜åœ¨æ—¶æ¿€æ´»å¤©ç©ºæ•ˆæœ
             if (NPC.AnyNPCs(ModContent.NPCType<Spectre>())) {
                 if (!SkyManager.Instance[SpectreSky.name].IsActive()) {
                     SkyManager.Instance.Activate(SpectreSky.name);

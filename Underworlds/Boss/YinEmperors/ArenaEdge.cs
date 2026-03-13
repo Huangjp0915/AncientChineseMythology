@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using System;
 using Terraria;
@@ -10,14 +10,14 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 {
     /// <summary>
-    /// ÒõÌì×Ó - Ú¤ÑÛµ¯Ä»
-    /// ËÄÖ¡Ñ­»·ÑÛ¾¦ÎÆÀí£¨ArenaEdge.png£©£¬Ö§³Ö¶àÖÖ¹¥»÷Ä£Ê½£º
-    /// 0 = ÁĞÕó¼¤¹â£º¶àÖ»ÑÛ¾¦ÅÅÁĞ³ÉÕó£¬ÆëÉä¾Ş´óÖù×´¼¤¹â
-    /// 1 = »·ÈÆ³å·æ£ºÒ»È¦ÑÛ¾¦»·ÈÆºó³åÏòÍæ¼ÒÏŞÖÆ×ßÎ»
-    /// 2 = ÊØÎÀ»·ÈÆ£º»·ÈÆBossĞı×ª£¬³ÖĞøÊÍ·Å×·×Ùµ¯
-    /// 3 = »·ĞÎ¼¤¹âÕó£ºÑÛ¾¦Î§³ÉÔ²»·£¬ÏòÔ²ĞÄÆëÉä¼¤¹âĞÎ³ÉÀÎÁı
-    /// 4 = Ê®×Ö¼¤¹âÕó£ºÑÛ¾¦ÅÅÁĞ³ÉÊ®×Ö£¬Ğı×ªÉ¨Éä
-    /// 5 = É¨Éä¼¤¹â£ºµ¥Ö»ÑÛ¾¦»ºÂıĞı×ª¼¤¹âÉ¨µ´
+    /// é˜´å¤©å­ - å†¥çœ¼å¼¹å¹•
+    /// å››å¸§å¾ªç¯çœ¼ç›çº¹ç†ï¼ˆArenaEdge.pngï¼‰ï¼Œæ”¯æŒå¤šç§æ”»å‡»æ¨¡å¼ï¼š
+    /// 0 = åˆ—é˜µæ¿€å…‰ï¼šå¤šåªçœ¼ç›æ’åˆ—æˆé˜µï¼Œé½å°„å·¨å¤§æŸ±çŠ¶æ¿€å…‰
+    /// 1 = ç¯ç»•å†²é”‹ï¼šä¸€åœˆçœ¼ç›ç¯ç»•åå†²å‘ç©å®¶é™åˆ¶èµ°ä½
+    /// 2 = å®ˆå«ç¯ç»•ï¼šç¯ç»•Bossæ—‹è½¬ï¼ŒæŒç»­é‡Šæ”¾è¿½è¸ªå¼¹
+    /// 3 = ç¯å½¢æ¿€å…‰é˜µï¼šçœ¼ç›å›´æˆåœ†ç¯ï¼Œå‘åœ†å¿ƒé½å°„æ¿€å…‰å½¢æˆç‰¢ç¬¼
+    /// 4 = åå­—æ¿€å…‰é˜µï¼šçœ¼ç›æ’åˆ—æˆåå­—ï¼Œæ—‹è½¬æ‰«å°„
+    /// 5 = æ‰«å°„æ¿€å…‰ï¼šå•åªçœ¼ç›ç¼“æ…¢æ—‹è½¬æ¿€å…‰æ‰«è¡
     /// </summary>
     public class ArenaEdge : ModProjectile
     {
@@ -28,12 +28,12 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         private const int MaxFrames = 4;
         private const int FrameSpeed = 6;
 
-        // ai[0] = ¹¥»÷Ä£Ê½
+        // ai[0] = æ”»å‡»æ¨¡å¼
         private int AttackMode => (int)Projectile.ai[0];
-        // ai[1] = Ä£Ê½²ÎÊı£¨ÕóÁĞË÷Òı/»·ÈÆ½Ç¶ÈÆ«ÒÆ£©
+        // ai[1] = æ¨¡å¼å‚æ•°ï¼ˆé˜µåˆ—ç´¢å¼•/ç¯ç»•è§’åº¦åç§»ï¼‰
         private ref float ModeParam => ref Projectile.ai[1];
 
-        // ±¾µØ×´Ì¬
+        // æœ¬åœ°çŠ¶æ€
         private int frameCounter;
         private int currentFrame;
         private float pulsePhase;
@@ -44,7 +44,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         private float sweepAngle;
         private int sweepLaserIndex = -1;
 
-        // ¼¤¹âÄ£Ê½²ÎÊı
+        // æ¿€å…‰æ¨¡å¼å‚æ•°
         private const int LaserChargeTime = 80;
         private const int LaserFireTime = 60;
         private const int LaserFadeTime = 30;
@@ -70,7 +70,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         }
 
         public override void AI() {
-            // Ö¡¶¯»­
+            // å¸§åŠ¨ç”»
             frameCounter++;
             if (frameCounter >= FrameSpeed) {
                 frameCounter = 0;
@@ -81,7 +81,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             pulsePhase += 0.1f;
             localTimer++;
 
-            // ¹âÕÕ
+            // å…‰ç…§
             Lighting.AddLight(Projectile.Center, YinEmperorHelper.ImperialGold.ToVector3() * 0.4f);
 
             switch (AttackMode) {
@@ -106,14 +106,14 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             }
         }
 
-        #region Ä£Ê½0£ºÁĞÕó¼¤¹â
+        #region æ¨¡å¼0ï¼šåˆ—é˜µæ¿€å…‰
 
         /// <summary>
-        /// ÁĞÕó¼¤¹âÄ£Ê½£º
-        /// 1. ÑÛ¾¦·Éµ½Ö¸¶¨Î»ÖÃÅÅÁĞ
-        /// 2. ĞîÁ¦£¨Í«¿×ÊÕËõ+Á£×Ó»ã¾Û£©
-        /// 3. ÆëÉä¾Ş´óÖù×´¼¤¹â
-        /// 4. ¼¤¹âÏûÍËºóÑÛ¾¦ÏûÉ¢
+        /// åˆ—é˜µæ¿€å…‰æ¨¡å¼ï¼š
+        /// 1. çœ¼ç›é£åˆ°æŒ‡å®šä½ç½®æ’åˆ—
+        /// 2. è“„åŠ›ï¼ˆç³å­”æ”¶ç¼©+ç²’å­æ±‡èšï¼‰
+        /// 3. é½å°„å·¨å¤§æŸ±çŠ¶æ¿€å…‰
+        /// 4. æ¿€å…‰æ¶ˆé€€åçœ¼ç›æ¶ˆæ•£
         /// </summary>
         private void AI_LaserFormation() {
             NPC owner = FindOwner();
@@ -130,18 +130,18 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
             int totalDuration = LaserChargeTime + LaserFireTime + LaserFadeTime;
 
-            // === ĞîÁ¦½×¶Î ===
+            // === è“„åŠ›é˜¶æ®µ ===
             if (localTimer <= LaserChargeTime) {
-                // ¼õËÙµ½Î»
+                // å‡é€Ÿåˆ°ä½
                 Projectile.velocity *= 0.92f;
 
-                // ³¯ÏòÄ¿±ê£¨ÎÆÀíÕıÏò³¯ÉÏ£¬ToRotation()ÓÒÏòÎª0£¬Ğè²¹³¥PiOver2£©
+                // æœå‘ç›®æ ‡ï¼ˆçº¹ç†æ­£å‘æœä¸Šï¼ŒToRotation()å³å‘ä¸º0ï¼Œéœ€è¡¥å¿PiOver2ï¼‰
                 float targetAngle = (target.Center - Projectile.Center).ToRotation() + MathHelper.PiOver2;
                 Projectile.rotation = MathHelper.Lerp(Projectile.rotation, targetAngle, 0.08f);
 
                 chargeProgress = localTimer / (float)LaserChargeTime;
 
-                // ĞîÁ¦Á£×Ó»ã¾Ûµ½ÑÛÇ°
+                // è“„åŠ›ç²’å­æ±‡èšåˆ°çœ¼å‰
                 if (Main.netMode != NetmodeID.Server && localTimer % 3 == 0) {
                     float radius = 60f * (1f - chargeProgress);
                     Vector2 forward = (Projectile.rotation - MathHelper.PiOver2).ToRotationVector2();
@@ -157,20 +157,20 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                     }
                 }
 
-                // ĞîÁ¦ÒôĞ§
+                // è“„åŠ›éŸ³æ•ˆ
                 if (localTimer == LaserChargeTime - 20) {
                     SoundEngine.PlaySound(SoundID.Item117 with { Pitch = 0.3f, Volume = 0.7f }, Projectile.Center);
                 }
 
-                // ²»Ôì³É½Ó´¥ÉËº¦
+                // ä¸é€ æˆæ¥è§¦ä¼¤å®³
                 Projectile.damage = 0;
             }
-            // === ·¢Éä¼¤¹â ===
+            // === å‘å°„æ¿€å…‰ ===
             else if (localTimer == LaserChargeTime + 1 && !hasFiredLaser) {
                 hasFiredLaser = true;
 
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
-                    float laserAngle = (target.Center - Projectile.Center).ToRotation(); // ¼¤¹â·½ÏòÎŞĞèÎÆÀí²¹³¥
+                    float laserAngle = (target.Center - Projectile.Center).ToRotation(); // æ¿€å…‰æ–¹å‘æ— éœ€çº¹ç†è¡¥å¿
                     int damage = YinEmperorHelper.GetScaledDamage(110);
                     Projectile.NewProjectile(
                         Projectile.GetSource_FromAI(),
@@ -185,19 +185,19 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
                 SoundEngine.PlaySound(SoundID.Item33 with { Pitch = -0.5f, Volume = 1.3f }, Projectile.Center);
 
-                // ºó×øÁ¦Õğ²ü£¨rotationº¬ÎÆÀí²¹³¥£¬¼õÈ¥PiOver2»¹Ô­·½Ïò£©
+                // åååŠ›éœ‡é¢¤ï¼ˆrotationå«çº¹ç†è¡¥å¿ï¼Œå‡å»PiOver2è¿˜åŸæ–¹å‘ï¼‰
                 Vector2 recoil = -(Projectile.rotation - MathHelper.PiOver2).ToRotationVector2() * 4f;
                 Projectile.velocity = recoil;
             }
-            // === ¼¤¹â³ÖĞøÖĞ ===
+            // === æ¿€å…‰æŒç»­ä¸­ ===
             else if (localTimer <= LaserChargeTime + LaserFireTime) {
-                // ±£³Ö³¯Ïò£¬Î¢Î¢Õğ²ü
+                // ä¿æŒæœå‘ï¼Œå¾®å¾®éœ‡é¢¤
                 Projectile.velocity *= 0.9f;
                 if (Main.netMode != NetmodeID.Server) {
                     Projectile.Center += Main.rand.NextVector2Circular(1.5f, 1.5f);
                 }
 
-                // ·¢ÉäÖĞÁ£×Ó
+                // å‘å°„ä¸­ç²’å­
                 if (Main.rand.NextBool(2)) {
                     Vector2 forward = (Projectile.rotation - MathHelper.PiOver2).ToRotationVector2();
                     Vector2 dustPos = Projectile.Center + forward * 25f + Main.rand.NextVector2Circular(8, 8);
@@ -207,7 +207,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                     d.velocity = forward * 3f + Main.rand.NextVector2Circular(1, 1);
                 }
             }
-            // === ÏûÉ¢ ===
+            // === æ¶ˆæ•£ ===
             else {
                 Projectile.alpha += 8;
                 Projectile.velocity *= 0.95f;
@@ -216,7 +216,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 }
             }
 
-            // ³¬Ê±±£»¤
+            // è¶…æ—¶ä¿æŠ¤
             if (localTimer > totalDuration + 30) {
                 Projectile.Kill();
             }
@@ -224,14 +224,14 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
         #endregion
 
-        #region Ä£Ê½1£º»·ÈÆ³å·æ
+        #region æ¨¡å¼1ï¼šç¯ç»•å†²é”‹
 
         /// <summary>
-        /// »·ÈÆ³å·æÄ£Ê½£º
-        /// 1. ÑÛ¾¦´ÓÔ¶´¦¾ùÔÈ·ÉÈë¹ìµÀ£¨Èë³¡ÆÚ£©
-        /// 2. ÎÈ¶¨»·ÈÆÊÕËõ£¬ĞÎ³É¿É±æÊ¶µÄÔ²»·£¨Ñİ³öÆÚ£©
-        /// 3. ¶ÌÔİÍ£¶ÙĞîÁ¦£¬ÉÁË¸¾¯¸æ
-        /// 4. È«²¿³åÏòÍæ¼ÒÖĞĞÄ
+        /// ç¯ç»•å†²é”‹æ¨¡å¼ï¼š
+        /// 1. çœ¼ç›ä»è¿œå¤„å‡åŒ€é£å…¥è½¨é“ï¼ˆå…¥åœºæœŸï¼‰
+        /// 2. ç¨³å®šç¯ç»•æ”¶ç¼©ï¼Œå½¢æˆå¯è¾¨è¯†çš„åœ†ç¯ï¼ˆæ¼”å‡ºæœŸï¼‰
+        /// 3. çŸ­æš‚åœé¡¿è“„åŠ›ï¼Œé—ªçƒè­¦å‘Š
+        /// 4. å…¨éƒ¨å†²å‘ç©å®¶ä¸­å¿ƒ
         /// </summary>
         private void AI_EncirclingCharge() {
             Player target = FindTarget();
@@ -247,7 +247,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             int chargeDuration = 35;
             int totalOrbitEnd = approachDuration + orbitDuration + pauseDuration;
 
-            // === Èë³¡·ÉÏò¹ìµÀ ===
+            // === å…¥åœºé£å‘è½¨é“ ===
             if (localTimer <= approachDuration) {
                 float t = localTimer / (float)approachDuration;
                 float radius = MathHelper.Lerp(500f, 300f, ACMUtils.SineInOut(t));
@@ -259,10 +259,10 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 Projectile.rotation = (target.Center - Projectile.Center).ToRotation() + MathHelper.PiOver2;
                 Projectile.damage = 0;
 
-                // Öğ½¥ÏÔÏÖ
+                // é€æ¸æ˜¾ç°
                 Projectile.alpha = (int)(255 * (1f - t));
             }
-            // === ÎÈ¶¨»·ÈÆÊÕËõ ===
+            // === ç¨³å®šç¯ç»•æ”¶ç¼© ===
             else if (localTimer <= approachDuration + orbitDuration) {
                 float progress = (localTimer - approachDuration) / (float)orbitDuration;
                 Projectile.alpha = 0;
@@ -277,7 +277,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 Projectile.rotation = (target.Center - Projectile.Center).ToRotation() + MathHelper.PiOver2;
                 Projectile.damage = 0;
 
-                // ÍÏÎ²¹â»·
+                // æ‹–å°¾å…‰ç¯
                 if (Main.netMode != NetmodeID.Server && localTimer % 4 == 0) {
                     var d = Dust.NewDustPerfect(Projectile.Center, DustID.Shadowflame);
                     d.noGravity = true;
@@ -285,20 +285,20 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                     d.velocity = -Projectile.velocity * 0.15f;
                 }
             }
-            // === ĞîÁ¦Í£¶Ù + ÉÁË¸¾¯¸æ ===
+            // === è“„åŠ›åœé¡¿ + é—ªçƒè­¦å‘Š ===
             else if (localTimer <= totalOrbitEnd) {
                 float pauseT = (localTimer - approachDuration - orbitDuration) / (float)pauseDuration;
 
-                // Í£ÔÚµ±Ç°Î»ÖÃ
+                // åœåœ¨å½“å‰ä½ç½®
                 Vector2 holdPos = target.Center + new Vector2(MathF.Cos(orbitAngle), MathF.Sin(orbitAngle)) * 140f;
                 Projectile.velocity = (holdPos - Projectile.Center) * 0.2f;
                 Projectile.rotation = (target.Center - Projectile.Center).ToRotation() + MathHelper.PiOver2;
                 Projectile.damage = 0;
 
-                // ÉÁË¸¾¯¸æ
+                // é—ªçƒè­¦å‘Š
                 Projectile.alpha = (int)(MathF.Sin(pauseT * MathHelper.Pi * 6f) * 80f);
 
-                // ĞîÁ¦Á£×Ó
+                // è“„åŠ›ç²’å­
                 if (Main.netMode != NetmodeID.Server && localTimer % 2 == 0) {
                     Vector2 forward = (target.Center - Projectile.Center).SafeNormalize(Vector2.UnitY);
                     var d = Dust.NewDustPerfect(Projectile.Center + forward * 15f, DustID.GoldFlame);
@@ -311,7 +311,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                     SoundEngine.PlaySound(SoundID.Item8 with { Pitch = 0.5f, Volume = 0.9f }, Projectile.Center);
                 }
             }
-            // === ³åÏòÍæ¼Ò ===
+            // === å†²å‘ç©å®¶ ===
             else if (localTimer == totalOrbitEnd + 1) {
                 Vector2 toTarget = (target.Center - Projectile.Center).SafeNormalize(Vector2.UnitY);
                 Projectile.velocity = toTarget * 20f;
@@ -321,7 +321,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 SoundEngine.PlaySound(SoundID.DD2_WyvernDiveDown with { Pitch = 0.2f, Volume = 1f }, Projectile.Center);
                 YinEmperorHelper.CreateDragonBurst(Projectile.Center, 30f, 1, 6);
             }
-            // === ³å·æÖĞ ===
+            // === å†²é”‹ä¸­ ===
             else if (localTimer <= totalOrbitEnd + chargeDuration) {
                 Projectile.rotation = Projectile.velocity.ToRotation() + MathHelper.PiOver2;
 
@@ -329,7 +329,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                     YinEmperorHelper.CreateImperialTrail(Projectile.Center, Projectile.velocity, 0.8f);
                 }
             }
-            // === ÏûÉ¢ ===
+            // === æ¶ˆæ•£ ===
             else {
                 Projectile.alpha += 12;
                 Projectile.velocity *= 0.95f;
@@ -340,11 +340,11 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
         #endregion
 
-        #region Ä£Ê½2£ºÊØÎÀ»·ÈÆ
+        #region æ¨¡å¼2ï¼šå®ˆå«ç¯ç»•
 
         /// <summary>
-        /// ÊØÎÀ»·ÈÆÄ£Ê½£º
-        /// »·ÈÆBossĞı×ª£¬¶¨ÆÚÊÍ·Å×·×Ùµ¯
+        /// å®ˆå«ç¯ç»•æ¨¡å¼ï¼š
+        /// ç¯ç»•Bossæ—‹è½¬ï¼Œå®šæœŸé‡Šæ”¾è¿½è¸ªå¼¹
         /// </summary>
         private void AI_GuardianOrbit() {
             NPC owner = FindOwner();
@@ -361,10 +361,10 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             Vector2 orbitPos = owner.Center + new Vector2(MathF.Cos(orbitAngle), MathF.Sin(orbitAngle)) * radius;
             Projectile.velocity = (orbitPos - Projectile.Center) * 0.12f;
 
-            // ³¯Íâ¿´£¨ÎÆÀíÕıÏò³¯ÉÏ£¬orbitAngleÖ¸ÏòÔ²ÖÜÎ»ÖÃ£¬³¯Íâ=orbitAngle·½Ïò£©
+            // æœå¤–çœ‹ï¼ˆçº¹ç†æ­£å‘æœä¸Šï¼ŒorbitAngleæŒ‡å‘åœ†å‘¨ä½ç½®ï¼Œæœå¤–=orbitAngleæ–¹å‘ï¼‰
             Projectile.rotation = orbitAngle;
 
-            // ¶¨ÆÚ·¢Éä×·×Ùµ¯
+            // å®šæœŸå‘å°„è¿½è¸ªå¼¹
             if (localTimer % 80 == 40 && Main.netMode != NetmodeID.MultiplayerClient) {
                 Player target = FindTarget();
                 if (target != null) {
@@ -380,7 +380,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 }
             }
 
-            // »·ÈÆÁ£×Ó
+            // ç¯ç»•ç²’å­
             if (Main.netMode != NetmodeID.Server && Main.rand.NextBool(3)) {
                 var d = Dust.NewDustPerfect(Projectile.Center, DustID.GoldFlame);
                 d.noGravity = true;
@@ -388,19 +388,19 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 d.velocity = Main.rand.NextVector2Circular(1, 1);
             }
 
-            // ²»Ôì³É½Ó´¥ÉËº¦
+            // ä¸é€ æˆæ¥è§¦ä¼¤å®³
             Projectile.damage = 0;
         }
 
         #endregion
 
-        #region Ä£Ê½3£º»·ĞÎ¼¤¹âÕó
+        #region æ¨¡å¼3ï¼šç¯å½¢æ¿€å…‰é˜µ
 
         /// <summary>
-        /// »·ĞÎ¼¤¹âÕó£º
-        /// ÑÛ¾¦Î§³ÉÔ²»·£¬È«²¿³¯ÏòÔ²ĞÄĞîÁ¦ºóÆëÉä¼¤¹â
-        /// ĞÎ³É¼¤¹âÀÎÁı£¬Íæ¼Ò±ØĞëÔÚÔ²ĞÄ¸½½ü¶ã±Ü
-        /// ModeParam = Ô²»·ÉÏµÄ½Ç¶ÈÎ»ÖÃ
+        /// ç¯å½¢æ¿€å…‰é˜µï¼š
+        /// çœ¼ç›å›´æˆåœ†ç¯ï¼Œå…¨éƒ¨æœå‘åœ†å¿ƒè“„åŠ›åé½å°„æ¿€å…‰
+        /// å½¢æˆæ¿€å…‰ç‰¢ç¬¼ï¼Œç©å®¶å¿…é¡»åœ¨åœ†å¿ƒé™„è¿‘èº²é¿
+        /// ModeParam = åœ†ç¯ä¸Šçš„è§’åº¦ä½ç½®
         /// </summary>
         private void AI_RingLaser() {
             Player target = FindTarget();
@@ -412,7 +412,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             int positionTime = 50;
             int totalDuration = positionTime + LaserChargeTime + LaserFireTime + LaserFadeTime;
 
-            // === ·ÉÏòÔ²»·Î»ÖÃ ===
+            // === é£å‘åœ†ç¯ä½ç½® ===
             if (localTimer <= positionTime) {
                 float t = localTimer / (float)positionTime;
                 float radius = 450f;
@@ -424,7 +424,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 Projectile.alpha = (int)(255 * (1f - ACMUtils.SineInOut(t)));
                 Projectile.damage = 0;
             }
-            // === µ½Î»ºóĞîÁ¦ ===
+            // === åˆ°ä½åè“„åŠ› ===
             else if (localTimer <= positionTime + LaserChargeTime) {
                 Projectile.alpha = 0;
                 Projectile.velocity *= 0.9f;
@@ -432,7 +432,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
                 chargeProgress = (localTimer - positionTime) / (float)LaserChargeTime;
 
-                // ĞîÁ¦Á£×Ó
+                // è“„åŠ›ç²’å­
                 if (Main.netMode != NetmodeID.Server && localTimer % 3 == 0) {
                     float radius = 50f * (1f - chargeProgress);
                     Vector2 forward = (Projectile.rotation - MathHelper.PiOver2).ToRotationVector2();
@@ -452,7 +452,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
                 Projectile.damage = 0;
             }
-            // === ·¢Éä¼¤¹â ===
+            // === å‘å°„æ¿€å…‰ ===
             else if (localTimer == positionTime + LaserChargeTime + 1 && !hasFiredLaser) {
                 hasFiredLaser = true;
 
@@ -471,14 +471,14 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 Vector2 recoil = -(Projectile.rotation - MathHelper.PiOver2).ToRotationVector2() * 3f;
                 Projectile.velocity = recoil;
             }
-            // === ¼¤¹â³ÖĞø ===
+            // === æ¿€å…‰æŒç»­ ===
             else if (localTimer <= positionTime + LaserChargeTime + LaserFireTime) {
                 Projectile.velocity *= 0.9f;
                 if (Main.netMode != NetmodeID.Server) {
                     Projectile.Center += Main.rand.NextVector2Circular(1f, 1f);
                 }
             }
-            // === ÏûÉ¢ ===
+            // === æ¶ˆæ•£ ===
             else {
                 Projectile.alpha += 10;
                 Projectile.velocity *= 0.95f;
@@ -492,13 +492,13 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
         #endregion
 
-        #region Ä£Ê½4£ºÊ®×Ö¼¤¹âÕó
+        #region æ¨¡å¼4ï¼šåå­—æ¿€å…‰é˜µ
 
         /// <summary>
-        /// Ê®×Ö¼¤¹âÕó£º
-        /// ÑÛ¾¦ÅÅÁĞ³ÉÊ®×ÖĞÎ£¨ÉÏÏÂ×óÓÒ£©£¬ĞîÁ¦ºóÆëÉä¼¤¹â
-        /// Ê®×Ö»ºÂıĞı×ª£¬É¨Éä´ó·¶Î§ÇøÓò
-        /// ModeParam = Ê®×ÖÉÏµÄÎ»ÖÃË÷Òı£¨ÓÉBoss±àÅÅ£©
+        /// åå­—æ¿€å…‰é˜µï¼š
+        /// çœ¼ç›æ’åˆ—æˆåå­—å½¢ï¼ˆä¸Šä¸‹å·¦å³ï¼‰ï¼Œè“„åŠ›åé½å°„æ¿€å…‰
+        /// åå­—ç¼“æ…¢æ—‹è½¬ï¼Œæ‰«å°„å¤§èŒƒå›´åŒºåŸŸ
+        /// ModeParam = åå­—ä¸Šçš„ä½ç½®ç´¢å¼•ï¼ˆç”±Bossç¼–æ’ï¼‰
         /// </summary>
         private void AI_CrossLaser() {
             NPC owner = FindOwner();
@@ -515,26 +515,26 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
             int positionTime = 60;
             int chargeTime = 70;
-            int fireTime = 90; // ½Ï³¤µÄ·¢ÉäÊ±¼äÓÃÓÚĞı×ªÉ¨Éä
+            int fireTime = 90; // è¾ƒé•¿çš„å‘å°„æ—¶é—´ç”¨äºæ—‹è½¬æ‰«å°„
             int fadeTime = 20;
             int totalDuration = positionTime + chargeTime + fireTime + fadeTime;
 
-            // Ê®×ÖÖĞĞÄÎªBossÎ»ÖÃ
+            // åå­—ä¸­å¿ƒä¸ºBossä½ç½®
             Vector2 crossCenter = owner.Center;
 
-            // === ·ÉÏòÊ®×ÖÎ»ÖÃ ===
+            // === é£å‘åå­—ä½ç½® ===
             if (localTimer <= positionTime) {
                 Projectile.velocity *= 0.9f;
                 Projectile.rotation = (crossCenter - Projectile.Center).ToRotation() + MathHelper.PiOver2;
                 Projectile.alpha = (int)(255 * (1f - localTimer / (float)positionTime));
                 Projectile.damage = 0;
             }
-            // === ĞîÁ¦ ===
+            // === è“„åŠ› ===
             else if (localTimer <= positionTime + chargeTime) {
                 Projectile.alpha = 0;
                 Projectile.velocity *= 0.85f;
 
-                // ³¯ÏòÔ¶ÀëBossÖĞĞÄµÄ·½Ïò
+                // æœå‘è¿œç¦»Bossä¸­å¿ƒçš„æ–¹å‘
                 Vector2 outward = (Projectile.Center - crossCenter).SafeNormalize(Vector2.UnitY);
                 Projectile.rotation = outward.ToRotation() + MathHelper.PiOver2;
 
@@ -557,7 +557,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
                 Projectile.damage = 0;
             }
-            // === ·¢Éä + »ºÂıĞı×ª ===
+            // === å‘å°„ + ç¼“æ…¢æ—‹è½¬ ===
             else if (localTimer == positionTime + chargeTime + 1 && !hasFiredLaser) {
                 hasFiredLaser = true;
 
@@ -577,7 +577,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 sweepAngle = (Projectile.Center - crossCenter).ToRotation();
             }
             else if (localTimer > positionTime + chargeTime + 1 && localTimer <= positionTime + chargeTime + fireTime) {
-                // »ºÂıÈÆBossÖĞĞÄĞı×ª£¨Õû¸öÊ®×ÖÒ»Æğ×ª£©
+                // ç¼“æ…¢ç»•Bossä¸­å¿ƒæ—‹è½¬ï¼ˆæ•´ä¸ªåå­—ä¸€èµ·è½¬ï¼‰
                 sweepAngle += 0.008f;
                 float dist = Vector2.Distance(Projectile.Center, crossCenter);
                 Vector2 newPos = crossCenter + sweepAngle.ToRotationVector2() * dist;
@@ -586,7 +586,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 Vector2 outward = (Projectile.Center - crossCenter).SafeNormalize(Vector2.UnitY);
                 Projectile.rotation = outward.ToRotation() + MathHelper.PiOver2;
 
-                // Í¬²½¼¤¹â·½Ïò
+                // åŒæ­¥æ¿€å…‰æ–¹å‘
                 if (sweepLaserIndex >= 0 && sweepLaserIndex < Main.maxProjectiles) {
                     var laser = Main.projectile[sweepLaserIndex];
                     if (laser.active && laser.type == ModContent.ProjectileType<YinEmperorLaser>()) {
@@ -595,12 +595,12 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                     }
                 }
 
-                // Õğ²ü
+                // éœ‡é¢¤
                 if (Main.netMode != NetmodeID.Server) {
                     Projectile.Center += Main.rand.NextVector2Circular(1f, 1f);
                 }
             }
-            // === ÏûÉ¢ ===
+            // === æ¶ˆæ•£ ===
             else {
                 Projectile.alpha += 12;
                 Projectile.velocity *= 0.95f;
@@ -614,12 +614,12 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
         #endregion
 
-        #region Ä£Ê½5£ºÉ¨Éä¼¤¹â
+        #region æ¨¡å¼5ï¼šæ‰«å°„æ¿€å…‰
 
         /// <summary>
-        /// É¨Éä¼¤¹â£º
-        /// µ¥Ö»ÑÛ¾¦·Éµ½Ö¸¶¨Î»ÖÃ£¬ÊÍ·Å¼¤¹â²¢»ºÂıĞı×ªÉ¨Éä
-        /// ModeParam = ³õÊ¼É¨Éä½Ç¶È
+        /// æ‰«å°„æ¿€å…‰ï¼š
+        /// å•åªçœ¼ç›é£åˆ°æŒ‡å®šä½ç½®ï¼Œé‡Šæ”¾æ¿€å…‰å¹¶ç¼“æ…¢æ—‹è½¬æ‰«å°„
+        /// ModeParam = åˆå§‹æ‰«å°„è§’åº¦
         /// </summary>
         private void AI_SweepingLaser() {
             NPC owner = FindOwner();
@@ -630,11 +630,11 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
             int positionTime = 50;
             int chargeTime = 60;
-            int fireTime = 120; // ³¤Ê±¼äÉ¨Éä
+            int fireTime = 120; // é•¿æ—¶é—´æ‰«å°„
             int fadeTime = 20;
             int totalDuration = positionTime + chargeTime + fireTime + fadeTime;
 
-            // === ·ÉÏòÎ»ÖÃ ===
+            // === é£å‘ä½ç½® ===
             if (localTimer <= positionTime) {
                 Projectile.velocity *= 0.92f;
                 sweepAngle = ModeParam;
@@ -642,7 +642,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 Projectile.alpha = (int)(255 * (1f - localTimer / (float)positionTime));
                 Projectile.damage = 0;
             }
-            // === ĞîÁ¦ ===
+            // === è“„åŠ› ===
             else if (localTimer <= positionTime + chargeTime) {
                 Projectile.alpha = 0;
                 Projectile.velocity *= 0.85f;
@@ -667,7 +667,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
                 Projectile.damage = 0;
             }
-            // === ·¢Éä + »ºÂıĞı×ªÉ¨Éä ===
+            // === å‘å°„ + ç¼“æ…¢æ—‹è½¬æ‰«å°„ ===
             else if (localTimer == positionTime + chargeTime + 1 && !hasFiredLaser) {
                 hasFiredLaser = true;
 
@@ -684,12 +684,12 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 SoundEngine.PlaySound(SoundID.Item33 with { Pitch = -0.5f, Volume = 1.2f }, Projectile.Center);
             }
             else if (localTimer > positionTime + chargeTime + 1 && localTimer <= positionTime + chargeTime + fireTime) {
-                // »ºÂıĞı×ªÉ¨Éä£¨Ô¼É¨¹ı90¶È£©
+                // ç¼“æ…¢æ—‹è½¬æ‰«å°„ï¼ˆçº¦æ‰«è¿‡90åº¦ï¼‰
                 sweepAngle += 0.013f;
                 Projectile.rotation = sweepAngle + MathHelper.PiOver2;
                 Projectile.velocity *= 0.9f;
 
-                // Í¬²½¼¤¹â·½Ïò
+                // åŒæ­¥æ¿€å…‰æ–¹å‘
                 if (sweepLaserIndex >= 0 && sweepLaserIndex < Main.maxProjectiles) {
                     var laser = Main.projectile[sweepLaserIndex];
                     if (laser.active && laser.type == ModContent.ProjectileType<YinEmperorLaser>()) {
@@ -698,12 +698,12 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                     }
                 }
 
-                // Õğ²ü
+                // éœ‡é¢¤
                 if (Main.netMode != NetmodeID.Server) {
                     Projectile.Center += Main.rand.NextVector2Circular(1.2f, 1.2f);
                 }
 
-                // É¨ÉäÖĞÁ£×Ó
+                // æ‰«å°„ä¸­ç²’å­
                 if (Main.rand.NextBool(2)) {
                     Vector2 forward = sweepAngle.ToRotationVector2();
                     var d = Dust.NewDustPerfect(
@@ -714,7 +714,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                     d.velocity = forward * 3f;
                 }
             }
-            // === ÏûÉ¢ ===
+            // === æ¶ˆæ•£ ===
             else {
                 Projectile.alpha += 12;
                 Projectile.velocity *= 0.95f;
@@ -728,7 +728,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
         #endregion
 
-        #region ¹¤¾ß·½·¨
+        #region å·¥å…·æ–¹æ³•
 
         private NPC FindOwner() {
             foreach (var npc in Main.ActiveNPCs) {
@@ -755,7 +755,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
         #endregion
 
-        #region »æÖÆ
+        #region ç»˜åˆ¶
 
         public override bool PreDraw(ref Color lightColor) {
             SpriteBatch sb = Main.spriteBatch;
@@ -767,7 +767,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
             float pulse = 1f + MathF.Sin(pulsePhase) * 0.1f;
 
-            // ÍÏÎ²
+            // æ‹–å°¾
             for (int i = 0; i < Projectile.oldPos.Length; i++) {
                 if (Projectile.oldPos[i] == Vector2.Zero) continue;
                 Vector2 pos = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
@@ -778,11 +778,11 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 sb.Draw(tex, pos, sourceRect, trailColor, Projectile.oldRot[i], origin, trailScale, SpriteEffects.None, 0);
             }
 
-            // Íâ·¢¹â
+            // å¤–å‘å…‰
             Color glowColor = YinEmperorHelper.ImperialGold;
             glowColor.A = 0;
 
-            // ĞîÁ¦Ê±·¢¹âÔöÇ¿
+            // è“„åŠ›æ—¶å‘å…‰å¢å¼º
             float glowMod = AttackMode == 0 ? (1f + chargeProgress * 0.8f) : 1f;
 
             for (int i = 2; i >= 0; i--) {
@@ -792,7 +792,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                     Projectile.rotation, origin, glowScale, SpriteEffects.None, 0);
             }
 
-            // Ö÷Ìå
+            // ä¸»ä½“
             Color mainColor = Color.Lerp(lightColor, YinEmperorHelper.ImperialGold, 0.3f);
             sb.Draw(tex, Projectile.Center - Main.screenPosition, sourceRect,
                 mainColor * ((255 - Projectile.alpha) / 255f),

@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -10,9 +10,9 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
 {
     /// <summary>
-    /// ÄæÁÛ - ÌìÍ¥Ñ²ÎÀ½ğÁúµôÂäµÄ½üÕ½ÎäÆ÷
-    /// ÓÉ½ğÁúÄæÁÛ¶ÍÔì¶ø³ÉµÄÉñµ¶£¬ÔÌº¬ÁúÍşÖ®Á¦
-    /// ÌØĞ§£º»Ó¿³ÊÍ·Å½ğÉ«ÁúÆøÕ¶£¬Ã¿µÚÈıµ¶ÊÍ·Å¾ŞÁúÅØÏø£¬ÃüÖĞ»ıÀÛÁúÍş¿É´¥·¢ÄæÁÛÖ®Å­
+    /// é€†é³ - å¤©åº­å·¡å«é‡‘é¾™æ‰è½çš„è¿‘æˆ˜æ­¦å™¨
+    /// ç”±é‡‘é¾™é€†é³é”»é€ è€Œæˆçš„ç¥åˆ€ï¼Œè•´å«é¾™å¨ä¹‹åŠ›
+    /// ç‰¹æ•ˆï¼šæŒ¥ç é‡Šæ”¾é‡‘è‰²é¾™æ°”æ–©ï¼Œæ¯ç¬¬ä¸‰åˆ€é‡Šæ”¾å·¨é¾™å’†å“®ï¼Œå‘½ä¸­ç§¯ç´¯é¾™å¨å¯è§¦å‘é€†é³ä¹‹æ€’
     /// </summary>
     public class ScalebreakerCleaver : ModItem
     {
@@ -41,21 +41,21 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
         }
 
         public override void HoldItem(Player player) {
-            // ÁúÍş¹â»·Ğ§¹û
+            // é¾™å¨å…‰ç¯æ•ˆæœ
             if (dragonFury > 50f && Main.rand.NextBool(8)) {
                 Vector2 dustPos = player.Center + Main.rand.NextVector2Circular(40, 40);
                 int dust = Dust.NewDust(dustPos, 0, 0, DustID.GoldFlame, 0, -1f, 100, default, 1.2f);
                 Main.dust[dust].noGravity = true;
             }
 
-            // ÂúÅ­ÆøÊ±µÄÇ¿ÁÒĞ§¹û
+            // æ»¡æ€’æ°”æ—¶çš„å¼ºçƒˆæ•ˆæœ
             if (dragonFury >= MaxFury && Main.rand.NextBool(4)) {
                 Vector2 dustPos = player.Center + Main.rand.NextVector2Circular(60, 60);
                 int dust = Dust.NewDust(dustPos, 0, 0, DustID.GoldCoin, 0, -2f, 100, default, 1.8f);
                 Main.dust[dust].noGravity = true;
             }
 
-            // Å­Æø×ÔÈ»Ë¥¼õ
+            // æ€’æ°”è‡ªç„¶è¡°å‡
             if (dragonFury > 0f) {
                 dragonFury -= 0.05f;
                 if (dragonFury < 0f) dragonFury = 0f;
@@ -66,31 +66,31 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
             slashCount++;
             Vector2 direction = (Main.MouseWorld - player.Center).SafeNormalize(Vector2.UnitX);
 
-            // ÆÕÍ¨ÁúÆøÕ¶
+            // æ™®é€šé¾™æ°”æ–©
             Projectile.NewProjectile(source, player.Center + direction * 30f, direction * 14f,
                 ModContent.ProjectileType<DragonAuraSlash>(), damage, knockback, player.whoAmI);
 
-            // Ã¿µÚÈıµ¶ÊÍ·Å¾ŞÁúÅØÏø
+            // æ¯ç¬¬ä¸‰åˆ€é‡Šæ”¾å·¨é¾™å’†å“®
             if (slashCount >= 3) {
                 slashCount = 0;
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.5f, Volume = 0.8f }, player.Center);
 
-                // ¾ŞÁúÅØÏø²¨
+                // å·¨é¾™å’†å“®æ³¢
                 Projectile.NewProjectile(source, player.Center, direction * 18f,
                     ModContent.ProjectileType<DragonRoarWave>(), (int)(damage * 1.5f), knockback * 2f, player.whoAmI);
 
-                // ÆÁÄ»Õğ¶¯
+                // å±å¹•éœ‡åŠ¨
                 if (player.whoAmI == Main.myPlayer) {
                     player.GetModPlayer<ScreenShakePlayer>().ShakeScreen(6, 10);
                 }
             }
 
-            // ÂúÅ­ÆøÊ±´¥·¢ÄæÁÛÖ®Å­
+            // æ»¡æ€’æ°”æ—¶è§¦å‘é€†é³ä¹‹æ€’
             if (dragonFury >= MaxFury) {
                 dragonFury = 0f;
                 SoundEngine.PlaySound(SoundID.Item119 with { Pitch = 0.3f, Volume = 1.2f }, player.Center);
 
-                // ÄæÁÛÖ®Å­ - È«·½Î»ÁúÆø±¬·¢
+                // é€†é³ä¹‹æ€’ - å…¨æ–¹ä½é¾™æ°”çˆ†å‘
                 for (int i = 0; i < 8; i++) {
                     float angle = MathHelper.TwoPi * i / 8f;
                     Vector2 dir = angle.ToRotationVector2();
@@ -98,7 +98,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
                         ModContent.ProjectileType<ReverseScaleWrath>(), damage * 2, knockback, player.whoAmI);
                 }
 
-                // ÊÓ¾õ±¬·¢
+                // è§†è§‰çˆ†å‘
                 for (int i = 0; i < 30; i++) {
                     Vector2 vel = Main.rand.NextVector2CircularEdge(10, 10);
                     int dust = Dust.NewDust(player.Center, 0, 0, DustID.GoldFlame, vel.X, vel.Y, 100, default, 2.5f);
@@ -110,12 +110,12 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
         }
 
         public override void OnHitNPC(Player player, NPC target, NPC.HitInfo hit, int damageDone) {
-            // ÀÛ»ıÁúÍş
+            // ç´¯ç§¯é¾™å¨
             dragonFury += 8f;
             if (hit.Crit) dragonFury += 12f;
             if (dragonFury > MaxFury) dragonFury = MaxFury;
 
-            // ½ğÉ«ÁúÁÛËéÆ¬Ğ§¹û
+            // é‡‘è‰²é¾™é³ç¢ç‰‡æ•ˆæœ
             for (int i = 0; i < 5; i++) {
                 Vector2 vel = Main.rand.NextVector2CircularEdge(4, 4);
                 int dust = Dust.NewDust(target.Center, 0, 0, DustID.GoldCoin, vel.X, vel.Y, 100, default, 1.5f);
@@ -124,15 +124,15 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
         }
 
         public override void ModifyTooltips(System.Collections.Generic.List<TooltipLine> tooltips) {
-            tooltips.Add(new TooltipLine(Mod, "DragonLore", "¡¸´¥ÅöÁúÖ®ÄæÁÛÕß£¬±ØÔâÁúÍşÖ®Å­¡¹"));
-            tooltips.Add(new TooltipLine(Mod, "DragonEffect", "»Ó¿³ÊÍ·Å½ğÉ«ÁúÆøÕ¶"));
-            tooltips.Add(new TooltipLine(Mod, "DragonEffect2", "Ã¿µÚÈıµ¶ÊÍ·Å¾ŞÁúÅØÏø²¨"));
-            tooltips.Add(new TooltipLine(Mod, "DragonEffect3", "ÃüÖĞµĞÈË»ıÀÛÁúÍş£¬ÂúÅ­Ê±´¥·¢ÄæÁÛÖ®Å­"));
+            tooltips.Add(new TooltipLine(Mod, "DragonLore", "ã€Œè§¦ç¢°é¾™ä¹‹é€†é³è€…ï¼Œå¿…é­é¾™å¨ä¹‹æ€’ã€"));
+            tooltips.Add(new TooltipLine(Mod, "DragonEffect", "æŒ¥ç é‡Šæ”¾é‡‘è‰²é¾™æ°”æ–©"));
+            tooltips.Add(new TooltipLine(Mod, "DragonEffect2", "æ¯ç¬¬ä¸‰åˆ€é‡Šæ”¾å·¨é¾™å’†å“®æ³¢"));
+            tooltips.Add(new TooltipLine(Mod, "DragonEffect3", "å‘½ä¸­æ•Œäººç§¯ç´¯é¾™å¨ï¼Œæ»¡æ€’æ—¶è§¦å‘é€†é³ä¹‹æ€’"));
         }
     }
 
     /// <summary>
-    /// ÄæÁÛµ¶µ¯Ä» - ÊÖ³Ö»Ó¿³
+    /// é€†é³åˆ€å¼¹å¹• - æ‰‹æŒæŒ¥ç 
     /// </summary>
     public class ScalebreakerCleaverProjectile : ModProjectile
     {
@@ -182,7 +182,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
                 return;
             }
 
-            // »Ó¿³»¡¶È
+            // æŒ¥ç å¼§åº¦
             float baseAngle = (Main.MouseWorld - Owner.MountedCenter).ToRotation();
             float currentAngle = baseAngle + (swingProgress - 0.5f) * SwingAngle * swingDirection;
             Projectile.rotation = currentAngle;
@@ -194,7 +194,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
             float armRotation = currentAngle - MathHelper.PiOver2;
             Owner.SetCompositeArmFront(true, Player.CompositeArmStretchAmount.Full, armRotation);
 
-            // »Ó¿³Á£×Ó
+            // æŒ¥ç ç²’å­
             if (Main.rand.NextBool(2)) {
                 Vector2 dustPos = Projectile.Center + direction * 40f;
                 int dust = Dust.NewDust(dustPos, 0, 0, DustID.GoldFlame, 0, 0, 100, default, 1.5f);
@@ -226,7 +226,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
             Vector2 towner = (Owner.Center - Projectile.Center).SafeNormalize(Vector2.Zero);
             float rotfix = Projectile.spriteDirection > 0 ? 0 : MathHelper.PiOver2 + MathHelper.PiOver2;
 
-            //// ÍÏÎ²
+            //// æ‹–å°¾
             for (int i = 0; i < Projectile.oldPos.Length - 8; i++) {
                 if (Projectile.oldPos[i] == Vector2.Zero) continue;
                 float progress = 1f - (float)i / Projectile.oldPos.Length;
@@ -237,13 +237,13 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
                 Main.EntitySpriteDraw(texture, drawPos, null, trailColor, Projectile.oldRot[i] + rotfix, origin, Projectile.scale * progress * 0.5f, effects, 0);
             }
 
-            // ·¢¹â²ã
+            // å‘å…‰å±‚
             Color glowColor = Color.Gold * 0.4f;
             glowColor.A = 0;
             Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null, glowColor,
                 Projectile.rotation + rotfix, origin, Projectile.scale * 0.6f, effects, 0);
 
-            // Ö÷Ìå
+            // ä¸»ä½“
             Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null, lightColor,
                 Projectile.rotation + rotfix, origin, Projectile.scale * 0.5f, effects, 0);
 
@@ -259,7 +259,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
     }
 
     /// <summary>
-    /// ÁúÆøÕ¶ - ÆÕÍ¨¹¥»÷ÊÍ·ÅµÄ½ğÉ«ÆøÈĞ
+    /// é¾™æ°”æ–© - æ™®é€šæ”»å‡»é‡Šæ”¾çš„é‡‘è‰²æ°”åˆƒ
     /// </summary>
     public class DragonAuraSlash : ModProjectile
     {
@@ -287,7 +287,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
             Projectile.rotation = Projectile.velocity.ToRotation();
             Projectile.velocity *= 0.98f;
 
-            // ÁúÆøÁ£×Ó
+            // é¾™æ°”ç²’å­
             if (Main.rand.NextBool(2)) {
                 Vector2 dustPos = Projectile.Center + Main.rand.NextVector2Circular(10, 5);
                 int dust = Dust.NewDust(dustPos, 0, 0, DustID.GoldFlame, 0, 0, 100, default, 1.2f);
@@ -312,7 +312,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
             Texture2D texture = ACMAsset.GlaciateWave ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = new Vector2(0, texture.Height / 2f);
 
-            // ÍÏÎ²
+            // æ‹–å°¾
             for (int i = 0; i < Projectile.oldPos.Length; i++) {
                 if (Projectile.oldPos[i] == Vector2.Zero) continue;
                 float progress = 1f - (float)i / Projectile.oldPos.Length;
@@ -324,7 +324,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
                     new Vector2(0.8f * progress, 0.15f * progress) * 0.5f, SpriteEffects.None, 0f);
             }
 
-            // Ö÷Ìå
+            // ä¸»ä½“
             Color mainColor = Color.Gold;
             mainColor.A = 0;
             Main.spriteBatch.Draw(texture, Projectile.Center - Main.screenPosition, null, mainColor, Projectile.rotation,
@@ -343,7 +343,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
     }
 
     /// <summary>
-    /// ¾ŞÁúÅØÏø²¨ - Ã¿µÚÈıµ¶ÊÍ·ÅµÄÇ¿Á¦³å»÷²¨
+    /// å·¨é¾™å’†å“®æ³¢ - æ¯ç¬¬ä¸‰åˆ€é‡Šæ”¾çš„å¼ºåŠ›å†²å‡»æ³¢
     /// </summary>
     public class DragonRoarWave : ModProjectile
     {
@@ -372,11 +372,11 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
             Projectile.rotation = Projectile.velocity.ToRotation();
             waveScale = MathHelper.Lerp(waveScale, 1.5f, 0.08f);
 
-            // µ÷ÕûÅö×²Ïä
+            // è°ƒæ•´ç¢°æ’ç®±
             Projectile.width = (int)(80 * waveScale);
             Projectile.height = (int)(60 * waveScale);
 
-            // ÁúĞÎ²¨¶¯Á£×Ó
+            // é¾™å½¢æ³¢åŠ¨ç²’å­
             for (int i = 0; i < 3; i++) {
                 Vector2 perpendicular = Projectile.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
                 float offset = MathF.Sin(Projectile.ai[0] * 0.3f + i) * 20f * waveScale;
@@ -395,7 +395,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
             target.AddBuff(BuffID.OnFire3, 240);
 
-            // ¾ŞÁúÅØÏø³å»÷Ğ§¹û
+            // å·¨é¾™å’†å“®å†²å‡»æ•ˆæœ
             Vector2 knockbackDir = (target.Center - Projectile.Center).SafeNormalize(Vector2.Zero);
             target.velocity += knockbackDir * 8f;
 
@@ -413,7 +413,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
             Texture2D texture = ACMAsset.GlaciateWave ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = new Vector2(0, texture.Height / 2f);
 
-            // ÁúĞÎÍÏÎ²
+            // é¾™å½¢æ‹–å°¾
             for (int i = 0; i < Projectile.oldPos.Length; i++) {
                 if (Projectile.oldPos[i] == Vector2.Zero) continue;
                 float progress = 1f - (float)i / Projectile.oldPos.Length;
@@ -428,7 +428,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
                     new Vector2(1.2f * bodyScale, 0.35f * bodyScale) * 0.5f, SpriteEffects.None, 0f);
             }
 
-            // ÁúÍ·Ö÷Ìå
+            // é¾™å¤´ä¸»ä½“
             Color headColor = Color.Gold;
             headColor.A = 0;
             Main.spriteBatch.Draw(texture, Projectile.Center - Main.screenPosition, null, headColor, Projectile.rotation,
@@ -450,7 +450,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
     }
 
     /// <summary>
-    /// ÄæÁÛÖ®Å­ - ÂúÅ­Æø´¥·¢µÄÇ¿Á¦ÁúÆøµ¯
+    /// é€†é³ä¹‹æ€’ - æ»¡æ€’æ°”è§¦å‘çš„å¼ºåŠ›é¾™æ°”å¼¹
     /// </summary>
     public class ReverseScaleWrath : ModProjectile
     {
@@ -478,7 +478,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
         public override void AI() {
             Projectile.rotation = Projectile.velocity.ToRotation();
 
-            // ÁúÁÛÄÜÁ¿Á£×Ó
+            // é¾™é³èƒ½é‡ç²’å­
             for (int i = 0; i < 2; i++) {
                 Vector2 dustPos = Projectile.Center + Main.rand.NextVector2Circular(15, 15);
                 int dustType = Main.rand.NextBool() ? DustID.GoldFlame : DustID.GoldCoin;
@@ -487,7 +487,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
                 Main.dust[dust].velocity = -Projectile.velocity * 0.15f;
             }
 
-            // ×·×Ù×î½üµĞÈË
+            // è¿½è¸ªæœ€è¿‘æ•Œäºº
             if (Projectile.timeLeft < 60) {
                 NPC target = FindClosestNPC(600f);
                 if (target != null) {
@@ -520,7 +520,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
             target.AddBuff(BuffID.OnFire3, 300);
             target.AddBuff(BuffID.Ichor, 180);
 
-            // ÄæÁÛ±¬·¢
+            // é€†é³çˆ†å‘
             for (int i = 0; i < 20; i++) {
                 Vector2 vel = Main.rand.NextVector2CircularEdge(10, 10);
                 int dustType = Main.rand.NextBool() ? DustID.GoldFlame : DustID.GoldCoin;
@@ -535,7 +535,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
             Texture2D texture = ACMAsset.LightShot ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = texture.Size() / 2f;
 
-            // ÁúÁÛÄÜÁ¿ÍÏÎ²
+            // é¾™é³èƒ½é‡æ‹–å°¾
             for (int i = 0; i < Projectile.oldPos.Length; i++) {
                 if (Projectile.oldPos[i] == Vector2.Zero) continue;
                 float progress = 1f - (float)i / Projectile.oldPos.Length;
@@ -547,12 +547,12 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
                 Main.spriteBatch.Draw(texture, drawPos, null, trailColor, Projectile.rotation, origin, trailScale, SpriteEffects.None, 0f);
             }
 
-            // ºËĞÄ¹âÇò
+            // æ ¸å¿ƒå…‰çƒ
             Color coreColor = Color.Gold;
             coreColor.A = 0;
             Main.spriteBatch.Draw(texture, Projectile.Center - Main.screenPosition, null, coreColor, Projectile.rotation, origin, 1.5f * Projectile.scale, SpriteEffects.None, 0f);
 
-            // Íâ²ã¹âÔÎ
+            // å¤–å±‚å…‰æ™•
             Color outerColor = Color.OrangeRed * 0.5f;
             outerColor.A = 0;
             Main.spriteBatch.Draw(texture, Projectile.Center - Main.screenPosition, null, outerColor, Projectile.rotation, origin, 2f * Projectile.scale, SpriteEffects.None, 0f);
@@ -563,7 +563,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
         public override void OnKill(int timeLeft) {
             SoundEngine.PlaySound(SoundID.Item14 with { Pitch = 0.2f, Volume = 0.8f }, Projectile.Center);
 
-            // ÄæÁÛ±¬Õ¨
+            // é€†é³çˆ†ç‚¸
             for (int i = 0; i < 30; i++) {
                 Vector2 vel = Main.rand.NextVector2Circular(10, 10);
                 int dustType = Main.rand.NextBool() ? DustID.GoldFlame : DustID.GoldCoin;

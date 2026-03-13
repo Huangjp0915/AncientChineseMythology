@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using System;
 using Terraria;
@@ -8,55 +8,55 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.Spectres
 {
     /// <summary>
-    /// Ô¹ÁéBoss¸¨Öú¹¤¾ßÀà
-    /// ÇàÉ«/»ÆÉ«Ö÷ÌâµÄÊÓ¾õĞ§¹û
+    /// æ€¨çµBossè¾…åŠ©å·¥å…·ç±»
+    /// é’è‰²/é»„è‰²ä¸»é¢˜çš„è§†è§‰æ•ˆæœ
     /// </summary>
     public static class SpectreHelper
     {
         public static string Path => typeof(SpectreHelper).Namespace.Replace(".", "/") + "/";
 
-        #region ÎÆÀí×ÊÔ´
+        #region çº¹ç†èµ„æº
 
         private static Asset<Texture2D> _coreTexture;
         private static Asset<Texture2D> _soulTexture;
 
-        /// <summary>ºËĞÄÎÆÀí</summary>
+        /// <summary>æ ¸å¿ƒçº¹ç†</summary>
         public static Texture2D CoreTexture => (_coreTexture ??= ModContent.Request<Texture2D>(Path + "SpectreCore")).Value;
 
-        /// <summary>Áé»êÎÆÀí</summary>
+        /// <summary>çµé­‚çº¹ç†</summary>
         public static Texture2D SoulTexture => (_soulTexture ??= ModContent.Request<Texture2D>(Path + "SpectreSoul")).Value;
 
-        // ¸´ÓÃ»ù´¡ÎÆÀí
+        // å¤ç”¨åŸºç¡€çº¹ç†
         private static Texture2D DustTexture => BAWImpermanences.BAWHelper.DustTexture;
 
         #endregion
 
-        #region Ô¹ÁéÖ÷ÌâÑÕÉ«
+        #region æ€¨çµä¸»é¢˜é¢œè‰²
 
-        /// <summary>Ô¹ÁéÇàÉ« - Ö÷É«µ÷</summary>
+        /// <summary>æ€¨çµé’è‰² - ä¸»è‰²è°ƒ</summary>
         public static Color SpectreCyan => new Color(80, 220, 200);
 
-        /// <summary>Ô¹ÁéÉîÇà - ÉîÉ«</summary>
+        /// <summary>æ€¨çµæ·±é’ - æ·±è‰²</summary>
         public static Color SpectreDeepCyan => new Color(30, 120, 110);
 
-        /// <summary>Ô¹Áé»ÆÉ« - ¸¨ÖúÉ«</summary>
+        /// <summary>æ€¨çµé»„è‰² - è¾…åŠ©è‰²</summary>
         public static Color SpectreYellow => new Color(255, 220, 100);
 
-        /// <summary>Ô¹Áé½ğÉ« - ¸ß¹âÉ«</summary>
+        /// <summary>æ€¨çµé‡‘è‰² - é«˜å…‰è‰²</summary>
         public static Color SpectreGold => new Color(255, 200, 50);
 
-        /// <summary>Ô¹Áé°µÂÌ - ÒõÓ°É«</summary>
+        /// <summary>æ€¨çµæš—ç»¿ - é˜´å½±è‰²</summary>
         public static Color SpectreDarkGreen => new Color(40, 80, 60);
 
-        /// <summary>·ßÅ­ºìÉ« - ¿ñ±©Ê±Ê¹ÓÃ</summary>
+        /// <summary>æ„¤æ€’çº¢è‰² - ç‹‚æš´æ—¶ä½¿ç”¨</summary>
         public static Color SpectreRage => new Color(255, 100, 80);
 
         #endregion
 
-        #region Á£×ÓĞ§¹û
+        #region ç²’å­æ•ˆæœ
 
         /// <summary>
-        /// ´´½¨Ô¹ÁéäöÎĞÁ£×Ó
+        /// åˆ›å»ºæ€¨çµæ¼©æ¶¡ç²’å­
         /// </summary>
         public static void CreateSpectreVortex(Vector2 center, float radius, float intensity, int particleCount = 25) {
             for (int i = 0; i < particleCount; i++) {
@@ -67,7 +67,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
                 Vector2 toCenter = (center - pos).SafeNormalize(Vector2.Zero);
                 float speed = intensity * (1f - dist / radius) * 6f;
 
-                // ÇàÉ«ºÍ»ÆÉ«»ìºÏÁ£×Ó
+                // é’è‰²å’Œé»„è‰²æ··åˆç²’å­
                 int dustType = Main.rand.NextBool(3) ? DustID.YellowTorch : DustID.IceTorch;
                 var d = Dust.NewDustPerfect(pos, dustType);
                 d.noGravity = true;
@@ -78,7 +78,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
         }
 
         /// <summary>
-        /// ´´½¨Ô¹Áé±¬·¢Á£×Ó
+        /// åˆ›å»ºæ€¨çµçˆ†å‘ç²’å­
         /// </summary>
         public static void CreateSpectreBurst(Vector2 center, float radius, int rings = 3, int particlesPerRing = 14) {
             for (int ring = 0; ring < rings; ring++) {
@@ -89,7 +89,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
                     Vector2 direction = new Vector2(MathF.Cos(angle), MathF.Sin(angle));
                     Vector2 pos = center + direction * ringRadius * 0.3f;
 
-                    // ½»ÌæÊ¹ÓÃÇàÉ«ºÍ»ÆÉ«
+                    // äº¤æ›¿ä½¿ç”¨é’è‰²å’Œé»„è‰²
                     int dustType = (ring + i) % 2 == 0 ? DustID.IceTorch : DustID.YellowTorch;
                     var d = Dust.NewDustPerfect(pos, dustType);
                     d.noGravity = true;
@@ -101,7 +101,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
         }
 
         /// <summary>
-        /// ´´½¨Ô¹ÆøÍÏÎ²
+        /// åˆ›å»ºæ€¨æ°”æ‹–å°¾
         /// </summary>
         public static void CreateSpectreTrail(Vector2 position, Vector2 velocity, float scale = 1f) {
             for (int i = 0; i < 2; i++) {
@@ -116,7 +116,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
         }
 
         /// <summary>
-        /// ´´½¨Áé»êÁ´½ÓÁ£×Ó
+        /// åˆ›å»ºçµé­‚é“¾æ¥ç²’å­
         /// </summary>
         public static void CreateSoulChainParticles(Vector2 start, Vector2 end, float intensity) {
             Vector2 direction = (end - start).SafeNormalize(Vector2.Zero);
@@ -127,7 +127,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
                 float progress = i / (float)segments;
                 Vector2 pos = Vector2.Lerp(start, end, progress);
 
-                // Ìí¼Ó²¨¶¯
+                // æ·»åŠ æ³¢åŠ¨
                 Vector2 perpendicular = direction.RotatedBy(MathHelper.PiOver2);
                 float wave = MathF.Sin(progress * MathHelper.TwoPi * 3 + Main.GlobalTimeWrappedHourly * 5) * 10f * intensity;
                 pos += perpendicular * wave;
@@ -144,7 +144,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
         }
 
         /// <summary>
-        /// ´´½¨Ô¹Äî²¨¶¯
+        /// åˆ›å»ºæ€¨å¿µæ³¢åŠ¨
         /// </summary>
         public static void CreateGrudgeWave(Vector2 center, float angle, float length, float width) {
             Vector2 direction = angle.ToRotationVector2();
@@ -171,10 +171,10 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
 
         #endregion
 
-        #region »æÖÆ·½·¨
+        #region ç»˜åˆ¶æ–¹æ³•
 
         /// <summary>
-        /// »æÖÆÔ¹ÁéºËĞÄ
+        /// ç»˜åˆ¶æ€¨çµæ ¸å¿ƒ
         /// </summary>
         public static void DrawSpectreCore(SpriteBatch sb, Vector2 position, Color coreColor, Color glowColor,
             float scale, float pulsePhase, bool isEnraged = false) {
@@ -189,7 +189,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
                 position += Main.rand.NextVector2Circular(2, 2);
             }
 
-            // Íâ²ã¹âÔÎ
+            // å¤–å±‚å…‰æ™•
             Color glow = glowColor;
             glow.A = 0;
             for (int i = 4; i >= 0; i--) {
@@ -205,7 +205,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
                     pulsePhase * 0.08f * i, origin, layerScale, SpriteEffects.None, 0);
             }
 
-            // ÄÜÁ¿äöÎĞ²ã
+            // èƒ½é‡æ¼©æ¶¡å±‚
             for (int i = 0; i < 2; i++) {
                 float swirl = pulsePhase * (0.4f + i * 0.25f);
                 float swirlScale = scale * pulse * (1.2f - i * 0.1f);
@@ -216,17 +216,17 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
                     swirl, origin, swirlScale, SpriteEffects.None, 0);
             }
 
-            // ºËĞÄ
+            // æ ¸å¿ƒ
             sb.Draw(tex, position - Main.screenPosition, null, coreColor,
                 0f, origin, scale * pulse, SpriteEffects.None, 0);
 
-            // ÖĞĞÄ¸ß¹â
+            // ä¸­å¿ƒé«˜å…‰
             Color highlight = Color.White;
             highlight.A = 0;
             sb.Draw(tex, position - Main.screenPosition, null, highlight * 0.5f,
                 0f, origin, scale * pulse * 0.35f, SpriteEffects.None, 0);
 
-            // ¿ñ±©Ê±µÄºìÉ«ÄÜÁ¿»·
+            // ç‹‚æš´æ—¶çš„çº¢è‰²èƒ½é‡ç¯
             if (isEnraged) {
                 for (int i = 0; i < 3; i++) {
                     float ringAngle = pulsePhase * 2.5f + i * MathHelper.TwoPi / 3f;
@@ -242,7 +242,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
         }
 
         /// <summary>
-        /// »æÖÆÁé»êÁ´Ìõ
+        /// ç»˜åˆ¶çµé­‚é“¾æ¡
         /// </summary>
         public static void DrawSoulChain(SpriteBatch sb, Vector2 start, Vector2 end, Color color,
             float width, float timeOffset) {
@@ -258,7 +258,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
             Color glowColor = color;
             glowColor.A = 0;
 
-            // Íâ²ã¹âÔÎ
+            // å¤–å±‚å…‰æ™•
             for (int layer = 0; layer < 2; layer++) {
                 float layerWidth = width * (1.4f + layer * 0.6f);
 
@@ -266,7 +266,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
                     float progress = i / (float)segments;
                     Vector2 basePos = start + direction * (progress * distance);
 
-                    // ²¨¶¯Ğ§¹û
+                    // æ³¢åŠ¨æ•ˆæœ
                     float wave = MathF.Sin(progress * MathHelper.TwoPi * 4f + timeOffset * 0.12f) * layerWidth * 0.3f;
                     Vector2 pos = basePos + perpendicular * wave;
 
@@ -280,7 +280,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
                 }
             }
 
-            // ºËĞÄÁ´Ìõ
+            // æ ¸å¿ƒé“¾æ¡
             for (int i = 0; i < segments; i++) {
                 float progress = i / (float)segments;
                 Vector2 basePos = start + direction * (progress * distance);
@@ -300,7 +300,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
         }
 
         /// <summary>
-        /// »æÖÆÔ¹Äî¹â»·
+        /// ç»˜åˆ¶æ€¨å¿µå…‰ç¯
         /// </summary>
         public static void DrawGrudgeAura(SpriteBatch sb, Vector2 center, float radius, int segments,
             float rotation, float pulsePhase) {
@@ -309,14 +309,14 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
 
             Vector2 origin = tex.Size() / 2f;
 
-            // ÍâÈ¦
+            // å¤–åœˆ
             for (int i = 0; i < segments; i++) {
                 float angle = rotation + MathHelper.TwoPi * i / segments;
                 float pulse = MathF.Sin(pulsePhase + angle * 2) * 0.3f + 0.7f;
                 float dist = radius + MathF.Sin(pulsePhase * 1.5f + i * 0.5f) * 8f;
                 Vector2 pos = center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * dist;
 
-                // ½»ÌæÇàÉ«ºÍ»ÆÉ«
+                // äº¤æ›¿é’è‰²å’Œé»„è‰²
                 Color auraColor = i % 2 == 0 ? SpectreCyan : SpectreYellow;
                 auraColor.A = 0;
                 float auraScale = 0.7f + pulse * 0.2f;
@@ -325,7 +325,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
                     angle + MathHelper.PiOver2, origin, auraScale, SpriteEffects.None, 0);
             }
 
-            // ÄÚÈ¦Á¬ÏßĞ§¹û
+            // å†…åœˆè¿çº¿æ•ˆæœ
             for (int i = 0; i < segments / 2; i++) {
                 float angle1 = rotation + MathHelper.TwoPi * i * 2 / segments;
                 float angle2 = rotation + MathHelper.TwoPi * ((i * 2 + segments / 3) % segments) / segments;
@@ -339,7 +339,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
         }
 
         /// <summary>
-        /// »æÖÆÁé»ê»·ÈÆ
+        /// ç»˜åˆ¶çµé­‚ç¯ç»•
         /// </summary>
         public static void DrawSoulOrbit(SpriteBatch sb, Vector2 center, float radius, int count,
             float rotation, float pulsePhase) {
@@ -357,7 +357,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
                 Color soulColor = colors[i % colors.Length];
                 float soulPulse = 0.8f + MathF.Sin(pulsePhase + i * MathHelper.Pi / count) * 0.2f;
 
-                // Áé»êÍÏÎ²
+                // çµé­‚æ‹–å°¾
                 for (int t = 1; t <= 4; t++) {
                     float trailAngle = angle - t * 0.12f;
                     Vector2 trailPos = center + new Vector2(MathF.Cos(trailAngle), MathF.Sin(trailAngle)) * orbitRadius;
@@ -370,14 +370,14 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
                         0f, origin, soulPulse * (1f - t * 0.08f), SpriteEffects.None, 0);
                 }
 
-                // Áé»êºËĞÄ
+                // çµé­‚æ ¸å¿ƒ
                 DrawSpectreCore(sb, pos, soulColor, Color.Lerp(soulColor, Color.White, 0.3f),
                     soulPulse * 0.7f, pulsePhase + i);
             }
         }
 
         /// <summary>
-        /// »æÖÆÄÜÁ¿²¨ÎÆ
+        /// ç»˜åˆ¶èƒ½é‡æ³¢çº¹
         /// </summary>
         public static void DrawEnergyWave(SpriteBatch sb, Vector2 center, float radius, float width,
             Color color, float alpha) {
@@ -401,10 +401,10 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
 
         #endregion
 
-        #region ÆÁÄ»Ğ§¹û
+        #region å±å¹•æ•ˆæœ
 
         /// <summary>
-        /// ´´½¨ÆÁÄ»ÉÁË¸
+        /// åˆ›å»ºå±å¹•é—ªçƒ
         /// </summary>
         public static void CreateScreenFlash(Vector2 center, Color color, float intensity) {
             int particleCount = (int)(40 * intensity);
@@ -421,15 +421,15 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
 
         #endregion
 
-        #region ¹¤¾ß·½·¨
+        #region å·¥å…·æ–¹æ³•
 
         /// <summary>
-        /// Æ½»¬²½½ø
+        /// å¹³æ»‘æ­¥è¿›
         /// </summary>
         public static float SmoothStep(float t) => t * t * (3f - 2f * t);
 
         /// <summary>
-        /// »ñÈ¡»ùÓÚÄÑ¶ÈµÄÉËº¦
+        /// è·å–åŸºäºéš¾åº¦çš„ä¼¤å®³
         /// </summary>
         public static int GetScaledDamage(int baseDamage) {
             if (Main.masterMode)

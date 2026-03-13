@@ -1,37 +1,37 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 
 namespace AncientChineseMythology.Celestias.Boss.AoGuangs
 {
     /// <summary>
-    /// ¶«º£ÁúÍõ¸¨ÖúÀà - ÑÕÉ«ºÍ»æÖÆ¹¤¾ß
+    /// ä¸œæµ·é¾™ç‹è¾…åŠ©ç±» - é¢œè‰²å’Œç»˜åˆ¶å·¥å…·
     /// </summary>
     public static class AoGuangHelper
     {
-        #region Ö÷ÌâÑÕÉ«
+        #region ä¸»é¢˜é¢œè‰²
 
-        /// <summary>ÁúÍõÀ¶ - Ö÷É«µ÷</summary>
+        /// <summary>é¾™ç‹è“ - ä¸»è‰²è°ƒ</summary>
         public static Color DragonBlue => new Color(50, 130, 200);
 
-        /// <summary>º£ÑóÇà - ¸¨ÖúÉ«</summary>
+        /// <summary>æµ·æ´‹é’ - è¾…åŠ©è‰²</summary>
         public static Color OceanTeal => new Color(70, 180, 190);
 
-        /// <summary>Ë®¹â°× - ¸ß¹âÉ«</summary>
+        /// <summary>æ°´å…‰ç™½ - é«˜å…‰è‰²</summary>
         public static Color WaterGlow => new Color(180, 230, 255);
 
-        /// <summary>´¿°× - ºËĞÄ¸ß¹â</summary>
+        /// <summary>çº¯ç™½ - æ ¸å¿ƒé«˜å…‰</summary>
         public static Color PureWhite => new Color(255, 255, 255);
 
-        /// <summary>Éîº£À¶ - °µ²¿</summary>
+        /// <summary>æ·±æµ·è“ - æš—éƒ¨</summary>
         public static Color DeepSeaBlue => new Color(30, 80, 140);
 
-        /// <summary>ÅİÄ­°× - ÆøÅİÉ«</summary>
+        /// <summary>æ³¡æ²«ç™½ - æ°”æ³¡è‰²</summary>
         public static Color FoamWhite => new Color(220, 245, 255);
 
         #endregion
 
-        #region »º¶¯º¯Êı
+        #region ç¼“åŠ¨å‡½æ•°
 
         public static float QuadOut(float t) {
             t = Math.Clamp(t, 0f, 1f);
@@ -49,32 +49,32 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
         }
 
         /// <summary>
-        /// »ñÈ¡LightShotÎÆÀíµÄÕıÈ·Ğı×ª½Ç¶È
-        /// LightShotÎÆÀíÕıÃæ³¯ÓÒ£¬´Ë·½·¨·µ»ØĞŞÕıºóµÄĞı×ª½Ç¶È
+        /// è·å–LightShotçº¹ç†çš„æ­£ç¡®æ—‹è½¬è§’åº¦
+        /// LightShotçº¹ç†æ­£é¢æœå³ï¼Œæ­¤æ–¹æ³•è¿”å›ä¿®æ­£åçš„æ—‹è½¬è§’åº¦
         /// </summary>
-        /// <param name="targetDirection">Ä¿±ê·½ÏòµÄ»¡¶È</param>
-        /// <returns>ĞŞÕıºóµÄĞı×ª½Ç¶È</returns>
+        /// <param name="targetDirection">ç›®æ ‡æ–¹å‘çš„å¼§åº¦</param>
+        /// <returns>ä¿®æ­£åçš„æ—‹è½¬è§’åº¦</returns>
         public static float GetLightShotRotation(float targetDirection) {
-            // LightShotÄ¬ÈÏ³¯ÓÒ(0¶È)£¬Ö±½Ó·µ»ØÄ¿±ê·½Ïò¼´¿É
+            // LightShoté»˜è®¤æœå³(0åº¦)ï¼Œç›´æ¥è¿”å›ç›®æ ‡æ–¹å‘å³å¯
             return targetDirection;
         }
 
         /// <summary>
-        /// »ñÈ¡LightShotÎÆÀí³¯ÉÏÊ±µÄĞı×ª½Ç¶È
+        /// è·å–LightShotçº¹ç†æœä¸Šæ—¶çš„æ—‹è½¬è§’åº¦
         /// </summary>
         public static float LightShotUpRotation => -MathHelper.PiOver2;
 
         /// <summary>
-        /// »ñÈ¡LightShotÎÆÀí³¯ÏÂÊ±µÄĞı×ª½Ç¶È
+        /// è·å–LightShotçº¹ç†æœä¸‹æ—¶çš„æ—‹è½¬è§’åº¦
         /// </summary>
         public static float LightShotDownRotation => MathHelper.PiOver2;
 
         #endregion
 
-        #region »æÖÆ·½·¨
+        #region ç»˜åˆ¶æ–¹æ³•
 
         /// <summary>
-        /// »æÖÆË®äöÎĞ
+        /// ç»˜åˆ¶æ°´æ¼©æ¶¡
         /// </summary>
         public static void DrawWaterVortex(SpriteBatch sb, Vector2 center, float radius, float rotation, float alpha) {
             Vector2 screenPos = center - Main.screenPosition;
@@ -84,7 +84,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             Texture2D tex = ACMAsset.LightShot;
             Vector2 origin = tex.Size() / 2f;
 
-            // »æÖÆ¶à²ãĞı×ªÔ²»·
+            // ç»˜åˆ¶å¤šå±‚æ—‹è½¬åœ†ç¯
             int ringCount = 3;
             for (int ring = 0; ring < ringCount; ring++) {
                 float ringRadius = radius * (0.5f + ring * 0.25f);
@@ -105,14 +105,14 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 }
             }
 
-            // ÖĞĞÄ·¢¹â
+            // ä¸­å¿ƒå‘å…‰
             Color centerColor = WaterGlow * alpha * 0.5f;
             centerColor.A = 0;
             sb.Draw(tex, screenPos, null, centerColor, 0f, origin, 0.6f * alpha, SpriteEffects.None, 0f);
         }
 
         /// <summary>
-        /// »æÖÆ³±Ï«²¨
+        /// ç»˜åˆ¶æ½®æ±æ³¢
         /// </summary>
         public static void DrawTidalWave(SpriteBatch sb, Vector2 center, float radius, float alpha) {
             Vector2 screenPos = center - Main.screenPosition;
@@ -122,7 +122,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             Texture2D tex = ACMAsset.LightShot;
             Vector2 origin = tex.Size() / 2f;
 
-            // »æÖÆÀ©É¢»·
+            // ç»˜åˆ¶æ‰©æ•£ç¯
             int particleCount = 24;
             for (int i = 0; i < particleCount; i++) {
                 float angle = MathHelper.TwoPi * i / particleCount;
@@ -135,7 +135,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 sb.Draw(tex, pos, null, color, 0f, origin, 0.4f * alpha, SpriteEffects.None, 0f);
             }
 
-            // ÄÚÈ¦
+            // å†…åœˆ
             for (int i = 0; i < particleCount / 2; i++) {
                 float angle = MathHelper.TwoPi * i / (particleCount / 2) + 0.1f;
                 Vector2 pos = screenPos + angle.ToRotationVector2() * (radius * 0.85f);
@@ -148,7 +148,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
         }
 
         /// <summary>
-        /// »æÖÆ¾ŞĞÍäöÎĞ
+        /// ç»˜åˆ¶å·¨å‹æ¼©æ¶¡
         /// </summary>
         public static void DrawGiantWhirlpool(SpriteBatch sb, Vector2 center, float radius, float rotation, float alpha) {
             Vector2 screenPos = center - Main.screenPosition;
@@ -158,7 +158,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             Texture2D tex = ACMAsset.LightShot;
             Vector2 origin = tex.Size() / 2f;
 
-            // ¶à²ã´óĞÍĞı×ª»·
+            // å¤šå±‚å¤§å‹æ—‹è½¬ç¯
             int ringCount = 5;
             for (int ring = 0; ring < ringCount; ring++) {
                 float ringRadius = radius * (0.3f + ring * 0.18f);
@@ -180,19 +180,19 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 }
             }
 
-            // ÖĞĞÄºÚ¶´Ğ§¹û
+            // ä¸­å¿ƒé»‘æ´æ•ˆæœ
             Color centerDark = DeepSeaBlue * alpha * 0.8f;
             centerDark.A = 0;
             sb.Draw(tex, screenPos, null, centerDark, 0f, origin, 1.2f * alpha, SpriteEffects.None, 0f);
 
-            // ÖĞĞÄ·¢¹âµã
+            // ä¸­å¿ƒå‘å…‰ç‚¹
             Color centerGlow = WaterGlow * alpha * 0.4f;
             centerGlow.A = 0;
             sb.Draw(tex, screenPos, null, centerGlow, 0f, origin, 0.5f * alpha, SpriteEffects.None, 0f);
         }
 
         /// <summary>
-        /// »æÖÆË®¹âÇò
+        /// ç»˜åˆ¶æ°´å…‰çƒ
         /// </summary>
         public static void DrawWaterOrb(SpriteBatch sb, Vector2 center, Color baseColor, Color glowColor, float scale, float phase) {
             Vector2 screenPos = center - Main.screenPosition;
@@ -204,24 +204,24 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
 
             float pulse = 1f + MathF.Sin(phase) * 0.15f;
 
-            // Íâ¹âÔÎ
+            // å¤–å…‰æ™•
             Color outerColor = baseColor * 0.4f * pulse;
             outerColor.A = 0;
             sb.Draw(tex, screenPos, null, outerColor, 0f, origin, scale * 1.4f * pulse, SpriteEffects.None, 0f);
 
-            // ÖĞ²ã
+            // ä¸­å±‚
             Color midColor = Color.Lerp(baseColor, glowColor, 0.5f) * 0.6f * pulse;
             midColor.A = 0;
             sb.Draw(tex, screenPos, null, midColor, 0f, origin, scale * pulse, SpriteEffects.None, 0f);
 
-            // ºËĞÄ
+            // æ ¸å¿ƒ
             Color coreColor = glowColor * 0.8f;
             coreColor.A = 0;
             sb.Draw(tex, screenPos, null, coreColor, 0f, origin, scale * 0.6f * pulse, SpriteEffects.None, 0f);
         }
 
         /// <summary>
-        /// »æÖÆË®Áú¹â»·
+        /// ç»˜åˆ¶æ°´é¾™å…‰ç¯
         /// </summary>
         public static void DrawDragonAura(SpriteBatch sb, Vector2 center, float radius, float rotation, float alpha) {
             Vector2 screenPos = center - Main.screenPosition;
@@ -231,7 +231,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             Texture2D tex = ACMAsset.LightShot;
             Vector2 origin = tex.Size() / 2f;
 
-            // ÁúĞÎ¹â»· - Ë«²ãĞı×ª
+            // é¾™å½¢å…‰ç¯ - åŒå±‚æ—‹è½¬
             int orbCount = 8;
             for (int layer = 0; layer < 2; layer++) {
                 float layerRadius = radius * (1f + layer * 0.3f);

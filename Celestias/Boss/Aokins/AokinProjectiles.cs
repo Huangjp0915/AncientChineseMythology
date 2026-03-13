@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.GameContent;
@@ -7,10 +7,10 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Celestias.Boss.Aokins
 {
-    #region ÁúÑæ»ğÇò
+    #region é¾™ç„°ç«çƒ
 
     /// <summary>
-    /// °½ÇÕ»ğÇò - ´ø×·×ÙµÄ»ğÑæµ¯Ä»
+    /// æ•–é’¦ç«çƒ - å¸¦è¿½è¸ªçš„ç«ç„°å¼¹å¹•
     /// </summary>
     public class AokinFireball : ModProjectile
     {
@@ -38,7 +38,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
         public override void AI() {
             firePhase += 0.12f;
 
-            // Î¢Èõ×·×Ù
+            // å¾®å¼±è¿½è¸ª
             if (Projectile.timeLeft > 220) {
                 Player target = Main.player[Player.FindClosest(Projectile.position, Projectile.width, Projectile.height)];
                 if (target.active && !target.dead) {
@@ -52,7 +52,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
 
             Projectile.rotation = Projectile.velocity.ToRotation();
 
-            // »ğÑæÁ£×Ó
+            // ç«ç„°ç²’å­
             if (Main.netMode != NetmodeID.Server && Main.rand.NextBool(2)) {
                 int dustType = Main.rand.NextBool() ? DustID.Torch : DustID.SolarFlare;
                 int dust = Dust.NewDust(Projectile.Center, 0, 0, dustType, 0, 0, 180, default, 1.5f);
@@ -70,7 +70,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
 
             float pulse = 1f + MathF.Sin(firePhase * 2f) * 0.2f;
 
-            // ÍÏÎ²
+            // æ‹–å°¾
             for (int i = 0; i < Projectile.oldPos.Length; i++) {
                 if (Projectile.oldPos[i] == Vector2.Zero) continue;
                 float progress = 1f - (float)i / Projectile.oldPos.Length;
@@ -82,17 +82,17 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                 Main.spriteBatch.Draw(tex, pos, null, trailColor, 0f, origin, 0.5f * progress * pulse, SpriteEffects.None, 0f);
             }
 
-            // Íâ²ã¹âÔÎ
+            // å¤–å±‚å…‰æ™•
             Color outerColor = AokinHelper.DragonFlameRed * 0.35f * pulse;
             outerColor.A = 0;
             Main.spriteBatch.Draw(tex, drawPos, null, outerColor, 0f, origin, 0.9f * pulse, SpriteEffects.None, 0f);
 
-            // ÖĞ²ã
+            // ä¸­å±‚
             Color midColor = AokinHelper.MoltenOrange * 0.5f * pulse;
             midColor.A = 0;
             Main.spriteBatch.Draw(tex, drawPos, null, midColor, 0f, origin, 0.55f * pulse, SpriteEffects.None, 0f);
 
-            // ºËĞÄ
+            // æ ¸å¿ƒ
             Color coreColor = AokinHelper.BlazingGold * 0.8f;
             coreColor.A = 0;
             Main.spriteBatch.Draw(tex, drawPos, null, coreColor, 0f, origin, 0.3f * pulse, SpriteEffects.None, 0f);
@@ -114,10 +114,10 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
 
     #endregion
 
-    #region ÔÉÊ¯
+    #region é™¨çŸ³
 
     /// <summary>
-    /// °½ÇÕÔÉÊ¯ - ´Ó¿ÕÖĞÏÂÂäµÄ»ğÑæÔÉÊ¯
+    /// æ•–é’¦é™¨çŸ³ - ä»ç©ºä¸­ä¸‹è½çš„ç«ç„°é™¨çŸ³
     /// </summary>
     public class AokinMeteor : ModProjectile
     {
@@ -145,11 +145,11 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
             firePhase += 0.1f;
             Projectile.rotation += 0.1f;
 
-            // ¼ÓËÙÏÂÂä
+            // åŠ é€Ÿä¸‹è½
             if (Projectile.velocity.Y < 18f)
                 Projectile.velocity.Y += 0.3f;
 
-            // »ğÑæÎ²¼£
+            // ç«ç„°å°¾è¿¹
             if (Main.netMode != NetmodeID.Server) {
                 for (int i = 0; i < 2; i++) {
                     Vector2 dustPos = Projectile.Center + Main.rand.NextVector2Circular(10, 10);
@@ -170,7 +170,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
 
             float pulse = 1f + MathF.Sin(firePhase * 3f) * 0.15f;
 
-            // ÍÏÎ²
+            // æ‹–å°¾
             for (int i = 0; i < Projectile.oldPos.Length; i++) {
                 if (Projectile.oldPos[i] == Vector2.Zero) continue;
                 float progress = 1f - (float)i / Projectile.oldPos.Length;
@@ -182,17 +182,17 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                 Main.spriteBatch.Draw(tex, pos, null, trailColor, 0f, origin, (0.6f + progress * 0.4f) * pulse, SpriteEffects.None, 0f);
             }
 
-            // Íâ²ã¹âÔÎ
+            // å¤–å±‚å…‰æ™•
             Color outerColor = AokinHelper.DragonFlameRed * 0.4f * pulse;
             outerColor.A = 0;
             Main.spriteBatch.Draw(tex, drawPos, null, outerColor, 0f, origin, 1.4f * pulse, SpriteEffects.None, 0f);
 
-            // ÖĞ²ã
+            // ä¸­å±‚
             Color midColor = AokinHelper.MoltenOrange * 0.6f * pulse;
             midColor.A = 0;
             Main.spriteBatch.Draw(tex, drawPos, null, midColor, 0f, origin, 0.9f * pulse, SpriteEffects.None, 0f);
 
-            // ºËĞÄ
+            // æ ¸å¿ƒ
             Color coreColor = AokinHelper.BlazingGold * 0.9f;
             coreColor.A = 0;
             Main.spriteBatch.Draw(tex, drawPos, null, coreColor, 0f, origin, 0.5f * pulse, SpriteEffects.None, 0f);
@@ -203,7 +203,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
         public override void OnKill(int timeLeft) {
             if (Main.netMode == NetmodeID.Server) return;
 
-            // ÂäµØ±¬Õ¨Ğ§¹û
+            // è½åœ°çˆ†ç‚¸æ•ˆæœ
             for (int i = 0; i < 20; i++) {
                 Vector2 vel = Main.rand.NextVector2Circular(6, 6);
                 int dustType = Main.rand.NextBool() ? DustID.Torch : DustID.SolarFlare;
@@ -211,7 +211,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                 Main.dust[dust].noGravity = true;
             }
 
-            // »ğĞÇ·É½¦
+            // ç«æ˜Ÿé£æº…
             for (int i = 0; i < 8; i++) {
                 float angle = MathHelper.TwoPi * i / 8;
                 Vector2 vel = angle.ToRotationVector2() * Main.rand.NextFloat(3, 6);
@@ -225,10 +225,10 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
 
     #endregion
 
-    #region »ğÑæĞıÎĞ
+    #region ç«ç„°æ—‹æ¶¡
 
     /// <summary>
-    /// °½ÇÕ»ğÑæĞıÎĞ - Í£ÁôÔÚÔ­µØµÄĞı×ª»ğÑæÇøÓò
+    /// æ•–é’¦ç«ç„°æ—‹æ¶¡ - åœç•™åœ¨åŸåœ°çš„æ—‹è½¬ç«ç„°åŒºåŸŸ
     /// </summary>
     public class AokinFlameVortex : ModProjectile
     {
@@ -258,7 +258,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
 
             Projectile.velocity *= 0.95f;
 
-            // Ğı×ª»ğÑæÁ£×Ó
+            // æ—‹è½¬ç«ç„°ç²’å­
             if (Main.netMode != NetmodeID.Server) {
                 for (int i = 0; i < 4; i++) {
                     float angle = vortexAngle + MathHelper.TwoPi * i / 4;
@@ -299,18 +299,18 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
 
     #endregion
 
-    #region »ğÑæ·âÂ·Áú¾í
+    #region ç«ç„°å°è·¯é¾™å·
 
     /// <summary>
-    /// °½ÇÕ»ğÑæ·âÂ·Áú¾í - Õ½³¡±ß½ç£¬Ê¹ÓÃÔ­°æÉ³³¾±©ÎÆÀí
-    /// ¸úËæBoss´æÔÚ£¬ÏŞÖÆÍæ¼Ò»î¶¯·¶Î§
+    /// æ•–é’¦ç«ç„°å°è·¯é¾™å· - æˆ˜åœºè¾¹ç•Œï¼Œä½¿ç”¨åŸç‰ˆæ²™å°˜æš´çº¹ç†
+    /// è·ŸéšBosså­˜åœ¨ï¼Œé™åˆ¶ç©å®¶æ´»åŠ¨èŒƒå›´
     /// </summary>
     public class AokinBarrierTornado : ModProjectile
     {
         public override string Texture => "InnoVault/Assets/placeholder";
 
         private ref float OwnerIndex => ref Projectile.ai[0];
-        private ref float Side => ref Projectile.ai[1]; // -1×ó, 1ÓÒ
+        private ref float Side => ref Projectile.ai[1]; // -1å·¦, 1å³
 
         private float tornadoRotation;
         private float tornadoAlpha;
@@ -333,7 +333,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
         }
 
         public override void AI() {
-            // ¼ì²éBossÊÇ·ñ´æ»î
+            // æ£€æŸ¥Bossæ˜¯å¦å­˜æ´»
             NPC owner = Main.npc[(int)OwnerIndex];
             if (!owner.active || owner.type != ModContent.NPCType<Aokin>()) {
                 tornadoAlpha -= 0.02f;
@@ -343,7 +343,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                 return;
             }
 
-            // ¸úËæÍæ¼ÒÎ»ÖÃ£¨Á½²à¹Ì¶¨¾àÀë£©
+            // è·Ÿéšç©å®¶ä½ç½®ï¼ˆä¸¤ä¾§å›ºå®šè·ç¦»ï¼‰
             Player target = Main.player[owner.target];
             if (target.active && !target.dead) {
                 float targetX = target.Center.X + Side * 800f;
@@ -353,12 +353,12 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                 );
             }
 
-            // ½¥ÈëĞ§¹û
+            // æ¸å…¥æ•ˆæœ
             tornadoAlpha = MathHelper.Lerp(tornadoAlpha, 1f, 0.02f);
             tornadoHeight = MathHelper.Lerp(tornadoHeight, MaxHeight, 0.03f);
             tornadoRotation += 0.15f;
 
-            // »ğÑæÁ£×ÓĞ§¹û
+            // ç«ç„°ç²’å­æ•ˆæœ
             if (Main.netMode != NetmodeID.Server) {
                 for (int i = 0; i < 8; i++) {
                     float heightOffset = Main.rand.NextFloat(-tornadoHeight / 2, tornadoHeight / 2);
@@ -377,7 +377,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                 }
             }
 
-            // ÍÆ¿ªÍæ¼Ò
+            // æ¨å¼€ç©å®¶
             foreach (Player player in Main.player) {
                 if (!player.active || player.dead) continue;
                 float distance = MathF.Abs(player.Center.X - Projectile.Center.X);
@@ -405,7 +405,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
             Texture2D tornadoTex = TextureAssets.Projectile[ProjectileID.SandnadoHostile].Value;
             Vector2 origin = new Vector2(tornadoTex.Width / 2f, tornadoTex.Height / 2f);
 
-            // »æÖÆ¶à²ã»ğÁú¾í
+            // ç»˜åˆ¶å¤šå±‚ç«é¾™å·
             int segments = 162;
             for (int seg = 0; seg < segments; seg++) {
                 float heightPercent = (float)seg / segments;
@@ -415,17 +415,17 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
 
                 Vector2 segPos = screenPos + new Vector2(0, yOffset);
 
-                // Íâ²ã - °µºì
+                // å¤–å±‚ - æš—çº¢
                 Color outerColor = AokinHelper.DragonFlameRed * tornadoAlpha * 0.4f;
                 outerColor.A = 0;
                 sb.Draw(tornadoTex, segPos, null, outerColor, segRot, origin, segRadius * 1.3f, SpriteEffects.None, 0f);
 
-                // ÖĞ²ã - ÈÛÑÒ³È
+                // ä¸­å±‚ - ç†”å²©æ©™
                 Color midColor = AokinHelper.MoltenOrange * tornadoAlpha * 0.6f;
                 midColor.A = 0;
                 sb.Draw(tornadoTex, segPos, null, midColor, segRot * 1.2f, origin, segRadius, SpriteEffects.None, 0f);
 
-                // ÄÚ²ã - ÁÒÑæ½ğ
+                // å†…å±‚ - çƒˆç„°é‡‘
                 Color innerColor = AokinHelper.BlazingGold * tornadoAlpha * 0.3f;
                 innerColor.A = 0;
                 sb.Draw(tornadoTex, segPos, null, innerColor, segRot * 1.5f, origin, segRadius * 0.7f, SpriteEffects.None, 0f);

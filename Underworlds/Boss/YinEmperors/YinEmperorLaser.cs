@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -9,11 +9,11 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 {
     /// <summary>
-    /// ÒõÌì×Ó - Öù×´¼¤¹â
-    /// ÓÉMagicPixel·´¸´µş¼Ó»æÖÆµÄ¾Ş´óÖù×´¹âÊø
-    /// ¶à²ã½¥±ä+Á£×ÓÓªÔìµÛÚ¤ÍşÑ¹¸Ğ
-    /// ai[0] = ¼¤¹â·½Ïò½Ç¶È
-    /// ai[1] = ³ÖĞøÊ±¼ä
+    /// é˜´å¤©å­ - æŸ±çŠ¶æ¿€å…‰
+    /// ç”±MagicPixelåå¤å åŠ ç»˜åˆ¶çš„å·¨å¤§æŸ±çŠ¶å…‰æŸ
+    /// å¤šå±‚æ¸å˜+ç²’å­è¥é€ å¸å†¥å¨å‹æ„Ÿ
+    /// ai[0] = æ¿€å…‰æ–¹å‘è§’åº¦
+    /// ai[1] = æŒç»­æ—¶é—´
     /// </summary>
     public class YinEmperorLaser : ModProjectile
     {
@@ -52,19 +52,19 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             float expandTime = 8f;
             float fadeTime = 15f;
 
-            // Õ¹¿ª
+            // å±•å¼€
             if (laserTimer <= expandTime) {
                 float t = laserTimer / expandTime;
                 currentLength = MathHelper.Lerp(0f, TargetLength, ACMUtils.QuadOut(t));
                 currentWidth = MathHelper.Lerp(0f, MaxBeamWidth, ACMUtils.ElasticOut(t));
             }
-            // ³ÖĞø
+            // æŒç»­
             else if (laserTimer <= duration - fadeTime) {
                 currentLength = TargetLength;
-                // Âö¶¯¿í¶È
+                // è„‰åŠ¨å®½åº¦
                 currentWidth = MaxBeamWidth * (1f + MathF.Sin(pulsePhase) * 0.08f);
             }
-            // ÏûÍË
+            // æ¶ˆé€€
             else if (laserTimer <= duration) {
                 float fadeT = (laserTimer - (duration - fadeTime)) / fadeTime;
                 currentWidth = MaxBeamWidth * (1f - ACMUtils.QuadIn(fadeT));
@@ -75,12 +75,12 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 return;
             }
 
-            // Á£×ÓĞ§¹û
+            // ç²’å­æ•ˆæœ
             if (Main.netMode != NetmodeID.Server) {
                 CreateLaserParticles();
             }
 
-            // ¹âÕÕ
+            // å…‰ç…§
             Vector2 dir = LaserDirection.ToRotationVector2();
             for (int i = 0; i < 5; i++) {
                 float progress = i / 5f;
@@ -88,7 +88,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 Lighting.AddLight(lightPos, YinEmperorHelper.ImperialGold.ToVector3() * 0.6f * (currentWidth / MaxBeamWidth));
             }
 
-            // ÆğÊ¼ÒôĞ§
+            // èµ·å§‹éŸ³æ•ˆ
             if (laserTimer == 1) {
                 SoundEngine.PlaySound(SoundID.Item33 with { Pitch = -0.6f, Volume = 1.2f }, Projectile.Center);
             }
@@ -99,7 +99,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             Vector2 perp = dir.RotatedBy(MathHelper.PiOver2);
             float widthRatio = currentWidth / MaxBeamWidth;
 
-            // ÑØ¹âÊøÉ¢²¼Á£×Ó
+            // æ²¿å…‰æŸæ•£å¸ƒç²’å­
             if (Main.rand.NextBool(2) && currentWidth > 5f) {
                 float dist = Main.rand.NextFloat(0.1f, 1f) * currentLength;
                 float offset = Main.rand.NextFloat(-1f, 1f) * currentWidth * 0.6f;
@@ -113,7 +113,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 d.alpha = 80;
             }
 
-            // Æğµã±¬ÁÑÁ£×Ó
+            // èµ·ç‚¹çˆ†è£‚ç²’å­
             if (Main.rand.NextBool(2) && currentWidth > 10f) {
                 Vector2 startPos = Projectile.Center + Main.rand.NextVector2Circular(currentWidth * 0.3f, currentWidth * 0.3f);
                 var d = Dust.NewDustPerfect(startPos, DustID.GoldFlame);
@@ -122,7 +122,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 d.velocity = dir * Main.rand.NextFloat(2f, 6f);
             }
 
-            // Ä©¶ËÏûÉ¢Á£×Ó
+            // æœ«ç«¯æ¶ˆæ•£ç²’å­
             if (Main.rand.NextBool(3) && currentWidth > 10f) {
                 Vector2 endPos = Projectile.Center + dir * currentLength + Main.rand.NextVector2Circular(currentWidth, currentWidth);
                 var d = Dust.NewDustPerfect(endPos, DustID.Shadowflame);
@@ -153,30 +153,30 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             float rotation = LaserDirection;
             float widthRatio = currentWidth / MaxBeamWidth;
 
-            // === µÚ1²ã£º×îÍâ²ã°µ×ÏÉ«ÔÎÈ¾ ===
+            // === ç¬¬1å±‚ï¼šæœ€å¤–å±‚æš—ç´«è‰²æ™•æŸ“ ===
             DrawBeamLayer(sb, pixel, screenStart, rotation, currentLength,
                 currentWidth * 3f, YinEmperorHelper.AbyssPurple, 0.08f * widthRatio, pulsePhase * 0.7f);
 
-            // === µÚ2²ã£ºÍâ²ãµÛÚ¤½ğÔÎ ===
+            // === ç¬¬2å±‚ï¼šå¤–å±‚å¸å†¥é‡‘æ™• ===
             DrawBeamLayer(sb, pixel, screenStart, rotation, currentLength,
                 currentWidth * 2.2f, YinEmperorHelper.ImperialGold, 0.12f * widthRatio, pulsePhase * 0.9f);
 
-            // === µÚ3²ã£ºÖĞ²ã×ÏÉ«ÄÜÁ¿ ===
+            // === ç¬¬3å±‚ï¼šä¸­å±‚ç´«è‰²èƒ½é‡ ===
             DrawBeamLayer(sb, pixel, screenStart, rotation, currentLength,
                 currentWidth * 1.5f, YinEmperorHelper.AbyssPurple, 0.2f * widthRatio, pulsePhase);
 
-            // === µÚ4²ã£ººËĞÄ½ğÉ«¹âÖù ===
+            // === ç¬¬4å±‚ï¼šæ ¸å¿ƒé‡‘è‰²å…‰æŸ± ===
             DrawBeamLayer(sb, pixel, screenStart, rotation, currentLength,
                 currentWidth * 1f, YinEmperorHelper.DragonVeinGold, 0.35f * widthRatio, pulsePhase * 1.2f);
 
-            // === µÚ5²ã£º×îÄÚ²ã¸ßÁÁ°×ºË ===
+            // === ç¬¬5å±‚ï¼šæœ€å†…å±‚é«˜äº®ç™½æ ¸ ===
             DrawBeamLayer(sb, pixel, screenStart, rotation, currentLength,
                 currentWidth * 0.5f, Color.White, 0.4f * widthRatio, pulsePhase * 1.5f);
 
-            // === ÆğÊ¼±¬µã ===
+            // === èµ·å§‹çˆ†ç‚¹ ===
             DrawBeamOrigin(sb, pixel, screenStart, widthRatio);
 
-            // === Ä©¶ËÀ©É¢ ===
+            // === æœ«ç«¯æ‰©æ•£ ===
             Vector2 endPos = screenStart + LaserDirection.ToRotationVector2() * currentLength;
             DrawBeamEnd(sb, pixel, endPos, widthRatio);
 
@@ -184,7 +184,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         }
 
         /// <summary>
-        /// »æÖÆµ¥²ã¹âÊø - Ê¹ÓÃ¶à¶ÎMagicPixelÆ´½Ó£¬´ø²¨¶¯Ğ§¹û
+        /// ç»˜åˆ¶å•å±‚å…‰æŸ - ä½¿ç”¨å¤šæ®µMagicPixelæ‹¼æ¥ï¼Œå¸¦æ³¢åŠ¨æ•ˆæœ
         /// </summary>
         private void DrawBeamLayer(SpriteBatch sb, Texture2D pixel, Vector2 screenStart,
             float rotation, float length, float width, Color color, float alpha, float waveOffset) {
@@ -201,21 +201,21 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 float progress = i / (float)segmentCount;
                 Vector2 segPos = screenStart + dir * (length * progress);
 
-                // ±ßÔµµ­³ö
+                // è¾¹ç¼˜æ·¡å‡º
                 float edgeFade = 1f;
                 if (progress < 0.05f)
                     edgeFade = progress / 0.05f;
                 if (progress > 0.92f)
                     edgeFade = (1f - progress) / 0.08f;
 
-                // ²¨¶¯¿í¶È±ä»¯
+                // æ³¢åŠ¨å®½åº¦å˜åŒ–
                 float wave = 1f + MathF.Sin(progress * MathHelper.Pi * 6f + waveOffset) * 0.15f;
                 float segWidth = width * wave * edgeFade;
 
-                // Âö¶¯ÁÁ¶È±ä»¯
+                // è„‰åŠ¨äº®åº¦å˜åŒ–
                 float pulse = 1f + MathF.Sin(progress * MathHelper.Pi * 4f + waveOffset * 1.3f) * 0.2f;
 
-                // ºáÏòÎ¢Æ«ÒÆÓªÔì²»ÎÈ¶¨¸Ğ
+                // æ¨ªå‘å¾®åç§»è¥é€ ä¸ç¨³å®šæ„Ÿ
                 float drift = MathF.Sin(progress * MathHelper.Pi * 8f + waveOffset * 0.5f) * width * 0.05f;
                 Vector2 finalPos = segPos + perp * drift;
 
@@ -229,13 +229,13 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         }
 
         /// <summary>
-        /// »æÖÆ¹âÊøÆğµã±¬ÁÑĞ§¹û
+        /// ç»˜åˆ¶å…‰æŸèµ·ç‚¹çˆ†è£‚æ•ˆæœ
         /// </summary>
         private void DrawBeamOrigin(SpriteBatch sb, Texture2D pixel, Vector2 pos, float widthRatio) {
             Color goldGlow = YinEmperorHelper.DragonVeinGold;
             goldGlow.A = 0;
 
-            // ¶à²ãÔ²ĞÎµş¼Ó
+            // å¤šå±‚åœ†å½¢å åŠ 
             for (int i = 4; i >= 0; i--) {
                 float size = currentWidth * (1.5f + i * 0.5f);
                 float layerAlpha = 0.15f / (i + 1) * widthRatio;
@@ -249,7 +249,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                     SpriteEffects.None, 0);
             }
 
-            // Ê®×Ö¸ß¹â
+            // åå­—é«˜å…‰
             Color white = Color.White;
             white.A = 0;
             float crossSize = currentWidth * 1.2f;
@@ -267,7 +267,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         }
 
         /// <summary>
-        /// »æÖÆ¹âÊøÄ©¶ËÀ©É¢Ğ§¹û
+        /// ç»˜åˆ¶å…‰æŸæœ«ç«¯æ‰©æ•£æ•ˆæœ
         /// </summary>
         private void DrawBeamEnd(SpriteBatch sb, Texture2D pixel, Vector2 pos, float widthRatio) {
             Color purpleGlow = YinEmperorHelper.AbyssPurple;

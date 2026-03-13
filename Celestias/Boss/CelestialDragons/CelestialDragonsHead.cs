@@ -1,12 +1,12 @@
-using Terraria;
+ï»¿using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Celestias.Boss.CelestialDragons
 {
     /// <summary>
-    /// ÌìÍ¥Ñ²ÎÀ½ğÁú - Í·²¿
-    /// ÌùÍ¼³ß´ç: 382x256
+    /// å¤©åº­å·¡å«é‡‘é¾™ - å¤´éƒ¨
+    /// è´´å›¾å°ºå¯¸: 382x256
     /// </summary>
     [AutoloadBossHead]
     public class CelestialDragonsHead : CelestialDragons
@@ -23,8 +23,8 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons
 
         public override void SetDefaults() {
             base.SetDefaults();
-            // ¿í¶ÈÓÃÓÚ¼ÆËãÓëÏÂÒ»½ÚµÄ¾àÀë
-            // Í·²¿ÌùÍ¼382¿í£¬µÚÒ»¸öÌå½Ú´ÓÍ·²¿µÄÒ»°ë¿ªÊ¼
+            // å®½åº¦ç”¨äºè®¡ç®—ä¸ä¸‹ä¸€èŠ‚çš„è·ç¦»
+            // å¤´éƒ¨è´´å›¾382å®½ï¼Œç¬¬ä¸€ä¸ªä½“èŠ‚ä»å¤´éƒ¨çš„ä¸€åŠå¼€å§‹
             NPC.width = (int)(HeadTextureWidth * 0.5f);
             NPC.height = HeadTextureHeight;
             NPC.boss = true;

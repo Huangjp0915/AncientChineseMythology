@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.GameContent;
@@ -8,13 +8,13 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
 {
     internal partial class Aokin
     {
-        #region »æÖÆ
+        #region ç»˜åˆ¶
 
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
-            // »æÖÆÉßĞÎÉíÌå¶Î - ´ÓÎ²²¿µ½Í·²¿
+            // ç»˜åˆ¶è›‡å½¢èº«ä½“æ®µ - ä»å°¾éƒ¨åˆ°å¤´éƒ¨
             DrawSegments(spriteBatch, screenPos);
 
-            // »æÖÆÍ·²¿
+            // ç»˜åˆ¶å¤´éƒ¨
             DrawHead(spriteBatch, screenPos, drawColor);
 
             return false;
@@ -32,11 +32,11 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
 
                 Color segColor = Lighting.GetColor((int)segmentPos[i].X / 16, (int)segmentPos[i].Y / 16);
 
-                // ¸ù¾İÃ¿¶Î×ÔÉíµÄ³¯ÏòÅĞ¶Ï·­×ª
+                // æ ¹æ®æ¯æ®µè‡ªèº«çš„æœå‘åˆ¤æ–­ç¿»è½¬
                 float segDirX = MathF.Cos(segmentRot[i]);
                 SpriteEffects effects = segDirX < 0 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
 
-                // »ğÑæ¹âÔÎ²ã£¨Ëæ½×¶Î±ä»¯Ç¿¶È£©
+                // ç«ç„°å…‰æ™•å±‚ï¼ˆéšé˜¶æ®µå˜åŒ–å¼ºåº¦ï¼‰
                 if (flameAuraAlpha > 0.05f) {
                     float progress = (float)i / SegmentCount;
                     Color glowColor = Color.Lerp(AokinHelper.DragonFlameRed, AokinHelper.MoltenOrange, progress);
@@ -47,7 +47,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                         segmentRot[i] + MathF.PI / 2f, origin, NPC.scale * 1.2f * firePulse, effects, 0f);
                 }
 
-                // Ö÷Ìå
+                // ä¸»ä½“
                 spriteBatch.Draw(segTex, segmentPos[i] - screenPos, null, segColor,
                     segmentRot[i] + MathF.PI / 2f, origin, NPC.scale, effects, 0f);
             }
@@ -59,36 +59,36 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
 
             float firePulse = 1f + MathF.Sin(globalTime * 3f) * 0.08f;
 
-            // »ğÑæ¹â»·
+            // ç«ç„°å…‰ç¯
             DrawFireAura(spriteBatch, screenPos, headTex, origin, firePulse);
 
-            // »ğÑæÍÏÎ²
+            // ç«ç„°æ‹–å°¾
             DrawFireTrail(spriteBatch, screenPos, headTex, origin);
 
-            // Ö÷ÌåÑÕÉ« - Î¢Î¢´ø»ğÑæÉ«µ÷
+            // ä¸»ä½“é¢œè‰² - å¾®å¾®å¸¦ç«ç„°è‰²è°ƒ
             Color fireTint = Color.Lerp(drawColor, AokinHelper.MoltenOrange, 0.2f);
             fireTint = Color.Lerp(fireTint, Color.White, 0.15f);
 
             SpriteEffects effects = NPC.velocity.X < 0 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
             float drawRot = NPC.rotation + MathF.PI / 2f;
 
-            // Íâ²ã·¢¹â
+            // å¤–å±‚å‘å…‰
             Color outerGlow = AokinHelper.BlazingGold * 0.4f * firePulse;
             outerGlow.A = 0;
             spriteBatch.Draw(headTex, NPC.Center - screenPos, null, outerGlow,
                 drawRot, origin, NPC.scale * 1.15f * firePulse, effects, 0f);
 
-            // Ö÷Ìå
+            // ä¸»ä½“
             spriteBatch.Draw(headTex, NPC.Center - screenPos, null, fireTint * NPC.Opacity,
                 drawRot, origin, NPC.scale * firePulse, effects, 0f);
 
-            // ÄÚ²¿¸ß¹â
+            // å†…éƒ¨é«˜å…‰
             Color innerGlow = AokinHelper.PureWhite * 0.25f * firePulse;
             innerGlow.A = 0;
             spriteBatch.Draw(headTex, NPC.Center - screenPos, null, innerGlow,
                 drawRot, origin, NPC.scale * 0.8f, effects, 0f);
 
-            // ÁúÑÛ¹âĞ§
+            // é¾™çœ¼å…‰æ•ˆ
             DrawDragonEyes(spriteBatch, screenPos);
         }
 

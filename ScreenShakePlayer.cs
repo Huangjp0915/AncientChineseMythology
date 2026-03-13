@@ -1,10 +1,10 @@
-using Terraria;
+锘縰sing Terraria;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology
 {
     /// <summary>
-    /// 处理屏幕震动效果
+    /// 澶勭悊灞忓箷闇囧姩鏁堟灉
     /// </summary>
     internal class ScreenShakePlayer : ModPlayer
     {
@@ -12,7 +12,7 @@ namespace AncientChineseMythology
         private int shakeDuration = 0;
 
         /// <summary>
-        /// 触发屏幕震动
+        /// 瑙﹀彂灞忓箷闇囧姩
         /// </summary>
         public void ShakeScreen(float intensity, int duration) {
             if (intensity > shakeIntensity) {
@@ -23,7 +23,7 @@ namespace AncientChineseMythology
 
         public override void ModifyScreenPosition() {
             if (shakeDuration > 0) {
-                // 应用随机震动
+                // 搴旂敤闅忔満闇囧姩
                 float currentIntensity = shakeIntensity * (shakeDuration / 20f);
                 Main.screenPosition += Main.rand.NextVector2Circular(currentIntensity, currentIntensity);
 
@@ -36,7 +36,7 @@ namespace AncientChineseMythology
         }
 
         public override void ResetEffects() {
-            // 每帧逐渐减弱震动
+            // 姣忓抚閫愭笎鍑忓急闇囧姩
             if (shakeIntensity > 0f) {
                 shakeIntensity *= 0.95f;
             }

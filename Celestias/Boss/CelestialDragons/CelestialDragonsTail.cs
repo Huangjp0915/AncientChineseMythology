@@ -1,10 +1,10 @@
-using Terraria;
+ï»¿using Terraria;
 
 namespace AncientChineseMythology.Celestias.Boss.CelestialDragons
 {
     /// <summary>
-    /// ÌìÍ¥Ñ²ÎÀ½ğÁú - Î²²¿
-    /// ÌùÍ¼³ß´ç: 412x124
+    /// å¤©åº­å·¡å«é‡‘é¾™ - å°¾éƒ¨
+    /// è´´å›¾å°ºå¯¸: 412x124
     /// </summary>
     public class CelestialDragonsTail : CelestialDragons
     {
@@ -12,18 +12,18 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons
 
         public override void SetDefaults() {
             base.SetDefaults();
-            // Î²²¿¿í¶È
+            // å°¾éƒ¨å®½åº¦
             NPC.width = (int)(TailTextureWidth * 0.5f);
             NPC.height = TailTextureHeight;
         }
 
         public override void ChangeSummonType() {
-            // Î²°Í²»ÔÙÉú³ÉºóĞø½Úµã
+            // å°¾å·´ä¸å†ç”Ÿæˆåç»­èŠ‚ç‚¹
             SummonNPCType = 0;
         }
 
         protected override float GetSegmentWidth() {
-            // Î²²¿½Ï³¤£¬Ê¹ÓÃ½ÏĞ¡µÄÓĞĞ§¿í¶ÈÒÔ±£Ö¤½ôÃÜÁ¬½Ó
+            // å°¾éƒ¨è¾ƒé•¿ï¼Œä½¿ç”¨è¾ƒå°çš„æœ‰æ•ˆå®½åº¦ä»¥ä¿è¯ç´§å¯†è¿æ¥
             return TailTextureWidth * 0.3f;
         }
     }

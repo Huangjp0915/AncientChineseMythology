@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -8,7 +8,7 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 {
     /// <summary>
-    /// °×ÎŞ³£»ù´¡ÓÄ»êµ¯Ä» - Æ®ºöµÄ×·×ÙÓÄ»ê
+    /// ç™½æ— å¸¸åŸºç¡€å¹½é­‚å¼¹å¹• - é£˜å¿½çš„è¿½è¸ªå¹½é­‚
     /// </summary>
     public class GhostProjectile : ModProjectile
     {
@@ -39,15 +39,15 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         }
 
         public override void AI() {
-            // µ­ÈëĞ§¹û
+            // æ·¡å…¥æ•ˆæœ
             ghostAlpha = MathHelper.Lerp(ghostAlpha, 1f, 0.05f);
             pulsePhase += 0.12f;
             wobblePhase += 0.08f;
 
-            // ÓÄÁé°ãµÄĞı×ª£¨»ºÂıÇÒÆ®ºö£©
+            // å¹½çµèˆ¬çš„æ—‹è½¬ï¼ˆç¼“æ…¢ä¸”é£˜å¿½ï¼‰
             Projectile.rotation += MathF.Sin(wobblePhase) * 0.05f + 0.02f;
 
-            // ×·×Ù×î½üÍæ¼Ò
+            // è¿½è¸ªæœ€è¿‘ç©å®¶
             Player target = null;
             float closestDist = 700f;
             foreach (var p in Main.player) {
@@ -67,12 +67,12 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 Projectile.velocity = Vector2.Lerp(Projectile.velocity, toTarget * targetSpeed, homingStrength);
             }
 
-            // ÓÄÁé°ãµÄÆ®¶¯£¨¸üÃ÷ÏÔµÄ²¨ÀËÔË¶¯£©
+            // å¹½çµèˆ¬çš„é£˜åŠ¨ï¼ˆæ›´æ˜æ˜¾çš„æ³¢æµªè¿åŠ¨ï¼‰
             Vector2 perpendicular = Projectile.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
             float drift = MathF.Sin(wobblePhase * 1.5f + Projectile.whoAmI * 0.5f) * 2f;
             Projectile.position += perpendicular * drift;
 
-            // Ö÷ÌåÁ£×ÓĞ§¹û
+            // ä¸»ä½“ç²’å­æ•ˆæœ
             if (Main.rand.NextBool(2)) {
                 Vector2 dustOffset = Main.rand.NextVector2Circular(12, 12);
                 var d = Dust.NewDustPerfect(Projectile.Center + dustOffset, DustID.SpectreStaff);
@@ -82,7 +82,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 d.alpha = 100;
             }
 
-            // Î²¼£Á£×Ó
+            // å°¾è¿¹ç²’å­
             if (Main.rand.NextBool(3)) {
                 var d = Dust.NewDustPerfect(Projectile.oldPos[4] + Projectile.Size / 2, DustID.SpectreStaff);
                 d.noGravity = true;
@@ -91,7 +91,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 d.alpha = 150;
             }
 
-            // ¹âÕÕ£¨Âö¶¯£©
+            // å…‰ç…§ï¼ˆè„‰åŠ¨ï¼‰
             float lightPulse = 0.4f + MathF.Sin(pulsePhase) * 0.15f;
             Lighting.AddLight(Projectile.Center, new Color(180, 180, 255).ToVector3() * lightPulse * ghostAlpha);
         }
@@ -103,7 +103,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 
             Vector2 origin = tex.Size() / 2f;
 
-            // »æÖÆÓÄÁéÍÏÎ²£¨¶à²ã½¥±ä£©
+            // ç»˜åˆ¶å¹½çµæ‹–å°¾ï¼ˆå¤šå±‚æ¸å˜ï¼‰
             for (int layer = 0; layer < 2; layer++) {
                 for (int i = Projectile.oldPos.Length - 1; i >= 0; i--) {
                     if (Projectile.oldPos[i] == Vector2.Zero) continue;
@@ -119,7 +119,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 
                     Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
 
-                    // ÇáÎ¢Æ«ÒÆÔö¼ÓÆ®ºö¸Ğ
+                    // è½»å¾®åç§»å¢åŠ é£˜å¿½æ„Ÿ
                     float wobble = MathF.Sin(wobblePhase + i * 0.3f) * 3f;
                     drawPos.Y += wobble;
 
@@ -127,13 +127,13 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 }
             }
 
-            // Ö÷ÌåÓÄ»ê¹âÇò
+            // ä¸»ä½“å¹½é­‚å…‰çƒ
             BAWHelper.DrawGhostOrb(sb, Projectile.Center,
                 new Color(200, 220, 255) * ghostAlpha,
                 new Color(120, 180, 255),
                 1.2f, pulsePhase);
 
-            // ¶îÍâµÄÓÄÁé"ÑÛ¾¦"Ğ§¹û
+            // é¢å¤–çš„å¹½çµ"çœ¼ç›"æ•ˆæœ
             float eyeOffset = MathF.Sin(pulsePhase * 2f) * 2f;
             Color eyeColor = Color.White * ghostAlpha * 0.8f;
             eyeColor.A = 0;
@@ -148,14 +148,14 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         public override void OnHitPlayer(Player target, Player.HurtInfo info) {
             target.GetModPlayer<BAWPlayer>().ApplyYinQiCorrosion(180);
 
-            // ÃüÖĞÌØĞ§
+            // å‘½ä¸­ç‰¹æ•ˆ
             SoundEngine.PlaySound(SoundID.NPCHit54 with { Pitch = 0.3f }, Projectile.Center);
         }
 
         public override void OnKill(int timeLeft) {
             SoundEngine.PlaySound(SoundID.Item10 with { Pitch = 0.5f, Volume = 0.8f }, Projectile.Center);
 
-            // ÓÄ»êÏûÉ¢
+            // å¹½é­‚æ¶ˆæ•£
             for (int i = 0; i < 15; i++) {
                 var d = Dust.NewDustPerfect(Projectile.Center, DustID.SpectreStaff);
                 d.noGravity = true;
@@ -167,7 +167,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
     }
 
     /// <summary>
-    /// °×ÎŞ³£ÓÄÁé·¨Õóµ¯Ä» - »·ÈÆÍæ¼ÒµÄÊÕËõ·¨Õó
+    /// ç™½æ— å¸¸å¹½çµæ³•é˜µå¼¹å¹• - ç¯ç»•ç©å®¶çš„æ”¶ç¼©æ³•é˜µ
     /// </summary>
     public class SpiritCircleProjectile : ModProjectile
     {
@@ -199,7 +199,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         }
 
         public override void AI() {
-            // Ñ°ÕÒÄ¿±êÍæ¼Ò
+            // å¯»æ‰¾ç›®æ ‡ç©å®¶
             if (targetPlayer == null || !targetPlayer.active || targetPlayer.dead) {
                 float closestDist = float.MaxValue;
                 foreach (var p in Main.player) {
@@ -214,10 +214,10 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
             }
 
             if (targetPlayer != null) {
-                // »·ÈÆÍæ¼ÒĞı×ª
+                // ç¯ç»•ç©å®¶æ—‹è½¬
                 circleAngle += orbitSpeed;
-                orbitSpeed = MathHelper.Lerp(orbitSpeed, 0.05f, 0.005f); // ¼ÓËÙĞı×ª
-                orbitRadius = MathHelper.Lerp(orbitRadius, 60f, 0.008f); // ÊÕ½ô°üÎ§È¦
+                orbitSpeed = MathHelper.Lerp(orbitSpeed, 0.05f, 0.005f); // åŠ é€Ÿæ—‹è½¬
+                orbitRadius = MathHelper.Lerp(orbitRadius, 60f, 0.008f); // æ”¶ç´§åŒ…å›´åœˆ
 
                 Vector2 targetPos = targetPlayer.Center + new Vector2(MathF.Cos(circleAngle), MathF.Sin(circleAngle)) * orbitRadius;
                 Projectile.velocity = (targetPos - Projectile.Center) * 0.15f;
@@ -226,7 +226,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
             pulsePhase += 0.1f;
             runeRotation += 0.08f;
 
-            // ·ûÎÄÁ£×ÓĞ§¹û
+            // ç¬¦æ–‡ç²’å­æ•ˆæœ
             if (Main.rand.NextBool(2)) {
                 float particleAngle = Main.rand.NextFloat(MathHelper.TwoPi);
                 float particleRadius = 25f + MathF.Sin(pulsePhase + particleAngle * 3) * 8f;
@@ -239,9 +239,9 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 d.alpha = 100;
             }
 
-            // Á¬½ÓÏßÁ£×Ó£¨Á¬½Óµ½ÆäËû·¨Õó£©
+            // è¿æ¥çº¿ç²’å­ï¼ˆè¿æ¥åˆ°å…¶ä»–æ³•é˜µï¼‰
             if (Main.rand.NextBool(8) && targetPlayer != null) {
-                // ÕÒµ½Í¬ÀàĞÍµÄÆäËûµ¯Ä»
+                // æ‰¾åˆ°åŒç±»å‹çš„å…¶ä»–å¼¹å¹•
                 foreach (var proj in Main.projectile) {
                     if (proj.active && proj.type == Projectile.type && proj.whoAmI != Projectile.whoAmI) {
                         float dist = Vector2.Distance(Projectile.Center, proj.Center);
@@ -267,7 +267,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 
             Vector2 origin = tex.Size() / 2f;
 
-            // »æÖÆ¶à²ã¹â»·
+            // ç»˜åˆ¶å¤šå±‚å…‰ç¯
             for (int ring = 0; ring < 3; ring++) {
                 float ringRadius = 20f + ring * 12f;
                 float ringAlpha = 0.5f - ring * 0.15f;
@@ -287,7 +287,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 }
             }
 
-            // ÖĞĞÄºËĞÄ
+            // ä¸­å¿ƒæ ¸å¿ƒ
             float corePulse = 1f + MathF.Sin(pulsePhase * 1.5f) * 0.2f;
             BAWHelper.DrawGhostOrb(sb, Projectile.Center,
                 new Color(180, 200, 255), new Color(100, 150, 255),
@@ -315,7 +315,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
     }
 
     /// <summary>
-    /// °×ÎŞ³£ÓÄ»ê²¨µ¯Ä» - À©É¢µÄÓÄÁé²¨ÀË
+    /// ç™½æ— å¸¸å¹½é­‚æ³¢å¼¹å¹• - æ‰©æ•£çš„å¹½çµæ³¢æµª
     /// </summary>
     public class GhostWaveProjectile : ModProjectile
     {
@@ -344,20 +344,20 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
             Projectile.rotation = Projectile.velocity.ToRotation();
             pulsePhase += 0.15f;
 
-            // ²¨ÀËÕ¹¿í
+            // æ³¢æµªå±•å®½
             waveWidth = MathHelper.Lerp(waveWidth, 2.5f, 0.01f);
 
-            // ²¨ÀËÔË¶¯
+            // æ³¢æµªè¿åŠ¨
             float waveOffset = MathF.Sin(pulsePhase * 0.8f) * 4f;
             Vector2 perpendicular = Projectile.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
             Projectile.position += perpendicular * waveOffset;
 
-            // ½¥½ø¼ÓËÙ
+            // æ¸è¿›åŠ é€Ÿ
             if (Projectile.velocity.Length() < 16) {
                 Projectile.velocity *= 1.012f;
             }
 
-            // ²¨ÀËÁ£×ÓĞ§¹û
+            // æ³¢æµªç²’å­æ•ˆæœ
             for (int i = 0; i < 3; i++) {
                 float offsetY = (i - 1) * 15f * waveWidth;
                 Vector2 dustPos = Projectile.Center + perpendicular * offsetY;
@@ -381,21 +381,21 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
             Vector2 origin = tex.Size() / 2f;
             Vector2 perpendicular = Projectile.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
 
-            // »æÖÆ²¨ÀËÍÏÎ²
+            // ç»˜åˆ¶æ³¢æµªæ‹–å°¾
             for (int i = Projectile.oldPos.Length - 1; i >= 0; i--) {
                 if (Projectile.oldPos[i] == Vector2.Zero) continue;
 
                 float progress = 1f - (float)i / Projectile.oldPos.Length;
                 float trailWidth = waveWidth * progress;
 
-                // ¶à²ã²¨ÀËĞ§¹û
+                // å¤šå±‚æ³¢æµªæ•ˆæœ
                 for (int layer = -2; layer <= 2; layer++) {
                     float layerOffset = layer * 12f * trailWidth;
                     float layerAlpha = (1f - MathF.Abs(layer) / 3f) * progress * 0.4f;
 
                     Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2 + perpendicular * layerOffset - Main.screenPosition;
 
-                    // ²¨ÀËÆğ·ü
+                    // æ³¢æµªèµ·ä¼
                     float waveY = MathF.Sin(pulsePhase + i * 0.2f + layer * 0.5f) * 3f;
                     drawPos.Y += waveY;
 
@@ -407,7 +407,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 }
             }
 
-            // Ö÷Ìå²¨ÀË
+            // ä¸»ä½“æ³¢æµª
             float mainPulse = 1f + MathF.Sin(pulsePhase) * 0.2f;
             for (int w = -2; w <= 2; w++) {
                 float wOffset = w * 15f * waveWidth;
@@ -421,7 +421,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                     new Vector2(1.5f, 1.2f * mainPulse), SpriteEffects.None, 0);
             }
 
-            // Ç°¶ËÁÁµã
+            // å‰ç«¯äº®ç‚¹
             Color headColor = Color.White * 0.6f;
             headColor.A = 0;
             sb.Draw(tex, Projectile.Center - Main.screenPosition, null, headColor,
@@ -449,7 +449,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
     }
 
     /// <summary>
-    /// °×ÎŞ³£Áé»êÎüÈ¡µ¯Ä» - Á¬½Ó²¢ÎüÈ¡Íæ¼ÒÉúÃü
+    /// ç™½æ— å¸¸çµé­‚å¸å–å¼¹å¹• - è¿æ¥å¹¶å¸å–ç©å®¶ç”Ÿå‘½
     /// </summary>
     public class SoulDrainProjectile : ModProjectile
     {
@@ -488,7 +488,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
             pulsePhase += 0.1f;
 
             if (!isConnected) {
-                // ×·×ÙÍæ¼Ò
+                // è¿½è¸ªç©å®¶
                 Player target = null;
                 float closestDist = 500f;
                 foreach (var p in Main.player) {
@@ -505,7 +505,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                     Vector2 toTarget = (target.Center - Projectile.Center).SafeNormalize(Vector2.Zero);
                     Projectile.velocity = Vector2.Lerp(Projectile.velocity, toTarget * 14, 0.07f);
 
-                    // ¼ì²âÃüÖĞ
+                    // æ£€æµ‹å‘½ä¸­
                     if (Projectile.Hitbox.Intersects(target.Hitbox)) {
                         isConnected = true;
                         connectedPlayer = target;
@@ -517,7 +517,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 Projectile.rotation = Projectile.velocity.ToRotation();
                 connectionAlpha = MathHelper.Lerp(connectionAlpha, 0f, 0.1f);
 
-                // ×·×ÙÁ£×Ó
+                // è¿½è¸ªç²’å­
                 if (Main.rand.NextBool(2)) {
                     var d = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(15, 15), DustID.SpectreStaff);
                     d.noGravity = true;
@@ -526,17 +526,17 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 }
             }
             else if (connectedPlayer != null && connectedPlayer.active && !connectedPlayer.dead) {
-                // ÎüÈ¡×´Ì¬
+                // å¸å–çŠ¶æ€
                 connectionAlpha = MathHelper.Lerp(connectionAlpha, 1f, 0.05f);
                 Projectile.Center = connectedPlayer.Center;
                 drainTimer++;
 
-                // ´ÓÍæ¼ÒÎüÈ¡ÄÜÁ¿µ½boss
+                // ä»ç©å®¶å¸å–èƒ½é‡åˆ°boss
                 if (drainTimer % 12 == 0) {
-                    // ÉËº¦Íæ¼Ò
+                    // ä¼¤å®³ç©å®¶
                     connectedPlayer.Hurt(Terraria.DataStructures.PlayerDeathReason.ByNPC(owner.whoAmI), 8, 0);
 
-                    // ÖÎÁÆboss
+                    // æ²»ç–—boss
                     if (owner.life < owner.lifeMax) {
                         int healAmount = 60;
                         owner.life += healAmount;
@@ -545,14 +545,14 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                         owner.HealEffect(healAmount);
                     }
 
-                    // Ó¦ÓÃdebuff
+                    // åº”ç”¨debuff
                     connectedPlayer.GetModPlayer<BAWPlayer>().ApplyYinQiCorrosion(30);
 
-                    // ÎüÈ¡Âö³åÒôĞ§
+                    // å¸å–è„‰å†²éŸ³æ•ˆ
                     SoundEngine.PlaySound(SoundID.Item29 with { Pitch = 0.5f, Volume = 0.5f }, Projectile.Center);
                 }
 
-                // ÎüÈ¡Ò»¶¨Ê±¼äºó¶Ï¿ª
+                // å¸å–ä¸€å®šæ—¶é—´åæ–­å¼€
                 if (drainTimer > 150 || !connectedPlayer.active || connectedPlayer.dead) {
                     Projectile.Kill();
                 }
@@ -569,18 +569,18 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 
             SpriteBatch sb = Main.spriteBatch;
 
-            // »æÖÆÄÜÁ¿ÎüÈ¡ÉäÏß
+            // ç»˜åˆ¶èƒ½é‡å¸å–å°„çº¿
             if (connectionAlpha > 0.1f) {
                 DrawDrainBeam(sb);
             }
 
-            // »æÖÆµ¯Ä»±¾Ìå
+            // ç»˜åˆ¶å¼¹å¹•æœ¬ä½“
             if (!isConnected) {
-                // ×·×Ù×´Ì¬£º»æÖÆ×·×Ù¹âÇò
+                // è¿½è¸ªçŠ¶æ€ï¼šç»˜åˆ¶è¿½è¸ªå…‰çƒ
                 DrawTrackingOrb(sb);
             }
             else {
-                // ÎüÈ¡×´Ì¬£º»æÖÆ¸½×ÅĞ§¹û
+                // å¸å–çŠ¶æ€ï¼šç»˜åˆ¶é™„ç€æ•ˆæœ
                 DrawDrainEffect(sb);
             }
 
@@ -593,7 +593,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 
             Vector2 origin = tex.Size() / 2f;
 
-            // ÍÏÎ²
+            // æ‹–å°¾
             for (int i = 0; i < Projectile.oldPos.Length; i++) {
                 if (Projectile.oldPos[i] == Vector2.Zero) continue;
 
@@ -605,21 +605,21 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 sb.Draw(tex, drawPos, null, trailColor, 0f, origin, progress * 1.5f, SpriteEffects.None, 0);
             }
 
-            // Ö÷Ìå
+            // ä¸»ä½“
             BAWHelper.DrawGhostOrb(sb, Projectile.Center,
                 new Color(200, 120, 255), new Color(150, 80, 200),
                 1.8f, pulsePhase);
         }
 
         private void DrawDrainBeam(SpriteBatch sb) {
-            // Ê¹ÓÃ¸ß¼¶ÄÜÁ¿ÉäÏß»æÖÆ
+            // ä½¿ç”¨é«˜çº§èƒ½é‡å°„çº¿ç»˜åˆ¶
             Color beamColor = Color.Lerp(new Color(180, 100, 220), new Color(255, 150, 255), MathF.Sin(pulsePhase) * 0.5f + 0.5f);
             beamColor *= connectionAlpha;
 
             BAWHelper.DrawEnergyBeam(sb, connectedPlayer?.Center ?? Projectile.Center, owner.Center, beamColor,
                 12f * connectionAlpha, pulsePhase * 60f);
 
-            // ÑØÉäÏßÁ÷¶¯µÄÄÜÁ¿Á£×Ó£¨ÊÓ¾õÉÏµÄ£¬²»ÊÇÊµ¼ÊÁ£×Ó£©
+            // æ²¿å°„çº¿æµåŠ¨çš„èƒ½é‡ç²’å­ï¼ˆè§†è§‰ä¸Šçš„ï¼Œä¸æ˜¯å®é™…ç²’å­ï¼‰
             var tex = BAWHelper.DustTexture;
             if (tex == null || connectedPlayer == null) return;
 
@@ -649,7 +649,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 
             Vector2 origin = tex.Size() / 2f;
 
-            // ÔÚÍæ¼ÒÉíÉÏ»æÖÆÎüÈ¡äöÎĞ
+            // åœ¨ç©å®¶èº«ä¸Šç»˜åˆ¶å¸å–æ¼©æ¶¡
             int spiralArms = 3;
             for (int arm = 0; arm < spiralArms; arm++) {
                 float baseAngle = pulsePhase + MathHelper.TwoPi * arm / spiralArms;
@@ -669,7 +669,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 }
             }
 
-            // ÖĞĞÄÎüÈ¡µã
+            // ä¸­å¿ƒå¸å–ç‚¹
             float centerPulse = 1f + MathF.Sin(pulsePhase * 2f) * 0.3f;
             BAWHelper.DrawGhostOrb(sb, connectedPlayer.Center,
                 new Color(255, 150, 255) * connectionAlpha,
@@ -680,7 +680,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         public override void OnKill(int timeLeft) {
             SoundEngine.PlaySound(SoundID.Item10 with { Pitch = -0.3f }, Projectile.Center);
 
-            // ¶Ï¿ªÁ¬½ÓµÄ±¬·¢Ğ§¹û
+            // æ–­å¼€è¿æ¥çš„çˆ†å‘æ•ˆæœ
             for (int i = 0; i < 20; i++) {
                 var d = Dust.NewDustPerfect(Projectile.Center, DustID.SpectreStaff);
                 d.noGravity = true;

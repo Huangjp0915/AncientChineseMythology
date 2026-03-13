@@ -1,4 +1,4 @@
-using Terraria;
+ï»¿using Terraria;
 using Terraria.Audio;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -6,7 +6,7 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 {
     /// <summary>
-    /// ÓÄÚ¤ÁúÕÙ»½ÎïÆ·
+    /// å¹½å†¥é¾™å¬å”¤ç‰©å“
     /// </summary>
     public class NetherDragonSummonItem : ModItem
     {
@@ -22,16 +22,16 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         }
 
         public override bool CanUseItem(Player player) {
-            // ¼ì²éÊÇ·ñÒÑ¾­´æÔÚBoss
+            // æ£€æŸ¥æ˜¯å¦å·²ç»å­˜åœ¨Boss
             return !NPC.AnyNPCs(ModContent.NPCType<NetherDragonHead>());
         }
 
         public override bool? UseItem(Player player) {
             if (player.whoAmI == Main.myPlayer) {
-                // ²¥·ÅÕÙ»½ÒôĞ§
+                // æ’­æ”¾å¬å”¤éŸ³æ•ˆ
                 SoundEngine.PlaySound(SoundID.Roar, player.position);
 
-                // ÔÚÍæ¼ÒÉÏ·½Éú³ÉÓÄÚ¤Áú
+                // åœ¨ç©å®¶ä¸Šæ–¹ç”Ÿæˆå¹½å†¥é¾™
                 int npcID = NPC.NewNPC(
                     player.GetSource_ItemUse(Item),
                     (int)player.Center.X,
@@ -43,8 +43,8 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                     NetMessage.SendData(MessageID.SyncNPC, number: npcID);
                 }
 
-                // ÏÔÊ¾ÕÙ»½ÎÄ±¾
-                Main.NewText("ÓÄÚ¤ÁúÒÑËÕĞÑ£¡", new Color(100, 150, 255));
+                // æ˜¾ç¤ºå¬å”¤æ–‡æœ¬
+                Main.NewText("å¹½å†¥é¾™å·²è‹é†’ï¼", new Color(100, 150, 255));
             }
 
             return true;

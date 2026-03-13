@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -8,10 +8,10 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
 {
-    #region ÌìÑÛÆÍ´ÓNPC
+    #region å¤©çœ¼ä»†ä»NPC
 
     /// <summary>
-    /// ÌìÑÛÆÍ´Ó - »·ÈÆBoss²¢·¢Éä¹¥»÷
+    /// å¤©çœ¼ä»†ä» - ç¯ç»•Bosså¹¶å‘å°„æ”»å‡»
     /// </summary>
     internal class CelestialEyeMinion : ModNPC
     {
@@ -59,7 +59,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
         public override void AI() {
             globalTime += 1f / 60f;
 
-            // »ñÈ¡Ö÷ÈË
+            // è·å–ä¸»äºº
             NPC owner = Main.npc[(int)OwnerIndex];
             if (!owner.active || owner.type != ModContent.NPCType<CelestialOverseer>()) {
                 NPC.life = 0;
@@ -67,14 +67,14 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
                 return;
             }
 
-            // »ñÈ¡Ä¿±ê
+            // è·å–ç›®æ ‡
             Player target = Main.player[owner.target];
             if (!target.active || target.dead) {
                 NPC.velocity *= 0.95f;
                 return;
             }
 
-            // ¹ìµÀÔË¶¯
+            // è½¨é“è¿åŠ¨
             orbitAngle += 0.02f + MinionIndex * 0.005f;
             float targetRadius = 250f + MathF.Sin(globalTime * 2f + MinionIndex) * 30f;
             orbitRadius = MathHelper.Lerp(orbitRadius, targetRadius, 0.05f);
@@ -82,21 +82,21 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
             Vector2 orbitOffset = orbitAngle.ToRotationVector2() * orbitRadius;
             Vector2 targetPos = owner.Center + orbitOffset;
 
-            // Æ½»¬ÒÆ¶¯
+            // å¹³æ»‘ç§»åŠ¨
             NPC.velocity = (targetPos - NPC.Center) * 0.1f;
 
-            // ÃæÏòÍæ¼Ò
+            // é¢å‘ç©å®¶
             NPC.rotation = (target.Center - NPC.Center).ToRotation();
 
             AttackTimer++;
 
-            // ¹¥»÷Ä£Ê½
+            // æ”»å‡»æ¨¡å¼
             if (LaserMode == 1) {
-                // ¼¤¹âÄ£Ê½ÓÉBoss¿ØÖÆ
+                // æ¿€å…‰æ¨¡å¼ç”±Bossæ§åˆ¶
                 LaserMode = 0;
             }
             else {
-                // ÆÕÍ¨¹¥»÷
+                // æ™®é€šæ”»å‡»
                 float attackCooldown = Main.expertMode ? 80f : 100f;
                 if (AttackTimer >= attackCooldown) {
                     AttackTimer = 0;
@@ -104,7 +104,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
                 }
             }
 
-            // ·¢¹â
+            // å‘å…‰
             Lighting.AddLight(NPC.Center, new Vector3(0.8f, 0.9f, 1f) * 0.6f);
         }
 
@@ -113,10 +113,10 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
 
             Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero);
 
-            // Ëæ»úÑ¡Ôñ¹¥»÷ÀàĞÍ
+            // éšæœºé€‰æ‹©æ”»å‡»ç±»å‹
             int attackType = Main.rand.Next(3);
             switch (attackType) {
-                case 0: // µ¥·¢×·×Ùµ¯
+                case 0: // å•å‘è¿½è¸ªå¼¹
                     Projectile.NewProjectile(
                         NPC.GetSource_FromAI(),
                         NPC.Center,
@@ -128,7 +128,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
                     );
                     break;
 
-                case 1: // ÈıÁ¬·¢
+                case 1: // ä¸‰è¿å‘
                     for (int i = -1; i <= 1; i++) {
                         Vector2 vel = toTarget.RotatedBy(MathHelper.ToRadians(15 * i)) * 8f;
                         Projectile.NewProjectile(
@@ -143,7 +143,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
                     }
                     break;
 
-                case 2: // ĞÇ³½µ¯
+                case 2: // æ˜Ÿè¾°å¼¹
                     Projectile.NewProjectile(
                         NPC.GetSource_FromAI(),
                         NPC.Center,
@@ -164,7 +164,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
             Vector2 drawPos = NPC.Center - screenPos;
             Vector2 origin = texture.Size() / 2f;
 
-            // ÍÏÎ²
+            // æ‹–å°¾
             for (int i = 0; i < NPC.oldPos.Length; i++) {
                 if (NPC.oldPos[i] == Vector2.Zero) continue;
                 float progress = 1f - (float)i / NPC.oldPos.Length;
@@ -174,15 +174,15 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
                 spriteBatch.Draw(texture, trailPos, null, trailColor, NPC.oldRot[i], origin, NPC.scale * progress, SpriteEffects.None, 0f);
             }
 
-            // Íâ²ã¹âÔÎ
+            // å¤–å±‚å…‰æ™•
             Color glowColor = new Color(200, 220, 255) * 0.5f;
             glowColor.A = 0;
             spriteBatch.Draw(texture, drawPos, null, glowColor, NPC.rotation, origin, NPC.scale * 1.3f, SpriteEffects.None, 0f);
 
-            // Ö÷Ìå
+            // ä¸»ä½“
             spriteBatch.Draw(texture, drawPos, null, Color.White, NPC.rotation, origin, NPC.scale, SpriteEffects.None, 0f);
 
-            // Í«¿×¸ß¹â
+            // ç³å­”é«˜å…‰
             Color coreColor = new Color(255, 255, 220);
             coreColor.A = 0;
             spriteBatch.Draw(texture, drawPos, null, coreColor * 0.5f, NPC.rotation, origin, NPC.scale * 0.8f, SpriteEffects.None, 0f);
@@ -191,7 +191,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
         }
 
         public override void OnKill() {
-            // ËÀÍöÁ£×Ó
+            // æ­»äº¡ç²’å­
             for (int i = 0; i < 20; i++) {
                 Vector2 dustVel = Main.rand.NextVector2CircularEdge(6, 6);
                 int dust = Dust.NewDust(NPC.Center, 0, 0, DustID.GoldCoin, dustVel.X, dustVel.Y, 100, default, 2f);
@@ -202,7 +202,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
 
     #endregion
     /// <summary>
-    /// ÉñÊ¥¹âµ¯ - »ù´¡×·×Ùµ¯Ä»
+    /// ç¥åœ£å…‰å¼¹ - åŸºç¡€è¿½è¸ªå¼¹å¹•
     /// </summary>
     internal class HolyOrb : ModProjectile
     {
@@ -225,7 +225,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
         }
 
         public override void AI() {
-            // ÇáÎ¢×·×Ù
+            // è½»å¾®è¿½è¸ª
             if (Projectile.ai[0] == 0) {
                 Player target = Main.player[Player.FindClosest(Projectile.position, Projectile.width, Projectile.height)];
                 if (target.active && !target.dead) {
@@ -239,7 +239,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
 
             Projectile.rotation = Projectile.velocity.ToRotation() + MathHelper.PiOver2;
 
-            // ·¢¹âÁ£×Ó
+            // å‘å…‰ç²’å­
             if (!VaultUtils.isServer && Main.rand.NextBool(3)) {
                 int dust = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height, DustID.GoldCoin, 0, 0, 100, default, 1.2f);
                 Main.dust[dust].noGravity = true;
@@ -253,7 +253,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
             Texture2D tex = ACMAsset.BlankStar;
             Vector2 origin = tex.Size() / 2f;
 
-            // Ê¹ÓÃ ACMAsset.LightShot »æÖÆ¹âĞ§
+            // ä½¿ç”¨ ACMAsset.LightShot ç»˜åˆ¶å…‰æ•ˆ
             if (ACMAsset.LightShot != null) {
                 Color glowColor = new Color(255, 240, 180) * 0.6f;
                 glowColor.A = 0;
@@ -271,7 +271,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
                 );
             }
 
-            // ÍÏÎ²
+            // æ‹–å°¾
             Color trailColor = new Color(255, 230, 150);
             trailColor.A = 0;
             float trailOpacity = 0.4f;
@@ -283,7 +283,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
                 Main.spriteBatch.Draw(tex, pos, null, trailColor * fade, Projectile.rotation, origin, Projectile.scale * (1f - i * 0.05f), SpriteEffects.None, 0);
             }
 
-            // Ö÷Ìå
+            // ä¸»ä½“
             Color mainColor = new Color(255, 245, 200);
             mainColor.A = 0;
             Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, mainColor, Projectile.rotation, origin, Projectile.scale, SpriteEffects.None, 0f);
@@ -294,7 +294,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
         public override void OnKill(int timeLeft) {
             if (VaultUtils.isServer) return;
 
-            // ÏûÉ¢Á£×Ó
+            // æ¶ˆæ•£ç²’å­
             for (int i = 0; i < 8; i++) {
                 Vector2 dustVel = Main.rand.NextVector2CircularEdge(4, 4);
                 int dust = Dust.NewDust(Projectile.Center, 0, 0, DustID.GoldCoin, dustVel.X, dustVel.Y, 100, default, 1.5f);
@@ -304,7 +304,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
     }
 
     /// <summary>
-    /// ÌìÑÛ¹âÊø - ´ÓÌìÑÛ·¢ÉäµÄ×·×Ù¹âÊø
+    /// å¤©çœ¼å…‰æŸ - ä»å¤©çœ¼å‘å°„çš„è¿½è¸ªå…‰æŸ
     /// </summary>
     internal class CelestialEyeBeam : ModProjectile
     {
@@ -327,7 +327,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
         }
 
         public override void AI() {
-            // ¸üÇ¿µÄ×·×Ù
+            // æ›´å¼ºçš„è¿½è¸ª
             Player target = Main.player[Player.FindClosest(Projectile.position, Projectile.width, Projectile.height)];
             if (target.active && !target.dead && Projectile.timeLeft > 120) {
                 Vector2 toTarget = target.Center - Projectile.Center;
@@ -340,7 +340,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
 
             Projectile.rotation = Projectile.velocity.ToRotation();
 
-            // ¹âÊøÁ£×Ó
+            // å…‰æŸç²’å­
             if (!VaultUtils.isServer) {
                 int dust = Dust.NewDust(Projectile.Center, 0, 0, DustID.BlueTorch, 0, 0, 100, new Color(200, 220, 255), 1f);
                 Main.dust[dust].noGravity = true;
@@ -351,7 +351,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            // Ê¹ÓÃ½£Æø»Ò¶ÈÍ¼»æÖÆ¹âÊøĞ§¹û
+            // ä½¿ç”¨å‰‘æ°”ç°åº¦å›¾ç»˜åˆ¶å…‰æŸæ•ˆæœ
             if (ACMAsset.GlaciateWave != null) {
                 Texture2D beamTex = ACMAsset.GlaciateWave;
                 Vector2 origin = new Vector2(0, beamTex.Height / 2f);
@@ -362,7 +362,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
                 float length = Projectile.velocity.Length() * 3f;
                 Vector2 scale = new Vector2(length / beamTex.Width, 0.15f);
 
-                // ¶à²ã¹âÊø
+                // å¤šå±‚å…‰æŸ
                 for (int i = 0; i < 3; i++) {
                     float layerAlpha = 0.5f - i * 0.15f;
                     float layerScale = 1f + i * 0.3f;
@@ -380,7 +380,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
                 }
             }
 
-            // ºËĞÄ¹âµã
+            // æ ¸å¿ƒå…‰ç‚¹
             if (ACMAsset.LightShot != null) {
                 Color coreColor = new Color(220, 240, 255);
                 coreColor.A = 0;
@@ -402,7 +402,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
     }
 
     /// <summary>
-    /// ÉñÊ¥¹âÖù - ´ÓÌì¶ø½µµÄÉóÅĞ¹âÖù
+    /// ç¥åœ£å…‰æŸ± - ä»å¤©è€Œé™çš„å®¡åˆ¤å…‰æŸ±
     /// </summary>
     internal class DivineLightPillar : ModProjectile
     {
@@ -426,7 +426,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
         public override void AI() {
             Projectile.ai[0]++;
 
-            // ¹âÖùÁ£×Ó
+            // å…‰æŸ±ç²’å­
             if (!VaultUtils.isServer && Projectile.ai[0] % 2 == 0) {
                 for (int i = 0; i < 3; i++) {
                     Vector2 dustPos = Projectile.Center + new Vector2(Main.rand.NextFloat(-30, 30), Main.rand.NextFloat(-400, 400));
@@ -435,7 +435,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
                 }
             }
 
-            // Ç¿ÁÒ·¢¹â
+            // å¼ºçƒˆå‘å…‰
             for (int i = 0; i < 5; i++) {
                 Vector2 lightPos = Projectile.Center + new Vector2(0, -300 + i * 150);
                 Lighting.AddLight(lightPos, new Vector3(1f, 0.95f, 0.7f) * 1.5f);
@@ -443,7 +443,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
         }
 
         public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
-            // ×Ô¶¨ÒåÅö×²¼ì²â - Ï¸³¤µÄ¹âÖù
+            // è‡ªå®šä¹‰ç¢°æ’æ£€æµ‹ - ç»†é•¿çš„å…‰æŸ±
             Rectangle pillarBox = new Rectangle(
                 (int)Projectile.Center.X - 30,
                 (int)Projectile.Center.Y - 400,
@@ -458,18 +458,18 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
             float progress = Projectile.ai[0] / 60f;
             float alpha = progress < 0.2f ? progress / 0.2f : (progress > 0.8f ? (1f - progress) / 0.2f : 1f);
 
-            // Ê¹ÓÃ GlaciateWave »æÖÆ¹âÖù
+            // ä½¿ç”¨ GlaciateWave ç»˜åˆ¶å…‰æŸ±
             if (ACMAsset.GlaciateWave != null) {
                 Texture2D pillarTex = ACMAsset.GlaciateWave;
 
                 Color pillarColor = new Color(255, 240, 180) * alpha * 0.8f;
                 pillarColor.A = 0;
 
-                // Ğı×ª90¶ÈÊ¹Æä´¹Ö±
+                // æ—‹è½¬90åº¦ä½¿å…¶å‚ç›´
                 float rotation = MathHelper.PiOver2;
                 Vector2 scale = new Vector2(1600f / pillarTex.Width, 0.25f);
 
-                // ¶à²ã¹âÖù
+                // å¤šå±‚å…‰æŸ±
                 for (int i = 0; i < 3; i++) {
                     float layerAlpha = 0.6f - i * 0.15f;
                     float layerScale = 1f + i * 0.4f;
@@ -487,7 +487,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
                 }
             }
 
-            // ÖĞĞÄ¸ßÁÁ
+            // ä¸­å¿ƒé«˜äº®
             if (ACMAsset.LightShot != null) {
                 Color coreColor = new Color(255, 255, 220) * alpha;
                 coreColor.A = 0;
@@ -514,7 +514,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
         public override void OnKill(int timeLeft) {
             if (VaultUtils.isServer) return;
 
-            // ÏûÉ¢¹âĞ§
+            // æ¶ˆæ•£å…‰æ•ˆ
             for (int i = 0; i < 20; i++) {
                 Vector2 dustPos = Projectile.Center + new Vector2(Main.rand.NextFloat(-30, 30), Main.rand.NextFloat(-400, 400));
                 Vector2 dustVel = Main.rand.NextVector2Circular(5, 5);
@@ -527,7 +527,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
     }
 
     /// <summary>
-    /// ĞÇ³½µ¯Ä» - ´ÓÔ¶´¦·ÉÀ´µÄĞÇ³½
+    /// æ˜Ÿè¾°å¼¹å¹• - ä»è¿œå¤„é£æ¥çš„æ˜Ÿè¾°
     /// </summary>
     internal class CelestialStar : ModProjectile
     {
@@ -551,12 +551,12 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
         public override void AI() {
             Projectile.rotation += 0.15f;
 
-            // ¼ÓËÙ
+            // åŠ é€Ÿ
             if (Projectile.velocity.Length() < 18f) {
                 Projectile.velocity *= 1.02f;
             }
 
-            // ĞÇ¹âÁ£×Ó
+            // æ˜Ÿå…‰ç²’å­
             if (!VaultUtils.isServer && Main.rand.NextBool(2)) {
                 int dust = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height, DustID.YellowStarDust, 0, 0, 100, default, 1.5f);
                 Main.dust[dust].noGravity = true;
@@ -567,13 +567,13 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            // Ê¹ÓÃ BlankStar »æÖÆĞÇ³½
+            // ä½¿ç”¨ BlankStar ç»˜åˆ¶æ˜Ÿè¾°
             if (ACMAsset.BlankStar != null) {
                 Texture2D starTex = ACMAsset.BlankStar;
                 Vector2 origin = starTex.Size() / 2f;
                 Vector2 drawPos = Projectile.Center - Main.screenPosition;
 
-                // ÍÏÎ²
+                // æ‹–å°¾
                 Color trailColor = new Color(255, 230, 150) * 0.5f;
                 trailColor.A = 0;
 
@@ -585,12 +585,12 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
                     Main.spriteBatch.Draw(starTex, pos, null, trailColor * fade, Projectile.oldRot[i], origin, scale, SpriteEffects.None, 0);
                 }
 
-                // Íâ²ã¹âÔÎ
+                // å¤–å±‚å…‰æ™•
                 Color glowColor = new Color(255, 245, 180) * 0.6f;
                 glowColor.A = 0;
                 Main.spriteBatch.Draw(starTex, drawPos, null, glowColor, Projectile.rotation * 0.5f, origin, 0.7f, SpriteEffects.None, 0f);
 
-                // ºËĞÄ
+                // æ ¸å¿ƒ
                 Color coreColor = new Color(255, 255, 220);
                 coreColor.A = 0;
                 Main.spriteBatch.Draw(starTex, drawPos, null, coreColor, Projectile.rotation, origin, 0.5f, SpriteEffects.None, 0f);
@@ -602,7 +602,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
         public override void OnKill(int timeLeft) {
             if (VaultUtils.isServer) return;
 
-            // ĞÇ³½±¬Õ¨Ğ§¹û
+            // æ˜Ÿè¾°çˆ†ç‚¸æ•ˆæœ
             for (int i = 0; i < 15; i++) {
                 Vector2 dustVel = Main.rand.NextVector2CircularEdge(6, 6);
                 int dust = Dust.NewDust(Projectile.Center, 0, 0, DustID.YellowStarDust, dustVel.X, dustVel.Y, 100, default, 2f);
@@ -614,7 +614,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
     }
 
     /// <summary>
-    /// ÉñÊ¥¹â»· - Ğı×ªµÄ¹â»·µ¯Ä»
+    /// ç¥åœ£å…‰ç¯ - æ—‹è½¬çš„å…‰ç¯å¼¹å¹•
     /// </summary>
     internal class HolyHaloRing : ModProjectile
     {
@@ -636,7 +636,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
         }
 
         public override void AI() {
-            // Ğı×ªÔË¶¯
+            // æ—‹è½¬è¿åŠ¨
             Projectile.ai[0] += 0.03f;
             float currentAngle = Projectile.ai[0];
             float speed = Projectile.velocity.Length();
@@ -644,7 +644,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
 
             Projectile.rotation = currentAngle + MathHelper.PiOver2;
 
-            // ¹â»·Á£×Ó
+            // å…‰ç¯ç²’å­
             if (!VaultUtils.isServer && Main.rand.NextBool(4)) {
                 int dust = Dust.NewDust(Projectile.Center, 0, 0, DustID.GoldCoin, 0, 0, 100, default, 1f);
                 Main.dust[dust].noGravity = true;
@@ -660,7 +660,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
                 Vector2 origin = tex.Size() / 2f;
                 Vector2 drawPos = Projectile.Center - Main.screenPosition;
 
-                // ÍÏÎ²
+                // æ‹–å°¾
                 Color trailColor = new Color(255, 220, 150) * 0.4f;
                 trailColor.A = 0;
 
@@ -671,7 +671,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
                     Main.spriteBatch.Draw(tex, pos, null, trailColor * fade, 0f, origin, 0.4f * (1f - i * 0.05f), SpriteEffects.None, 0);
                 }
 
-                // Ö÷Ìå
+                // ä¸»ä½“
                 Color mainColor = new Color(255, 240, 180);
                 mainColor.A = 0;
                 Main.spriteBatch.Draw(tex, drawPos, null, mainColor, 0f, origin, 0.5f, SpriteEffects.None, 0f);
@@ -681,10 +681,10 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
         }
     }
 
-    #region ´ó¼¤¹âµ¯Ä»
+    #region å¤§æ¿€å…‰å¼¹å¹•
 
     /// <summary>
-    /// ÉñÊ¥ËÀ¹â - ×·×ÙÍæ¼ÒµÄ´ó¼¤¹â
+    /// ç¥åœ£æ­»å…‰ - è¿½è¸ªç©å®¶çš„å¤§æ¿€å…‰
     /// </summary>
     internal class DivineDeathRay : ModProjectile
     {
@@ -712,7 +712,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
         private ref float LaserAngle => ref Projectile.ai[1];
 
         public override void AI() {
-            // ¸úËæBoss
+            // è·ŸéšBoss
             NPC owner = Main.npc[(int)OwnerIndex];
             if (!owner.active) {
                 Projectile.Kill();
@@ -721,7 +721,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
 
             Projectile.Center = owner.Center;
 
-            // ×·×ÙÍæ¼Ò
+            // è¿½è¸ªç©å®¶
             Player target = Main.player[Player.FindClosest(Projectile.position, Projectile.width, Projectile.height)];
             if (target.active && !target.dead) {
                 float targetAngle = (target.Center - Projectile.Center).ToRotation();
@@ -731,7 +731,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
 
             Projectile.rotation = LaserAngle;
 
-            // ¼¤¹âÁ£×Ó
+            // æ¿€å…‰ç²’å­
             if (!VaultUtils.isServer) {
                 Vector2 laserDir = LaserAngle.ToRotationVector2();
                 for (int i = 0; i < 5; i++) {
@@ -743,7 +743,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
                 }
             }
 
-            // ·¢¹â
+            // å‘å…‰
             for (int i = 0; i < 10; i++) {
                 Vector2 lightPos = Projectile.Center + LaserAngle.ToRotationVector2() * (i * 200);
                 Lighting.AddLight(lightPos, new Vector3(1f, 0.95f, 0.7f) * 1.5f);
@@ -770,22 +770,22 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
 
             Vector2 scale = new Vector2(LaserLength / laserTex.Width, width);
 
-            // ºËĞÄ
+            // æ ¸å¿ƒ
             Color coreColor = new Color(255, 245, 200) * alpha;
             coreColor.A = 0;
             Main.spriteBatch.Draw(laserTex, drawPos, null, coreColor, LaserAngle, origin, scale, SpriteEffects.None, 0f);
 
-            // Íâ²ã¹âÔÎ
+            // å¤–å±‚å…‰æ™•
             Color glowColor = new Color(255, 220, 150) * alpha * 0.6f;
             glowColor.A = 0;
             Main.spriteBatch.Draw(laserTex, drawPos, null, glowColor, LaserAngle, origin, scale * new Vector2(1f, 1.5f), SpriteEffects.None, 0f);
 
-            // ×îÍâ²ã
+            // æœ€å¤–å±‚
             Color outerColor = new Color(255, 200, 100) * alpha * 0.3f;
             outerColor.A = 0;
             Main.spriteBatch.Draw(laserTex, drawPos, null, outerColor, LaserAngle, origin, scale * new Vector2(1f, 2f), SpriteEffects.None, 0f);
 
-            // Æğµã¹âÇò
+            // èµ·ç‚¹å…‰çƒ
             if (ACMAsset.LightShot != null) {
                 Color orbColor = new Color(255, 250, 200) * alpha;
                 orbColor.A = 0;
@@ -797,7 +797,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
     }
 
     /// <summary>
-    /// ÖÕ¼«Ìì¹â - ³¬´ó¼¤¹â
+    /// ç»ˆæå¤©å…‰ - è¶…å¤§æ¿€å…‰
     /// </summary>
     internal class OmegaCelestialLaser : ModProjectile
     {
@@ -833,7 +833,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
 
             Projectile.Center = owner.Center;
 
-            // ¸üÇ¿µÄ×·×Ù
+            // æ›´å¼ºçš„è¿½è¸ª
             Player target = Main.player[Player.FindClosest(Projectile.position, Projectile.width, Projectile.height)];
             if (target.active && !target.dead) {
                 float targetAngle = (target.Center - Projectile.Center).ToRotation();
@@ -843,7 +843,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
 
             Projectile.rotation = LaserAngle;
 
-            // ´óÁ¿Á£×Ó
+            // å¤§é‡ç²’å­
             if (!VaultUtils.isServer) {
                 Vector2 laserDir = LaserAngle.ToRotationVector2();
                 for (int i = 0; i < 10; i++) {
@@ -856,7 +856,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
                 }
             }
 
-            // Ç¿ÁÒ·¢¹â
+            // å¼ºçƒˆå‘å…‰
             for (int i = 0; i < 15; i++) {
                 Vector2 lightPos = Projectile.Center + LaserAngle.ToRotationVector2() * (i * 200);
                 Lighting.AddLight(lightPos, new Vector3(1f, 0.95f, 0.7f) * 2f);
@@ -883,7 +883,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
 
             Vector2 scale = new Vector2(LaserLength / laserTex.Width, width);
 
-            // ¶à²ã»æÖÆ
+            // å¤šå±‚ç»˜åˆ¶
             for (int layer = 3; layer >= 0; layer--) {
                 float layerWidth = 1f + layer * 0.5f;
                 float layerAlpha = 1f - layer * 0.2f;
@@ -892,7 +892,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
                 Main.spriteBatch.Draw(laserTex, drawPos, null, layerColor, LaserAngle, origin, scale * new Vector2(1f, layerWidth), SpriteEffects.None, 0f);
             }
 
-            // Æğµã±¬·¢
+            // èµ·ç‚¹çˆ†å‘
             if (ACMAsset.Sparkle != null) {
                 Color burstColor = new Color(255, 250, 200) * alpha;
                 burstColor.A = 0;
@@ -911,7 +911,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
     }
 
     /// <summary>
-    /// ½»²æ¼¤¹â - Ğı×ªµÄ¹Ì¶¨¼¤¹â
+    /// äº¤å‰æ¿€å…‰ - æ—‹è½¬çš„å›ºå®šæ¿€å…‰
     /// </summary>
     internal class CrossLaserBeam : ModProjectile
     {
@@ -947,11 +947,11 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
 
             Projectile.Center = owner.Center;
 
-            // »ºÂıĞı×ª
+            // ç¼“æ…¢æ—‹è½¬
             LaserAngle += 0.015f;
             Projectile.rotation = LaserAngle;
 
-            // Á£×Ó
+            // ç²’å­
             if (!VaultUtils.isServer && Main.rand.NextBool(2)) {
                 Vector2 laserDir = LaserAngle.ToRotationVector2();
                 float dist = Main.rand.NextFloat(LaserLength);
@@ -960,7 +960,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
                 Main.dust[dust].noGravity = true;
             }
 
-            // ·¢¹â
+            // å‘å…‰
             for (int i = 0; i < 8; i++) {
                 Vector2 lightPos = Projectile.Center + LaserAngle.ToRotationVector2() * (i * 180);
                 Lighting.AddLight(lightPos, new Vector3(1f, 0.95f, 0.7f) * 1f);
@@ -999,7 +999,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
     }
 
     /// <summary>
-    /// É¨Éä¼¤¹âµ¯ - ¿ìËÙÖ±Ïß¼¤¹âµ¯
+    /// æ‰«å°„æ¿€å…‰å¼¹ - å¿«é€Ÿç›´çº¿æ¿€å…‰å¼¹
     /// </summary>
     internal class SweepingLaserBolt : ModProjectile
     {
@@ -1041,7 +1041,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
             Vector2 origin = new Vector2(0, tex.Height / 2f);
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
 
-            // ÍÏÎ²
+            // æ‹–å°¾
             for (int i = 0; i < Projectile.oldPos.Length; i++) {
                 if (Projectile.oldPos[i] == Vector2.Zero) continue;
                 float fade = 0.5f * (1f - i / (float)Projectile.oldPos.Length);
@@ -1052,7 +1052,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
                 Main.spriteBatch.Draw(tex, pos, null, trailColor, Projectile.oldRot[i], origin, new Vector2(0.3f, trailScale), SpriteEffects.None, 0f);
             }
 
-            // Ö÷Ìå
+            // ä¸»ä½“
             Color mainColor = new Color(255, 245, 200);
             mainColor.A = 0;
             Main.spriteBatch.Draw(tex, drawPos, null, mainColor, Projectile.rotation, origin, new Vector2(0.4f, 0.1f), SpriteEffects.None, 0f);
@@ -1062,7 +1062,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
     }
 
     /// <summary>
-    /// ÆÍ´ÓÍ¬²½¼¤¹â - ÆÍ´Ó·¢ÉäµÄ¼¤¹âµ¯
+    /// ä»†ä»åŒæ­¥æ¿€å…‰ - ä»†ä»å‘å°„çš„æ¿€å…‰å¼¹
     /// </summary>
     internal class MinionSyncLaser : ModProjectile
     {
@@ -1104,7 +1104,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
             Vector2 origin = new Vector2(0, tex.Height / 2f);
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
 
-            // ÍÏÎ²
+            // æ‹–å°¾
             for (int i = 0; i < Projectile.oldPos.Length; i++) {
                 if (Projectile.oldPos[i] == Vector2.Zero) continue;
                 float fade = 0.6f * (1f - i / (float)Projectile.oldPos.Length);
@@ -1114,12 +1114,12 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
                 Main.spriteBatch.Draw(tex, pos, null, trailColor, Projectile.oldRot[i], origin, new Vector2(0.5f, 0.12f * (1f - i * 0.04f)), SpriteEffects.None, 0f);
             }
 
-            // Ö÷Ìå
+            // ä¸»ä½“
             Color mainColor = new Color(220, 240, 255);
             mainColor.A = 0;
             Main.spriteBatch.Draw(tex, drawPos, null, mainColor, Projectile.rotation, origin, new Vector2(0.6f, 0.15f), SpriteEffects.None, 0f);
 
-            // ºËĞÄ¹âµã
+            // æ ¸å¿ƒå…‰ç‚¹
             if (ACMAsset.LightShot != null) {
                 Color coreColor = new Color(255, 255, 255);
                 coreColor.A = 0;

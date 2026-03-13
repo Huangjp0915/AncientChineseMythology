@@ -1,4 +1,4 @@
-using AncientChineseMythology.Underworlds.Tiles;
+ï»¿using AncientChineseMythology.Underworlds.Tiles;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -10,47 +10,47 @@ using Terraria.Utilities;
 namespace AncientChineseMythology.Underworlds
 {
     /// <summary>
-    /// µØ¸®µØĞÎÉú³ÉÆ÷ - Ìá¹©ÔÚµØÓüÓÒ²àÉú³ÉµØ¸®µØĞÎµÄ½Ó¿Ú
-    /// Ö§³ÖÒì²½·Ö¿éÉú³É£¬±ÜÃâ×èÈûÖ÷Ïß³Ì
+    /// åœ°åºœåœ°å½¢ç”Ÿæˆå™¨ - æä¾›åœ¨åœ°ç‹±å³ä¾§ç”Ÿæˆåœ°åºœåœ°å½¢çš„æ¥å£
+    /// æ”¯æŒå¼‚æ­¥åˆ†å—ç”Ÿæˆï¼Œé¿å…é˜»å¡ä¸»çº¿ç¨‹
     /// </summary>
     public class UnderworldTerrainGenerator : ModSystem
     {
-        // Éú³É×´Ì¬¹ÜÀí
+        // ç”ŸæˆçŠ¶æ€ç®¡ç†
         private static bool _isGenerating = false;
         private static CancellationTokenSource _cancellationTokenSource;
         private static float _generationProgress = 0f;
 
         /// <summary>
-        /// ÊÇ·ñÕıÔÚÉú³ÉµØĞÎ
+        /// æ˜¯å¦æ­£åœ¨ç”Ÿæˆåœ°å½¢
         /// </summary>
         public static bool IsGenerating => _isGenerating;
 
         /// <summary>
-        /// µ±Ç°Éú³É½ø¶È (0-1)
+        /// å½“å‰ç”Ÿæˆè¿›åº¦ (0-1)
         /// </summary>
         public static float GenerationProgress => _generationProgress;
 
         /// <summary>
-        /// È¡ÏûÕıÔÚ½øĞĞµÄµØĞÎÉú³É
+        /// å–æ¶ˆæ­£åœ¨è¿›è¡Œçš„åœ°å½¢ç”Ÿæˆ
         /// </summary>
         public static void CancelGeneration() {
             _cancellationTokenSource?.Cancel();
         }
 
         /// <summary>
-        /// Ã¿Ö¡´¦ÀíµÄ×î´ó Tile ²Ù×÷ÊıÁ¿£¬ÓÃÓÚ¿ØÖÆÖ¡ÂÊ
+        /// æ¯å¸§å¤„ç†çš„æœ€å¤§ Tile æ“ä½œæ•°é‡ï¼Œç”¨äºæ§åˆ¶å¸§ç‡
         /// </summary>
         private const int TilesPerFrame = 5000;
 
         /// <summary>
-        /// Òì²½Éú³ÉµØ¸®µØĞÎµÄÖ÷½Ó¿Ú - ²»×èÈûÖ÷Ïß³Ì
+        /// å¼‚æ­¥ç”Ÿæˆåœ°åºœåœ°å½¢çš„ä¸»æ¥å£ - ä¸é˜»å¡ä¸»çº¿ç¨‹
         /// </summary>
-        /// <param name="seed">Ëæ»úÖÖ×Ó£¬Ä¬ÈÏÊ¹ÓÃµ±Ç°Ê±¼ä</param>
-        /// <param name="onProgress">½ø¶È»Øµ÷</param>
-        /// <param name="onComplete">Íê³É»Øµ÷</param>
+        /// <param name="seed">éšæœºç§å­ï¼Œé»˜è®¤ä½¿ç”¨å½“å‰æ—¶é—´</param>
+        /// <param name="onProgress">è¿›åº¦å›è°ƒ</param>
+        /// <param name="onComplete">å®Œæˆå›è°ƒ</param>
         public static async Task GenerateUnderworldTerrainAsync(int? seed = null, Action<float, string> onProgress = null, Action<bool> onComplete = null) {
             if (_isGenerating) {
-                Main.NewText("µØĞÎÉú³ÉÕıÔÚ½øĞĞÖĞ£¬ÇëÉÔºò...", Color.Yellow);
+                Main.NewText("åœ°å½¢ç”Ÿæˆæ­£åœ¨è¿›è¡Œä¸­ï¼Œè¯·ç¨å€™...", Color.Yellow);
                 return;
             }
 
@@ -63,10 +63,10 @@ namespace AncientChineseMythology.Underworlds
                 int randomSeed = seed ?? (int)DateTime.Now.Ticks;
                 UnifiedRandom rand = new UnifiedRandom(randomSeed);
 
-                Main.NewText("¿ªÊ¼Òì²½Éú³ÉµØ¸®µØĞÎ...", Color.Purple);
-                onProgress?.Invoke(0f, "³õÊ¼»¯...");
+                Main.NewText("å¼€å§‹å¼‚æ­¥ç”Ÿæˆåœ°åºœåœ°å½¢...", Color.Purple);
+                onProgress?.Invoke(0f, "åˆå§‹åŒ–...");
 
-                // ¼ÆËãµØ¸®ÇøÓò·¶Î§
+                // è®¡ç®—åœ°åºœåŒºåŸŸèŒƒå›´
                 int underworldStartX = Main.maxTilesX / 2;
                 int underworldEndX = Main.maxTilesX - 200;
                 int underworldCoreStartY = Main.UnderworldLayer;
@@ -74,34 +74,34 @@ namespace AncientChineseMythology.Underworlds
                 int underworldSurfaceStartY = (int)Main.rockLayer;
                 int underworldSurfaceEndY = Main.UnderworldLayer;
 
-                // ÑéÖ¤·¶Î§
+                // éªŒè¯èŒƒå›´
                 if (underworldEndX <= underworldStartX || underworldCoreEndY <= underworldCoreStartY) {
-                    Main.NewText("´íÎó£ºµØÍ¼ÅäÖÃÒì³££¬ÎŞ·¨Éú³ÉµØ¸®µØĞÎ", Color.Red);
+                    Main.NewText("é”™è¯¯ï¼šåœ°å›¾é…ç½®å¼‚å¸¸ï¼Œæ— æ³•ç”Ÿæˆåœ°åºœåœ°å½¢", Color.Red);
                     onComplete?.Invoke(false);
                     return;
                 }
 
-                // ¶¨ÒåÉú³É²½Öè
+                // å®šä¹‰ç”Ÿæˆæ­¥éª¤
                 var steps = new List<(string name, Func<Task> action, float weight)> {
-                    ("ÇåÀíÔ­ÓĞµØĞÎ", () => ClearHellTerrainAsync(underworldStartX, underworldEndX, underworldCoreStartY, underworldCoreEndY, token), 0.1f),
-                    ("Éú³É»ù´¡µØĞÎ", () => GenerateBaseTerrainAsync(underworldStartX, underworldEndX, underworldCoreStartY, underworldCoreEndY, rand, token), 0.1f),
-                    ("Éú³ÉÁùµÀÂÖ»Ø²ã", () => GenerateUndulatingTerrainAsync(underworldStartX, underworldEndX, underworldCoreStartY, underworldCoreEndY, rand, token), 0.1f),
-                    ("Éú³É¶´Ñ¨µîÌÃ", () => GenerateCavernsAsync(underworldStartX, underworldEndX, underworldCoreStartY, underworldCoreEndY, rand, token), 0.1f),
-                    ("Éú³ÉµØ¸®½¨Öş", () => GenerateUnderworldStructuresAsync(underworldStartX, underworldEndX, underworldCoreStartY, underworldCoreEndY, rand, token), 0.1f),
-                    ("ÆÌÉè»ÆÈªÖ®Â·", () => GenerateYellowSpringsPathAsync(underworldStartX, underworldEndX, underworldCoreStartY, underworldCoreEndY, rand, token), 0.05f),
-                    ("Æ½»¬µØĞÎ", () => SmoothTerrainAsync(underworldStartX, underworldEndX, underworldCoreStartY, underworldCoreEndY, token), 0.05f),
-                    ("Ìí¼ÓÏ¸½Ú×°ÊÎ", () => AddDetailsAsync(underworldStartX, underworldEndX, underworldCoreStartY, underworldCoreEndY, rand, token), 0.05f),
-                    ("¿ª±ÙµØ¸®µØ±í", () => GenerateUnderworldSurfaceAsync(underworldStartX, underworldEndX, underworldSurfaceStartY, underworldSurfaceEndY, rand, token), 0.1f),
-                    ("µñ¿ÌµØ±íÏ¿¹È", () => GenerateSurfaceCanyonsAsync(underworldStartX, underworldEndX, underworldSurfaceStartY, underworldSurfaceEndY, rand, token), 0.1f),
-                    ("ÊúÁ¢ÓÄÚ¤Ê¯Öù", () => GenerateSurfacePillarsAsync(underworldStartX, underworldEndX, underworldSurfaceStartY, underworldSurfaceEndY, rand, token), 0.05f),
-                    ("ÆÌÉèÁé»êÉ³µØ±í", () => GenerateNetherSandLayerAsync(underworldStartX, underworldEndX, underworldSurfaceStartY, underworldSurfaceEndY, rand, token), 0.1f),
+                    ("æ¸…ç†åŸæœ‰åœ°å½¢", () => ClearHellTerrainAsync(underworldStartX, underworldEndX, underworldCoreStartY, underworldCoreEndY, token), 0.1f),
+                    ("ç”ŸæˆåŸºç¡€åœ°å½¢", () => GenerateBaseTerrainAsync(underworldStartX, underworldEndX, underworldCoreStartY, underworldCoreEndY, rand, token), 0.1f),
+                    ("ç”Ÿæˆå…­é“è½®å›å±‚", () => GenerateUndulatingTerrainAsync(underworldStartX, underworldEndX, underworldCoreStartY, underworldCoreEndY, rand, token), 0.1f),
+                    ("ç”Ÿæˆæ´ç©´æ®¿å ‚", () => GenerateCavernsAsync(underworldStartX, underworldEndX, underworldCoreStartY, underworldCoreEndY, rand, token), 0.1f),
+                    ("ç”Ÿæˆåœ°åºœå»ºç­‘", () => GenerateUnderworldStructuresAsync(underworldStartX, underworldEndX, underworldCoreStartY, underworldCoreEndY, rand, token), 0.1f),
+                    ("é“ºè®¾é»„æ³‰ä¹‹è·¯", () => GenerateYellowSpringsPathAsync(underworldStartX, underworldEndX, underworldCoreStartY, underworldCoreEndY, rand, token), 0.05f),
+                    ("å¹³æ»‘åœ°å½¢", () => SmoothTerrainAsync(underworldStartX, underworldEndX, underworldCoreStartY, underworldCoreEndY, token), 0.05f),
+                    ("æ·»åŠ ç»†èŠ‚è£…é¥°", () => AddDetailsAsync(underworldStartX, underworldEndX, underworldCoreStartY, underworldCoreEndY, rand, token), 0.05f),
+                    ("å¼€è¾Ÿåœ°åºœåœ°è¡¨", () => GenerateUnderworldSurfaceAsync(underworldStartX, underworldEndX, underworldSurfaceStartY, underworldSurfaceEndY, rand, token), 0.1f),
+                    ("é›•åˆ»åœ°è¡¨å³¡è°·", () => GenerateSurfaceCanyonsAsync(underworldStartX, underworldEndX, underworldSurfaceStartY, underworldSurfaceEndY, rand, token), 0.1f),
+                    ("ç«–ç«‹å¹½å†¥çŸ³æŸ±", () => GenerateSurfacePillarsAsync(underworldStartX, underworldEndX, underworldSurfaceStartY, underworldSurfaceEndY, rand, token), 0.05f),
+                    ("é“ºè®¾çµé­‚æ²™åœ°è¡¨", () => GenerateNetherSandLayerAsync(underworldStartX, underworldEndX, underworldSurfaceStartY, underworldSurfaceEndY, rand, token), 0.1f),
                 };
 
                 float progressAccum = 0f;
 
                 for (int i = 0; i < steps.Count; i++) {
                     if (token.IsCancellationRequested) {
-                        Main.NewText("µØĞÎÉú³ÉÒÑÈ¡Ïû", Color.Orange);
+                        Main.NewText("åœ°å½¢ç”Ÿæˆå·²å–æ¶ˆ", Color.Orange);
                         onComplete?.Invoke(false);
                         return;
                     }
@@ -117,14 +117,14 @@ namespace AncientChineseMythology.Underworlds
                 }
 
                 _generationProgress = 1f;
-                Main.NewText("µØ¸®ÒÑ¾­ÍêÕûÇÖÈë£¡", Color.LightBlue);
-                onProgress?.Invoke(1f, "Íê³É");
+                Main.NewText("åœ°åºœå·²ç»å®Œæ•´ä¾µå…¥ï¼", Color.LightBlue);
+                onProgress?.Invoke(1f, "å®Œæˆ");
                 onComplete?.Invoke(true);
             } catch (OperationCanceledException) {
-                Main.NewText("µØĞÎÉú³ÉÒÑÈ¡Ïû", Color.Orange);
+                Main.NewText("åœ°å½¢ç”Ÿæˆå·²å–æ¶ˆ", Color.Orange);
                 onComplete?.Invoke(false);
             } catch (Exception ex) {
-                Main.NewText($"µØĞÎÉú³É³ö´í: {ex.Message}", Color.Red);
+                Main.NewText($"åœ°å½¢ç”Ÿæˆå‡ºé”™: {ex.Message}", Color.Red);
                 onComplete?.Invoke(false);
             } finally {
                 _isGenerating = false;
@@ -135,159 +135,159 @@ namespace AncientChineseMythology.Underworlds
         }
 
         /// <summary>
-        /// Éú³ÉµØ¸®µØĞÎµÄÍ¬²½½Ó¿Ú£¨±£Áô¼æÈİĞÔ£¬µ«»á×èÈûÖ÷Ïß³Ì£©
+        /// ç”Ÿæˆåœ°åºœåœ°å½¢çš„åŒæ­¥æ¥å£ï¼ˆä¿ç•™å…¼å®¹æ€§ï¼Œä½†ä¼šé˜»å¡ä¸»çº¿ç¨‹ï¼‰
         /// </summary>
-        /// <param name="seed">Ëæ»úÖÖ×Ó£¬Ä¬ÈÏÊ¹ÓÃµ±Ç°Ê±¼ä</param>
+        /// <param name="seed">éšæœºç§å­ï¼Œé»˜è®¤ä½¿ç”¨å½“å‰æ—¶é—´</param>
         public static void GenerateUnderworldTerrain(int? seed = null) {
             int randomSeed = seed ?? (int)DateTime.Now.Ticks;
             UnifiedRandom rand = new UnifiedRandom(randomSeed);
 
-            Main.NewText("¿ªÊ¼Éú³ÉµØ¸®µØĞÎ...", Color.Purple);
+            Main.NewText("å¼€å§‹ç”Ÿæˆåœ°åºœåœ°å½¢...", Color.Purple);
 
-            // ¼ÆËãµØ¸®ÇøÓò·¶Î§ - µØÓüÓÒ°ë±ß¼°ÆäÉÏ·½
+            // è®¡ç®—åœ°åºœåŒºåŸŸèŒƒå›´ - åœ°ç‹±å³åŠè¾¹åŠå…¶ä¸Šæ–¹
             int underworldStartX = Main.maxTilesX / 2;
             int underworldEndX = Main.maxTilesX - 200;
 
-            // µØ¸®ºËĞÄÇø£¨µØÓü²ã£©
+            // åœ°åºœæ ¸å¿ƒåŒºï¼ˆåœ°ç‹±å±‚ï¼‰
             int underworldCoreStartY = Main.UnderworldLayer;
             int underworldCoreEndY = Main.maxTilesY;
 
-            // µØ¸®µØ±íÇø£¨ÏòÉÏÀ©Õ¹£©
-            int underworldSurfaceStartY = (int)Main.rockLayer; // ´ÓÑÒÊ¯²ã¿ªÊ¼
+            // åœ°åºœåœ°è¡¨åŒºï¼ˆå‘ä¸Šæ‰©å±•ï¼‰
+            int underworldSurfaceStartY = (int)Main.rockLayer; // ä»å²©çŸ³å±‚å¼€å§‹
             int underworldSurfaceEndY = Main.UnderworldLayer;
 
-            // ÑéÖ¤·¶Î§ÓĞĞ§ĞÔ
+            // éªŒè¯èŒƒå›´æœ‰æ•ˆæ€§
             if (underworldEndX <= underworldStartX) {
-                Main.NewText("´íÎó£ºµØÍ¼Ì«Ğ¡£¬ÎŞ·¨Éú³ÉµØ¸®µØĞÎ", Color.Red);
+                Main.NewText("é”™è¯¯ï¼šåœ°å›¾å¤ªå°ï¼Œæ— æ³•ç”Ÿæˆåœ°åºœåœ°å½¢", Color.Red);
                 return;
             }
 
             if (underworldCoreEndY <= underworldCoreStartY) {
-                Main.NewText("´íÎó£ºµØÓü²ãÅäÖÃÒì³££¬ÎŞ·¨Éú³ÉµØ¸®µØĞÎ", Color.Red);
+                Main.NewText("é”™è¯¯ï¼šåœ°ç‹±å±‚é…ç½®å¼‚å¸¸ï¼Œæ— æ³•ç”Ÿæˆåœ°åºœåœ°å½¢", Color.Red);
                 return;
             }
 
-            // È·±£×îĞ¡ÇøÓò´óĞ¡
+            // ç¡®ä¿æœ€å°åŒºåŸŸå¤§å°
             if (underworldEndX - underworldStartX < 500) {
-                Main.NewText("¾¯¸æ£º¿ÉÓÃÇøÓò½ÏĞ¡£¬µØ¸®µØĞÎ¿ÉÄÜ²»ÍêÕû", Color.Yellow);
+                Main.NewText("è­¦å‘Šï¼šå¯ç”¨åŒºåŸŸè¾ƒå°ï¼Œåœ°åºœåœ°å½¢å¯èƒ½ä¸å®Œæ•´", Color.Yellow);
             }
 
-            Main.NewText($"µØ¸®ºËĞÄÇø£ºX({underworldStartX}-{underworldEndX}) Y({underworldCoreStartY}-{underworldCoreEndY})", Color.Cyan);
-            Main.NewText($"µØ¸®µØ±íÇø£ºX({underworldStartX}-{underworldEndX}) Y({underworldSurfaceStartY}-{underworldSurfaceEndY})", Color.Cyan);
+            Main.NewText($"åœ°åºœæ ¸å¿ƒåŒºï¼šX({underworldStartX}-{underworldEndX}) Y({underworldCoreStartY}-{underworldCoreEndY})", Color.Cyan);
+            Main.NewText($"åœ°åºœåœ°è¡¨åŒºï¼šX({underworldStartX}-{underworldEndX}) Y({underworldSurfaceStartY}-{underworldSurfaceEndY})", Color.Cyan);
 
-            // ===== µØ¸®ºËĞÄÇøÉú³É =====
+            // ===== åœ°åºœæ ¸å¿ƒåŒºç”Ÿæˆ =====
 
-            // µÚÒ»²½£º³¹µ×Çå³ıÔ­ÓĞµØĞÎ£¨ºËĞÄÇø£©
+            // ç¬¬ä¸€æ­¥ï¼šå½»åº•æ¸…é™¤åŸæœ‰åœ°å½¢ï¼ˆæ ¸å¿ƒåŒºï¼‰
             ClearHellTerrain(underworldStartX, underworldEndX, underworldCoreStartY, underworldCoreEndY);
 
-            // µÚ¶ş²½£ºÉú³É»ù´¡µØĞÎ²ã
-            Main.NewText("Éú³É»ù´¡µØĞÎ...", Color.Yellow);
+            // ç¬¬äºŒæ­¥ï¼šç”ŸæˆåŸºç¡€åœ°å½¢å±‚
+            Main.NewText("ç”ŸæˆåŸºç¡€åœ°å½¢...", Color.Yellow);
             GenerateBaseTerrain(underworldStartX, underworldEndX, underworldCoreStartY, underworldCoreEndY, rand);
 
-            // µÚÈı²½£ºÉú³ÉÆğ·üµÄµØ±í
-            Main.NewText("Éú³ÉÁùµÀÂÖ»Ø²ã...", Color.Yellow);
+            // ç¬¬ä¸‰æ­¥ï¼šç”Ÿæˆèµ·ä¼çš„åœ°è¡¨
+            Main.NewText("ç”Ÿæˆå…­é“è½®å›å±‚...", Color.Yellow);
             GenerateUndulatingTerrain(underworldStartX, underworldEndX, underworldCoreStartY, underworldCoreEndY, rand);
 
-            // µÚËÄ²½£ºÉú³É¶´Ñ¨ºÍ¿Õ¼ä
-            Main.NewText("Éú³É¶´Ñ¨µîÌÃ...", Color.Yellow);
+            // ç¬¬å››æ­¥ï¼šç”Ÿæˆæ´ç©´å’Œç©ºé—´
+            Main.NewText("ç”Ÿæˆæ´ç©´æ®¿å ‚...", Color.Yellow);
             GenerateCaverns(underworldStartX, underworldEndX, underworldCoreStartY, underworldCoreEndY, rand);
 
-            // µÚÎå²½£ºÌí¼ÓµØ¸®ÌØÉ«½á¹¹
-            Main.NewText("Éú³ÉµØ¸®½¨Öş...", Color.Yellow);
+            // ç¬¬äº”æ­¥ï¼šæ·»åŠ åœ°åºœç‰¹è‰²ç»“æ„
+            Main.NewText("ç”Ÿæˆåœ°åºœå»ºç­‘...", Color.Yellow);
             GenerateUnderworldStructures(underworldStartX, underworldEndX, underworldCoreStartY, underworldCoreEndY, rand);
 
-            // µÚÁù²½£ºÉú³É»ÆÈªÖ®Â·£¨¹á´©µÄÖ÷Í¨µÀ£©
-            Main.NewText("ÆÌÉè»ÆÈªÖ®Â·...", Color.Yellow);
+            // ç¬¬å…­æ­¥ï¼šç”Ÿæˆé»„æ³‰ä¹‹è·¯ï¼ˆè´¯ç©¿çš„ä¸»é€šé“ï¼‰
+            Main.NewText("é“ºè®¾é»„æ³‰ä¹‹è·¯...", Color.Yellow);
             GenerateYellowSpringsPath(underworldStartX, underworldEndX, underworldCoreStartY, underworldCoreEndY, rand);
 
-            // µÚÆß²½£ºÆ½»¬µØĞÎ
-            Main.NewText("Æ½»¬µØĞÎ...", Color.Yellow);
+            // ç¬¬ä¸ƒæ­¥ï¼šå¹³æ»‘åœ°å½¢
+            Main.NewText("å¹³æ»‘åœ°å½¢...", Color.Yellow);
             SmoothTerrain(underworldStartX, underworldEndX, underworldCoreStartY, underworldCoreEndY);
 
-            // µÚ°Ë²½£ºÌí¼ÓÏ¸½Ú×°ÊÎ
-            Main.NewText("Ìí¼ÓÏ¸½Ú×°ÊÎ...", Color.Yellow);
+            // ç¬¬å…«æ­¥ï¼šæ·»åŠ ç»†èŠ‚è£…é¥°
+            Main.NewText("æ·»åŠ ç»†èŠ‚è£…é¥°...", Color.Yellow);
             AddDetails(underworldStartX, underworldEndX, underworldCoreStartY, underworldCoreEndY, rand);
 
-            // ===== µØ¸®µØ±íÇøÉú³É =====
+            // ===== åœ°åºœåœ°è¡¨åŒºç”Ÿæˆ =====
 
-            // µÚ¾Å²½£ºÉú³ÉµØ¸®µØ±íÇøÓò
-            Main.NewText("¿ª±ÙµØ¸®µØ±í...", Color.Yellow);
+            // ç¬¬ä¹æ­¥ï¼šç”Ÿæˆåœ°åºœåœ°è¡¨åŒºåŸŸ
+            Main.NewText("å¼€è¾Ÿåœ°åºœåœ°è¡¨...", Color.Yellow);
             GenerateUnderworldSurface(underworldStartX, underworldEndX, underworldSurfaceStartY, underworldSurfaceEndY, rand);
 
-            // µÚÊ®²½£ºÉú³ÉµØ±í¶´Ñ¨ºÍÏ¿¹È
-            Main.NewText("µñ¿ÌµØ±íÏ¿¹È...", Color.Yellow);
+            // ç¬¬åæ­¥ï¼šç”Ÿæˆåœ°è¡¨æ´ç©´å’Œå³¡è°·
+            Main.NewText("é›•åˆ»åœ°è¡¨å³¡è°·...", Color.Yellow);
             GenerateSurfaceCanyons(underworldStartX, underworldEndX, underworldSurfaceStartY, underworldSurfaceEndY, rand);
 
-            // µÚÊ®Ò»²½£ºÉú³ÉµØ±íÑÒÊ¯ÖùºÍ½á¹¹
-            Main.NewText("ÊúÁ¢ÓÄÚ¤Ê¯Öù...", Color.Yellow);
+            // ç¬¬åä¸€æ­¥ï¼šç”Ÿæˆåœ°è¡¨å²©çŸ³æŸ±å’Œç»“æ„
+            Main.NewText("ç«–ç«‹å¹½å†¥çŸ³æŸ±...", Color.Yellow);
             GenerateSurfacePillars(underworldStartX, underworldEndX, underworldSurfaceStartY, underworldSurfaceEndY, rand);
 
-            // µÚÊ®¶ş²½£ºÆÌÉèÁé»êÉ³µØ±í
-            Main.NewText("ÆÌÉèÁé»êÉ³µØ±í...", Color.Yellow);
+            // ç¬¬åäºŒæ­¥ï¼šé“ºè®¾çµé­‚æ²™åœ°è¡¨
+            Main.NewText("é“ºè®¾çµé­‚æ²™åœ°è¡¨...", Color.Yellow);
             GenerateNetherSandLayer(underworldStartX, underworldEndX, underworldSurfaceStartY, underworldSurfaceEndY, rand);
 
-            Main.NewText("µØ¸®ÒÑ¾­ÍêÕûÇÖÈë£¡", Color.LightBlue);
+            Main.NewText("åœ°åºœå·²ç»å®Œæ•´ä¾µå…¥ï¼", Color.LightBlue);
         }
 
         /// <summary>
-        /// Çå³ıµØÓüÓÒ°ë±ßµÄÔ­ÓĞµØĞÎ
+        /// æ¸…é™¤åœ°ç‹±å³åŠè¾¹çš„åŸæœ‰åœ°å½¢
         /// </summary>
         private static void ClearHellTerrain(int startX, int endX, int startY, int endY) {
-            Main.NewText("ÇåÀíÔ­ÓĞµØĞÎÖĞ...", Color.Yellow);
+            Main.NewText("æ¸…ç†åŸæœ‰åœ°å½¢ä¸­...", Color.Yellow);
 
             for (int i = startX; i < endX; i++) {
                 for (int j = startY; j < endY; j++) {
                     Tile tile = Main.tile[i, j];
 
-                    // ±£Áô»ùÑÒ£¨µ×²¿±ß½ç£©- ±£Áô×îµ×²¿µÄ·½¿é
+                    // ä¿ç•™åŸºå²©ï¼ˆåº•éƒ¨è¾¹ç•Œï¼‰- ä¿ç•™æœ€åº•éƒ¨çš„æ–¹å—
                     if (j >= Main.maxTilesY - 5) {
                         continue;
                     }
 
-                    // Çå³ıËùÓĞ·½¿é£¨²»½ö½öÊÇµØÓü·½¿é£©
+                    // æ¸…é™¤æ‰€æœ‰æ–¹å—ï¼ˆä¸ä»…ä»…æ˜¯åœ°ç‹±æ–¹å—ï¼‰
                     if (tile.HasTile) {
                         tile.ClearTile();
                     }
 
-                    // Çå³ıËùÓĞÒºÌå£¨ÈÛÑÒ¡¢Ë®µÈ£©
+                    // æ¸…é™¤æ‰€æœ‰æ¶²ä½“ï¼ˆç†”å²©ã€æ°´ç­‰ï¼‰
                     if (tile.LiquidAmount > 0) {
                         tile.LiquidAmount = 0;
                         tile.LiquidType = 0;
                     }
 
-                    // Çå³ıËùÓĞÇ½±Ú
+                    // æ¸…é™¤æ‰€æœ‰å¢™å£
                     if (tile.WallType > 0) {
                         tile.WallType = 0;
                     }
 
-                    // Çå³ıÆäËûÊôĞÔ
+                    // æ¸…é™¤å…¶ä»–å±æ€§
                     tile.ClearEverything();
                 }
             }
 
-            Main.NewText("Ô­ÓĞµØĞÎÇåÀíÍê³É", Color.LightGreen);
+            Main.NewText("åŸæœ‰åœ°å½¢æ¸…ç†å®Œæˆ", Color.LightGreen);
         }
 
         /// <summary>
-        /// Éú³É»ù´¡ÓÄÚ¤Ê¯µØĞÎ²ã
+        /// ç”ŸæˆåŸºç¡€å¹½å†¥çŸ³åœ°å½¢å±‚
         /// </summary>
         private static void GenerateBaseTerrain(int startX, int endX, int startY, int endY, UnifiedRandom rand) {
             int umbralStoneType = ModContent.TileType<UmbralStone>();
 
             for (int i = startX; i < endX; i++) {
                 for (int j = startY; j < endY; j++) {
-                    // µ×²¿ÍêÈ«Ìî³ä£¨×îµ×²¿100¸ñ£©
+                    // åº•éƒ¨å®Œå…¨å¡«å……ï¼ˆæœ€åº•éƒ¨100æ ¼ï¼‰
                     if (j >= endY - 100) {
                         WorldGen.PlaceTile(i, j, umbralStoneType, forced: true, mute: true);
                         continue;
                     }
 
-                    // Ê¹ÓÃ°ØÁÖÔëÉù´´½¨×ÔÈ»·Ö²¼
+                    // ä½¿ç”¨æŸæ—å™ªå£°åˆ›å»ºè‡ªç„¶åˆ†å¸ƒ
                     float noise = GetPerlinNoise(i * 0.02f, j * 0.02f, rand);
 
-                    // ¸ù¾İÉî¶Èµ÷ÕûÃÜ¶È - Ê¹ÕûÌå¸üÃÜ¼¯
+                    // æ ¹æ®æ·±åº¦è°ƒæ•´å¯†åº¦ - ä½¿æ•´ä½“æ›´å¯†é›†
                     float depth = (j - startY) / (float)(endY - startY);
-                    float density = 0.4f + depth * 0.5f; // Ìá¸ß»ù´¡ÃÜ¶È
+                    float density = 0.4f + depth * 0.5f; // æé«˜åŸºç¡€å¯†åº¦
 
                     if (noise > 1f - density) {
                         WorldGen.PlaceTile(i, j, umbralStoneType, forced: true, mute: true);
@@ -297,24 +297,24 @@ namespace AncientChineseMythology.Underworlds
         }
 
         /// <summary>
-        /// Éú³ÉÆğ·üµÄµØ¸®µØ±í
+        /// ç”Ÿæˆèµ·ä¼çš„åœ°åºœåœ°è¡¨
         /// </summary>
         private static void GenerateUndulatingTerrain(int startX, int endX, int startY, int endY, UnifiedRandom rand) {
             int umbralStoneType = ModContent.TileType<UmbralStone>();
 
-            // Éú³É¶à²ãÆğ·üµÄÆ½Ì¨
-            int platformCount = 6; // 6²ã²»Í¬¸ß¶ÈµÄÆ½Ì¨£¬ÏóÕ÷ÁùµÀÂÖ»Ø
+            // ç”Ÿæˆå¤šå±‚èµ·ä¼çš„å¹³å°
+            int platformCount = 6; // 6å±‚ä¸åŒé«˜åº¦çš„å¹³å°ï¼Œè±¡å¾å…­é“è½®å›
 
             for (int layer = 0; layer < platformCount; layer++) {
                 int baseHeight = startY + (endY - startY) / (platformCount + 1) * (layer + 1);
 
                 for (int i = startX; i < endX; i++) {
-                    // Ê¹ÓÃÕıÏÒ²¨µş¼Ó°ØÁÖÔëÉù´´½¨×ÔÈ»Æğ·ü
+                    // ä½¿ç”¨æ­£å¼¦æ³¢å åŠ æŸæ—å™ªå£°åˆ›å»ºè‡ªç„¶èµ·ä¼
                     float wave = (float)Math.Sin(i * 0.05f + layer * 2f) * 10f;
                     float noise = GetPerlinNoise(i * 0.03f, layer * 10f, rand) * 15f;
                     int height = baseHeight + (int)(wave + noise);
 
-                    // Éú³ÉÆ½Ì¨ºñ¶È
+                    // ç”Ÿæˆå¹³å°åšåº¦
                     int thickness = rand.Next(3, 10);
 
                     for (int j = height; j < height + thickness; j++) {
@@ -327,20 +327,20 @@ namespace AncientChineseMythology.Underworlds
         }
 
         /// <summary>
-        /// Éú³É¶´Ñ¨ºÍ¿ª·Å¿Õ¼ä
+        /// ç”Ÿæˆæ´ç©´å’Œå¼€æ”¾ç©ºé—´
         /// </summary>
         private static void GenerateCaverns(int startX, int endX, int startY, int endY, UnifiedRandom rand) {
-            // Éú³É´óĞÍ¿Õ¶´ - ´ú±íµØ¸®µÄ¸÷¸öµîÌÃ¿Õ¼ä
+            // ç”Ÿæˆå¤§å‹ç©ºæ´ - ä»£è¡¨åœ°åºœçš„å„ä¸ªæ®¿å ‚ç©ºé—´
             int cavernCount = rand.Next(20, 30);
 
             for (int n = 0; n < cavernCount; n++) {
-                // È·±£ÓĞ×ã¹»µÄ¿Õ¼äÉú³É¶´Ñ¨
+                // ç¡®ä¿æœ‰è¶³å¤Ÿçš„ç©ºé—´ç”Ÿæˆæ´ç©´
                 int safeStartX = Math.Max(startX + 50, startX);
                 int safeEndX = Math.Max(endX - 50, safeStartX + 100);
                 int safeStartY = Math.Max(startY + 50, startY);
                 int safeEndY = Math.Max(endY - 100, safeStartY + 100);
 
-                // Èç¹û·¶Î§²»¹»£¬Ìø¹ıÕâ¸ö¶´Ñ¨
+                // å¦‚æœèŒƒå›´ä¸å¤Ÿï¼Œè·³è¿‡è¿™ä¸ªæ´ç©´
                 if (safeEndX <= safeStartX || safeEndY <= safeStartY) {
                     continue;
                 }
@@ -348,19 +348,19 @@ namespace AncientChineseMythology.Underworlds
                 int centerX = rand.Next(safeStartX, safeEndX);
                 int centerY = rand.Next(safeStartY, safeEndY);
 
-                // Ëæ»úÍÖÔ²ĞÎ¶´Ñ¨
+                // éšæœºæ¤­åœ†å½¢æ´ç©´
                 int radiusX = rand.Next(15, 50);
                 int radiusY = rand.Next(10, 35);
 
                 for (int i = centerX - radiusX; i <= centerX + radiusX; i++) {
                     for (int j = centerY - radiusY; j <= centerY + radiusY; j++) {
                         if (i >= startX && i < endX && j >= startY && j < endY) {
-                            // ÍÖÔ²·½³Ì
+                            // æ¤­åœ†æ–¹ç¨‹
                             float dx = (i - centerX) / (float)radiusX;
                             float dy = (j - centerY) / (float)radiusY;
 
                             if (dx * dx + dy * dy <= 1f) {
-                                // Ìí¼Ó±ßÔµËæ»úĞÔ
+                                // æ·»åŠ è¾¹ç¼˜éšæœºæ€§
                                 float edge = dx * dx + dy * dy;
                                 if (edge < 0.8f || rand.NextFloat() > edge) {
                                     Tile tile = Main.tile[i, j];
@@ -372,17 +372,17 @@ namespace AncientChineseMythology.Underworlds
                 }
             }
 
-            // Éú³ÉòêÑÑµÄÍ¨µÀ
+            // ç”Ÿæˆèœ¿èœ’çš„é€šé“
             int tunnelCount = rand.Next(25, 40);
 
             for (int n = 0; n < tunnelCount; n++) {
-                // È·±£ÓĞ×ã¹»µÄ¿Õ¼äÉú³ÉÍ¨µÀ
+                // ç¡®ä¿æœ‰è¶³å¤Ÿçš„ç©ºé—´ç”Ÿæˆé€šé“
                 int safeStartX = Math.Max(startX + 20, startX);
                 int safeEndX = Math.Max(endX - 20, safeStartX + 40);
                 int safeStartY = Math.Max(startY + 20, startY);
                 int safeEndY = Math.Max(endY - 80, safeStartY + 40);
 
-                // Èç¹û·¶Î§²»¹»£¬Ìø¹ıÕâ¸öÍ¨µÀ
+                // å¦‚æœèŒƒå›´ä¸å¤Ÿï¼Œè·³è¿‡è¿™ä¸ªé€šé“
                 if (safeEndX <= safeStartX || safeEndY <= safeStartY) {
                     continue;
                 }
@@ -396,17 +396,17 @@ namespace AncientChineseMythology.Underworlds
                 float angle = rand.NextFloat() * MathHelper.TwoPi;
 
                 for (int step = 0; step < length; step++) {
-                    // Ëæ»ú¸Ä±ä·½Ïò
+                    // éšæœºæ”¹å˜æ–¹å‘
                     angle += (rand.NextFloat() - 0.5f) * 0.3f;
 
                     x += (int)(Math.Cos(angle) * 2);
                     y += (int)(Math.Sin(angle) * 2);
 
-                    // È·±£²»³¬³ö±ß½ç
+                    // ç¡®ä¿ä¸è¶…å‡ºè¾¹ç•Œ
                     x = Math.Clamp(x, startX, endX - 1);
                     y = Math.Clamp(y, startY, endY - 61);
 
-                    // ÍÚ¾òÍ¨µÀ
+                    // æŒ–æ˜é€šé“
                     for (int dx = -width; dx <= width; dx++) {
                         for (int dy = -width; dy <= width; dy++) {
                             int ti = x + dx;
@@ -425,19 +425,19 @@ namespace AncientChineseMythology.Underworlds
         }
 
         /// <summary>
-        /// Éú³É»ÆÈªÖ®Â· - ¹á´©µØ¸®µÄÖ÷Í¨µÀ
+        /// ç”Ÿæˆé»„æ³‰ä¹‹è·¯ - è´¯ç©¿åœ°åºœçš„ä¸»é€šé“
         /// </summary>
         private static void GenerateYellowSpringsPath(int startX, int endX, int startY, int endY, UnifiedRandom rand) {
-            // ´Ó×óÖÁÓÒµÄòêÑÑÖ÷Â·
+            // ä»å·¦è‡³å³çš„èœ¿èœ’ä¸»è·¯
             int pathY = startY + (endY - startY) / 2;
             int pathWidth = 12;
 
             for (int i = startX; i < endX; i++) {
-                // ÉÏÏÂ²¨¶¯
+                // ä¸Šä¸‹æ³¢åŠ¨
                 float wave = (float)Math.Sin(i * 0.02f) * 20f;
                 int currentY = pathY + (int)wave;
 
-                // Çå¿ÕÂ·¾¶
+                // æ¸…ç©ºè·¯å¾„
                 for (int dy = -pathWidth; dy <= pathWidth; dy++) {
                     int j = currentY + dy;
                     if (j >= startY && j < endY - 60) {
@@ -447,13 +447,13 @@ namespace AncientChineseMythology.Underworlds
                     }
                 }
 
-                // ÔÚÂ·¾¶µ×²¿ºÍÉÏ·½ÆÌÉèÓÄÚ¤Ê¯±ß½ç£¬ĞÎ³ÉÃ÷ÏÔµÄÍ¨µÀ
-                // µ×²¿µØ°å
+                // åœ¨è·¯å¾„åº•éƒ¨å’Œä¸Šæ–¹é“ºè®¾å¹½å†¥çŸ³è¾¹ç•Œï¼Œå½¢æˆæ˜æ˜¾çš„é€šé“
+                // åº•éƒ¨åœ°æ¿
                 for (int floorWidth = -pathWidth - 2; floorWidth <= pathWidth + 2; floorWidth++) {
                     int floorJ = currentY + pathWidth + 1;
                     if (floorJ >= startY && floorJ < endY - 60) {
                         WorldGen.PlaceTile(i, floorJ, ModContent.TileType<UmbralStone>(), forced: true, mute: true);
-                        // ¼ÓºñµØ°å
+                        // åŠ åšåœ°æ¿
                         if (floorJ + 1 < endY - 60) {
                             WorldGen.PlaceTile(i, floorJ + 1, ModContent.TileType<UmbralStone>(), forced: true, mute: true);
                         }
@@ -463,16 +463,16 @@ namespace AncientChineseMythology.Underworlds
         }
 
         /// <summary>
-        /// Éú³ÉµØ¸®ÌØÉ«½á¹¹£¨Öù×Ó¡¢Ğ¡ĞÍ½¨ÖşµÈ£©
+        /// ç”Ÿæˆåœ°åºœç‰¹è‰²ç»“æ„ï¼ˆæŸ±å­ã€å°å‹å»ºç­‘ç­‰ï¼‰
         /// </summary>
         private static void GenerateUnderworldStructures(int startX, int endX, int startY, int endY, UnifiedRandom rand) {
             int umbralStoneType = ModContent.TileType<UmbralStone>();
 
-            // Éú³ÉÓÄÚ¤Ê¯Öù - ÏóÕ÷µØ¸®µÄÖ§Öù
+            // ç”Ÿæˆå¹½å†¥çŸ³æŸ± - è±¡å¾åœ°åºœçš„æ”¯æŸ±
             int pillarCount = rand.Next(15, 25);
 
             for (int n = 0; n < pillarCount; n++) {
-                // È·±£ÓĞ×ã¹»µÄ¿Õ¼ä
+                // ç¡®ä¿æœ‰è¶³å¤Ÿçš„ç©ºé—´
                 int safeStartX = Math.Max(startX + 30, startX);
                 int safeEndX = Math.Max(endX - 30, safeStartX + 60);
 
@@ -480,13 +480,13 @@ namespace AncientChineseMythology.Underworlds
 
                 int x = rand.Next(safeStartX, safeEndX);
 
-                // ¼ÆËã°²È«µÄY·¶Î§
+                // è®¡ç®—å®‰å…¨çš„YèŒƒå›´
                 int yRange = endY - startY - 100;
                 if (yRange <= 50) continue;
 
                 int y = startY + rand.Next(50, Math.Max(51, yRange));
 
-                // Ñ°ÕÒ¿É·ÅÖÃÎ»ÖÃ£¨¿ÕÆøÏÂ·½ÓĞÊµĞÄ·½¿é£©
+                // å¯»æ‰¾å¯æ”¾ç½®ä½ç½®ï¼ˆç©ºæ°”ä¸‹æ–¹æœ‰å®å¿ƒæ–¹å—ï¼‰
                 bool foundGround = false;
                 int maxCheckY = Math.Min(endY - 80, Main.maxTilesY - 80);
 
@@ -500,7 +500,7 @@ namespace AncientChineseMythology.Underworlds
 
                 if (!foundGround) continue;
 
-                // Éú³ÉÖù×Ó£¨ÏòÉÏ»òÏòÏÂ£©
+                // ç”ŸæˆæŸ±å­ï¼ˆå‘ä¸Šæˆ–å‘ä¸‹ï¼‰
                 int height = rand.Next(15, 40);
                 int width = rand.Next(2, 5);
                 bool goingUp = rand.NextBool();
@@ -515,18 +515,18 @@ namespace AncientChineseMythology.Underworlds
                         }
                     }
 
-                    // Öù×ÓÖğ½¥±äÏ¸
+                    // æŸ±å­é€æ¸å˜ç»†
                     if (h > height / 2 && width > 1 && rand.NextBool(3)) {
                         width--;
                     }
                 }
             }
 
-            // Éú³ÉĞ¡ĞÍÊ¯Ì¨ - ÏóÕ÷ÅĞ¹ÙÌ¨¡¢ÄÎºÎÇÅµÈ
+            // ç”Ÿæˆå°å‹çŸ³å° - è±¡å¾åˆ¤å®˜å°ã€å¥ˆä½•æ¡¥ç­‰
             int platformCount = rand.Next(10, 15);
 
             for (int n = 0; n < platformCount; n++) {
-                // È·±£ÓĞ×ã¹»µÄ¿Õ¼ä
+                // ç¡®ä¿æœ‰è¶³å¤Ÿçš„ç©ºé—´
                 int safeStartX = Math.Max(startX + 40, startX);
                 int safeEndX = Math.Max(endX - 40, safeStartX + 80);
                 int safeStartY = Math.Max(startY + 60, startY);
@@ -540,7 +540,7 @@ namespace AncientChineseMythology.Underworlds
                 int platformWidth = rand.Next(8, 16);
                 int platformHeight = rand.Next(2, 5);
 
-                // È·±£Î»ÖÃÊÇ¿ÕÆø
+                // ç¡®ä¿ä½ç½®æ˜¯ç©ºæ°”
                 bool canPlace = true;
                 for (int i = Math.Max(x - platformWidth, startX); i <= Math.Min(x + platformWidth, endX - 1); i++) {
                     for (int j = y; j < Math.Min(y + platformHeight + 10, endY - 60); j++) {
@@ -554,7 +554,7 @@ namespace AncientChineseMythology.Underworlds
 
                 if (!canPlace) continue;
 
-                // ·ÅÖÃÆ½Ì¨
+                // æ”¾ç½®å¹³å°
                 for (int i = x - platformWidth; i <= x + platformWidth; i++) {
                     for (int j = y; j < y + platformHeight; j++) {
                         if (i >= startX && i < endX && j >= startY && j < endY - 60) {
@@ -566,22 +566,22 @@ namespace AncientChineseMythology.Underworlds
         }
 
         /// <summary>
-        /// Ìí¼ÓÏ¸½Ú×°ÊÎ
+        /// æ·»åŠ ç»†èŠ‚è£…é¥°
         /// </summary>
         private static void AddDetails(int startX, int endX, int startY, int endY, UnifiedRandom rand) {
             int umbralStoneType = ModContent.TileType<UmbralStone>();
 
-            // È·±£ÓĞĞ§·¶Î§
+            // ç¡®ä¿æœ‰æ•ˆèŒƒå›´
             if (endX <= startX || endY <= startY + 60) {
                 return;
             }
 
-            // Ìí¼ÓËæ»úµÄÓÄÚ¤Ê¯¿é£¬Ôö¼ÓµØĞÎµÄ²»¹æÔò¸Ğ
+            // æ·»åŠ éšæœºçš„å¹½å†¥çŸ³å—ï¼Œå¢åŠ åœ°å½¢çš„ä¸è§„åˆ™æ„Ÿ
             for (int n = 0; n < 1000; n++) {
                 int x = rand.Next(startX, endX);
                 int y = rand.Next(startY, endY - 60);
 
-                // ±ß½ç¼ì²é
+                // è¾¹ç•Œæ£€æŸ¥
                 if (x < startX || x >= endX || y < startY || y >= endY - 60) continue;
                 if (y + 1 >= endY) continue;
 
@@ -594,10 +594,10 @@ namespace AncientChineseMythology.Underworlds
         }
 
         /// <summary>
-        /// Æ½»¬µØĞÎ£¬Ê¹Æä¸ü×ÔÈ»
+        /// å¹³æ»‘åœ°å½¢ï¼Œä½¿å…¶æ›´è‡ªç„¶
         /// </summary>
         private static void SmoothTerrain(int startX, int endX, int startY, int endY) {
-            // ¼òµ¥µÄÆ½»¬´¦Àí
+            // ç®€å•çš„å¹³æ»‘å¤„ç†
             for (int pass = 0; pass < 2; pass++) {
                 for (int i = startX + 2; i < endX - 2; i += 5) {
                     for (int j = startY + 2; j < endY - 62; j += 5) {
@@ -611,57 +611,57 @@ namespace AncientChineseMythology.Underworlds
         }
 
         /// <summary>
-        /// ¼òµ¥µÄ°ØÁÖÔëÉùÊµÏÖ
+        /// ç®€å•çš„æŸæ—å™ªå£°å®ç°
         /// </summary>
         private static float GetPerlinNoise(float x, float y, UnifiedRandom rand) {
-            // Ê¹ÓÃÈı½Çº¯ÊıÄ£Äâ°ØÁÖÔëÉù
+            // ä½¿ç”¨ä¸‰è§’å‡½æ•°æ¨¡æ‹ŸæŸæ—å™ªå£°
             float noise = 0f;
             noise += (float)Math.Sin(x * 1.0f) * 0.5f;
             noise += (float)Math.Sin(y * 1.0f) * 0.5f;
             noise += (float)Math.Sin((x + y) * 0.5f) * 0.3f;
             noise += (float)Math.Sin((x - y) * 0.7f) * 0.2f;
 
-            // ¹éÒ»»¯µ½ 0-1
+            // å½’ä¸€åŒ–åˆ° 0-1
             return (noise + 1.5f) / 3f;
         }
 
         /// <summary>
-        /// Éú³ÉµØ¸®µØ±íÇøÓò
+        /// ç”Ÿæˆåœ°åºœåœ°è¡¨åŒºåŸŸ
         /// </summary>
         private static void GenerateUnderworldSurface(int startX, int endX, int startY, int endY, UnifiedRandom rand) {
             int umbralStoneType = ModContent.TileType<UmbralStone>();
 
-            // ²»ÔÙÍêÈ«Çå¿Õ£¬¶øÊÇÑ¡ÔñĞÔµØÇå³ıºÍÌæ»»
-            // µÚÒ»²½£ºÉú³ÉµØ¸®µÄ"ÇÖÊ´"·¶Î§ - ²»¹æÔòµÄÇåÀíÇøÓò
+            // ä¸å†å®Œå…¨æ¸…ç©ºï¼Œè€Œæ˜¯é€‰æ‹©æ€§åœ°æ¸…é™¤å’Œæ›¿æ¢
+            // ç¬¬ä¸€æ­¥ï¼šç”Ÿæˆåœ°åºœçš„"ä¾µèš€"èŒƒå›´ - ä¸è§„åˆ™çš„æ¸…ç†åŒºåŸŸ
             for (int i = startX; i < endX; i++) {
                 for (int j = startY; j < endY; j++) {
                     Tile tile = Main.tile[i, j];
 
-                    // Ê¹ÓÃÔëÉù¾ö¶¨ÊÇ·ñÇå³ı¸ÃÎ»ÖÃ
+                    // ä½¿ç”¨å™ªå£°å†³å®šæ˜¯å¦æ¸…é™¤è¯¥ä½ç½®
                     float erosionNoise = GetPerlinNoise(i * 0.015f, j * 0.015f, rand);
 
-                    // ¾àÀëµØÓü²ãÔ½½ü£¬Çå³ı¸ÅÂÊÔ½¸ß
+                    // è·ç¦»åœ°ç‹±å±‚è¶Šè¿‘ï¼Œæ¸…é™¤æ¦‚ç‡è¶Šé«˜
                     float depthFactor = (j - startY) / (float)(endY - startY);
-                    float clearChance = depthFactor * 0.7f + 0.2f; // 20%-90%µÄÇå³ı¸ÅÂÊ
+                    float clearChance = depthFactor * 0.7f + 0.2f; // 20%-90%çš„æ¸…é™¤æ¦‚ç‡
 
-                    // Ìí¼Ó±ßÔµ½¥±äĞ§¹û
+                    // æ·»åŠ è¾¹ç¼˜æ¸å˜æ•ˆæœ
                     float edgeDistanceX = Math.Min(i - startX, endX - i) / 100f;
                     edgeDistanceX = Math.Clamp(edgeDistanceX, 0f, 1f);
                     clearChance *= edgeDistanceX;
 
                     if (erosionNoise > 1f - clearChance) {
-                        // Çå³ı·½¿é
+                        // æ¸…é™¤æ–¹å—
                         if (tile.HasTile) {
                             tile.ClearTile();
                         }
 
-                        // Çå³ıÒºÌå
+                        // æ¸…é™¤æ¶²ä½“
                         if (tile.LiquidAmount > 0) {
                             tile.LiquidAmount = 0;
                             tile.LiquidType = 0;
                         }
 
-                        // ²¿·ÖÇå³ıÇ½±Ú£¨²»ÊÇÈ«²¿£©
+                        // éƒ¨åˆ†æ¸…é™¤å¢™å£ï¼ˆä¸æ˜¯å…¨éƒ¨ï¼‰
                         if (tile.WallType > 0 && rand.NextBool(2)) {
                             tile.WallType = 0;
                         }
@@ -669,25 +669,25 @@ namespace AncientChineseMythology.Underworlds
                 }
             }
 
-            // µÚ¶ş²½£ºÔÚÇå¿ÕµÄÇøÓòÖĞÉú³É²»¹æÔòµÄÓÄÚ¤Ê¯µØĞÎ
+            // ç¬¬äºŒæ­¥ï¼šåœ¨æ¸…ç©ºçš„åŒºåŸŸä¸­ç”Ÿæˆä¸è§„åˆ™çš„å¹½å†¥çŸ³åœ°å½¢
             for (int i = startX; i < endX; i++) {
-                // ´´½¨Æğ·üµÄµØ¸®µØ±íÂÖÀª
+                // åˆ›å»ºèµ·ä¼çš„åœ°åºœåœ°è¡¨è½®å»“
                 float surfaceNoise = GetPerlinNoise(i * 0.02f, 0, rand);
                 int baseSurfaceHeight = startY + (int)((endY - startY) * 0.5f + surfaceNoise * (endY - startY) * 0.3f);
 
-                // ´ÓµØ±íÏòÏÂÌî³äÓÄÚ¤Ê¯£¬µ«ÃÜ¶ÈÖğ½¥½µµÍ
+                // ä»åœ°è¡¨å‘ä¸‹å¡«å……å¹½å†¥çŸ³ï¼Œä½†å¯†åº¦é€æ¸é™ä½
                 for (int j = baseSurfaceHeight; j < endY; j++) {
-                    // Ö»ÔÚÒÑÇå¿ÕµÄÎ»ÖÃ·ÅÖÃ
+                    // åªåœ¨å·²æ¸…ç©ºçš„ä½ç½®æ”¾ç½®
                     if (Main.tile[i, j].HasTile) continue;
 
-                    // Ê¹ÓÃÔëÉù´´½¨²»¹æÔòµÄÌî³ä
+                    // ä½¿ç”¨å™ªå£°åˆ›å»ºä¸è§„åˆ™çš„å¡«å……
                     float noise = GetPerlinNoise(i * 0.05f, j * 0.05f, rand);
 
-                    // ¸ù¾İÉî¶Èµ÷ÕûÃÜ¶È - Ô½½Ó½üµØÓü²ãÔ½ÃÜ¼¯
+                    // æ ¹æ®æ·±åº¦è°ƒæ•´å¯†åº¦ - è¶Šæ¥è¿‘åœ°ç‹±å±‚è¶Šå¯†é›†
                     float depth = (j - baseSurfaceHeight) / (float)(endY - baseSurfaceHeight);
-                    float density = 0.2f + depth * 0.5f; // 20%-70%µÄÃÜ¶È
+                    float density = 0.2f + depth * 0.5f; // 20%-70%çš„å¯†åº¦
 
-                    // Ìí¼Ó´¹Ö±·½ÏòµÄ±ä»¯
+                    // æ·»åŠ å‚ç›´æ–¹å‘çš„å˜åŒ–
                     float verticalNoise = GetPerlinNoise(i * 0.08f, j * 0.08f, rand);
                     density += verticalNoise * 0.2f;
 
@@ -699,10 +699,10 @@ namespace AncientChineseMythology.Underworlds
         }
 
         /// <summary>
-        /// Éú³ÉµØ±íÏ¿¹ÈºÍ´óĞÍ¶´Ñ¨
+        /// ç”Ÿæˆåœ°è¡¨å³¡è°·å’Œå¤§å‹æ´ç©´
         /// </summary>
         private static void GenerateSurfaceCanyons(int startX, int endX, int startY, int endY, UnifiedRandom rand) {
-            // ¼õÉÙ´¹Ö±Ï¿¹ÈÊıÁ¿£¬Ê¹Æä¸üÏ¡Êè
+            // å‡å°‘å‚ç›´å³¡è°·æ•°é‡ï¼Œä½¿å…¶æ›´ç¨€ç–
             int canyonCount = rand.Next(3, 7);
 
             for (int n = 0; n < canyonCount; n++) {
@@ -715,15 +715,15 @@ namespace AncientChineseMythology.Underworlds
                 int canyonWidth = rand.Next(8, 20);
                 int canyonDepth = rand.Next((endY - startY) / 3, (endY - startY) / 2);
 
-                // ÍÚ¾òÏ¿¹È - Ê¹ÓÃ¸üÈáºÍµÄÇúÏß
+                // æŒ–æ˜å³¡è°· - ä½¿ç”¨æ›´æŸ”å’Œçš„æ›²çº¿
                 for (int i = canyonX - canyonWidth; i <= canyonX + canyonWidth; i++) {
                     for (int j = startY; j < startY + canyonDepth; j++) {
                         if (i >= startX && i < endX && j >= startY && j < endY) {
-                            // Ê¹ÓÃ¸üÆ½»¬µÄÅ×ÎïÏß
+                            // ä½¿ç”¨æ›´å¹³æ»‘çš„æŠ›ç‰©çº¿
                             float distFromCenter = Math.Abs(i - canyonX) / (float)canyonWidth;
                             float depthFactor = (1f - distFromCenter * distFromCenter);
 
-                            // Ìí¼ÓÔëÉùÊ¹±ßÔµ²»¹æÔò
+                            // æ·»åŠ å™ªå£°ä½¿è¾¹ç¼˜ä¸è§„åˆ™
                             float edgeNoise = GetPerlinNoise(i * 0.1f, j * 0.1f, rand);
                             depthFactor *= (0.8f + edgeNoise * 0.4f);
 
@@ -737,7 +737,7 @@ namespace AncientChineseMythology.Underworlds
                 }
             }
 
-            // ¼õÉÙ¶´Ñ¨ÊıÁ¿
+            // å‡å°‘æ´ç©´æ•°é‡
             int cavernCount = rand.Next(8, 15);
 
             for (int n = 0; n < cavernCount; n++) {
@@ -751,11 +751,11 @@ namespace AncientChineseMythology.Underworlds
                 int centerX = rand.Next(safeStartX, safeEndX);
                 int centerY = rand.Next(safeStartY, safeEndY);
 
-                // ¼õĞ¡¶´Ñ¨´óĞ¡
+                // å‡å°æ´ç©´å¤§å°
                 int radiusX = rand.Next(8, 20);
                 int radiusY = rand.Next(6, 15);
 
-                // ÍÚ¾òÍÖÔ²ĞÎ¶´Ñ¨
+                // æŒ–æ˜æ¤­åœ†å½¢æ´ç©´
                 for (int i = centerX - radiusX; i <= centerX + radiusX; i++) {
                     for (int j = centerY - radiusY; j <= centerY + radiusY; j++) {
                         if (i >= startX && i < endX && j >= startY && j < endY) {
@@ -763,7 +763,7 @@ namespace AncientChineseMythology.Underworlds
                             float dy = (j - centerY) / (float)radiusY;
 
                             if (dx * dx + dy * dy <= 1f) {
-                                // ¸üÈáºÍµÄ±ßÔµ
+                                // æ›´æŸ”å’Œçš„è¾¹ç¼˜
                                 float edge = dx * dx + dy * dy;
                                 float edgeNoise = GetPerlinNoise(i * 0.15f, j * 0.15f, rand);
 
@@ -778,7 +778,7 @@ namespace AncientChineseMythology.Underworlds
                 }
             }
 
-            // ¼õÉÙÍ¨µÀÊıÁ¿
+            // å‡å°‘é€šé“æ•°é‡
             int tunnelCount = rand.Next(10, 18);
 
             for (int n = 0; n < tunnelCount; n++) {
@@ -792,14 +792,14 @@ namespace AncientChineseMythology.Underworlds
                 int x = rand.Next(safeStartX, safeEndX);
                 int y = rand.Next(safeStartY, safeEndY);
 
-                // Ëõ¶ÌÍ¨µÀ³¤¶È
+                // ç¼©çŸ­é€šé“é•¿åº¦
                 int length = rand.Next(20, 50);
                 int width = rand.Next(2, 5);
 
                 float angle = rand.NextFloat() * MathHelper.TwoPi;
 
                 for (int step = 0; step < length; step++) {
-                    // ¸üÎÂºÍµÄ·½Ïò±ä»¯
+                    // æ›´æ¸©å’Œçš„æ–¹å‘å˜åŒ–
                     angle += (rand.NextFloat() - 0.5f) * 0.2f;
 
                     x += (int)(Math.Cos(angle) * 1.5f);
@@ -828,12 +828,12 @@ namespace AncientChineseMythology.Underworlds
         }
 
         /// <summary>
-        /// Éú³ÉµØ±íÑÒÊ¯ÖùºÍ¼â´Ì
+        /// ç”Ÿæˆåœ°è¡¨å²©çŸ³æŸ±å’Œå°–åˆº
         /// </summary>
         private static void GenerateSurfacePillars(int startX, int endX, int startY, int endY, UnifiedRandom rand) {
             int umbralStoneType = ModContent.TileType<UmbralStone>();
 
-            // ¼õÉÙÏòÉÏÊ¯ÖùµÄÊıÁ¿
+            // å‡å°‘å‘ä¸ŠçŸ³æŸ±çš„æ•°é‡
             int pillarCountUp = rand.Next(15, 25);
 
             for (int n = 0; n < pillarCountUp; n++) {
@@ -844,11 +844,11 @@ namespace AncientChineseMythology.Underworlds
 
                 int x = rand.Next(safeStartX, safeEndX);
 
-                // ´Óµ×²¿ÏòÉÏÑ°ÕÒµØÃæ
+                // ä»åº•éƒ¨å‘ä¸Šå¯»æ‰¾åœ°é¢
                 int groundY = -1;
                 for (int checkY = endY - 1; checkY >= startY; checkY--) {
                     if (Main.tile[x, checkY].HasTile && Main.tileSolid[Main.tile[x, checkY].TileType]) {
-                        // È·±£ÊÇÓÄÚ¤Ê¯»òºÏÊÊµÄµØ¸®·½¿é
+                        // ç¡®ä¿æ˜¯å¹½å†¥çŸ³æˆ–åˆé€‚çš„åœ°åºœæ–¹å—
                         if ((Main.tile[x, checkY].TileType == umbralStoneType ||
                              Main.tile[x, checkY].TileType == ModContent.TileType<NetherSand>()) &&
                             checkY > startY && !Main.tile[x, checkY - 1].HasTile) {
@@ -860,11 +860,11 @@ namespace AncientChineseMythology.Underworlds
 
                 if (groundY == -1) continue;
 
-                // ¼õĞ¡Ê¯Öù¸ß¶È
+                // å‡å°çŸ³æŸ±é«˜åº¦
                 int height = rand.Next(3, 12);
                 int baseWidth = rand.Next(1, 3);
 
-                // Éú³ÉÏòÉÏµÄ×¶ĞÎÖù×Ó
+                // ç”Ÿæˆå‘ä¸Šçš„é”¥å½¢æŸ±å­
                 for (int h = 0; h < height; h++) {
                     int currentWidth = (int)(baseWidth * (1f - h / (float)height * 0.7f));
                     if (currentWidth < 1) currentWidth = 1;
@@ -882,7 +882,7 @@ namespace AncientChineseMythology.Underworlds
                 }
             }
 
-            // ¼õÉÙÏòÏÂÊ¯ÖùµÄÊıÁ¿
+            // å‡å°‘å‘ä¸‹çŸ³æŸ±çš„æ•°é‡
             int pillarCountDown = rand.Next(15, 25);
 
             for (int n = 0; n < pillarCountDown; n++) {
@@ -893,11 +893,11 @@ namespace AncientChineseMythology.Underworlds
 
                 int x = rand.Next(safeStartX, safeEndX);
 
-                // ´Ó¶¥²¿ÏòÏÂÑ°ÕÒÌì»¨°å
+                // ä»é¡¶éƒ¨å‘ä¸‹å¯»æ‰¾å¤©èŠ±æ¿
                 int ceilingY = -1;
                 for (int checkY = startY; checkY < endY; checkY++) {
                     if (Main.tile[x, checkY].HasTile && Main.tileSolid[Main.tile[x, checkY].TileType]) {
-                        // È·±£ÊÇÓÄÚ¤Ê¯
+                        // ç¡®ä¿æ˜¯å¹½å†¥çŸ³
                         if (Main.tile[x, checkY].TileType == umbralStoneType &&
                             checkY < endY - 1 && !Main.tile[x, checkY + 1].HasTile) {
                             ceilingY = checkY;
@@ -908,11 +908,11 @@ namespace AncientChineseMythology.Underworlds
 
                 if (ceilingY == -1) continue;
 
-                // ¼õĞ¡Ê¯Öù¸ß¶È
+                // å‡å°çŸ³æŸ±é«˜åº¦
                 int height = rand.Next(3, 12);
                 int baseWidth = rand.Next(1, 3);
 
-                // Éú³ÉÏòÏÂµÄ×¶ĞÎÖù×Ó
+                // ç”Ÿæˆå‘ä¸‹çš„é”¥å½¢æŸ±å­
                 for (int h = 0; h < height; h++) {
                     int currentWidth = (int)(baseWidth * (1f - h / (float)height * 0.7f));
                     if (currentWidth < 1) currentWidth = 1;
@@ -932,26 +932,26 @@ namespace AncientChineseMythology.Underworlds
         }
 
         /// <summary>
-        /// ÆÌÉèÁé»êÉ³µØ±í²ã
+        /// é“ºè®¾çµé­‚æ²™åœ°è¡¨å±‚
         /// </summary>
         private static void GenerateNetherSandLayer(int startX, int endX, int startY, int endY, UnifiedRandom rand) {
             int netherSandType = ModContent.TileType<NetherSand>();
             int umbralStoneType = ModContent.TileType<UmbralStone>();
 
-            // ÔÚÓÄÚ¤Ê¯±íÃæÆÌÉèÁé»êÉ³ - ¸üÏ¡ÊèµÄ¸²¸Ç
+            // åœ¨å¹½å†¥çŸ³è¡¨é¢é“ºè®¾çµé­‚æ²™ - æ›´ç¨€ç–çš„è¦†ç›–
             for (int i = startX; i < endX; i++) {
                 for (int j = startY; j < endY; j++) {
                     Tile tile = Main.tile[i, j];
 
-                    // ¼ì²éÊÇ·ñÊÇÓÄÚ¤Ê¯ÇÒÉÏ·½ÊÇ¿ÕÆø
+                    // æ£€æŸ¥æ˜¯å¦æ˜¯å¹½å†¥çŸ³ä¸”ä¸Šæ–¹æ˜¯ç©ºæ°”
                     if (tile.HasTile && tile.TileType == umbralStoneType) {
                         if (j > startY && !Main.tile[i, j - 1].HasTile) {
-                            // Ê¹ÓÃÔëÉù¾ö¶¨ÊÇ·ñÔÚ´Ë´¦·ÅÖÃÁé»êÉ³
+                            // ä½¿ç”¨å™ªå£°å†³å®šæ˜¯å¦åœ¨æ­¤å¤„æ”¾ç½®çµé­‚æ²™
                             float sandNoise = GetPerlinNoise(i * 0.08f, j * 0.08f, rand);
 
-                            if (sandNoise > 0.4f) { // Ö»ÔÚ60%µÄ±íÃæ·ÅÖÃÁé»êÉ³
-                                // ÔÚ±íÃæÉÏ·½·ÅÖÃÁé»êÉ³£¬Éî¶È½ÏÇ³
-                                int sandDepth = rand.Next(1, 4); // 1-3²ãÁé»êÉ³
+                            if (sandNoise > 0.4f) { // åªåœ¨60%çš„è¡¨é¢æ”¾ç½®çµé­‚æ²™
+                                // åœ¨è¡¨é¢ä¸Šæ–¹æ”¾ç½®çµé­‚æ²™ï¼Œæ·±åº¦è¾ƒæµ…
+                                int sandDepth = rand.Next(1, 4); // 1-3å±‚çµé­‚æ²™
 
                                 for (int depth = 0; depth < sandDepth; depth++) {
                                     int sandJ = j - 1 - depth;
@@ -968,7 +968,7 @@ namespace AncientChineseMythology.Underworlds
                 }
             }
 
-            // ¼õÉÙÁé»êÉ³¶ÑµÄÊıÁ¿
+            // å‡å°‘çµé­‚æ²™å †çš„æ•°é‡
             int sandPileCount = rand.Next(10, 20);
 
             for (int n = 0; n < sandPileCount; n++) {
@@ -979,7 +979,7 @@ namespace AncientChineseMythology.Underworlds
 
                 int centerX = rand.Next(safeStartX, safeEndX);
 
-                // Ñ°ÕÒµØÃæ
+                // å¯»æ‰¾åœ°é¢
                 int groundY = -1;
                 for (int checkY = startY; checkY < endY; checkY++) {
                     if (Main.tile[centerX, checkY].HasTile && Main.tileSolid[Main.tile[centerX, checkY].TileType]) {
@@ -990,7 +990,7 @@ namespace AncientChineseMythology.Underworlds
 
                 if (groundY == -1 || groundY <= startY + 5) continue;
 
-                // Éú³É½ÏĞ¡µÄÉ³¶Ñ
+                // ç”Ÿæˆè¾ƒå°çš„æ²™å †
                 int pileWidth = rand.Next(4, 8);
                 int pileHeight = rand.Next(2, 5);
 
@@ -1011,17 +1011,17 @@ namespace AncientChineseMythology.Underworlds
                 }
             }
 
-            // ÔÚ¶´Ñ¨µ×²¿·ÅÖÃÉÙÁ¿Áé»êÉ³ - ¸üÏ¡Êè
+            // åœ¨æ´ç©´åº•éƒ¨æ”¾ç½®å°‘é‡çµé­‚æ²™ - æ›´ç¨€ç–
             for (int i = startX; i < endX; i += 5) {
                 for (int j = startY + 20; j < endY - 20; j += 5) {
                     Tile tile = Main.tile[i, j];
 
-                    // Èç¹ûÊÇ¿ÕÆøÇÒÏÂ·½ÓĞ¹ÌÌå·½¿é
+                    // å¦‚æœæ˜¯ç©ºæ°”ä¸”ä¸‹æ–¹æœ‰å›ºä½“æ–¹å—
                     if (!tile.HasTile && j + 1 < endY) {
                         Tile below = Main.tile[i, j + 1];
                         if (below.HasTile && Main.tileSolid[below.TileType]) {
-                            // ½µµÍ¸ÅÂÊ
-                            if (rand.NextBool(6)) { // Ô¼16%µÄ¸ÅÂÊ
+                            // é™ä½æ¦‚ç‡
+                            if (rand.NextBool(6)) { // çº¦16%çš„æ¦‚ç‡
                                 int sandLayers = rand.Next(1, 2);
                                 for (int layer = 0; layer < sandLayers; layer++) {
                                     int sandJ = j - layer;
@@ -1036,18 +1036,18 @@ namespace AncientChineseMythology.Underworlds
             }
         }
 
-        #region Òì²½°æ±¾µÄÉú³É·½·¨
+        #region å¼‚æ­¥ç‰ˆæœ¬çš„ç”Ÿæˆæ–¹æ³•
 
         /// <summary>
-        /// Òì²½ÈÃ³ö¿ØÖÆÈ¨£¬±ÜÃâ×èÈûÖ÷Ïß³Ì
+        /// å¼‚æ­¥è®©å‡ºæ§åˆ¶æƒï¼Œé¿å…é˜»å¡ä¸»çº¿ç¨‹
         /// </summary>
         private static async Task YieldAsync(CancellationToken token) {
             token.ThrowIfCancellationRequested();
-            await Task.Delay(1, token); // ¶ÌÔİÈÃ³ö¿ØÖÆÈ¨
+            await Task.Delay(1, token); // çŸ­æš‚è®©å‡ºæ§åˆ¶æƒ
         }
 
         /// <summary>
-        /// Òì²½Çå³ıµØÓüÓÒ°ë±ßµÄÔ­ÓĞµØĞÎ
+        /// å¼‚æ­¥æ¸…é™¤åœ°ç‹±å³åŠè¾¹çš„åŸæœ‰åœ°å½¢
         /// </summary>
         private static async Task ClearHellTerrainAsync(int startX, int endX, int startY, int endY, CancellationToken token) {
             int processedCount = 0;
@@ -1087,7 +1087,7 @@ namespace AncientChineseMythology.Underworlds
         }
 
         /// <summary>
-        /// Òì²½Éú³É»ù´¡ÓÄÚ¤Ê¯µØĞÎ²ã
+        /// å¼‚æ­¥ç”ŸæˆåŸºç¡€å¹½å†¥çŸ³åœ°å½¢å±‚
         /// </summary>
         private static async Task GenerateBaseTerrainAsync(int startX, int endX, int startY, int endY, UnifiedRandom rand, CancellationToken token) {
             int umbralStoneType = ModContent.TileType<UmbralStone>();
@@ -1120,7 +1120,7 @@ namespace AncientChineseMythology.Underworlds
         }
 
         /// <summary>
-        /// Òì²½Éú³ÉÆğ·üµÄµØ¸®µØ±í
+        /// å¼‚æ­¥ç”Ÿæˆèµ·ä¼çš„åœ°åºœåœ°è¡¨
         /// </summary>
         private static async Task GenerateUndulatingTerrainAsync(int startX, int endX, int startY, int endY, UnifiedRandom rand, CancellationToken token) {
             int umbralStoneType = ModContent.TileType<UmbralStone>();
@@ -1154,7 +1154,7 @@ namespace AncientChineseMythology.Underworlds
         }
 
         /// <summary>
-        /// Òì²½Éú³É¶´Ñ¨ºÍ¿ª·Å¿Õ¼ä
+        /// å¼‚æ­¥ç”Ÿæˆæ´ç©´å’Œå¼€æ”¾ç©ºé—´
         /// </summary>
         private static async Task GenerateCavernsAsync(int startX, int endX, int startY, int endY, UnifiedRandom rand, CancellationToken token) {
             int cavernCount = rand.Next(20, 30);
@@ -1237,7 +1237,7 @@ namespace AncientChineseMythology.Underworlds
         }
 
         /// <summary>
-        /// Òì²½Éú³É»ÆÈªÖ®Â·
+        /// å¼‚æ­¥ç”Ÿæˆé»„æ³‰ä¹‹è·¯
         /// </summary>
         private static async Task GenerateYellowSpringsPathAsync(int startX, int endX, int startY, int endY, UnifiedRandom rand, CancellationToken token) {
             int pathY = startY + (endY - startY) / 2;
@@ -1278,7 +1278,7 @@ namespace AncientChineseMythology.Underworlds
         }
 
         /// <summary>
-        /// Òì²½Éú³ÉµØ¸®ÌØÉ«½á¹¹
+        /// å¼‚æ­¥ç”Ÿæˆåœ°åºœç‰¹è‰²ç»“æ„
         /// </summary>
         private static async Task GenerateUnderworldStructuresAsync(int startX, int endX, int startY, int endY, UnifiedRandom rand, CancellationToken token) {
             int umbralStoneType = ModContent.TileType<UmbralStone>();
@@ -1375,7 +1375,7 @@ namespace AncientChineseMythology.Underworlds
         }
 
         /// <summary>
-        /// Òì²½Ìí¼ÓÏ¸½Ú×°ÊÎ
+        /// å¼‚æ­¥æ·»åŠ ç»†èŠ‚è£…é¥°
         /// </summary>
         private static async Task AddDetailsAsync(int startX, int endX, int startY, int endY, UnifiedRandom rand, CancellationToken token) {
             int umbralStoneType = ModContent.TileType<UmbralStone>();
@@ -1408,7 +1408,7 @@ namespace AncientChineseMythology.Underworlds
         }
 
         /// <summary>
-        /// Òì²½Æ½»¬µØĞÎ
+        /// å¼‚æ­¥å¹³æ»‘åœ°å½¢
         /// </summary>
         private static async Task SmoothTerrainAsync(int startX, int endX, int startY, int endY, CancellationToken token) {
             int processedCount = 0;
@@ -1434,13 +1434,13 @@ namespace AncientChineseMythology.Underworlds
         }
 
         /// <summary>
-        /// Òì²½Éú³ÉµØ¸®µØ±íÇøÓò
+        /// å¼‚æ­¥ç”Ÿæˆåœ°åºœåœ°è¡¨åŒºåŸŸ
         /// </summary>
         private static async Task GenerateUnderworldSurfaceAsync(int startX, int endX, int startY, int endY, UnifiedRandom rand, CancellationToken token) {
             int umbralStoneType = ModContent.TileType<UmbralStone>();
             int processedCount = 0;
 
-            // µÚÒ»²½£ºÉú³ÉµØ¸®µÄ"ÇÖÊ´"·¶Î§
+            // ç¬¬ä¸€æ­¥ï¼šç”Ÿæˆåœ°åºœçš„"ä¾µèš€"èŒƒå›´
             for (int i = startX; i < endX; i++) {
                 for (int j = startY; j < endY; j++) {
                     token.ThrowIfCancellationRequested();
@@ -1472,7 +1472,7 @@ namespace AncientChineseMythology.Underworlds
                 }
             }
 
-            // µÚ¶ş²½£ºÔÚÇå¿ÕµÄÇøÓòÖĞÉú³É²»¹æÔòµÄÓÄÚ¤Ê¯µØĞÎ
+            // ç¬¬äºŒæ­¥ï¼šåœ¨æ¸…ç©ºçš„åŒºåŸŸä¸­ç”Ÿæˆä¸è§„åˆ™çš„å¹½å†¥çŸ³åœ°å½¢
             processedCount = 0;
             for (int i = startX; i < endX; i++) {
                 token.ThrowIfCancellationRequested();
@@ -1503,7 +1503,7 @@ namespace AncientChineseMythology.Underworlds
         }
 
         /// <summary>
-        /// Òì²½Éú³ÉµØ±íÏ¿¹ÈºÍ´óĞÍ¶´Ñ¨
+        /// å¼‚æ­¥ç”Ÿæˆåœ°è¡¨å³¡è°·å’Œå¤§å‹æ´ç©´
         /// </summary>
         private static async Task GenerateSurfaceCanyonsAsync(int startX, int endX, int startY, int endY, UnifiedRandom rand, CancellationToken token) {
             int canyonCount = rand.Next(3, 7);
@@ -1627,7 +1627,7 @@ namespace AncientChineseMythology.Underworlds
         }
 
         /// <summary>
-        /// Òì²½Éú³ÉµØ±íÑÒÊ¯ÖùºÍ¼â´Ì
+        /// å¼‚æ­¥ç”Ÿæˆåœ°è¡¨å²©çŸ³æŸ±å’Œå°–åˆº
         /// </summary>
         private static async Task GenerateSurfacePillarsAsync(int startX, int endX, int startY, int endY, UnifiedRandom rand, CancellationToken token) {
             int umbralStoneType = ModContent.TileType<UmbralStone>();
@@ -1728,14 +1728,14 @@ namespace AncientChineseMythology.Underworlds
         }
 
         /// <summary>
-        /// Òì²½ÆÌÉèÁé»êÉ³µØ±í²ã
+        /// å¼‚æ­¥é“ºè®¾çµé­‚æ²™åœ°è¡¨å±‚
         /// </summary>
         private static async Task GenerateNetherSandLayerAsync(int startX, int endX, int startY, int endY, UnifiedRandom rand, CancellationToken token) {
             int netherSandType = ModContent.TileType<NetherSand>();
             int umbralStoneType = ModContent.TileType<UmbralStone>();
             int processedCount = 0;
 
-            // ÔÚÓÄÚ¤Ê¯±íÃæÆÌÉèÁé»êÉ³
+            // åœ¨å¹½å†¥çŸ³è¡¨é¢é“ºè®¾çµé­‚æ²™
             for (int i = startX; i < endX; i++) {
                 for (int j = startY; j < endY; j++) {
                     token.ThrowIfCancellationRequested();
@@ -1770,7 +1770,7 @@ namespace AncientChineseMythology.Underworlds
                 }
             }
 
-            // Éú³ÉÁé»êÉ³¶Ñ
+            // ç”Ÿæˆçµé­‚æ²™å †
             int sandPileCount = rand.Next(10, 20);
 
             for (int n = 0; n < sandPileCount; n++) {
@@ -1815,7 +1815,7 @@ namespace AncientChineseMythology.Underworlds
                 await YieldAsync(token);
             }
 
-            // ÔÚ¶´Ñ¨µ×²¿·ÅÖÃÉÙÁ¿Áé»êÉ³
+            // åœ¨æ´ç©´åº•éƒ¨æ”¾ç½®å°‘é‡çµé­‚æ²™
             processedCount = 0;
             for (int i = startX; i < endX; i += 5) {
                 for (int j = startY + 20; j < endY - 20; j += 5) {

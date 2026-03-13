@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.ID;
@@ -6,37 +6,37 @@ using Terraria.ID;
 namespace AncientChineseMythology.Celestias.Boss.Aoyuans
 {
     /// <summary>
-    /// Î÷º£ÁúÍõ°½Èò - ¸¨Öú¹¤¾ßÀà
-    /// ±ùËª/º®Ë®Ö÷ÌâÅäÉ«£¬ÊÓ¾õĞ§¹û¸¨Öú
+    /// è¥¿æµ·é¾™ç‹æ•–é—° - è¾…åŠ©å·¥å…·ç±»
+    /// å†°éœœ/å¯’æ°´ä¸»é¢˜é…è‰²ï¼Œè§†è§‰æ•ˆæœè¾…åŠ©
     /// </summary>
     public static class AoyuanHelper
     {
-        #region Ö÷ÌâÅäÉ« - ±ùËª/Î÷º£É«Ïµ
+        #region ä¸»é¢˜é…è‰² - å†°éœœ/è¥¿æµ·è‰²ç³»
 
-        /// <summary>Éîº£À¶ - ºËĞÄ±ùÏ¢</summary>
+        /// <summary>æ·±æµ·è“ - æ ¸å¿ƒå†°æ¯</summary>
         public static Color DeepSeaBlue => new Color(20, 80, 160);
 
-        /// <summary>º®±ùÇà - ÁúÏ¢º®Æø</summary>
+        /// <summary>å¯’å†°é’ - é¾™æ¯å¯’æ°”</summary>
         public static Color FrostCyan => new Color(100, 200, 230);
 
-        /// <summary>±ù¾§°× - ¸ß¹âÉ«</summary>
+        /// <summary>å†°æ™¶ç™½ - é«˜å…‰è‰²</summary>
         public static Color IceCrystalWhite => new Color(220, 240, 255);
 
-        /// <summary>±©·ç×Ï - ¶ş½×¶ÎÅ­Æø</summary>
+        /// <summary>æš´é£ç´« - äºŒé˜¶æ®µæ€’æ°”</summary>
         public static Color StormViolet => new Color(100, 60, 180);
 
-        /// <summary>´¿°× - ºËĞÄ¸ß¹â</summary>
+        /// <summary>çº¯ç™½ - æ ¸å¿ƒé«˜å…‰</summary>
         public static Color PureWhite => new Color(255, 255, 255);
 
-        /// <summary>ÉîÔ¨ºÚÀ¶ - Éîº£Ñ¹ÆÈ</summary>
+        /// <summary>æ·±æ¸Šé»‘è“ - æ·±æµ·å‹è¿«</summary>
         public static Color AbyssBlack => new Color(10, 20, 40);
 
-        /// <summary>Î÷º£±Ì - ÁúÍõ×ğ¹óÉ«</summary>
+        /// <summary>è¥¿æµ·ç¢§ - é¾™ç‹å°Šè´µè‰²</summary>
         public static Color WestSeaTeal => new Color(40, 140, 170);
 
         #endregion
 
-        #region »º¶¯º¯Êı
+        #region ç¼“åŠ¨å‡½æ•°
 
         public static float QuadOut(float t) {
             t = Math.Clamp(t, 0f, 1f);
@@ -50,10 +50,10 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
 
         #endregion
 
-        #region Á£×ÓĞ§¹û
+        #region ç²’å­æ•ˆæœ
 
         /// <summary>
-        /// ´´½¨±ùËªĞıÎĞÁ£×Ó - ½×¶Î×ª»»/¹¥»÷Ê¹ÓÃ
+        /// åˆ›å»ºå†°éœœæ—‹æ¶¡ç²’å­ - é˜¶æ®µè½¬æ¢/æ”»å‡»ä½¿ç”¨
         /// </summary>
         public static void CreateFrostVortex(Vector2 center, float radius, float intensity, int particleCount = 40) {
             for (int i = 0; i < particleCount; i++) {
@@ -74,7 +74,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
         }
 
         /// <summary>
-        /// ´´½¨±ù¾§±¬·¢ - ³å´Ì/»÷ÖĞÊ±Ê¹ÓÃ
+        /// åˆ›å»ºå†°æ™¶çˆ†å‘ - å†²åˆº/å‡»ä¸­æ—¶ä½¿ç”¨
         /// </summary>
         public static void CreateIceBurst(Vector2 center, float radius, int rings = 3, int particlesPerRing = 16) {
             for (int ring = 0; ring < rings; ring++) {
@@ -96,7 +96,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
         }
 
         /// <summary>
-        /// ´´½¨±ùËªÎ²¼£Á£×Ó
+        /// åˆ›å»ºå†°éœœå°¾è¿¹ç²’å­
         /// </summary>
         public static void CreateFrostTrail(Vector2 position, Vector2 velocity, float scale = 1f) {
             for (int i = 0; i < 3; i++) {
@@ -112,10 +112,10 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
 
         #endregion
 
-        #region »æÖÆ¸¨Öú
+        #region ç»˜åˆ¶è¾…åŠ©
 
         /// <summary>
-        /// »æÖÆ±ùËª¹â»·
+        /// ç»˜åˆ¶å†°éœœå…‰ç¯
         /// </summary>
         public static void DrawFrostAura(SpriteBatch sb, Vector2 center, float radius, float rotation, float alpha) {
             if (ACMAsset.SoftGlow == null) return;

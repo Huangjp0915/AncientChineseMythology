@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using System;
 using Terraria;
@@ -8,56 +8,56 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
 {
     /// <summary>
-    /// ¾õĞÑ-Ú¤¸®¾¡Í·-ÓÄÚ¤Áú ÖÕ¾ÖBoss×¨ÓÃ»æÖÆ¹¤¾ßÀà
-    /// Ìá¹©¼«ÖÂµÄÊÓ¾õÌØĞ§Ö§³Ö
+    /// è§‰é†’-å†¥åºœå°½å¤´-å¹½å†¥é¾™ ç»ˆå±€Bossä¸“ç”¨ç»˜åˆ¶å·¥å…·ç±»
+    /// æä¾›æè‡´çš„è§†è§‰ç‰¹æ•ˆæ”¯æŒ
     /// </summary>
     public static class AwakeningNetherHelper
     {
         public static string Path => typeof(AwakeningNetherHelper).Namespace.Replace(".", "/") + "/";
 
-        #region ÎÆÀí×ÊÔ´
+        #region çº¹ç†èµ„æº
 
         private static Asset<Texture2D> _voidCoreTexture;
         private static Asset<Texture2D> _energyRingTexture;
         private static Asset<Texture2D> _riftTexture;
 
-        /// <summary>Ğé¿ÕºËĞÄÎÆÀí</summary>
+        /// <summary>è™šç©ºæ ¸å¿ƒçº¹ç†</summary>
         public static Texture2D VoidCoreTexture => (_voidCoreTexture ??= ModContent.Request<Texture2D>(Path + "VoidCore")).Value;
 
-        /// <summary>ÄÜÁ¿»·ÎÆÀí</summary>
+        /// <summary>èƒ½é‡ç¯çº¹ç†</summary>
         public static Texture2D EnergyRingTexture => (_energyRingTexture ??= ModContent.Request<Texture2D>(Path + "EnergyRing")).Value;
 
-        /// <summary>ÁÑÏ¶ÎÆÀí</summary>
+        /// <summary>è£‚éš™çº¹ç†</summary>
         public static Texture2D RiftTexture => (_riftTexture ??= ModContent.Request<Texture2D>(Path + "Rift")).Value;
 
-        // ¸´ÓÃBAWHelperµÄ»ù´¡ÎÆÀí
+        // å¤ç”¨BAWHelperçš„åŸºç¡€çº¹ç†
         private static Texture2D DustTexture => BAWImpermanences.BAWHelper.DustTexture;
 
         #endregion
 
-        #region ÖÕ¾Ö¼¶ÌØĞ§ÑÕÉ«
+        #region ç»ˆå±€çº§ç‰¹æ•ˆé¢œè‰²
 
-        /// <summary>¾õĞÑ×ÏÉ« - Ö÷É«µ÷</summary>
+        /// <summary>è§‰é†’ç´«è‰² - ä¸»è‰²è°ƒ</summary>
         public static Color AwakeningPurple => new Color(180, 60, 255);
 
-        /// <summary>Ğé¿ÕºÚ×Ï - ÉîÉ«</summary>
+        /// <summary>è™šç©ºé»‘ç´« - æ·±è‰²</summary>
         public static Color VoidDarkPurple => new Color(80, 20, 140);
 
-        /// <summary>ÓÄÚ¤Çà - ¸¨ÖúÉ«</summary>
+        /// <summary>å¹½å†¥é’ - è¾…åŠ©è‰²</summary>
         public static Color NetherCyan => new Color(100, 200, 255);
 
-        /// <summary>Áé»ê·Û - ¸ß¹âÉ«</summary>
+        /// <summary>çµé­‚ç²‰ - é«˜å…‰è‰²</summary>
         public static Color SoulPink => new Color(255, 120, 200);
 
-        /// <summary>»ÙÃğºì - ¿ñ±©É«</summary>
+        /// <summary>æ¯ç­çº¢ - ç‹‚æš´è‰²</summary>
         public static Color DestructionRed => new Color(255, 50, 80);
 
         #endregion
 
-        #region ¼«ÖÂÁ£×ÓĞ§¹û
+        #region æè‡´ç²’å­æ•ˆæœ
 
         /// <summary>
-        /// ´´½¨Ğé¿ÕäöÎĞÁ£×Ó - ´ó·¶Î§µÄÎüÈëĞ§¹û
+        /// åˆ›å»ºè™šç©ºæ¼©æ¶¡ç²’å­ - å¤§èŒƒå›´çš„å¸å…¥æ•ˆæœ
         /// </summary>
         public static void CreateVoidVortex(Vector2 center, float radius, float intensity, int particleCount = 30) {
             for (int i = 0; i < particleCount; i++) {
@@ -65,7 +65,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 float dist = radius * (0.3f + Main.rand.NextFloat(0.7f));
                 Vector2 pos = center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * dist;
 
-                // ÏòÖĞĞÄÎüÈë
+                // å‘ä¸­å¿ƒå¸å…¥
                 Vector2 toCenter = (center - pos).SafeNormalize(Vector2.Zero);
                 float speed = intensity * (1f - dist / radius) * 8f;
 
@@ -76,7 +76,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 d.velocity = toCenter * speed + new Vector2(-toCenter.Y, toCenter.X) * speed * 0.5f;
                 d.alpha = 100;
 
-                // Ìí¼Ó·¢¹âÁ£×Ó
+                // æ·»åŠ å‘å…‰ç²’å­
                 if (Main.rand.NextBool(3)) {
                     var glow = Dust.NewDustPerfect(pos, DustID.PurpleCrystalShard);
                     glow.noGravity = true;
@@ -87,7 +87,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         /// <summary>
-        /// ´´½¨´ÎÔªËºÁÑÁ£×Ó - ¿Õ¼äËºÁÑµÄÊÓ¾õĞ§¹û
+        /// åˆ›å»ºæ¬¡å…ƒæ’•è£‚ç²’å­ - ç©ºé—´æ’•è£‚çš„è§†è§‰æ•ˆæœ
         /// </summary>
         public static void CreateDimensionTear(Vector2 start, Vector2 end, float intensity) {
             Vector2 direction = (end - start).SafeNormalize(Vector2.Zero);
@@ -99,17 +99,17 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 float progress = i / (float)segments;
                 Vector2 basePos = Vector2.Lerp(start, end, progress);
 
-                // ¾â³İĞÎËºÁÑ
+                // é”¯é½¿å½¢æ’•è£‚
                 float zigzag = MathF.Sin(progress * MathHelper.Pi * 6) * 20f * intensity;
                 Vector2 pos = basePos + perpendicular * zigzag;
 
-                // Ö÷ËºÁÑÁ£×Ó
+                // ä¸»æ’•è£‚ç²’å­
                 var d = Dust.NewDustPerfect(pos, DustID.Shadowflame);
                 d.noGravity = true;
                 d.scale = 2f * intensity * (1f - MathF.Abs(progress - 0.5f) * 2f);
                 d.velocity = perpendicular * zigzag * 0.1f;
 
-                // ±ßÔµÄÜÁ¿
+                // è¾¹ç¼˜èƒ½é‡
                 if (Main.rand.NextBool(2)) {
                     var edge = Dust.NewDustPerfect(pos + Main.rand.NextVector2Circular(10, 10), DustID.PurpleTorch);
                     edge.noGravity = true;
@@ -120,7 +120,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         /// <summary>
-        /// ´´½¨Áé»ê±¬·¢Á£×Ó - »·ĞÎÀ©É¢
+        /// åˆ›å»ºçµé­‚çˆ†å‘ç²’å­ - ç¯å½¢æ‰©æ•£
         /// </summary>
         public static void CreateSoulBurst(Vector2 center, float radius, int rings = 3, int particlesPerRing = 16) {
             for (int ring = 0; ring < rings; ring++) {
@@ -143,10 +143,10 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         /// <summary>
-        /// ´´½¨Ğé¿ÕÍÏÎ²Á£×Ó - ÓÃÓÚ¸ßËÙÒÆ¶¯
+        /// åˆ›å»ºè™šç©ºæ‹–å°¾ç²’å­ - ç”¨äºé«˜é€Ÿç§»åŠ¨
         /// </summary>
         public static void CreateVoidTrail(Vector2 position, Vector2 velocity, float scale = 1f) {
-            // Ö÷ÍÏÎ²
+            // ä¸»æ‹–å°¾
             for (int i = 0; i < 3; i++) {
                 Vector2 offset = Main.rand.NextVector2Circular(10 * scale, 10 * scale);
                 var d = Dust.NewDustPerfect(position + offset, DustID.Shadowflame);
@@ -156,7 +156,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 d.alpha = 80;
             }
 
-            // ÄÜÁ¿²ĞÓ°
+            // èƒ½é‡æ®‹å½±
             if (Main.rand.NextBool(2)) {
                 var glow = Dust.NewDustPerfect(position, DustID.PurpleCrystalShard);
                 glow.noGravity = true;
@@ -167,10 +167,10 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
 
         #endregion
 
-        #region ÖÕ¾Ö¼¶»æÖÆ·½·¨
+        #region ç»ˆå±€çº§ç»˜åˆ¶æ–¹æ³•
 
         /// <summary>
-        /// »æÖÆĞé¿ÕºËĞÄ - ´øÓĞ¶à²ã¹âÔÎºÍÂö¶¯Ğ§¹û
+        /// ç»˜åˆ¶è™šç©ºæ ¸å¿ƒ - å¸¦æœ‰å¤šå±‚å…‰æ™•å’Œè„‰åŠ¨æ•ˆæœ
         /// </summary>
         public static void DrawVoidCore(SpriteBatch sb, Vector2 position, Color coreColor, Color glowColor,
             float scale, float pulsePhase, bool isEnraged = false) {
@@ -180,20 +180,20 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
             Vector2 origin = tex.Size() / 2f;
             float pulse = 1f + MathF.Sin(pulsePhase) * 0.2f + MathF.Sin(pulsePhase * 2.3f) * 0.1f;
 
-            // ¿ñ±©Ê±¶îÍâµÄ²»ÎÈ¶¨Ğ§¹û
+            // ç‹‚æš´æ—¶é¢å¤–çš„ä¸ç¨³å®šæ•ˆæœ
             if (isEnraged) {
                 pulse += MathF.Sin(pulsePhase * 5f) * 0.15f;
                 position += Main.rand.NextVector2Circular(3, 3);
             }
 
-            // Íâ²ã¹âÔÎ£¨¶à²ãµş¼Ó£©
+            // å¤–å±‚å…‰æ™•ï¼ˆå¤šå±‚å åŠ ï¼‰
             Color glow = glowColor;
             glow.A = 0;
             for (int i = 5; i >= 0; i--) {
                 float layerScale = scale * pulse * (2f + i * 0.5f);
                 float layerAlpha = 0.1f / (i + 1);
 
-                // Ã¿²ãÇáÎ¢Æ«ÒÆ´´Ôì²»ÎÈ¶¨¸Ğ
+                // æ¯å±‚è½»å¾®åç§»åˆ›é€ ä¸ç¨³å®šæ„Ÿ
                 Vector2 layerOffset = new Vector2(
                     MathF.Sin(pulsePhase + i * 0.5f) * 2f,
                     MathF.Cos(pulsePhase * 1.3f + i * 0.5f) * 2f
@@ -203,7 +203,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                     pulsePhase * 0.1f * i, origin, layerScale, SpriteEffects.None, 0);
             }
 
-            // ÄÜÁ¿äöÎĞ²ã
+            // èƒ½é‡æ¼©æ¶¡å±‚
             for (int i = 0; i < 3; i++) {
                 float swirl = pulsePhase * (0.5f + i * 0.3f);
                 float swirlScale = scale * pulse * (1.3f - i * 0.15f);
@@ -214,17 +214,17 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                     swirl, origin, swirlScale, SpriteEffects.None, 0);
             }
 
-            // ºËĞÄ
+            // æ ¸å¿ƒ
             sb.Draw(tex, position - Main.screenPosition, null, coreColor,
                 0f, origin, scale * pulse, SpriteEffects.None, 0);
 
-            // ÖĞĞÄ¸ß¹â
+            // ä¸­å¿ƒé«˜å…‰
             Color highlight = Color.White;
             highlight.A = 0;
             sb.Draw(tex, position - Main.screenPosition, null, highlight * 0.6f,
                 0f, origin, scale * pulse * 0.4f, SpriteEffects.None, 0);
 
-            // ¿ñ±©Ê±µÄ¶îÍâÄÜÁ¿»·
+            // ç‹‚æš´æ—¶çš„é¢å¤–èƒ½é‡ç¯
             if (isEnraged) {
                 for (int i = 0; i < 2; i++) {
                     float ringAngle = pulsePhase * 2f + i * MathHelper.Pi;
@@ -240,7 +240,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         /// <summary>
-        /// »æÖÆÄÜÁ¿¹âÊø - ´øÓĞ²¨¶¯ºÍÁ£×ÓĞ§¹ûµÄ¼¤¹â
+        /// ç»˜åˆ¶èƒ½é‡å…‰æŸ - å¸¦æœ‰æ³¢åŠ¨å’Œç²’å­æ•ˆæœçš„æ¿€å…‰
         /// </summary>
         public static void DrawEnergyBeam(SpriteBatch sb, Vector2 start, Vector2 end, Color color,
             float width, float timeOffset, bool intense = false) {
@@ -255,7 +255,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
             int segments = (int)(distance / 6);
             float intensityMod = intense ? 1.5f : 1f;
 
-            // Íâ²ã¹âÔÎ
+            // å¤–å±‚å…‰æ™•
             Color glowColor = color;
             glowColor.A = 0;
 
@@ -266,7 +266,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                     float progress = i / (float)segments;
                     Vector2 basePos = start + direction * (progress * distance);
 
-                    // ¶àÖØ²¨¶¯
+                    // å¤šé‡æ³¢åŠ¨
                     float wave1 = MathF.Sin(progress * MathHelper.TwoPi * 3f + timeOffset * 0.15f) * layerWidth * 0.4f;
                     float wave2 = MathF.Sin(progress * MathHelper.TwoPi * 7f + timeOffset * 0.25f) * layerWidth * 0.15f;
                     Vector2 pos = basePos + perpendicular * (wave1 + wave2);
@@ -281,7 +281,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 }
             }
 
-            // ºËĞÄ¹âÊø
+            // æ ¸å¿ƒå…‰æŸ
             for (int i = 0; i < segments; i++) {
                 float progress = i / (float)segments;
                 Vector2 basePos = start + direction * (progress * distance);
@@ -301,7 +301,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         /// <summary>
-        /// »æÖÆ´ÎÔªÁÑÏ¶ - ¿Õ¼äËºÁÑµÄÊÓ¾õĞ§¹û
+        /// ç»˜åˆ¶æ¬¡å…ƒè£‚éš™ - ç©ºé—´æ’•è£‚çš„è§†è§‰æ•ˆæœ
         /// </summary>
         public static void DrawDimensionRift(SpriteBatch sb, Vector2 center, float scale, float rotation,
             float pulsePhase, bool closing = false) {
@@ -312,7 +312,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
             float closingMod = closing ? (1f - pulsePhase * 0.01f) : 1f;
             float pulse = 1f + MathF.Sin(pulsePhase) * 0.15f;
 
-            // ÁÑÏ¶±ßÔµµÄ²»ÎÈ¶¨ÄÜÁ¿
+            // è£‚éš™è¾¹ç¼˜çš„ä¸ç¨³å®šèƒ½é‡
             int edgeCount = 12;
             for (int i = 0; i < edgeCount; i++) {
                 float angle = rotation + MathHelper.TwoPi * i / edgeCount;
@@ -328,20 +328,20 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                     angle + pulsePhase * 0.5f, origin, edgeScale * closingMod, SpriteEffects.None, 0);
             }
 
-            // ÖĞĞÄºÚ¶´Ğ§¹û
+            // ä¸­å¿ƒé»‘æ´æ•ˆæœ
             for (int layer = 4; layer >= 0; layer--) {
                 float layerScale = scale * (0.5f + layer * 0.3f) * pulse * closingMod;
                 Color layerColor = Color.Lerp(VoidDarkPurple, Color.Black, layer / 5f);
                 layerColor.A = (byte)(200 - layer * 30);
 
-                // ÍÖÔ²ĞÎÁÑÏ¶
+                // æ¤­åœ†å½¢è£‚éš™
                 Vector2 riftScale = new Vector2(layerScale, layerScale * 0.35f);
 
                 sb.Draw(tex, center - Main.screenPosition, null, layerColor,
                     rotation, origin, riftScale, SpriteEffects.None, 0);
             }
 
-            // ÁÑÏ¶ÄÚ²¿µÄÄÜÁ¿Ó¿¶¯
+            // è£‚éš™å†…éƒ¨çš„èƒ½é‡æ¶ŒåŠ¨
             for (int i = 0; i < 6; i++) {
                 float innerAngle = pulsePhase * 1.5f + i * MathHelper.TwoPi / 6f;
                 float innerDist = scale * 15f * MathF.Sin(pulsePhase + i) * closingMod;
@@ -354,7 +354,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                     innerAngle, origin, 0.8f * closingMod, SpriteEffects.None, 0);
             }
 
-            // ±ßÔµ¸ß¹â
+            // è¾¹ç¼˜é«˜å…‰
             Color highlightColor = NetherCyan;
             highlightColor.A = 0;
             sb.Draw(tex, center - Main.screenPosition, null, highlightColor * 0.3f * closingMod,
@@ -362,7 +362,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         /// <summary>
-        /// »æÖÆÁé»ê»·ÈÆĞ§¹û - ¶à¸öÁé»êÇòÎ§ÈÆÖĞĞÄĞı×ª
+        /// ç»˜åˆ¶çµé­‚ç¯ç»•æ•ˆæœ - å¤šä¸ªçµé­‚çƒå›´ç»•ä¸­å¿ƒæ—‹è½¬
         /// </summary>
         public static void DrawSoulOrbit(SpriteBatch sb, Vector2 center, float radius, int count,
             float rotation, float pulsePhase, Color[] colors = null) {
@@ -381,7 +381,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 Color soulColor = colors[i % colors.Length];
                 float soulPulse = 0.8f + MathF.Sin(pulsePhase + i * MathHelper.Pi / count) * 0.2f;
 
-                // Áé»êÍÏÎ²
+                // çµé­‚æ‹–å°¾
                 for (int t = 1; t <= 5; t++) {
                     float trailAngle = angle - t * 0.15f;
                     Vector2 trailPos = center + new Vector2(MathF.Cos(trailAngle), MathF.Sin(trailAngle)) * orbitRadius;
@@ -394,14 +394,14 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                         0f, origin, soulPulse * (1f - t * 0.1f), SpriteEffects.None, 0);
                 }
 
-                // Áé»êºËĞÄ
+                // çµé­‚æ ¸å¿ƒ
                 DrawVoidCore(sb, pos, soulColor, Color.Lerp(soulColor, Color.White, 0.3f),
                     soulPulse * 0.8f, pulsePhase + i);
             }
         }
 
         /// <summary>
-        /// »æÖÆÄÜÁ¿²¨ÎÆ - À©É¢µÄ³å»÷²¨Ğ§¹û
+        /// ç»˜åˆ¶èƒ½é‡æ³¢çº¹ - æ‰©æ•£çš„å†²å‡»æ³¢æ•ˆæœ
         /// </summary>
         public static void DrawEnergyWave(SpriteBatch sb, Vector2 center, float radius, float width,
             Color color, float alpha) {
@@ -418,12 +418,12 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 float angle = MathHelper.TwoPi * i / segments;
                 Vector2 pos = center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * radius;
 
-                // ²¨ÎÆÁ£×Ó
+                // æ³¢çº¹ç²’å­
                 sb.Draw(tex, pos - Main.screenPosition, null, waveColor * alpha,
                     angle, origin, width / 20f, SpriteEffects.None, 0);
             }
 
-            // ÄÚÍâ±ßÔµ
+            // å†…å¤–è¾¹ç¼˜
             for (int i = 0; i < segments; i++) {
                 float angle = MathHelper.TwoPi * i / segments;
                 Vector2 innerPos = center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * (radius - width / 2);
@@ -438,13 +438,13 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
 
         #endregion
 
-        #region ÆÁÄ»Ğ§¹û
+        #region å±å¹•æ•ˆæœ
 
         /// <summary>
-        /// ´´½¨ÆÁÄ»ÉÁË¸Ğ§¹û£¨Í¨¹ıÁ£×ÓÄ£Äâ£©
+        /// åˆ›å»ºå±å¹•é—ªçƒæ•ˆæœï¼ˆé€šè¿‡ç²’å­æ¨¡æ‹Ÿï¼‰
         /// </summary>
         public static void CreateScreenFlash(Vector2 center, Color color, float intensity) {
-            // ÔÚÆÁÄ»±ßÔµ´´½¨´óÁ¿Á£×ÓÄ£ÄâÉÁË¸
+            // åœ¨å±å¹•è¾¹ç¼˜åˆ›å»ºå¤§é‡ç²’å­æ¨¡æ‹Ÿé—ªçƒ
             int particleCount = (int)(50 * intensity);
             for (int i = 0; i < particleCount; i++) {
                 Vector2 pos = center + Main.rand.NextVector2Circular(800, 600);
@@ -458,15 +458,15 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
 
         #endregion
 
-        #region ¹¤¾ß·½·¨
+        #region å·¥å…·æ–¹æ³•
 
         /// <summary>
-        /// Æ½»¬²½½ø
+        /// å¹³æ»‘æ­¥è¿›
         /// </summary>
         public static float SmoothStep(float t) => t * t * (3f - 2f * t);
 
         /// <summary>
-        /// µ¯ĞÔ»º³ö
+        /// å¼¹æ€§ç¼“å‡º
         /// </summary>
         public static float ElasticOut(float t) {
             if (t == 0 || t == 1) return t;
@@ -475,7 +475,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         /// <summary>
-        /// »ñÈ¡»ùÓÚÄÑ¶ÈµÄÉËº¦
+        /// è·å–åŸºäºéš¾åº¦çš„ä¼¤å®³
         /// </summary>
         public static int GetScaledDamage(int baseDamage) {
             if (Main.masterMode)

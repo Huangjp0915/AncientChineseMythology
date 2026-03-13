@@ -1,12 +1,12 @@
-using Terraria;
+ï»¿using Terraria;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Celestias.Boss.CelestialDragons
 {
     /// <summary>
-    /// ÌìÍ¥Ñ²ÎÀ½ğÁú - Ìå½Ú
-    /// ÌùÍ¼³ß´ç: 152x92
-    /// Ã¿¸öÌå½Ú¸²¸ÇÇ°Ò»¸öÌå½ÚÔ¼40%¿í¶È
+    /// å¤©åº­å·¡å«é‡‘é¾™ - ä½“èŠ‚
+    /// è´´å›¾å°ºå¯¸: 152x92
+    /// æ¯ä¸ªä½“èŠ‚è¦†ç›–å‰ä¸€ä¸ªä½“èŠ‚çº¦40%å®½åº¦
     /// </summary>
     public class CelestialDragonsBody : CelestialDragons
     {
@@ -14,7 +14,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons
 
         public override void SetDefaults() {
             base.SetDefaults();
-            // Ìå½Ú¿í¶È£¬ÓÃÓÚ¼ÆËã¸úËæ¾àÀë
+            // ä½“èŠ‚å®½åº¦ï¼Œç”¨äºè®¡ç®—è·Ÿéšè·ç¦»
             NPC.width = BodyTextureWidth;
             NPC.height = BodyTextureHeight;
         }
@@ -22,7 +22,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons
         public override void ChangeSummonType() {
             SummonNPCType = ModContent.NPCType<CelestialDragonsBody>();
 
-            // ×îºó3½ÚÇĞ»»µ½Î²°Í
+            // æœ€å3èŠ‚åˆ‡æ¢åˆ°å°¾å·´
             if (SummonCount >= SummonMax - 1)
                 SummonNPCType = ModContent.NPCType<CelestialDragonsTail>();
         }

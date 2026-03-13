@@ -1,4 +1,4 @@
-using AncientChineseMythology.Underworlds.Boss.AwakeningNethers.Items;
+ï»¿using AncientChineseMythology.Underworlds.Boss.AwakeningNethers.Items;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -12,24 +12,24 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
 {
     /// <summary>
-    /// ¾õĞÑ-Ú¤¸®¾¡Í·-ÓÄÚ¤Áú Í·²¿
-    /// ÖÕ¾ÖBoss£¬¾ß±¸Ç¿´óµÄAIºÍ¼«ÖÂµÄÊÓ¾õĞ§¹û
+    /// è§‰é†’-å†¥åºœå°½å¤´-å¹½å†¥é¾™ å¤´éƒ¨
+    /// ç»ˆå±€Bossï¼Œå…·å¤‡å¼ºå¤§çš„AIå’Œæè‡´çš„è§†è§‰æ•ˆæœ
     /// </summary>
     [AutoloadBossHead]
     public class AwakeningNetherHead : AwakeningNether
     {
         public override WormType NPCWormType => WormType.Head;
-        // AI×´Ì¬Ã¶¾Ù
+        // AIçŠ¶æ€æšä¸¾
         private enum AIState
         {
-            Circling,           // »·ÈÆÍæ¼Ò
-            DashPrepare,        // ³å´Ì×¼±¸
-            Dash,               // ³å´Ì¹¥»÷
-            VoidBreath,         // Ğé¿ÕÍÂÏ¢
-            SoulStorm,          // Áé»ê·ç±©
-            DimensionRift,      // ´ÎÔªÁÑÏ¶
-            VoidDevour,         // Ğé¿ÕÍÌÊÉ£¨ĞÂÔö£©
-            DesperateFury       // ¿ñ±©½×¶Î£¨µÍÑªÁ¿Ê±£©
+            Circling,           // ç¯ç»•ç©å®¶
+            DashPrepare,        // å†²åˆºå‡†å¤‡
+            Dash,               // å†²åˆºæ”»å‡»
+            VoidBreath,         // è™šç©ºåæ¯
+            SoulStorm,          // çµé­‚é£æš´
+            DimensionRift,      // æ¬¡å…ƒè£‚éš™
+            VoidDevour,         // è™šç©ºåå™¬ï¼ˆæ–°å¢ï¼‰
+            DesperateFury       // ç‹‚æš´é˜¶æ®µï¼ˆä½è¡€é‡æ—¶ï¼‰
         }
 
         private AIState CurrentState {
@@ -37,21 +37,21 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
             set => NPC.ai[0] = (float)value;
         }
 
-        // ×´Ì¬¼ÆÊ±Æ÷
+        // çŠ¶æ€è®¡æ—¶å™¨
         private int stateTimer = 0;
         private int attackTimer = 0;
         private int dashCount = 0;
-        private const int MaxDashes = 4; // Ôö¼Ó³å´Ì´ÎÊı
+        private const int MaxDashes = 4; // å¢åŠ å†²åˆºæ¬¡æ•°
 
-        // ³å´Ì²ÎÊı
+        // å†²åˆºå‚æ•°
         private Vector2 dashTarget;
-        private float dashSpeed = 40f; // ÌáÉı³å´ÌËÙ¶È
+        private float dashSpeed = 40f; // æå‡å†²åˆºé€Ÿåº¦
 
-        // ½×¶Î¿ØÖÆ
-        private bool isPhase2 = false; // 50%ÑªÁ¿ÒÔÏÂ
-        private bool isPhase3 = false; // 25%ÑªÁ¿ÒÔÏÂ
+        // é˜¶æ®µæ§åˆ¶
+        private bool isPhase2 = false; // 50%è¡€é‡ä»¥ä¸‹
+        private bool isPhase3 = false; // 25%è¡€é‡ä»¥ä¸‹
 
-        // ÊÓ¾õĞ§¹û²ÎÊı
+        // è§†è§‰æ•ˆæœå‚æ•°
         private float pulsePhase = 0f;
         private float auraIntensity = 0f;
         private float[] energyWaveRadius = new float[3];
@@ -93,19 +93,19 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         public override void OnSpawn(IEntitySource source) {
             base.OnSpawn(source);
 
-            // Boss³ö³¡ÒôĞ§
+            // Bosså‡ºåœºéŸ³æ•ˆ
             SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.5f, Volume = 1.5f }, NPC.Center);
 
-            // ³ö³¡ÌØĞ§ - Ğé¿ÕäöÎĞ
+            // å‡ºåœºç‰¹æ•ˆ - è™šç©ºæ¼©æ¶¡
             AwakeningNetherHelper.CreateVoidVortex(NPC.Center, 200f, 1.5f, 60);
             AwakeningNetherHelper.CreateSoulBurst(NPC.Center, 150f, 4, 24);
 
-            // ´¥·¢ÄÜÁ¿²¨
+            // è§¦å‘èƒ½é‡æ³¢
             TriggerEnergyWave();
         }
 
         /// <summary>
-        /// ´¥·¢ÄÜÁ¿³å»÷²¨
+        /// è§¦å‘èƒ½é‡å†²å‡»æ³¢
         /// </summary>
         private void TriggerEnergyWave() {
             for (int i = 0; i < energyWaveRadius.Length; i++) {
@@ -118,7 +118,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         /// <summary>
-        /// ¸üĞÂÄÜÁ¿²¨
+        /// æ›´æ–°èƒ½é‡æ³¢
         /// </summary>
         private void UpdateEnergyWaves() {
             for (int i = 0; i < energyWaveRadius.Length; i++) {
@@ -136,25 +136,25 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
             if (!NPC.HasValidTarget)
                 NPC.TargetClosest(true);
 
-            // ¸üĞÂÊÓ¾õĞ§¹û
+            // æ›´æ–°è§†è§‰æ•ˆæœ
             pulsePhase += 0.08f;
             auraIntensity = MathHelper.Lerp(auraIntensity, isPhase3 ? 1.5f : (isPhase2 ? 1.2f : 1f), 0.02f);
             UpdateEnergyWaves();
 
-            // ³ÖĞøµÄÄÜÁ¿¹â»·Á£×Ó
+            // æŒç»­çš„èƒ½é‡å…‰ç¯ç²’å­
             CreateAuraParticles();
 
-            // ¼ì²é½×¶Î×ª»»
+            // æ£€æŸ¥é˜¶æ®µè½¬æ¢
             CheckPhaseTransition();
 
-            // ³õÊ¼»¯
+            // åˆå§‹åŒ–
             if (NPC.localAI[0] == 0f) {
                 CurrentState = AIState.Circling;
                 stateTimer = 180;
                 NPC.localAI[0] = 1f;
             }
 
-            // ×´Ì¬»ú
+            // çŠ¶æ€æœº
             stateTimer--;
             attackTimer++;
 
@@ -185,15 +185,15 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                     break;
             }
 
-            // Ğı×ªºÍ³¯Ïò
+            // æ—‹è½¬å’Œæœå‘
             UpdateRotation();
         }
 
         /// <summary>
-        /// ´´½¨³ÖĞøµÄÄÜÁ¿¹â»·Á£×Ó
+        /// åˆ›å»ºæŒç»­çš„èƒ½é‡å…‰ç¯ç²’å­
         /// </summary>
         private void CreateAuraParticles() {
-            // »·ÈÆÁ£×Ó
+            // ç¯ç»•ç²’å­
             if (Main.rand.NextBool(2)) {
                 float angle = Main.rand.NextFloat(MathHelper.TwoPi);
                 float dist = 60f + Main.rand.NextFloat(30f);
@@ -207,7 +207,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 d.alpha = 100;
             }
 
-            // ¿ñ±©½×¶ÎµÄ¶îÍâÁ£×Ó
+            // ç‹‚æš´é˜¶æ®µçš„é¢å¤–ç²’å­
             if (isPhase3 && Main.rand.NextBool(2)) {
                 Vector2 pos = NPC.Center + Main.rand.NextVector2Circular(80f, 80f);
                 var d = Dust.NewDustPerfect(pos, DustID.ShadowbeamStaff);
@@ -218,7 +218,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         /// <summary>
-        /// ¼ì²é½×¶Î×ª»»
+        /// æ£€æŸ¥é˜¶æ®µè½¬æ¢
         /// </summary>
         private void CheckPhaseTransition() {
             float lifePercent = (float)NPC.life / NPC.lifeMax;
@@ -226,7 +226,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
             if (!isPhase2 && lifePercent <= 0.5f) {
                 isPhase2 = true;
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.3f }, NPC.Center);
-                // ½×¶Î×ª»»ÌØĞ§
+                // é˜¶æ®µè½¬æ¢ç‰¹æ•ˆ
                 CreatePhaseTransitionEffect();
             }
 
@@ -234,7 +234,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 isPhase3 = true;
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.6f, Volume = 1.3f }, NPC.Center);
                 CreatePhaseTransitionEffect();
-                // ½øÈë¿ñ±©×´Ì¬
+                // è¿›å…¥ç‹‚æš´çŠ¶æ€
                 if (CurrentState != AIState.DesperateFury) {
                     CurrentState = AIState.DesperateFury;
                     stateTimer = 600;
@@ -243,19 +243,19 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         /// <summary>
-        /// ½×¶Î×ª»»ÌØĞ§
+        /// é˜¶æ®µè½¬æ¢ç‰¹æ•ˆ
         /// </summary>
         private void CreatePhaseTransitionEffect() {
-            // ´ó¹æÄ£Ğé¿Õ±¬·¢
+            // å¤§è§„æ¨¡è™šç©ºçˆ†å‘
             AwakeningNetherHelper.CreateVoidVortex(NPC.Center, 150f, 1.2f, 50);
             AwakeningNetherHelper.CreateSoulBurst(NPC.Center, 120f, 3, 20);
 
-            // ¶àÖØÄÜÁ¿²¨
+            // å¤šé‡èƒ½é‡æ³¢
             for (int i = 0; i < 3; i++) {
                 TriggerEnergyWave();
             }
 
-            // ´«Í³Á£×Ó
+            // ä¼ ç»Ÿç²’å­
             for (int i = 0; i < 100; i++) {
                 Vector2 velocity = Main.rand.NextVector2CircularEdge(15f, 15f);
                 int dust = Dust.NewDust(NPC.Center, NPC.width, NPC.height,
@@ -263,12 +263,12 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 Main.dust[dust].noGravity = true;
             }
 
-            // ÆÁÄ»ÉÁË¸
+            // å±å¹•é—ªçƒ
             AwakeningNetherHelper.CreateScreenFlash(NPC.Center, AwakeningNetherHelper.AwakeningPurple, 0.8f);
         }
 
         /// <summary>
-        /// »·ÈÆÍæ¼ÒÒÆ¶¯
+        /// ç¯ç»•ç©å®¶ç§»åŠ¨
         /// </summary>
         private void CirclingBehavior() {
             float radius = isPhase2 ? 350f : 450f;
@@ -287,34 +287,34 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
             float inertia = isPhase2 ? 15f : 20f;
             NPC.velocity = (NPC.velocity * (inertia - 1) + toTarget / 8f) / inertia;
 
-            // ÖÜÆÚĞÔ·¢Éäµ¯Ä»
+            // å‘¨æœŸæ€§å‘å°„å¼¹å¹•
             if (attackTimer % (isPhase2 ? 60 : 90) == 0) {
                 ShootVoidBolts();
             }
 
-            // ×´Ì¬×ª»»
+            // çŠ¶æ€è½¬æ¢
             if (stateTimer <= 0) {
                 ChooseNextState();
             }
         }
 
         /// <summary>
-        /// ³å´Ì×¼±¸
+        /// å†²åˆºå‡†å¤‡
         /// </summary>
         private void DashPrepareBehavior() {
-            // ¼õËÙ²¢Ãé×¼Íæ¼Ò
+            // å‡é€Ÿå¹¶ç„å‡†ç©å®¶
             NPC.velocity *= 0.92f;
 
-            // Ëø¶¨Ä¿±êÎ»ÖÃ
+            // é”å®šç›®æ ‡ä½ç½®
             if (stateTimer == 45) {
-                dashTarget = Target.Center + Target.velocity * 25f; // ÔöÇ¿Ô¤ÅĞ
+                dashTarget = Target.Center + Target.velocity * 25f; // å¢å¼ºé¢„åˆ¤
                 SoundEngine.PlaySound(SoundID.Item8 with { Pitch = 0.5f, Volume = 1.2f }, NPC.Center);
 
-                // ĞîÁ¦äöÎĞÌØĞ§
+                // è“„åŠ›æ¼©æ¶¡ç‰¹æ•ˆ
                 AwakeningNetherHelper.CreateVoidVortex(NPC.Center, 100f, 0.8f, 30);
             }
 
-            // ³ÖĞøĞîÁ¦Á£×Ó
+            // æŒç»­è“„åŠ›ç²’å­
             if (stateTimer < 45 && stateTimer > 0) {
                 float chargeProgress = 1f - stateTimer / 45f;
                 for (int i = 0; i < 3; i++) {
@@ -329,25 +329,25 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
 
             if (stateTimer <= 0) {
                 CurrentState = AIState.Dash;
-                stateTimer = 50; // ÑÓ³¤³å´ÌÊ±¼ä
+                stateTimer = 50; // å»¶é•¿å†²åˆºæ—¶é—´
                 Vector2 direction = (dashTarget - NPC.Center).SafeNormalize(Vector2.UnitY);
                 NPC.velocity = direction * dashSpeed;
                 SoundEngine.PlaySound(SoundID.DD2_WyvernDiveDown with { Pitch = -0.3f, Volume = 1.3f }, NPC.Center);
 
-                // ³å´Ì±¬·¢ÌØĞ§
+                // å†²åˆºçˆ†å‘ç‰¹æ•ˆ
                 TriggerEnergyWave();
                 AwakeningNetherHelper.CreateSoulBurst(NPC.Center, 80f, 2, 12);
             }
         }
 
         /// <summary>
-        /// ³å´Ì¹¥»÷
+        /// å†²åˆºæ”»å‡»
         /// </summary>
         private void DashBehavior() {
-            // ¸ßËÙÍÏÎ²ÌØĞ§
+            // é«˜é€Ÿæ‹–å°¾ç‰¹æ•ˆ
             AwakeningNetherHelper.CreateVoidTrail(NPC.Center, NPC.velocity, 1.5f);
 
-            // ³å´Ì¹ı³ÌÖĞ²úÉú´ÎÔªËºÁÑ
+            // å†²åˆºè¿‡ç¨‹ä¸­äº§ç”Ÿæ¬¡å…ƒæ’•è£‚
             if (Main.rand.NextBool(3) && stateTimer > 20) {
                 Vector2 perpendicular = NPC.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
                 Vector2 tearStart = NPC.Center + perpendicular * Main.rand.NextFloat(-50f, 50f);
@@ -362,7 +362,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
             if (stateTimer <= 0) {
                 dashCount++;
                 if (dashCount < MaxDashes && isPhase2) {
-                    // Á¬Ğø³å´Ì - ¸ü¶ÌµÄ×¼±¸Ê±¼ä
+                    // è¿ç»­å†²åˆº - æ›´çŸ­çš„å‡†å¤‡æ—¶é—´
                     CurrentState = AIState.DashPrepare;
                     stateTimer = isPhase3 ? 20 : 25;
                 }
@@ -374,15 +374,15 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         /// <summary>
-        /// Ğé¿ÕÍÂÏ¢ - ÉÈĞÎµ¯Ä»
+        /// è™šç©ºåæ¯ - æ‰‡å½¢å¼¹å¹•
         /// </summary>
         private void VoidBreathBehavior() {
-            // »ºÂı¸ú×ÙÍæ¼Ò
+            // ç¼“æ…¢è·Ÿè¸ªç©å®¶
             Vector2 targetPos = Target.Center - new Vector2(0, 300f);
             Vector2 toTarget = targetPos - NPC.Center;
             NPC.velocity = Vector2.Lerp(NPC.velocity, toTarget * 0.05f, 0.1f);
 
-            // ·¢ÉäÉÈĞÎµ¯Ä»
+            // å‘å°„æ‰‡å½¢å¼¹å¹•
             int fireRate = isPhase2 ? 8 : 12;
             if (attackTimer % fireRate == 0 && stateTimer > 60) {
                 ShootVoidBreath();
@@ -394,15 +394,15 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         /// <summary>
-        /// Áé»ê·ç±© - »·ĞÎµ¯Ä»
+        /// çµé­‚é£æš´ - ç¯å½¢å¼¹å¹•
         /// </summary>
         private void SoulStormBehavior() {
-            // ÔÚÍæ¼ÒÉÏ·½ÅÌĞı
+            // åœ¨ç©å®¶ä¸Šæ–¹ç›˜æ—‹
             Vector2 targetPos = Target.Center - new Vector2(0, 400f);
             Vector2 toTarget = targetPos - NPC.Center;
             NPC.velocity = Vector2.Lerp(NPC.velocity, toTarget * 0.04f, 0.08f);
 
-            // ·¢Éä»·ĞÎµ¯Ä»
+            // å‘å°„ç¯å½¢å¼¹å¹•
             int fireRate = isPhase2 ? 20 : 30;
             if (attackTimer % fireRate == 0 && stateTimer > 90) {
                 ShootSoulStorm();
@@ -414,17 +414,17 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         /// <summary>
-        /// ´ÎÔªÁÑÏ¶ - ÕÙ»½Ğé¿ÕÁÑÏ¶
+        /// æ¬¡å…ƒè£‚éš™ - å¬å”¤è™šç©ºè£‚éš™
         /// </summary>
         private void DimensionRiftBehavior() {
-            // ¿ìËÙÒÆ¶¯
+            // å¿«é€Ÿç§»åŠ¨
             float angle = NPC.ai[1] * 0.08f;
             Vector2 targetPos = Target.Center + new Vector2(MathF.Cos(angle) * 500f, MathF.Sin(angle) * 300f);
             Vector2 toTarget = targetPos - NPC.Center;
             NPC.velocity = Vector2.Lerp(NPC.velocity, toTarget * 0.08f, 0.12f);
             NPC.ai[1]++;
 
-            // ´´½¨´ÎÔªÁÑÏ¶
+            // åˆ›å»ºæ¬¡å…ƒè£‚éš™
             if (stateTimer == 150 || stateTimer == 100 || stateTimer == 50) {
                 CreateDimensionRift();
             }
@@ -435,37 +435,37 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         /// <summary>
-        /// Ğé¿ÕÍÌÊÉ - ĞÂÔöµÄÖÕ¼«¹¥»÷Ä£Ê½
+        /// è™šç©ºåå™¬ - æ–°å¢çš„ç»ˆææ”»å‡»æ¨¡å¼
         /// </summary>
         private void VoidDevourBehavior() {
-            // ÒÆ¶¯µ½Íæ¼ÒÉÏ·½
+            // ç§»åŠ¨åˆ°ç©å®¶ä¸Šæ–¹
             Vector2 targetPos = Target.Center - new Vector2(0, 350f);
             Vector2 toTarget = targetPos - NPC.Center;
             NPC.velocity = Vector2.Lerp(NPC.velocity, toTarget * 0.06f, 0.1f);
 
-            // ²úÉúÎüÒıĞ§¹û
+            // äº§ç”Ÿå¸å¼•æ•ˆæœ
             if (stateTimer > 60 && stateTimer < 180) {
-                // ´´½¨³ÖĞøµÄĞé¿ÕäöÎĞ
+                // åˆ›å»ºæŒç»­çš„è™šç©ºæ¼©æ¶¡
                 if (stateTimer % 10 == 0) {
                     AwakeningNetherHelper.CreateVoidVortex(NPC.Center, 200f, 0.6f, 20);
                 }
 
-                // ¶ÔÍæ¼Ò²úÉúÇáÎ¢ÎüÒı
+                // å¯¹ç©å®¶äº§ç”Ÿè½»å¾®å¸å¼•
                 Vector2 pullDir = (NPC.Center - Target.Center).SafeNormalize(Vector2.Zero);
                 float pullStrength = 2f * (1f - Vector2.Distance(Target.Center, NPC.Center) / 500f);
                 if (pullStrength > 0) {
                     Target.velocity += pullDir * pullStrength * 0.1f;
                 }
 
-                // ÖÜÆÚĞÔ·¢Éä×·×Ùµ¯
+                // å‘¨æœŸæ€§å‘å°„è¿½è¸ªå¼¹
                 if (stateTimer % 20 == 0) {
                     ShootVoidBolts();
                 }
             }
 
-            // ½áÊøÊ±µÄ´ó±¬·¢
+            // ç»“æŸæ—¶çš„å¤§çˆ†å‘
             if (stateTimer == 60) {
-                // ·¢Éä´óÁ¿Áé»êµ¯
+                // å‘å°„å¤§é‡çµé­‚å¼¹
                 ShootMassiveSoulStorm();
                 TriggerEnergyWave();
                 SoundEngine.PlaySound(SoundID.Item117 with { Pitch = -0.5f, Volume = 1.3f }, NPC.Center);
@@ -477,19 +477,19 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         /// <summary>
-        /// ¿ñ±©½×¶Î - µÍÑªÁ¿Ê±µÄ·è¿ñ¹¥»÷
+        /// ç‹‚æš´é˜¶æ®µ - ä½è¡€é‡æ—¶çš„ç–¯ç‹‚æ”»å‡»
         /// </summary>
         private void DesperateFuryBehavior() {
-            // ·è¿ñ×·»÷Íæ¼Ò
+            // ç–¯ç‹‚è¿½å‡»ç©å®¶
             Vector2 toPlayer = (Target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
-            float targetSpeed = 10f; // ÌáÉıËÙ¶È
+            float targetSpeed = 10f; // æå‡é€Ÿåº¦
 
             NPC.velocity = Vector2.Lerp(NPC.velocity, toPlayer * targetSpeed, 0.18f);
 
-            // ³ÖĞø¸ßËÙÍÏÎ²
+            // æŒç»­é«˜é€Ÿæ‹–å°¾
             AwakeningNetherHelper.CreateVoidTrail(NPC.Center, NPC.velocity, 2f);
 
-            // ³ÖĞø·¢Éäµ¯Ä»
+            // æŒç»­å‘å°„å¼¹å¹•
             if (attackTimer % 12 == 0) {
                 ShootVoidBolts();
             }
@@ -498,12 +498,12 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 ShootSoulStorm();
             }
 
-            // ÖÜÆÚĞÔ´´½¨ÁÑÏ¶
+            // å‘¨æœŸæ€§åˆ›å»ºè£‚éš™
             if (attackTimer % 90 == 0) {
                 CreateDimensionRift();
             }
 
-            // ¿ñ±©ÌØĞ§ - ³ÖĞøµÄÄÜÁ¿±¬·¢
+            // ç‹‚æš´ç‰¹æ•ˆ - æŒç»­çš„èƒ½é‡çˆ†å‘
             if (Main.rand.NextBool(2)) {
                 Vector2 pos = NPC.Center + Main.rand.NextVector2Circular(60f, 60f);
                 var d = Dust.NewDustPerfect(pos, DustID.ShadowbeamStaff);
@@ -512,14 +512,14 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 d.velocity = Main.rand.NextVector2Circular(4, 4);
             }
 
-            // ÖÜÆÚĞÔÄÜÁ¿²¨
+            // å‘¨æœŸæ€§èƒ½é‡æ³¢
             if (attackTimer % 60 == 0) {
                 TriggerEnergyWave();
             }
 
             if (stateTimer <= 0) {
                 stateTimer = 250;
-                // ¿ñ±©½×¶Î¼äĞªĞÔÇĞ»»µ½³å´Ì»òÍÌÊÉ
+                // ç‹‚æš´é˜¶æ®µé—´æ­‡æ€§åˆ‡æ¢åˆ°å†²åˆºæˆ–åå™¬
                 int choice = Main.rand.Next(3);
                 if (choice == 0) {
                     CurrentState = AIState.DashPrepare;
@@ -533,7 +533,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         /// <summary>
-        /// Ñ¡ÔñÏÂÒ»¸ö×´Ì¬
+        /// é€‰æ‹©ä¸‹ä¸€ä¸ªçŠ¶æ€
         /// </summary>
         private void ChooseNextState() {
             int choice = Main.rand.Next(isPhase2 ? 6 : 4);
@@ -569,7 +569,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                     break;
             }
 
-            // ¿ñ±©½×¶ÎÇ¿ÖÆ½øÈë¿ñ±©
+            // ç‹‚æš´é˜¶æ®µå¼ºåˆ¶è¿›å…¥ç‹‚æš´
             if (isPhase3 && Main.rand.NextBool(2)) {
                 CurrentState = AIState.DesperateFury;
                 stateTimer = 250;
@@ -577,7 +577,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         /// <summary>
-        /// ¸üĞÂĞı×ªºÍ³¯Ïò
+        /// æ›´æ–°æ—‹è½¬å’Œæœå‘
         /// </summary>
         private void UpdateRotation() {
             if (NPC.velocity.LengthSquared() > 1f) {
@@ -588,10 +588,10 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
             }
         }
 
-        #region ¹¥»÷·½·¨
+        #region æ”»å‡»æ–¹æ³•
 
         /// <summary>
-        /// ·¢ÉäĞé¿Õµ¯ - Ê¹ÓÃ×Ô¶¨Òå×·×Ùµ¯Ä»
+        /// å‘å°„è™šç©ºå¼¹ - ä½¿ç”¨è‡ªå®šä¹‰è¿½è¸ªå¼¹å¹•
         /// </summary>
         private void ShootVoidBolts() {
             if (Main.netMode == NetmodeID.MultiplayerClient)
@@ -615,19 +615,19 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                     ModContent.ProjectileType<AwakeningNetherVoidBolt>(),
                     damage,
                     0f,
-                    ai0: isPhase3 ? 1 : 0, // ¿ñ±©Ê±ÎªÇ¿»¯°æ
-                    ai1: isPhase2 ? 1 : 0  // ×·×ÙµÈ¼¶
+                    ai0: isPhase3 ? 1 : 0, // ç‹‚æš´æ—¶ä¸ºå¼ºåŒ–ç‰ˆ
+                    ai1: isPhase2 ? 1 : 0  // è¿½è¸ªç­‰çº§
                 );
             }
 
             SoundEngine.PlaySound(SoundID.Item8 with { Pitch = 0.3f, Volume = 1.1f }, NPC.Center);
 
-            // ·¢ÉäÌØĞ§
+            // å‘å°„ç‰¹æ•ˆ
             AwakeningNetherHelper.CreateSoulBurst(NPC.Center, 40f, 1, 8);
         }
 
         /// <summary>
-        /// Ğé¿ÕÍÂÏ¢ - Ê¹ÓÃ×Ô¶¨ÒåÍÂÏ¢µ¯Ä»
+        /// è™šç©ºåæ¯ - ä½¿ç”¨è‡ªå®šä¹‰åæ¯å¼¹å¹•
         /// </summary>
         private void ShootVoidBreath() {
             if (Main.netMode == NetmodeID.MultiplayerClient)
@@ -651,18 +651,18 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                     ModContent.ProjectileType<AwakeningNetherBreath>(),
                     damage,
                     0f,
-                    ai0: isPhase3 ? 1 : 0 // ¿ñ±©°æ
+                    ai0: isPhase3 ? 1 : 0 // ç‹‚æš´ç‰ˆ
                 );
             }
 
             SoundEngine.PlaySound(SoundID.Item74 with { Pitch = -0.2f, Volume = 1.2f }, NPC.Center);
 
-            // ÍÂÏ¢ÒôĞ§ºÍÌØĞ§
+            // åæ¯éŸ³æ•ˆå’Œç‰¹æ•ˆ
             AwakeningNetherHelper.CreateVoidVortex(NPC.Center + toPlayer * 60f, 60f, 0.5f, 15);
         }
 
         /// <summary>
-        /// Áé»ê·ç±© - »·ĞÎµ¯Ä»
+        /// çµé­‚é£æš´ - ç¯å½¢å¼¹å¹•
         /// </summary>
         private void ShootSoulStorm() {
             if (Main.netMode == NetmodeID.MultiplayerClient)
@@ -683,20 +683,20 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                     ModContent.ProjectileType<AwakeningNetherSoulOrb>(),
                     damage,
                     0f,
-                    ai0: i % 2, // 0=Ö±Ïß£¬1=ÂİĞı
-                    ai1: i % 3  // ÑÕÉ«Ë÷Òı
+                    ai0: i % 2, // 0=ç›´çº¿ï¼Œ1=èºæ—‹
+                    ai1: i % 3  // é¢œè‰²ç´¢å¼•
                 );
             }
 
             SoundEngine.PlaySound(SoundID.Item71 with { Pitch = 0.2f, Volume = 1.2f }, NPC.Center);
 
-            // Áé»ê·ç±©ÌØĞ§
+            // çµé­‚é£æš´ç‰¹æ•ˆ
             AwakeningNetherHelper.CreateSoulBurst(NPC.Center, 100f, 4, 24);
             TriggerEnergyWave();
         }
 
         /// <summary>
-        /// ´ó¹æÄ£Áé»ê·ç±© - Ğé¿ÕÍÌÊÉ½áÊøÊ±Ê¹ÓÃ
+        /// å¤§è§„æ¨¡çµé­‚é£æš´ - è™šç©ºåå™¬ç»“æŸæ—¶ä½¿ç”¨
         /// </summary>
         private void ShootMassiveSoulStorm() {
             if (Main.netMode == NetmodeID.MultiplayerClient)
@@ -704,7 +704,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
 
             int damage = GetProjectileDamage(75);
 
-            // ¶à²¨´Î·¢Éä
+            // å¤šæ³¢æ¬¡å‘å°„
             for (int wave = 0; wave < 3; wave++) {
                 int count = 12 + wave * 4;
                 float angleOffset = wave * 0.15f;
@@ -727,13 +727,13 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 }
             }
 
-            // ´ó¹æÄ£ÌØĞ§
+            // å¤§è§„æ¨¡ç‰¹æ•ˆ
             AwakeningNetherHelper.CreateSoulBurst(NPC.Center, 150f, 5, 30);
             AwakeningNetherHelper.CreateScreenFlash(NPC.Center, AwakeningNetherHelper.SoulPink, 0.6f);
         }
 
         /// <summary>
-        /// ´´½¨´ÎÔªÁÑÏ¶
+        /// åˆ›å»ºæ¬¡å…ƒè£‚éš™
         /// </summary>
         private void CreateDimensionRift() {
             if (Main.netMode == NetmodeID.MultiplayerClient)
@@ -741,10 +741,10 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
 
             int damage = GetProjectileDamage(100);
 
-            // ÔÚÍæ¼Ò¸½½üËæ»úÎ»ÖÃ´´½¨ÁÑÏ¶
+            // åœ¨ç©å®¶é™„è¿‘éšæœºä½ç½®åˆ›å»ºè£‚éš™
             Vector2 riftPos = Target.Center + Main.rand.NextVector2Circular(350f, 350f);
 
-            // È·±£ÁÑÏ¶²»»áÌ«½ü»òÌ«Ô¶
+            // ç¡®ä¿è£‚éš™ä¸ä¼šå¤ªè¿‘æˆ–å¤ªè¿œ
             float dist = Vector2.Distance(riftPos, Target.Center);
             if (dist < 100f) {
                 riftPos = Target.Center + (riftPos - Target.Center).SafeNormalize(Vector2.UnitX) * 150f;
@@ -757,17 +757,17 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 ModContent.ProjectileType<AwakeningNetherRift>(),
                 damage,
                 0f,
-                ai0: isPhase2 ? 1 : 0 // ´óĞ¡µÈ¼¶
+                ai0: isPhase2 ? 1 : 0 // å¤§å°ç­‰çº§
             );
 
             SoundEngine.PlaySound(SoundID.Item117 with { Pitch = -0.3f, Volume = 1.2f }, riftPos);
 
-            // ÁÑÏ¶´´½¨ÌØĞ§
+            // è£‚éš™åˆ›å»ºç‰¹æ•ˆ
             AwakeningNetherHelper.CreateDimensionTear(NPC.Center, riftPos, 0.8f);
         }
 
         /// <summary>
-        /// »ñÈ¡µ¯Ä»ÉËº¦£¨¸ù¾İÄÑ¶Èµ÷Õû£©
+        /// è·å–å¼¹å¹•ä¼¤å®³ï¼ˆæ ¹æ®éš¾åº¦è°ƒæ•´ï¼‰
         /// </summary>
         private int GetProjectileDamage(int baseDamage) {
             if (Main.masterMode)
@@ -782,23 +782,23 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         public override void OnKill() {
             base.OnKill();
 
-            // Ê·Ê«¼¶ËÀÍöÌØĞ§
+            // å²è¯—çº§æ­»äº¡ç‰¹æ•ˆ
             AwakeningNetherHelper.CreateVoidVortex(NPC.Center, 300f, 2f, 100);
             AwakeningNetherHelper.CreateSoulBurst(NPC.Center, 250f, 5, 30);
 
-            // ¶àÖØÄÜÁ¿²¨
+            // å¤šé‡èƒ½é‡æ³¢
             for (int i = 0; i < 5; i++) {
                 TriggerEnergyWave();
             }
 
-            // ´ÎÔªËºÁÑ
+            // æ¬¡å…ƒæ’•è£‚
             for (int i = 0; i < 8; i++) {
                 float angle = MathHelper.TwoPi * i / 8;
                 Vector2 dir = new Vector2(MathF.Cos(angle), MathF.Sin(angle));
                 AwakeningNetherHelper.CreateDimensionTear(NPC.Center, NPC.Center + dir * 200f, 1f);
             }
 
-            // ´óÁ¿Á£×Ó
+            // å¤§é‡ç²’å­
             for (int i = 0; i < 200; i++) {
                 Vector2 velocity = Main.rand.NextVector2CircularEdge(25f, 25f);
                 int dustType = Main.rand.NextBool() ? DustID.Shadowflame : DustID.ShadowbeamStaff;
@@ -808,7 +808,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 d.velocity = velocity;
             }
 
-            // ÆÁÄ»ÉÁË¸
+            // å±å¹•é—ªçƒ
             AwakeningNetherHelper.CreateScreenFlash(NPC.Center, AwakeningNetherHelper.AwakeningPurple, 1.5f);
 
             SoundEngine.PlaySound(SoundID.NPCDeath14 with { Pitch = -0.5f, Volume = 1.8f }, NPC.Center);
@@ -818,33 +818,33 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
             Texture2D tex = TextureAssets.Npc[Type].Value;
             Vector2 origin = new Vector2(tex.Width / 2, tex.Height * 0.4f);
 
-            // »æÖÆÄÜÁ¿²¨
+            // ç»˜åˆ¶èƒ½é‡æ³¢
             DrawEnergyWaves(spriteBatch, screenPos);
 
-            // ¾õĞÑÌ¬µÄ×ÏÉ«ÓÄÚ¤É«µ÷
+            // è§‰é†’æ€çš„ç´«è‰²å¹½å†¥è‰²è°ƒ
             Color netherColor = Color.Lerp(drawColor, AwakeningNetherHelper.AwakeningPurple, 0.5f);
 
-            // ½×¶Î2ÑÕÉ«±ä»¯
+            // é˜¶æ®µ2é¢œè‰²å˜åŒ–
             if (isPhase2) {
                 netherColor = Color.Lerp(netherColor, AwakeningNetherHelper.NetherCyan, 0.2f);
             }
 
-            // ¿ñ±©½×¶ÎÑÕÉ«¸üÉî + ÉÁË¸
+            // ç‹‚æš´é˜¶æ®µé¢œè‰²æ›´æ·± + é—ªçƒ
             if (isPhase3) {
                 float flash = MathF.Sin(pulsePhase * 3f) * 0.3f + 0.7f;
                 netherColor = Color.Lerp(netherColor, AwakeningNetherHelper.DestructionRed, 0.4f * flash);
             }
 
-            // »æÖÆÍâ²ãÄÜÁ¿¹â»·
+            // ç»˜åˆ¶å¤–å±‚èƒ½é‡å…‰ç¯
             DrawEnergyAura(spriteBatch, screenPos);
 
-            // »æÖÆ¶à²ãÍÏÎ²
+            // ç»˜åˆ¶å¤šå±‚æ‹–å°¾
             DrawAdvancedTrail(spriteBatch, screenPos, tex, origin, netherColor);
 
-            // Ö÷Ìå»æÖÆ
+            // ä¸»ä½“ç»˜åˆ¶
             SpriteEffects mainEffects = NPC.spriteDirection == -1 ? SpriteEffects.FlipVertically : SpriteEffects.None;
             float drawRot = NPC.spriteDirection == -1 ? NPC.rotation - MathHelper.Pi : NPC.rotation;
-            // Íâ²ã¹âÔÎ
+            // å¤–å±‚å…‰æ™•
             Color glowColor = netherColor;
             glowColor.A = 0;
             float pulse = 1f + MathF.Sin(pulsePhase) * 0.1f;
@@ -854,11 +854,11 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                     drawRot, origin, glowScale, mainEffects, 0);
             }
 
-            // Ö÷Ìå
+            // ä¸»ä½“
             spriteBatch.Draw(tex, NPC.Center - screenPos, null, netherColor, drawRot,
                 origin, NPC.scale * pulse, mainEffects, 0);
 
-            // »æÖÆ»·ÈÆµÄÁé»êÇò£¨¿ñ±©½×¶Î£©
+            // ç»˜åˆ¶ç¯ç»•çš„çµé­‚çƒï¼ˆç‹‚æš´é˜¶æ®µï¼‰
             if (isPhase3) {
                 DrawOrbitingSouls(spriteBatch, screenPos);
             }
@@ -867,7 +867,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         /// <summary>
-        /// »æÖÆÄÜÁ¿²¨
+        /// ç»˜åˆ¶èƒ½é‡æ³¢
         /// </summary>
         private void DrawEnergyWaves(SpriteBatch sb, Vector2 screenPos) {
             for (int i = 0; i < energyWaveRadius.Length; i++) {
@@ -882,7 +882,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         /// <summary>
-        /// »æÖÆÄÜÁ¿¹â»·
+        /// ç»˜åˆ¶èƒ½é‡å…‰ç¯
         /// </summary>
         private void DrawEnergyAura(SpriteBatch sb, Vector2 screenPos) {
             var tex = BAWImpermanences.BAWHelper.DustTexture;
@@ -909,10 +909,10 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         /// <summary>
-        /// »æÖÆ¸ß¼¶ÍÏÎ²
+        /// ç»˜åˆ¶é«˜çº§æ‹–å°¾
         /// </summary>
         private void DrawAdvancedTrail(SpriteBatch sb, Vector2 screenPos, Texture2D tex, Vector2 origin, Color baseColor) {
-            // Íâ²ã¹âÔÎÍÏÎ²
+            // å¤–å±‚å…‰æ™•æ‹–å°¾
             for (int layer = 0; layer < 2; layer++) {
                 for (int i = 0; i < NPC.oldPos.Length; i++) {
                     if (NPC.oldPos[i] == Vector2.Zero) continue;
@@ -935,7 +935,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 }
             }
 
-            // ÄÜÁ¿ÏßÁ¬½Ó
+            // èƒ½é‡çº¿è¿æ¥
             var dustTex = BAWImpermanences.BAWHelper.DustTexture;
             if (dustTex != null) {
                 for (int i = 1; i < NPC.oldPos.Length; i += 2) {
@@ -953,7 +953,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         /// <summary>
-        /// »æÖÆ»·ÈÆµÄÁé»êÇò£¨¿ñ±©½×¶Î£©
+        /// ç»˜åˆ¶ç¯ç»•çš„çµé­‚çƒï¼ˆç‹‚æš´é˜¶æ®µï¼‰
         /// </summary>
         private void DrawOrbitingSouls(SpriteBatch sb, Vector2 screenPos) {
             AwakeningNetherHelper.DrawSoulOrbit(sb, NPC.Center, 100f, 4, pulsePhase * 1.5f, pulsePhase,

@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.IO;
 using Terraria;
 using Terraria.DataStructures;
@@ -8,36 +8,36 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.NPCs.Boss.AzureDragons
 {
     /// <summary>
-    /// ÇàÁúÍ·²¿ - ×´Ì¬»úÓëAIµ÷¶ÈÖĞĞÄ
-    /// Ò»½×¶Î(100%~60%)£º²ÔÁú³öº£ - »ù´¡ÅÌĞı+ÁúÏ¢+À×Çò
-    /// ¶ş½×¶Î(60%~25%)£ºÀ×öªÕğÅ­ - ¸ßËÙ³å´Ì+ÉÁµç¾ØÕó+Áú¾í·ç±©
-    /// Èı½×¶Î(25%~0%)£ºÌìÍş½µÊÀ - ÖÕ¼«À×±©+Á¬Ğø³å´Ì+È«ÆÁÉÁµç
+    /// é’é¾™å¤´éƒ¨ - çŠ¶æ€æœºä¸AIè°ƒåº¦ä¸­å¿ƒ
+    /// ä¸€é˜¶æ®µ(100%~60%)ï¼šè‹é¾™å‡ºæµ· - åŸºç¡€ç›˜æ—‹+é¾™æ¯+é›·çƒ
+    /// äºŒé˜¶æ®µ(60%~25%)ï¼šé›·éœ†éœ‡æ€’ - é«˜é€Ÿå†²åˆº+é—ªç”µçŸ©é˜µ+é¾™å·é£æš´
+    /// ä¸‰é˜¶æ®µ(25%~0%)ï¼šå¤©å¨é™ä¸– - ç»ˆæé›·æš´+è¿ç»­å†²åˆº+å…¨å±é—ªç”µ
     /// </summary>
     [AutoloadBossHead]
     public partial class AzureDragonHead : AzureDragon
     {
         public override WormType NPCWormType => WormType.Head;
 
-        #region ×´Ì¬Ã¶¾Ù
+        #region çŠ¶æ€æšä¸¾
 
         public enum AIState : int
         {
             Intro = 0,
-            // Ò»½×¶Î
+            // ä¸€é˜¶æ®µ
             Phase1_Orbit,
             Phase1_DragonBreath,
             Phase1_ThunderOrbs,
             Phase1_Charge,
-            // ½×¶Î×ª»»
+            // é˜¶æ®µè½¬æ¢
             PhaseTransition_2,
-            // ¶ş½×¶Î
+            // äºŒé˜¶æ®µ
             Phase2_StormChase,
             Phase2_LightningMatrix,
             Phase2_TornadoSweep,
             Phase2_RapidCharge,
-            // ½×¶Î×ª»»
+            // é˜¶æ®µè½¬æ¢
             PhaseTransition_3,
-            // Èı½×¶Î
+            // ä¸‰é˜¶æ®µ
             Phase3_ThunderJudgment,
             Phase3_CelestialFury,
             Phase3_DragonAscent,
@@ -45,7 +45,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
 
         #endregion
 
-        #region AIÊôĞÔ
+        #region AIå±æ€§
 
         public AIState State {
             get => (AIState)(int)NPC.ai[0];
@@ -59,33 +59,33 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
         public bool IsPhase2 => NPC.life < NPC.lifeMax * 0.6f;
         public bool IsPhase3 => NPC.life < NPC.lifeMax * 0.25f;
 
-        // Ë½ÓĞ×´Ì¬
+        // ç§æœ‰çŠ¶æ€
         private float globalTime;
         private bool didPhase2Transition;
         private bool didPhase3Transition;
 
-        // ³å´Ì¿ØÖÆ
+        // å†²åˆºæ§åˆ¶
         private Vector2 chargeTarget;
         private Vector2 chargeDirection;
         private int chargeCount;
         private int maxCharges;
 
-        // ÒÆ¶¯Ä¿±ê
+        // ç§»åŠ¨ç›®æ ‡
         private float orbitAngle;
         private float orbitSpeed;
 
-        // ÊÓ¾õ
+        // è§†è§‰
         private float auraIntensity;
         private float introProgress;
 
-        // ¹¥»÷Ñ¡Ôñ
+        // æ”»å‡»é€‰æ‹©
         private int phase1AttackIndex;
         private int phase2AttackIndex;
         private int phase3AttackIndex;
 
         #endregion
 
-        #region »ù´¡ÖØĞ´
+        #region åŸºç¡€é‡å†™
 
         public override void SetStaticDefaults() {
             base.SetStaticDefaults();
@@ -142,7 +142,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
 
         #endregion
 
-        #region AIÖ÷Ñ­»·
+        #region AIä¸»å¾ªç¯
 
         public override void AI() {
             base.AI();
@@ -157,22 +157,22 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                 return;
             }
 
-            // ¼ì²é½×¶Î×ª»»
+            // æ£€æŸ¥é˜¶æ®µè½¬æ¢
             CheckPhaseTransition();
 
             StateTimer++;
             AttackTimer++;
 
-            // ¸üĞÂ¹â»·
+            // æ›´æ–°å…‰ç¯
             float targetAura = IsPhase3 ? 1.5f : (IsPhase2 ? 1.0f : 0.6f);
             auraIntensity = MathHelper.Lerp(auraIntensity, targetAura, 0.02f);
 
-            // ×´Ì¬»úµ÷¶È
+            // çŠ¶æ€æœºè°ƒåº¦
             switch (State) {
                 case AIState.Intro:
                     RunIntro(target);
                     break;
-                // Ò»½×¶Î
+                // ä¸€é˜¶æ®µ
                 case AIState.Phase1_Orbit:
                     RunPhase1Orbit(target);
                     break;
@@ -185,11 +185,11 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                 case AIState.Phase1_Charge:
                     RunPhase1Charge(target);
                     break;
-                // ½×¶Î×ª»»
+                // é˜¶æ®µè½¬æ¢
                 case AIState.PhaseTransition_2:
                     RunPhaseTransition2(target);
                     break;
-                // ¶ş½×¶Î
+                // äºŒé˜¶æ®µ
                 case AIState.Phase2_StormChase:
                     RunPhase2StormChase(target);
                     break;
@@ -202,11 +202,11 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                 case AIState.Phase2_RapidCharge:
                     RunPhase2RapidCharge(target);
                     break;
-                // ½×¶Î×ª»»
+                // é˜¶æ®µè½¬æ¢
                 case AIState.PhaseTransition_3:
                     RunPhaseTransition3(target);
                     break;
-                // Èı½×¶Î
+                // ä¸‰é˜¶æ®µ
                 case AIState.Phase3_ThunderJudgment:
                     RunPhase3ThunderJudgment(target);
                     break;
@@ -218,17 +218,17 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                     break;
             }
 
-            // Í·²¿³¯Ïò - ½ö´æ´¢Ô­Ê¼ËÙ¶È½Ç¶È£¬·­×ªÔÚPreDrawÖĞ´¦Àí
+            // å¤´éƒ¨æœå‘ - ä»…å­˜å‚¨åŸå§‹é€Ÿåº¦è§’åº¦ï¼Œç¿»è½¬åœ¨PreDrawä¸­å¤„ç†
             NPC.rotation = NPC.velocity.ToRotation();
 
-            // ÔöÇ¿¹âÕÕ
+            // å¢å¼ºå…‰ç…§
             float lightPulse = 0.8f + 0.3f * MathF.Sin(globalTime * 3f);
             Lighting.AddLight(NPC.Center, DragonCyan.ToVector3() * auraIntensity * lightPulse);
         }
 
         #endregion
 
-        #region ½×¶Î×ª»»
+        #region é˜¶æ®µè½¬æ¢
 
         private void CheckPhaseTransition() {
             if (!didPhase2Transition && IsPhase2 && !IsPhase3 &&
@@ -286,15 +286,15 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
 
         #endregion
 
-        #region ¸¨Öú·½·¨
+        #region è¾…åŠ©æ–¹æ³•
 
-        /// <summary>Æ½»¬ÅÌĞıÏòÄ¿±êÎ»ÖÃÒÆ¶¯</summary>
+        /// <summary>å¹³æ»‘ç›˜æ—‹å‘ç›®æ ‡ä½ç½®ç§»åŠ¨</summary>
         private void SmoothOrbit(Vector2 desiredPos, float inertia = 60f) {
             Vector2 toGoal = desiredPos - NPC.Center;
             NPC.velocity = (NPC.velocity * (inertia - 1) + toGoal / 8f) / inertia;
         }
 
-        /// <summary>¿ìËÙ²åÖµÒÆ¶¯</summary>
+        /// <summary>å¿«é€Ÿæ’å€¼ç§»åŠ¨</summary>
         private void LerpToPosition(Vector2 desiredPos, float speed = 0.08f) {
             NPC.Center = Vector2.Lerp(NPC.Center, desiredPos, speed);
         }

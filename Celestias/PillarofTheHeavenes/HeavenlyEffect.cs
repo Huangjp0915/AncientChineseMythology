@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Graphics.Effects;
@@ -9,7 +9,7 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
 {
     /// <summary>
-    /// ÌìÖùÇøÓò³¡¾°Ğ§¹û
+    /// å¤©æŸ±åŒºåŸŸåœºæ™¯æ•ˆæœ
     /// </summary>
     internal class HeavenPillarSceneEffect : ModSceneEffect
     {
@@ -24,7 +24,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
     }
 
     /// <summary>
-    /// ÌìÍ¥ÏÉÆøÌì¿ÕĞ§¹û
+    /// å¤©åº­ä»™æ°”å¤©ç©ºæ•ˆæœ
     /// </summary>
     internal class HeavenlySky : CustomSky, IACMLoader
     {
@@ -32,49 +32,49 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         private bool active;
         private float intensity;
 
-        // ÏÉÆøĞ§¹û²ÎÊı
+        // ä»™æ°”æ•ˆæœå‚æ•°
         private float divinePulseTimer = 0f;
         private float cloudDriftTimer = 0f;
         private float lightRayTimer = 0f;
 
-        // ÏéÔÆ²ã
+        // ç¥¥äº‘å±‚
         private readonly AuspiciousCloud[] clouds = new AuspiciousCloud[80];
 
-        // Éñ¹âÁ£×Ó
+        // ç¥å…‰ç²’å­
         private readonly DivineLightParticle[] divineParticles = new DivineLightParticle[40];
 
-        // Æ®ÂäµÄ½ğÉ«»¨°ê
+        // é£˜è½çš„é‡‘è‰²èŠ±ç“£
         private readonly GoldenPetal[] petals = new GoldenPetal[30];
 
-        // ÌìÍ¥É«²Ê - ÉñÊ¥µÄ½ğ°×´äÂÌÉ«µ÷
+        // å¤©åº­è‰²å½© - ç¥åœ£çš„é‡‘ç™½ç¿ ç»¿è‰²è°ƒ
         private readonly Color[] heavenlyColors =
         [
-            new Color(255, 250, 220),   // ÉñÊ¥½ğ°×
-            new Color(255, 245, 200),   // Å¯½ğ
-            new Color(220, 255, 230),   // ´äÓñÂÌ
-            new Color(240, 255, 250),   // ÏÉ°×
-            new Color(255, 240, 180),   // ½ğ»Æ
-            new Color(200, 240, 255),   // ÌìÇà
+            new Color(255, 250, 220),   // ç¥åœ£é‡‘ç™½
+            new Color(255, 245, 200),   // æš–é‡‘
+            new Color(220, 255, 230),   // ç¿ ç‰ç»¿
+            new Color(240, 255, 250),   // ä»™ç™½
+            new Color(255, 240, 180),   // é‡‘é»„
+            new Color(200, 240, 255),   // å¤©é’
         ];
 
         void IACMLoader.LoadData() {
             SkyManager.Instance[Name] = this;
-            // ´´½¨ÉñÊ¥½ğÉ«ÂË¾µ
+            // åˆ›å»ºç¥åœ£é‡‘è‰²æ»¤é•œ
             Filters.Scene[Name] = new Filter(new ScreenShaderData("FilterMiniTower")
-                .UseColor(0.95f, 0.9f, 0.7f) // ÉñÊ¥½ğÉ«µ÷
+                .UseColor(0.95f, 0.9f, 0.7f) // ç¥åœ£é‡‘è‰²è°ƒ
                 .UseOpacity(0.3f), EffectPriority.High);
 
-            // ³õÊ¼»¯ÏéÔÆ
+            // åˆå§‹åŒ–ç¥¥äº‘
             for (int i = 0; i < clouds.Length; i++) {
                 clouds[i] = new AuspiciousCloud();
             }
 
-            // ³õÊ¼»¯Éñ¹âÁ£×Ó
+            // åˆå§‹åŒ–ç¥å…‰ç²’å­
             for (int i = 0; i < divineParticles.Length; i++) {
                 divineParticles[i] = new DivineLightParticle();
             }
 
-            // ³õÊ¼»¯»¨°ê
+            // åˆå§‹åŒ–èŠ±ç“£
             for (int i = 0; i < petals.Length; i++) {
                 petals[i] = new GoldenPetal();
             }
@@ -99,23 +99,23 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         public override void Draw(SpriteBatch spriteBatch, float minDepth, float maxDepth) {
             if (intensity <= 0.01f) return;
 
-            // ÉñÊ¥µÄ±³¾°¹âÔÎ
+            // ç¥åœ£çš„èƒŒæ™¯å…‰æ™•
             Color bgColor = new Color(255, 252, 240);
             Rectangle screenRect = new Rectangle(0, 0, Main.screenWidth, Main.screenHeight);
             Texture2D pixel = Terraria.GameContent.TextureAssets.MagicPixel.Value;
 
             spriteBatch.Draw(pixel, screenRect, new Rectangle(0, 0, 1, 1), bgColor * intensity * 0.15f);
 
-            // »æÖÆÏéÔÆ²ã
+            // ç»˜åˆ¶ç¥¥äº‘å±‚
             DrawAuspiciousCloudsSky(spriteBatch);
 
-            // »æÖÆÉñ¹âÁ£×Ó
+            // ç»˜åˆ¶ç¥å…‰ç²’å­
             DrawDivineLightSky(spriteBatch);
 
-            // »æÖÆ½ğÉ«»¨°ê
+            // ç»˜åˆ¶é‡‘è‰²èŠ±ç“£
             DrawGoldenPetalsSky(spriteBatch);
 
-            // »æÖÆ¹âÖùĞ§¹û
+            // ç»˜åˆ¶å…‰æŸ±æ•ˆæœ
             DrawLightPillarsSky(spriteBatch, pixel);
         }
 
@@ -155,7 +155,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
 
         public override Color OnTileColor(Color inColor) {
             if (intensity > 0.1f) {
-                // Ó¦ÓÃÉñÊ¥µÄÅ¯½ğÉ«µ÷
+                // åº”ç”¨ç¥åœ£çš„æš–é‡‘è‰²è°ƒ
                 float warmR = 1.05f;
                 float warmG = 1.02f;
                 float warmB = 0.95f;
@@ -172,7 +172,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
             return inColor;
         }
 
-        #region »æÖÆ·½·¨
+        #region ç»˜åˆ¶æ–¹æ³•
         private void DrawAuspiciousCloudsSky(SpriteBatch sb) {
             Texture2D smokeTex = ACMAsset.Smoke;
             if (smokeTex == null) return;
@@ -202,7 +202,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
 
                 sb.Draw(smokeTex, drawPos, smokeRect, cloudColor, cloud.Rotation, new Vector2(frameSize / 2), cloud.Scale, SpriteEffects.None, 0f);
 
-                // ¹âÔÎ²ã
+                // å…‰æ™•å±‚
                 Color glowColor = cloudColor;
                 glowColor.A = 0;
                 sb.Draw(smokeTex, drawPos, smokeRect, glowColor * 0.3f, cloud.Rotation * 0.8f, new Vector2(frameSize / 2), cloud.Scale * 1.4f, SpriteEffects.None, 0f);
@@ -247,7 +247,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
 
         private void DrawLightPillarsSky(SpriteBatch sb, Texture2D pixel) {
-            // »æÖÆ´ÓÌì½µÏÂµÄÉñ¹âÖù
+            // ç»˜åˆ¶ä»å¤©é™ä¸‹çš„ç¥å…‰æŸ±
             int pillarCount = 4;
             for (int i = 0; i < pillarCount; i++) {
                 float phase = (lightRayTimer + i * MathHelper.PiOver2) % MathHelper.TwoPi;
@@ -258,7 +258,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                 pillarColor *= pillarAlpha * intensity * 0.08f;
                 pillarColor.A = 0;
 
-                // ½¥±ä¹âÖù
+                // æ¸å˜å…‰æŸ±
                 for (int j = 0; j < 20; j++) {
                     float yFactor = j / 20f;
                     int width = (int)(30 + (1f - yFactor) * 50);
@@ -270,7 +270,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
         #endregion
 
-        #region ÏéÔÆÀà
+        #region ç¥¥äº‘ç±»
         private class AuspiciousCloud
         {
             public Vector2 Position;
@@ -321,7 +321,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
         #endregion
 
-        #region Éñ¹âÁ£×ÓÀà
+        #region ç¥å…‰ç²’å­ç±»
         private class DivineLightParticle
         {
             public Vector2 Position;
@@ -349,7 +349,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
 
                 AnimProgress += AnimSpeed;
                 Position += Velocity;
-                Velocity.Y -= 0.01f; // »ºÂıÉÏÉı
+                Velocity.Y -= 0.01f; // ç¼“æ…¢ä¸Šå‡
 
                 if (AnimProgress >= 1f) Reset();
             }
@@ -370,7 +370,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
         #endregion
 
-        #region ½ğÉ«»¨°êÀà
+        #region é‡‘è‰²èŠ±ç“£ç±»
         private class GoldenPetal
         {
             public Vector2 Position;
@@ -399,7 +399,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
 
                 AnimProgress += AnimSpeed;
 
-                // Æ®ÂäµÄÒ¡°Ú
+                // é£˜è½çš„æ‘‡æ‘†
                 float wave = (float)Math.Sin(AnimProgress * MathHelper.TwoPi * 4f);
                 Velocity.X += wave * 0.03f;
 
@@ -428,11 +428,11 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
     }
 
     /// <summary>
-    /// ÌìÍ¥ÊÓ¾õĞ§¹û´¦ÀíÆ÷ - Íæ¼Ò²ãÃæµÄĞ§¹û
+    /// å¤©åº­è§†è§‰æ•ˆæœå¤„ç†å™¨ - ç©å®¶å±‚é¢çš„æ•ˆæœ
     /// </summary>
     public class HeavenlyEffect : ModPlayer
     {
-        #region Ğ§¹û×´Ì¬
+        #region æ•ˆæœçŠ¶æ€
         public float PillarInfluence { get; private set; }
         private float effectFade;
         private float divineGlowTimer;
@@ -590,7 +590,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
     }
 
     /// <summary>
-    /// ÌìÖùÇøÓòÊÀ½ç²ãÃæµÄ»æÖÆÏµÍ³
+    /// å¤©æŸ±åŒºåŸŸä¸–ç•Œå±‚é¢çš„ç»˜åˆ¶ç³»ç»Ÿ
     /// </summary>
     public class HeavenlyWorldDrawSystem : ModSystem
     {
@@ -820,7 +820,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
     }
 
     /// <summary>
-    /// ÌìÍ¥Ğ§¹û¹ÜÀíÆ÷
+    /// å¤©åº­æ•ˆæœç®¡ç†å™¨
     /// </summary>
     public static class HeavenlyEffectManager
     {
@@ -836,7 +836,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
     }
 
     /// <summary>
-    /// ÌìÖùÇøÓòµÄÈ«¾Ö±³¾°Ğ§¹û
+    /// å¤©æŸ±åŒºåŸŸçš„å…¨å±€èƒŒæ™¯æ•ˆæœ
     /// </summary>
     public class HeavenlyBackgroundEffect : ModSystem
     {

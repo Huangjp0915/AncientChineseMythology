@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using System;
 using Terraria;
@@ -7,49 +7,49 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 {
     /// <summary>
-    /// ÅşÉ³ÃÅÌìÍõBoss¸¨ÖúÀà
-    /// ÏÉÆøÀà°×É«Ö÷ÌâÊÓ¾õĞ§¹û
+    /// æ¯—æ²™é—¨å¤©ç‹Bossè¾…åŠ©ç±»
+    /// ä»™æ°”ç±»ç™½è‰²ä¸»é¢˜è§†è§‰æ•ˆæœ
     /// </summary>
     public static class VaisravanaHelper
     {
         public static string Path => typeof(VaisravanaHelper).Namespace.Replace(".", "/") + "/";
 
-        #region ÎÆÀí×ÊÔ´
+        #region çº¹ç†èµ„æº
 
         private static Asset<Texture2D> _towerTexture;
         private static Asset<Texture2D> _dustTexture;
 
-        /// <summary>±¦ËşÎÆÀí</summary>
+        /// <summary>å®å¡”çº¹ç†</summary>
         public static Texture2D TowerTexture => (_towerTexture ??= ModContent.Request<Texture2D>(Path + "VaisravanaTower")).Value;
 
-        /// <summary>Í¨ÓÃÁ£×ÓÎÆÀí</summary>
+        /// <summary>é€šç”¨ç²’å­çº¹ç†</summary>
         public static Texture2D DustTexture => (_dustTexture ??= ModContent.Request<Texture2D>(Path + "VaisravanaDust")).Value;
 
         #endregion
 
-        #region ÑÕÉ«¶¨Òå - ÏÉÆø°×É«Ö÷Ìâ
+        #region é¢œè‰²å®šä¹‰ - ä»™æ°”ç™½è‰²ä¸»é¢˜
 
-        /// <summary>Ö÷É«µ÷ - Ê¥½à°×</summary>
+        /// <summary>ä¸»è‰²è°ƒ - åœ£æ´ç™½</summary>
         public static Color PureWhite => new Color(255, 255, 255);
 
-        /// <summary>¸¨É«µ÷ - ÏÉ¹â½ğ</summary>
+        /// <summary>è¾…è‰²è°ƒ - ä»™å…‰é‡‘</summary>
         public static Color ImmortalGold => new Color(255, 245, 220);
 
-        /// <summary>¹âÔÎÉ« - ÌìÇà°×</summary>
+        /// <summary>å…‰æ™•è‰² - å¤©é’ç™½</summary>
         public static Color CelestialAzure => new Color(230, 245, 255);
 
-        /// <summary>ÄÜÁ¿É« - Áé¹âÒø</summary>
+        /// <summary>èƒ½é‡è‰² - çµå…‰é“¶</summary>
         public static Color SpiritSilver => new Color(240, 248, 255);
 
-        /// <summary>±¦ËşÉ« - ÁğÁ§½ğ</summary>
+        /// <summary>å®å¡”è‰² - ç‰ç’ƒé‡‘</summary>
         public static Color TowerGold => new Color(255, 230, 180);
 
-        /// <summary>ÉñÍşÉ« - Ê¥Óò°×½ğ</summary>
+        /// <summary>ç¥å¨è‰² - åœ£åŸŸç™½é‡‘</summary>
         public static Color DivineWhite => new Color(255, 252, 248);
 
         #endregion
 
-        #region Ëæ»ú¹¤¾ß
+        #region éšæœºå·¥å…·
 
         public static float RandFloat(double a, double b = 0) {
             var max = (float)Math.Max(a, b);
@@ -65,10 +65,10 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
         #endregion
 
-        #region »æÖÆ¸¨Öú - ÏÉÆøÖ÷Ìâ
+        #region ç»˜åˆ¶è¾…åŠ© - ä»™æ°”ä¸»é¢˜
 
         /// <summary>
-        /// »æÖÆÏÉÆø¹âÇòĞ§¹û
+        /// ç»˜åˆ¶ä»™æ°”å…‰çƒæ•ˆæœ
         /// </summary>
         public static void DrawImmortalOrb(SpriteBatch sb, Vector2 position, Color coreColor, Color glowColor,
             float scale, float pulsePhase) {
@@ -78,7 +78,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             Vector2 origin = tex.Size() / 2f;
             float pulse = 1f + MathF.Sin(pulsePhase) * 0.12f;
 
-            // Íâ²ã¹âÔÎ£¨¶à²ã½¥±ä£©
+            // å¤–å±‚å…‰æ™•ï¼ˆå¤šå±‚æ¸å˜ï¼‰
             Color glow = glowColor;
             glow.A = 0;
             for (int i = 4; i >= 0; i--) {
@@ -88,13 +88,13 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                     0f, origin, layerScale, SpriteEffects.None, 0);
             }
 
-            // ºËĞÄ
+            // æ ¸å¿ƒ
             Color core = coreColor;
             core.A = 0;
             sb.Draw(tex, position - Main.screenPosition, null, core,
                 0f, origin, scale * pulse, SpriteEffects.None, 0);
 
-            // ÖĞĞÄ¸ß¹â
+            // ä¸­å¿ƒé«˜å…‰
             Color highlight = PureWhite;
             highlight.A = 0;
             sb.Draw(tex, position - Main.screenPosition, null, highlight * 0.6f,
@@ -102,7 +102,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
         }
 
         /// <summary>
-        /// »æÖÆÏÉÆø¹â»·
+        /// ç»˜åˆ¶ä»™æ°”å…‰ç¯
         /// </summary>
         public static void DrawImmortalHalo(SpriteBatch sb, Vector2 center, float radius, Color color,
             float rotation, float alpha = 1f) {
@@ -111,7 +111,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
             Vector2 origin = tex.Size() / 2f;
 
-            // ¹â»·ÍâÈ¦
+            // å…‰ç¯å¤–åœˆ
             Color haloColor = color;
             haloColor.A = 0;
 
@@ -125,7 +125,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                     angle, origin, pulseScale, SpriteEffects.None, 0);
             }
 
-            // ÄÚÈ¦Á¬½ÓÏßĞ§¹û
+            // å†…åœˆè¿æ¥çº¿æ•ˆæœ
             if (ACMAsset.LightShot != null) {
                 for (int i = 0; i < segments / 2; i++) {
                     float angle = rotation * 0.5f + MathHelper.TwoPi * i / (segments / 2);
@@ -137,7 +137,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
         }
 
         /// <summary>
-        /// »æÖÆ±¦Ëş¹âÖù
+        /// ç»˜åˆ¶å®å¡”å…‰æŸ±
         /// </summary>
         public static void DrawTowerBeam(SpriteBatch sb, Vector2 start, Vector2 end, Color color,
             float width, float timeOffset) {
@@ -151,7 +151,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             Vector2 origin = new Vector2(0, tex.Height / 2f);
             Vector2 scale = new Vector2(distance / tex.Width, width / tex.Height);
 
-            // ¶à²ã¹âÖù
+            // å¤šå±‚å…‰æŸ±
             Color beamColor = color;
             beamColor.A = 0;
 
@@ -164,7 +164,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                     rotation, origin, scale * new Vector2(1f, layerWidth * pulse), SpriteEffects.None, 0);
             }
 
-            // Æğµã¹âÇò
+            // èµ·ç‚¹å…‰çƒ
             if (ACMAsset.LightShot != null) {
                 Color orbColor = PureWhite;
                 orbColor.A = 0;
@@ -174,7 +174,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
         }
 
         /// <summary>
-        /// »æÖÆÆ®ÒİÏÉÆøÍÏÎ²
+        /// ç»˜åˆ¶é£˜é€¸ä»™æ°”æ‹–å°¾
         /// </summary>
         public static void DrawImmortalTrail(SpriteBatch sb, Vector2[] oldPositions, float[] oldRotations,
             Texture2D texture, Color color, float baseScale, float alpha = 1f) {
@@ -191,7 +191,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                 float trailAlpha = progress * 0.5f * alpha;
                 float trailScale = baseScale * (0.4f + progress * 0.6f);
 
-                // Æ®¶¯Æ«ÒÆ
+                // é£˜åŠ¨åç§»
                 float wobble = MathF.Sin(Main.GameUpdateCount * 0.05f + i * 0.4f) * 3f;
                 Vector2 drawPos = oldPositions[i] - Main.screenPosition;
                 drawPos.Y += wobble;
@@ -204,7 +204,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
         }
 
         /// <summary>
-        /// »æÖÆĞÇÃ¢±¬·¢Ğ§¹û
+        /// ç»˜åˆ¶æ˜ŸèŠ’çˆ†å‘æ•ˆæœ
         /// </summary>
         public static void DrawStarBurst(SpriteBatch sb, Vector2 center, Color color, float scale, float rotation) {
             var tex = ACMAsset.Sparkle;
@@ -214,7 +214,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             Color burstColor = color;
             burstColor.A = 0;
 
-            // ¶à²ãĞÇÃ¢
+            // å¤šå±‚æ˜ŸèŠ’
             for (int i = 0; i < 3; i++) {
                 float layerRot = rotation + i * MathHelper.TwoPi / 6f;
                 float layerScale = scale * (1f + i * 0.3f);
@@ -226,7 +226,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
         }
 
         /// <summary>
-        /// »æÖÆÉñÊ¥¹â»·£¨Ô²ĞÎ£©
+        /// ç»˜åˆ¶ç¥åœ£å…‰ç¯ï¼ˆåœ†å½¢ï¼‰
         /// </summary>
         public static void DrawDivineCircle(SpriteBatch sb, Vector2 center, float radius, Color color,
             float rotation, float alpha = 1f) {
@@ -247,14 +247,14 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                     0f, origin, pointScale, SpriteEffects.None, 0);
             }
 
-            // ÖĞĞÄ´ó¹âÇò
+            // ä¸­å¿ƒå¤§å…‰çƒ
             sb.Draw(tex, center - Main.screenPosition, null, circleColor * alpha * 0.2f,
                 0f, origin, radius / 32f, SpriteEffects.None, 0);
         }
 
         #endregion
 
-        #region »º¶¯º¯Êı
+        #region ç¼“åŠ¨å‡½æ•°
 
         public static float SmoothStep(float t) => t * t * (3f - 2f * t);
 
@@ -278,7 +278,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
     }
 
     /// <summary>
-    /// ÅşÉ³ÃÅÌìÍõ×¨ÓÃÁ£×Ó - ÏÉÆø°×É«Ö÷Ìâ
+    /// æ¯—æ²™é—¨å¤©ç‹ä¸“ç”¨ç²’å­ - ä»™æ°”ç™½è‰²ä¸»é¢˜
     /// </summary>
     public class VaisravanaDust : ModDust
     {
@@ -299,10 +299,10 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             dust.velocity *= 0.96f;
             dust.alpha -= 4;
 
-            // ÉÏÆ®Ğ§¹û£¨ÏÉÆøÆ®Òİ¸Ğ£©
+            // ä¸Šé£˜æ•ˆæœï¼ˆä»™æ°”é£˜é€¸æ„Ÿï¼‰
             dust.velocity.Y -= 0.02f;
 
-            // °×É«ÏÉ¹â
+            // ç™½è‰²ä»™å…‰
             Lighting.AddLight(dust.position, new Vector3(0.9f, 0.95f, 1f) * dust.scale * 0.3f);
 
             if (dust.scale <= 0 || dust.alpha < 0)
@@ -313,7 +313,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
     }
 
     /// <summary>
-    /// ±¦Ëş½ğ¹âÁ£×Ó
+    /// å®å¡”é‡‘å…‰ç²’å­
     /// </summary>
     public class TowerGoldDust : ModDust
     {
@@ -333,7 +333,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             dust.velocity *= 0.97f;
             dust.alpha -= 3;
 
-            // ½ğÉ«±¦¹â
+            // é‡‘è‰²å®å…‰
             Lighting.AddLight(dust.position, new Vector3(1f, 0.95f, 0.8f) * dust.scale * 0.4f);
 
             if (dust.scale <= 0 || dust.alpha < 0)
@@ -344,7 +344,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
     }
 
     /// <summary>
-    /// Áé¹âÒø³¾ - Æ®ÒİµÄÏÉÆøÁ£×Ó
+    /// çµå…‰é“¶å°˜ - é£˜é€¸çš„ä»™æ°”ç²’å­
     /// </summary>
     public class SpiritSilverDust : ModDust
     {
@@ -364,11 +364,11 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             dust.velocity *= 0.98f;
             dust.alpha -= 3;
 
-            // Æ®ÒİµÄ²¨¶¯
+            // é£˜é€¸çš„æ³¢åŠ¨
             dust.velocity.X += MathF.Sin(Main.GameUpdateCount * 0.08f + dust.position.Y * 0.01f) * 0.03f;
             dust.velocity.Y -= 0.015f;
 
-            // Òø°×Áé¹â
+            // é“¶ç™½çµå…‰
             Lighting.AddLight(dust.position, new Vector3(0.85f, 0.9f, 1f) * dust.scale * 0.35f);
 
             if (dust.scale <= 0 || dust.alpha < 0)

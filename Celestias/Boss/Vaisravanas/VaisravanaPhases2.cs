@@ -1,4 +1,4 @@
-using Terraria;
+ï»¿using Terraria;
 using Terraria.Audio;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -6,18 +6,18 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 {
     /// <summary>
-    /// ÅşÉ³ÃÅÌìÍõ - ¶ş½×¶ÎºÍÈı½×¶ÎAI£¨·ÖÀëÎÄ¼ş£©
+    /// æ¯—æ²™é—¨å¤©ç‹ - äºŒé˜¶æ®µå’Œä¸‰é˜¶æ®µAIï¼ˆåˆ†ç¦»æ–‡ä»¶ï¼‰
     /// </summary>
     internal partial class Vaisravana
     {
-        #region ¶ş½×¶ÎAI
+        #region äºŒé˜¶æ®µAI
 
         private void RunPhase2Descend(Player target) {
-            // ÌìÍõ½µÁÙ - ÏÂÑ¹²¢ÊÍ·Å»·ĞÎÏÉÆø²¨
+            // å¤©ç‹é™ä¸´ - ä¸‹å‹å¹¶é‡Šæ”¾ç¯å½¢ä»™æ°”æ³¢
             Vector2 descendPos = target.Center + new Vector2(0, -220);
             NPC.Center = Vector2.Lerp(NPC.Center, descendPos, 0.025f);
 
-            // ÊÍ·ÅÏÉÆø²¨
+            // é‡Šæ”¾ä»™æ°”æ³¢
             if (PhaseTimer % 50 == 0) {
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
                     Projectile.NewProjectile(
@@ -34,7 +34,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                 SoundEngine.PlaySound(SoundID.Item29 with { Pitch = 0.1f }, NPC.Center);
             }
 
-            // »·ĞÎ¹âµ¯
+            // ç¯å½¢å…‰å¼¹
             if (PhaseTimer % 35 == 0) {
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
                     int waveCount = 14;
@@ -55,7 +55,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                 }
             }
 
-            // ÏÉÆøÁ£×Ó
+            // ä»™æ°”ç²’å­
             if (!VaultUtils.isServer && PhaseTimer % 3 == 0) {
                 Vector2 dustPos = target.Center + Main.rand.NextVector2Circular(350, 60) + new Vector2(0, -80);
                 int dust = Dust.NewDust(dustPos, 0, 0, DustID.WhiteTorch, 0, 2.5f, 100, default, 1.3f);
@@ -86,7 +86,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
         private void RunPhase2YakshaSummon(Player target) {
             switch ((int)SubState) {
-                case 0: // ÕÙ»½½×¶Î
+                case 0: // å¬å”¤é˜¶æ®µ
                     NPC.velocity *= 0.9f;
 
                     if (PhaseTimer == 1) {
@@ -115,7 +115,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                         }
                     }
 
-                    // ÕÙ»½Á£×ÓĞ§¹û
+                    // å¬å”¤ç²’å­æ•ˆæœ
                     if (!VaultUtils.isServer && PhaseTimer <= 30) {
                         for (int i = 0; i < 10; i++) {
                             Vector2 dustPos = NPC.Center + Main.rand.NextVector2CircularEdge(100, 100);
@@ -131,7 +131,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                     }
                     break;
 
-                case 1: // µÈ´ıÆÍ´ÓĞĞ¶¯
+                case 1: // ç­‰å¾…ä»†ä»è¡ŒåŠ¨
                     Vector2 hoverPos = target.Center + new Vector2(0, -340);
                     NPC.Center = Vector2.Lerp(NPC.Center, hoverPos, 0.012f);
 
@@ -144,7 +144,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
         private void RunPhase2QuadrantRay(Player target) {
             switch ((int)SubState) {
-                case 0: // ×¼±¸
+                case 0: // å‡†å¤‡
                     NPC.velocity *= 0.9f;
 
                     Vector2 quadHoverPos = target.Center + new Vector2(0, -300);
@@ -155,7 +155,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                         SoundEngine.PlaySound(SoundID.Item15 with { Pitch = 0.5f }, NPC.Center);
                     }
 
-                    // Ô¤¾¯Ïß
+                    // é¢„è­¦çº¿
                     if (!VaultUtils.isServer) {
                         for (int i = 0; i < 4; i++) {
                             float angle = laserAngle + MathHelper.PiOver2 * i;
@@ -174,7 +174,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                     }
                     break;
 
-                case 1: // ·¢ÉäËÄ·½¼¤¹â
+                case 1: // å‘å°„å››æ–¹æ¿€å…‰
                     if (PhaseTimer == 1) {
                         if (Main.netMode != NetmodeID.MultiplayerClient) {
                             for (int i = 0; i < 4; i++) {
@@ -212,7 +212,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             Vector2 hoverPos = target.Center + new Vector2(0, -280);
             NPC.Center = Vector2.Lerp(NPC.Center, hoverPos, 0.02f);
 
-            // ¶à´ÎÊÍ·ÅÏÉÆø²¨
+            // å¤šæ¬¡é‡Šæ”¾ä»™æ°”æ³¢
             if (PhaseTimer % 30 == 0 && PhaseTimer <= 120) {
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
                     Projectile.NewProjectile(
@@ -237,17 +237,17 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
         private void RunPhase2DivineDash(Player target) {
             switch ((int)SubState) {
-                case 0: // ×¼±¸³å´Ì
+                case 0: // å‡†å¤‡å†²åˆº
                     dashCount = 0;
                     maxDashCount = Main.expertMode ? 4 : 3;
                     SubState = 1;
                     PhaseTimer = 0;
                     break;
 
-                case 1: // ĞîÁ¦
+                case 1: // è“„åŠ›
                     NPC.velocity *= 0.9f;
 
-                    // ĞîÁ¦Á£×Ó
+                    // è“„åŠ›ç²’å­
                     if (!VaultUtils.isServer) {
                         Vector2 dustVel = Main.rand.NextVector2CircularEdge(6, 6);
                         int dust = Dust.NewDust(NPC.Center, 0, 0, DustID.WhiteTorch, dustVel.X, dustVel.Y, 100, default, 1.6f);
@@ -264,10 +264,10 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                     }
                     break;
 
-                case 2: // ³å´Ì
+                case 2: // å†²åˆº
                     NPC.velocity = dashVelocity;
 
-                    // ³å´ÌÍÏÎ²Á£×Ó
+                    // å†²åˆºæ‹–å°¾ç²’å­
                     if (!VaultUtils.isServer) {
                         for (int i = 0; i < 4; i++) {
                             Vector2 dustPos = NPC.Center - NPC.velocity.SafeNormalize(Vector2.Zero) * 35f * i;
@@ -295,7 +295,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             Vector2 hoverPos = target.Center + new Vector2(0, -300);
             NPC.Center = Vector2.Lerp(NPC.Center, hoverPos, 0.018f);
 
-            // ÊÍ·ÅĞı×ª¹â»·
+            // é‡Šæ”¾æ—‹è½¬å…‰ç¯
             if (PhaseTimer % 22 == 0) {
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
                     float baseAngle = PhaseTimer * 0.12f;
@@ -327,18 +327,18 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
         #endregion
 
-        #region Èı½×¶ÎAI
+        #region ä¸‰é˜¶æ®µAI
 
         private void RunPhase3FourKingsWrath(Player target) {
-            // ËÄÌìÍõÍş - ³ÖĞø×·»÷²¢ÊÍ·ÅÃÜ¼¯µ¯Ä»
+            // å››å¤©ç‹å¨ - æŒç»­è¿½å‡»å¹¶é‡Šæ”¾å¯†é›†å¼¹å¹•
             Vector2 toTarget = target.Center - NPC.Center;
             Vector2 desiredVelocity = toTarget.SafeNormalize(Vector2.Zero) * 11f;
             NPC.velocity = Vector2.Lerp(NPC.velocity, desiredVelocity, 0.07f);
 
-            // ¸ßËÙ±¦ËşĞı×ª
+            // é«˜é€Ÿå®å¡”æ—‹è½¬
             towerOrbitSpeed = 0.035f;
 
-            // ÃÜ¼¯ÉñÊ¥¹âµ¯
+            // å¯†é›†ç¥åœ£å…‰å¼¹
             if (PhaseTimer % 10 == 0) {
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
                     Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero);
@@ -359,7 +359,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                 }
             }
 
-            // ±¦ËşÍ¬²½Éä»÷
+            // å®å¡”åŒæ­¥å°„å‡»
             if (PhaseTimer % 25 == 0) {
                 FireAllTowerBeams(target);
             }
@@ -406,7 +406,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
         private void RunPhase3TowerJudgment(Player target) {
             switch ((int)SubState) {
-                case 0: // ×¼±¸
+                case 0: // å‡†å¤‡
                     NPC.velocity *= 0.92f;
 
                     if (PhaseTimer == 1) {
@@ -420,7 +420,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                         SoundEngine.PlaySound(SoundID.Item15 with { Pitch = 0.6f }, NPC.Center);
                     }
 
-                    // Ô¤¾¯
+                    // é¢„è­¦
                     if (!VaultUtils.isServer) {
                         foreach (var pos in pillarPositions) {
                             if (pos == Vector2.Zero) continue;
@@ -435,10 +435,10 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                     }
                     break;
 
-                case 1: // ÊÍ·Å¹âÖù
+                case 1: // é‡Šæ”¾å…‰æŸ±
                     if (PhaseTimer == 1) {
                         if (Main.netMode != NetmodeID.MultiplayerClient) {
-                            // Ê¹ÓÃĞÇ³½µ¯Ä»Ä£Äâ¹âÖùĞ§¹û
+                            // ä½¿ç”¨æ˜Ÿè¾°å¼¹å¹•æ¨¡æ‹Ÿå…‰æŸ±æ•ˆæœ
                             foreach (var pos in pillarPositions) {
                                 if (pos == Vector2.Zero) continue;
                                 Projectile.NewProjectile(
@@ -466,7 +466,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
         private void RunPhase3UltimateTower(Player target) {
             switch ((int)SubState) {
-                case 0: // ĞîÁ¦
+                case 0: // è“„åŠ›
                     NPC.velocity *= 0.85f;
 
                     if (PhaseTimer == 1) {
@@ -474,7 +474,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                         SoundEngine.PlaySound(SoundID.Item15 with { Pitch = -0.3f, Volume = 1.5f }, NPC.Center);
                     }
 
-                    // ¾Ş´óÄÜÁ¿¾Û¼¯Ğ§¹û
+                    // å·¨å¤§èƒ½é‡èšé›†æ•ˆæœ
                     if (!VaultUtils.isServer) {
                         for (int i = 0; i < 14; i++) {
                             Vector2 dustPos = NPC.Center + Main.rand.NextVector2CircularEdge(220, 220);
@@ -517,10 +517,10 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                     }
                     break;
 
-                case 1: // ¼¤¹â³ÖĞø
+                case 1: // æ¿€å…‰æŒç»­
                     NPC.velocity *= 0.9f;
 
-                    // ×·×ÙÍæ¼Ò
+                    // è¿½è¸ªç©å®¶
                     float targetAngle = (target.Center - NPC.Center).ToRotation();
                     laserAngle = MathHelper.Lerp(laserAngle, targetAngle, 0.018f);
 
@@ -533,7 +533,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
         private void RunPhase3YakshaSync(Player target) {
             switch ((int)SubState) {
-                case 0: // È·±£ÓĞÆÍ´Ó
+                case 0: // ç¡®ä¿æœ‰ä»†ä»
                     if (!hasSpawnedMinions || !AnyMinionsAlive()) {
                         if (Main.netMode != NetmodeID.MultiplayerClient) {
                             int minionCount = Main.expertMode ? 4 : 3;
@@ -561,7 +561,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                     PhaseTimer = 0;
                     break;
 
-                case 1: // ×¼±¸Í¬²½¹¥»÷
+                case 1: // å‡†å¤‡åŒæ­¥æ”»å‡»
                     NPC.velocity *= 0.9f;
 
                     if (PhaseTimer == 1) {
@@ -576,7 +576,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                         }
                     }
 
-                    // Ô¤¾¯Ğ§¹û
+                    // é¢„è­¦æ•ˆæœ
                     if (!VaultUtils.isServer) {
                         foreach (int minionId in yakshaMinionIds) {
                             if (minionId >= 0 && minionId < Main.maxNPCs && Main.npc[minionId].active) {
@@ -597,7 +597,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                     }
                     break;
 
-                case 2: // Í¬²½·¢Éä
+                case 2: // åŒæ­¥å‘å°„
                     if (PhaseTimer == 1) {
                         if (Main.netMode != NetmodeID.MultiplayerClient) {
                             foreach (int minionId in yakshaMinionIds) {
@@ -617,7 +617,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                                 }
                             }
 
-                            // BossÒ²·¢Éä
+                            // Bossä¹Ÿå‘å°„
                             Vector2 bossToTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero);
                             Projectile.NewProjectile(
                                 NPC.GetSource_FromAI(),
@@ -643,10 +643,10 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
         private void RunPhase3FinalRadiance(Player target) {
             switch ((int)SubState) {
-                case 0: // ĞîÁ¦
+                case 0: // è“„åŠ›
                     NPC.velocity *= 0.9f;
 
-                    // ÄÜÁ¿¾Û¼¯
+                    // èƒ½é‡èšé›†
                     if (!VaultUtils.isServer) {
                         for (int i = 0; i < 12; i++) {
                             Vector2 dustPos = NPC.Center + Main.rand.NextVector2CircularEdge(320, 320);
@@ -666,10 +666,10 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                     }
                     break;
 
-                case 1: // ÊÍ·Å
+                case 1: // é‡Šæ”¾
                     if (PhaseTimer == 1) {
                         if (Main.netMode != NetmodeID.MultiplayerClient) {
-                            // ¾Ş´óµÄ»·ĞÎµ¯Ä»±¬·¢
+                            // å·¨å¤§çš„ç¯å½¢å¼¹å¹•çˆ†å‘
                             int waves = 4;
                             for (int w = 0; w < waves; w++) {
                                 int count = 18;
@@ -690,7 +690,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                                 }
                             }
 
-                            // Í¬Ê±ÊÍ·ÅÏÉÆø²¨
+                            // åŒæ—¶é‡Šæ”¾ä»™æ°”æ³¢
                             Projectile.NewProjectile(
                                 NPC.GetSource_FromAI(),
                                 NPC.Center,

@@ -1,112 +1,112 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 
 namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 {
     /// <summary>
-    /// ÓÄÚ¤ÇàÇğºüÎ²°Í - ÓÄÁé»¯µÄÎ²°Í£¬¾ßÓĞ´©Í¸¡¢»êÆÇÍÏÎ²Ğ§¹û
-    /// Óë¾ÅÎ²ºü²»Í¬£¬ÕâĞ©Î²°Í¸ü¼ÓÆ®Ãì¡¢Áé¶¯£¬´øÓĞÓÄÀ¶É«µ÷
+    /// å¹½å†¥é’ä¸˜ç‹å°¾å·´ - å¹½çµåŒ–çš„å°¾å·´ï¼Œå…·æœ‰ç©¿é€ã€é­‚é­„æ‹–å°¾æ•ˆæœ
+    /// ä¸ä¹å°¾ç‹ä¸åŒï¼Œè¿™äº›å°¾å·´æ›´åŠ é£˜æ¸ºã€çµåŠ¨ï¼Œå¸¦æœ‰å¹½è“è‰²è°ƒ
     /// </summary>
     public class NetherKitsuneTail
     {
-        /// <summary>¹Ç÷À¹Ø½ÚÊıÁ¿</summary>
+        /// <summary>éª¨éª¼å…³èŠ‚æ•°é‡</summary>
         public const int JointCount = 14;
 
-        /// <summary>Ã¿¸ö¹Ç÷À¶ÎµÄ»ù´¡³¤¶È</summary>
+        /// <summary>æ¯ä¸ªéª¨éª¼æ®µçš„åŸºç¡€é•¿åº¦</summary>
         public const float BaseSegmentLength = 26f;
 
-        /// <summary>ÓÄÚ¤´Ì»÷Ê±µÄ×î´óÑÓÕ¹±¶ÂÊ</summary>
+        /// <summary>å¹½å†¥åˆºå‡»æ—¶çš„æœ€å¤§å»¶å±•å€ç‡</summary>
         public const float MaxExtensionMultiplier = 4.5f;
 
-        /// <summary>µ±Ç°Ã¿¸ö¶ÎµÄÊµ¼Ê³¤¶È</summary>
+        /// <summary>å½“å‰æ¯ä¸ªæ®µçš„å®é™…é•¿åº¦</summary>
         private float[] currentSegmentLengths;
 
-        /// <summary>µ±Ç°ÑÓÕ¹±¶ÂÊ</summary>
+        /// <summary>å½“å‰å»¶å±•å€ç‡</summary>
         private float currentExtension = 1.0f;
 
-        /// <summary>Ä¿±êÑÓÕ¹±¶ÂÊ</summary>
+        /// <summary>ç›®æ ‡å»¶å±•å€ç‡</summary>
         private float targetExtension = 1.0f;
 
-        /// <summary>Î²°Í×Ü³¤¶È£¨¶¯Ì¬£©</summary>
+        /// <summary>å°¾å·´æ€»é•¿åº¦ï¼ˆåŠ¨æ€ï¼‰</summary>
         public float TotalLength => JointCount * BaseSegmentLength * currentExtension;
 
-        /// <summary>Î²°ÍË÷Òı£¨0-8£©</summary>
+        /// <summary>å°¾å·´ç´¢å¼•ï¼ˆ0-8ï¼‰</summary>
         public int TailIndex { get; private set; }
 
-        /// <summary>¹Ø½ÚÎ»ÖÃÊı×é</summary>
+        /// <summary>å…³èŠ‚ä½ç½®æ•°ç»„</summary>
         public Vector2[] Joints { get; private set; }
 
-        /// <summary>¹Ø½ÚËÙ¶È</summary>
+        /// <summary>å…³èŠ‚é€Ÿåº¦</summary>
         public Vector2[] Velocities { get; private set; }
 
-        /// <summary>Ä¿±êÎ»ÖÃ</summary>
+        /// <summary>ç›®æ ‡ä½ç½®</summary>
         public Vector2 TargetPosition { get; set; }
 
-        /// <summary>¸ù²¿Î»ÖÃ</summary>
+        /// <summary>æ ¹éƒ¨ä½ç½®</summary>
         public Vector2 RootPosition { get; set; }
 
-        /// <summary>¸ù²¿»ù×¼½Ç¶È</summary>
+        /// <summary>æ ¹éƒ¨åŸºå‡†è§’åº¦</summary>
         public float BaseAngle { get; set; }
 
-        /// <summary>ÊÇ·ñ´¦ÓÚ¹¥»÷×´Ì¬</summary>
+        /// <summary>æ˜¯å¦å¤„äºæ”»å‡»çŠ¶æ€</summary>
         public bool IsAttacking { get; private set; }
 
-        /// <summary>¹¥»÷¼ÆÊ±Æ÷</summary>
+        /// <summary>æ”»å‡»è®¡æ—¶å™¨</summary>
         public float AttackTimer { get; private set; }
 
-        /// <summary>¹¥»÷ÀàĞÍ</summary>
+        /// <summary>æ”»å‡»ç±»å‹</summary>
         public TailAttackType CurrentAttack { get; private set; }
 
-        /// <summary>¹¥»÷Ä¿±êÎ»ÖÃ</summary>
+        /// <summary>æ”»å‡»ç›®æ ‡ä½ç½®</summary>
         public Vector2 AttackTargetPos { get; private set; }
 
-        // ÎïÀí²ÎÊı - ÓÄÚ¤Î²°Í¸üÇáÓ¯Æ®Òİ
+        // ç‰©ç†å‚æ•° - å¹½å†¥å°¾å·´æ›´è½»ç›ˆé£˜é€¸
         private float stiffness = 0.10f;
         private float damping = 0.80f;
-        private float gravityInfluence = 0.15f; // ÓÄÁé»¯¼õÉÙÖØÁ¦
-        private float swayAmplitude = 12f;      // ¸ü´óµÄ°Ú¶¯·ù¶È
+        private float gravityInfluence = 0.15f; // å¹½çµåŒ–å‡å°‘é‡åŠ›
+        private float swayAmplitude = 12f;      // æ›´å¤§çš„æ‘†åŠ¨å¹…åº¦
         private float swaySpeed = 3.0f;
         private float swayPhase;
 
-        // ÓÄÚ¤ÌØĞ§²ÎÊı
-        private float ghostAlpha = 1.0f;        // ÓÄÁéÍ¸Ã÷¶È
-        private float soulTrailIntensity = 0f;  // »êÆÇÍÏÎ²Ç¿¶È
-        private float phaseShiftTimer = 0f;     // ÏàÎ»Æ«ÒÆ£¨ÓÃÓÚÉÁË¸Ğ§¹û£©
+        // å¹½å†¥ç‰¹æ•ˆå‚æ•°
+        private float ghostAlpha = 1.0f;        // å¹½çµé€æ˜åº¦
+        private float soulTrailIntensity = 0f;  // é­‚é­„æ‹–å°¾å¼ºåº¦
+        private float phaseShiftTimer = 0f;     // ç›¸ä½åç§»ï¼ˆç”¨äºé—ªçƒæ•ˆæœï¼‰
 
-        // ¹¥»÷×´Ì¬²ÎÊı
+        // æ”»å‡»çŠ¶æ€å‚æ•°
         private Vector2 attackStartPos;
         private float attackDuration;
         private float attackProgress;
         private Vector2[] attackKeyframes;
 
-        // äÖÈ¾²ÎÊı
+        // æ¸²æŸ“å‚æ•°
         private float[] segmentWidths;
         private float glowIntensity = 0f;
 
-        // »êÆÇÍÏÎ²¼ÇÂ¼
+        // é­‚é­„æ‹–å°¾è®°å½•
         private Vector2[] trailPositions;
         private const int TrailLength = 8;
 
         public enum TailAttackType
         {
             None,
-            GhostStab,          // ÓÄÁé´Ì»÷ - ´©Í¸ĞÔÍ»´Ì
-            SoulSweep,          // »êÆÇºáÉ¨ - ´ø»êÆÇÉËº¦µÄºáÉ¨
-            PhaseWhip,          // ÏàÎ»±Ş´ò - ºöÃ÷ºö°µµÄ±Ş´ò
-            SpiritDrain,        // Áé»êÎüÈ¡ - ÎüÈ¡ÉúÃü
-            NetherCoil,         // ÓÄÚ¤ÅÌÈÆ - Êø¸¿µĞÈË
-            PhantomSlam,        // »ÃÓ°ÏÂÔÒ - ·ÖÁÑ³É¶à¸ö»ÃÓ°¹¥»÷
-            VoidPierce          // Ğé¿Õ´©´Ì - ³¬Ô¶¾àÀë´©´Ì
+            GhostStab,          // å¹½çµåˆºå‡» - ç©¿é€æ€§çªåˆº
+            SoulSweep,          // é­‚é­„æ¨ªæ‰« - å¸¦é­‚é­„ä¼¤å®³çš„æ¨ªæ‰«
+            PhaseWhip,          // ç›¸ä½é­æ‰“ - å¿½æ˜å¿½æš—çš„é­æ‰“
+            SpiritDrain,        // çµé­‚å¸å– - å¸å–ç”Ÿå‘½
+            NetherCoil,         // å¹½å†¥ç›˜ç»• - æŸç¼šæ•Œäºº
+            PhantomSlam,        // å¹»å½±ä¸‹ç ¸ - åˆ†è£‚æˆå¤šä¸ªå¹»å½±æ”»å‡»
+            VoidPierce          // è™šç©ºç©¿åˆº - è¶…è¿œè·ç¦»ç©¿åˆº
         }
 
-        /// <summary>ÊÇ·ñÏÔÊ¾Ô¤ÅĞÏß</summary>
+        /// <summary>æ˜¯å¦æ˜¾ç¤ºé¢„åˆ¤çº¿</summary>
         public bool ShowTelegraph { get; set; }
 
-        /// <summary>Ô¤ÅĞÏßÄ¿±ê·½Ïò</summary>
+        /// <summary>é¢„åˆ¤çº¿ç›®æ ‡æ–¹å‘</summary>
         public Vector2 TelegraphDirection { get; set; }
 
-        /// <summary>Ô¤ÅĞÏß³¤¶È</summary>
+        /// <summary>é¢„åˆ¤çº¿é•¿åº¦</summary>
         public float TelegraphLength { get; set; }
 
         public NetherKitsuneTail(int tailIndex) {
@@ -118,10 +118,10 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             attackKeyframes = new Vector2[4];
             trailPositions = new Vector2[TrailLength];
 
-            // Ã¿ÌõÎ²°ÍµÄ°Ú¶¯ÏàÎ»²»Í¬£¬ÓÄÚ¤°æ¸ü¼Ó´íÂä
+            // æ¯æ¡å°¾å·´çš„æ‘†åŠ¨ç›¸ä½ä¸åŒï¼Œå¹½å†¥ç‰ˆæ›´åŠ é”™è½
             swayPhase = tailIndex * MathHelper.TwoPi / 9f + Main.rand.NextFloat(0.5f);
 
-            // ³õÊ¼»¯¶Î¿í¶È£¨ÓÄÚ¤Î²°Í¸üÏ¸³¤Æ®Òİ£©
+            // åˆå§‹åŒ–æ®µå®½åº¦ï¼ˆå¹½å†¥å°¾å·´æ›´ç»†é•¿é£˜é€¸ï¼‰
             for (int i = 0; i < JointCount; i++) {
                 float t = i / (float)(JointCount - 1);
                 segmentWidths[i] = MathHelper.Lerp(0.9f, 0.2f, EaseOutQuad(t));
@@ -130,7 +130,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         }
 
         /// <summary>
-        /// ³õÊ¼»¯Î²°ÍÎ»ÖÃ
+        /// åˆå§‹åŒ–å°¾å·´ä½ç½®
         /// </summary>
         public void Initialize(Vector2 rootPos, float baseAngle) {
             RootPosition = rootPos;
@@ -156,13 +156,13 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         }
 
         /// <summary>
-        /// ¸üĞÂÎ²°Í×´Ì¬
+        /// æ›´æ–°å°¾å·´çŠ¶æ€
         /// </summary>
         public void Update(Vector2 newRootPos, float newBaseAngle, Vector2 ownerVelocity, float globalTime) {
             RootPosition = newRootPos;
             BaseAngle = newBaseAngle;
 
-            // ¸üĞÂÏàÎ»Æ«ÒÆ£¨ÓÄÁéÉÁË¸Ğ§¹û£©
+            // æ›´æ–°ç›¸ä½åç§»ï¼ˆå¹½çµé—ªçƒæ•ˆæœï¼‰
             phaseShiftTimer += 0.05f;
             ghostAlpha = 0.7f + 0.3f * MathF.Sin(phaseShiftTimer + TailIndex * 0.5f);
 
@@ -174,7 +174,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                 targetExtension = 1.0f;
             }
 
-            // Æ½»¬²åÖµÑÓÕ¹ÏµÊı
+            // å¹³æ»‘æ’å€¼å»¶å±•ç³»æ•°
             currentExtension = MathHelper.Lerp(currentExtension, targetExtension, 0.18f);
 
             UpdateSegmentLengths();
@@ -192,7 +192,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         }
 
         private void UpdateTrail() {
-            // ¸üĞÂ»êÆÇÍÏÎ²
+            // æ›´æ–°é­‚é­„æ‹–å°¾
             for (int i = TrailLength - 1; i > 0; i--) {
                 trailPositions[i] = trailPositions[i - 1];
             }
@@ -200,10 +200,10 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         }
 
         /// <summary>
-        /// ¿ÕÏĞ×´Ì¬µÄÓÄÁé°Ú¶¯
+        /// ç©ºé—²çŠ¶æ€çš„å¹½çµæ‘†åŠ¨
         /// </summary>
         private void UpdateIdleMotion(Vector2 ownerVelocity, float globalTime) {
-            // ÓÄÚ¤Î²°Í¸ü¼ÓÆ®ÒİµÄ°Ú¶¯
+            // å¹½å†¥å°¾å·´æ›´åŠ é£˜é€¸çš„æ‘†åŠ¨
             float swayOffset = MathF.Sin(globalTime * swaySpeed + swayPhase) * swayAmplitude;
             float swayOffset2 = MathF.Sin(globalTime * swaySpeed * 0.6f + swayPhase + 2f) * swayAmplitude * 0.7f;
             float swayOffset3 = MathF.Cos(globalTime * swaySpeed * 0.4f + swayPhase) * swayAmplitude * 0.3f;
@@ -212,7 +212,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 
             float targetAngle = BaseAngle + swayOffset * 0.06f + swayOffset2 * 0.04f;
 
-            // ÓÄÚ¤Î²°ÍÓĞÇáÎ¢µÄÉÏ¸¡ÇãÏò
+            // å¹½å†¥å°¾å·´æœ‰è½»å¾®çš„ä¸Šæµ®å€¾å‘
             Vector2 floatOffset = new Vector2(0, -10f + MathF.Sin(globalTime * 1.5f + TailIndex) * 5f);
 
             TargetPosition = RootPosition +
@@ -221,12 +221,12 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                 new Vector2(swayOffset + swayOffset3, swayOffset2) +
                 floatOffset;
 
-            // ¸üĞÂ»êÆÇÍÏÎ²Ç¿¶È
+            // æ›´æ–°é­‚é­„æ‹–å°¾å¼ºåº¦
             soulTrailIntensity = MathHelper.Lerp(soulTrailIntensity, 0.3f, 0.05f);
         }
 
         /// <summary>
-        /// ¸üĞÂ¹¥»÷¶¯×÷
+        /// æ›´æ–°æ”»å‡»åŠ¨ä½œ
         /// </summary>
         private void UpdateAttack(float globalTime) {
             AttackTimer += 1f / 60f;
@@ -262,10 +262,10 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             }
         }
 
-        #region ¹¥»÷¶¯×÷ÊµÏÖ
+        #region æ”»å‡»åŠ¨ä½œå®ç°
 
         /// <summary>
-        /// ÓÄÁé´Ì»÷ - ´©Í¸ĞÔÍ»´Ì
+        /// å¹½çµåˆºå‡» - ç©¿é€æ€§çªåˆº
         /// </summary>
         public void StartGhostStabAttack(Vector2 target, float duration = 0.35f) {
             IsAttacking = true;
@@ -288,14 +288,14 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                 float localT = EaseOutQuad(t / 0.2f);
                 TargetPosition = Vector2.Lerp(attackKeyframes[0], attackKeyframes[1], localT);
                 stiffness = 0.25f;
-                ghostAlpha = MathHelper.Lerp(1f, 0.5f, localT); // ĞîÁ¦Ê±±äµ­
+                ghostAlpha = MathHelper.Lerp(1f, 0.5f, localT); // è“„åŠ›æ—¶å˜æ·¡
             }
             else if (t < 0.45f) {
                 float localT = EaseInQuad((t - 0.2f) / 0.25f);
                 TargetPosition = Vector2.Lerp(attackKeyframes[1], attackKeyframes[2], localT);
                 stiffness = 0.6f;
                 glowIntensity = localT;
-                ghostAlpha = MathHelper.Lerp(0.5f, 1f, localT); // ´Ì³öÊ±±äÊµ
+                ghostAlpha = MathHelper.Lerp(0.5f, 1f, localT); // åˆºå‡ºæ—¶å˜å®
                 soulTrailIntensity = 1f;
             }
             else {
@@ -308,7 +308,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         }
 
         /// <summary>
-        /// »êÆÇºáÉ¨
+        /// é­‚é­„æ¨ªæ‰«
         /// </summary>
         public void StartSoulSweepAttack(Vector2 target, float sweepAngle = MathHelper.PiOver2, float duration = 0.55f) {
             IsAttacking = true;
@@ -353,7 +353,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         }
 
         /// <summary>
-        /// ÏàÎ»±Ş´ò - ºöÃ÷ºö°µ
+        /// ç›¸ä½é­æ‰“ - å¿½æ˜å¿½æš—
         /// </summary>
         public void StartPhaseWhipAttack(Vector2 target, float duration = 0.45f) {
             IsAttacking = true;
@@ -380,13 +380,13 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             stiffness = 0.15f + 0.35f * MathF.Sin(t * MathF.PI);
             glowIntensity = MathF.Sin(t * MathF.PI);
 
-            // ÏàÎ»ÉÁË¸Ğ§¹û
+            // ç›¸ä½é—ªçƒæ•ˆæœ
             ghostAlpha = 0.4f + 0.6f * MathF.Abs(MathF.Sin(t * MathF.PI * 5f));
             soulTrailIntensity = MathF.Sin(t * MathF.PI);
         }
 
         /// <summary>
-        /// Áé»êÎüÈ¡
+        /// çµé­‚å¸å–
         /// </summary>
         public void StartSpiritDrainAttack(Vector2 target, float duration = 0.9f) {
             IsAttacking = true;
@@ -408,7 +408,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                 glowIntensity = localT * 0.5f;
             }
             else if (t < 0.8f) {
-                // ÎüÈ¡½×¶Î - ±£³ÖÔÚÄ¿±êÎ»ÖÃ²¢Âö¶¯
+                // å¸å–é˜¶æ®µ - ä¿æŒåœ¨ç›®æ ‡ä½ç½®å¹¶è„‰åŠ¨
                 float localT = (t - 0.3f) / 0.5f;
                 float pulse = MathF.Sin(localT * MathF.PI * 4f) * 20f;
                 TargetPosition = AttackTargetPos + toTarget * pulse;
@@ -425,7 +425,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         }
 
         /// <summary>
-        /// ÓÄÚ¤ÅÌÈÆ
+        /// å¹½å†¥ç›˜ç»•
         /// </summary>
         public void StartNetherCoilAttack(float duration = 1.0f) {
             IsAttacking = true;
@@ -442,7 +442,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             float radius = TotalLength * 0.35f * (1f - t * 0.4f);
             float angle = BaseAngle + coils * MathHelper.TwoPi;
 
-            // ÓÄÚ¤ÅÌÈÆÓĞÉÏÉıĞ§¹û
+            // å¹½å†¥ç›˜ç»•æœ‰ä¸Šå‡æ•ˆæœ
             float rise = t * 50f;
 
             TargetPosition = RootPosition + new Vector2(MathF.Cos(angle), MathF.Sin(angle) - rise / radius) * radius;
@@ -452,7 +452,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         }
 
         /// <summary>
-        /// »ÃÓ°ÏÂÔÒ
+        /// å¹»å½±ä¸‹ç ¸
         /// </summary>
         public void StartPhantomSlamAttack(Vector2 target, float duration = 0.65f) {
             IsAttacking = true;
@@ -476,14 +476,14 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                 TargetPosition = Vector2.Lerp(attackKeyframes[0], attackKeyframes[1], localT);
                 stiffness = 0.25f;
                 glowIntensity = localT * 0.4f;
-                ghostAlpha = 1f - localT * 0.3f; // ¸ß¾ÙÊ±±äµ­
+                ghostAlpha = 1f - localT * 0.3f; // é«˜ä¸¾æ—¶å˜æ·¡
             }
             else if (t < 0.55f) {
                 float localT = EaseInQuad((t - 0.35f) / 0.2f);
                 TargetPosition = Vector2.Lerp(attackKeyframes[1], attackKeyframes[2], localT);
                 stiffness = 0.65f;
                 glowIntensity = 0.4f + localT * 0.6f;
-                ghostAlpha = 0.7f + localT * 0.3f; // ÏÂÔÒÊ±±äÊµ
+                ghostAlpha = 0.7f + localT * 0.3f; // ä¸‹ç ¸æ—¶å˜å®
                 soulTrailIntensity = 1f;
             }
             else {
@@ -495,7 +495,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         }
 
         /// <summary>
-        /// Ğé¿Õ´©´Ì - ³¬Ô¶¾àÀë¹¥»÷
+        /// è™šç©ºç©¿åˆº - è¶…è¿œè·ç¦»æ”»å‡»
         /// </summary>
         public void StartVoidPierceAttack(Vector2 direction, float telegraphTime = 0.6f, float stabTime = 0.12f, float recoverTime = 0.45f) {
             IsAttacking = true;
@@ -523,7 +523,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             float phase1End = voidPiercePhases[0] / attackDuration;
             float phase2End = (voidPiercePhases[0] + voidPiercePhases[1]) / attackDuration;
 
-            if (t < phase1End) // Ô¤ÅĞ½×¶Î
+            if (t < phase1End) // é¢„åˆ¤é˜¶æ®µ
             {
                 float localT = t / phase1End;
 
@@ -533,10 +533,10 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                 targetExtension = 1.0f;
                 stiffness = MathHelper.Lerp(0.1f, 0.45f, localT);
                 glowIntensity = localT * 0.7f;
-                ghostAlpha = 0.5f + 0.3f * MathF.Sin(localT * MathF.PI * 6f); // ÉÁË¸Ô¤¾¯
+                ghostAlpha = 0.5f + 0.3f * MathF.Sin(localT * MathF.PI * 6f); // é—ªçƒé¢„è­¦
                 ShowTelegraph = true;
             }
-            else if (t < phase2End) // ´©´Ì½×¶Î
+            else if (t < phase2End) // ç©¿åˆºé˜¶æ®µ
             {
                 float localT = (t - phase1End) / (phase2End - phase1End);
 
@@ -552,7 +552,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                 soulTrailIntensity = 1f;
                 ShowTelegraph = false;
             }
-            else // »ØÊÕ½×¶Î
+            else // å›æ”¶é˜¶æ®µ
             {
                 float localT = (t - phase2End) / (1f - phase2End);
                 float recoverT = EaseOutQuad(localT);
@@ -581,7 +581,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 
         #endregion
 
-        #region FABRIK IKËã·¨
+        #region FABRIK IKç®—æ³•
 
         private void SolveFABRIK() {
             const int iterations = 5;
@@ -604,7 +604,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                 for (int i = 1; i < JointCount; i++) {
                     Vector2 direction = (Joints[i] - Joints[i - 1]).SafeNormalize(Vector2.UnitY);
 
-                    // ÓÄÚ¤Î²°Í¸üÁé»î
+                    // å¹½å†¥å°¾å·´æ›´çµæ´»
                     float maxBendAngle = MathHelper.ToRadians(45f / MathF.Max(1f, currentExtension * 0.4f));
 
                     if (i > 1) {
@@ -637,7 +637,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 
         #endregion
 
-        #region ÎïÀíÄ£Äâ
+        #region ç‰©ç†æ¨¡æ‹Ÿ
 
         private void ApplyPhysics(Vector2 ownerVelocity) {
             for (int i = 1; i < JointCount; i++) {
@@ -649,9 +649,9 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                 Vector2 springForce = (idealPos - Joints[i]) * stiffness;
                 Vector2 inertiaForce = -ownerVelocity * (0.12f * i / JointCount);
 
-                // ÓÄÚ¤Î²°ÍÓĞÇáÎ¢ÉÏ¸¡
+                // å¹½å†¥å°¾å·´æœ‰è½»å¾®ä¸Šæµ®
                 float gravityFactor = (float)i / JointCount * gravityInfluence / MathF.Max(1f, currentExtension * 0.5f);
-                Vector2 gravityForce = new Vector2(0, gravityFactor * 0.3f - 0.1f); // ÇáÎ¢ÉÏ¸¡
+                Vector2 gravityForce = new Vector2(0, gravityFactor * 0.3f - 0.1f); // è½»å¾®ä¸Šæµ®
 
                 Velocities[i] += springForce + inertiaForce + gravityForce;
                 Velocities[i] *= damping;
@@ -676,10 +676,10 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 
         #endregion
 
-        #region »æÖÆ
+        #region ç»˜åˆ¶
 
         /// <summary>
-        /// »æÖÆÎ²°Í
+        /// ç»˜åˆ¶å°¾å·´
         /// </summary>
         public void Draw(SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor) {
             Texture2D bodyTex = NetherKitsune.NetherMissesBody;
@@ -688,25 +688,25 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             if (bodyTex == null || tipTex == null)
                 return;
 
-            // ÏÈ»æÖÆ»êÆÇÍÏÎ²
+            // å…ˆç»˜åˆ¶é­‚é­„æ‹–å°¾
             DrawSoulTrail(spriteBatch, screenPos);
 
-            // »æÖÆËùÓĞÌå½Ú
+            // ç»˜åˆ¶æ‰€æœ‰ä½“èŠ‚
             for (int i = 0; i < JointCount - 1; i++) {
                 DrawSegment(spriteBatch, screenPos, bodyTex, i, lightColor);
             }
 
-            // »æÖÆÎ²¼â
+            // ç»˜åˆ¶å°¾å°–
             DrawTip(spriteBatch, screenPos, tipTex, lightColor);
 
-            // »æÖÆ·¢¹âĞ§¹û
+            // ç»˜åˆ¶å‘å…‰æ•ˆæœ
             if (glowIntensity > 0) {
                 DrawGlow(spriteBatch, screenPos);
             }
         }
 
         /// <summary>
-        /// »æÖÆ»êÆÇÍÏÎ²
+        /// ç»˜åˆ¶é­‚é­„æ‹–å°¾
         /// </summary>
         private void DrawSoulTrail(SpriteBatch spriteBatch, Vector2 screenPos) {
             if (soulTrailIntensity <= 0.1f)
@@ -729,7 +729,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                 float rotation = dir.ToRotation();
                 float length = Vector2.Distance(pos, prevPos);
 
-                // ÓÄÀ¶É«ÍÏÎ²
+                // å¹½è“è‰²æ‹–å°¾
                 Color trailColor = new Color(80, 150, 220) * alpha;
                 trailColor.A = 0;
 
@@ -750,7 +750,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         }
 
         /// <summary>
-        /// »æÖÆÔ¤ÅĞÏß
+        /// ç»˜åˆ¶é¢„åˆ¤çº¿
         /// </summary>
         public void DrawTelegraph(SpriteBatch spriteBatch, Vector2 screenPos) {
             if (!ShowTelegraph || TelegraphLength <= 0)
@@ -759,7 +759,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             float pulseTime = (float)Main.timeForVisualEffects * 0.1f;
             float pulse = 0.5f + 0.5f * MathF.Sin(pulseTime * 10f);
 
-            // ÓÄÀ¶É«Ô¤ÅĞÏß
+            // å¹½è“è‰²é¢„åˆ¤çº¿
             Color telegraphColor = Color.Lerp(new Color(60, 120, 200), new Color(100, 180, 255), pulse) * (0.25f + pulse * 0.25f);
             telegraphColor.A = 0;
 
@@ -780,7 +780,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                 Vector2 p1 = Vector2.Lerp(startPos, endPos, t1);
                 Vector2 p2 = Vector2.Lerp(startPos, endPos, t2);
 
-                // ĞéÏß + ²¨¶¯Ğ§¹û
+                // è™šçº¿ + æ³¢åŠ¨æ•ˆæœ
                 if (i % 3 == 0) continue;
 
                 float wave = MathF.Sin(t1 * MathF.PI * 8f + pulseTime * 5f) * 3f;
@@ -809,7 +809,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                 );
             }
 
-            // ÖÕµã¾¯¸æ - ÓÄÀ¶É«
+            // ç»ˆç‚¹è­¦å‘Š - å¹½è“è‰²
             float warningPulse = 1f + 0.4f * MathF.Sin(pulseTime * 15f);
             Color warningColor = new Color(100, 180, 255) * (0.4f + pulse * 0.3f);
             warningColor.A = 0;
@@ -844,7 +844,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 
             float widthScale = segmentWidths[index];
 
-            // ÓÄÀ¶É«µ÷
+            // å¹½è“è‰²è°ƒ
             Color baseColor = Color.Lerp(lightColor, new Color(80, 140, 200), 0.5f);
             Color drawColor = Color.Lerp(baseColor, new Color(120, 200, 255), glowIntensity * 0.6f);
             drawColor *= ghostAlpha;
@@ -854,7 +854,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 
             Vector2 scale = new Vector2(length / texture.Width, widthScale);
 
-            // Ö÷Ìå
+            // ä¸»ä½“
             spriteBatch.Draw(
                 texture,
                 drawPos,
@@ -867,7 +867,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                 0f
             );
 
-            // ÓÄÚ¤·¢¹â²ã
+            // å¹½å†¥å‘å…‰å±‚
             if (glowIntensity > 0 || ghostAlpha < 0.9f) {
                 Color glowColor = new Color(100, 180, 255) * (glowIntensity * 0.5f + (1f - ghostAlpha) * 0.3f);
                 glowColor.A = 0;
@@ -894,7 +894,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             Vector2 direction = (lastJoint - prevJoint).SafeNormalize(Vector2.UnitY);
             float rotation = direction.ToRotation();
 
-            // ÓÄÀ¶É«Î²¼â
+            // å¹½è“è‰²å°¾å°–
             Color baseColor = Color.Lerp(lightColor, new Color(100, 180, 255), 0.6f);
             Color tipColor = Color.Lerp(baseColor, new Color(150, 220, 255), glowIntensity);
             tipColor *= ghostAlpha;
@@ -913,7 +913,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                 0f
             );
 
-            // Î²¼â·¢¹â
+            // å°¾å°–å‘å…‰
             if (glowIntensity > 0) {
                 Color glowColor = new Color(120, 200, 255) * glowIntensity * 0.6f;
                 glowColor.A = 0;
@@ -937,14 +937,14 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 
                 float intensity = glowIntensity * (float)(i - (JointCount - 4) + 1) / 4f;
 
-                // ÓÄÀ¶É«¹âÕÕ
+                // å¹½è“è‰²å…‰ç…§
                 Lighting.AddLight(Joints[i], new Vector3(0.3f, 0.6f, 0.9f) * intensity);
             }
         }
 
         #endregion
 
-        #region ¹¤¾ß·½·¨
+        #region å·¥å…·æ–¹æ³•
 
         public Vector2 GetJointPosition(int index) {
             if (index < 0 || index >= JointCount)

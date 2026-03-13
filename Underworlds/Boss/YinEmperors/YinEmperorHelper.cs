@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using System;
 using Terraria;
@@ -8,51 +8,51 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 {
     /// <summary>
-    /// ÒõÌì×Ó×¨ÓÃ»æÖÆ¹¤¾ßÀà
-    /// Ìá¹©µÛÍõ¼¶ÓÄÚ¤ÊÓ¾õÌØĞ§Ö§³Ö
+    /// é˜´å¤©å­ä¸“ç”¨ç»˜åˆ¶å·¥å…·ç±»
+    /// æä¾›å¸ç‹çº§å¹½å†¥è§†è§‰ç‰¹æ•ˆæ”¯æŒ
     /// </summary>
     public static class YinEmperorHelper
     {
         public static string Path => typeof(YinEmperorHelper).Namespace.Replace(".", "/") + "/";
 
-        #region ÎÆÀí×ÊÔ´
+        #region çº¹ç†èµ„æº
 
         private static Asset<Texture2D> _ringTexture;
 
-        /// <summary>µÛÚ¤·¨»·ÎÆÀí</summary>
+        /// <summary>å¸å†¥æ³•ç¯çº¹ç†</summary>
         public static Texture2D RingTexture => (_ringTexture ??= ModContent.Request<Texture2D>(Path + "YinEmperorRing")).Value;
 
         #endregion
 
-        #region µÛÚ¤ÅäÉ«·½°¸
+        #region å¸å†¥é…è‰²æ–¹æ¡ˆ
 
-        /// <summary>µÛÚ¤½ğ - ¸¯Ğà»ÊÈ¨</summary>
+        /// <summary>å¸å†¥é‡‘ - è…æœ½çš‡æƒ</summary>
         public static Color ImperialGold => new Color(220, 180, 60);
 
-        /// <summary>Ú¤Ô¨×Ï - ÉîåäÓÄ°µ</summary>
+        /// <summary>å†¥æ¸Šç´« - æ·±é‚ƒå¹½æš—</summary>
         public static Color AbyssPurple => new Color(100, 30, 160);
 
-        /// <summary>»êµÆÇà - ÓÄÚ¤µÆ»ğ</summary>
+        /// <summary>é­‚ç¯é’ - å¹½å†¥ç¯ç«</summary>
         public static Color SoulLanternCyan => new Color(80, 200, 220);
 
-        /// <summary>Ú¤Ñªºì - µÛÍõÖ®Å­</summary>
+        /// <summary>å†¥è¡€çº¢ - å¸ç‹ä¹‹æ€’</summary>
         public static Color NetherBloodRed => new Color(200, 30, 50);
 
-        /// <summary>ÒõÓ°ºÚ - ´¿´â°µÓò</summary>
+        /// <summary>é˜´å½±é»‘ - çº¯ç²¹æš—åŸŸ</summary>
         public static Color ShadowBlack => new Color(15, 10, 25);
 
-        /// <summary>ÁúÂö½ğ - µÛÍõÁúÆø</summary>
+        /// <summary>é¾™è„‰é‡‘ - å¸ç‹é¾™æ°”</summary>
         public static Color DragonVeinGold => new Color(255, 210, 80);
 
-        /// <summary>Áé·û°× - ·âÓ¡·ûÎÄ</summary>
+        /// <summary>çµç¬¦ç™½ - å°å°ç¬¦æ–‡</summary>
         public static Color TalismanWhite => new Color(230, 220, 255);
 
         #endregion
 
-        #region µÛÍõ¼¶Á£×ÓÌØĞ§
+        #region å¸ç‹çº§ç²’å­ç‰¹æ•ˆ
 
         /// <summary>
-        /// ´´½¨µÛÚ¤äöÎĞ - ÒõÌì×Ó³ö³¡/½×¶Î×ª»»ÓÃ´óĞÍÌØĞ§
+        /// åˆ›å»ºå¸å†¥æ¼©æ¶¡ - é˜´å¤©å­å‡ºåœº/é˜¶æ®µè½¬æ¢ç”¨å¤§å‹ç‰¹æ•ˆ
         /// </summary>
         public static void CreateImperialVortex(Vector2 center, float radius, float intensity, int particleCount = 40) {
             for (int i = 0; i < particleCount; i++) {
@@ -63,7 +63,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 Vector2 toCenter = (center - pos).SafeNormalize(Vector2.Zero);
                 float speed = intensity * (1f - dist / radius) * 10f;
 
-                // µÛÍõ½ğÑæ+Ú¤×ÏË«É«Á£×Ó
+                // å¸ç‹é‡‘ç„°+å†¥ç´«åŒè‰²ç²’å­
                 int dustType = Main.rand.NextBool(3) ? DustID.GoldFlame : DustID.Shadowflame;
                 var d = Dust.NewDustPerfect(pos, dustType);
                 d.noGravity = true;
@@ -71,7 +71,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 d.velocity = toCenter * speed + new Vector2(-toCenter.Y, toCenter.X) * speed * 0.6f;
                 d.alpha = 80;
 
-                // µÛÚ¤Ëé¹â
+                // å¸å†¥ç¢å…‰
                 if (Main.rand.NextBool(4)) {
                     var glow = Dust.NewDustPerfect(pos, DustID.YellowTorch);
                     glow.noGravity = true;
@@ -82,7 +82,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         }
 
         /// <summary>
-        /// ´´½¨ÁúÆø±¬·¢ - µÛÍõÁúÂöÄÜÁ¿ÊÍ·Å
+        /// åˆ›å»ºé¾™æ°”çˆ†å‘ - å¸ç‹é¾™è„‰èƒ½é‡é‡Šæ”¾
         /// </summary>
         public static void CreateDragonBurst(Vector2 center, float radius, int rings = 3, int particlesPerRing = 16) {
             for (int ring = 0; ring < rings; ring++) {
@@ -93,7 +93,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                     Vector2 direction = new Vector2(MathF.Cos(angle), MathF.Sin(angle));
                     Vector2 pos = center + direction * ringRadius * 0.3f;
 
-                    // ½ğÉ«Óë×ÏÉ«½»Ìæ
+                    // é‡‘è‰²ä¸ç´«è‰²äº¤æ›¿
                     int dustType = ring % 2 == 0 ? DustID.GoldFlame : DustID.Shadowflame;
                     var d = Dust.NewDustPerfect(pos, dustType);
                     d.noGravity = true;
@@ -105,7 +105,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         }
 
         /// <summary>
-        /// ´´½¨µÛÚ¤ÍÏÎ² - ÒÆ¶¯Ê±µÄÓÄ½ğÎ²¼£
+        /// åˆ›å»ºå¸å†¥æ‹–å°¾ - ç§»åŠ¨æ—¶çš„å¹½é‡‘å°¾è¿¹
         /// </summary>
         public static void CreateImperialTrail(Vector2 position, Vector2 velocity, float scale = 1f) {
             for (int i = 0; i < 4; i++) {
@@ -127,7 +127,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         }
 
         /// <summary>
-        /// ´´½¨·ûÎÄ±¬ÆÆ - ·âÓ¡½â³ıÊ±µÄ·ûÎÄËéÁÑĞ§¹û
+        /// åˆ›å»ºç¬¦æ–‡çˆ†ç ´ - å°å°è§£é™¤æ—¶çš„ç¬¦æ–‡ç¢è£‚æ•ˆæœ
         /// </summary>
         public static void CreateTalismanBurst(Vector2 center, float radius, int count = 20) {
             for (int i = 0; i < count; i++) {
@@ -141,7 +141,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 d.velocity = direction * Main.rand.NextFloat(4f, 10f);
                 d.alpha = 50;
 
-                // ·ûÎÄËéÆ¬¹âµã
+                // ç¬¦æ–‡ç¢ç‰‡å…‰ç‚¹
                 if (Main.rand.NextBool(2)) {
                     var shard = Dust.NewDustPerfect(pos, DustID.YellowTorch);
                     shard.noGravity = true;
@@ -152,7 +152,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         }
 
         /// <summary>
-        /// ´´½¨Ú¤À×Öù - Ìì½µµÛÚ¤À×öªÖùĞ§¹û
+        /// åˆ›å»ºå†¥é›·æŸ± - å¤©é™å¸å†¥é›·éœ†æŸ±æ•ˆæœ
         /// </summary>
         public static void CreateNetherLightningPillar(Vector2 top, Vector2 bottom, float intensity) {
             Vector2 direction = (bottom - top).SafeNormalize(Vector2.UnitY);
@@ -164,7 +164,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 float progress = i / (float)segments;
                 Vector2 basePos = Vector2.Lerp(top, bottom, progress);
 
-                // ÉÁµç¾â³İ
+                // é—ªç”µé”¯é½¿
                 float zigzag = MathF.Sin(progress * MathHelper.Pi * 8 + Main.GlobalTimeWrappedHourly * 20f) * 25f * intensity;
                 Vector2 pos = basePos + perpendicular * zigzag;
 
@@ -184,7 +184,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         }
 
         /// <summary>
-        /// ´´½¨ÆÁÄ»ÉÁË¸£¨Í¨¹ıÁ£×ÓÄ£Äâ£©
+        /// åˆ›å»ºå±å¹•é—ªçƒï¼ˆé€šè¿‡ç²’å­æ¨¡æ‹Ÿï¼‰
         /// </summary>
         public static void CreateScreenFlash(Vector2 center, Color color, float intensity) {
             int particleCount = (int)(60 * intensity);
@@ -204,10 +204,10 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
         #endregion
 
-        #region µÛÚ¤»æÖÆ·½·¨
+        #region å¸å†¥ç»˜åˆ¶æ–¹æ³•
 
         /// <summary>
-        /// »æÖÆµÛÚ¤¹â»· - »·ÈÆBossµÄµÛÍõ·ûÎÄ¹â»·
+        /// ç»˜åˆ¶å¸å†¥å…‰ç¯ - ç¯ç»•Bossçš„å¸ç‹ç¬¦æ–‡å…‰ç¯
         /// </summary>
         public static void DrawImperialAura(SpriteBatch sb, Vector2 center, float radius, int count,
             float rotation, float pulsePhase, float intensity) {
@@ -231,7 +231,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         }
 
         /// <summary>
-        /// »æÖÆÄÜÁ¿²¨ - À©É¢µÄµÛÚ¤³å»÷²¨
+        /// ç»˜åˆ¶èƒ½é‡æ³¢ - æ‰©æ•£çš„å¸å†¥å†²å‡»æ³¢
         /// </summary>
         public static void DrawEnergyWave(SpriteBatch sb, Vector2 center, float radius, float width,
             Color color, float alpha) {
@@ -252,7 +252,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                     angle, origin, width / 20f, SpriteEffects.None, 0);
             }
 
-            // ÄÚÍâ±ßÔµ
+            // å†…å¤–è¾¹ç¼˜
             for (int i = 0; i < segments; i++) {
                 float angle = MathHelper.TwoPi * i / segments;
                 Vector2 innerPos = center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * (radius - width / 2);
@@ -266,7 +266,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         }
 
         /// <summary>
-        /// »æÖÆÁúÆø¹âÖù - µÛÍõ³ö³¡Ê±µÄ³åÌì¹âÖù
+        /// ç»˜åˆ¶é¾™æ°”å…‰æŸ± - å¸ç‹å‡ºåœºæ—¶çš„å†²å¤©å…‰æŸ±
         /// </summary>
         public static void DrawDragonPillar(SpriteBatch sb, Vector2 basePos, float height, float width,
             float pulsePhase, float alpha) {
@@ -275,7 +275,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
             Vector2 origin = tex.Size() / 2f;
 
-            // ´Óµ×²¿µ½¶¥²¿µÄ¹âÖù
+            // ä»åº•éƒ¨åˆ°é¡¶éƒ¨çš„å…‰æŸ±
             int segments = (int)(height / 15);
             for (int i = 0; i < segments; i++) {
                 float progress = i / (float)segments;
@@ -285,13 +285,13 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 float segWidth = width * (1f - progress * 0.6f) * pulse;
                 float segAlpha = alpha * (1f - progress * 0.7f);
 
-                // ½ğÉ«ºËĞÄ
+                // é‡‘è‰²æ ¸å¿ƒ
                 Color coreColor = DragonVeinGold;
                 coreColor.A = 0;
                 sb.Draw(tex, pos - Main.screenPosition, null, coreColor * segAlpha,
                     0f, origin, new Vector2(segWidth / tex.Width, 1.2f), SpriteEffects.None, 0);
 
-                // ×ÏÉ«ÍâÔÎ
+                // ç´«è‰²å¤–æ™•
                 Color glowColor = AbyssPurple;
                 glowColor.A = 0;
                 sb.Draw(tex, pos - Main.screenPosition, null, glowColor * segAlpha * 0.4f,
@@ -300,7 +300,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         }
 
         /// <summary>
-        /// »æÖÆµÛÍõÁúÆø»·ÈÆÇò
+        /// ç»˜åˆ¶å¸ç‹é¾™æ°”ç¯ç»•çƒ
         /// </summary>
         public static void DrawDragonOrbs(SpriteBatch sb, Vector2 center, float radius, int count,
             float rotation, float pulsePhase) {
@@ -318,7 +318,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 Color orbColor = colors[i % colors.Length];
                 float orbPulse = 0.8f + MathF.Sin(pulsePhase + i * MathHelper.Pi / count) * 0.2f;
 
-                // ÍÏÎ²
+                // æ‹–å°¾
                 for (int t = 1; t <= 4; t++) {
                     float trailAngle = angle - t * 0.12f;
                     Vector2 trailPos = center + new Vector2(MathF.Cos(trailAngle), MathF.Sin(trailAngle)) * orbitRadius;
@@ -331,13 +331,13 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                         0f, origin, orbPulse * (1f - t * 0.12f), SpriteEffects.None, 0);
                 }
 
-                // ºËĞÄ
+                // æ ¸å¿ƒ
                 Color core = orbColor;
                 core.A = 0;
                 sb.Draw(tex, pos - Main.screenPosition, null, core * 0.7f,
                     0f, origin, orbPulse, SpriteEffects.None, 0);
 
-                // ¸ß¹â
+                // é«˜å…‰
                 Color highlight = Color.White;
                 highlight.A = 0;
                 sb.Draw(tex, pos - Main.screenPosition, null, highlight * 0.4f,
@@ -348,8 +348,8 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         #endregion
 
         /// <summary>
-        /// »æÖÆµÛÚ¤·¨»· - Boss±³ºóĞı×ªµÄ¾Ş´óÔ²»·
-        /// Ê¹ÓÃYinEmperorRing.pngÎÆÀí£¬¶à²ãµş¼ÓÓªÔìÍşÑ¹¸Ğ
+        /// ç»˜åˆ¶å¸å†¥æ³•ç¯ - BossèƒŒåæ—‹è½¬çš„å·¨å¤§åœ†ç¯
+        /// ä½¿ç”¨YinEmperorRing.pngçº¹ç†ï¼Œå¤šå±‚å åŠ è¥é€ å¨å‹æ„Ÿ
         /// </summary>
         public static void DrawImperialRing(SpriteBatch sb, Vector2 center, float scale,
             float rotation, float pulsePhase, float alpha) {
@@ -358,34 +358,34 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
             Vector2 origin = tex.Size() / 2f;
 
-            // === µÚ1²ã£º×îÍâ²ã°µ×ÏÔÎÈ¾ ===
+            // === ç¬¬1å±‚ï¼šæœ€å¤–å±‚æš—ç´«æ™•æŸ“ ===
             Color outerGlow = AbyssPurple;
             outerGlow.A = 0;
             float outerPulse = 1f + MathF.Sin(pulsePhase * 0.8f) * 0.05f;
             sb.Draw(tex, center - Main.screenPosition, null, outerGlow * alpha * 0.15f,
                 rotation * 0.3f, origin, scale * 1.15f * outerPulse, SpriteEffects.None, 0);
 
-            // === µÚ2²ã£º½ğÉ«Ö÷»· ===
+            // === ç¬¬2å±‚ï¼šé‡‘è‰²ä¸»ç¯ ===
             Color goldRing = ImperialGold;
             goldRing.A = 0;
             float mainPulse = 1f + MathF.Sin(pulsePhase) * 0.03f;
             sb.Draw(tex, center - Main.screenPosition, null, goldRing * alpha * 0.6f,
                 rotation, origin, scale * mainPulse, SpriteEffects.None, 0);
 
-            // === µÚ3²ã£º·´ÏòĞı×ªµÄÓÄ°µ²ã ===
+            // === ç¬¬3å±‚ï¼šåå‘æ—‹è½¬çš„å¹½æš—å±‚ ===
             Color darkRing = ShadowBlack;
             darkRing.A = 0;
             sb.Draw(tex, center - Main.screenPosition, null, darkRing * alpha * 0.25f,
                 -rotation * 0.6f, origin, scale * 0.95f, SpriteEffects.None, 0);
 
-            // === µÚ4²ã£ºÄÚ²ã¸ßÁÁ±ßÔµ ===
+            // === ç¬¬4å±‚ï¼šå†…å±‚é«˜äº®è¾¹ç¼˜ ===
             Color highlight = DragonVeinGold;
             highlight.A = 0;
             float innerPulse = 1f + MathF.Sin(pulsePhase * 1.5f) * 0.06f;
             sb.Draw(tex, center - Main.screenPosition, null, highlight * alpha * 0.3f,
                 rotation * 1.2f, origin, scale * 0.88f * innerPulse, SpriteEffects.None, 0);
 
-            // === µÚ5²ã£º°×É«ºôÎü¸ß¹â ===
+            // === ç¬¬5å±‚ï¼šç™½è‰²å‘¼å¸é«˜å…‰ ===
             Color white = Color.White;
             white.A = 0;
             float breathAlpha = (MathF.Sin(pulsePhase * 0.6f) * 0.5f + 0.5f) * 0.08f;
@@ -393,19 +393,19 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 rotation, origin, scale * mainPulse, SpriteEffects.None, 0);
         }
 
-        #region ¹¤¾ß·½·¨
+        #region å·¥å…·æ–¹æ³•
 
-        /// <summary>Æ½»¬²åÖµ</summary>
+        /// <summary>å¹³æ»‘æ’å€¼</summary>
         public static float SmoothStep(float t) => t * t * (3f - 2f * t);
 
-        /// <summary>µ¯ĞÔ»º³ö</summary>
+        /// <summary>å¼¹æ€§ç¼“å‡º</summary>
         public static float ElasticOut(float t) {
             if (t == 0 || t == 1) return t;
             float p = 0.3f;
             return MathF.Pow(2, -10 * t) * MathF.Sin((t - p / 4) * (2 * MathF.PI) / p) + 1;
         }
 
-        /// <summary>¸ù¾İÄÑ¶ÈËõ·ÅÉËº¦</summary>
+        /// <summary>æ ¹æ®éš¾åº¦ç¼©æ”¾ä¼¤å®³</summary>
         public static int GetScaledDamage(int baseDamage) {
             if (Main.masterMode)
                 return (int)(baseDamage * 1.5f);

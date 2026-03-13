@@ -1,23 +1,23 @@
-using System;
+ï»¿using System;
 using Terraria;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 {
     /// <summary>
-    /// ºÚ°×ÎŞ³£BossÕ½×¨ÓÃÍæ¼ÒĞ§¹ûÀà
-    /// ´¦ÀíÆÁÄ»Ğ§¹û¡¢¾µÍ·¿ØÖÆµÈ
+    /// é»‘ç™½æ— å¸¸Bossæˆ˜ä¸“ç”¨ç©å®¶æ•ˆæœç±»
+    /// å¤„ç†å±å¹•æ•ˆæœã€é•œå¤´æ§åˆ¶ç­‰
     /// </summary>
     public class BAWPlayer : ModPlayer
     {
-        #region ÆÁÄ»Î»ÖÃ¿ØÖÆ
+        #region å±å¹•ä½ç½®æ§åˆ¶
 
         private Vector2 screenPos;
         private bool startSetScreenPos = false;
         private float timerSetScreenPos = 1;
 
         /// <summary>
-        /// ÉèÖÃÆÁÄ»¾Û½¹Î»ÖÃ
+        /// è®¾ç½®å±å¹•èšç„¦ä½ç½®
         /// </summary>
         public void SetScreenPos(Vector2 toVec) {
             screenPos = Vector2.Lerp(screenPos, toVec - Main.ScreenSize.ToVector2() * 0.5f, 0.04f);
@@ -27,13 +27,13 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 
         #endregion
 
-        #region ÆÁÄ»Õğ¶¯
+        #region å±å¹•éœ‡åŠ¨
 
         private int shakeScale = 0;
         private int shakeTime = 0;
 
         /// <summary>
-        /// ÉèÖÃÆÁÄ»Õğ¶¯
+        /// è®¾ç½®å±å¹•éœ‡åŠ¨
         /// </summary>
         public void SetScreenShake(double scale, double time) {
             shakeScale = (int)scale;
@@ -42,7 +42,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 
         #endregion
 
-        #region Ëõ·Å¿ØÖÆ
+        #region ç¼©æ”¾æ§åˆ¶
 
         private float oldZoom;
         private float targetZoom = 1;
@@ -50,7 +50,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         private bool startSetZoom = false;
 
         /// <summary>
-        /// ÉèÖÃ»­ÃæËõ·Å
+        /// è®¾ç½®ç”»é¢ç¼©æ”¾
         /// </summary>
         public void SetZoom(float zoom) {
             targetZoom = MathHelper.Lerp(targetZoom, zoom, 0.02f);
@@ -60,22 +60,22 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 
         #endregion
 
-        #region ÌØÊâĞ§¹û
+        #region ç‰¹æ®Šæ•ˆæœ
 
         /// <summary>
-        /// Áé»êËø¶¨Ğ§¹û£¨±»ºÚ°×ÎŞ³£¹²Í¬Ëø¶¨Ê±µÄ¼õËÙĞ§¹û£©
+        /// çµé­‚é”å®šæ•ˆæœï¼ˆè¢«é»‘ç™½æ— å¸¸å…±åŒé”å®šæ—¶çš„å‡é€Ÿæ•ˆæœï¼‰
         /// </summary>
         public bool SoulLocked { get; set; } = false;
         public int SoulLockTimer { get; set; } = 0;
 
         /// <summary>
-        /// ÒõÆøÇÖÊ´Ğ§¹û£¨°×ÎŞ³£µÄdebuff£©
+        /// é˜´æ°”ä¾µèš€æ•ˆæœï¼ˆç™½æ— å¸¸çš„debuffï¼‰
         /// </summary>
         public bool YinQiCorrosion { get; set; } = false;
         public int YinQiTimer { get; set; } = 0;
 
         /// <summary>
-        /// ËøÁ´Êø¸¿Ğ§¹û£¨ºÚÎŞ³£µÄdebuff£©
+        /// é”é“¾æŸç¼šæ•ˆæœï¼ˆé»‘æ— å¸¸çš„debuffï¼‰
         /// </summary>
         public bool ChainBound { get; set; } = false;
         public int ChainBoundTimer { get; set; } = 0;
@@ -83,7 +83,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         #endregion
 
         public override void ResetEffects() {
-            // ÖØÖÃÃ¿Ö¡µÄÁÙÊ±Ğ§¹û
+            // é‡ç½®æ¯å¸§çš„ä¸´æ—¶æ•ˆæœ
             if (SoulLockTimer > 0) {
                 SoulLockTimer--;
                 SoulLocked = true;
@@ -110,27 +110,27 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         }
 
         public override void PostUpdateRunSpeeds() {
-            // Áé»êËø¶¨Ê±´ó·ù¼õËÙ
+            // çµé­‚é”å®šæ—¶å¤§å¹…å‡é€Ÿ
             if (SoulLocked) {
                 Player.maxRunSpeed *= 0.5f;
                 Player.runAcceleration *= 0.5f;
                 Player.jumpSpeedBoost -= 2f;
             }
 
-            // ËøÁ´Êø¸¿Ê±¼õËÙ
+            // é”é“¾æŸç¼šæ—¶å‡é€Ÿ
             if (ChainBound) {
                 Player.maxRunSpeed *= 0.7f;
                 Player.runAcceleration *= 0.7f;
             }
 
-            // ÒõÆøÇÖÊ´Ê±ÇáÎ¢¼õËÙ
+            // é˜´æ°”ä¾µèš€æ—¶è½»å¾®å‡é€Ÿ
             if (YinQiCorrosion) {
                 Player.maxRunSpeed *= 0.9f;
             }
         }
 
         public override void ModifyScreenPosition() {
-            // ÆÁÄ»Î»ÖÃ¿ØÖÆ
+            // å±å¹•ä½ç½®æ§åˆ¶
             if (!startSetScreenPos) {
                 timerSetScreenPos = 1;
                 screenPos = Main.screenPosition;
@@ -146,13 +146,13 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 }
             }
 
-            // ÆÁÄ»Õğ¶¯
+            // å±å¹•éœ‡åŠ¨
             if (shakeTime > 0) {
                 shakeTime--;
                 Main.screenPosition += new Vector2(shakeScale).RotatedByRandom(MathHelper.TwoPi);
             }
 
-            // Ëõ·Å¿ØÖÆ
+            // ç¼©æ”¾æ§åˆ¶
             if (startSetZoom) {
                 Main.GameZoomTarget = targetZoom;
 
@@ -173,7 +173,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         }
 
         public override void ModifyHitByNPC(NPC npc, ref Player.HurtModifiers modifiers) {
-            // ¼ì²éÊÇ·ñ±»ºÚ°×ÎŞ³£Í¬Ê±Ëø¶¨£¨Ôö¼ÓÉËº¦£©
+            // æ£€æŸ¥æ˜¯å¦è¢«é»‘ç™½æ— å¸¸åŒæ—¶é”å®šï¼ˆå¢åŠ ä¼¤å®³ï¼‰
             bool blackActive = false;
             bool whiteActive = false;
             bool blackHalfHealth = false;
@@ -194,7 +194,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 }
             }
 
-            // Ë«°ëÑª¿ñ±©×´Ì¬£ºÉËº¦Ôö¼Ó30%
+            // åŒåŠè¡€ç‹‚æš´çŠ¶æ€ï¼šä¼¤å®³å¢åŠ 30%
             if (blackHalfHealth && whiteHalfHealth) {
                 modifiers.FinalDamage *= 1.3f;
             }
@@ -203,7 +203,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         }
 
         public override void ModifyHitByProjectile(Projectile proj, ref Player.HurtModifiers modifiers) {
-            // Í¬ÉÏ£¬µ¯Ä»ÉËº¦Ò²Ôö¼Ó
+            // åŒä¸Šï¼Œå¼¹å¹•ä¼¤å®³ä¹Ÿå¢åŠ 
             bool blackHalfHealth = false;
             bool whiteHalfHealth = false;
 
@@ -228,21 +228,21 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         }
 
         /// <summary>
-        /// Ó¦ÓÃÁé»êËø¶¨Ğ§¹û
+        /// åº”ç”¨çµé­‚é”å®šæ•ˆæœ
         /// </summary>
         public void ApplySoulLock(int duration) {
             SoulLockTimer = Math.Max(SoulLockTimer, duration);
         }
 
         /// <summary>
-        /// Ó¦ÓÃÒõÆøÇÖÊ´Ğ§¹û
+        /// åº”ç”¨é˜´æ°”ä¾µèš€æ•ˆæœ
         /// </summary>
         public void ApplyYinQiCorrosion(int duration) {
             YinQiTimer = Math.Max(YinQiTimer, duration);
         }
 
         /// <summary>
-        /// Ó¦ÓÃËøÁ´Êø¸¿Ğ§¹û
+        /// åº”ç”¨é”é“¾æŸç¼šæ•ˆæœ
         /// </summary>
         public void ApplyChainBound(int duration) {
             ChainBoundTimer = Math.Max(ChainBoundTimer, duration);

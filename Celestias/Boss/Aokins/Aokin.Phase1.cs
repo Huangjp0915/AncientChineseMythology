@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.ID;
@@ -8,10 +8,10 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
 {
     internal partial class Aokin
     {
-        #region Ò»½×¶Î¹¥»÷
+        #region ä¸€é˜¶æ®µæ”»å‡»
 
         /// <summary>
-        /// Ò»½×¶ÎÑ²Âß - »·ÈÆÍæ¼ÒÒÆ¶¯
+        /// ä¸€é˜¶æ®µå·¡é€» - ç¯ç»•ç©å®¶ç§»åŠ¨
         /// </summary>
         private void RunPhase1Patrol(Player target) {
             float orbitSpeed = 0.02f;
@@ -31,7 +31,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
             Vector2 toTarget = targetPos - NPC.Center;
             NPC.velocity = Vector2.Lerp(NPC.velocity, toTarget * 0.06f, 0.08f);
 
-            // »ğÑæÎ²¼£
+            // ç«ç„°å°¾è¿¹
             if (!VaultUtils.isServer && Main.rand.NextBool(3)) {
                 AokinHelper.CreateFireTrail(NPC.Center - NPC.velocity * 2f, NPC.velocity, 0.8f);
             }
@@ -42,7 +42,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
         }
 
         /// <summary>
-        /// »ğµ¯ÆëÉä - ÏòÍæ¼ÒÉÈĞÎ·¢Éä»ğµ¯
+        /// ç«å¼¹é½å°„ - å‘ç©å®¶æ‰‡å½¢å‘å°„ç«å¼¹
         /// </summary>
         private void RunPhase1FireBarrage(Player target) {
             Vector2 hoverPos = target.Center + new Vector2(MathF.Sin(globalTime * 1.5f) * 100f, -350);
@@ -70,7 +70,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                 SoundEngine.PlaySound(SoundID.Item34 with { Pitch = 0.2f, Volume = 0.8f }, NPC.Center);
             }
 
-            // »ğÑæÁ£×Ó
+            // ç«ç„°ç²’å­
             if (!VaultUtils.isServer && AttackTimer % 5 == 0) {
                 Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
                 for (int i = 0; i < 3; i++) {
@@ -86,7 +86,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
         }
 
         /// <summary>
-        /// ÁúÏ¢ÅçÉä - ³¯Íæ¼Ò·½Ïò³ÖĞøÅçÉä»ğÑæ
+        /// é¾™æ¯å–·å°„ - æœç©å®¶æ–¹å‘æŒç»­å–·å°„ç«ç„°
         /// </summary>
         private void RunPhase1DragonBreath(Player target) {
             NPC.rotation = (target.Center - NPC.Center).ToRotation();
@@ -119,7 +119,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                 Main.projectile[p].timeLeft = 100;
             }
 
-            // ÁúÏ¢»ğÑæÁ£×Ó
+            // é¾™æ¯ç«ç„°ç²’å­
             if (!VaultUtils.isServer) {
                 Vector2 breathDir = NPC.rotation.ToRotationVector2();
                 for (int i = 0; i < 4; i++) {
@@ -135,16 +135,16 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
         }
 
         /// <summary>
-        /// Î²±ŞºáÉ¨ - Ô­µØĞı×ªÓÃÉíÌå¶ÎÉ¨µ´Íæ¼Ò
+        /// å°¾é­æ¨ªæ‰« - åŸåœ°æ—‹è½¬ç”¨èº«ä½“æ®µæ‰«è¡ç©å®¶
         /// </summary>
         private void RunPhase1TailWhip(Player target) {
             NPC.velocity *= 0.93f;
 
-            // ¿ìËÙĞı×ª
+            // å¿«é€Ÿæ—‹è½¬
             NPC.rotation += MathF.PI / 20f;
             tailTurnSpeed = 20f;
 
-            // Ğı×ª»ğÑæÌØĞ§
+            // æ—‹è½¬ç«ç„°ç‰¹æ•ˆ
             if (!VaultUtils.isServer && AttackTimer % 3 == 0) {
                 float angle = NPC.rotation + MathF.PI;
                 Vector2 dustPos = NPC.Center + angle.ToRotationVector2() * 60f;
@@ -160,7 +160,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
         }
 
         /// <summary>
-        /// ÔÉÊ¯Óê - ´Ó¿ÕÖĞÕÙ»½»ğÇòÏÂÂä
+        /// é™¨çŸ³é›¨ - ä»ç©ºä¸­å¬å”¤ç«çƒä¸‹è½
         /// </summary>
         private void RunPhase1MeteorRain(Player target) {
             NPC.velocity *= 0.95f;
@@ -183,7 +183,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                 );
             }
 
-            // ĞîÁ¦Á£×Ó
+            // è“„åŠ›ç²’å­
             if (!VaultUtils.isServer && AttackTimer < 30) {
                 for (int i = 0; i < 5; i++) {
                     Vector2 dustPos = NPC.Center + Main.rand.NextVector2CircularEdge(150, 150);

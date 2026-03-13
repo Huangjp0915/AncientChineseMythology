@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -10,7 +10,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
 {
     internal partial class Aokin
     {
-        #region AIÖ÷Ñ­»·
+        #region AIä¸»å¾ªç¯
 
         public override void AI() {
             random ??= new Random(seed);
@@ -19,7 +19,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
             if (divebombCooldown > 0)
                 divebombCooldown--;
 
-            // ¼¤»îÌì¿Õ±³¾°
+            // æ¿€æ´»å¤©ç©ºèƒŒæ™¯
             if (!VaultUtils.isServer && AokinSky.name != null) {
                 if (!SkyManager.Instance[AokinSky.name].IsActive())
                     SkyManager.Instance.Activate(AokinSky.name, NPC.Center);
@@ -32,7 +32,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                 NPC.TargetClosest();
                 target = Main.player[NPC.target];
                 if (!target.active || target.dead) {
-                    // ¹Ø±ÕÌì¿Õ±³¾°
+                    // å…³é—­å¤©ç©ºèƒŒæ™¯
                     if (!VaultUtils.isServer && AokinSky.name != null) {
                         SkyManager.Instance.Deactivate(AokinSky.name);
                     }
@@ -42,16 +42,16 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                 }
             }
 
-            // ½×¶Î×ª»»¼ì²â
+            // é˜¶æ®µè½¬æ¢æ£€æµ‹
             CheckPhaseTransition();
 
-            // ¸üĞÂÊÓ¾õĞ§¹û
+            // æ›´æ–°è§†è§‰æ•ˆæœ
             UpdateVisualEffects();
 
-            // ¸üĞÂÉßĞÎÉíÌå
+            // æ›´æ–°è›‡å½¢èº«ä½“
             UpdateSegments();
 
-            // ÉíÌå¶ÎÅö×²ÉËº¦
+            // èº«ä½“æ®µç¢°æ’ä¼¤å®³
             ApplySegmentContactDamage(target);
 
             PhaseTimer++;
@@ -64,7 +64,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                 case BossPhase.Intro_SummonBarriers:
                     RunIntroSummonBarriers(target);
                     break;
-                // Ò»½×¶Î
+                // ä¸€é˜¶æ®µ
                 case BossPhase.Phase1_Patrol:
                     RunPhase1Patrol(target);
                     break;
@@ -80,11 +80,11 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                 case BossPhase.Phase1_MeteorRain:
                     RunPhase1MeteorRain(target);
                     break;
-                // ½×¶Î×ª»»
+                // é˜¶æ®µè½¬æ¢
                 case BossPhase.PhaseTransition_2:
                     RunPhaseTransition2(target);
                     break;
-                // ¶ş½×¶Î
+                // äºŒé˜¶æ®µ
                 case BossPhase.Phase2_FuryCharge:
                     RunPhase2FuryCharge(target);
                     break;
@@ -105,16 +105,16 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                     break;
             }
 
-            // ¸üĞÂ³¯Ïò
+            // æ›´æ–°æœå‘
             UpdateRotation();
 
-            // »ğÑæ¹âÕÕ
+            // ç«ç„°å…‰ç…§
             Lighting.AddLight(NPC.Center, new Vector3(0.9f, 0.4f, 0.2f) * glowIntensity);
         }
 
         #endregion
 
-        #region ÉßĞÎÉíÌå¸üĞÂ
+        #region è›‡å½¢èº«ä½“æ›´æ–°
 
         private void UpdateSegments() {
             if (Main.gamePaused) return;
@@ -136,7 +136,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                 Vector2 targetPos = previousSegment - previousRot.ToRotationVector2() * gap;
                 segmentPos[i] += (targetPos - segmentPos[i]) * 0.3f;
 
-                // ±£³Ö¹Ì¶¨¾àÀë
+                // ä¿æŒå›ºå®šè·ç¦»
                 Vector2 diff = previousSegment - segmentPos[i];
                 if (diff.LengthSquared() > 0.01f) {
                     segmentPos[i] = previousSegment - diff.SafeNormalize(Vector2.Zero) * gap;
@@ -167,7 +167,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
 
         #endregion
 
-        #region ¸¨Öú·½·¨
+        #region è¾…åŠ©æ–¹æ³•
 
         private void UpdateRotation() {
             if (NPC.velocity.LengthSquared() > 1f) {
@@ -220,7 +220,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
         }
 
         private BossPhase GetRandomPhase2Attack() {
-            // ¸©³åĞèÒªÀäÈ´
+            // ä¿¯å†²éœ€è¦å†·å´
             if (divebombCooldown <= 0 && Main.rand.NextBool(5))
                 return BossPhase.Phase2_Divebomb;
 
@@ -235,19 +235,19 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
 
         #endregion
 
-        #region ³ö³¡Ñİ³ö
+        #region å‡ºåœºæ¼”å‡º
 
         private void RunIntro(Player target) {
             introProgress = MathHelper.Clamp(PhaseTimer / 180f, 0f, 1f);
 
-            // ´ÓÌì¿Õ½µÏÂ
+            // ä»å¤©ç©ºé™ä¸‹
             Vector2 introOffset = new Vector2(0, 400) * (1f - ACMUtils.SineInOut(introProgress));
             Vector2 desiredPos = target.Center + new Vector2(0, -300) + introOffset;
 
             NPC.Center = Vector2.Lerp(NPC.Center, desiredPos, 0.03f);
             NPC.velocity *= 0.9f;
 
-            // »ğÑæÁ£×ÓĞ§¹û
+            // ç«ç„°ç²’å­æ•ˆæœ
             if (!VaultUtils.isServer && PhaseTimer % 2 == 0) {
                 for (int i = 0; i < 5; i++) {
                     Vector2 dustPos = NPC.Center + Main.rand.NextVector2CircularEdge(180, 180) * (1f - introProgress);
@@ -263,7 +263,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                 }
             }
 
-            // ÁúºğÒôĞ§
+            // é¾™å¼éŸ³æ•ˆ
             if (PhaseTimer == 60) {
                 SoundEngine.PlaySound(SoundID.Zombie20 with { Pitch = -0.3f, Volume = 1.5f }, NPC.Center);
             }
@@ -272,7 +272,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.2f }, NPC.Center);
                 Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(15, 50);
 
-                // »ğÑæ±¬·¢
+                // ç«ç„°çˆ†å‘
                 AokinHelper.CreateDragonFireBurst(NPC.Center, 200f, 3, 16);
             }
 
@@ -282,7 +282,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
         }
 
         /// <summary>
-        /// ³ö³¡ºóÕÙ»½Á½²à»ğÁú¾í·âÂ·
+        /// å‡ºåœºåå¬å”¤ä¸¤ä¾§ç«é¾™å·å°è·¯
         /// </summary>
         private void RunIntroSummonBarriers(Player target) {
             NPC.velocity *= 0.9f;
@@ -290,12 +290,12 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
             Vector2 hoverPos = target.Center + new Vector2(0, -350);
             NPC.velocity += (hoverPos - NPC.Center) * 0.003f;
 
-            // ÕÙ»½Á½²à»ğÑæÁú¾í
+            // å¬å”¤ä¸¤ä¾§ç«ç„°é¾™å·
             if (PhaseTimer == 30 && Main.netMode != NetmodeID.MultiplayerClient) {
                 hasSpawnedBarriers = true;
                 barrierTornadoIds = new int[2];
 
-                // ×ó²àÁú¾í
+                // å·¦ä¾§é¾™å·
                 int leftTornado = Projectile.NewProjectile(
                     NPC.GetSource_FromAI(),
                     target.Center + new Vector2(-800, 0),
@@ -308,7 +308,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                 );
                 barrierTornadoIds[0] = leftTornado;
 
-                // ÓÒ²àÁú¾í
+                // å³ä¾§é¾™å·
                 int rightTornado = Projectile.NewProjectile(
                     NPC.GetSource_FromAI(),
                     target.Center + new Vector2(800, 0),
@@ -325,7 +325,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                 Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(15, 40);
             }
 
-            // »ğÑæÑ¹ÆÈÁ£×Ó
+            // ç«ç„°å‹è¿«ç²’å­
             if (!VaultUtils.isServer && PhaseTimer > 30) {
                 for (int i = 0; i < 8; i++) {
                     float angle = MathHelper.TwoPi * i / 8 + PhaseTimer * 0.03f;
@@ -343,7 +343,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
 
         #endregion
 
-        #region ½×¶Î×ª»»
+        #region é˜¶æ®µè½¬æ¢
 
         private void RunPhaseTransition2(Player target) {
             NPC.velocity *= 0.92f;
@@ -352,7 +352,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
             Vector2 hoverPos = target.Center + new Vector2(0, -350);
             NPC.velocity += (hoverPos - NPC.Center) * 0.002f;
 
-            // »ğÑæĞıÎĞÌØĞ§
+            // ç«ç„°æ—‹æ¶¡ç‰¹æ•ˆ
             if (!VaultUtils.isServer) {
                 for (int i = 0; i < 12; i++) {
                     float angle = MathHelper.TwoPi * i / 12 + PhaseTimer * 0.05f;

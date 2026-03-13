@@ -1,4 +1,4 @@
-using AncientChineseMythology.Underworlds.Tiles;
+ï»¿using AncientChineseMythology.Underworlds.Tiles;
 using System.IO;
 using Terraria;
 using Terraria.ID;
@@ -8,17 +8,17 @@ using Terraria.ModLoader.IO;
 namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 {
     /// <summary>
-    /// ÓÄÚ¤Áú»÷É±×´Ì¬ºÍÓÄÚ¤¿óÉú³ÉÏµÍ³
+    /// å¹½å†¥é¾™å‡»æ€çŠ¶æ€å’Œå¹½å†¥çŸ¿ç”Ÿæˆç³»ç»Ÿ
     /// </summary>
     public class NetherDragonDownedSystem : ModSystem
     {
         /// <summary>
-        /// ÓÄÚ¤ÁúÊÇ·ñ±»»÷É±¹ı
+        /// å¹½å†¥é¾™æ˜¯å¦è¢«å‡»æ€è¿‡
         /// </summary>
         public static bool DownedNetherDragon { get; set; } = false;
 
         /// <summary>
-        /// ÓÄÚ¤¿óÊÇ·ñÒÑ¾­Éú³É¹ı
+        /// å¹½å†¥çŸ¿æ˜¯å¦å·²ç»ç”Ÿæˆè¿‡
         /// </summary>
         public static bool NetherOreGenerated { get; set; } = false;
 
@@ -56,65 +56,65 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         }
 
         /// <summary>
-        /// ÔÚÓÄÚ¤ÁúËÀÍöºóµ÷ÓÃ£¬Éú³ÉÓÄÚ¤¿ó
+        /// åœ¨å¹½å†¥é¾™æ­»äº¡åè°ƒç”¨ï¼Œç”Ÿæˆå¹½å†¥çŸ¿
         /// </summary>
         public static void OnNetherDragonKilled() {
             if (NetherOreGenerated) {
-                return; // ÒÑ¾­Éú³É¹ı£¬²»ÔÙÉú³É
+                return; // å·²ç»ç”Ÿæˆè¿‡ï¼Œä¸å†ç”Ÿæˆ
             }
 
             DownedNetherDragon = true;
             NetherOreGenerated = true;
 
             if (Main.netMode == NetmodeID.MultiplayerClient) {
-                return; // ¿Í»§¶Ë²»Ö´ĞĞÉú³É
+                return; // å®¢æˆ·ç«¯ä¸æ‰§è¡Œç”Ÿæˆ
             }
 
-            // Éú³ÉÓÄÚ¤¿ó
+            // ç”Ÿæˆå¹½å†¥çŸ¿
             GenerateNetherOre();
 
-            // Í¨ÖªÍæ¼Ò
+            // é€šçŸ¥ç©å®¶
             if (Main.netMode == NetmodeID.Server) {
                 NetMessage.SendData(MessageID.WorldData);
             }
         }
 
         /// <summary>
-        /// ÔÚµØ¸®ÇøÓòÉú³ÉÓÄÚ¤¿ó
+        /// åœ¨åœ°åºœåŒºåŸŸç”Ÿæˆå¹½å†¥çŸ¿
         /// </summary>
         private static void GenerateNetherOre() {
             int netherOreType = ModContent.TileType<NetherOreTile>();
             int umbralStoneType = ModContent.TileType<UmbralStone>();
 
-            // µØ¸®ÇøÓò·¶Î§£¨ÓëµØĞÎÉú³ÉÆ÷Ò»ÖÂ£©
+            // åœ°åºœåŒºåŸŸèŒƒå›´ï¼ˆä¸åœ°å½¢ç”Ÿæˆå™¨ä¸€è‡´ï¼‰
             int underworldStartX = Main.maxTilesX / 2;
             int underworldEndX = Main.maxTilesX - 200;
             int underworldStartY = (int)Main.rockLayer;
             int underworldEndY = Main.maxTilesY - 50;
 
-            // È·±£·¶Î§ÓĞĞ§
+            // ç¡®ä¿èŒƒå›´æœ‰æ•ˆ
             if (underworldEndX <= underworldStartX || underworldEndY <= underworldStartY) {
-                Main.NewText("´íÎó£ºµØ¸®ÇøÓòÎŞĞ§£¬ÎŞ·¨Éú³ÉÓÄÚ¤¿ó", Color.Red);
+                Main.NewText("é”™è¯¯ï¼šåœ°åºœåŒºåŸŸæ— æ•ˆï¼Œæ— æ³•ç”Ÿæˆå¹½å†¥çŸ¿", Color.Red);
                 return;
             }
 
             int oreCount = 0;
-            int targetOreVeins = Main.rand.Next(80, 120); // Ä¿±êÉú³É80-120¸ö¿óÂö
+            int targetOreVeins = Main.rand.Next(80, 120); // ç›®æ ‡ç”Ÿæˆ80-120ä¸ªçŸ¿è„‰
 
-            Main.NewText("ÓÄÚ¤ÁúµÄÁ¦Á¿×¢ÈëÁË´óµØ...", new Color(100, 150, 255));
+            Main.NewText("å¹½å†¥é¾™çš„åŠ›é‡æ³¨å…¥äº†å¤§åœ°...", new Color(100, 150, 255));
 
-            for (int vein = 0; vein < targetOreVeins * 3; vein++) { // ¶à´Î³¢ÊÔÒÔÈ·±£Éú³É×ã¹»ÊıÁ¿
+            for (int vein = 0; vein < targetOreVeins * 3; vein++) { // å¤šæ¬¡å°è¯•ä»¥ç¡®ä¿ç”Ÿæˆè¶³å¤Ÿæ•°é‡
                 if (oreCount >= targetOreVeins) break;
 
-                // Ëæ»úÑ¡ÔñÎ»ÖÃ
+                // éšæœºé€‰æ‹©ä½ç½®
                 int x = Main.rand.Next(underworldStartX + 50, underworldEndX - 50);
                 int y = Main.rand.Next(underworldStartY + 100, underworldEndY - 100);
 
-                // ¼ì²éÊÇ·ñÔÚÓÄÚ¤Ê¯ÄÚ
+                // æ£€æŸ¥æ˜¯å¦åœ¨å¹½å†¥çŸ³å†…
                 if (!Main.tile[x, y].HasTile) continue;
                 if (Main.tile[x, y].TileType != umbralStoneType) continue;
 
-                // Éú³É¿óÂö
+                // ç”ŸæˆçŸ¿è„‰
                 int veinSize = Main.rand.Next(4, 12);
                 int veinStrength = Main.rand.Next(3, 6);
 
@@ -129,7 +129,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                 oreCount++;
             }
 
-            // ÔÚµØÓü²ãÒ²Éú³ÉÒ»Ğ©
+            // åœ¨åœ°ç‹±å±‚ä¹Ÿç”Ÿæˆä¸€äº›
             int hellStartY = Main.UnderworldLayer;
             int hellEndY = Main.maxTilesY - 50;
 
@@ -152,7 +152,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                 );
             }
 
-            Main.NewText("ÓÄÚ¤¿óÒÑÔÚµØ¸®ÖĞÏÔÏÖ£¡", new Color(100, 150, 255));
+            Main.NewText("å¹½å†¥çŸ¿å·²åœ¨åœ°åºœä¸­æ˜¾ç°ï¼", new Color(100, 150, 255));
         }
     }
 }

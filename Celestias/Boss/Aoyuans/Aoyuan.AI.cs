@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.Graphics.Effects;
@@ -9,22 +9,22 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
 {
     internal partial class Aoyuan
     {
-        #region AIÖ÷Ñ­»·
+        #region AIä¸»å¾ªç¯
 
-        // ¹¥»÷ÀàĞÍ³£Á¿
-        // internalAI[1] Öµ¶ÔÓ¦:
-        // 0 = ±ùÖùÓê£¨¶à²¨´Î£©
-        // 1 = Ç°·½±ùµ¯
-        // 2 = ÉÈĞÎ±ù¾§É¢Éä
-        // 3 = ÂİĞı±ùµ¯
-        // 4 = ×·×Ù±ùµ¯Á¬Éä
-        // 5 = ±ùËª»· + ±ùÖùÓê×éºÏ
-        // 6 = ÁúÏ¢±ù×¶Á¬Éä
-        // 7 = ±ùÖù¼¤¹â´óÕĞ£¨¶ş½×¶Î×¨Êô£©
+        // æ”»å‡»ç±»å‹å¸¸é‡
+        // internalAI[1] å€¼å¯¹åº”:
+        // 0 = å†°æŸ±é›¨ï¼ˆå¤šæ³¢æ¬¡ï¼‰
+        // 1 = å‰æ–¹å†°å¼¹
+        // 2 = æ‰‡å½¢å†°æ™¶æ•£å°„
+        // 3 = èºæ—‹å†°å¼¹
+        // 4 = è¿½è¸ªå†°å¼¹è¿å°„
+        // 5 = å†°éœœç¯ + å†°æŸ±é›¨ç»„åˆ
+        // 6 = é¾™æ¯å†°é”¥è¿å°„
+        // 7 = å†°æŸ±æ¿€å…‰å¤§æ‹›ï¼ˆäºŒé˜¶æ®µä¸“å±ï¼‰
 
-        /// <summary>Ò»½×¶Î¹¥»÷ÀàĞÍÊı</summary>
+        /// <summary>ä¸€é˜¶æ®µæ”»å‡»ç±»å‹æ•°</summary>
         private const int Phase1AttackCount = 5;
-        /// <summary>¶ş½×¶Î¹¥»÷ÀàĞÍÊı</summary>
+        /// <summary>äºŒé˜¶æ®µæ”»å‡»ç±»å‹æ•°</summary>
         private const int Phase2AttackCount = 8;
 
         public override bool PreAI() {
@@ -35,7 +35,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
             if (beamCooldown > 0)
                 beamCooldown--;
 
-            // ¼¤»îÌì¿Õ±³¾°
+            // æ¿€æ´»å¤©ç©ºèƒŒæ™¯
             if (!VaultUtils.isServer && AoyuanSky.name != null) {
                 if (!SkyManager.Instance[AoyuanSky.name].IsActive())
                     SkyManager.Instance.Activate(AoyuanSky.name, NPC.Center);
@@ -43,7 +43,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
 
             Player player = Main.player[NPC.target];
 
-            // ¹¥»÷Ö¡¶¯»­£¨ÁúÏ¢/´óÕĞÊ±ÕÅ×ì£©
+            // æ”»å‡»å¸§åŠ¨ç”»ï¼ˆé¾™æ¯/å¤§æ‹›æ—¶å¼ å˜´ï¼‰
             if (fireAttack || internalAI[0] >= 450) {
                 attackCounter++;
                 if (attackCounter > 10) {
@@ -56,15 +56,15 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
 
             float dist = NPC.Distance(player.Center);
 
-            // ¹¥»÷¼ÆÊ±Æ÷Ñ­»·
+            // æ”»å‡»è®¡æ—¶å™¨å¾ªç¯
             internalAI[0]++;
 
-            // Ñ¡ÔñÏÂÒ»´Î¹¥»÷ÀàĞÍ
+            // é€‰æ‹©ä¸‹ä¸€æ¬¡æ”»å‡»ç±»å‹
             if (internalAI[0] == 350) {
                 if (IsPhase2) {
-                    // ¶ş½×¶Î£º¼¤¹â´óÕĞÓĞÀäÈ´
+                    // äºŒé˜¶æ®µï¼šæ¿€å…‰å¤§æ‹›æœ‰å†·å´
                     if (beamCooldown <= 0 && Main.rand.NextBool(4)) {
-                        internalAI[1] = 7; // ±ùÖù¼¤¹â
+                        internalAI[1] = 7; // å†°æŸ±æ¿€å…‰
                     }
                     else {
                         internalAI[1] = Main.rand.Next(Phase2AttackCount - 1); // 0-6
@@ -75,7 +75,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
                 }
             }
 
-            // Ö´ĞĞ¹¥»÷
+            // æ‰§è¡Œæ”»å‡»
             if (internalAI[0] > 300) {
                 Attack(NPC);
             }
@@ -84,14 +84,14 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
                 breathBurstCount = 0;
             }
 
-            // ÁúÏ¢¹¥»÷£¨¾àÀëÔ¶Ê±´¥·¢ÕÅ×ìÅç±ù£©
+            // é¾™æ¯æ”»å‡»ï¼ˆè·ç¦»è¿œæ—¶è§¦å‘å¼ å˜´å–·å†°ï¼‰
             if (dist > 300 && Main.rand.NextBool(20) && !fireAttack && internalAI[0] < 300) {
                 fireAttack = true;
             }
 
             if (fireAttack) {
                 attackTimer++;
-                // ±ùÏ¢Á£×Ó
+                // å†°æ¯ç²’å­
                 if (!VaultUtils.isServer && attackTimer % 3 == 0) {
                     Vector2 breathDir = NPC.velocity.SafeNormalize(Vector2.UnitY);
                     for (int i = 0; i < 4; i++) {
@@ -100,7 +100,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
                         Main.dust[d].noGravity = true;
                     }
                 }
-                // ÁúÏ¢ÆÚ¼ä·¢Éä±ù×¶
+                // é¾™æ¯æœŸé—´å‘å°„å†°é”¥
                 if (attackTimer % 12 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                     AoyuanAttacks.BreathIcicles(NPC, Main.expertMode ? 4 : 2);
                 }
@@ -112,7 +112,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
                 }
             }
 
-            // ³öÉúÁ£×Ó
+            // å‡ºç”Ÿç²’å­
             if (NPC.alpha > 0) {
                 for (int spawnDust = 0; spawnDust < 2; spawnDust++) {
                     int d = Dust.NewDust(new Vector2(NPC.position.X, NPC.position.Y), NPC.width, NPC.height,
@@ -123,7 +123,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
                 if (NPC.alpha < 0) NPC.alpha = 0;
             }
 
-            // ³¯Ïò
+            // æœå‘
             NPC.spriteDirection = NPC.velocity.X > 0 ? -1 : 1;
 
             NPC.ai[1]++;
@@ -147,7 +147,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
                 }
             }
 
-            // Èä³æÉíÌåÁ´Éú³É
+            // è •è™«èº«ä½“é“¾ç”Ÿæˆ
             if (Main.netMode != NetmodeID.MultiplayerClient) {
                 if (NPC.ai[0] == 0) {
                     NPC.realLife = NPC.whoAmI;
@@ -165,7 +165,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
                 }
             }
 
-            // Èä³æÒÆ¶¯AI - ¶ş½×¶Î¼ÓËÙ
+            // è •è™«ç§»åŠ¨AI - äºŒé˜¶æ®µåŠ é€Ÿ
             float speed = IsPhase2 ? 16f : 12f;
             float acceleration = IsPhase2 ? 0.18f : 0.13f;
 
@@ -230,7 +230,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
 
             NPC.rotation = (float)Math.Atan2(NPC.velocity.Y, NPC.velocity.X) + 1.57f;
 
-            // ÍÑÕ½
+            // è„±æˆ˜
             if (Main.player[NPC.target].dead ||
                 Math.Abs(NPC.position.X - Main.player[NPC.target].position.X) > 6000f ||
                 Math.Abs(NPC.position.Y - Main.player[NPC.target].position.Y) > 6000f) {
@@ -250,7 +250,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
                  NPC.velocity.Y > 0.0 && NPC.oldVelocity.Y < 0.0 || NPC.velocity.Y < 0.0 && NPC.oldVelocity.Y > 0.0) && !NPC.justHit)
                 NPC.netUpdate = true;
 
-            // ±ùËª¹âÕÕ£¨¶ş½×¶Î¸üÁÁ£©
+            // å†°éœœå…‰ç…§ï¼ˆäºŒé˜¶æ®µæ›´äº®ï¼‰
             float lightMul = IsPhase2 ? 1.5f : 1f;
             Lighting.AddLight(NPC.Center, new Vector3(0.3f, 0.6f, 0.9f) * glowIntensity * lightMul);
 
@@ -259,14 +259,14 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
 
         #endregion
 
-        #region ¹¥»÷Âß¼­
+        #region æ”»å‡»é€»è¾‘
 
         private void Attack(NPC npc) {
             int damage = Main.expertMode ? npc.damage / 4 : npc.damage / 2;
 
             switch ((int)internalAI[1]) {
                 case 0:
-                    // ±ùÖùÓê£¨¶à²¨´ÎÏÂÂä£©
+                    // å†°æŸ±é›¨ï¼ˆå¤šæ³¢æ¬¡ä¸‹è½ï¼‰
                     if (internalAI[0] == 320 || internalAI[0] == 340 || internalAI[0] == 360 || internalAI[0] == 380) {
                         int count = Main.expertMode ? 10 : 8;
                         if (IsPhase2) count += 4;
@@ -278,7 +278,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
                     break;
 
                 case 1:
-                    // Ç°·½±ùµ¯
+                    // å‰æ–¹å†°å¼¹
                     if (internalAI[0] == 350 && Main.netMode != NetmodeID.MultiplayerClient) {
                         Projectile.NewProjectile(npc.GetSource_FromAI(),
                             npc.Center.X, npc.Center.Y, npc.velocity.X * 2, npc.velocity.Y,
@@ -287,7 +287,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
                     break;
 
                 case 2:
-                    // ÉÈĞÎ±ù¾§É¢Éä
+                    // æ‰‡å½¢å†°æ™¶æ•£å°„
                     if (internalAI[0] == 350) {
                         int count = Main.expertMode ? 8 : 6;
                         if (IsPhase2) count += 4;
@@ -297,7 +297,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
                     break;
 
                 case 3:
-                    // ÂİĞı±ùµ¯£¨³ÖĞøÊÍ·ÅĞı×ªµ¯Ä»£©
+                    // èºæ—‹å†°å¼¹ï¼ˆæŒç»­é‡Šæ”¾æ—‹è½¬å¼¹å¹•ï¼‰
                     if (internalAI[0] >= 310 && internalAI[0] <= 390 && (int)internalAI[0] % 8 == 0) {
                         float spinAngle = (internalAI[0] - 310) * 0.15f;
                         int arms = IsPhase2 ? 5 : 3;
@@ -307,7 +307,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
                     break;
 
                 case 4:
-                    // ×·×Ù±ùµ¯Á¬Éä£¨3²¨£©
+                    // è¿½è¸ªå†°å¼¹è¿å°„ï¼ˆ3æ³¢ï¼‰
                     if ((internalAI[0] == 320 || internalAI[0] == 350 || internalAI[0] == 380)) {
                         int count = Main.expertMode ? 6 : 4;
                         if (IsPhase2) count += 2;
@@ -317,7 +317,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
                     break;
 
                 case 5:
-                    // ±ùËª»· + ±ùÖùÓê×éºÏ¼¼
+                    // å†°éœœç¯ + å†°æŸ±é›¨ç»„åˆæŠ€
                     if (internalAI[0] == 330) {
                         int ringCount = IsPhase2 ? 24 : 16;
                         AoyuanAttacks.FrostRing(npc, ringCount, 5f);
@@ -333,7 +333,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
                     break;
 
                 case 6:
-                    // ÁúÏ¢±ù×¶Á¬Éä£¨ÕÅ×ì³ÖĞøÅçÉä£©
+                    // é¾™æ¯å†°é”¥è¿å°„ï¼ˆå¼ å˜´æŒç»­å–·å°„ï¼‰
                     if (internalAI[0] == 310) {
                         fireAttack = true;
                         attackTimer = 0;
@@ -355,7 +355,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
                     break;
 
                 case 7:
-                    // ±ùÖù¼¤¹â´óÕĞ£¨¶ş½×¶Î×¨Êô£©
+                    // å†°æŸ±æ¿€å…‰å¤§æ‹›ï¼ˆäºŒé˜¶æ®µä¸“å±ï¼‰
                     if (internalAI[0] == 320) {
                         fireAttack = true;
                         attackTimer = 0;

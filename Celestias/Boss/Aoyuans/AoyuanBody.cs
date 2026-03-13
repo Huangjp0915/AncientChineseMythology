@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.GameContent;
@@ -8,11 +8,11 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.Boss.Aoyuans
 {
     /// <summary>
-    /// °½ÈòÉíÌå¶ÎNPC - Á´½Óµ½Í·²¿ĞÎ³ÉÈä³æ½á¹¹
-    /// ÎÆÀíAoyuanBody.png: 112¡Á320, 5Ö¡, Ã¿Ö¡112¡Á64
-    /// ai[1]: Ç°Ò»¶ÎNPCË÷Òı
-    /// ai[2]: µ±Ç°¶ÎÊ¹ÓÃµÄÖ¡ºÅ£¨0-4£©
-    /// ai[3]: Í·²¿NPCË÷Òı£¨realLifeÖ¸Ïò£©
+    /// æ•–é—°èº«ä½“æ®µNPC - é“¾æ¥åˆ°å¤´éƒ¨å½¢æˆè •è™«ç»“æ„
+    /// çº¹ç†AoyuanBody.png: 112Ã—320, 5å¸§, æ¯å¸§112Ã—64
+    /// ai[1]: å‰ä¸€æ®µNPCç´¢å¼•
+    /// ai[2]: å½“å‰æ®µä½¿ç”¨çš„å¸§å·ï¼ˆ0-4ï¼‰
+    /// ai[3]: å¤´éƒ¨NPCç´¢å¼•ï¼ˆrealLifeæŒ‡å‘ï¼‰
     /// </summary>
     [AutoloadBossHead]
     public class AoyuanBody : ModNPC
@@ -56,22 +56,22 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
         }
 
         public override bool PreAI() {
-            // ³¯ÏòÇ°Ò»¶Î
+            // æœå‘å‰ä¸€æ®µ
             Vector2 chasePosition = Main.npc[(int)NPC.ai[1]].Center;
             Vector2 directionVector = chasePosition - NPC.Center;
             NPC.spriteDirection = directionVector.X > 0f ? 1 : -1;
 
-            // ¹ØÁªÍ·²¿
+            // å…³è”å¤´éƒ¨
             if (NPC.ai[3] > 0)
                 NPC.realLife = (int)NPC.ai[3];
 
-            // Ä¿±êÑ¡Ôñ
+            // ç›®æ ‡é€‰æ‹©
             if (NPC.target < 0 || NPC.target == byte.MaxValue || Main.player[NPC.target].dead)
                 NPC.TargetClosest(true);
             if (Main.player[NPC.target].dead && NPC.timeLeft > 300)
                 NPC.timeLeft = 300;
 
-            // ³öÉú½¥ÏÔÁ£×Ó
+            // å‡ºç”Ÿæ¸æ˜¾ç²’å­
             if (NPC.alpha != 0) {
                 for (int spawnDust = 0; spawnDust < 2; spawnDust++) {
                     int d = Dust.NewDust(new Vector2(NPC.position.X, NPC.position.Y), NPC.width, NPC.height,
@@ -84,7 +84,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
             if (NPC.alpha < 0)
                 NPC.alpha = 0;
 
-            // ¼ì²éÍ·²¿´æ»î
+            // æ£€æŸ¥å¤´éƒ¨å­˜æ´»
             if (Main.netMode != NetmodeID.MultiplayerClient) {
                 if (!Main.npc[(int)NPC.ai[1]].active || Main.npc[(int)NPC.ai[3]].type != ModContent.NPCType<Aoyuan>()) {
                     NPC.life = 0;
@@ -94,7 +94,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
                 }
             }
 
-            // ¸úËæÇ°Ò»¶Î±£³Ö¾àÀë
+            // è·Ÿéšå‰ä¸€æ®µä¿æŒè·ç¦»
             if (NPC.ai[1] < Main.npc.Length) {
                 Vector2 npcCenter = new Vector2(NPC.position.X + NPC.width * 0.5f, NPC.position.Y + NPC.height * 0.5f);
                 float dirX = Main.npc[(int)NPC.ai[1]].position.X + Main.npc[(int)NPC.ai[1]].width / 2 - npcCenter.X;

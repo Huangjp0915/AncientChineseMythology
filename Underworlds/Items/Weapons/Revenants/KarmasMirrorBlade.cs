@@ -1,4 +1,4 @@
-using AncientChineseMythology.Underworlds.Tiles;
+ï»¿using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -11,8 +11,8 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
 {
     /// <summary>
-    /// Äõ¾µ»ØĞıÈĞ - ÈçÍ¬Äõ¾µÌ¨°ãÓ³ÕÕ×ïÄõ¡¢È¥¶ø¸´·µµÄÀûÈĞ£¬»ØĞıïÚÀàÎäÆ÷
-    /// ÈâºóÖĞÆÚ£¬Í¶ÖÀºóĞı×ª·ÉĞĞ²¢·µ»Ø£¬ÃüÖĞµĞÈËÊ±Ó³ÕÕÆä×ïÄõ²úÉú¾µÃæËéÁÑÌØĞ§
+    /// å­½é•œå›æ—‹åˆƒ - å¦‚åŒå­½é•œå°èˆ¬æ˜ ç…§ç½ªå­½ã€å»è€Œå¤è¿”çš„åˆ©åˆƒï¼Œå›æ—‹é•–ç±»æ­¦å™¨
+    /// è‚‰åä¸­æœŸï¼ŒæŠ•æ·åæ—‹è½¬é£è¡Œå¹¶è¿”å›ï¼Œå‘½ä¸­æ•Œäººæ—¶æ˜ ç…§å…¶ç½ªå­½äº§ç”Ÿé•œé¢ç¢è£‚ç‰¹æ•ˆ
     /// </summary>
     public class KarmasMirrorBlade : ModItem
     {
@@ -58,8 +58,8 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
     }
 
     /// <summary>
-    /// Äõ¾µ»ØĞıÈĞµ¯Ä» - Ğı×ª·É³öºó·µ»ØÍæ¼Ò£¬´øÓĞ¾µÃæ·´ÉäÍÏÎ²
-    /// Ê¹ÓÃACMAsset.Sparkleµş¼ÓÃüÖĞ»ğ»¨£¬ACMAsset.BlankStar»æÖÆ¾µ¹â
+    /// å­½é•œå›æ—‹åˆƒå¼¹å¹• - æ—‹è½¬é£å‡ºåè¿”å›ç©å®¶ï¼Œå¸¦æœ‰é•œé¢åå°„æ‹–å°¾
+    /// ä½¿ç”¨ACMAsset.Sparkleå åŠ å‘½ä¸­ç«èŠ±ï¼ŒACMAsset.BlankStarç»˜åˆ¶é•œå…‰
     /// </summary>
     public class KarmasMirrorBladeProj : ModProjectile
     {
@@ -103,7 +103,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
 
             Timer++;
 
-            //¸ßËÙĞı×ª
+            //é«˜é€Ÿæ—‹è½¬
             Projectile.rotation += 0.35f * Projectile.direction;
 
             switch (State) {
@@ -117,7 +117,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
 
             SpawnMirrorParticles();
 
-            //Àä°×É«+µ­×ÏÉ«¹âÕÕ£¨¾µÃæ·´Éä¸Ğ£©
+            //å†·ç™½è‰²+æ·¡ç´«è‰²å…‰ç…§ï¼ˆé•œé¢åå°„æ„Ÿï¼‰
             Lighting.AddLight(Projectile.Center, 0.6f, 0.5f, 0.7f);
         }
 
@@ -146,7 +146,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
         }
 
         private void SpawnMirrorParticles() {
-            //¾µÃæËé¹âÁ£×Ó
+            //é•œé¢ç¢å…‰ç²’å­
             if (Main.rand.NextBool(2)) {
                 Dust mirror = Dust.NewDustDirect(
                     Projectile.Center - Vector2.One * 12,
@@ -157,7 +157,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 mirror.noGravity = true;
             }
 
-            //°µ×ÏÚ¤Æø
+            //æš—ç´«å†¥æ°”
             if (Main.rand.NextBool(3)) {
                 Dust shadow = Dust.NewDustDirect(
                     Projectile.Center + Main.rand.NextVector2Circular(15, 15),
@@ -168,7 +168,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 shadow.velocity = -Projectile.velocity * 0.2f;
             }
 
-            //°×É«ÉÁ¹âËéÆ¬
+            //ç™½è‰²é—ªå…‰ç¢ç‰‡
             if (Main.rand.NextBool(5)) {
                 Dust glint = Dust.NewDustDirect(
                     Projectile.Center, 4, 4, DustID.WhiteTorch,
@@ -180,16 +180,16 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
         }
 
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
-            //Äõ¾µÓ³ÕÕ£º±©»÷Ê±¸´ÖÆÒ»´ÎÉËº¦£¨¾µÏñ·´Éä£©
+            //å­½é•œæ˜ ç…§ï¼šæš´å‡»æ—¶å¤åˆ¶ä¸€æ¬¡ä¼¤å®³ï¼ˆé•œåƒåå°„ï¼‰
             if (hit.Crit && Main.rand.NextBool(3)) {
                 target.SimpleStrikeNPC(damageDone / 3, hit.HitDirection, false, 0f, null, false, 0, true);
                 SoundEngine.PlaySound(SoundID.Item27 with { Volume = 0.6f, Pitch = 0.5f }, target.Center);
             }
 
-            //¸½¼Ó¼õ·À
+            //é™„åŠ å‡é˜²
             target.AddBuff(BuffID.Ichor, 150);
 
-            //¾µÃæËéÁÑ±¬·¢ÌØĞ§
+            //é•œé¢ç¢è£‚çˆ†å‘ç‰¹æ•ˆ
             for (int i = 0; i < 12; i++) {
                 Vector2 vel = Main.rand.NextVector2CircularEdge(6f, 6f);
                 Dust burst = Dust.NewDustPerfect(
@@ -199,7 +199,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 burst.noGravity = true;
             }
 
-            //°µ×Ï±¬·¢
+            //æš—ç´«çˆ†å‘
             for (int i = 0; i < 6; i++) {
                 Vector2 vel = Main.rand.NextVector2Circular(5f, 5f);
                 Dust shadow = Dust.NewDustPerfect(
@@ -225,24 +225,24 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
             Texture2D texture = TextureAssets.Projectile[Type].Value;
             Vector2 origin = texture.Size() / 2f;
 
-            //¾µÃæ·´ÉäÍÏÎ²
+            //é•œé¢åå°„æ‹–å°¾
             for (int i = 0; i < Projectile.oldPos.Length; i++) {
                 if (Projectile.oldPos[i] == Vector2.Zero) continue;
                 float progress = 1f - (float)i / Projectile.oldPos.Length;
                 Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
 
-                //Òø°×É«µ½°µ×ÏÉ«½¥±ä
+                //é“¶ç™½è‰²åˆ°æš—ç´«è‰²æ¸å˜
                 Color trailColor = Color.Lerp(new Color(120, 80, 180), new Color(220, 220, 255), progress) * progress * 0.5f;
                 trailColor.A = 0;
                 float scale = Projectile.scale * progress;
                 Main.EntitySpriteDraw(texture, drawPos, null, trailColor, Projectile.oldRot[i], origin, scale, SpriteEffects.None, 0);
             }
 
-            //»æÖÆÖ÷Ìå
+            //ç»˜åˆ¶ä¸»ä½“
             Color mainColor = Color.Lerp(lightColor, new Color(230, 220, 255), 0.3f);
             Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null, mainColor, Projectile.rotation, origin, Projectile.scale, SpriteEffects.None, 0);
 
-            //Ê¹ÓÃBlankStarµş¼Ó¾µÃæĞÇ¹â
+            //ä½¿ç”¨BlankStarå åŠ é•œé¢æ˜Ÿå…‰
             Texture2D blankStar = ACMAsset.BlankStar;
             if (blankStar != null) {
                 Vector2 starOrigin = blankStar.Size() / 2f;
@@ -252,7 +252,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 Main.EntitySpriteDraw(blankStar, Projectile.Center - Main.screenPosition, null, starColor, Timer * 0.1f, starOrigin, pulse, SpriteEffects.None, 0);
             }
 
-            //Ê¹ÓÃSparkleµş¼ÓËéÁÑ¹âÏß
+            //ä½¿ç”¨Sparkleå åŠ ç¢è£‚å…‰çº¿
             Texture2D sparkle = ACMAsset.Sparkle;
             if (sparkle != null) {
                 Vector2 sparkleOrigin = sparkle.Size() / 2f;
@@ -262,7 +262,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 Main.EntitySpriteDraw(sparkle, Projectile.Center - Main.screenPosition, null, sparkColor, -Timer * 0.08f, sparkleOrigin, sparkPulse, SpriteEffects.None, 0);
             }
 
-            //¾µÃæ¹âÔÎ
+            //é•œé¢å…‰æ™•
             Color glowColor = new Color(180, 170, 220) * 0.3f;
             glowColor.A = 0;
             Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null, glowColor, Projectile.rotation, origin, Projectile.scale * 1.15f, SpriteEffects.None, 0);

@@ -1,104 +1,104 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 
 namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
 {
     /// <summary>
-    /// ¾ÅÎ²ºüÎ²°Í - Ê¹ÓÃFABRIKÄæÔË¶¯Ñ§Ëã·¨ÊµÏÖ×ÔÈ»µÄÎ²°ÍÔË¶¯
-    /// Ã¿ÌõÎ²°ÍÓÉ¶à¸ö¹Ç÷À¹Ø½Ú×é³É£¬Ö§³ÖÎïÀíÄ£ÄâºÍ¹¥»÷¶¯×÷
+    /// ä¹å°¾ç‹å°¾å·´ - ä½¿ç”¨FABRIKé€†è¿åŠ¨å­¦ç®—æ³•å®ç°è‡ªç„¶çš„å°¾å·´è¿åŠ¨
+    /// æ¯æ¡å°¾å·´ç”±å¤šä¸ªéª¨éª¼å…³èŠ‚ç»„æˆï¼Œæ”¯æŒç‰©ç†æ¨¡æ‹Ÿå’Œæ”»å‡»åŠ¨ä½œ
     /// </summary>
     public class KyuubiTail
     {
-        /// <summary>¹Ç÷À¹Ø½ÚÊıÁ¿</summary>
+        /// <summary>éª¨éª¼å…³èŠ‚æ•°é‡</summary>
         public const int JointCount = 12;
 
-        /// <summary>Ã¿¸ö¹Ç÷À¶ÎµÄ»ù´¡³¤¶È</summary>
+        /// <summary>æ¯ä¸ªéª¨éª¼æ®µçš„åŸºç¡€é•¿åº¦</summary>
         public const float BaseSegmentLength = 24f;
 
-        /// <summary>Ô¶¾àÀë´Ì»÷Ê±µÄ×î´óÑÓÕ¹±¶ÂÊ</summary>
+        /// <summary>è¿œè·ç¦»åˆºå‡»æ—¶çš„æœ€å¤§å»¶å±•å€ç‡</summary>
         public const float MaxExtensionMultiplier = 4.0f;
 
-        /// <summary>µ±Ç°Ã¿¸ö¶ÎµÄÊµ¼Ê³¤¶È</summary>
+        /// <summary>å½“å‰æ¯ä¸ªæ®µçš„å®é™…é•¿åº¦</summary>
         private float[] currentSegmentLengths;
 
-        /// <summary>µ±Ç°ÑÓÕ¹±¶ÂÊ (1.0 = Õı³£, >1.0 = ÑÓÕ¹)</summary>
+        /// <summary>å½“å‰å»¶å±•å€ç‡ (1.0 = æ­£å¸¸, >1.0 = å»¶å±•)</summary>
         private float currentExtension = 1.0f;
 
-        /// <summary>Ä¿±êÑÓÕ¹±¶ÂÊ</summary>
+        /// <summary>ç›®æ ‡å»¶å±•å€ç‡</summary>
         private float targetExtension = 1.0f;
 
-        /// <summary>Î²°Í×Ü³¤¶È£¨¶¯Ì¬£©</summary>
+        /// <summary>å°¾å·´æ€»é•¿åº¦ï¼ˆåŠ¨æ€ï¼‰</summary>
         public float TotalLength => JointCount * BaseSegmentLength * currentExtension;
 
-        /// <summary>Î²°ÍË÷Òı£¨0-8£©</summary>
+        /// <summary>å°¾å·´ç´¢å¼•ï¼ˆ0-8ï¼‰</summary>
         public int TailIndex { get; private set; }
 
-        /// <summary>¹Ø½ÚÎ»ÖÃÊı×é</summary>
+        /// <summary>å…³èŠ‚ä½ç½®æ•°ç»„</summary>
         public Vector2[] Joints { get; private set; }
 
-        /// <summary>¹Ø½ÚËÙ¶È£¨ÓÃÓÚ¹ßĞÔÄ£Äâ£©</summary>
+        /// <summary>å…³èŠ‚é€Ÿåº¦ï¼ˆç”¨äºæƒ¯æ€§æ¨¡æ‹Ÿï¼‰</summary>
         public Vector2[] Velocities { get; private set; }
 
-        /// <summary>Ä¿±êÎ»ÖÃ£¨IKÇó½âÄ¿±ê£©</summary>
+        /// <summary>ç›®æ ‡ä½ç½®ï¼ˆIKæ±‚è§£ç›®æ ‡ï¼‰</summary>
         public Vector2 TargetPosition { get; set; }
 
-        /// <summary>¸ù²¿Î»ÖÃ£¨Á¬½Ó±¾Ìå£©</summary>
+        /// <summary>æ ¹éƒ¨ä½ç½®ï¼ˆè¿æ¥æœ¬ä½“ï¼‰</summary>
         public Vector2 RootPosition { get; set; }
 
-        /// <summary>¸ù²¿»ù×¼½Ç¶È</summary>
+        /// <summary>æ ¹éƒ¨åŸºå‡†è§’åº¦</summary>
         public float BaseAngle { get; set; }
 
-        /// <summary>ÊÇ·ñ´¦ÓÚ¹¥»÷×´Ì¬</summary>
+        /// <summary>æ˜¯å¦å¤„äºæ”»å‡»çŠ¶æ€</summary>
         public bool IsAttacking { get; private set; }
 
-        /// <summary>¹¥»÷¼ÆÊ±Æ÷</summary>
+        /// <summary>æ”»å‡»è®¡æ—¶å™¨</summary>
         public float AttackTimer { get; private set; }
 
-        /// <summary>¹¥»÷ÀàĞÍ</summary>
+        /// <summary>æ”»å‡»ç±»å‹</summary>
         public TailAttackType CurrentAttack { get; private set; }
 
-        /// <summary>¹¥»÷Ä¿±êÎ»ÖÃ</summary>
+        /// <summary>æ”»å‡»ç›®æ ‡ä½ç½®</summary>
         public Vector2 AttackTargetPos { get; private set; }
 
-        // ÎïÀí²ÎÊı
-        private float stiffness = 0.15f;      // ¸Õ¶ÈÏµÊı
-        private float damping = 0.85f;         // ×èÄáÏµÊı
-        private float gravityInfluence = 0.3f; // ÖØÁ¦Ó°Ïì
-        private float swayAmplitude = 8f;      // ×ÔÈ»°Ú¶¯·ù¶È
-        private float swaySpeed = 2.5f;        // °Ú¶¯ËÙ¶È
-        private float swayPhase;               // °Ú¶¯ÏàÎ»Æ«ÒÆ
+        // ç‰©ç†å‚æ•°
+        private float stiffness = 0.15f;      // åˆšåº¦ç³»æ•°
+        private float damping = 0.85f;         // é˜»å°¼ç³»æ•°
+        private float gravityInfluence = 0.3f; // é‡åŠ›å½±å“
+        private float swayAmplitude = 8f;      // è‡ªç„¶æ‘†åŠ¨å¹…åº¦
+        private float swaySpeed = 2.5f;        // æ‘†åŠ¨é€Ÿåº¦
+        private float swayPhase;               // æ‘†åŠ¨ç›¸ä½åç§»
 
-        // ¹¥»÷×´Ì¬²ÎÊı
+        // æ”»å‡»çŠ¶æ€å‚æ•°
         private Vector2 attackStartPos;
         private float attackDuration;
         private float attackProgress;
         private Vector2[] attackKeyframes;
 
-        // äÖÈ¾²ÎÊı
-        private float[] segmentWidths;         // Ã¿¸ö¶ÎµÄ¿í¶È£¨ÓÃÓÚ½¥±ä£©
+        // æ¸²æŸ“å‚æ•°
+        private float[] segmentWidths;         // æ¯ä¸ªæ®µçš„å®½åº¦ï¼ˆç”¨äºæ¸å˜ï¼‰
         private Color tailColor = Color.White;
         private float glowIntensity = 0f;
 
         public enum TailAttackType
         {
             None,
-            Stab,           // ´Ì»÷ - ¿ìËÙÖ±ÏßÍ»´Ì
-            Sweep,          // ºáÉ¨ - »¡ĞÎÉ¨»÷
-            Whip,           // ±Ş´ò - SĞÎË¦¶¯
-            ProjectileFire, // Éäµ¯ - Î²¼â·¢Éäµ¯Ä»
-            Coil,           // ²øÈÆ - ÂİĞıÅÌÈÆ×¼±¸
-            Slam,           // ÏÂÔÒ - ¸ß¾ÙºóÃÍÔÒ
-            LongRangeStab   // Ô¶¾àÀë´Ì»÷ - ´ó·¶Î§Ô¶¾àÀëÍ»´Ì
+            Stab,           // åˆºå‡» - å¿«é€Ÿç›´çº¿çªåˆº
+            Sweep,          // æ¨ªæ‰« - å¼§å½¢æ‰«å‡»
+            Whip,           // é­æ‰“ - Så½¢ç”©åŠ¨
+            ProjectileFire, // å°„å¼¹ - å°¾å°–å‘å°„å¼¹å¹•
+            Coil,           // ç¼ ç»• - èºæ—‹ç›˜ç»•å‡†å¤‡
+            Slam,           // ä¸‹ç ¸ - é«˜ä¸¾åçŒ›ç ¸
+            LongRangeStab   // è¿œè·ç¦»åˆºå‡» - å¤§èŒƒå›´è¿œè·ç¦»çªåˆº
         }
 
-        /// <summary>ÊÇ·ñÏÔÊ¾Ô¤ÅĞÏß</summary>
+        /// <summary>æ˜¯å¦æ˜¾ç¤ºé¢„åˆ¤çº¿</summary>
         public bool ShowTelegraph { get; set; }
 
-        /// <summary>Ô¤ÅĞÏßÄ¿±ê·½Ïò</summary>
+        /// <summary>é¢„åˆ¤çº¿ç›®æ ‡æ–¹å‘</summary>
         public Vector2 TelegraphDirection { get; set; }
 
-        /// <summary>Ô¤ÅĞÏß³¤¶È</summary>
+        /// <summary>é¢„åˆ¤çº¿é•¿åº¦</summary>
         public float TelegraphLength { get; set; }
 
         public KyuubiTail(int tailIndex) {
@@ -109,20 +109,20 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             currentSegmentLengths = new float[JointCount];
             attackKeyframes = new Vector2[4];
 
-            // ³õÊ¼»¯ÏàÎ»Æ«ÒÆ£¬ÈÃÃ¿ÌõÎ²°ÍµÄ°Ú¶¯ÓĞ²îÒì
+            // åˆå§‹åŒ–ç›¸ä½åç§»ï¼Œè®©æ¯æ¡å°¾å·´çš„æ‘†åŠ¨æœ‰å·®å¼‚
             swayPhase = tailIndex * MathHelper.TwoPi / 9f;
 
-            // ³õÊ¼»¯¶Î¿í¶È£¨´Ó´Öµ½Ï¸µÄ½¥±ä£©
+            // åˆå§‹åŒ–æ®µå®½åº¦ï¼ˆä»ç²—åˆ°ç»†çš„æ¸å˜ï¼‰
             for (int i = 0; i < JointCount; i++) {
                 float t = i / (float)(JointCount - 1);
-                // Ê¹ÓÃÆ½»¬ÇúÏß£º¸ù²¿½Ï´Ö£¬ÖĞ¼ä»ºÂı±äÏ¸£¬¼â¶Ë¿ìËÙÊÕÕ­
+                // ä½¿ç”¨å¹³æ»‘æ›²çº¿ï¼šæ ¹éƒ¨è¾ƒç²—ï¼Œä¸­é—´ç¼“æ…¢å˜ç»†ï¼Œå°–ç«¯å¿«é€Ÿæ”¶çª„
                 segmentWidths[i] = MathHelper.Lerp(1.0f, 0.3f, EaseOutQuad(t));
                 currentSegmentLengths[i] = BaseSegmentLength;
             }
         }
 
         /// <summary>
-        /// ³õÊ¼»¯Î²°ÍÎ»ÖÃ
+        /// åˆå§‹åŒ–å°¾å·´ä½ç½®
         /// </summary>
         public void Initialize(Vector2 rootPos, float baseAngle) {
             RootPosition = rootPos;
@@ -130,14 +130,14 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             currentExtension = 1.0f;
             targetExtension = 1.0f;
 
-            // ³õÊ¼»¯¶Î³¤¶È
+            // åˆå§‹åŒ–æ®µé•¿åº¦
             for (int i = 0; i < JointCount; i++) {
                 currentSegmentLengths[i] = BaseSegmentLength;
             }
 
-            // ÑØ×Å»ù×¼½Ç¶ÈÅÅÁĞËùÓĞ¹Ø½Ú
+            // æ²¿ç€åŸºå‡†è§’åº¦æ’åˆ—æ‰€æœ‰å…³èŠ‚
             for (int i = 0; i < JointCount; i++) {
-                float angle = baseAngle + MathF.Sin(i * 0.3f) * 0.2f; // ÇáÎ¢ÍäÇú
+                float angle = baseAngle + MathF.Sin(i * 0.3f) * 0.2f; // è½»å¾®å¼¯æ›²
                 Joints[i] = rootPos + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * BaseSegmentLength * i;
                 Velocities[i] = Vector2.Zero;
             }
@@ -146,7 +146,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         }
 
         /// <summary>
-        /// ¸üĞÂÎ²°Í×´Ì¬
+        /// æ›´æ–°å°¾å·´çŠ¶æ€
         /// </summary>
         public void Update(Vector2 newRootPos, float newBaseAngle, Vector2 ownerVelocity, float globalTime) {
             RootPosition = newRootPos;
@@ -157,52 +157,52 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             }
             else {
                 UpdateIdleMotion(ownerVelocity, globalTime);
-                // ·Ç¹¥»÷Ê±»Ö¸´Õı³£³¤¶È
+                // éæ”»å‡»æ—¶æ¢å¤æ­£å¸¸é•¿åº¦
                 targetExtension = 1.0f;
             }
 
-            // Æ½»¬²åÖµµ±Ç°ÑÓÕ¹ÏµÊı
+            // å¹³æ»‘æ’å€¼å½“å‰å»¶å±•ç³»æ•°
             currentExtension = MathHelper.Lerp(currentExtension, targetExtension, 0.15f);
 
-            // ¸üĞÂÃ¿¸ö¶ÎµÄÊµ¼Ê³¤¶È
+            // æ›´æ–°æ¯ä¸ªæ®µçš„å®é™…é•¿åº¦
             UpdateSegmentLengths();
 
-            // Ó¦ÓÃFABRIKËã·¨Çó½âIK
+            // åº”ç”¨FABRIKç®—æ³•æ±‚è§£IK
             SolveFABRIK();
 
-            // Ó¦ÓÃÎïÀíÄ£Äâ
+            // åº”ç”¨ç‰©ç†æ¨¡æ‹Ÿ
             ApplyPhysics(ownerVelocity);
 
-            // ¸üĞÂ·¢¹âĞ§¹û
+            // æ›´æ–°å‘å…‰æ•ˆæœ
             UpdateGlow();
         }
 
         /// <summary>
-        /// ¸üĞÂÃ¿¸ö¶ÎµÄÊµ¼Ê³¤¶È
+        /// æ›´æ–°æ¯ä¸ªæ®µçš„å®é™…é•¿åº¦
         /// </summary>
         private void UpdateSegmentLengths() {
             for (int i = 0; i < JointCount; i++) {
-                // Ä©¶Ë¶ÎÑÓÕ¹¸ü¶à£¬¸ù²¿¶ÎÑÓÕ¹½ÏÉÙ£¬²úÉú×ÔÈ»µÄÀ­ÉìĞ§¹û
+                // æœ«ç«¯æ®µå»¶å±•æ›´å¤šï¼Œæ ¹éƒ¨æ®µå»¶å±•è¾ƒå°‘ï¼Œäº§ç”Ÿè‡ªç„¶çš„æ‹‰ä¼¸æ•ˆæœ
                 float segmentExtensionFactor = MathHelper.Lerp(0.5f, 1.5f, (float)i / (JointCount - 1));
                 currentSegmentLengths[i] = BaseSegmentLength * (1.0f + (currentExtension - 1.0f) * segmentExtensionFactor);
             }
         }
 
         /// <summary>
-        /// ¿ÕÏĞ×´Ì¬µÄ×ÔÈ»°Ú¶¯
+        /// ç©ºé—²çŠ¶æ€çš„è‡ªç„¶æ‘†åŠ¨
         /// </summary>
         private void UpdateIdleMotion(Vector2 ownerVelocity, float globalTime) {
-            // ¼ÆËã×ÔÈ»°Ú¶¯Ä¿±ê
+            // è®¡ç®—è‡ªç„¶æ‘†åŠ¨ç›®æ ‡
             float swayOffset = MathF.Sin(globalTime * swaySpeed + swayPhase) * swayAmplitude;
             float swayOffset2 = MathF.Sin(globalTime * swaySpeed * 0.7f + swayPhase + 1.5f) * swayAmplitude * 0.5f;
 
-            // »ùÓÚËÙ¶ÈµÄÍÏÎ²Ğ§¹û
+            // åŸºäºé€Ÿåº¦çš„æ‹–å°¾æ•ˆæœ
             Vector2 velocityInfluence = -ownerVelocity * 0.8f;
 
-            // ¼ÆËã×ÔÈ»ÑÓÉì·½Ïò
+            // è®¡ç®—è‡ªç„¶å»¶ä¼¸æ–¹å‘
             float targetAngle = BaseAngle + swayOffset * 0.05f + swayOffset2 * 0.03f;
 
-            // ÉèÖÃÄ¿±êÎ»ÖÃÔÚÎ²°Í×ÔÈ»ÑÓÉìµÄÄ©¶Ë
+            // è®¾ç½®ç›®æ ‡ä½ç½®åœ¨å°¾å·´è‡ªç„¶å»¶ä¼¸çš„æœ«ç«¯
             TargetPosition = RootPosition +
                 new Vector2(MathF.Cos(targetAngle), MathF.Sin(targetAngle)) * TotalLength * 0.9f +
                 velocityInfluence * 3f +
@@ -210,10 +210,10 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         }
 
         /// <summary>
-        /// ¸üĞÂ¹¥»÷¶¯×÷
+        /// æ›´æ–°æ”»å‡»åŠ¨ä½œ
         /// </summary>
         private void UpdateAttack(float globalTime) {
-            AttackTimer += 1f / 60f; // ¼ÙÉè60FPS
+            AttackTimer += 1f / 60f; // å‡è®¾60FPS
             attackProgress = AttackTimer / attackDuration;
 
             if (attackProgress >= 1f) {
@@ -246,10 +246,10 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             }
         }
 
-        #region ¹¥»÷¶¯×÷ÊµÏÖ
+        #region æ”»å‡»åŠ¨ä½œå®ç°
 
         /// <summary>
-        /// ¿ªÊ¼´Ì»÷¹¥»÷
+        /// å¼€å§‹åˆºå‡»æ”»å‡»
         /// </summary>
         public void StartStabAttack(Vector2 target, float duration = 0.4f) {
             IsAttacking = true;
@@ -259,33 +259,33 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             AttackTargetPos = target;
             attackStartPos = Joints[JointCount - 1];
 
-            // ÉèÖÃ¹Ø¼üÖ¡£ºĞîÁ¦->Í»´Ì->»ØÊÕ
-            attackKeyframes[0] = attackStartPos; // ÆğÊ¼
-            attackKeyframes[1] = RootPosition + (RootPosition - target).SafeNormalize(Vector2.UnitY) * 80f; // ĞîÁ¦ºó³·
-            attackKeyframes[2] = target + (target - RootPosition).SafeNormalize(Vector2.UnitY) * 60f; // ´Ì³ö³¬¹ıÄ¿±ê
-            attackKeyframes[3] = RootPosition + (target - RootPosition).SafeNormalize(Vector2.UnitY) * TotalLength * 0.7f; // »ØÊÕ
+            // è®¾ç½®å…³é”®å¸§ï¼šè“„åŠ›->çªåˆº->å›æ”¶
+            attackKeyframes[0] = attackStartPos; // èµ·å§‹
+            attackKeyframes[1] = RootPosition + (RootPosition - target).SafeNormalize(Vector2.UnitY) * 80f; // è“„åŠ›åæ’¤
+            attackKeyframes[2] = target + (target - RootPosition).SafeNormalize(Vector2.UnitY) * 60f; // åˆºå‡ºè¶…è¿‡ç›®æ ‡
+            attackKeyframes[3] = RootPosition + (target - RootPosition).SafeNormalize(Vector2.UnitY) * TotalLength * 0.7f; // å›æ”¶
         }
 
         private void UpdateStabAttack() {
             float t = attackProgress;
 
-            // Ê¹ÓÃ±´Èû¶ûÇúÏßºÍ·Ö¶ÎÊ±¼ä¿ØÖÆ
-            if (t < 0.25f) // ĞîÁ¦½×¶Î (0-25%)
+            // ä½¿ç”¨è´å¡å°”æ›²çº¿å’Œåˆ†æ®µæ—¶é—´æ§åˆ¶
+            if (t < 0.25f) // è“„åŠ›é˜¶æ®µ (0-25%)
             {
                 float localT = t / 0.25f;
                 localT = EaseOutQuad(localT);
                 TargetPosition = Vector2.Lerp(attackKeyframes[0], attackKeyframes[1], localT);
-                stiffness = 0.3f; // Ôö¼Ó¸Õ¶È±íÏÖÁ¦Á¿¸Ğ
+                stiffness = 0.3f; // å¢åŠ åˆšåº¦è¡¨ç°åŠ›é‡æ„Ÿ
             }
-            else if (t < 0.5f) // Í»´Ì½×¶Î (25-50%)
+            else if (t < 0.5f) // çªåˆºé˜¶æ®µ (25-50%)
             {
                 float localT = (t - 0.25f) / 0.25f;
-                localT = EaseInQuad(localT); // ¼ÓËÙ´Ì³ö
+                localT = EaseInQuad(localT); // åŠ é€Ÿåˆºå‡º
                 TargetPosition = Vector2.Lerp(attackKeyframes[1], attackKeyframes[2], localT);
-                stiffness = 0.5f; // ×î¸ß¸Õ¶È
-                glowIntensity = localT; // ·¢¹â
+                stiffness = 0.5f; // æœ€é«˜åˆšåº¦
+                glowIntensity = localT; // å‘å…‰
             }
-            else // »ØÊÕ½×¶Î (50-100%)
+            else // å›æ”¶é˜¶æ®µ (50-100%)
             {
                 float localT = (t - 0.5f) / 0.5f;
                 localT = EaseOutQuad(localT);
@@ -296,7 +296,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         }
 
         /// <summary>
-        /// ¿ªÊ¼ºáÉ¨¹¥»÷
+        /// å¼€å§‹æ¨ªæ‰«æ”»å‡»
         /// </summary>
         public void StartSweepAttack(Vector2 target, float sweepAngle = MathHelper.PiOver2, float duration = 0.6f) {
             IsAttacking = true;
@@ -310,7 +310,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             float baseAngle = toTarget.ToRotation();
             float radius = TotalLength * 0.85f;
 
-            // ºáÉ¨»¡ÏßµÄ¹Ø¼üµã
+            // æ¨ªæ‰«å¼§çº¿çš„å…³é”®ç‚¹
             attackKeyframes[0] = attackStartPos;
             attackKeyframes[1] = RootPosition + (baseAngle - sweepAngle * 0.6f).ToRotationVector2() * radius;
             attackKeyframes[2] = RootPosition + (baseAngle + sweepAngle * 0.6f).ToRotationVector2() * radius;
@@ -320,22 +320,22 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         private void UpdateSweepAttack() {
             float t = attackProgress;
 
-            if (t < 0.15f) // ×¼±¸
+            if (t < 0.15f) // å‡†å¤‡
             {
                 float localT = EaseOutQuad(t / 0.15f);
                 TargetPosition = Vector2.Lerp(attackKeyframes[0], attackKeyframes[1], localT);
                 stiffness = 0.25f;
             }
-            else if (t < 0.6f) // ºáÉ¨
+            else if (t < 0.6f) // æ¨ªæ‰«
             {
                 float localT = (t - 0.15f) / 0.45f;
-                // Ê¹ÓÃÕıÏÒÇúÏßÈÃÉ¨¶¯¸üÁ÷³©
+                // ä½¿ç”¨æ­£å¼¦æ›²çº¿è®©æ‰«åŠ¨æ›´æµç•…
                 localT = (1f - MathF.Cos(localT * MathF.PI)) * 0.5f;
                 TargetPosition = Vector2.Lerp(attackKeyframes[1], attackKeyframes[2], localT);
                 stiffness = 0.4f;
                 glowIntensity = MathF.Sin(localT * MathF.PI);
             }
-            else // »ØÊÕ
+            else // å›æ”¶
             {
                 float localT = EaseOutQuad((t - 0.6f) / 0.4f);
                 TargetPosition = Vector2.Lerp(attackKeyframes[2], attackKeyframes[3], localT);
@@ -345,7 +345,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         }
 
         /// <summary>
-        /// ¿ªÊ¼±Ş´ò¹¥»÷
+        /// å¼€å§‹é­æ‰“æ”»å‡»
         /// </summary>
         public void StartWhipAttack(Vector2 target, float duration = 0.5f) {
             IsAttacking = true;
@@ -361,9 +361,9 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             Vector2 toTarget = (AttackTargetPos - RootPosition).SafeNormalize(Vector2.UnitY);
             float baseAngle = toTarget.ToRotation();
 
-            // SĞÎ±Ş´ò¹ì¼£
+            // Så½¢é­æ‰“è½¨è¿¹
             float wavePhase = t * MathF.PI * 3f;
-            float waveAmplitude = MathF.Sin(t * MathF.PI) * 100f; // ÖĞ¼ä×î´óÕñ·ù
+            float waveAmplitude = MathF.Sin(t * MathF.PI) * 100f; // ä¸­é—´æœ€å¤§æŒ¯å¹…
             float reach = EaseOutQuad(MathF.Min(t * 2f, 1f)) * TotalLength;
 
             Vector2 perpendicular = new Vector2(-toTarget.Y, toTarget.X);
@@ -375,7 +375,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         }
 
         /// <summary>
-        /// ¿ªÊ¼Éäµ¯¹¥»÷
+        /// å¼€å§‹å°„å¼¹æ”»å‡»
         /// </summary>
         public void StartProjectileAttack(Vector2 target, float duration = 0.8f) {
             IsAttacking = true;
@@ -390,23 +390,23 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             float t = attackProgress;
             Vector2 toTarget = (AttackTargetPos - RootPosition).SafeNormalize(Vector2.UnitY);
 
-            if (t < 0.6f) // ĞîÁ¦Ãé×¼
+            if (t < 0.6f) // è“„åŠ›ç„å‡†
             {
                 float localT = EaseOutQuad(t / 0.6f);
-                // Î²°ÍÖ¸ÏòÄ¿±ê·½Ïò
+                // å°¾å·´æŒ‡å‘ç›®æ ‡æ–¹å‘
                 TargetPosition = RootPosition + toTarget * TotalLength * 0.9f;
                 stiffness = MathHelper.Lerp(0.15f, 0.5f, localT);
                 glowIntensity = localT;
             }
-            else if (t < 0.7f) // ·¢ÉäÊ±¿Ì
+            else if (t < 0.7f) // å‘å°„æ—¶åˆ»
             {
                 float localT = (t - 0.6f) / 0.1f;
-                // ÕâÀïÓ¦¸Ã´¥·¢Êµ¼ÊµÄÉäµ¯Éú³É
+                // è¿™é‡Œåº”è¯¥è§¦å‘å®é™…çš„å°„å¼¹ç”Ÿæˆ
                 TargetPosition = RootPosition + toTarget * TotalLength * (0.9f + localT * 0.1f);
                 stiffness = 0.5f;
                 glowIntensity = 1f;
             }
-            else // »ØÊÕ
+            else // å›æ”¶
             {
                 float localT = EaseOutQuad((t - 0.7f) / 0.3f);
                 TargetPosition = RootPosition + toTarget * TotalLength * MathHelper.Lerp(1f, 0.7f, localT);
@@ -416,7 +416,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         }
 
         /// <summary>
-        /// ¿ªÊ¼²øÈÆĞîÁ¦
+        /// å¼€å§‹ç¼ ç»•è“„åŠ›
         /// </summary>
         public void StartCoilAttack(float duration = 1.0f) {
             IsAttacking = true;
@@ -429,9 +429,9 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         private void UpdateCoilAttack() {
             float t = attackProgress;
 
-            // ÂİĞıÅÌÈÆĞ§¹û
-            float coils = 1.5f + t * 1.5f; // ÅÌÈÆÈ¦ÊıËæÊ±¼äÔö¼Ó
-            float radius = TotalLength * 0.4f * (1f - t * 0.3f); // °ë¾¶Öğ½¥ÊÕ½ô
+            // èºæ—‹ç›˜ç»•æ•ˆæœ
+            float coils = 1.5f + t * 1.5f; // ç›˜ç»•åœˆæ•°éšæ—¶é—´å¢åŠ 
+            float radius = TotalLength * 0.4f * (1f - t * 0.3f); // åŠå¾„é€æ¸æ”¶ç´§
             float angle = BaseAngle + coils * MathHelper.TwoPi;
 
             TargetPosition = RootPosition + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * radius;
@@ -440,7 +440,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         }
 
         /// <summary>
-        /// ¿ªÊ¼ÏÂÔÒ¹¥»÷
+        /// å¼€å§‹ä¸‹ç ¸æ”»å‡»
         /// </summary>
         public void StartSlamAttack(Vector2 target, float duration = 0.7f) {
             IsAttacking = true;
@@ -450,31 +450,31 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             AttackTargetPos = target;
             attackStartPos = Joints[JointCount - 1];
 
-            // ¸ß¾ÙÎ»ÖÃ
+            // é«˜ä¸¾ä½ç½®
             attackKeyframes[0] = attackStartPos;
-            attackKeyframes[1] = RootPosition + new Vector2(0, -TotalLength * 0.9f); // ¸ß¾Ù
-            attackKeyframes[2] = target; // ÔÒÏòÄ¿±ê
+            attackKeyframes[1] = RootPosition + new Vector2(0, -TotalLength * 0.9f); // é«˜ä¸¾
+            attackKeyframes[2] = target; // ç ¸å‘ç›®æ ‡
             attackKeyframes[3] = RootPosition + (target - RootPosition).SafeNormalize(Vector2.UnitY) * TotalLength * 0.6f;
         }
 
         private void UpdateSlamAttack() {
             float t = attackProgress;
 
-            if (t < 0.4f) // ¸ß¾Ù
+            if (t < 0.4f) // é«˜ä¸¾
             {
                 float localT = EaseOutQuad(t / 0.4f);
                 TargetPosition = Vector2.Lerp(attackKeyframes[0], attackKeyframes[1], localT);
                 stiffness = 0.3f;
                 glowIntensity = localT * 0.5f;
             }
-            else if (t < 0.6f) // ÏÂÔÒ
+            else if (t < 0.6f) // ä¸‹ç ¸
             {
                 float localT = EaseInQuad((t - 0.4f) / 0.2f);
                 TargetPosition = Vector2.Lerp(attackKeyframes[1], attackKeyframes[2], localT);
                 stiffness = 0.6f;
                 glowIntensity = 0.5f + localT * 0.5f;
             }
-            else // »Øµ¯
+            else // å›å¼¹
             {
                 float localT = EaseOutBack((t - 0.6f) / 0.4f);
                 TargetPosition = Vector2.Lerp(attackKeyframes[2], attackKeyframes[3], localT);
@@ -484,7 +484,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         }
 
         /// <summary>
-        /// ¿ªÊ¼Ô¶¾àÀë´Ì»÷¹¥»÷ - ´ó·¶Î§Ô¶¾àÀëÍ»´Ì£¬Î²°Í»á¶¯Ì¬ÑÓÕ¹
+        /// å¼€å§‹è¿œè·ç¦»åˆºå‡»æ”»å‡» - å¤§èŒƒå›´è¿œè·ç¦»çªåˆºï¼Œå°¾å·´ä¼šåŠ¨æ€å»¶å±•
         /// </summary>
         public void StartLongRangeStabAttack(Vector2 direction, float telegraphTime = 0.5f, float stabTime = 0.15f, float recoverTime = 0.4f) {
             IsAttacking = true;
@@ -492,15 +492,15 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             AttackTimer = 0f;
             attackDuration = telegraphTime + stabTime + recoverTime;
 
-            // ´æ´¢¹¥»÷·½Ïò
+            // å­˜å‚¨æ”»å‡»æ–¹å‘
             TelegraphDirection = direction.SafeNormalize(Vector2.UnitX);
             attackStartPos = Joints[JointCount - 1];
 
-            // ¼ÆËãÑÓÕ¹ºóµÄ×Ü³¤¶È
+            // è®¡ç®—å»¶å±•åçš„æ€»é•¿åº¦
             float extendedLength = JointCount * BaseSegmentLength * MaxExtensionMultiplier;
             TelegraphLength = extendedLength;
 
-            // ´æ´¢Ê±¼ä·ÖÅä
+            // å­˜å‚¨æ—¶é—´åˆ†é…
             longRangePhases[0] = telegraphTime;
             longRangePhases[1] = stabTime;
             longRangePhases[2] = recoverTime;
@@ -508,7 +508,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             ShowTelegraph = true;
         }
 
-        // Ô¶¾àÀë´Ì»÷Ê±¼ä·ÖÅä
+        // è¿œè·ç¦»åˆºå‡»æ—¶é—´åˆ†é…
         private float[] longRangePhases = new float[3];
 
         private void UpdateLongRangeStabAttack() {
@@ -516,45 +516,45 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             float phase1End = longRangePhases[0] / attackDuration;
             float phase2End = (longRangePhases[0] + longRangePhases[1]) / attackDuration;
 
-            if (t < phase1End) // Ô¤ÅĞ½×¶Î - ÏÔÊ¾Ô¤ÅĞÏß²¢ĞîÁ¦
+            if (t < phase1End) // é¢„åˆ¤é˜¶æ®µ - æ˜¾ç¤ºé¢„åˆ¤çº¿å¹¶è“„åŠ›
             {
                 float localT = t / phase1End;
 
-                // Î²°Í»ºÂıÊÕËõµ½¸ù²¿¸½½ü£¬×¼±¸ĞîÁ¦
+                // å°¾å·´ç¼“æ…¢æ”¶ç¼©åˆ°æ ¹éƒ¨é™„è¿‘ï¼Œå‡†å¤‡è“„åŠ›
                 float coilT = EaseOutQuad(localT);
                 TargetPosition = RootPosition + TelegraphDirection * BaseSegmentLength * JointCount * 0.3f * (1f - coilT * 0.5f);
 
-                // ÑÓÕ¹ÏµÊı±£³ÖÕı³£
+                // å»¶å±•ç³»æ•°ä¿æŒæ­£å¸¸
                 targetExtension = 1.0f;
                 stiffness = MathHelper.Lerp(0.15f, 0.5f, localT);
                 glowIntensity = localT * 0.6f;
                 ShowTelegraph = true;
             }
-            else if (t < phase2End) // ´Ì³ö½×¶Î - ¼«¿ìËÙÑÓÕ¹´Ì³ö
+            else if (t < phase2End) // åˆºå‡ºé˜¶æ®µ - æå¿«é€Ÿå»¶å±•åˆºå‡º
             {
                 float localT = (t - phase1End) / (phase2End - phase1End);
 
-                // ¿ìËÙÑÓÕ¹Î²°Í
-                float extensionT = EaseOutQuad(localT); // ¿ìËÙ¼ÓËÙÈ»ºó¼õËÙ
+                // å¿«é€Ÿå»¶å±•å°¾å·´
+                float extensionT = EaseOutQuad(localT); // å¿«é€ŸåŠ é€Ÿç„¶åå‡é€Ÿ
                 targetExtension = 1.0f + (MaxExtensionMultiplier - 1.0f) * extensionT;
 
-                // Ä¿±êÎ»ÖÃÔÚÑÓÕ¹ºóµÄ×îÔ¶µã
+                // ç›®æ ‡ä½ç½®åœ¨å»¶å±•åçš„æœ€è¿œç‚¹
                 float currentMaxLength = JointCount * BaseSegmentLength * targetExtension;
                 TargetPosition = RootPosition + TelegraphDirection * currentMaxLength * 0.95f;
 
-                stiffness = 0.8f; // ×î¸ß¸Õ¶È£¬±íÏÖÁ¦Á¿¸Ğ
+                stiffness = 0.8f; // æœ€é«˜åˆšåº¦ï¼Œè¡¨ç°åŠ›é‡æ„Ÿ
                 glowIntensity = 0.6f + extensionT * 0.4f;
                 ShowTelegraph = false;
             }
-            else // »ØÊÕ½×¶Î - »ºÂıÊÕËõ
+            else // å›æ”¶é˜¶æ®µ - ç¼“æ…¢æ”¶ç¼©
             {
                 float localT = (t - phase2End) / (1f - phase2End);
                 float recoverT = EaseOutQuad(localT);
 
-                // »ºÂıÊÕËõÎ²°Í
+                // ç¼“æ…¢æ”¶ç¼©å°¾å·´
                 targetExtension = MathHelper.Lerp(MaxExtensionMultiplier, 1.0f, recoverT);
 
-                // Ä¿±êÎ»ÖÃ»Øµ½Õı³£×´Ì¬
+                // ç›®æ ‡ä½ç½®å›åˆ°æ­£å¸¸çŠ¶æ€
                 float currentMaxLength = JointCount * BaseSegmentLength * targetExtension;
                 TargetPosition = RootPosition + TelegraphDirection * currentMaxLength * 0.6f;
 
@@ -575,40 +575,40 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
 
         #endregion
 
-        #region FABRIK IKËã·¨
+        #region FABRIK IKç®—æ³•
 
         /// <summary>
-        /// FABRIK (Forward And Backward Reaching Inverse Kinematics) Ëã·¨
-        /// ÊµÏÖ×ÔÈ»µÄ¹Ç÷ÀÁ´IKÇó½â
+        /// FABRIK (Forward And Backward Reaching Inverse Kinematics) ç®—æ³•
+        /// å®ç°è‡ªç„¶çš„éª¨éª¼é“¾IKæ±‚è§£
         /// </summary>
         private void SolveFABRIK() {
-            const int iterations = 5; // µü´ú´ÎÊı
-            const float tolerance = 0.5f; // Èİ²î
+            const int iterations = 5; // è¿­ä»£æ¬¡æ•°
+            const float tolerance = 0.5f; // å®¹å·®
 
-            // ¹Ì¶¨¸ù²¿Î»ÖÃ
+            // å›ºå®šæ ¹éƒ¨ä½ç½®
             Joints[0] = RootPosition;
 
             for (int iter = 0; iter < iterations; iter++) {
-                // ¼ì²éÊÇ·ñÒÑ¾­×ã¹»½Ó½üÄ¿±ê
+                // æ£€æŸ¥æ˜¯å¦å·²ç»è¶³å¤Ÿæ¥è¿‘ç›®æ ‡
                 float distToTarget = Vector2.Distance(Joints[JointCount - 1], TargetPosition);
                 if (distToTarget < tolerance)
                     break;
 
-                // ÏòÇ°´«µİ (Forward Reaching) - ´ÓÄ©¶Ëµ½¸ù²¿
+                // å‘å‰ä¼ é€’ (Forward Reaching) - ä»æœ«ç«¯åˆ°æ ¹éƒ¨
                 Joints[JointCount - 1] = TargetPosition;
                 for (int i = JointCount - 2; i >= 0; i--) {
                     Vector2 direction = (Joints[i] - Joints[i + 1]).SafeNormalize(Vector2.UnitY);
-                    // Ê¹ÓÃ¶¯Ì¬¶Î³¤¶È
+                    // ä½¿ç”¨åŠ¨æ€æ®µé•¿åº¦
                     Joints[i] = Joints[i + 1] + direction * currentSegmentLengths[i];
                 }
 
-                // Ïòºó´«µİ (Backward Reaching) - ´Ó¸ù²¿µ½Ä©¶Ë
+                // å‘åä¼ é€’ (Backward Reaching) - ä»æ ¹éƒ¨åˆ°æœ«ç«¯
                 Joints[0] = RootPosition;
                 for (int i = 1; i < JointCount; i++) {
                     Vector2 direction = (Joints[i] - Joints[i - 1]).SafeNormalize(Vector2.UnitY);
 
-                    // Ó¦ÓÃ½Ç¶ÈÔ¼Êø£¨ÏŞÖÆÏàÁÚ¹Ç÷ÀÖ®¼äµÄÍäÇú½Ç¶È£©
-                    // ÑÓÕ¹Ê±·Å¿í½Ç¶ÈÔ¼Êø£¬ÈÃÎ²°ÍÄÜ¸üÖ±µØ´Ì³ö
+                    // åº”ç”¨è§’åº¦çº¦æŸï¼ˆé™åˆ¶ç›¸é‚»éª¨éª¼ä¹‹é—´çš„å¼¯æ›²è§’åº¦ï¼‰
+                    // å»¶å±•æ—¶æ”¾å®½è§’åº¦çº¦æŸï¼Œè®©å°¾å·´èƒ½æ›´ç›´åœ°åˆºå‡º
                     float maxBendAngle = MathHelper.ToRadians(35f / MathF.Max(1f, currentExtension * 0.5f));
 
                     if (i > 1) {
@@ -616,20 +616,20 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
                         direction = ConstrainAngle(direction, prevDirection, maxBendAngle);
                     }
                     else {
-                        // µÚÒ»¶ÎÏà¶ÔÓÚ»ù×¼½Ç¶ÈµÄÔ¼Êø
+                        // ç¬¬ä¸€æ®µç›¸å¯¹äºåŸºå‡†è§’åº¦çš„çº¦æŸ
                         Vector2 baseDirection = new Vector2(MathF.Cos(BaseAngle), MathF.Sin(BaseAngle));
                         float maxRootBendAngle = MathHelper.ToRadians(60f);
                         direction = ConstrainAngle(direction, baseDirection, maxRootBendAngle);
                     }
 
-                    // Ê¹ÓÃ¶¯Ì¬¶Î³¤¶È
+                    // ä½¿ç”¨åŠ¨æ€æ®µé•¿åº¦
                     Joints[i] = Joints[i - 1] + direction * currentSegmentLengths[i - 1];
                 }
             }
         }
 
         /// <summary>
-        /// Ô¼Êø¹Ç÷À·½ÏòÔÚÔÊĞíµÄ½Ç¶È·¶Î§ÄÚ
+        /// çº¦æŸéª¨éª¼æ–¹å‘åœ¨å…è®¸çš„è§’åº¦èŒƒå›´å†…
         /// </summary>
         private Vector2 ConstrainAngle(Vector2 direction, Vector2 referenceDirection, float maxAngle) {
             float angle = MathF.Acos(MathHelper.Clamp(Vector2.Dot(direction, referenceDirection), -1f, 1f));
@@ -637,7 +637,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             if (angle <= maxAngle)
                 return direction;
 
-            // ¼ÆËãÔ¼ÊøºóµÄ·½Ïò
+            // è®¡ç®—çº¦æŸåçš„æ–¹å‘
             float cross = referenceDirection.X * direction.Y - referenceDirection.Y * direction.X;
             float sign = cross >= 0 ? 1f : -1f;
             float constrainedAngle = referenceDirection.ToRotation() + maxAngle * sign;
@@ -647,52 +647,52 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
 
         #endregion
 
-        #region ÎïÀíÄ£Äâ
+        #region ç‰©ç†æ¨¡æ‹Ÿ
 
         /// <summary>
-        /// Ó¦ÓÃÎïÀíĞ§¹û£¨¹ßĞÔ¡¢×èÄá¡¢ÖØÁ¦£©
+        /// åº”ç”¨ç‰©ç†æ•ˆæœï¼ˆæƒ¯æ€§ã€é˜»å°¼ã€é‡åŠ›ï¼‰
         /// </summary>
         private void ApplyPhysics(Vector2 ownerVelocity) {
-            // Ìø¹ı¸ù²¿
+            // è·³è¿‡æ ¹éƒ¨
             for (int i = 1; i < JointCount; i++) {
-                // ¼ÆËãµ½ÀíÏëÎ»ÖÃµÄÆ«ÒÆ
+                // è®¡ç®—åˆ°ç†æƒ³ä½ç½®çš„åç§»
                 Vector2 prevJoint = Joints[i - 1];
                 Vector2 idealDirection = (Joints[i] - prevJoint).SafeNormalize(Vector2.UnitY);
                 float segLen = currentSegmentLengths[i - 1];
                 Vector2 idealPos = prevJoint + idealDirection * segLen;
 
-                // µ¯ĞÔÁ¦
+                // å¼¹æ€§åŠ›
                 Vector2 springForce = (idealPos - Joints[i]) * stiffness;
 
-                // ¹ßĞÔ£¨¿¼ÂÇÖ÷ÌåËÙ¶È£©
+                // æƒ¯æ€§ï¼ˆè€ƒè™‘ä¸»ä½“é€Ÿåº¦ï¼‰
                 Vector2 inertiaForce = -ownerVelocity * (0.1f * i / JointCount);
 
-                // ÖØÁ¦Ó°Ïì£¨Ä©¶ËÊÜÓ°Ïì¸ü´ó£©- ÑÓÕ¹Ê±¼õÉÙÖØÁ¦Ó°Ïì
+                // é‡åŠ›å½±å“ï¼ˆæœ«ç«¯å—å½±å“æ›´å¤§ï¼‰- å»¶å±•æ—¶å‡å°‘é‡åŠ›å½±å“
                 float gravityFactor = (float)i / JointCount * gravityInfluence / MathF.Max(1f, currentExtension * 0.5f);
                 Vector2 gravityForce = new Vector2(0, gravityFactor * 0.5f);
 
-                // ¸üĞÂËÙ¶È
+                // æ›´æ–°é€Ÿåº¦
                 Velocities[i] += springForce + inertiaForce + gravityForce;
-                Velocities[i] *= damping; // ×èÄá
+                Velocities[i] *= damping; // é˜»å°¼
 
-                // ÏŞÖÆ×î´óËÙ¶È - ÑÓÕ¹Ê±ÔÊĞí¸ü¿ìµÄËÙ¶È
+                // é™åˆ¶æœ€å¤§é€Ÿåº¦ - å»¶å±•æ—¶å…è®¸æ›´å¿«çš„é€Ÿåº¦
                 float maxSpeed = 15f * MathF.Max(1f, currentExtension * 0.5f);
                 if (Velocities[i].LengthSquared() > maxSpeed * maxSpeed) {
                     Velocities[i] = Velocities[i].SafeNormalize(Vector2.Zero) * maxSpeed;
                 }
 
-                // Ó¦ÓÃËÙ¶È£¨µ«±£³Ö¹Ç÷À³¤¶ÈÔ¼Êø£©
+                // åº”ç”¨é€Ÿåº¦ï¼ˆä½†ä¿æŒéª¨éª¼é•¿åº¦çº¦æŸï¼‰
                 Joints[i] += Velocities[i];
 
-                // ÖØĞÂÔ¼Êø³¤¶È
+                // é‡æ–°çº¦æŸé•¿åº¦
                 Vector2 dir = (Joints[i] - prevJoint).SafeNormalize(Vector2.UnitY);
                 Joints[i] = prevJoint + dir * segLen;
             }
         }
 
         private void UpdateGlow() {
-            // ¹¥»÷Ê±×Ô¶¯¸üĞÂ·¢¹âÒÑÔÚ¹¥»÷º¯ÊıÖĞ´¦Àí
-            // ÕâÀï´¦Àí×ÔÈ»Ë¥¼õ
+            // æ”»å‡»æ—¶è‡ªåŠ¨æ›´æ–°å‘å…‰å·²åœ¨æ”»å‡»å‡½æ•°ä¸­å¤„ç†
+            // è¿™é‡Œå¤„ç†è‡ªç„¶è¡°å‡
             if (!IsAttacking && glowIntensity > 0) {
                 glowIntensity = MathF.Max(0, glowIntensity - 0.02f);
             }
@@ -700,10 +700,10 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
 
         #endregion
 
-        #region »æÖÆ
+        #region ç»˜åˆ¶
 
         /// <summary>
-        /// »æÖÆÎ²°Í
+        /// ç»˜åˆ¶å°¾å·´
         /// </summary>
         public void Draw(SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor) {
             Texture2D bodyTex = KyuubiKitsune.MissesBody;
@@ -712,37 +712,37 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             if (bodyTex == null || tipTex == null)
                 return;
 
-            // »æÖÆËùÓĞÌå½Ú
+            // ç»˜åˆ¶æ‰€æœ‰ä½“èŠ‚
             for (int i = 0; i < JointCount - 1; i++) {
                 DrawSegment(spriteBatch, screenPos, bodyTex, i, lightColor);
             }
 
-            // »æÖÆÎ²¼â
+            // ç»˜åˆ¶å°¾å°–
             DrawTip(spriteBatch, screenPos, tipTex, lightColor);
 
-            // »æÖÆ·¢¹âĞ§¹û
+            // ç»˜åˆ¶å‘å…‰æ•ˆæœ
             if (glowIntensity > 0) {
                 DrawGlow(spriteBatch, screenPos);
             }
         }
 
         /// <summary>
-        /// »æÖÆÔ¤ÅĞÏß£¨ÔÚÎ²°Í»æÖÆÖ®Ç°µ÷ÓÃ£©
+        /// ç»˜åˆ¶é¢„åˆ¤çº¿ï¼ˆåœ¨å°¾å·´ç»˜åˆ¶ä¹‹å‰è°ƒç”¨ï¼‰
         /// </summary>
         public void DrawTelegraph(SpriteBatch spriteBatch, Vector2 screenPos) {
             if (!ShowTelegraph || TelegraphLength <= 0)
                 return;
 
-            // Ô¤ÅĞÏß²ÎÊı
+            // é¢„åˆ¤çº¿å‚æ•°
             float pulseTime = (float)Main.timeForVisualEffects * 0.1f;
             float pulse = 0.5f + 0.5f * MathF.Sin(pulseTime * 8f);
             Color telegraphColor = Color.Lerp(Color.OrangeRed, Color.Gold, pulse) * (0.3f + pulse * 0.3f);
-            telegraphColor.A = 0; // ¼ÓĞÔ»ìºÏ
+            telegraphColor.A = 0; // åŠ æ€§æ··åˆ
 
             Vector2 startPos = RootPosition;
             Vector2 endPos = RootPosition + TelegraphDirection * TelegraphLength;
 
-            // »æÖÆÔ¤ÅĞÏß£¨Ê¹ÓÃ¶à¸öµãÁ¬³ÉÏß£©
+            // ç»˜åˆ¶é¢„åˆ¤çº¿ï¼ˆä½¿ç”¨å¤šä¸ªç‚¹è¿æˆçº¿ï¼‰
             int segments = 30;
             float lineWidth = 4f + pulse * 2f;
 
@@ -753,19 +753,19 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
                 Vector2 p1 = Vector2.Lerp(startPos, endPos, t1);
                 Vector2 p2 = Vector2.Lerp(startPos, endPos, t2);
 
-                // ĞéÏßĞ§¹û
+                // è™šçº¿æ•ˆæœ
                 if (i % 3 == 0) continue;
 
-                // ½¥±äµ­³ö
+                // æ¸å˜æ·¡å‡º
                 float alpha = 1f - t1 * 0.5f;
                 Color segColor = telegraphColor * alpha;
 
-                // »æÖÆÏß¶Î£¨¼ò»¯Îªµã£©
+                // ç»˜åˆ¶çº¿æ®µï¼ˆç®€åŒ–ä¸ºç‚¹ï¼‰
                 Vector2 drawPos = (p1 + p2) * 0.5f - screenPos;
                 float segLength = Vector2.Distance(p1, p2);
                 float rotation = (p2 - p1).ToRotation();
 
-                // Ê¹ÓÃÎ²°ÍÌå½ÚÎÆÀí»æÖÆÔ¤ÅĞÏß
+                // ä½¿ç”¨å°¾å·´ä½“èŠ‚çº¹ç†ç»˜åˆ¶é¢„åˆ¤çº¿
                 Texture2D bodyTex = KyuubiKitsune.MissesBody;
                 if (bodyTex != null) {
                     Vector2 scale = new Vector2(segLength / bodyTex.Width * 1.5f, lineWidth / bodyTex.Height);
@@ -783,7 +783,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
                 }
             }
 
-            // ÔÚÖÕµã»æÖÆ¾¯¸æ±ê¼Ç
+            // åœ¨ç»ˆç‚¹ç»˜åˆ¶è­¦å‘Šæ ‡è®°
             float warningPulse = 1f + 0.3f * MathF.Sin(pulseTime * 12f);
             Color warningColor = Color.Red * (0.5f + pulse * 0.3f);
             warningColor.A = 0;
@@ -803,12 +803,12 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
                 );
             }
 
-            // Ìí¼Ó¹âÕÕ
+            // æ·»åŠ å…‰ç…§
             Lighting.AddLight(endPos, new Vector3(1f, 0.3f, 0.1f) * pulse * 0.5f);
         }
 
         /// <summary>
-        /// »æÖÆµ¥¸öÌå½Ú
+        /// ç»˜åˆ¶å•ä¸ªä½“èŠ‚
         /// </summary>
         private void DrawSegment(SpriteBatch spriteBatch, Vector2 screenPos, Texture2D texture, int index, Color lightColor) {
             if (index >= JointCount - 1)
@@ -820,21 +820,21 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             float rotation = direction.ToRotation();
             float length = direction.Length();
 
-            // ¼ÆËã¿í¶ÈËõ·Å
+            // è®¡ç®—å®½åº¦ç¼©æ”¾
             float widthScale = segmentWidths[index];
 
-            // »ìºÏÑÕÉ«£¨¿¼ÂÇ·¢¹â£©
+            // æ··åˆé¢œè‰²ï¼ˆè€ƒè™‘å‘å…‰ï¼‰
             Color drawColor = Color.Lerp(lightColor, Color.OrangeRed, glowIntensity * 0.5f);
             drawColor = Color.Lerp(drawColor, tailColor, 0.3f);
 
-            // ¼ÆËã»æÖÆÎ»ÖÃ£¨Ìå½ÚÖĞĞÄ£©
+            // è®¡ç®—ç»˜åˆ¶ä½ç½®ï¼ˆä½“èŠ‚ä¸­å¿ƒï¼‰
             Vector2 center = (start + end) * 0.5f;
             Vector2 drawPos = center - screenPos;
 
-            // ¼ÆËãËõ·Å£¨XÖáÀ­ÉìÒÔÆ¥Åä¹Ç÷À³¤¶È£¬YÖá¸ù¾İ¿í¶È½¥±ä£©
+            // è®¡ç®—ç¼©æ”¾ï¼ˆXè½´æ‹‰ä¼¸ä»¥åŒ¹é…éª¨éª¼é•¿åº¦ï¼ŒYè½´æ ¹æ®å®½åº¦æ¸å˜ï¼‰
             Vector2 scale = new Vector2(length / texture.Width, widthScale);
 
-            // »æÖÆÌå½Ú
+            // ç»˜åˆ¶ä½“èŠ‚
             spriteBatch.Draw(
                 texture,
                 drawPos,
@@ -849,7 +849,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         }
 
         /// <summary>
-        /// »æÖÆÎ²¼â
+        /// ç»˜åˆ¶å°¾å°–
         /// </summary>
         private void DrawTip(SpriteBatch spriteBatch, Vector2 screenPos, Texture2D texture, Color lightColor) {
             if (JointCount < 2)
@@ -860,21 +860,21 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             Vector2 direction = (lastJoint - prevJoint).SafeNormalize(Vector2.UnitY);
             float rotation = direction.ToRotation();
 
-            // Î²¼âÑÕÉ«£¬·¢¹âÊ±¸üÁÁ
+            // å°¾å°–é¢œè‰²ï¼Œå‘å…‰æ—¶æ›´äº®
             Color tipColor = Color.Lerp(lightColor, Color.Gold, glowIntensity);
             tipColor = Color.Lerp(tipColor, tailColor, 0.3f);
 
-            // Î²¼âËõ·Å
+            // å°¾å°–ç¼©æ”¾
             float tipScale = segmentWidths[JointCount - 1] * 1.2f;
 
-            // »æÖÆÎ²¼â
+            // ç»˜åˆ¶å°¾å°–
             spriteBatch.Draw(
                 texture,
                 lastJoint - screenPos,
                 null,
                 tipColor,
                 rotation,
-                new Vector2(0, texture.Height * 0.5f), // Ô­µãÔÚ×óÖĞ£¬Ê¹¼â¶Ë³¯Íâ
+                new Vector2(0, texture.Height * 0.5f), // åŸç‚¹åœ¨å·¦ä¸­ï¼Œä½¿å°–ç«¯æœå¤–
                 tipScale,
                 SpriteEffects.None,
                 0f
@@ -882,34 +882,34 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         }
 
         /// <summary>
-        /// »æÖÆ·¢¹âĞ§¹û
+        /// ç»˜åˆ¶å‘å…‰æ•ˆæœ
         /// </summary>
         private void DrawGlow(SpriteBatch spriteBatch, Vector2 screenPos) {
-            // ¼òµ¥µÄ¼ÓĞÔ·¢¹â
-            // ÔÚÎ²¼â¸½½ü»æÖÆ·¢¹âµã
+            // ç®€å•çš„åŠ æ€§å‘å…‰
+            // åœ¨å°¾å°–é™„è¿‘ç»˜åˆ¶å‘å…‰ç‚¹
             for (int i = JointCount - 3; i < JointCount; i++) {
                 if (i < 0) continue;
 
                 float intensity = glowIntensity * (float)(i - (JointCount - 3) + 1) / 3f;
                 Color glowColor = Color.OrangeRed * intensity * 0.5f;
-                glowColor.A = 0; // ¼ÓĞÔ»ìºÏ
+                glowColor.A = 0; // åŠ æ€§æ··åˆ
 
-                // Ê¹ÓÃ¼òµ¥µÄÔ²ĞÎ·¢¹â£¨Èç¹ûÓĞ×¨ÃÅµÄ·¢¹âÎÆÀí¿ÉÒÔÌæ»»£©
+                // ä½¿ç”¨ç®€å•çš„åœ†å½¢å‘å…‰ï¼ˆå¦‚æœæœ‰ä¸“é—¨çš„å‘å…‰çº¹ç†å¯ä»¥æ›¿æ¢ï¼‰
                 Vector2 pos = Joints[i] - screenPos;
                 float glowSize = 20f * intensity;
 
-                // ÕâÀï¼ò»¯´¦Àí£¬Êµ¼Ê¿ÉÒÔÊ¹ÓÃ×¨ÃÅµÄ·¢¹âÎÆÀí
-                // Ìí¼Ó¹âÕÕĞ§¹û
+                // è¿™é‡Œç®€åŒ–å¤„ç†ï¼Œå®é™…å¯ä»¥ä½¿ç”¨ä¸“é—¨çš„å‘å…‰çº¹ç†
+                // æ·»åŠ å…‰ç…§æ•ˆæœ
                 Lighting.AddLight(Joints[i], new Vector3(1f, 0.5f, 0.2f) * intensity);
             }
         }
 
         #endregion
 
-        #region ¹¤¾ß·½·¨
+        #region å·¥å…·æ–¹æ³•
 
         /// <summary>
-        /// »ñÈ¡Ö¸¶¨¹Ø½ÚµÄÊÀ½çÎ»ÖÃ
+        /// è·å–æŒ‡å®šå…³èŠ‚çš„ä¸–ç•Œä½ç½®
         /// </summary>
         public Vector2 GetJointPosition(int index) {
             if (index < 0 || index >= JointCount)
@@ -918,12 +918,12 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         }
 
         /// <summary>
-        /// »ñÈ¡Î²¼âÎ»ÖÃ
+        /// è·å–å°¾å°–ä½ç½®
         /// </summary>
         public Vector2 GetTipPosition() => Joints[JointCount - 1];
 
         /// <summary>
-        /// »ñÈ¡Î²¼â·½Ïò
+        /// è·å–å°¾å°–æ–¹å‘
         /// </summary>
         public Vector2 GetTipDirection() {
             if (JointCount < 2)
@@ -932,7 +932,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         }
 
         /// <summary>
-        /// ¼ì²éÉäµ¯·¢ÉäÊ±»ú
+        /// æ£€æŸ¥å°„å¼¹å‘å°„æ—¶æœº
         /// </summary>
         public bool ShouldFireProjectile() {
             return CurrentAttack == TailAttackType.ProjectileFire &&
@@ -940,7 +940,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         }
 
         /// <summary>
-        /// »ñÈ¡µ±Ç°¿í¶ÈËõ·Å
+        /// è·å–å½“å‰å®½åº¦ç¼©æ”¾
         /// </summary>
         public float GetWidthAtIndex(int index) {
             if (index < 0 || index >= JointCount)
@@ -948,7 +948,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             return segmentWidths[index];
         }
 
-        // »º¶¯º¯Êı
+        // ç¼“åŠ¨å‡½æ•°
         private static float EaseOutQuad(float t) => 1f - (1f - t) * (1f - t);
         private static float EaseInQuad(float t) => t * t;
         private static float EaseOutBack(float t) {

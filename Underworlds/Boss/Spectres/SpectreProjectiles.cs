@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -9,7 +9,7 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.Spectres
 {
     /// <summary>
-    /// Ô¹Äîµ¯ - Ô¹ÁéµÄÖ÷Òª×·×Ùµ¯Ä»
+    /// æ€¨å¿µå¼¹ - æ€¨çµçš„ä¸»è¦è¿½è¸ªå¼¹å¹•
     /// </summary>
     public class SpectreWraithBolt : ModProjectile
     {
@@ -39,14 +39,14 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
             pulsePhase += 0.12f;
             Projectile.rotation = Projectile.velocity.ToRotation() + MathHelper.PiOver2;
 
-            // ÇáÎ¢×·×Ù
+            // è½»å¾®è¿½è¸ª
             Player target = FindTarget();
             if (target != null && Projectile.timeLeft > 200) {
                 Vector2 toTarget = (target.Center - Projectile.Center).SafeNormalize(Vector2.Zero);
                 Projectile.velocity = Vector2.Lerp(Projectile.velocity, toTarget * Projectile.velocity.Length(), homingStrength);
             }
 
-            // Á£×ÓĞ§¹û
+            // ç²’å­æ•ˆæœ
             if (Main.rand.NextBool(2)) {
                 int dustType = Main.rand.NextBool() ? DustID.IceTorch : DustID.YellowTorch;
                 var d = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(10, 10), dustType);
@@ -79,7 +79,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
             var tex = TextureAssets.Projectile[Type].Value;
             Vector2 origin = tex.Size() / 2f;
 
-            // ÍÏÎ²
+            // æ‹–å°¾
             for (int i = Projectile.oldPos.Length - 1; i >= 0; i--) {
                 if (Projectile.oldPos[i] == Vector2.Zero) continue;
 
@@ -94,11 +94,11 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
                     Projectile.scale * (0.5f + progress * 0.5f), SpriteEffects.None, 0);
             }
 
-            // Ö÷Ìå
+            // ä¸»ä½“
             float pulse = 1f + MathF.Sin(pulsePhase) * 0.15f;
             Color mainColor = SpectreHelper.SpectreCyan;
 
-            // ¹âÔÎ
+            // å…‰æ™•
             Color glowColor = mainColor;
             sb.Draw(tex, Projectile.Center - Main.screenPosition, null, glowColor * 0.4f,
                 Projectile.rotation, origin, Projectile.scale * pulse * 1.3f, SpriteEffects.None, 0);
@@ -121,7 +121,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
     }
 
     /// <summary>
-    /// Áé»êÁ´Ìõ - Á¬½Ó¹¥»÷µ¯Ä»
+    /// çµé­‚é“¾æ¡ - è¿æ¥æ”»å‡»å¼¹å¹•
     /// </summary>
     public class SpectreSoulChain : ModProjectile
     {
@@ -155,7 +155,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
 
             pulsePhase += 0.15f;
 
-            // ÏòÄ¿±êÎ»ÖÃÒÆ¶¯
+            // å‘ç›®æ ‡ä½ç½®ç§»åŠ¨
             Vector2 toTarget = (targetPos - Projectile.Center).SafeNormalize(Vector2.Zero);
             float dist = Vector2.Distance(Projectile.Center, targetPos);
 
@@ -163,7 +163,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
                 Projectile.velocity = Vector2.Lerp(Projectile.velocity, toTarget * 14f, 0.08f);
             }
             else {
-                // µ½´ïÄ¿±êºóÏûÉ¢
+                // åˆ°è¾¾ç›®æ ‡åæ¶ˆæ•£
                 Projectile.velocity *= 0.9f;
                 Projectile.alpha += 5;
                 if (Projectile.alpha > 255) {
@@ -173,7 +173,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
 
             Projectile.rotation += 0.1f;
 
-            // Á´ÌõÁ£×Ó
+            // é“¾æ¡ç²’å­
             SpectreHelper.CreateSoulChainParticles(Projectile.Center, targetPos, 0.5f);
 
             Lighting.AddLight(Projectile.Center, SpectreHelper.SpectreYellow.ToVector3() * 0.4f);
@@ -182,14 +182,14 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
         public override bool PreDraw(ref Color lightColor) {
             SpriteBatch sb = Main.spriteBatch;
 
-            // »æÖÆÁ´Ìõ
+            // ç»˜åˆ¶é“¾æ¡
             if (Projectile.oldPos.Length > 5 && Projectile.oldPos[5] != Vector2.Zero) {
                 Vector2 chainStart = Projectile.oldPos[Math.Min(10, Projectile.oldPos.Length - 1)] + Projectile.Size / 2;
                 SpectreHelper.DrawSoulChain(sb, chainStart, Projectile.Center,
                     SpectreHelper.SpectreYellow, 6f, pulsePhase * 60f);
             }
 
-            // »æÖÆºËĞÄ
+            // ç»˜åˆ¶æ ¸å¿ƒ
             float pulse = 1f + MathF.Sin(pulsePhase) * 0.2f;
             SpectreHelper.DrawSpectreCore(sb, Projectile.Center,
                 SpectreHelper.SpectreYellow, SpectreHelper.SpectreGold,
@@ -209,14 +209,14 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
     }
 
     /// <summary>
-    /// Áé»êÇò - »·ĞÎµ¯Ä»
+    /// çµé­‚çƒ - ç¯å½¢å¼¹å¹•
     /// </summary>
     public class SpectreSoulOrb : ModProjectile
     {
         public override string Texture => SpectreHelper.Path + "SpectreSoul";
 
         private float pulsePhase = 0f;
-        private int ColorType => (int)Projectile.ai[0]; // 0=ÇàÉ«, 1=»ÆÉ«
+        private int ColorType => (int)Projectile.ai[0]; // 0=é’è‰², 1=é»„è‰²
 
         public override void SetStaticDefaults() {
             ProjectileID.Sets.TrailCacheLength[Projectile.type] = 10;
@@ -238,12 +238,12 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
             pulsePhase += 0.1f;
             Projectile.rotation += 0.08f;
 
-            // ÇáÎ¢¼ÓËÙ
+            // è½»å¾®åŠ é€Ÿ
             if (Projectile.velocity.Length() < 12f) {
                 Projectile.velocity *= 1.01f;
             }
 
-            // Á£×Ó
+            // ç²’å­
             if (Main.rand.NextBool(3)) {
                 int dustType = ColorType == 0 ? DustID.IceTorch : DustID.YellowTorch;
                 var d = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(8, 8), dustType);
@@ -263,7 +263,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
 
             Color orbColor = ColorType == 0 ? SpectreHelper.SpectreCyan : SpectreHelper.SpectreYellow;
 
-            // ÍÏÎ²
+            // æ‹–å°¾
             for (int i = Projectile.oldPos.Length - 1; i >= 0; i--) {
                 if (Projectile.oldPos[i] == Vector2.Zero) continue;
 
@@ -277,10 +277,10 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
                     Projectile.scale * (0.4f + progress * 0.6f), SpriteEffects.None, 0);
             }
 
-            // Ö÷Ìå
+            // ä¸»ä½“
             float pulse = 1f + MathF.Sin(pulsePhase) * 0.15f;
 
-            // ¹âÔÎ
+            // å…‰æ™•
             Color glowColor = orbColor;
             glowColor.A = 0;
             sb.Draw(tex, Projectile.Center - Main.screenPosition, null, glowColor * 0.5f,
@@ -313,7 +313,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
     }
 
     /// <summary>
-    /// °§º¿²¨ - ´ó·¶Î§À©É¢µ¯Ä»
+    /// å“€åšæ³¢ - å¤§èŒƒå›´æ‰©æ•£å¼¹å¹•
     /// </summary>
     public class SpectreWailingWave : ModProjectile
     {
@@ -346,20 +346,20 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
 
             Projectile.rotation = Projectile.velocity.ToRotation();
 
-            // Öğ½¥¼ÓËÙ
+            // é€æ¸åŠ é€Ÿ
             if (Projectile.velocity.Length() < 14f) {
                 Projectile.velocity *= 1.015f;
             }
 
-            // ²¨ĞÎÔË¶¯
+            // æ³¢å½¢è¿åŠ¨
             Vector2 perpendicular = Projectile.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
             float wave = MathF.Sin(pulsePhase * 0.8f) * 3f;
             Projectile.position += perpendicular * wave;
 
-            // Á£×Ó
+            // ç²’å­
             SpectreHelper.CreateSpectreTrail(Projectile.Center, Projectile.velocity, growthScale);
 
-            // ·¢¹â
+            // å‘å…‰
             Color lightColor = Color.Lerp(SpectreHelper.SpectreCyan, SpectreHelper.SpectreYellow, 0.5f);
             Lighting.AddLight(Projectile.Center, lightColor.ToVector3() * 0.4f * growthScale);
         }
@@ -369,7 +369,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
             var tex = TextureAssets.Projectile[Type].Value;
             Vector2 origin = tex.Size() / 2f;
 
-            // ¶à²ãÍÏÎ²
+            // å¤šå±‚æ‹–å°¾
             for (int layer = 0; layer < 2; layer++) {
                 for (int i = Projectile.oldPos.Length - 1; i >= 0; i--) {
                     if (Projectile.oldPos[i] == Vector2.Zero) continue;
@@ -390,11 +390,11 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
                 }
             }
 
-            // Ö÷Ìå
+            // ä¸»ä½“
             float pulse = 1f + MathF.Sin(pulsePhase) * 0.1f;
             Color mainColor = Color.Lerp(SpectreHelper.SpectreCyan, SpectreHelper.SpectreYellow, 0.4f);
 
-            // ¹âÔÎ
+            // å…‰æ™•
             Color glowColor = mainColor;
             glowColor.A = 0;
             sb.Draw(tex, Projectile.Center - Main.screenPosition, null, glowColor * 0.4f,

@@ -1,0 +1,19 @@
+{
+    // C# 扩展设置 - 确保 IntelliSense 正常工作
+    "dotnet.defaultSolution": "AncientChineseMythology.sln",
+    "omnisharp.projectLoadTimeout": 120,
+    "omnisharp.enableMsBuildLoadProjectsOnDemand": false,
+    "omnisharp.enableRoslynAnalyzers": true,
+
+    // 排除不需要的文件夹
+    "files.exclude": {
+        "**/bin": true,
+        "**/obj": true,
+        "**/.vs": true
+    },
+
+    // 文件关联
+    "files.associations": {
+        "*.hjson": "hjson"
+    }
+}

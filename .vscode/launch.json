@@ -1,0 +1,25 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "启动 tModLoader 并调试",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "dotnet",
+            "args": [
+                "D:\\Steam_RunSets\\steamapps\\common\\tModLoader\\tModLoader.dll"
+            ],
+            "cwd": "D:\\Steam_RunSets\\steamapps\\common\\tModLoader",
+            "console": "externalTerminal",
+            "preLaunchTask": "build",
+            "justMyCode": true
+        },
+        {
+            "name": "附加到 tModLoader 进程",
+            "type": "coreclr",
+            "request": "attach",
+            "processName": "dotnet",
+            "justMyCode": true
+        }
+    ]
+}

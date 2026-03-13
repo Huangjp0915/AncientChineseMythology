@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.ID;
@@ -6,23 +6,23 @@ using Terraria.ID;
 namespace AncientChineseMythology.NPCs.Boss.AzureDragons
 {
     /// <summary>
-    /// ÇàÁúÍ·²¿ - AIÕĞÊ½ÊµÏÖ
+    /// é’é¾™å¤´éƒ¨ - AIæ‹›å¼å®ç°
     /// </summary>
     public partial class AzureDragonHead
     {
-        #region ³ö³¡Ñİ³ö
+        #region å‡ºåœºæ¼”å‡º
 
         private void RunIntro(Player target) {
             introProgress = MathHelper.Clamp(StateTimer / 180f, 0f, 1f);
             NPC.dontTakeDamage = true;
 
-            // ´ÓÌì¶ø½µ£¬À×¹â»·ÈÆ
+            // ä»å¤©è€Œé™ï¼Œé›·å…‰ç¯ç»•
             Vector2 introOffset = new Vector2(0, -800) * (1f - ACMUtils.SineInOut(introProgress));
             Vector2 desiredPos = target.Center + new Vector2(0, -400) + introOffset;
             NPC.Center = Vector2.Lerp(NPC.Center, desiredPos, 0.03f);
             NPC.velocity *= 0.9f;
 
-            // ÇàÀ¶É«À×¹âÁ£×Ó
+            // é’è“è‰²é›·å…‰ç²’å­
             if (!VaultUtils.isServer && StateTimer % 2 == 0) {
                 for (int i = 0; i < 6; i++) {
                     Vector2 dustPos = NPC.Center + Main.rand.NextVector2CircularEdge(200, 200) * (1f - introProgress);
@@ -31,7 +31,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                     Main.dust[dust].velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 6f;
                 }
 
-                // ÉÁµç»ğ»¨
+                // é—ªç”µç«èŠ±
                 if (Main.rand.NextBool(3)) {
                     Vector2 sparkPos = NPC.Center + Main.rand.NextVector2Circular(150, 150);
                     int spark = Dust.NewDust(sparkPos, 0, 0, DustID.Electric, 0, 0, 150, default, 1.5f);
@@ -47,7 +47,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.2f, Volume = 1.8f }, NPC.Center);
                 Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(18, 60);
 
-                // ³ö³¡À×±©±¬·¢
+                // å‡ºåœºé›·æš´çˆ†å‘
                 if (!VaultUtils.isServer) {
                     for (int i = 0; i < 60; i++) {
                         Vector2 vel = Main.rand.NextVector2CircularEdge(12, 12);
@@ -70,10 +70,10 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
 
         #endregion
 
-        #region Ò»½×¶Î - ²ÔÁú³öº£
+        #region ä¸€é˜¶æ®µ - è‹é¾™å‡ºæµ·
 
         /// <summary>
-        /// ÅÌĞıÑ²ß® - ÔÚÍæ¼ÒÖÜÎ§×ö8×ÖÅÌĞı£¬Ò»¶ÎÊ±¼äºóÇĞ»»µ½¹¥»÷ÕĞÊ½
+        /// ç›˜æ—‹å·¡å¼‹ - åœ¨ç©å®¶å‘¨å›´åš8å­—ç›˜æ—‹ï¼Œä¸€æ®µæ—¶é—´ååˆ‡æ¢åˆ°æ”»å‡»æ‹›å¼
         /// </summary>
         private void RunPhase1Orbit(Player target) {
             orbitAngle += orbitSpeed;
@@ -87,28 +87,28 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
             Vector2 desiredPos = target.Center + new Vector2(offsetX, -h + offsetY);
             SmoothOrbit(desiredPos, 80f);
 
-            // ÅÌĞıÊ±ÇàÉ«ÍÏÎ²Á£×Ó
+            // ç›˜æ—‹æ—¶é’è‰²æ‹–å°¾ç²’å­
             if (!VaultUtils.isServer && StateTimer % 4 == 0) {
                 int dust = Dust.NewDust(NPC.Center, 0, 0, DustID.BlueTorch, 0, 0, 120, default, 1.5f);
                 Main.dust[dust].noGravity = true;
                 Main.dust[dust].velocity = -NPC.velocity * 0.2f;
             }
 
-            // ÅÌĞıÒ»¶¨Ê±¼äºóÇĞ»»¹¥»÷
+            // ç›˜æ—‹ä¸€å®šæ—¶é—´ååˆ‡æ¢æ”»å‡»
             if (StateTimer > 180) {
                 TransitionTo(PickPhase1Attack());
             }
         }
 
         /// <summary>
-        /// ÁúÏ¢ÍÂÏ¢ - ³¯Íæ¼Ò·½ÏòÊÍ·ÅÉÈĞÎÇàÉ«ÄÜÁ¿µ¯Ä»
+        /// é¾™æ¯åæ¯ - æœç©å®¶æ–¹å‘é‡Šæ”¾æ‰‡å½¢é’è‰²èƒ½é‡å¼¹å¹•
         /// </summary>
         private void RunPhase1DragonBreath(Player target) {
             switch ((int)SubState) {
-                case 0: // ĞîÁ¦½×¶Î
+                case 0: // è“„åŠ›é˜¶æ®µ
                     NPC.velocity *= 0.92f;
 
-                    // ĞîÁ¦Á£×ÓÏò¿Ú²¿»ã¾Û
+                    // è“„åŠ›ç²’å­å‘å£éƒ¨æ±‡èš
                     if (!VaultUtils.isServer) {
                         for (int i = 0; i < 3; i++) {
                             Vector2 dustPos = NPC.Center + Main.rand.NextVector2CircularEdge(120, 120);
@@ -126,14 +126,14 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                     }
                     break;
 
-                case 1: // ÍÂÏ¢½×¶Î - Á¬Ğø·¢ÉäÄÜÁ¿µ¯
+                case 1: // åæ¯é˜¶æ®µ - è¿ç»­å‘å°„èƒ½é‡å¼¹
                     NPC.velocity *= 0.95f;
 
-                    // »º»º×·×ÙÍæ¼Ò
+                    // ç¼“ç¼“è¿½è¸ªç©å®¶
                     Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
                     NPC.velocity += toTarget * 0.3f;
 
-                    // Ã¿¸ôÒ»¶¨Ö¡·¢ÉäÁúÏ¢µ¯
+                    // æ¯éš”ä¸€å®šå¸§å‘å°„é¾™æ¯å¼¹
                     int fireInterval = Main.expertMode ? 6 : 8;
                     if (AttackTimer % fireInterval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                         float baseAngle = toTarget.ToRotation();
@@ -150,7 +150,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                         }
                     }
 
-                    // ÍÂÏ¢Ê±ÇàÉ«ÑÌÎíÁ£×Ó
+                    // åæ¯æ—¶é’è‰²çƒŸé›¾ç²’å­
                     if (!VaultUtils.isServer) {
                         for (int i = 0; i < 5; i++) {
                             Vector2 dustVel = toTarget.RotatedByRandom(0.4f) * Main.rand.NextFloat(4, 10);
@@ -168,11 +168,11 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
         }
 
         /// <summary>
-        /// À×Çòºä»÷ - ÔÚÍæ¼ÒÖÜÎ§Éú³É¶à¸öÀ×Çò£¬¶ÌÔİÑÓ³Ùºó±¬Õ¨
+        /// é›·çƒè½°å‡» - åœ¨ç©å®¶å‘¨å›´ç”Ÿæˆå¤šä¸ªé›·çƒï¼ŒçŸ­æš‚å»¶è¿Ÿåçˆ†ç‚¸
         /// </summary>
         private void RunPhase1ThunderOrbs(Player target) {
             switch ((int)SubState) {
-                case 0: // ĞüÍ£ĞîÁ¦
+                case 0: // æ‚¬åœè“„åŠ›
                     Vector2 hoverPos = target.Center + new Vector2(0, -450);
                     SmoothOrbit(hoverPos, 50f);
 
@@ -188,7 +188,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
 
                         SoundEngine.PlaySound(SoundID.Item93 with { Pitch = -0.2f, Volume = 1.3f }, NPC.Center);
 
-                        // ÔÚÍæ¼ÒÖÜÎ§Éú³ÉÀ×Çò
+                        // åœ¨ç©å®¶å‘¨å›´ç”Ÿæˆé›·çƒ
                         if (Main.netMode != NetmodeID.MultiplayerClient) {
                             int orbCount = Main.expertMode ? 8 : 6;
                             for (int i = 0; i < orbCount; i++) {
@@ -206,10 +206,10 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                     }
                     break;
 
-                case 1: // µÈ´ıÀ×Çò±¬Õ¨
+                case 1: // ç­‰å¾…é›·çƒçˆ†ç‚¸
                     NPC.velocity *= 0.9f;
 
-                    // µç»¡Á£×ÓĞ§¹û
+                    // ç”µå¼§ç²’å­æ•ˆæœ
                     if (!VaultUtils.isServer && AttackTimer % 5 == 0) {
                         for (int i = 0; i < 8; i++) {
                             Vector2 dustPos = NPC.Center + Main.rand.NextVector2Circular(100, 100);
@@ -226,21 +226,21 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
         }
 
         /// <summary>
-        /// ²ÔÁú³å´Ì - ÏòÍæ¼Ò¸ßËÙ³å´Ì£¬´øÓĞÇàÉ«ÍÏÎ²
+        /// è‹é¾™å†²åˆº - å‘ç©å®¶é«˜é€Ÿå†²åˆºï¼Œå¸¦æœ‰é’è‰²æ‹–å°¾
         /// </summary>
         private void RunPhase1Charge(Player target) {
             switch ((int)SubState) {
-                case 0: // Ëø¶¨×¼±¸
+                case 0: // é”å®šå‡†å¤‡
                     chargeCount = 0;
                     maxCharges = Main.expertMode ? 4 : 3;
                     SubState = 1;
                     AttackTimer = 0;
                     break;
 
-                case 1: // Ô¤¸æ
+                case 1: // é¢„å‘Š
                     NPC.velocity *= 0.85f;
 
-                    // ³å´Ì·½ÏòÖ¸Ê¾Á£×Ó
+                    // å†²åˆºæ–¹å‘æŒ‡ç¤ºç²’å­
                     if (!VaultUtils.isServer) {
                         Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero);
                         for (int i = 0; i < 4; i++) {
@@ -265,8 +265,8 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                     }
                     break;
 
-                case 2: // ³å´ÌÖĞ
-                    // ÇàÉ«³å´ÌÍÏÎ²
+                case 2: // å†²åˆºä¸­
+                    // é’è‰²å†²åˆºæ‹–å°¾
                     if (!VaultUtils.isServer) {
                         for (int i = 0; i < 6; i++) {
                             Vector2 dustPos = NPC.Center - NPC.velocity.SafeNormalize(Vector2.Zero) * 40f;
@@ -276,7 +276,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                             Main.dust[dust].noGravity = true;
                             Main.dust[dust].velocity = -NPC.velocity * 0.1f;
                         }
-                        // µç»¡»ğ»¨
+                        // ç”µå¼§ç«èŠ±
                         if (Main.rand.NextBool(2)) {
                             int spark = Dust.NewDust(NPC.Center, 0, 0, DustID.Electric, 0, 0, 50, default, 1.5f);
                             Main.dust[spark].noGravity = true;
@@ -299,13 +299,13 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
 
         #endregion
 
-        #region ½×¶Î×ª»»Ñİ³ö
+        #region é˜¶æ®µè½¬æ¢æ¼”å‡º
 
         private void RunPhaseTransition2(Player target) {
             NPC.velocity *= 0.92f;
             NPC.dontTakeDamage = true;
 
-            // À×±©¾ÛÂ£ÌØĞ§
+            // é›·æš´èšæ‹¢ç‰¹æ•ˆ
             if (!VaultUtils.isServer) {
                 for (int i = 0; i < 8; i++) {
                     Vector2 dustPos = NPC.Center + Main.rand.NextVector2CircularEdge(250, 250);
@@ -320,7 +320,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0f, Volume = 2f }, NPC.Center);
                 Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(22, 60);
 
-                // ±¬·¢µç»¡
+                // çˆ†å‘ç”µå¼§
                 if (!VaultUtils.isServer) {
                     for (int i = 0; i < 80; i++) {
                         Vector2 vel = Main.rand.NextVector2CircularEdge(15, 15);
@@ -341,7 +341,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
             NPC.velocity *= 0.9f;
             NPC.dontTakeDamage = true;
 
-            // ÌìÍş½µÁÙ - ¸üÇ¿ÁÒµÄÀ×±©ÌØĞ§
+            // å¤©å¨é™ä¸´ - æ›´å¼ºçƒˆçš„é›·æš´ç‰¹æ•ˆ
             if (!VaultUtils.isServer) {
                 for (int i = 0; i < 12; i++) {
                     Vector2 dustPos = NPC.Center + Main.rand.NextVector2CircularEdge(300, 300);
@@ -363,7 +363,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
             }
 
             if (StateTimer == 70) {
-                // È«·½Î»µç»¡±¬·¢
+                // å…¨æ–¹ä½ç”µå¼§çˆ†å‘
                 if (!VaultUtils.isServer) {
                     for (int i = 0; i < 120; i++) {
                         Vector2 vel = Main.rand.NextVector2CircularEdge(18, 18);
@@ -383,18 +383,18 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
 
         #endregion
 
-        #region ¶ş½×¶Î - À×öªÕğÅ­
+        #region äºŒé˜¶æ®µ - é›·éœ†éœ‡æ€’
 
         /// <summary>
-        /// ·ç±©×·»÷ - ¿ìËÙ×·×ÙÍæ¼Ò£¬Í¬Ê±ÊÍ·ÅÉÁµç»ğ»¨
+        /// é£æš´è¿½å‡» - å¿«é€Ÿè¿½è¸ªç©å®¶ï¼ŒåŒæ—¶é‡Šæ”¾é—ªç”µç«èŠ±
         /// </summary>
         private void RunPhase2StormChase(Player target) {
-            // ¸ßËÙ×·×Ù
+            // é«˜é€Ÿè¿½è¸ª
             Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
             float chaseSpeed = Main.expertMode ? 18f : 14f;
             NPC.velocity = Vector2.Lerp(NPC.velocity, toTarget * chaseSpeed, 0.06f);
 
-            // ×·×ÙÊ±ÊÍ·Åµç»¡Á£×Ó
+            // è¿½è¸ªæ—¶é‡Šæ”¾ç”µå¼§ç²’å­
             if (!VaultUtils.isServer && StateTimer % 3 == 0) {
                 for (int i = 0; i < 4; i++) {
                     Vector2 offset = Main.rand.NextVector2Circular(40, 40);
@@ -405,7 +405,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                 }
             }
 
-            // ×·×Ù¹ı³ÌÖĞÖÜÆÚĞÔÊÍ·ÅÀ×µçµ¯
+            // è¿½è¸ªè¿‡ç¨‹ä¸­å‘¨æœŸæ€§é‡Šæ”¾é›·ç”µå¼¹
             int shootInterval = Main.expertMode ? 20 : 30;
             if (StateTimer % shootInterval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                 Vector2 vel = toTarget.RotatedByRandom(0.3f) * 12f;
@@ -421,11 +421,11 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
         }
 
         /// <summary>
-        /// ÉÁµç¾ØÕó - ÔÚÕ½³¡ÉÏ²¼ÏÂµç»¡Íø¸ñ
+        /// é—ªç”µçŸ©é˜µ - åœ¨æˆ˜åœºä¸Šå¸ƒä¸‹ç”µå¼§ç½‘æ ¼
         /// </summary>
         private void RunPhase2LightningMatrix(Player target) {
             switch ((int)SubState) {
-                case 0: // Éı¿ÕĞîÁ¦
+                case 0: // å‡ç©ºè“„åŠ›
                     Vector2 highPos = target.Center + new Vector2(0, -600);
                     SmoothOrbit(highPos, 40f);
 
@@ -444,11 +444,11 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                     }
                     break;
 
-                case 1: // ÊÍ·ÅÉÁµçÕó
+                case 1: // é‡Šæ”¾é—ªç”µé˜µ
                     NPC.velocity *= 0.9f;
 
                     if (AttackTimer == 1 && Main.netMode != NetmodeID.MultiplayerClient) {
-                        // ×İºá½»´íµÄÉÁµç
+                        // çºµæ¨ªäº¤é”™çš„é—ªç”µ
                         int lines = Main.expertMode ? 6 : 4;
                         for (int i = 0; i < lines; i++) {
                             float angle = MathHelper.TwoPi * i / lines;
@@ -463,7 +463,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                         }
                     }
 
-                    // ¾ØÕóÉÁË¸ÌØĞ§
+                    // çŸ©é˜µé—ªçƒç‰¹æ•ˆ
                     if (!VaultUtils.isServer && AttackTimer % 4 == 0) {
                         for (int i = 0; i < 10; i++) {
                             Vector2 dustPos = target.Center + Main.rand.NextVector2Circular(400, 400);
@@ -480,16 +480,16 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
         }
 
         /// <summary>
-        /// Áú¾í·ç±© - ¸ßËÙÂİĞıÅÌĞı±Æ½üÍæ¼Ò£¬ÁôÏÂµç»¡Ğı·ç
+        /// é¾™å·é£æš´ - é«˜é€Ÿèºæ—‹ç›˜æ—‹é€¼è¿‘ç©å®¶ï¼Œç•™ä¸‹ç”µå¼§æ—‹é£
         /// </summary>
         private void RunPhase2TornadoSweep(Player target) {
-            orbitAngle += 0.08f; // ¼«¿ìµÄĞı×ª
+            orbitAngle += 0.08f; // æå¿«çš„æ—‹è½¬
 
             float radius = MathHelper.Lerp(500f, 100f, MathHelper.Clamp(StateTimer / 180f, 0, 1));
             Vector2 desiredPos = target.Center + orbitAngle.ToRotationVector2() * radius;
             NPC.velocity = (desiredPos - NPC.Center) * 0.12f;
 
-            // Ğı·çÍÏÎ²
+            // æ—‹é£æ‹–å°¾
             if (!VaultUtils.isServer) {
                 for (int i = 0; i < 5; i++) {
                     Vector2 dustVel = (-NPC.velocity).SafeNormalize(Vector2.Zero).RotatedByRandom(1f) * Main.rand.NextFloat(3, 8);
@@ -503,7 +503,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                 }
             }
 
-            // Ğı·ç¹ı³ÌÖĞÊÍ·Åµ¯Ä»
+            // æ—‹é£è¿‡ç¨‹ä¸­é‡Šæ”¾å¼¹å¹•
             if (StateTimer % 15 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                 Vector2 vel = NPC.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2) * 10f;
                 Projectile.NewProjectile(
@@ -518,7 +518,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
         }
 
         /// <summary>
-        /// ¼±ËÙÁ¬³å - ¶à´Î¼«ËÙ³å´Ì£¬Ã¿´Î¸Ä±ä·½Ïò
+        /// æ€¥é€Ÿè¿å†² - å¤šæ¬¡æé€Ÿå†²åˆºï¼Œæ¯æ¬¡æ”¹å˜æ–¹å‘
         /// </summary>
         private void RunPhase2RapidCharge(Player target) {
             switch ((int)SubState) {
@@ -529,7 +529,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                     AttackTimer = 0;
                     break;
 
-                case 1: // ¶ÌÔİËø¶¨
+                case 1: // çŸ­æš‚é”å®š
                     NPC.velocity *= 0.8f;
 
                     if (!VaultUtils.isServer) {
@@ -556,7 +556,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                     }
                     break;
 
-                case 2: // ³å´Ì
+                case 2: // å†²åˆº
                     if (!VaultUtils.isServer) {
                         for (int i = 0; i < 8; i++) {
                             Vector2 dustPos = NPC.Center - NPC.velocity.SafeNormalize(Vector2.Zero) * 50f;
@@ -585,20 +585,20 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
 
         #endregion
 
-        #region Èı½×¶Î - ÌìÍş½µÊÀ
+        #region ä¸‰é˜¶æ®µ - å¤©å¨é™ä¸–
 
         /// <summary>
-        /// À×öªÉóÅĞ - È«ÆÁ·¶Î§Á¬ĞøÂäÀ×+ÄÜÁ¿µ¯Ä»ÇãĞº
+        /// é›·éœ†å®¡åˆ¤ - å…¨å±èŒƒå›´è¿ç»­è½é›·+èƒ½é‡å¼¹å¹•å€¾æ³»
         /// </summary>
         private void RunPhase3ThunderJudgment(Player target) {
-            // ¾Ó¸ßÁÙÏÂ
+            // å±…é«˜ä¸´ä¸‹
             Vector2 highPos = target.Center + new Vector2(MathF.Sin(globalTime) * 200, -500);
             SmoothOrbit(highPos, 40f);
 
-            // ³ÖĞøÂäÀ×
+            // æŒç»­è½é›·
             int strikeInterval = Main.expertMode ? 8 : 12;
             if (StateTimer % strikeInterval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                // ÔÚÍæ¼ÒÖÜÎ§Ëæ»úÎ»ÖÃÉú³ÉÏòÏÂµÄÉÁµçµ¯Ä»
+                // åœ¨ç©å®¶å‘¨å›´éšæœºä½ç½®ç”Ÿæˆå‘ä¸‹çš„é—ªç”µå¼¹å¹•
                 Vector2 strikePos = target.Center + Main.rand.NextVector2Circular(500, 200);
                 strikePos.Y -= 800;
                 Vector2 vel = new Vector2(Main.rand.NextFloat(-2f, 2f), 18f);
@@ -609,7 +609,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                 );
             }
 
-            // Í¬Ê±ÊÍ·Å×·×ÙÄÜÁ¿µ¯
+            // åŒæ—¶é‡Šæ”¾è¿½è¸ªèƒ½é‡å¼¹
             if (StateTimer % 30 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                 for (int i = 0; i < 3; i++) {
                     float angle = Main.rand.NextFloat(MathHelper.TwoPi);
@@ -621,7 +621,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                 }
             }
 
-            // À×±©ÊÓ¾õĞ§¹û
+            // é›·æš´è§†è§‰æ•ˆæœ
             if (!VaultUtils.isServer) {
                 for (int i = 0; i < 6; i++) {
                     Vector2 dustPos = NPC.Center + Main.rand.NextVector2Circular(150, 150);
@@ -637,7 +637,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
         }
 
         /// <summary>
-        /// ÌìÅ­Áú¾í - ¼«ËÙÂİĞı±Æ½ü+±¬·¢µç»¡ºéÁ÷
+        /// å¤©æ€’é¾™å· - æé€Ÿèºæ—‹é€¼è¿‘+çˆ†å‘ç”µå¼§æ´ªæµ
         /// </summary>
         private void RunPhase3CelestialFury(Player target) {
             float progress = MathHelper.Clamp(StateTimer / 240f, 0, 1);
@@ -647,7 +647,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
             Vector2 desiredPos = target.Center + orbitAngle.ToRotationVector2() * radius;
             NPC.velocity = (desiredPos - NPC.Center) * 0.15f;
 
-            // ¼«ÖÂĞı·çÌØĞ§
+            // æè‡´æ—‹é£ç‰¹æ•ˆ
             if (!VaultUtils.isServer) {
                 for (int i = 0; i < 8; i++) {
                     Vector2 dustVel = (-NPC.velocity).SafeNormalize(Vector2.Zero).RotatedByRandom(1.2f) *
@@ -659,7 +659,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                 }
             }
 
-            // ¸ßÆµµ¯Ä»ÊÍ·Å
+            // é«˜é¢‘å¼¹å¹•é‡Šæ”¾
             if (StateTimer % 10 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                 Vector2 vel = NPC.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2) * 12f;
                 Projectile.NewProjectile(
@@ -672,13 +672,13 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                 );
             }
 
-            // µ½´ï×îÄÚÈ¦Ê±±¬·¢
+            // åˆ°è¾¾æœ€å†…åœˆæ—¶çˆ†å‘
             if (progress > 0.9f && SubState == 0) {
                 SubState = 1;
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.3f, Volume = 2f }, NPC.Center);
                 Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(25, 60);
 
-                // ±¬·¢µç»¡
+                // çˆ†å‘ç”µå¼§
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
                     for (int i = 0; i < 12; i++) {
                         float angle = MathHelper.TwoPi * i / 12f;
@@ -706,11 +706,11 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
         }
 
         /// <summary>
-        /// ÁúÉıÌì»÷ - ¼«ËÙÉıÌìºó¸©³åºä»÷£¬ÑØÍ¾ÁôÏÂµç»¡µØ´ø
+        /// é¾™å‡å¤©å‡» - æé€Ÿå‡å¤©åä¿¯å†²è½°å‡»ï¼Œæ²¿é€”ç•™ä¸‹ç”µå¼§åœ°å¸¦
         /// </summary>
         private void RunPhase3DragonAscent(Player target) {
             switch ((int)SubState) {
-                case 0: // ĞîÁ¦ÉıÌì
+                case 0: // è“„åŠ›å‡å¤©
                     NPC.velocity.Y -= 1.5f;
                     NPC.velocity.X *= 0.95f;
 
@@ -729,7 +729,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                     }
                     break;
 
-                case 1: // Ëø¶¨¸©³å
+                case 1: // é”å®šä¿¯å†²
                     NPC.velocity *= 0.7f;
 
                     if (AttackTimer >= 15) {
@@ -743,7 +743,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                     }
                     break;
 
-                case 2: // ¸©³åºä»÷
+                case 2: // ä¿¯å†²è½°å‡»
                     if (!VaultUtils.isServer) {
                         for (int i = 0; i < 10; i++) {
                             Vector2 dustPos = NPC.Center - NPC.velocity.SafeNormalize(Vector2.Zero) * 60f;
@@ -760,7 +760,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                         }
                     }
 
-                    // ¸©³åÂ·¾¶ÉÏÊÍ·Åµç»¡
+                    // ä¿¯å†²è·¯å¾„ä¸Šé‡Šæ”¾ç”µå¼§
                     if (AttackTimer % 4 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                         Vector2 perpendicular = NPC.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
                         Projectile.NewProjectile(
@@ -774,7 +774,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                     }
 
                     if (AttackTimer >= 25) {
-                        // ×ÅÂ½³å»÷
+                        // ç€é™†å†²å‡»
                         if (!VaultUtils.isServer) {
                             for (int i = 0; i < 60; i++) {
                                 Vector2 vel = Main.rand.NextVector2CircularEdge(15, 15);

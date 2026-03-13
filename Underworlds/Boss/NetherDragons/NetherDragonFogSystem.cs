@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using Terraria;
@@ -7,7 +7,7 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 {
     /// <summary>
-    /// ÓÄÚ¤ÁúÕ½¶·ÎíÆøÏµÍ³ - »·¾³ÎíÆø + BossÌå»ı½»»¥
+    /// å¹½å†¥é¾™æˆ˜æ–—é›¾æ°”ç³»ç»Ÿ - ç¯å¢ƒé›¾æ°” + Bossä½“ç§¯äº¤äº’
     /// </summary>
     internal class NetherDragonFogSystem : ModSystem
     {
@@ -15,33 +15,33 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         private static float intensity = 0f;
         private static int bossNPCIndex = -1;
 
-        // »·¾³ÎíÆø²ã£¨´ó·¶Î§¡¢»ºÂıÒÆ¶¯µÄ±³¾°Îí£©
+        // ç¯å¢ƒé›¾æ°”å±‚ï¼ˆå¤§èŒƒå›´ã€ç¼“æ…¢ç§»åŠ¨çš„èƒŒæ™¯é›¾ï¼‰
         private static readonly List<AmbientFogLayer> ambientFogs = new();
         private const int MaxAmbientFogs = 60;
 
-        // BossÈÅ¶¯²úÉúµÄ¶¯Ì¬ÎíÆøÎĞÁ÷
+        // Bossæ‰°åŠ¨äº§ç”Ÿçš„åŠ¨æ€é›¾æ°”æ¶¡æµ
         private static readonly List<FogVortex> vortexes = new();
         private const int MaxVortexes = 30;
 
-        // ÎíÆøÁ°äôĞ§¹û£¨Boss³å´ÌµÈ¶¯×÷£©
+        // é›¾æ°”æ¶Ÿæ¼ªæ•ˆæœï¼ˆBosså†²åˆºç­‰åŠ¨ä½œï¼‰
         private static readonly List<FogRipple> ripples = new();
         private const int MaxRipples = 15;
 
-        // Ê±¼ä¼ÆÊıÆ÷
+        // æ—¶é—´è®¡æ•°å™¨
         private static float globalTimer = 0f;
 
-        // BossÏà¹Ø²ÎÊı
+        // Bossç›¸å…³å‚æ•°
         private static Vector2 bossLastPosition = Vector2.Zero;
         private static Vector2 bossVelocity = Vector2.Zero;
 
-        // Õ½³¡ÖĞĞÄºÍ·¶Î§
+        // æˆ˜åœºä¸­å¿ƒå’ŒèŒƒå›´
         private static Vector2 battlefieldCenter = Vector2.Zero;
         private static float battlefieldRadius = 1200f;
 
         public static bool IsActive => isActive;
 
         /// <summary>
-        /// ¼¤»îÎíÆøĞ§¹û
+        /// æ¿€æ´»é›¾æ°”æ•ˆæœ
         /// </summary>
         public static void Activate(int bossIndex) {
             if (bossIndex < 0 || bossIndex >= Main.maxNPCs)
@@ -55,7 +55,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             battlefieldCenter = boss.Center;
             bossLastPosition = boss.Center;
 
-            // ³õÊ¼»¯»·¾³ÎíÆø
+            // åˆå§‹åŒ–ç¯å¢ƒé›¾æ°”
             ambientFogs.Clear();
             for (int i = 0; i < MaxAmbientFogs; i++) {
                 ambientFogs.Add(new AmbientFogLayer(battlefieldCenter, battlefieldRadius));
@@ -66,7 +66,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         }
 
         /// <summary>
-        /// Í£ÓÃÎíÆøĞ§¹û
+        /// åœç”¨é›¾æ°”æ•ˆæœ
         /// </summary>
         public static void Deactivate() {
             isActive = false;
@@ -74,7 +74,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         }
 
         /// <summary>
-        /// ´´½¨ÎíÆøÁ°äô£¨½öÔÚBossÌØÊâ¹¥»÷Ê±Ê¹ÓÃ£©
+        /// åˆ›å»ºé›¾æ°”æ¶Ÿæ¼ªï¼ˆä»…åœ¨Bossç‰¹æ®Šæ”»å‡»æ—¶ä½¿ç”¨ï¼‰
         /// </summary>
         public static void CreateRipple(Vector2 position, float strength = 1f) {
             if (ripples.Count < MaxRipples) {
@@ -83,7 +83,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         }
 
         /// <summary>
-        /// ´´½¨ÎíÆøÎĞÁ÷£¨Boss¿ìËÙÒÆ¶¯Ê±²úÉú£©
+        /// åˆ›å»ºé›¾æ°”æ¶¡æµï¼ˆBosså¿«é€Ÿç§»åŠ¨æ—¶äº§ç”Ÿï¼‰
         /// </summary>
         private static void CreateVortex(Vector2 position, Vector2 direction, float strength) {
             if (vortexes.Count < MaxVortexes) {
@@ -105,7 +105,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                 return;
             }
 
-            // ¼ì²éBossÊÇ·ñ´æ»î
+            // æ£€æŸ¥Bossæ˜¯å¦å­˜æ´»
             if (bossNPCIndex < 0 || bossNPCIndex >= Main.maxNPCs ||
                 !Main.npc[bossNPCIndex].active || Main.npc[bossNPCIndex].type != ModContent.NPCType<NetherDragonHead>()) {
                 Deactivate();
@@ -114,39 +114,39 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 
             NPC boss = Main.npc[bossNPCIndex];
 
-            // Ç¿¶È½¥±ä
+            // å¼ºåº¦æ¸å˜
             if (intensity < 1f) {
                 intensity = Math.Min(intensity + 0.008f, 1f);
             }
 
-            // ¸üĞÂÈ«¾Ö¼ÆÊ±Æ÷
+            // æ›´æ–°å…¨å±€è®¡æ—¶å™¨
             globalTimer += 0.016f;
             if (globalTimer > MathHelper.TwoPi * 10f) {
                 globalTimer -= MathHelper.TwoPi * 10f;
             }
 
-            // ¸üĞÂÕ½³¡ÖĞĞÄ£¨¸úËæBoss»ºÂıÒÆ¶¯£©
+            // æ›´æ–°æˆ˜åœºä¸­å¿ƒï¼ˆè·ŸéšBossç¼“æ…¢ç§»åŠ¨ï¼‰
             battlefieldCenter = Vector2.Lerp(battlefieldCenter, boss.Center, 0.01f);
 
-            // ¼ÆËãBossËÙ¶È
+            // è®¡ç®—Bossé€Ÿåº¦
             bossVelocity = boss.Center - bossLastPosition;
             float bossSpeed = bossVelocity.Length();
 
-            // Boss¿ìËÙÒÆ¶¯Ê±´´½¨Ìå»ıÎíÆøÈÅ¶¯
+            // Bosså¿«é€Ÿç§»åŠ¨æ—¶åˆ›å»ºä½“ç§¯é›¾æ°”æ‰°åŠ¨
             if (bossSpeed > 5f && Main.rand.NextBool(2)) {
-                // ÔÚBossºó·½´´½¨ÎĞÁ÷
+                // åœ¨Bossåæ–¹åˆ›å»ºæ¶¡æµ
                 Vector2 vortexPos = boss.Center - bossVelocity.SafeNormalize(Vector2.Zero) * 80f;
                 CreateVortex(vortexPos, bossVelocity, bossSpeed / 15f);
             }
 
             bossLastPosition = boss.Center;
 
-            // ¸üĞÂ»·¾³ÎíÆø
+            // æ›´æ–°ç¯å¢ƒé›¾æ°”
             foreach (var fog in ambientFogs) {
                 fog.Update(boss, battlefieldCenter, globalTimer);
             }
 
-            // ¸üĞÂÎĞÁ÷
+            // æ›´æ–°æ¶¡æµ
             for (int i = vortexes.Count - 1; i >= 0; i--) {
                 vortexes[i].Update();
                 if (vortexes[i].IsDead) {
@@ -154,7 +154,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                 }
             }
 
-            // ¸üĞÂÁ°äô
+            // æ›´æ–°æ¶Ÿæ¼ª
             for (int i = ripples.Count - 1; i >= 0; i--) {
                 ripples[i].Update();
                 if (ripples[i].IsDead) {
@@ -175,13 +175,13 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp,
                 DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
 
-            // ÏÈ»æÖÆ»·¾³ÎíÆø£¨±³¾°²ã£©
+            // å…ˆç»˜åˆ¶ç¯å¢ƒé›¾æ°”ï¼ˆèƒŒæ™¯å±‚ï¼‰
             DrawAmbientFogs(spriteBatch);
 
-            // ÔÙ»æÖÆÎĞÁ÷Ğ§¹û£¨ÖĞ²ã£©
+            // å†ç»˜åˆ¶æ¶¡æµæ•ˆæœï¼ˆä¸­å±‚ï¼‰
             DrawVortexes(spriteBatch);
 
-            // ×îºó»æÖÆÁ°äôĞ§¹û£¨Ç°¾°²ã£©
+            // æœ€åç»˜åˆ¶æ¶Ÿæ¼ªæ•ˆæœï¼ˆå‰æ™¯å±‚ï¼‰
             DrawRipples(spriteBatch);
 
             spriteBatch.End();
@@ -193,7 +193,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             foreach (var fog in ambientFogs) {
                 Vector2 drawPos = fog.Position - Main.screenPosition;
 
-                // ÆÁÄ»ÌŞ³ı
+                // å±å¹•å‰”é™¤
                 if (drawPos.X < -500 || drawPos.X > Main.screenWidth + 500 ||
                     drawPos.Y < -500 || drawPos.Y > Main.screenHeight + 500)
                     continue;
@@ -201,7 +201,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                 Color fogColor = fog.GetColor();
                 float alpha = fog.GetAlpha() * intensity;
 
-                // Ö÷ÎíÆø²ã
+                // ä¸»é›¾æ°”å±‚
                 sb.Draw(
                     fogTex,
                     drawPos,
@@ -214,7 +214,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                     0f
                 );
 
-                // ÈáºÍ¹âÔÎ²ã
+                // æŸ”å’Œå…‰æ™•å±‚
                 sb.Draw(
                     fogTex,
                     drawPos,
@@ -238,7 +238,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                 Color vortexColor = new Color(80, 120, 180);
                 float alpha = vortex.GetAlpha() * intensity;
 
-                // »æÖÆĞı×ªµÄÎĞÁ÷
+                // ç»˜åˆ¶æ—‹è½¬çš„æ¶¡æµ
                 for (int i = 0; i < 2; i++) {
                     float rotOffset = i * MathHelper.Pi;
                     sb.Draw(
@@ -265,7 +265,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                 Color rippleColor = new Color(100, 150, 220);
                 float alpha = ripple.GetAlpha() * intensity;
 
-                // »æÖÆ¶à²ãÁ°äô»·
+                // ç»˜åˆ¶å¤šå±‚æ¶Ÿæ¼ªç¯
                 for (int i = 0; i < 3; i++) {
                     float scaleOffset = i * 0.4f;
                     float alphaOffset = 1f - i * 0.25f;
@@ -286,17 +286,17 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         }
 
         /// <summary>
-        /// »ñÈ¡Ö¸¶¨Î»ÖÃµÄÎíÆøÃÜ¶È£¨ÓÃÓÚAIÊÓ¾õĞ§¹û£©
+        /// è·å–æŒ‡å®šä½ç½®çš„é›¾æ°”å¯†åº¦ï¼ˆç”¨äºAIè§†è§‰æ•ˆæœï¼‰
         /// </summary>
         public static float GetFogDensityAt(Vector2 position) {
             if (!isActive || intensity <= 0f)
                 return 0f;
 
-            // »ùÓÚ¾àÀëÕ½³¡ÖĞĞÄµÄ¾àÀë¼ÆËã»ù´¡ÎíÆøÃÜ¶È
+            // åŸºäºè·ç¦»æˆ˜åœºä¸­å¿ƒçš„è·ç¦»è®¡ç®—åŸºç¡€é›¾æ°”å¯†åº¦
             float distanceFromCenter = Vector2.Distance(position, battlefieldCenter);
             float baseDensity = 1f - Math.Clamp(distanceFromCenter / battlefieldRadius, 0f, 1f);
 
-            // µş¼Ó¸½½üÎí²ãµÄÓ°Ïì
+            // å åŠ é™„è¿‘é›¾å±‚çš„å½±å“
             float layerDensity = 0f;
             int nearbyCount = 0;
 
@@ -316,7 +316,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
     }
 
     /// <summary>
-    /// »·¾³ÎíÆø²ã - ´ó·¶Î§µÄ»ºÂıÒÆ¶¯±³¾°Îí
+    /// ç¯å¢ƒé›¾æ°”å±‚ - å¤§èŒƒå›´çš„ç¼“æ…¢ç§»åŠ¨èƒŒæ™¯é›¾
     /// </summary>
     internal class AmbientFogLayer
     {
@@ -333,7 +333,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         private Vector2 battlefieldCenter;
         private float battlefieldRadius;
 
-        // BossÅö×²²ÎÊı
+        // Bossç¢°æ’å‚æ•°
         private const float BossRepelRadius = 180f;
         private const float BossRepelStrength = 3f;
 
@@ -341,7 +341,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             battlefieldCenter = center;
             battlefieldRadius = radius;
 
-            // ÔÚÕ½³¡·¶Î§ÄÚËæ»ú·Ö²¼
+            // åœ¨æˆ˜åœºèŒƒå›´å†…éšæœºåˆ†å¸ƒ
             float angle = Main.rand.NextFloat(MathHelper.TwoPi);
             float distance = Main.rand.NextFloat(0f, radius * 0.9f);
             Position = center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * distance;
@@ -353,7 +353,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             RotationSpeed = Main.rand.NextFloat(-0.002f, 0.002f);
             PulsePhase = Main.rand.NextFloat(MathHelper.TwoPi);
 
-            // Òõ°µµÄµØ¸®É«µ÷
+            // é˜´æš—çš„åœ°åºœè‰²è°ƒ
             Color[] underworldColors = new Color[]
             {
                 new Color(35, 45, 55),
@@ -367,24 +367,24 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         public void Update(NPC boss, Vector2 center, float timer) {
             battlefieldCenter = center;
 
-            // »ù´¡»ºÂıÆ¯ÒÆ
+            // åŸºç¡€ç¼“æ…¢æ¼‚ç§»
             Position += Velocity;
             Rotation += RotationSpeed;
             PulsePhase += 0.01f;
 
-            // ±£³ÖÔÚÕ½³¡·¶Î§ÄÚ
+            // ä¿æŒåœ¨æˆ˜åœºèŒƒå›´å†…
             Vector2 toCenter = battlefieldCenter - Position;
             float distanceFromCenter = toCenter.Length();
             if (distanceFromCenter > battlefieldRadius * 0.8f) {
                 Velocity += toCenter.SafeNormalize(Vector2.Zero) * 0.05f;
             }
 
-            // ÏŞÖÆËÙ¶È
+            // é™åˆ¶é€Ÿåº¦
             if (Velocity.Length() > 0.5f) {
                 Velocity = Vector2.Normalize(Velocity) * 0.5f;
             }
 
-            // BossÌå»ıÅö×² - ÎíÆø±»ÍÆ¿ª
+            // Bossä½“ç§¯ç¢°æ’ - é›¾æ°”è¢«æ¨å¼€
             Vector2 toBoss = boss.Center - Position;
             float distanceToBoss = toBoss.Length();
 
@@ -393,18 +393,18 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             if (distanceToBoss < BossRepelRadius) {
                 IsRepelledByBoss = true;
 
-                // ¼ÆËãÅÅ³âÁ¦
+                // è®¡ç®—æ’æ–¥åŠ›
                 float repelStrength = (1f - distanceToBoss / BossRepelRadius) * BossRepelStrength;
                 Vector2 repelDirection = -toBoss.SafeNormalize(Vector2.Zero);
 
-                // Ó¦ÓÃÅÅ³âÁ¦
+                // åº”ç”¨æ’æ–¥åŠ›
                 Velocity += repelDirection * repelStrength * 0.1f;
 
-                // BossÔË¶¯²úÉúµÄÍÏ×§Ğ§¹û
+                // Bossè¿åŠ¨äº§ç”Ÿçš„æ‹–æ‹½æ•ˆæœ
                 Vector2 bossVelocity = boss.velocity;
                 float dragFactor = (1f - distanceToBoss / BossRepelRadius) * 0.2f;
 
-                // Ö»ÓĞµ±BossÔ¶ÀëÎíÆøÊ±²ÅÍÏ×§
+                // åªæœ‰å½“Bossè¿œç¦»é›¾æ°”æ—¶æ‰æ‹–æ‹½
                 if (Vector2.Dot(bossVelocity, -repelDirection) > 0) {
                     Velocity += bossVelocity * dragFactor * 0.3f;
                 }
@@ -413,7 +413,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 
         public Color GetColor() {
             if (IsRepelledByBoss) {
-                // ±»BossÈÅ¶¯Ê±ÑÕÉ«±äÀ¶
+                // è¢«Bossæ‰°åŠ¨æ—¶é¢œè‰²å˜è“
                 return Color.Lerp(baseColor, new Color(80, 120, 180), 0.4f);
             }
             return baseColor;
@@ -423,7 +423,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             float pulse = MathF.Sin(PulsePhase) * 0.15f + 0.85f;
             float baseAlpha = 0.6f;
 
-            // ±»BossÅÅ³âÊ±Í¸Ã÷¶È½µµÍ
+            // è¢«Bossæ’æ–¥æ—¶é€æ˜åº¦é™ä½
             if (IsRepelledByBoss) {
                 baseAlpha *= 0.7f;
             }
@@ -433,7 +433,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
     }
 
     /// <summary>
-    /// ÎíÆøÎĞÁ÷ - Boss¿ìËÙÒÆ¶¯²úÉúµÄÈÅ¶¯
+    /// é›¾æ°”æ¶¡æµ - Bosså¿«é€Ÿç§»åŠ¨äº§ç”Ÿçš„æ‰°åŠ¨
     /// </summary>
     internal class FogVortex
     {
@@ -461,7 +461,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         public void Update() {
             Progress += LifeTime * Strength;
             Position += Velocity;
-            Velocity *= 0.95f; // Öğ½¥¼õËÙ
+            Velocity *= 0.95f; // é€æ¸å‡é€Ÿ
 
             Scale = MathHelper.Lerp(0.8f, MaxScale, Progress);
             Rotation += RotationSpeed * Strength;
@@ -473,7 +473,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
     }
 
     /// <summary>
-    /// ÎíÆøÁ°äôĞ§¹û - ÌØÊâ¹¥»÷Ê±²úÉú
+    /// é›¾æ°”æ¶Ÿæ¼ªæ•ˆæœ - ç‰¹æ®Šæ”»å‡»æ—¶äº§ç”Ÿ
     /// </summary>
     internal class FogRipple
     {

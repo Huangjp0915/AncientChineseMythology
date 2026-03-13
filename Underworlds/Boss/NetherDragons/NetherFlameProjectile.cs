@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.GameContent;
 using Terraria.ID;
@@ -7,7 +7,7 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 {
     /// <summary>
-    /// ÓÄÚ¤ÁúÅçÉäµÄÀ¶É«ÓÄÚ¤»ğ
+    /// å¹½å†¥é¾™å–·å°„çš„è“è‰²å¹½å†¥ç«
     /// </summary>
     internal class NetherFlameProjectile : ModProjectile
     {
@@ -31,14 +31,14 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         }
 
         public override void AI() {
-            // Ö¡¶¯»­
+            // å¸§åŠ¨ç”»
             if (++Projectile.frameCounter >= 5) {
                 Projectile.frameCounter = 0;
                 if (++Projectile.frame >= Main.projFrames[Type])
                     Projectile.frame = 0;
             }
 
-            // Ğı×ª
+            // æ—‹è½¬
             Projectile.rotation = Projectile.velocity.ToRotation() + MathHelper.PiOver2;
 
             for (int i = 0; i < 6; i++) {
@@ -48,7 +48,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                 Main.dust[dust].velocity *= 0.3f;
             }
 
-            // ·¢¹âĞ§¹û
+            // å‘å…‰æ•ˆæœ
             Lighting.AddLight(Projectile.Center, 0.2f, 0.5f, 0.8f);
         }
 
@@ -59,25 +59,25 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 
             Color baseColor = Color.Lerp(Color.Blue, Color.Cyan, 0.6f);
 
-            // »æÖÆÍÏÎ²
+            // ç»˜åˆ¶æ‹–å°¾
             for (int i = 0; i < Projectile.oldPos.Length; i++) {
                 Vector2 pos = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
                 float fade = 0.5f * (1f - i / (float)Projectile.oldPos.Length);
                 Main.spriteBatch.Draw(tex, pos, rect, baseColor * fade, Projectile.rotation, origin, Projectile.scale * 0.8f, SpriteEffects.None, 0f);
             }
 
-            // Ö÷Ìå
+            // ä¸»ä½“
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
             Main.spriteBatch.Draw(tex, drawPos, rect, baseColor with { A = 200 }, Projectile.rotation, origin, Projectile.scale, SpriteEffects.None, 0f);
 
-            // Íâ²ã·¢¹â
+            // å¤–å±‚å‘å…‰
             Main.spriteBatch.Draw(tex, drawPos, rect, baseColor * 0.4f, Projectile.rotation, origin, Projectile.scale * 1.3f, SpriteEffects.None, 0f);
 
             return false;
         }
 
         public override void OnKill(int timeLeft) {
-            // ËÀÍöÁ£×ÓĞ§¹û
+            // æ­»äº¡ç²’å­æ•ˆæœ
             for (int i = 0; i < 10; i++) {
                 int dust = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height,
                     DustID.BlueTorch, 0, 0, 100, Color.Cyan, 2f);

@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent;
@@ -7,10 +7,10 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Celestias.Boss.AoGuangs
 {
-    #region ÉîÔ¨äöÎĞ
+    #region æ·±æ¸Šæ¼©æ¶¡
 
     /// <summary>
-    /// ÉîÔ¨äöÎĞ - Èı½×¶ÎµÄ¾ŞĞÍäöÎĞ£¬Ê¹ÓÃÔ­°æÁú¾íÎÆÀí
+    /// æ·±æ¸Šæ¼©æ¶¡ - ä¸‰é˜¶æ®µçš„å·¨å‹æ¼©æ¶¡ï¼Œä½¿ç”¨åŸç‰ˆé¾™å·çº¹ç†
     /// </summary>
     public class AbyssalVortex : ModProjectile
     {
@@ -43,7 +43,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             vortexAlpha = MathHelper.Lerp(vortexAlpha, 1f, 0.03f);
             vortexRadius = MathHelper.Lerp(vortexRadius, MaxRadius, 0.04f);
 
-            // Ç¿Á¦ÎüÒıÍæ¼Ò
+            // å¼ºåŠ›å¸å¼•ç©å®¶
             foreach (Player player in Main.player) {
                 if (!player.active || player.dead) continue;
 
@@ -53,13 +53,13 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                     float pullStrength = (1f - distance / 600f) * 1.5f;
                     player.velocity += pullDir * pullStrength;
 
-                    // Ğı×ªÀ­³¶
+                    // æ—‹è½¬æ‹‰æ‰¯
                     Vector2 tangent = pullDir.RotatedBy(MathHelper.PiOver2);
                     player.velocity += tangent * pullStrength * 0.3f;
                 }
             }
 
-            // ÉîÔ¨Á£×Ó
+            // æ·±æ¸Šç²’å­
             if (Main.netMode != NetmodeID.Server) {
                 for (int ring = 0; ring < 3; ring++) {
                     float ringRadius = vortexRadius * (0.4f + ring * 0.3f);
@@ -82,7 +82,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                     }
                 }
 
-                // ÖĞĞÄÉîÔ¨Á£×Ó
+                // ä¸­å¿ƒæ·±æ¸Šç²’å­
                 for (int i = 0; i < 3; i++) {
                     Vector2 dustPos = Projectile.Center + Main.rand.NextVector2Circular(30, 30);
                     int dust = Dust.NewDust(dustPos, 0, 0, DustID.BlueTorch, 0, 0, 200, default, 2f);
@@ -104,18 +104,18 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             SpriteBatch sb = Main.spriteBatch;
             Vector2 screenPos = Projectile.Center - Main.screenPosition;
             Main.instance.LoadProjectile(ProjectileID.SandnadoHostile);
-            // Ê¹ÓÃÔ­°æÁú¾í·çÎÆÀí»æÖÆÉîÔ¨
+            // ä½¿ç”¨åŸç‰ˆé¾™å·é£çº¹ç†ç»˜åˆ¶æ·±æ¸Š
             Texture2D tornadoTex = TextureAssets.Projectile[ProjectileID.SandnadoHostile].Value;
             Vector2 origin = tornadoTex.Size() / 2f;
 
-            // »æÖÆ¶à²ãĞı×ªÉîÔ¨
+            // ç»˜åˆ¶å¤šå±‚æ—‹è½¬æ·±æ¸Š
             int layers = 118;
             for (int layer = layers - 1; layer >= 0; layer--) {
                 float layerScale = 0.5f + layer * 0.2f;
                 float layerRot = vortexRotation * (1f + layer * 0.15f) * (layer % 2 == 0 ? 1 : -1);
                 float layerAlpha = vortexAlpha * (0.8f - layer * 0.08f);
 
-                // ÑÕÉ«´ÓÍâµ½ÄÚ½¥±ä
+                // é¢œè‰²ä»å¤–åˆ°å†…æ¸å˜
                 Color layerColor;
                 if (layer < 3) {
                     layerColor = Color.Lerp(AoGuangHelper.DeepSeaBlue, AoGuangHelper.WaterGlow, layer / 3f);
@@ -133,7 +133,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 sb.Draw(tornadoTex, screenPos, null, layerColor, layerRot, origin, layerScale * (vortexRadius / MaxRadius), SpriteEffects.None, 0f);
             }
 
-            // ÖĞĞÄÉîÔ¨ºËĞÄ
+            // ä¸­å¿ƒæ·±æ¸Šæ ¸å¿ƒ
             if (ACMAsset.LightShot != null) {
                 Color coreColor = AoGuangHelper.DeepSeaBlue * vortexAlpha * 0.8f;
                 coreColor.A = 0;
@@ -147,7 +147,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
         public override void OnKill(int timeLeft) {
             if (Main.netMode == NetmodeID.Server) return;
 
-            // ±¬·¢Á£×Ó
+            // çˆ†å‘ç²’å­
             for (int i = 0; i < 60; i++) {
                 float angle = MathHelper.TwoPi * i / 60;
                 Vector2 vel = angle.ToRotationVector2() * Main.rand.NextFloat(8, 15);
@@ -167,10 +167,10 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
 
     #endregion
 
-    #region ÂäË®Ã¬
+    #region è½æ°´çŸ›
 
     /// <summary>
-    /// ÂäË®Ã¬ - ´ÓÌì¶ø½µµÄË®Ã¬
+    /// è½æ°´çŸ› - ä»å¤©è€Œé™çš„æ°´çŸ›
     /// </summary>
     public class FallingWaterSpear : ModProjectile
     {
@@ -198,14 +198,14 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
         public override void AI() {
             spearPhase += 0.1f;
 
-            // ¼ÓËÙÏÂÂä
+            // åŠ é€Ÿä¸‹è½
             if (Projectile.velocity.Y < 25f) {
                 Projectile.velocity.Y += 0.3f;
             }
 
             Projectile.rotation = Projectile.velocity.ToRotation() + MathHelper.PiOver2;
 
-            // Ë®Ã¬ÍÏÎ²Á£×Ó
+            // æ°´çŸ›æ‹–å°¾ç²’å­
             if (Main.netMode != NetmodeID.Server) {
                 for (int i = 0; i < 2; i++) {
                     Vector2 dustPos = Projectile.Center - Projectile.velocity.SafeNormalize(Vector2.Zero) * 20f;
@@ -224,7 +224,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             if (!hasLanded) {
                 hasLanded = true;
 
-                // ×ÅµØ±¬·¢
+                // ç€åœ°çˆ†å‘
                 if (Main.netMode != NetmodeID.Server) {
                     for (int i = 0; i < 15; i++) {
                         Vector2 vel = new Vector2(Main.rand.NextFloat(-5, 5), Main.rand.NextFloat(-8, -2));
@@ -245,11 +245,11 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             if (ACMAsset.GlaciateWave == null) return false;
 
             Texture2D tex = ACMAsset.GlaciateWave;
-            // ×¢Òâ£ºGlaciateWave³¯ÓÒ£¬ĞèÒªĞı×ªÊ¹Æä³¯ÏÂ
+            // æ³¨æ„ï¼šGlaciateWaveæœå³ï¼Œéœ€è¦æ—‹è½¬ä½¿å…¶æœä¸‹
             Vector2 origin = new Vector2(tex.Width * 0.1f, tex.Height / 2f);
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
 
-            // ÍÏÎ²
+            // æ‹–å°¾
             for (int i = 0; i < Projectile.oldPos.Length; i++) {
                 if (Projectile.oldPos[i] == Vector2.Zero) continue;
                 float progress = 1f - (float)i / Projectile.oldPos.Length;
@@ -261,12 +261,12 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 Main.spriteBatch.Draw(tex, pos, null, trailColor, Projectile.oldRot[i] - MathHelper.PiOver2, origin, scale, SpriteEffects.None, 0f);
             }
 
-            // Ö÷ÌåË®Ã¬
+            // ä¸»ä½“æ°´çŸ›
             Color mainColor = AoGuangHelper.WaterGlow * 0.9f;
             mainColor.A = 0;
             Main.spriteBatch.Draw(tex, drawPos, null, mainColor, Projectile.rotation - MathHelper.PiOver2, origin, new Vector2(0.5f, 0.1f), SpriteEffects.None, 0f);
 
-            // Ã¬¼â¸ß¹â
+            // çŸ›å°–é«˜å…‰
             Color tipColor = AoGuangHelper.PureWhite * 0.7f;
             tipColor.A = 0;
             Vector2 tipOffset = Projectile.velocity.SafeNormalize(Vector2.Zero) * 15f;

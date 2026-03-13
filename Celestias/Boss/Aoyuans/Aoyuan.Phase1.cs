@@ -1,7 +1,7 @@
-namespace AncientChineseMythology.Celestias.Boss.Aoyuans
+ï»¿namespace AncientChineseMythology.Celestias.Boss.Aoyuans
 {
-    // Ò»½×¶Î¹¥»÷Âß¼­ÒÑºÏ²¢µ½ Aoyuan.AI.cs µÄ Attack ·½·¨ÖĞ
-    // ±£ÁôÎÄ¼şÒÔ±¸Î´À´À©Õ¹
+    // ä¸€é˜¶æ®µæ”»å‡»é€»è¾‘å·²åˆå¹¶åˆ° Aoyuan.AI.cs çš„ Attack æ–¹æ³•ä¸­
+    // ä¿ç•™æ–‡ä»¶ä»¥å¤‡æœªæ¥æ‰©å±•
     internal partial class Aoyuan
     {
     }

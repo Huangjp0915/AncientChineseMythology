@@ -1,4 +1,4 @@
-using InnoVault.Actors;
+ï»¿using InnoVault.Actors;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -8,78 +8,78 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
 {
     /// <summary>
-    /// ÌìÖùActor - ÉñÊ¥µÄÌìÍ¥Ö®ÖùÊµÌå
-    /// ËÄ¸ùÌìÖù´ú±íËÄ·½ÉñÊ¥£¬Ö§³ÅÌìñ·
-    /// ÎÆÀíÎªºáÏòËÄÖ¡ÅÅÁĞ£¬Ã¿Ö¡´ú±íÒ»¸ùÖù×ÓÑùÊ½
+    /// å¤©æŸ±Actor - ç¥åœ£çš„å¤©åº­ä¹‹æŸ±å®ä½“
+    /// å››æ ¹å¤©æŸ±ä»£è¡¨å››æ–¹ç¥åœ£ï¼Œæ”¯æ’‘å¤©ç©¹
+    /// çº¹ç†ä¸ºæ¨ªå‘å››å¸§æ’åˆ—ï¼Œæ¯å¸§ä»£è¡¨ä¸€æ ¹æŸ±å­æ ·å¼
     /// </summary>
     public class HeavenPillarActor : Actor
     {
-        #region ³£Á¿
-        /// <summary>ÌìÖù×ÜÊı</summary>
+        #region å¸¸é‡
+        /// <summary>å¤©æŸ±æ€»æ•°</summary>
         public const int PillarCount = 4;
-        /// <summary>ÌìÖùÓ°Ïì·¶Î§£¨Íæ¼Ò¿¿½ü´Ë¾àÀëÊ±´¥·¢Ğ§¹û£©- À©´óµ½2400ÏñËØ</summary>
+        /// <summary>å¤©æŸ±å½±å“èŒƒå›´ï¼ˆç©å®¶é è¿‘æ­¤è·ç¦»æ—¶è§¦å‘æ•ˆæœï¼‰- æ‰©å¤§åˆ°2400åƒç´ </summary>
         public const float EffectRadius = 2400f;
-        /// <summary>ÌìÖùºËĞÄ¹âĞ§·¶Î§</summary>
+        /// <summary>å¤©æŸ±æ ¸å¿ƒå…‰æ•ˆèŒƒå›´</summary>
         public const float CoreLightRadius = 1200f;
-        /// <summary>ÌìÖùËõ·Å±¶Êı</summary>
+        /// <summary>å¤©æŸ±ç¼©æ”¾å€æ•°</summary>
         public const float PillarScale = 3f;
         #endregion
 
-        #region ×´Ì¬ÊôĞÔ
-        /// <summary>Öù×ÓÑùÊ½Ë÷Òı£¨0-3£¬¶ÔÓ¦ËÄÖ¡ÎÆÀí£©</summary>
+        #region çŠ¶æ€å±æ€§
+        /// <summary>æŸ±å­æ ·å¼ç´¢å¼•ï¼ˆ0-3ï¼Œå¯¹åº”å››å¸§çº¹ç†ï¼‰</summary>
         [SyncVar]
         public int PillarStyleIndex;
 
-        /// <summary>ÌìÖùÊÇ·ñÒÑÍêÈ«½µÁÙ</summary>
+        /// <summary>å¤©æŸ±æ˜¯å¦å·²å®Œå…¨é™ä¸´</summary>
         [SyncVar]
         public bool HasDescended;
 
-        /// <summary>½µÁÙ¶¯»­½ø¶È£¨0-1£©</summary>
+        /// <summary>é™ä¸´åŠ¨ç”»è¿›åº¦ï¼ˆ0-1ï¼‰</summary>
         public float DescendProgress;
 
-        /// <summary>¹âĞ§Âö³å¼ÆÊ±Æ÷</summary>
+        /// <summary>å…‰æ•ˆè„‰å†²è®¡æ—¶å™¨</summary>
         private float glowPulseTimer;
 
-        /// <summary>¸¡¶¯¶¯»­¼ÆÊ±Æ÷</summary>
+        /// <summary>æµ®åŠ¨åŠ¨ç”»è®¡æ—¶å™¨</summary>
         private float floatTimer;
 
-        /// <summary>Á£×ÓÉú³É¼ÆÊ±Æ÷</summary>
+        /// <summary>ç²’å­ç”Ÿæˆè®¡æ—¶å™¨</summary>
         private int particleTimer;
 
-        /// <summary>ÉñÊ¥¹â»·Ğı×ª½Ç¶È</summary>
+        /// <summary>ç¥åœ£å…‰ç¯æ—‹è½¬è§’åº¦</summary>
         private float haloRotation;
 
-        /// <summary>µ±Ç°¹âĞ§Ç¿¶È</summary>
+        /// <summary>å½“å‰å…‰æ•ˆå¼ºåº¦</summary>
         private float currentGlowIntensity;
 
-        /// <summary>Ä¿±ê¹âĞ§Ç¿¶È</summary>
+        /// <summary>ç›®æ ‡å…‰æ•ˆå¼ºåº¦</summary>
         private float targetGlowIntensity;
 
-        /// <summary>ÏÉÆø¹âÖù¼ÆÊ±Æ÷</summary>
+        /// <summary>ä»™æ°”å…‰æŸ±è®¡æ—¶å™¨</summary>
         private float divinePillarTimer;
 
-        /// <summary>ÏéÔÆÆ¯¸¡¼ÆÊ±Æ÷</summary>
+        /// <summary>ç¥¥äº‘æ¼‚æµ®è®¡æ—¶å™¨</summary>
         private float cloudDriftTimer;
 
-        /// <summary>ÉñÊ¥¹â»·À©É¢¼ÆÊ±Æ÷</summary>
+        /// <summary>ç¥åœ£å…‰ç¯æ‰©æ•£è®¡æ—¶å™¨</summary>
         private float haloExpandTimer;
         #endregion
 
-        #region ÎÆÀí»º´æ
+        #region çº¹ç†ç¼“å­˜
         private static Texture2D pillarTexture;
         private static int frameWidth;
         private static int frameHeight;
         #endregion
 
         public override void OnSpawn(params object[] args) {
-            // ³õÊ¼»¯ÌìÖùÊôĞÔ - ·Å´óÈı±¶
+            // åˆå§‹åŒ–å¤©æŸ±å±æ€§ - æ”¾å¤§ä¸‰å€
             Width = frameWidth > 0 ? (int)(frameWidth * PillarScale) : 384;
             Height = frameHeight > 0 ? (int)(frameHeight * PillarScale) : 1536;
             Scale = PillarScale;
             DrawLayer = ActorDrawLayer.BeforeTiles;
-            DrawExtendMode = 1800; // ´ó·ùÀ©´ó»æÖÆ·¶Î§ÒÔÈİÄÉ¾ŞĞÍÌìÖù
+            DrawExtendMode = 1800; // å¤§å¹…æ‰©å¤§ç»˜åˆ¶èŒƒå›´ä»¥å®¹çº³å·¨å‹å¤©æŸ±
 
-            // ³õÊ¼»¯¶¯»­×´Ì¬
+            // åˆå§‹åŒ–åŠ¨ç”»çŠ¶æ€
             DescendProgress = 0f;
             HasDescended = false;
             glowPulseTimer = 0f;
@@ -92,14 +92,14 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
             cloudDriftTimer = Main.rand.NextFloat(MathHelper.TwoPi);
             haloExpandTimer = 0f;
 
-            // Èç¹û´«ÈëÁËÑùÊ½Ë÷Òı²ÎÊı
+            // å¦‚æœä¼ å…¥äº†æ ·å¼ç´¢å¼•å‚æ•°
             if (args != null && args.Length > 0 && args[0] is int styleIndex) {
                 PillarStyleIndex = (int)MathHelper.Clamp(styleIndex, 0, PillarCount - 1);
             }
         }
 
         public override void AI() {
-            // ¸üĞÂ½µÁÙ¶¯»­
+            // æ›´æ–°é™ä¸´åŠ¨ç”»
             if (!HasDescended) {
                 DescendProgress = MathHelper.Clamp(DescendProgress + 0.006f, 0f, 1f);
                 if (DescendProgress >= 1f) {
@@ -108,7 +108,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                 }
             }
 
-            // ¸üĞÂ¶¯»­¼ÆÊ±Æ÷
+            // æ›´æ–°åŠ¨ç”»è®¡æ—¶å™¨
             glowPulseTimer += 0.025f;
             floatTimer += 0.015f;
             haloRotation += 0.003f;
@@ -117,25 +117,25 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
             cloudDriftTimer += 0.008f;
             haloExpandTimer += 0.018f;
 
-            // ¸üĞÂ¹âĞ§Ç¿¶È
+            // æ›´æ–°å…‰æ•ˆå¼ºåº¦
             currentGlowIntensity = MathHelper.Lerp(currentGlowIntensity, targetGlowIntensity, 0.04f);
 
-            // ¼ì²â¸½½üÍæ¼Ò²¢´¥·¢Ğ§¹û
+            // æ£€æµ‹é™„è¿‘ç©å®¶å¹¶è§¦å‘æ•ˆæœ
             CheckNearbyPlayers();
 
-            // Éú³ÉÁ£×ÓĞ§¹û
+            // ç”Ÿæˆç²’å­æ•ˆæœ
             if (!VaultUtils.isServer) {
                 SpawnAmbientParticles();
                 SpawnDivineAuraParticles();
                 SpawnAscendingLightParticles();
             }
 
-            // Ìí¼Ó¹âÕÕ
+            // æ·»åŠ å…‰ç…§
             AddLighting();
         }
 
         /// <summary>
-        /// ¼ì²â¸½½üÍæ¼Ò²¢µ÷Õû¹âĞ§
+        /// æ£€æµ‹é™„è¿‘ç©å®¶å¹¶è°ƒæ•´å…‰æ•ˆ
         /// </summary>
         private void CheckNearbyPlayers() {
             float closestDistance = float.MaxValue;
@@ -147,7 +147,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                 }
             }
 
-            // ¸ù¾İ¾àÀëµ÷Õû¹âĞ§Ç¿¶È
+            // æ ¹æ®è·ç¦»è°ƒæ•´å…‰æ•ˆå¼ºåº¦
             if (closestDistance < EffectRadius) {
                 float proximityFactor = 1f - (closestDistance / EffectRadius);
                 targetGlowIntensity = 0.5f + proximityFactor * 0.5f;
@@ -158,7 +158,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
 
         /// <summary>
-        /// Éú³É»·¾³Á£×ÓĞ§¹û
+        /// ç”Ÿæˆç¯å¢ƒç²’å­æ•ˆæœ
         /// </summary>
         private void SpawnAmbientParticles() {
             if (!HasDescended || Main.dedServ) return;
@@ -166,7 +166,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
             float scaledWidth = Width;
             float scaledHeight = Height;
 
-            // ÉñÊ¥¹âÁ££¨Ã¿¸ô¼¸Ö¡Éú³É£©- Ôö¼ÓÃÜ¶È
+            // ç¥åœ£å…‰ç²’ï¼ˆæ¯éš”å‡ å¸§ç”Ÿæˆï¼‰- å¢åŠ å¯†åº¦
             if (particleTimer % 4 == 0) {
                 for (int j = 0; j < 3; j++) {
                     Vector2 particlePos = Center + Main.rand.NextVector2Circular(scaledWidth * 0.8f, scaledHeight * 0.5f);
@@ -178,7 +178,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                 }
             }
 
-            // ÉñÊ¥¹â»·Á£×Ó£¨µ±Íæ¼Ò¿¿½üÊ±¸üÃÜ¼¯£©
+            // ç¥åœ£å…‰ç¯ç²’å­ï¼ˆå½“ç©å®¶é è¿‘æ—¶æ›´å¯†é›†ï¼‰
             if (particleTimer % 8 == 0 && currentGlowIntensity > 0.4f) {
                 for (int j = 0; j < 4; j++) {
                     float angle = Main.rand.NextFloat(MathHelper.TwoPi);
@@ -192,7 +192,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                 }
             }
 
-            // ÏéÔÆÆ®¶¯Ğ§¹û - ¸ü¶à¸ü´óµÄÔÆ
+            // ç¥¥äº‘é£˜åŠ¨æ•ˆæœ - æ›´å¤šæ›´å¤§çš„äº‘
             if (particleTimer % 20 == 0) {
                 for (int j = 0; j < 2; j++) {
                     Vector2 cloudPos = Position + new Vector2(
@@ -209,7 +209,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                 }
             }
 
-            // ´äÂÌÓñ¹âÁ£×Ó£¨ÌìÖùÌØÉ«£©
+            // ç¿ ç»¿ç‰å…‰ç²’å­ï¼ˆå¤©æŸ±ç‰¹è‰²ï¼‰
             if (particleTimer % 12 == 0) {
                 Vector2 jadePos = Center + Main.rand.NextVector2Circular(scaledWidth * 0.6f, scaledHeight * 0.4f);
                 int jade = Dust.NewDust(jadePos, 0, 0, DustID.JungleGrass, 0, -1.8f, 120, default, Main.rand.NextFloat(1.4f, 2.4f));
@@ -219,13 +219,13 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
 
         /// <summary>
-        /// Éú³ÉÉñÊ¥¹â»·Á£×Ó
+        /// ç”Ÿæˆç¥åœ£å…‰ç¯ç²’å­
         /// </summary>
         private void SpawnDivineAuraParticles() {
             if (!HasDescended || Main.dedServ) return;
             if (currentGlowIntensity < 0.3f) return;
 
-            // »·ÈÆÌìÖùµÄ¹â»·Á£×Ó
+            // ç¯ç»•å¤©æŸ±çš„å…‰ç¯ç²’å­
             if (particleTimer % 6 == 0) {
                 float orbitAngle = haloRotation * 3f + particleTimer * 0.05f;
                 for (int i = 0; i < 2; i++) {
@@ -239,7 +239,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                 }
             }
 
-            // µ×²¿ÉñÊ¥¹âÈ¦
+            // åº•éƒ¨ç¥åœ£å…‰åœˆ
             if (particleTimer % 10 == 0) {
                 float baseAngle = Main.rand.NextFloat(MathHelper.TwoPi);
                 float baseRadius = Width * 0.6f + Main.rand.NextFloat(-30f, 30f);
@@ -251,13 +251,13 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
 
         /// <summary>
-        /// Éú³ÉÉÏÉı¹âÖùÁ£×Ó
+        /// ç”Ÿæˆä¸Šå‡å…‰æŸ±ç²’å­
         /// </summary>
         private void SpawnAscendingLightParticles() {
             if (!HasDescended || Main.dedServ) return;
             if (currentGlowIntensity < 0.5f) return;
 
-            // ´ÓÌìÖùÖĞĞÄÏòÉÏÉıÌÚµÄ¹âÖù
+            // ä»å¤©æŸ±ä¸­å¿ƒå‘ä¸Šå‡è…¾çš„å…‰æŸ±
             if (particleTimer % 3 == 0) {
                 float xOffset = Main.rand.NextFloat(-Width * 0.3f, Width * 0.3f);
                 Vector2 lightPos = Position + new Vector2(Width / 2 + xOffset, Height * 0.8f);
@@ -270,7 +270,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                 }
             }
 
-            // ¶¥²¿¹âÃ¢À©É¢
+            // é¡¶éƒ¨å…‰èŠ’æ‰©æ•£
             if (particleTimer % 15 == 0) {
                 Vector2 topCenter = Position + new Vector2(Width / 2, -50);
                 for (int i = 0; i < 6; i++) {
@@ -286,17 +286,17 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
 
         /// <summary>
-        /// Ìí¼Ó¹âÕÕĞ§¹û
+        /// æ·»åŠ å…‰ç…§æ•ˆæœ
         /// </summary>
         private void AddLighting() {
             if (!HasDescended) return;
 
-            // Ö÷Ìå¹âÕÕ - ÉñÊ¥½ğ°×É«£¬´ó·ùÔöÇ¿
+            // ä¸»ä½“å…‰ç…§ - ç¥åœ£é‡‘ç™½è‰²ï¼Œå¤§å¹…å¢å¼º
             float pulseIntensity = 0.85f + MathF.Sin(glowPulseTimer) * 0.15f;
             Vector3 mainLight = new Vector3(1f, 0.95f, 0.85f) * currentGlowIntensity * pulseIntensity;
             Vector3 jadeLight = new Vector3(0.7f, 1f, 0.8f) * currentGlowIntensity * pulseIntensity * 0.5f;
 
-            // ÌìÖù¶àµã¹âÔ´ - Ôö¼Ó¹âÔ´ÊıÁ¿ºÍÇ¿¶È
+            // å¤©æŸ±å¤šç‚¹å…‰æº - å¢åŠ å…‰æºæ•°é‡å’Œå¼ºåº¦
             int lightPoints = 12;
             for (int i = 0; i < lightPoints; i++) {
                 float yOffset = Height * i / (lightPoints - 1);
@@ -304,21 +304,21 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                 float intensity = 0.7f + 0.3f * (1f - (float)i / lightPoints);
                 Lighting.AddLight(lightPos, mainLight * intensity * 1.5f);
 
-                // Á½²à¸¨Öú¹âÔ´
+                // ä¸¤ä¾§è¾…åŠ©å…‰æº
                 Lighting.AddLight(lightPos + new Vector2(-Width * 0.4f, 0), mainLight * intensity * 0.6f);
                 Lighting.AddLight(lightPos + new Vector2(Width * 0.4f, 0), mainLight * intensity * 0.6f);
             }
 
-            // ¶¥²¿Ç¿¹â - ¸üÇ¿µÄ¹âÃ¢
+            // é¡¶éƒ¨å¼ºå…‰ - æ›´å¼ºçš„å…‰èŠ’
             Vector2 topPos = Position + new Vector2(Width / 2, -100);
             Lighting.AddLight(topPos, mainLight * 2f);
             Lighting.AddLight(topPos + new Vector2(0, -50), mainLight * 1.5f);
 
-            // µ×²¿¹âÈ¦
+            // åº•éƒ¨å…‰åœˆ
             Vector2 bottomPos = Position + new Vector2(Width / 2, Height + 50);
             Lighting.AddLight(bottomPos, mainLight * 1.2f);
 
-            // »·ÈÆ¹âÔ´
+            // ç¯ç»•å…‰æº
             for (int i = 0; i < 8; i++) {
                 float angle = MathHelper.TwoPi * i / 8 + haloRotation;
                 float radius = CoreLightRadius * 0.4f;
@@ -333,7 +333,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
             frameHeight = pillarTexture.Height;
             if (pillarTexture == null) return false;
 
-            // ¼ÆËãÖ¡¾ØĞÎ
+            // è®¡ç®—å¸§çŸ©å½¢
             Rectangle sourceRect = new Rectangle(
                 PillarStyleIndex * frameWidth,
                 0,
@@ -341,35 +341,35 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                 frameHeight
             );
 
-            // ½µÁÙ¶¯»­Æ«ÒÆ - ¸ü³¤µÄ½µÁÙ¾àÀë
+            // é™ä¸´åŠ¨ç”»åç§» - æ›´é•¿çš„é™ä¸´è·ç¦»
             float descendOffset = HasDescended ? 0f : (1f - ACMUtils.QuadOut(DescendProgress)) * 1500f;
 
-            // ¸¡¶¯Æ«ÒÆ - ÇáÎ¢µÄÉÏÏÂ¸¡¶¯
+            // æµ®åŠ¨åç§» - è½»å¾®çš„ä¸Šä¸‹æµ®åŠ¨
             float floatOffset = HasDescended ? MathF.Sin(floatTimer) * 5f : 0f;
 
             Vector2 drawPos = Position - Main.screenPosition + new Vector2(0, -descendOffset + floatOffset);
             Vector2 origin = Vector2.Zero;
 
-            // ½µÁÙÊ±µÄÍ¸Ã÷¶È½¥±ä
+            // é™ä¸´æ—¶çš„é€æ˜åº¦æ¸å˜
             float alpha = HasDescended ? 1f : ACMUtils.SineInOut(DescendProgress);
 
-            // »æÖÆÍâ²ãÉñÊ¥¹âÔÎ£¨×îµ×²ã£©
+            // ç»˜åˆ¶å¤–å±‚ç¥åœ£å…‰æ™•ï¼ˆæœ€åº•å±‚ï¼‰
             DrawOuterDivineGlow(spriteBatch, drawPos, alpha);
 
-            // »æÖÆ¹âÖùĞ§¹û
+            // ç»˜åˆ¶å…‰æŸ±æ•ˆæœ
             DrawLightPillarEffect(spriteBatch, drawPos, alpha);
 
-            // »æÖÆ¹âÔÎ±³¾°
+            // ç»˜åˆ¶å…‰æ™•èƒŒæ™¯
             if (currentGlowIntensity > 0.2f) {
                 DrawGlowEffect(spriteBatch, drawPos, alpha);
             }
 
-            // »æÖÆ»·ÈÆÏéÔÆ
+            // ç»˜åˆ¶ç¯ç»•ç¥¥äº‘
             DrawSurroundingClouds(spriteBatch, drawPos, alpha);
 
-            // »æÖÆÖ÷ÌåÌìÖù
+            // ç»˜åˆ¶ä¸»ä½“å¤©æŸ±
             Color pillarColor = drawColor * alpha;
-            pillarColor = Color.Lerp(pillarColor, Color.White, 0.4f); // ÌìÖù×Ô·¢¹âĞ§¹ûÔöÇ¿
+            pillarColor = Color.Lerp(pillarColor, Color.White, 0.4f); // å¤©æŸ±è‡ªå‘å…‰æ•ˆæœå¢å¼º
 
             spriteBatch.Draw(
                 pillarTexture,
@@ -383,9 +383,9 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                 0f
             );
 
-            // »æÖÆ¶à²ã¸ß¹âµş¼Ó
+            // ç»˜åˆ¶å¤šå±‚é«˜å…‰å åŠ 
             if (HasDescended && currentGlowIntensity > 0.3f) {
-                // µÚÒ»²ã½ğÉ«¸ß¹â
+                // ç¬¬ä¸€å±‚é‡‘è‰²é«˜å…‰
                 Color glowColor1 = new Color(255, 245, 200, 0) * (currentGlowIntensity - 0.3f) * 0.5f;
                 spriteBatch.Draw(
                     pillarTexture,
@@ -399,7 +399,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                     0f
                 );
 
-                // µÚ¶ş²ã°×É«¸ß¹â
+                // ç¬¬äºŒå±‚ç™½è‰²é«˜å…‰
                 if (currentGlowIntensity > 0.5f) {
                     Color glowColor2 = new Color(255, 255, 255, 0) * (currentGlowIntensity - 0.5f) * 0.3f;
                     spriteBatch.Draw(
@@ -415,7 +415,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                     );
                 }
 
-                // µÚÈı²ã´äÂÌÓñ¹â
+                // ç¬¬ä¸‰å±‚ç¿ ç»¿ç‰å…‰
                 if (currentGlowIntensity > 0.6f) {
                     float jadePulse = MathF.Sin(glowPulseTimer * 2f) * 0.5f + 0.5f;
                     Color glowColor3 = new Color(180, 255, 200, 0) * (currentGlowIntensity - 0.6f) * 0.25f * jadePulse;
@@ -433,11 +433,11 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                 }
             }
 
-            return false; // ×èÖ¹Ä¬ÈÏ»æÖÆ
+            return false; // é˜»æ­¢é»˜è®¤ç»˜åˆ¶
         }
 
         /// <summary>
-        /// »æÖÆÍâ²ãÉñÊ¥¹âÔÎ
+        /// ç»˜åˆ¶å¤–å±‚ç¥åœ£å…‰æ™•
         /// </summary>
         private void DrawOuterDivineGlow(SpriteBatch spriteBatch, Vector2 drawPos, float alpha) {
             Texture2D glowTex = ACMAsset.LightShot;
@@ -446,7 +446,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
             Vector2 glowCenter = drawPos + new Vector2(frameWidth * Scale / 2, frameHeight * Scale / 2);
             float baseAlpha = alpha * currentGlowIntensity * 0.4f;
 
-            // ¶à²ã´ó·¶Î§¹âÔÎ
+            // å¤šå±‚å¤§èŒƒå›´å…‰æ™•
             for (int i = 0; i < 5; i++) {
                 float layerScale = 15f + i * 5f;
                 float layerAlpha = baseAlpha * (0.3f - i * 0.05f);
@@ -475,7 +475,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
 
         /// <summary>
-        /// »æÖÆ¹âÖùĞ§¹û
+        /// ç»˜åˆ¶å…‰æŸ±æ•ˆæœ
         /// </summary>
         private void DrawLightPillarEffect(SpriteBatch spriteBatch, Vector2 drawPos, float alpha) {
             Texture2D glowTex = ACMAsset.LightShot;
@@ -484,7 +484,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
             Vector2 pillarCenter = drawPos + new Vector2(frameWidth * Scale / 2, 0);
             float beamAlpha = alpha * currentGlowIntensity * 0.3f;
 
-            // ´Ó¶¥²¿ÏòÉÏÑÓÉìµÄ¹âÖù
+            // ä»é¡¶éƒ¨å‘ä¸Šå»¶ä¼¸çš„å…‰æŸ±
             for (int i = 0; i < 8; i++) {
                 float yOffset = -i * 80f;
                 float fadeOut = 1f - i * 0.1f;
@@ -507,16 +507,16 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
 
         /// <summary>
-        /// »æÖÆ»·ÈÆÏéÔÆ
+        /// ç»˜åˆ¶ç¯ç»•ç¥¥äº‘
         /// </summary>
         private void DrawSurroundingClouds(SpriteBatch spriteBatch, Vector2 drawPos, float alpha) {
             Texture2D smokeTex = ACMAsset.Smoke;
             if (smokeTex == null || !HasDescended) return;
 
-            int smokeFrameSize = smokeTex.Width / 4; // 4x4 Ö¡
+            int smokeFrameSize = smokeTex.Width / 4; // 4x4 å¸§
             Vector2 pillarCenter = drawPos + new Vector2(frameWidth * Scale / 2, frameHeight * Scale / 2);
 
-            // »·ÈÆµÄÏéÔÆ
+            // ç¯ç»•çš„ç¥¥äº‘
             for (int i = 0; i < 6; i++) {
                 float angle = cloudDriftTimer + i * MathHelper.TwoPi / 6;
                 float radius = 250f + MathF.Sin(cloudDriftTimer * 2f + i) * 50f;
@@ -546,7 +546,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
 
         /// <summary>
-        /// »æÖÆÉñÊ¥¹âĞ§
+        /// ç»˜åˆ¶ç¥åœ£å…‰æ•ˆ
         /// </summary>
         private void DrawGlowEffect(SpriteBatch spriteBatch, Vector2 drawPos, float alpha) {
             Texture2D glowTex = ACMAsset.Sparkle;
@@ -555,7 +555,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
             float glowAlpha = (currentGlowIntensity - 0.2f) * alpha;
             Vector2 glowCenter = drawPos + new Vector2(frameWidth * Scale / 2, frameHeight * Scale / 2);
 
-            // ¶à²ã¹âÔÎ - ¸ü¶à²ã´Î
+            // å¤šå±‚å…‰æ™• - æ›´å¤šå±‚æ¬¡
             for (int i = 0; i < 5; i++) {
                 float layerScale = 8f + i * 3f;
                 float layerAlpha = glowAlpha * (0.5f - i * 0.08f);
@@ -582,7 +582,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                 );
             }
 
-            // Ìí¼ÓĞÇÃ¢Ğ§¹û
+            // æ·»åŠ æ˜ŸèŠ’æ•ˆæœ
             Texture2D starTex = ACMAsset.BlankStar;
             if (starTex != null && currentGlowIntensity > 0.5f) {
                 for (int i = 0; i < 4; i++) {
@@ -609,7 +609,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
 
         public override void PostDraw(SpriteBatch spriteBatch, Color drawColor) {
-            // »æÖÆ¶¥²¿·ûÎÄ¹âĞ§
+            // ç»˜åˆ¶é¡¶éƒ¨ç¬¦æ–‡å…‰æ•ˆ
             if (HasDescended && currentGlowIntensity > 0.3f) {
                 DrawTopRune(spriteBatch);
                 DrawDivineHalo(spriteBatch);
@@ -617,7 +617,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
 
         /// <summary>
-        /// »æÖÆ¶¥²¿·ûÎÄ
+        /// ç»˜åˆ¶é¡¶éƒ¨ç¬¦æ–‡
         /// </summary>
         private void DrawTopRune(SpriteBatch spriteBatch) {
             Texture2D starTex = ACMAsset.BlankStar;
@@ -626,7 +626,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
             float floatOffset = MathF.Sin(floatTimer * 1.5f) * 8f;
             Vector2 topPos = Position - Main.screenPosition + new Vector2(frameWidth * Scale / 2, -80 + floatOffset);
 
-            // ¶à²ã·ûÎÄĞ§¹û
+            // å¤šå±‚ç¬¦æ–‡æ•ˆæœ
             for (int i = 0; i < 3; i++) {
                 float runeScale = (1.2f - i * 0.2f) + MathF.Sin(glowPulseTimer * 2f + i) * 0.15f;
                 float runeAlpha = currentGlowIntensity * (0.9f - i * 0.2f);
@@ -652,16 +652,16 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
 
         /// <summary>
-        /// »æÖÆÉñÊ¥¹â»·
+        /// ç»˜åˆ¶ç¥åœ£å…‰ç¯
         /// </summary>
         private void DrawDivineHalo(SpriteBatch spriteBatch) {
             Texture2D glowTex = ACMAsset.LightShot;
             if (glowTex == null) return;
 
-            // ÔÚÌìÖùÖÜÎ§»æÖÆÀ©É¢µÄ¹â»·
+            // åœ¨å¤©æŸ±å‘¨å›´ç»˜åˆ¶æ‰©æ•£çš„å…‰ç¯
             Vector2 center = Position - Main.screenPosition + new Vector2(frameWidth * Scale / 2, frameHeight * Scale / 2);
 
-            // À©É¢¹â»·
+            // æ‰©æ•£å…‰ç¯
             float expandPhase = (haloExpandTimer % MathHelper.TwoPi) / MathHelper.TwoPi;
             float expandScale = 5f + expandPhase * 15f;
             float expandAlpha = (1f - expandPhase) * currentGlowIntensity * 0.3f;
@@ -680,7 +680,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
                 0f
             );
 
-            // µÚ¶ş²ãÀ©É¢£¨´í¿ªÏàÎ»£©
+            // ç¬¬äºŒå±‚æ‰©æ•£ï¼ˆé”™å¼€ç›¸ä½ï¼‰
             float expandPhase2 = ((haloExpandTimer + MathHelper.Pi) % MathHelper.TwoPi) / MathHelper.TwoPi;
             float expandScale2 = 5f + expandPhase2 * 15f;
             float expandAlpha2 = (1f - expandPhase2) * currentGlowIntensity * 0.2f;
@@ -701,15 +701,15 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes
         }
 
         /// <summary>
-        /// »ñÈ¡ÌìÖùµÄ·½Î»Ãû³Æ£¨¶«ÄÏÎ÷±±£©
+        /// è·å–å¤©æŸ±çš„æ–¹ä½åç§°ï¼ˆä¸œå—è¥¿åŒ—ï¼‰
         /// </summary>
         public string GetDirectionName() {
             return PillarStyleIndex switch {
-                0 => "¶«·½ÌìÖù",
-                1 => "ÄÏ·½ÌìÖù",
-                2 => "Î÷·½ÌìÖù",
-                3 => "±±·½ÌìÖù",
-                _ => "ÌìÖù"
+                0 => "ä¸œæ–¹å¤©æŸ±",
+                1 => "å—æ–¹å¤©æŸ±",
+                2 => "è¥¿æ–¹å¤©æŸ±",
+                3 => "åŒ—æ–¹å¤©æŸ±",
+                _ => "å¤©æŸ±"
             };
         }
     }

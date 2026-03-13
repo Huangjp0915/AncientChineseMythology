@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Graphics.Effects;
@@ -20,9 +20,9 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
     }
 
     /// <summary>
-    /// ×æÁú²Ğ»êÌì¿ÕĞ§¹û - ÃÔ»ÃÏÉÆøµÄÌì¿Õ±³¾°
-    /// °×É«ÎíÆøÃÖÂş£¬¿ÕÁéÆ®ÃìµÄÊÓ¾õĞ§¹û
-    /// Ê¹ÓÃ×Ô¶¯¼ì²âBoss´æÔÚµÄ·½Ê½¹ÜÀí¼¤»î/Í£ÓÃ
+    /// ç¥–é¾™æ®‹é­‚å¤©ç©ºæ•ˆæœ - è¿·å¹»ä»™æ°”çš„å¤©ç©ºèƒŒæ™¯
+    /// ç™½è‰²é›¾æ°”å¼¥æ¼«ï¼Œç©ºçµé£˜æ¸ºçš„è§†è§‰æ•ˆæœ
+    /// ä½¿ç”¨è‡ªåŠ¨æ£€æµ‹Bosså­˜åœ¨çš„æ–¹å¼ç®¡ç†æ¿€æ´»/åœç”¨
     /// </summary>
     public class AncestralDragonSky : CustomSky, IACMLoader
     {
@@ -36,17 +36,17 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
         private const float FadeInSpeed = 0.015f;
         private const float FadeOutSpeed = 0.02f;
 
-        // ÎíÆø²ã²ÎÊı
+        // é›¾æ°”å±‚å‚æ•°
         private const int MistLayerCount = 4;
         private float[] mistOffsets;
         private readonly float[] mistSpeeds = [0.02f, 0.015f, 0.025f, 0.01f];
         private readonly float[] mistScales = [1.5f, 2f, 1.2f, 2.5f];
 
-        // Áú»ê¹ì¼£
+        // é¾™é­‚è½¨è¿¹
         private Vector2[] soulTrailPoints;
         private int trailIndex = 0;
 
-        // Boss×´Ì¬»º´æ
+        // BossçŠ¶æ€ç¼“å­˜
         private float bossHealthPercent = 1f;
 
         void IACMLoader.LoadData() {
@@ -61,13 +61,13 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
         public override void Activate(Vector2 position, params object[] args) {
             active = true;
 
-            // ³õÊ¼»¯ÎíÆøÆ«ÒÆ
+            // åˆå§‹åŒ–é›¾æ°”åç§»
             mistOffsets ??= new float[MistLayerCount];
             for (int i = 0; i < MistLayerCount; i++) {
                 mistOffsets[i] = Main.rand.NextFloat(1000f);
             }
 
-            // ³õÊ¼»¯Áú»ê¹ì¼£
+            // åˆå§‹åŒ–é¾™é­‚è½¨è¿¹
             soulTrailPoints ??= new Vector2[20];
             for (int i = 0; i < soulTrailPoints.Length; i++) {
                 soulTrailPoints[i] = Vector2.Zero;
@@ -88,33 +88,33 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
         public override void Update(GameTime gameTime) {
             globalTime += (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            // ×Ô¶¯¼ì²âBossÊÇ·ñ´æÔÚ
+            // è‡ªåŠ¨æ£€æµ‹Bossæ˜¯å¦å­˜åœ¨
             NPC boss = FindBoss();
             bool shouldBeActive = boss != null && boss.active;
 
             if (shouldBeActive) {
-                // Boss´æÔÚÊ±¼¤»î
+                // Bosså­˜åœ¨æ—¶æ¿€æ´»
                 if (!active) {
                     Activate(Vector2.Zero);
                 }
 
-                // »º´æBossÑªÁ¿±ÈÀı£¨ÓÃÓÚÊÓ¾õĞ§¹ûÇ¿¶È£©
+                // ç¼“å­˜Bossè¡€é‡æ¯”ä¾‹ï¼ˆç”¨äºè§†è§‰æ•ˆæœå¼ºåº¦ï¼‰
                 bossHealthPercent = (float)boss.life / boss.lifeMax;
 
-                // ¸ù¾İBoss½×¶Îµ÷ÕûÄ¿±êÇ¿¶È
+                // æ ¹æ®Bossé˜¶æ®µè°ƒæ•´ç›®æ ‡å¼ºåº¦
                 float targetIntensity = MaxIntensity;
                 if (bossHealthPercent < 0.3f) {
-                    targetIntensity = MaxIntensity * 1.2f; // Èı½×¶Î¸üÇ¿ÁÒ
+                    targetIntensity = MaxIntensity * 1.2f; // ä¸‰é˜¶æ®µæ›´å¼ºçƒˆ
                 }
                 else if (bossHealthPercent < 0.6f) {
-                    targetIntensity = MaxIntensity * 1.1f; // ¶ş½×¶ÎÉÔÇ¿
+                    targetIntensity = MaxIntensity * 1.1f; // äºŒé˜¶æ®µç¨å¼º
                 }
 
-                // Æ½»¬½¥±äµ½Ä¿±êÇ¿¶È
+                // å¹³æ»‘æ¸å˜åˆ°ç›®æ ‡å¼ºåº¦
                 intensity = MathHelper.Lerp(intensity, targetIntensity, FadeInSpeed);
             }
             else {
-                // Boss²»´æÔÚÊ±Æ½»¬µ­³ö
+                // Bossä¸å­˜åœ¨æ—¶å¹³æ»‘æ·¡å‡º
                 intensity -= FadeOutSpeed;
                 if (intensity <= 0f) {
                     intensity = 0f;
@@ -124,31 +124,31 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
                 }
             }
 
-            // ¸üĞÂÎíÆøÆ«ÒÆ
+            // æ›´æ–°é›¾æ°”åç§»
             if (mistOffsets != null) {
                 for (int i = 0; i < MistLayerCount; i++) {
                     mistOffsets[i] += mistSpeeds[i];
                 }
             }
 
-            // ¸üĞÂÁú»ê¹ì¼£
+            // æ›´æ–°é¾™é­‚è½¨è¿¹
             UpdateDragonSoulTrail();
         }
 
         private void UpdateDragonSoulTrail() {
             if (soulTrailPoints == null) return;
 
-            // Ñ°ÕÒ×æÁúÍ·²¿
+            // å¯»æ‰¾ç¥–é¾™å¤´éƒ¨
             NPC boss = FindBoss();
             if (boss != null && boss.active) {
-                // ¼ÇÂ¼Î»ÖÃ
+                // è®°å½•ä½ç½®
                 soulTrailPoints[trailIndex] = boss.Center;
                 trailIndex = (trailIndex + 1) % soulTrailPoints.Length;
             }
         }
 
         /// <summary>
-        /// ²éÕÒ×æÁú²Ğ»êBoss
+        /// æŸ¥æ‰¾ç¥–é¾™æ®‹é­‚Boss
         /// </summary>
         private static NPC FindBoss() {
             foreach (NPC npc in Main.ActiveNPCs) {
@@ -160,41 +160,41 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
         }
 
         /// <summary>
-        /// ¼ì²éBossÊÇ·ñ´æÔÚ£¨¹©Íâ²¿Ê¹ÓÃ£©
+        /// æ£€æŸ¥Bossæ˜¯å¦å­˜åœ¨ï¼ˆä¾›å¤–éƒ¨ä½¿ç”¨ï¼‰
         /// </summary>
         public static bool IsBossActive() => FindBoss() != null;
 
         public override void Draw(SpriteBatch spriteBatch, float minDepth, float maxDepth) {
             if (maxDepth >= 0 && minDepth < 0 && intensity > 0.01f) {
-                // »æÖÆÃÔ»ÃÌì¿Õ±³¾°
+                // ç»˜åˆ¶è¿·å¹»å¤©ç©ºèƒŒæ™¯
                 DrawMysticalBackground(spriteBatch);
 
-                // »æÖÆÁ÷¶¯ÎíÆø
+                // ç»˜åˆ¶æµåŠ¨é›¾æ°”
                 DrawFlowingMist(spriteBatch);
 
-                // »æÖÆÁú»ê¹ì¼£¹âĞ§
+                // ç»˜åˆ¶é¾™é­‚è½¨è¿¹å…‰æ•ˆ
                 DrawSoulTrail(spriteBatch);
 
-                // »æÖÆĞÇ³½¹âµã
+                // ç»˜åˆ¶æ˜Ÿè¾°å…‰ç‚¹
                 DrawEtherealStars(spriteBatch);
 
-                // »æÖÆ±ßÔµÔÎÓ°
+                // ç»˜åˆ¶è¾¹ç¼˜æ™•å½±
                 DrawVignette(spriteBatch);
             }
         }
 
         private void DrawMysticalBackground(SpriteBatch spriteBatch) {
-            // ½¥±ä±³¾° - ´ÓÉî»ÒÀ¶µ½µ­Çà°×
+            // æ¸å˜èƒŒæ™¯ - ä»æ·±ç°è“åˆ°æ·¡é’ç™½
             Rectangle screenRect = new Rectangle(0, 0, Main.screenWidth, Main.screenHeight);
 
-            // Ê¹ÓÃ»ù´¡ÎÆÀí´´½¨½¥±äĞ§¹û
+            // ä½¿ç”¨åŸºç¡€çº¹ç†åˆ›å»ºæ¸å˜æ•ˆæœ
             Texture2D pixel = ACMAsset.BlankStar ?? Main.Assets.Request<Texture2D>("Images/MagicPixel").Value;
 
-            // µ×²ã - ÉîÉ«
+            // åº•å±‚ - æ·±è‰²
             Color bottomColor = new Color(30, 35, 50) * intensity * 0.8f;
             spriteBatch.Draw(pixel, screenRect, null, bottomColor, 0f, Vector2.Zero, SpriteEffects.None, 0f);
 
-            // ÉÏ²ã½¥±ä - ¸üÁÁµÄÇà°×É«Ïò¶¥²¿½¥±ä
+            // ä¸Šå±‚æ¸å˜ - æ›´äº®çš„é’ç™½è‰²å‘é¡¶éƒ¨æ¸å˜
             for (int i = 0; i < 10; i++) {
                 float t = i / 10f;
                 int height = Main.screenHeight / 10;
@@ -220,7 +220,7 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
                 float layerDepth = 0.5f + layer * 0.15f;
                 float alpha = (0.15f - layer * 0.025f) * intensity;
 
-                // ²ã¼¶ÑÕÉ«±ä»¯
+                // å±‚çº§é¢œè‰²å˜åŒ–
                 Color mistColor = layer switch {
                     0 => new Color(255, 255, 255),
                     1 => new Color(220, 235, 255),
@@ -230,7 +230,7 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
                 mistColor *= alpha;
                 mistColor.A = 0;
 
-                // ¶àÌõÎíÆø´ø
+                // å¤šæ¡é›¾æ°”å¸¦
                 for (int band = 0; band < 3; band++) {
                     float xOffset = mistOffsets[layer] * 100f + band * 400f;
                     float yOffset = MathF.Sin(globalTime * 0.5f + layer + band) * 50f;
@@ -276,7 +276,7 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
                 Vector2 worldPos = soulTrailPoints[index];
                 Vector2 screenPos = worldPos - Main.screenPosition;
 
-                // Ö»»æÖÆÆÁÄ»ÄÚµÄ
+                // åªç»˜åˆ¶å±å¹•å†…çš„
                 if (screenPos.X < -100 || screenPos.X > Main.screenWidth + 100 ||
                     screenPos.Y < -100 || screenPos.Y > Main.screenHeight + 100) continue;
 
@@ -299,21 +299,21 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
 
             Vector2 origin = starTex.Size() / 2f;
 
-            // »æÖÆÒ»Ğ©Æ®¶¯µÄ¹âµã
+            // ç»˜åˆ¶ä¸€äº›é£˜åŠ¨çš„å…‰ç‚¹
             int starCount = 30;
             for (int i = 0; i < starCount; i++) {
-                // Ê¹ÓÃ¹Ì¶¨ÖÖ×ÓÉú³ÉÎ±Ëæ»úÎ»ÖÃ
+                // ä½¿ç”¨å›ºå®šç§å­ç”Ÿæˆä¼ªéšæœºä½ç½®
                 float seed = i * 1234.567f;
                 float x = ((seed * 7.89f) % 1f) * Main.screenWidth;
                 float y = ((seed * 3.45f) % 1f) * Main.screenHeight * 0.7f;
 
-                // Ìí¼Ó¶¯Ì¬Æ«ÒÆ
+                // æ·»åŠ åŠ¨æ€åç§»
                 float offsetX = MathF.Sin(globalTime * 0.5f + seed) * 20f;
                 float offsetY = MathF.Sin(globalTime * 0.3f + seed * 1.5f) * 15f;
 
                 Vector2 position = new Vector2(x + offsetX, y + offsetY);
 
-                // ÉÁË¸Ğ§¹û
+                // é—ªçƒæ•ˆæœ
                 float twinkle = (MathF.Sin(globalTime * 2f + seed * 2f) + 1f) * 0.5f;
                 float alpha = (0.3f + twinkle * 0.4f) * intensity;
 
@@ -327,30 +327,30 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
         }
 
         private void DrawVignette(SpriteBatch spriteBatch) {
-            // ±ßÔµÔÎÓ°Ğ§¹û£¬Ôö¼ÓÃÔ»Ã¸Ğ
+            // è¾¹ç¼˜æ™•å½±æ•ˆæœï¼Œå¢åŠ è¿·å¹»æ„Ÿ
             Texture2D pixel = ACMAsset.LightShot;
             if (pixel == null) return;
 
             Vector2 screenCenter = new Vector2(Main.screenWidth / 2f, Main.screenHeight / 2f);
 
-            // ËÄ½Ç°µ»¯
+            // å››è§’æš—åŒ–
             Color vignetteColor = new Color(20, 25, 40) * intensity * 0.4f;
 
             float cornerSize = MathF.Min(Main.screenWidth, Main.screenHeight) * 0.4f;
             Vector2 origin = pixel.Size() / 2f;
 
-            // ×óÉÏ½Ç
+            // å·¦ä¸Šè§’
             spriteBatch.Draw(pixel, new Vector2(0, 0), null, vignetteColor, 0f, origin, cornerSize / pixel.Width, SpriteEffects.None, 0f);
-            // ÓÒÉÏ½Ç
+            // å³ä¸Šè§’
             spriteBatch.Draw(pixel, new Vector2(Main.screenWidth, 0), null, vignetteColor, 0f, origin, cornerSize / pixel.Width, SpriteEffects.None, 0f);
-            // ×óÏÂ½Ç
+            // å·¦ä¸‹è§’
             spriteBatch.Draw(pixel, new Vector2(0, Main.screenHeight), null, vignetteColor, 0f, origin, cornerSize / pixel.Width, SpriteEffects.None, 0f);
-            // ÓÒÏÂ½Ç
+            // å³ä¸‹è§’
             spriteBatch.Draw(pixel, new Vector2(Main.screenWidth, Main.screenHeight), null, vignetteColor, 0f, origin, cornerSize / pixel.Width, SpriteEffects.None, 0f);
         }
 
         public override Color OnTileColor(Color inColor) {
-            // Ê¹³¡¾°ÕûÌåÆ«ÀäÉ«µ÷
+            // ä½¿åœºæ™¯æ•´ä½“åå†·è‰²è°ƒ
             Color tintColor = Color.Lerp(Color.White, new Color(200, 210, 230), intensity * 0.3f);
             return new Color(
                 (int)(inColor.R * tintColor.R / 255f),
@@ -361,7 +361,7 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
         }
 
         public override float GetCloudAlpha() {
-            // ¼õÉÙÔ­°æÔÆ²ã
+            // å‡å°‘åŸç‰ˆäº‘å±‚
             return 1f - intensity * 0.8f;
         }
     }

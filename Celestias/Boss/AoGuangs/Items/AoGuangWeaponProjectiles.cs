@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -8,10 +8,10 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
 {
-    #region Ë®ÁúÕ¶²¨
+    #region æ°´é¾™æ–©æ³¢
 
     /// <summary>
-    /// Ë®ÁúÕ¶²¨ - ´óµ¶Ã¿Èıµ¶ÊÍ·Å
+    /// æ°´é¾™æ–©æ³¢ - å¤§åˆ€æ¯ä¸‰åˆ€é‡Šæ”¾
     /// </summary>
     public class DragonTidalSlash : ModProjectile
     {
@@ -42,7 +42,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
             Projectile.rotation = Projectile.velocity.ToRotation();
             Projectile.velocity *= 0.97f;
 
-            // Ë®ÁúÕ¶Á£×Ó
+            // æ°´é¾™æ–©ç²’å­
             if (Main.netMode != NetmodeID.Server) {
                 for (int i = 0; i < 2; i++) {
                     Vector2 dustPos = Projectile.Center + Main.rand.NextVector2Circular(15, 8);
@@ -71,7 +71,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
             Texture2D tex = ACMAsset.GlaciateWave ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = new Vector2(0, tex.Height / 2f);
 
-            // ÍÏÎ²
+            // æ‹–å°¾
             for (int i = 0; i < Projectile.oldPos.Length; i++) {
                 if (Projectile.oldPos[i] == Vector2.Zero) continue;
                 float progress = 1f - (float)i / Projectile.oldPos.Length;
@@ -85,7 +85,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
                     new Vector2(1f * progress, 0.2f * progress), SpriteEffects.None, 0f);
             }
 
-            // Ö÷Ìå
+            // ä¸»ä½“
             Color mainColor = AoGuangHelper.WaterGlow;
             mainColor.A = 0;
             Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, mainColor, Projectile.rotation,
@@ -106,10 +106,10 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
 
     #endregion
 
-    #region Ğ¡ĞÍË®Áú¾í
+    #region å°å‹æ°´é¾™å·
 
     /// <summary>
-    /// Ğ¡ĞÍË®Áú¾í - ´óµ¶Âú³±ÊÍ·Å£¬¸´ÓÃBarrierWaterTornadoÊÓ¾õ
+    /// å°å‹æ°´é¾™å· - å¤§åˆ€æ»¡æ½®é‡Šæ”¾ï¼Œå¤ç”¨BarrierWaterTornadoè§†è§‰
     /// </summary>
     public class MiniWaterTornado : ModProjectile
     {
@@ -142,7 +142,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
             tornadoAlpha = MathHelper.Lerp(tornadoAlpha, 1f, 0.04f);
             tornadoHeight = MathHelper.Lerp(tornadoHeight, MaxHeight, 0.05f);
 
-            // »ºÂı×·×Ù×î½üµĞÈË
+            // ç¼“æ…¢è¿½è¸ªæœ€è¿‘æ•Œäºº
             NPC target = FindClosestNPC(400f);
             if (target != null) {
                 Vector2 toTarget = (target.Center - Projectile.Center).SafeNormalize(Vector2.Zero);
@@ -152,7 +152,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
                 Projectile.velocity *= 0.95f;
             }
 
-            // ÎüÒıµĞÈË
+            // å¸å¼•æ•Œäºº
             foreach (NPC npc in Main.npc) {
                 if (!npc.active || npc.friendly || npc.dontTakeDamage) continue;
                 float distance = Vector2.Distance(npc.Center, Projectile.Center);
@@ -162,7 +162,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
                 }
             }
 
-            // Áú¾íÁ£×Ó
+            // é¾™å·ç²’å­
             if (Main.netMode != NetmodeID.Server) {
                 for (int i = 0; i < 4; i++) {
                     float heightOffset = Main.rand.NextFloat(-tornadoHeight / 2, tornadoHeight / 2);
@@ -228,7 +228,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
             Texture2D tornadoTex = TextureAssets.Projectile[ProjectileID.SandnadoHostile].Value;
             Vector2 origin = tornadoTex.Size() / 2f;
 
-            // »æÖÆĞ¡ĞÍË®Áú¾í
+            // ç»˜åˆ¶å°å‹æ°´é¾™å·
             int segments = 10;
             for (int seg = 0; seg < segments; seg++) {
                 float heightPercent = (float)seg / segments;
@@ -238,17 +238,17 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
 
                 Vector2 segPos = screenPos + new Vector2(0, yOffset);
 
-                // Íâ²ã
+                // å¤–å±‚
                 Color outerColor = AoGuangHelper.OceanTeal * tornadoAlpha * 0.4f;
                 outerColor.A = 0;
                 sb.Draw(tornadoTex, segPos, null, outerColor, segRot, origin, segRadius * 1.2f, SpriteEffects.None, 0f);
 
-                // ÖĞ²ã
+                // ä¸­å±‚
                 Color midColor = AoGuangHelper.DragonBlue * tornadoAlpha * 0.6f;
                 midColor.A = 0;
                 sb.Draw(tornadoTex, segPos, null, midColor, segRot * 1.25f, origin, segRadius, SpriteEffects.None, 0f);
 
-                // ÄÚ²ã
+                // å†…å±‚
                 Color innerColor = AoGuangHelper.WaterGlow * tornadoAlpha * 0.35f;
                 innerColor.A = 0;
                 sb.Draw(tornadoTex, segPos, null, innerColor, segRot * 1.5f, origin, segRadius * 0.65f, SpriteEffects.None, 0f);

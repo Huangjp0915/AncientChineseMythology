@@ -1,4 +1,4 @@
-using AncientChineseMythology.Underworlds.Tiles;
+ï»¿using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
@@ -9,8 +9,8 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
 {
     /// <summary>
-    /// ÑÖÄ¦¶ÏÒµµ¶ - ÑÖÍõÓÃÒÔ²Ã¶ÏÖÚÉúÒµ±¨µÄ¾Şµ¶£¬½üÕ½´óµ¶ÀàÎäÆ÷
-    /// ÈâºóÖĞÆÚ£¬»ÓÎèÊÍ·Å¶ÏÒµ½£Æøµ¯Ä»£¬»÷ÖĞµĞÈËÊ±²úÉúÒµ»ğ±¬ÁÑÌØĞ§
+    /// é˜æ‘©æ–­ä¸šåˆ€ - é˜ç‹ç”¨ä»¥è£æ–­ä¼—ç”Ÿä¸šæŠ¥çš„å·¨åˆ€ï¼Œè¿‘æˆ˜å¤§åˆ€ç±»æ­¦å™¨
+    /// è‚‰åä¸­æœŸï¼ŒæŒ¥èˆé‡Šæ”¾æ–­ä¸šå‰‘æ°”å¼¹å¹•ï¼Œå‡»ä¸­æ•Œäººæ—¶äº§ç”Ÿä¸šç«çˆ†è£‚ç‰¹æ•ˆ
     /// </summary>
     public class YamasSeverance : ModItem
     {
@@ -34,7 +34,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
         }
 
         public override void MeleeEffects(Player player, Rectangle hitbox) {
-            //»ÓÎèÊ±²úÉú°µ×ÏÉ«Ú¤»ğÁ£×Ó
+            //æŒ¥èˆæ—¶äº§ç”Ÿæš—ç´«è‰²å†¥ç«ç²’å­
             if (Main.rand.NextBool(2)) {
                 Dust flame = Dust.NewDustDirect(
                     new Vector2(hitbox.X, hitbox.Y), hitbox.Width, hitbox.Height,
@@ -44,7 +44,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 );
                 flame.noGravity = true;
             }
-            //ÓÄ»êÍÏÓ°
+            //å¹½é­‚æ‹–å½±
             if (Main.rand.NextBool(3)) {
                 Dust soul = Dust.NewDustDirect(
                     new Vector2(hitbox.X, hitbox.Y), hitbox.Width, hitbox.Height,
@@ -56,11 +56,11 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
         }
 
         public override void OnHitNPC(Player player, NPC target, NPC.HitInfo hit, int damageDone) {
-            //¶ÏÒµÖ®Ñæ£º¸½¼Ó°µÓ°ÑæºÍµØÓü»ğ
+            //æ–­ä¸šä¹‹ç„°ï¼šé™„åŠ æš—å½±ç„°å’Œåœ°ç‹±ç«
             target.AddBuff(BuffID.ShadowFlame, 180);
             target.AddBuff(BuffID.OnFire3, 180);
 
-            //»÷ÖĞ±¬ÁÑÌØĞ§
+            //å‡»ä¸­çˆ†è£‚ç‰¹æ•ˆ
             for (int i = 0; i < 12; i++) {
                 Vector2 vel = Main.rand.NextVector2Circular(6f, 6f);
                 Dust burst = Dust.NewDustPerfect(
@@ -70,7 +70,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 burst.noGravity = true;
             }
 
-            //±©»÷Ê±²úÉú¶ÏÒµ³å»÷²¨
+            //æš´å‡»æ—¶äº§ç”Ÿæ–­ä¸šå†²å‡»æ³¢
             if (hit.Crit) {
                 SoundEngine.PlaySound(SoundID.Item14 with { Volume = 0.7f, Pitch = -0.3f }, target.Center);
                 for (int i = 0; i < 20; i++) {
@@ -85,7 +85,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
         }
 
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
-            //Ã¿´Î»ÓÎèÊÍ·ÅÒ»µÀ¶ÏÒµ½£Æø
+            //æ¯æ¬¡æŒ¥èˆé‡Šæ”¾ä¸€é“æ–­ä¸šå‰‘æ°”
             Vector2 direction = velocity.SafeNormalize(Vector2.UnitX);
             position = player.Center + direction * 40f;
             Projectile.NewProjectile(source, position, velocity, type, (int)(damage * 0.7f), knockback * 0.5f, player.whoAmI);
@@ -103,8 +103,8 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
     }
 
     /// <summary>
-    /// ¶ÏÒµ½£Æøµ¯Ä» - ×ÏÉ«½£Æø²¨£¬ÏòÇ°·ÉĞĞ²¢´©Í¸µĞÈË
-    /// Ê¹ÓÃACMAsset.GlaciateWave»Ò¶ÈÍ¼µş¼Ó»æÖÆ
+    /// æ–­ä¸šå‰‘æ°”å¼¹å¹• - ç´«è‰²å‰‘æ°”æ³¢ï¼Œå‘å‰é£è¡Œå¹¶ç©¿é€æ•Œäºº
+    /// ä½¿ç”¨ACMAsset.GlaciateWaveç°åº¦å›¾å åŠ ç»˜åˆ¶
     /// </summary>
     public class YamasSeveranceSlash : ModProjectile
     {
@@ -131,7 +131,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
         }
 
         public override void AI() {
-            //Öğ½¥ÏûÍË
+            //é€æ¸æ¶ˆé€€
             Projectile.alpha += 4;
             if (Projectile.alpha > 255) {
                 Projectile.Kill();
@@ -140,11 +140,11 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
 
             Projectile.rotation = Projectile.velocity.ToRotation();
 
-            //Ú¤×ÏÉ«¹âÕÕ
+            //å†¥ç´«è‰²å…‰ç…§
             float brightness = (255 - Projectile.alpha) / 255f;
             Lighting.AddLight(Projectile.Center, 0.5f * brightness, 0.2f * brightness, 0.6f * brightness);
 
-            //½£ÆøÁ£×Ó
+            //å‰‘æ°”ç²’å­
             if (Main.rand.NextBool(2)) {
                 Dust trail = Dust.NewDustDirect(
                     Projectile.Center - Projectile.velocity * 0.5f + Main.rand.NextVector2Circular(10, 10),
@@ -155,7 +155,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 trail.noGravity = true;
             }
 
-            //É¢ÂäÚ¤×ÏËéÆ¬
+            //æ•£è½å†¥ç´«ç¢ç‰‡
             if (Main.rand.NextBool(4)) {
                 Dust shard = Dust.NewDustDirect(
                     Projectile.Center + Main.rand.NextVector2Circular(15, 15),
@@ -180,13 +180,13 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            //Ê¹ÓÃGlaciateWave»Ò¶ÈÍ¼»æÖÆ½£ÆøĞ§¹û
+            //ä½¿ç”¨GlaciateWaveç°åº¦å›¾ç»˜åˆ¶å‰‘æ°”æ•ˆæœ
             Texture2D glaciate = ACMAsset.GlaciateWave;
             if (glaciate != null) {
                 Vector2 origin = glaciate.Size() / 2f;
                 float opacity = (255 - Projectile.alpha) / 255f;
 
-                //»æÖÆÍÏÎ²
+                //ç»˜åˆ¶æ‹–å°¾
                 for (int i = 0; i < Projectile.oldPos.Length; i++) {
                     if (Projectile.oldPos[i] == Vector2.Zero) continue;
                     float progress = 1f - (float)i / Projectile.oldPos.Length;
@@ -197,12 +197,12 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                     Main.EntitySpriteDraw(glaciate, drawPos, null, trailColor, Projectile.oldRot[i], origin, new Vector2(scale, scale * 0.5f), SpriteEffects.None, 0);
                 }
 
-                //»æÖÆÖ÷Ìå½£Æø
+                //ç»˜åˆ¶ä¸»ä½“å‰‘æ°”
                 Color mainColor = new Color(200, 120, 255) * opacity * 0.8f;
                 mainColor.A = 0;
                 Main.EntitySpriteDraw(glaciate, Projectile.Center - Main.screenPosition, null, mainColor, Projectile.rotation, origin, new Vector2(0.4f, 0.25f), SpriteEffects.None, 0);
 
-                //Íâ²ã¹âÔÎ
+                //å¤–å±‚å…‰æ™•
                 Color glowColor = new Color(140, 60, 200) * opacity * 0.4f;
                 glowColor.A = 0;
                 Main.EntitySpriteDraw(glaciate, Projectile.Center - Main.screenPosition, null, glowColor, Projectile.rotation, origin, new Vector2(0.5f, 0.35f), SpriteEffects.None, 0);

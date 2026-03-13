@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -8,10 +8,10 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 {
-    #region ±¦ËşÉñ¹âµ¯
+    #region å®å¡”ç¥å…‰å¼¹
 
     /// <summary>
-    /// ±¦ËşÉñ¹âµ¯ - ÅşÉ³ÃÅÌìÍõµÄ»ù´¡µ¯Ä»
+    /// å®å¡”ç¥å…‰å¼¹ - æ¯—æ²™é—¨å¤©ç‹çš„åŸºç¡€å¼¹å¹•
     /// </summary>
     internal class TreasureTowerOrb : ModProjectile
     {
@@ -41,7 +41,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             orbAlpha = MathHelper.Lerp(orbAlpha, 1f, 0.08f);
             pulsePhase += 0.1f;
 
-            // ÇáÎ¢×·×Ù
+            // è½»å¾®è¿½è¸ª
             if (Projectile.ai[0] == 0 && Projectile.timeLeft > 200) {
                 Player target = Main.player[Player.FindClosest(Projectile.position, Projectile.width, Projectile.height)];
                 if (target.active && !target.dead) {
@@ -55,7 +55,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
             Projectile.rotation = Projectile.velocity.ToRotation() + MathHelper.PiOver2;
 
-            // ÏÉÆøÁ£×Ó
+            // ä»™æ°”ç²’å­
             if (!VaultUtils.isServer && Main.rand.NextBool(3)) {
                 Vector2 dustPos = Projectile.Center + Main.rand.NextVector2Circular(10, 10);
                 int dust = Dust.NewDust(dustPos, 0, 0, DustID.WhiteTorch, 0, 0, 100, default, 1f);
@@ -63,20 +63,20 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                 Main.dust[dust].velocity = -Projectile.velocity * 0.15f;
             }
 
-            // °×É«ÏÉ¹â
+            // ç™½è‰²ä»™å…‰
             Lighting.AddLight(Projectile.Center, new Vector3(1f, 0.98f, 0.95f) * 0.7f * orbAlpha);
         }
 
         public override bool PreDraw(ref Color lightColor) {
             SpriteBatch sb = Main.spriteBatch;
 
-            // Ê¹ÓÃ VaisravanaHelper »æÖÆÏÉÆø¹âÇò
+            // ä½¿ç”¨ VaisravanaHelper ç»˜åˆ¶ä»™æ°”å…‰çƒ
             VaisravanaHelper.DrawImmortalOrb(sb, Projectile.Center,
                 VaisravanaHelper.PureWhite * orbAlpha,
                 VaisravanaHelper.ImmortalGold,
                 0.6f, pulsePhase);
 
-            // ÍÏÎ²
+            // æ‹–å°¾
             if (ACMAsset.LightShot != null) {
                 Color trailColor = VaisravanaHelper.SpiritSilver * 0.4f;
                 trailColor.A = 0;
@@ -107,10 +107,10 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
     #endregion
 
-    #region ±¦Ëş¹âÊø
+    #region å®å¡”å…‰æŸ
 
     /// <summary>
-    /// ±¦Ëş¹âÊø - ´Ó±¦Ëş·¢ÉäµÄ×·×Ù¹âÊø
+    /// å®å¡”å…‰æŸ - ä»å®å¡”å‘å°„çš„è¿½è¸ªå…‰æŸ
     /// </summary>
     internal class TowerBeam : ModProjectile
     {
@@ -134,7 +134,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
         }
 
         public override void AI() {
-            // ×·×Ù
+            // è¿½è¸ª
             Player target = Main.player[Player.FindClosest(Projectile.position, Projectile.width, Projectile.height)];
             if (target.active && !target.dead && Projectile.timeLeft > 100) {
                 Vector2 toTarget = target.Center - Projectile.Center;
@@ -147,7 +147,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
             Projectile.rotation = Projectile.velocity.ToRotation();
 
-            // Á£×Ó
+            // ç²’å­
             if (!VaultUtils.isServer) {
                 int dust = Dust.NewDust(Projectile.Center, 0, 0, DustID.WhiteTorch, 0, 0, 100, default, 0.9f);
                 Main.dust[dust].noGravity = true;
@@ -176,7 +176,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                     Projectile.rotation, origin, scale * new Vector2(1f, layerScale), SpriteEffects.None, 0f);
             }
 
-            // ºËĞÄ¹âµã
+            // æ ¸å¿ƒå…‰ç‚¹
             if (ACMAsset.LightShot != null) {
                 Color coreColor = VaisravanaHelper.PureWhite;
                 coreColor.A = 0;
@@ -190,10 +190,10 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
     #endregion
 
-    #region ÌìÍõĞÇ³½
+    #region å¤©ç‹æ˜Ÿè¾°
 
     /// <summary>
-    /// ÌìÍõĞÇ³½ - ÌìÍõÕÙ»½µÄÉñÊ¥ĞÇ³½
+    /// å¤©ç‹æ˜Ÿè¾° - å¤©ç‹å¬å”¤çš„ç¥åœ£æ˜Ÿè¾°
     /// </summary>
     internal class VaisravanaStar : ModProjectile
     {
@@ -221,12 +221,12 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             starRotation += 0.12f;
             Projectile.rotation = starRotation;
 
-            // ¼ÓËÙ
+            // åŠ é€Ÿ
             if (Projectile.velocity.Length() < 20f) {
                 Projectile.velocity *= 1.025f;
             }
 
-            // ĞÇ¹âÁ£×Ó
+            // æ˜Ÿå…‰ç²’å­
             if (!VaultUtils.isServer && Main.rand.NextBool(2)) {
                 int dust = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height,
                     DustID.WhiteTorch, 0, 0, 100, default, 1.3f);
@@ -244,7 +244,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             Vector2 origin = starTex.Size() / 2f;
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
 
-            // ÍÏÎ²
+            // æ‹–å°¾
             Color trailColor = VaisravanaHelper.ImmortalGold * 0.5f;
             trailColor.A = 0;
 
@@ -256,12 +256,12 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                 Main.spriteBatch.Draw(starTex, pos, null, trailColor * fade, Projectile.oldRot[i], origin, scale, SpriteEffects.None, 0);
             }
 
-            // Íâ²ã¹âÔÎ
+            // å¤–å±‚å…‰æ™•
             Color glowColor = VaisravanaHelper.SpiritSilver * 0.5f;
             glowColor.A = 0;
             Main.spriteBatch.Draw(starTex, drawPos, null, glowColor, starRotation * 0.5f, origin, 0.65f, SpriteEffects.None, 0f);
 
-            // ºËĞÄ
+            // æ ¸å¿ƒ
             Color coreColor = VaisravanaHelper.PureWhite;
             coreColor.A = 0;
             Main.spriteBatch.Draw(starTex, drawPos, null, coreColor, starRotation, origin, 0.45f, SpriteEffects.None, 0f);
@@ -284,10 +284,10 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
     #endregion
 
-    #region ÏÉÆø²¨
+    #region ä»™æ°”æ³¢
 
     /// <summary>
-    /// ÏÉÆø²¨ - »·ĞÎÀ©É¢µÄÏÉÆø²¨¶¯
+    /// ä»™æ°”æ³¢ - ç¯å½¢æ‰©æ•£çš„ä»™æ°”æ³¢åŠ¨
     /// </summary>
     internal class ImmortalWave : ModProjectile
     {
@@ -312,13 +312,13 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
         }
 
         public override void AI() {
-            // À©É¢
+            // æ‰©æ•£
             float maxRadius = 600f;
             float progress = 1f - (float)Projectile.timeLeft / 60f;
             waveRadius = maxRadius * VaisravanaHelper.QuadOut(progress);
             waveAlpha = 1f - progress;
 
-            // Á£×ÓĞ§¹û
+            // ç²’å­æ•ˆæœ
             if (!VaultUtils.isServer && Projectile.timeLeft % 3 == 0) {
                 int particleCount = 8;
                 for (int i = 0; i < particleCount; i++) {
@@ -330,12 +330,12 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                 }
             }
 
-            // ¹âÕÕ
+            // å…‰ç…§
             Lighting.AddLight(Projectile.Center, new Vector3(1f, 0.98f, 0.95f) * waveAlpha * 0.8f);
         }
 
         public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
-            // »·ĞÎÅö×²
+            // ç¯å½¢ç¢°æ’
             Vector2 targetCenter = targetHitbox.Center.ToVector2();
             float distance = Vector2.Distance(Projectile.Center, targetCenter);
             float ringWidth = 40f;
@@ -346,11 +346,11 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             SpriteBatch sb = Main.spriteBatch;
             Vector2 center = Projectile.Center - Main.screenPosition;
 
-            // »æÖÆÀ©É¢»·
+            // ç»˜åˆ¶æ‰©æ•£ç¯
             VaisravanaHelper.DrawDivineCircle(sb, Projectile.Center, waveRadius,
                 VaisravanaHelper.PureWhite, Main.GameUpdateCount * 0.02f, waveAlpha);
 
-            // ÄÚ»·
+            // å†…ç¯
             VaisravanaHelper.DrawImmortalHalo(sb, Projectile.Center, waveRadius * 0.85f,
                 VaisravanaHelper.CelestialAzure, -Main.GameUpdateCount * 0.015f, waveAlpha * 0.7f);
 
@@ -360,10 +360,10 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
     #endregion
 
-    #region ´ó¼¤¹â
+    #region å¤§æ¿€å…‰
 
     /// <summary>
-    /// ±¦ËşÊ¥¹â - ÅşÉ³ÃÅÌìÍõµÄ´ó¼¤¹â
+    /// å®å¡”åœ£å…‰ - æ¯—æ²™é—¨å¤©ç‹çš„å¤§æ¿€å…‰
     /// </summary>
     internal class TreasureTowerRay : ModProjectile
     {
@@ -399,7 +399,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
             Projectile.Center = owner.Center;
 
-            // ×·×Ù
+            // è¿½è¸ª
             Player target = Main.player[Player.FindClosest(Projectile.position, Projectile.width, Projectile.height)];
             if (target.active && !target.dead) {
                 float targetAngle = (target.Center - Projectile.Center).ToRotation();
@@ -409,7 +409,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
             Projectile.rotation = LaserAngle;
 
-            // Á£×Ó
+            // ç²’å­
             if (!VaultUtils.isServer) {
                 Vector2 laserDir = LaserAngle.ToRotationVector2();
                 for (int i = 0; i < 6; i++) {
@@ -421,7 +421,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                 }
             }
 
-            // ¹âÕÕ
+            // å…‰ç…§
             for (int i = 0; i < 12; i++) {
                 Vector2 lightPos = Projectile.Center + LaserAngle.ToRotationVector2() * (i * 200);
                 Lighting.AddLight(lightPos, new Vector3(1f, 0.98f, 0.95f) * 1.8f);
@@ -448,7 +448,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
             Vector2 scale = new Vector2(LaserLength / laserTex.Width, width);
 
-            // ¶à²ã½¥±ä
+            // å¤šå±‚æ¸å˜
             for (int layer = 3; layer >= 0; layer--) {
                 float layerWidth = 1f + layer * 0.6f;
                 float layerAlpha = 1f - layer * 0.2f;
@@ -457,7 +457,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                 Main.spriteBatch.Draw(laserTex, drawPos, null, layerColor, LaserAngle, origin, scale * new Vector2(1f, layerWidth), SpriteEffects.None, 0f);
             }
 
-            // Æğµã±¬·¢
+            // èµ·ç‚¹çˆ†å‘
             if (ACMAsset.Sparkle != null) {
                 Color burstColor = VaisravanaHelper.PureWhite * alpha;
                 burstColor.A = 0;
@@ -476,7 +476,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
     }
 
     /// <summary>
-    /// ËÄ·½Ê¥¹â - ËÄ·½ÏòÍ¬Ê±·¢ÉäµÄ¼¤¹â
+    /// å››æ–¹åœ£å…‰ - å››æ–¹å‘åŒæ—¶å‘å°„çš„æ¿€å…‰
     /// </summary>
     internal class QuadrantRay : ModProjectile
     {
@@ -512,11 +512,11 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
             Projectile.Center = owner.Center;
 
-            // »ºÂıĞı×ª
+            // ç¼“æ…¢æ—‹è½¬
             LaserAngle += 0.012f;
             Projectile.rotation = LaserAngle;
 
-            // Á£×Ó
+            // ç²’å­
             if (!VaultUtils.isServer && Main.rand.NextBool(2)) {
                 Vector2 laserDir = LaserAngle.ToRotationVector2();
                 float dist = Main.rand.NextFloat(LaserLength);
@@ -564,10 +564,10 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
     #endregion
 
-    #region Ò¹²æÆÍ´Ó
+    #region å¤œå‰ä»†ä»
 
     /// <summary>
-    /// Ò¹²æÆÍ´Ó - ÅşÉ³ÃÅÌìÍõÕÙ»½µÄ»¤·¨
+    /// å¤œå‰ä»†ä» - æ¯—æ²™é—¨å¤©ç‹å¬å”¤çš„æŠ¤æ³•
     /// </summary>
     internal class YakshaMinion : ModNPC
     {
@@ -613,7 +613,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
         public override void AI() {
             globalTime += 1f / 60f;
 
-            // »ñÈ¡Ö÷ÈË
+            // è·å–ä¸»äºº
             NPC owner = Main.npc[(int)OwnerIndex];
             if (!owner.active || owner.type != ModContent.NPCType<Vaisravana>()) {
                 NPC.life = 0;
@@ -621,14 +621,14 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                 return;
             }
 
-            // »ñÈ¡Ä¿±ê
+            // è·å–ç›®æ ‡
             Player target = Main.player[owner.target];
             if (!target.active || target.dead) {
                 NPC.velocity *= 0.95f;
                 return;
             }
 
-            // »·ÈÆÔË¶¯
+            // ç¯ç»•è¿åŠ¨
             orbitAngle += 0.018f + MinionIndex * 0.004f;
             float targetRadius = 280f + MathF.Sin(globalTime * 1.5f + MinionIndex) * 40f;
             orbitRadius = MathHelper.Lerp(orbitRadius, targetRadius, 0.04f);
@@ -636,15 +636,15 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             Vector2 orbitOffset = orbitAngle.ToRotationVector2() * orbitRadius;
             Vector2 targetPos = owner.Center + orbitOffset;
 
-            // Æ½»¬ÒÆ¶¯
+            // å¹³æ»‘ç§»åŠ¨
             NPC.velocity = (targetPos - NPC.Center) * 0.08f;
 
-            // ÃæÏòÍæ¼Ò
+            // é¢å‘ç©å®¶
             NPC.rotation = (target.Center - NPC.Center).ToRotation();
 
             AttackTimer++;
 
-            // ¹¥»÷Ä£Ê½
+            // æ”»å‡»æ¨¡å¼
             if (AttackMode == 1) {
                 AttackMode = 0;
             }
@@ -656,7 +656,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                 }
             }
 
-            // ¹âÕÕ
+            // å…‰ç…§
             Lighting.AddLight(NPC.Center, new Vector3(1f, 0.98f, 0.95f) * 0.5f);
         }
 
@@ -667,7 +667,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
             int attackType = Main.rand.Next(2);
             switch (attackType) {
-                case 0: // ±¦ËşÉñ¹âµ¯
+                case 0: // å®å¡”ç¥å…‰å¼¹
                     Projectile.NewProjectile(
                         NPC.GetSource_FromAI(),
                         NPC.Center,
@@ -679,7 +679,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                     );
                     break;
 
-                case 1: // Èı·¢É¢Éä
+                case 1: // ä¸‰å‘æ•£å°„
                     for (int i = -1; i <= 1; i++) {
                         Vector2 vel = toTarget.RotatedBy(MathHelper.ToRadians(12 * i)) * 9f;
                         Projectile.NewProjectile(
@@ -703,7 +703,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             Vector2 drawPos = NPC.Center - screenPos;
             Vector2 origin = texture.Size() / 2f;
 
-            // ÍÏÎ²
+            // æ‹–å°¾
             for (int i = 0; i < NPC.oldPos.Length; i++) {
                 if (NPC.oldPos[i] == Vector2.Zero) continue;
                 float progress = 1f - (float)i / NPC.oldPos.Length;
@@ -713,15 +713,15 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                 spriteBatch.Draw(texture, trailPos, null, trailColor, NPC.oldRot[i], origin, NPC.scale * progress, SpriteEffects.None, 0f);
             }
 
-            // Íâ²ã¹âÔÎ
+            // å¤–å±‚å…‰æ™•
             Color glowColor = VaisravanaHelper.CelestialAzure * 0.4f;
             glowColor.A = 0;
             spriteBatch.Draw(texture, drawPos, null, glowColor, NPC.rotation, origin, NPC.scale * 1.25f, SpriteEffects.None, 0f);
 
-            // ±¾Ìå
+            // æœ¬ä½“
             spriteBatch.Draw(texture, drawPos, null, Color.White, NPC.rotation, origin, NPC.scale, SpriteEffects.None, 0f);
 
-            // ºËĞÄ¸ß¹â
+            // æ ¸å¿ƒé«˜å…‰
             Color coreColor = VaisravanaHelper.PureWhite;
             coreColor.A = 0;
             spriteBatch.Draw(texture, drawPos, null, coreColor * 0.5f, NPC.rotation, origin, NPC.scale * 0.75f, SpriteEffects.None, 0f);
@@ -740,10 +740,10 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
     #endregion
 
-    #region ÆäËûµ¯Ä»
+    #region å…¶ä»–å¼¹å¹•
 
     /// <summary>
-    /// ÏÉÆø¹â»· - Ğı×ªµÄ¹â»·µ¯Ä»
+    /// ä»™æ°”å…‰ç¯ - æ—‹è½¬çš„å…‰ç¯å¼¹å¹•
     /// </summary>
     internal class ImmortalHaloRing : ModProjectile
     {
@@ -766,7 +766,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
         }
 
         public override void AI() {
-            // Ğı×ªÔË¶¯
+            // æ—‹è½¬è¿åŠ¨
             Projectile.ai[0] += 0.025f;
             float currentAngle = Projectile.ai[0];
             float speed = Projectile.velocity.Length();
@@ -774,7 +774,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
             Projectile.rotation = currentAngle + MathHelper.PiOver2;
 
-            // ¹â»·Á£×Ó
+            // å…‰ç¯ç²’å­
             if (!VaultUtils.isServer && Main.rand.NextBool(4)) {
                 int dust = Dust.NewDust(Projectile.Center, 0, 0, DustID.WhiteTorch, 0, 0, 100, default, 0.9f);
                 Main.dust[dust].noGravity = true;
@@ -791,7 +791,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             Vector2 origin = tex.Size() / 2f;
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
 
-            // ÍÏÎ²
+            // æ‹–å°¾
             Color trailColor = VaisravanaHelper.ImmortalGold * 0.4f;
             trailColor.A = 0;
 
@@ -802,7 +802,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                 Main.spriteBatch.Draw(tex, pos, null, trailColor * fade, 0f, origin, 0.35f * (1f - i * 0.05f), SpriteEffects.None, 0);
             }
 
-            // ±¾Ìå
+            // æœ¬ä½“
             Color mainColor = VaisravanaHelper.PureWhite;
             mainColor.A = 0;
             Main.spriteBatch.Draw(tex, drawPos, null, mainColor, 0f, origin, 0.45f, SpriteEffects.None, 0f);
@@ -812,7 +812,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
     }
 
     /// <summary>
-    /// É¨Éä¹âµ¯ - ¿ìËÙÖ±Ïß¹âµ¯
+    /// æ‰«å°„å…‰å¼¹ - å¿«é€Ÿç›´çº¿å…‰å¼¹
     /// </summary>
     internal class SweepingLightBolt : ModProjectile
     {
@@ -854,7 +854,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             Vector2 origin = new Vector2(0, tex.Height / 2f);
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
 
-            // ÍÏÎ²
+            // æ‹–å°¾
             for (int i = 0; i < Projectile.oldPos.Length; i++) {
                 if (Projectile.oldPos[i] == Vector2.Zero) continue;
                 float fade = 0.5f * (1f - i / (float)Projectile.oldPos.Length);
@@ -865,7 +865,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                 Main.spriteBatch.Draw(tex, pos, null, trailColor, Projectile.oldRot[i], origin, new Vector2(0.25f, trailScale), SpriteEffects.None, 0f);
             }
 
-            // ±¾Ìå
+            // æœ¬ä½“
             Color mainColor = VaisravanaHelper.PureWhite;
             mainColor.A = 0;
             Main.spriteBatch.Draw(tex, drawPos, null, mainColor, Projectile.rotation, origin, new Vector2(0.35f, 0.08f), SpriteEffects.None, 0f);

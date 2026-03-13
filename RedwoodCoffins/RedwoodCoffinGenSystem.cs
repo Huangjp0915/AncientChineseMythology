@@ -1,4 +1,4 @@
-using InnoVault.TileProcessors;
+ï»¿using InnoVault.TileProcessors;
 using System;
 using Terraria;
 using Terraria.ID;
@@ -7,13 +7,13 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.RedwoodCoffins
 {
     /// <summary>
-    /// ºìÄ¾¹×²ÄÉú³ÉÏµÍ³ - ÔÚÔÂÇòÁìÖ÷ºóÔÚµØÏÂÉú³É¹×²Ä
+    /// çº¢æœ¨æ£ºæç”Ÿæˆç³»ç»Ÿ - åœ¨æœˆçƒé¢†ä¸»ååœ¨åœ°ä¸‹ç”Ÿæˆæ£ºæ
     /// </summary>
     public class RedwoodCoffinGenSystem : ModSystem
     {
-        private const int CHECK_INTERVAL = 60 * 10; // Ã¿10Ãë¼ì²éÒ»´Î
+        private const int CHECK_INTERVAL = 60 * 10; // æ¯10ç§’æ£€æŸ¥ä¸€æ¬¡
         private int checkTimer = 0;
-        private const int MAX_COFFINS_PER_WORLD = 5; // Ã¿¸öÊÀ½ç×î¶àÉú³É5¸ö¹×²Ä
+        private const int MAX_COFFINS_PER_WORLD = 5; // æ¯ä¸ªä¸–ç•Œæœ€å¤šç”Ÿæˆ5ä¸ªæ£ºæ
         private int coffinsGenerated = 0;
 
         public override void SaveWorldData(Terraria.ModLoader.IO.TagCompound tag) {
@@ -29,19 +29,19 @@ namespace AncientChineseMythology.RedwoodCoffins
         }
 
         public override void PostUpdateWorld() {
-            // Ö»ÔÚ·şÎñÆ÷»òµ¥»ú¶ËÖ´ĞĞ
+            // åªåœ¨æœåŠ¡å™¨æˆ–å•æœºç«¯æ‰§è¡Œ
             if (Main.netMode == NetmodeID.MultiplayerClient)
                 return;
 
-            // ¼ì²éÊÇ·ñ»÷°ÜÁËÔÂÇòÁìÖ÷
+            // æ£€æŸ¥æ˜¯å¦å‡»è´¥äº†æœˆçƒé¢†ä¸»
             if (!NPC.downedMoonlord)
                 return;
 
-            // ¼ì²éÊÇ·ñÒÑ¾­Éú³ÉÁË×ã¹»µÄ¹×²Ä
+            // æ£€æŸ¥æ˜¯å¦å·²ç»ç”Ÿæˆäº†è¶³å¤Ÿçš„æ£ºæ
             if (coffinsGenerated >= MAX_COFFINS_PER_WORLD)
                 return;
 
-            // Ôö¼Ó¼ÆÊ±Æ÷
+            // å¢åŠ è®¡æ—¶å™¨
             checkTimer++;
             if (checkTimer < CHECK_INTERVAL)
                 return;
@@ -54,16 +54,16 @@ namespace AncientChineseMythology.RedwoodCoffins
                 }
             }
 
-            // ³¢ÊÔÔÚÓĞÍæ¼ÒµÄµØÏÂÇøÓòÉú³É¹×²Ä
+            // å°è¯•åœ¨æœ‰ç©å®¶çš„åœ°ä¸‹åŒºåŸŸç”Ÿæˆæ£ºæ
             TryGenerateCoffin();
         }
 
         private void TryGenerateCoffin() {
-            // Ñ°ÕÒÔÚµØÏÂµÄÍæ¼Ò
+            // å¯»æ‰¾åœ¨åœ°ä¸‹çš„ç©å®¶
             Player targetPlayer = null;
             foreach (Player player in Main.player) {
                 if (player.active && !player.dead && player.ZoneUnderworldHeight == false) {
-                    // Íæ¼ÒÔÚµØÏÂ»ò¶´Ñ¨²ã
+                    // ç©å®¶åœ¨åœ°ä¸‹æˆ–æ´ç©´å±‚
                     if (player.position.Y > Main.worldSurface * 16) {
                         targetPlayer = player;
                         break;
@@ -74,12 +74,12 @@ namespace AncientChineseMythology.RedwoodCoffins
             if (targetPlayer == null)
                 return;
 
-            // ÔÚÍæ¼ÒÖÜÎ§Ñ°ÕÒºÏÊÊµÄÉú³ÉÎ»ÖÃ
+            // åœ¨ç©å®¶å‘¨å›´å¯»æ‰¾åˆé€‚çš„ç”Ÿæˆä½ç½®
             Point playerTilePos = targetPlayer.Center.ToTileCoordinates();
 
-            // ³¢ÊÔ¶à´ÎÑ°ÕÒºÏÊÊÎ»ÖÃ
+            // å°è¯•å¤šæ¬¡å¯»æ‰¾åˆé€‚ä½ç½®
             for (int attempt = 0; attempt < 100; attempt++) {
-                // ÔÚÍæ¼ÒÖÜÎ§Ëæ»úÒ»¸öÎ»ÖÃ£¨¾àÀë30-80¸ñ£©
+                // åœ¨ç©å®¶å‘¨å›´éšæœºä¸€ä¸ªä½ç½®ï¼ˆè·ç¦»30-80æ ¼ï¼‰
                 int offsetX = Main.rand.Next(-80, 80);
                 int offsetY = Main.rand.Next(-40, 40);
 
@@ -89,22 +89,22 @@ namespace AncientChineseMythology.RedwoodCoffins
                 int spawnX = playerTilePos.X + offsetX;
                 int spawnY = playerTilePos.Y + offsetY;
 
-                // ¼ì²éÉú³ÉÎ»ÖÃÊÇ·ñºÏÊÊ
+                // æ£€æŸ¥ç”Ÿæˆä½ç½®æ˜¯å¦åˆé€‚
                 if (IsValidSpawnLocation(spawnX, spawnY)) {
-                    // ×¼±¸Éú³ÉÇøÓò
+                    // å‡†å¤‡ç”ŸæˆåŒºåŸŸ
                     PrepareSpawnArea(spawnX, spawnY);
 
-                    // ·ÅÖÃ¹×²Ä
+                    // æ”¾ç½®æ£ºæ
                     if (PlaceCoffin(spawnX, spawnY)) {
                         coffinsGenerated++;
 
-                        // Í¨ÖªÍæ¼Ò
+                        // é€šçŸ¥ç©å®¶
                         if (Main.netMode == NetmodeID.SinglePlayer) {
-                            Main.NewText("Äã¸Ğ¾õµ½¸½½üµÄµØÏÂÓĞ¹É¹îÒìµÄÆøÏ¢...", 150, 150, 200);
+                            Main.NewText("ä½ æ„Ÿè§‰åˆ°é™„è¿‘çš„åœ°ä¸‹æœ‰è‚¡è¯¡å¼‚çš„æ°”æ¯...", 150, 150, 200);
                         }
                         else if (Main.netMode == NetmodeID.Server) {
                             Terraria.Chat.ChatHelper.BroadcastChatMessage(
-                                Terraria.Localization.NetworkText.FromLiteral("µØÏÂÉî´¦´«À´ÁËÕóÕóÒõ·ç..."),
+                                Terraria.Localization.NetworkText.FromLiteral("åœ°ä¸‹æ·±å¤„ä¼ æ¥äº†é˜µé˜µé˜´é£..."),
                                 new Color(150, 150, 200)
                             );
                         }
@@ -116,19 +116,19 @@ namespace AncientChineseMythology.RedwoodCoffins
         }
 
         private bool IsValidSpawnLocation(int x, int y) {
-            // ¼ì²éÊÇ·ñÔÚÊÀ½ç±ß½çÄÚ
+            // æ£€æŸ¥æ˜¯å¦åœ¨ä¸–ç•Œè¾¹ç•Œå†…
             if (x < 100 || x > Main.maxTilesX - 100 || y < 100 || y > Main.maxTilesY - 200)
                 return false;
 
-            // ¼ì²éÊÇ·ñÔÚµØÏÂ»ò¶´Ñ¨²ã
+            // æ£€æŸ¥æ˜¯å¦åœ¨åœ°ä¸‹æˆ–æ´ç©´å±‚
             if (y < Main.worldSurface)
                 return false;
 
-            // ¼ì²éÊÇ·ñÔÚµØÓü²ã
+            // æ£€æŸ¥æ˜¯å¦åœ¨åœ°ç‹±å±‚
             if (y > Main.maxTilesY - 200)
                 return false;
 
-            // ¼ì²éÖÜÎ§ÊÇ·ñÓĞ×ã¹»µÄ¿Õ¼ä£¨9¿í x 12¸ß£¬¼ÓÉÏ¶îÍâ¿Õ¼ä£©
+            // æ£€æŸ¥å‘¨å›´æ˜¯å¦æœ‰è¶³å¤Ÿçš„ç©ºé—´ï¼ˆ9å®½ x 12é«˜ï¼ŒåŠ ä¸Šé¢å¤–ç©ºé—´ï¼‰
             for (int checkX = x - 1; checkX < x + 10; checkX++) {
                 for (int checkY = y - 12; checkY < y + 2; checkY++) {
                     if (!WorldGen.InWorld(checkX, checkY))
@@ -136,14 +136,14 @@ namespace AncientChineseMythology.RedwoodCoffins
 
                     Tile tile = Main.tile[checkX, checkY];
 
-                    // µ×²¿ĞèÒªÓĞÊµĞÄ·½¿é
+                    // åº•éƒ¨éœ€è¦æœ‰å®å¿ƒæ–¹å—
                     if (checkY == y) {
                         if (!tile.HasTile || !Main.tileSolid[tile.TileType])
                             return false;
                     }
-                    // ÉÏ·½ĞèÒªÓĞ¿Õ¼ä»ò¿ÉÒÔÇåÀí
+                    // ä¸Šæ–¹éœ€è¦æœ‰ç©ºé—´æˆ–å¯ä»¥æ¸…ç†
                     else if (checkY < y) {
-                        // ÔÊĞí´æÔÚ·½¿é£¬ÎÒÃÇ»áÇåÀíËüÃÇ
+                        // å…è®¸å­˜åœ¨æ–¹å—ï¼Œæˆ‘ä»¬ä¼šæ¸…ç†å®ƒä»¬
                     }
                 }
             }
@@ -152,37 +152,37 @@ namespace AncientChineseMythology.RedwoodCoffins
         }
 
         private void PrepareSpawnArea(int x, int y) {
-            // ÇåÀí¹×²ÄÉÏ·½µÄ¿Õ¼ä£¨12¸ñ¸ß£©
+            // æ¸…ç†æ£ºæä¸Šæ–¹çš„ç©ºé—´ï¼ˆ12æ ¼é«˜ï¼‰
             for (int clearX = x - 1; clearX < x + 10; clearX++) {
                 for (int clearY = y - 13; clearY < y; clearY++) {
                     if (WorldGen.InWorld(clearX, clearY)) {
                         WorldGen.KillTile(clearX, clearY, noItem: true);
                         WorldGen.KillWall(clearX, clearY);
 
-                        // Çå³ıÒºÌå
+                        // æ¸…é™¤æ¶²ä½“
                         Tile tile = Main.tile[clearX, clearY];
                         tile.LiquidAmount = 0;
                     }
                 }
             }
 
-            // È·±£µ×²¿ÓĞ×ã¹»µÄÊµĞÄ·½¿é£¨9¸ñ¿í£©
+            // ç¡®ä¿åº•éƒ¨æœ‰è¶³å¤Ÿçš„å®å¿ƒæ–¹å—ï¼ˆ9æ ¼å®½ï¼‰
             for (int baseX = x; baseX < x + 9; baseX++) {
                 if (WorldGen.InWorld(baseX, y)) {
                     Tile baseTile = Main.tile[baseX, y];
 
-                    // Èç¹ûµ×²¿Ã»ÓĞ·½¿é£¬·ÅÖÃÊ¯¿é
+                    // å¦‚æœåº•éƒ¨æ²¡æœ‰æ–¹å—ï¼Œæ”¾ç½®çŸ³å—
                     if (!baseTile.HasTile || !Main.tileSolid[baseTile.TileType]) {
                         WorldGen.PlaceTile(baseX, y, TileID.Stone, forced: true);
                     }
 
-                    // È·±£µ×²¿·½¿éÊÇÆ½ÕûµÄ£¨Ã»ÓĞĞ±ÆÂ£©
+                    // ç¡®ä¿åº•éƒ¨æ–¹å—æ˜¯å¹³æ•´çš„ï¼ˆæ²¡æœ‰æ–œå¡ï¼‰
                     baseTile.Slope = SlopeType.Solid;
                     baseTile.IsHalfBlock = false;
                 }
             }
 
-            // Í¬²½µØĞÎ¸ü¸Ä
+            // åŒæ­¥åœ°å½¢æ›´æ”¹
             if (Main.netMode == NetmodeID.Server) {
                 for (int syncX = x - 2; syncX < x + 11; syncX++) {
                     for (int syncY = y - 14; syncY < y + 2; syncY++) {
@@ -195,23 +195,23 @@ namespace AncientChineseMythology.RedwoodCoffins
         }
 
         private bool PlaceCoffin(int x, int y) {
-            // ·ÅÖÃ¹×²Ä - ×¢ÒâOriginÊÇ(5, 11)£¬ËùÒÔĞèÒªµ÷Õû·ÅÖÃÎ»ÖÃ
+            // æ”¾ç½®æ£ºæ - æ³¨æ„Originæ˜¯(5, 11)ï¼Œæ‰€ä»¥éœ€è¦è°ƒæ•´æ”¾ç½®ä½ç½®
             int placeX = x + 5;
             int placeY = y - 1;
 
             bool success = WorldGen.PlaceObject(placeX, placeY, ModContent.TileType<RedwoodCoffinTile>(), style: 0);
 
             if (success) {
-                //»ñÈ¡Ïä×Ó×óÉÏ½ÇÎ»ÖÃ²¢´´½¨TPÊµÌå
+                //è·å–ç®±å­å·¦ä¸Šè§’ä½ç½®å¹¶åˆ›å»ºTPå®ä½“
                 if (TPUtils.TryGetTopLeft(placeX, placeY, out var point)) {
                     var tp = TileProcessorLoader.AddInWorld(ModContent.TileType<RedwoodCoffinTile>(), point, null);
                 }
-                // Í¬²½¹×²Ä·ÅÖÃ
+                // åŒæ­¥æ£ºææ”¾ç½®
                 if (Main.netMode == NetmodeID.Server) {
                     NetMessage.SendObjectPlacement(-1, placeX, placeY, ModContent.TileType<RedwoodCoffinTile>(), 0, 0, -1, -1);
                 }
 
-                // Ìí¼ÓÒ»Ğ©×°ÊÎĞ§¹û£¨»ğ°Ñ£©
+                // æ·»åŠ ä¸€äº›è£…é¥°æ•ˆæœï¼ˆç«æŠŠï¼‰
                 AddDecoration(x, y);
             }
 
@@ -219,7 +219,7 @@ namespace AncientChineseMythology.RedwoodCoffins
         }
 
         private void AddDecoration(int x, int y) {
-            // ÔÚ¹×²ÄÁ½²àËæ»ú·ÅÖÃÒ»Ğ©»ğ°Ñ
+            // åœ¨æ£ºæä¸¤ä¾§éšæœºæ”¾ç½®ä¸€äº›ç«æŠŠ
             if (Main.rand.NextBool(2)) {
                 WorldGen.PlaceTile(x - 2, y - 1, TileID.Torches, mute: true, style: 0);
             }
@@ -228,7 +228,7 @@ namespace AncientChineseMythology.RedwoodCoffins
                 WorldGen.PlaceTile(x + 10, y - 1, TileID.Torches, mute: true, style: 0);
             }
 
-            // Í¬²½×°ÊÎ
+            // åŒæ­¥è£…é¥°
             if (Main.netMode == NetmodeID.Server) {
                 NetMessage.SendTileSquare(-1, x - 3, y - 2, 15);
             }

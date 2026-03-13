@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.GameContent;
@@ -8,11 +8,11 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 {
     /// <summary>
-    /// °½Ë³×¦±Û¶ÎNPC - ÓëBody½»ÌæÅÅÁĞĞÎ³ÉÈä³æ½á¹¹
-    /// ÎÆÀíAoshunArms.png: 54¡Á54, µ¥Ö¡
-    /// ²Î¿¼AncientWyrmArms: ·½ÏòÏà¹Øorigin»æÖÆ£¬¸úËæÇ°Ò»¶Î
-    /// ai[1]: Ç°Ò»¶ÎNPCË÷Òı
-    /// ai[3]: Í·²¿NPCË÷Òı£¨realLifeÖ¸Ïò£©
+    /// æ•–é¡ºçˆªè‡‚æ®µNPC - ä¸Bodyäº¤æ›¿æ’åˆ—å½¢æˆè •è™«ç»“æ„
+    /// çº¹ç†AoshunArms.png: 54Ã—54, å•å¸§
+    /// å‚è€ƒAncientWyrmArms: æ–¹å‘ç›¸å…³originç»˜åˆ¶ï¼Œè·Ÿéšå‰ä¸€æ®µ
+    /// ai[1]: å‰ä¸€æ®µNPCç´¢å¼•
+    /// ai[3]: å¤´éƒ¨NPCç´¢å¼•ï¼ˆrealLifeæŒ‡å‘ï¼‰
     /// </summary>
     public class AoshunArms : ModNPC
     {

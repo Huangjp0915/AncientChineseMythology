@@ -1,4 +1,4 @@
-using AncientChineseMythology.Underworlds.Tiles;
+ï»¿using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -9,8 +9,8 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
 {
     /// <summary>
-    /// »ÆÈªÒı»ê¹­ - Òı¶ÉÁé»êÇ°Íù»ÆÈªµÄ¹­£¬Ô¶³Ì¹­ÀàÎäÆ÷
-    /// ÈâºóÖĞÆÚ£¬·¢ÉäµÄ¼ıÊ¸´øÓĞÒı»ê×·×ÙĞ§¹û£¬ÃüÖĞºóÁé»êÉıÌÚ
+    /// é»„æ³‰å¼•é­‚å¼“ - å¼•æ¸¡çµé­‚å‰å¾€é»„æ³‰çš„å¼“ï¼Œè¿œç¨‹å¼“ç±»æ­¦å™¨
+    /// è‚‰åä¸­æœŸï¼Œå‘å°„çš„ç®­çŸ¢å¸¦æœ‰å¼•é­‚è¿½è¸ªæ•ˆæœï¼Œå‘½ä¸­åçµé­‚å‡è…¾
     /// </summary>
     public class UnderworldSoulguide : ModItem
     {
@@ -39,11 +39,11 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
         }
 
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
-            //½«ÆÕÍ¨¼ı×ª»»ÎªÒı»ê¼ıµ¯Ä»
+            //å°†æ™®é€šç®­è½¬æ¢ä¸ºå¼•é­‚ç®­å¼¹å¹•
             int soulArrow = ModContent.ProjectileType<SoulguideArrow>();
             Projectile.NewProjectile(source, position, velocity, soulArrow, damage, knockback, player.whoAmI);
 
-            //ÓĞ¼¸ÂÊÉä³ö¶îÍâÒ»Ö§Òı»ê¼ı
+            //æœ‰å‡ ç‡å°„å‡ºé¢å¤–ä¸€æ”¯å¼•é­‚ç®­
             if (Main.rand.NextBool(3)) {
                 Vector2 perturbedSpeed = velocity.RotatedByRandom(MathHelper.ToRadians(10));
                 Projectile.NewProjectile(source, position, perturbedSpeed * 0.9f, soulArrow, (int)(damage * 0.6f), knockback, player.whoAmI);
@@ -62,8 +62,8 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
     }
 
     /// <summary>
-    /// Òı»ê¼ıµ¯Ä» - ´øÓĞÓÄ»êÍÏÎ²µÄ×·×Ù¼ıÊ¸£¬ÃüÖĞºóÁé»êÉıÌÚ
-    /// Ê¹ÓÃACMAsset.SoftGlowºÍACMAsset.BlankStarµş¼Ó»æÖÆ
+    /// å¼•é­‚ç®­å¼¹å¹• - å¸¦æœ‰å¹½é­‚æ‹–å°¾çš„è¿½è¸ªç®­çŸ¢ï¼Œå‘½ä¸­åçµé­‚å‡è…¾
+    /// ä½¿ç”¨ACMAsset.SoftGlowå’ŒACMAsset.BlankStarå åŠ ç»˜åˆ¶
     /// </summary>
     public class SoulguideArrow : ModProjectile
     {
@@ -95,7 +95,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
             Projectile.rotation = Projectile.velocity.ToRotation() + MathHelper.PiOver2;
             HomingTimer++;
 
-            //·ÉĞĞ0.3Ãëºó¿ªÊ¼Î¢Èõ×·×Ù
+            //é£è¡Œ0.3ç§’åå¼€å§‹å¾®å¼±è¿½è¸ª
             if (HomingTimer > 18f) {
                 NPC target = FindClosestNPC(400f);
                 if (target != null) {
@@ -104,10 +104,10 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 }
             }
 
-            //ÓÄÀ¶É«¹âÕÕ
+            //å¹½è“è‰²å…‰ç…§
             Lighting.AddLight(Projectile.Center, 0.3f, 0.5f, 0.7f);
 
-            //ÓÄ»êÍÏÎ²Á£×Ó
+            //å¹½é­‚æ‹–å°¾ç²’å­
             if (Main.rand.NextBool(2)) {
                 Dust soul = Dust.NewDustDirect(
                     Projectile.Center - Projectile.velocity * 0.5f,
@@ -118,7 +118,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 soul.noGravity = true;
             }
 
-            //µ­À¶¹âµã
+            //æ·¡è“å…‰ç‚¹
             if (Main.rand.NextBool(3)) {
                 Dust glow = Dust.NewDustDirect(
                     Projectile.Center + Main.rand.NextVector2Circular(6, 6),
@@ -145,7 +145,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
         }
 
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
-            //Òı»êĞ§¹û£ºÁé»êÉıÌÚÁ£×Ó
+            //å¼•é­‚æ•ˆæœï¼šçµé­‚å‡è…¾ç²’å­
             for (int i = 0; i < 12; i++) {
                 Vector2 vel = new Vector2(Main.rand.NextFloat(-2f, 2f), Main.rand.NextFloat(-5f, -2f));
                 Dust soul = Dust.NewDustPerfect(
@@ -155,7 +155,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 soul.noGravity = true;
             }
 
-            //À¶É«ĞÇ¹â±¬·¢
+            //è“è‰²æ˜Ÿå…‰çˆ†å‘
             for (int i = 0; i < 6; i++) {
                 Vector2 vel = Main.rand.NextVector2Circular(4f, 4f);
                 Dust star = Dust.NewDustPerfect(
@@ -169,15 +169,15 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            //Ê¹ÓÃSoftGlow»æÖÆÒı»ê¼ı¹âĞ§
+            //ä½¿ç”¨SoftGlowç»˜åˆ¶å¼•é­‚ç®­å…‰æ•ˆ
             Texture2D softGlow = ACMAsset.SoftGlow;
             Texture2D blankStar = ACMAsset.BlankStar;
 
-            //¼ıÍ·¹âÇò
+            //ç®­å¤´å…‰çƒ
             if (softGlow != null) {
                 Vector2 glowOrigin = softGlow.Size() / 2f;
 
-                //ÍÏÎ²¹âÇò
+                //æ‹–å°¾å…‰çƒ
                 for (int i = 0; i < Projectile.oldPos.Length; i++) {
                     if (Projectile.oldPos[i] == Vector2.Zero) continue;
                     float progress = 1f - (float)i / Projectile.oldPos.Length;
@@ -187,13 +187,13 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                     Main.EntitySpriteDraw(softGlow, drawPos, null, trailColor, 0f, glowOrigin, 0.5f * progress, SpriteEffects.None, 0);
                 }
 
-                //Ö÷Ìå¹âÇò
+                //ä¸»ä½“å…‰çƒ
                 Color mainGlow = new Color(100, 180, 255) * 0.6f;
                 mainGlow.A = 0;
                 Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, mainGlow, 0f, glowOrigin, 0.7f, SpriteEffects.None, 0);
             }
 
-            //¼ı¼âĞÇ¹âÉÁË¸
+            //ç®­å°–æ˜Ÿå…‰é—ªçƒ
             if (blankStar != null) {
                 Vector2 starOrigin = blankStar.Size() / 2f;
                 float pulse = 0.3f + MathF.Sin(HomingTimer * 0.2f) * 0.1f;
@@ -206,7 +206,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
         }
 
         public override void OnKill(int timeLeft) {
-            //ÏûÉ¢Ê±Áé»êÉıÌÚ
+            //æ¶ˆæ•£æ—¶çµé­‚å‡è…¾
             for (int i = 0; i < 8; i++) {
                 Dust death = Dust.NewDustDirect(
                     Projectile.position, Projectile.width, Projectile.height,

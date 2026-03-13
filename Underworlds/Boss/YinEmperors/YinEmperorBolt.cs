@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.GameContent;
@@ -8,8 +8,8 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 {
     /// <summary>
-    /// ÒõÌì×Ó - µÛÚ¤×·×Ùµ¯
-    /// ½ğ×ÏÉ«×·×ÙÄÜÁ¿µ¯£¬ÓÉÚ¤ÑÛ»òBoss±¾Ìå·¢Éä
+    /// é˜´å¤©å­ - å¸å†¥è¿½è¸ªå¼¹
+    /// é‡‘ç´«è‰²è¿½è¸ªèƒ½é‡å¼¹ï¼Œç”±å†¥çœ¼æˆ–Bossæœ¬ä½“å‘å°„
     /// </summary>
     public class YinEmperorBolt : ModProjectile
     {
@@ -40,21 +40,21 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             pulsePhase += 0.12f;
             Projectile.rotation = Projectile.velocity.ToRotation() + MathHelper.PiOver2;
 
-            // Ö¡¶¯»­
+            // å¸§åŠ¨ç”»
             Projectile.frameCounter++;
             if (Projectile.frameCounter >= 5) {
                 Projectile.frameCounter = 0;
                 Projectile.frame = (Projectile.frame + 1) % 4;
             }
 
-            // ÇáÎ¢×·×Ù
+            // è½»å¾®è¿½è¸ª
             Player target = FindTarget();
             if (target != null && Projectile.timeLeft > 120) {
                 Vector2 toTarget = (target.Center - Projectile.Center).SafeNormalize(Vector2.Zero);
                 Projectile.velocity = Vector2.Lerp(Projectile.velocity, toTarget * Projectile.velocity.Length(), homingStrength);
             }
 
-            // Á£×Ó
+            // ç²’å­
             if (Main.netMode != NetmodeID.Server && Main.rand.NextBool(3)) {
                 int dustType = Main.rand.NextBool() ? DustID.GoldFlame : DustID.Shadowflame;
                 var d = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(6, 6), dustType);
@@ -103,7 +103,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             Vector2 origin = new Vector2(tex.Width / 2f, frameHeight / 2f);
             float pulse = 1f + MathF.Sin(pulsePhase) * 0.1f;
 
-            // ÍÏÎ²
+            // æ‹–å°¾
             for (int i = 0; i < Projectile.oldPos.Length; i++) {
                 if (Projectile.oldPos[i] == Vector2.Zero) continue;
                 Vector2 pos = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
@@ -114,14 +114,14 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                     Projectile.scale * (0.4f + progress * 0.6f), SpriteEffects.None, 0);
             }
 
-            // Íâ·¢¹â
+            // å¤–å‘å…‰
             Color glowColor = YinEmperorHelper.ImperialGold;
             glowColor.A = 0;
             sb.Draw(tex, Projectile.Center - Main.screenPosition, sourceRect,
                 glowColor * 0.2f * ((255 - Projectile.alpha) / 255f),
                 Projectile.rotation, origin, Projectile.scale * 1.3f * pulse, SpriteEffects.None, 0);
 
-            // Ö÷Ìå
+            // ä¸»ä½“
             Color mainColor = Color.Lerp(lightColor, YinEmperorHelper.ImperialGold, 0.4f);
             sb.Draw(tex, Projectile.Center - Main.screenPosition, sourceRect,
                 mainColor * ((255 - Projectile.alpha) / 255f),

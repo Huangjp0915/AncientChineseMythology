@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.GameContent;
@@ -8,7 +8,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
 {
     internal partial class AoGuang
     {
-        #region »æÖÆ
+        #region ç»˜åˆ¶
 
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
             Texture2D tex = TextureAssets.Npc[Type].Value;
@@ -16,35 +16,35 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
 
             float waterPulse = 1f + MathF.Sin(globalTime * 3f) * 0.08f;
 
-            // Ë®¹âÔÎ
+            // æ°´å…‰æ™•
             DrawWaterAura(spriteBatch, screenPos, tex, origin, waterPulse);
 
-            // ÍÏÎ²
+            // æ‹–å°¾
             DrawWaterTrail(spriteBatch, screenPos, tex, origin);
 
-            // Ö÷Ìå
+            // ä¸»ä½“
             Color waterTint = Color.Lerp(drawColor, AoGuangHelper.DragonBlue, 0.4f);
             waterTint = Color.Lerp(waterTint, Color.White, 0.2f);
 
             SpriteEffects effects = NPC.spriteDirection == -1 ? SpriteEffects.FlipVertically : SpriteEffects.None;
 
-            // Íâ²ã·¢¹â
+            // å¤–å±‚å‘å…‰
             Color outerGlow = AoGuangHelper.WaterGlow * 0.4f * waterPulse;
             outerGlow.A = 0;
             spriteBatch.Draw(tex, NPC.Center - screenPos, null, outerGlow,
                 NPC.rotation, origin, NPC.scale * 1.15f * waterPulse, effects, 0f);
 
-            // Ö÷Ìå
+            // ä¸»ä½“
             spriteBatch.Draw(tex, NPC.Center - screenPos, null, waterTint * NPC.Opacity,
                 NPC.rotation, origin, NPC.scale * waterPulse, effects, 0f);
 
-            // ÄÚ²ã¸ß¹â
+            // å†…å±‚é«˜å…‰
             Color innerGlow = AoGuangHelper.PureWhite * 0.3f * waterPulse;
             innerGlow.A = 0;
             spriteBatch.Draw(tex, NPC.Center - screenPos, null, innerGlow,
                 NPC.rotation, origin, NPC.scale * 0.8f, effects, 0f);
 
-            // ÁúÑÛ¹âĞ§
+            // é¾™çœ¼å…‰æ•ˆ
             DrawDragonEyes(spriteBatch, screenPos);
 
             return false;
@@ -55,7 +55,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
 
             SpriteEffects effects = NPC.spriteDirection == -1 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
 
-            // ¶à²ãË®²¨ÎÆ
+            // å¤šå±‚æ°´æ³¢çº¹
             for (int i = 3; i >= 0; i--) {
                 float layerAlpha = waterAuraAlpha * (0.15f - i * 0.03f);
                 float layerScale = waveScale * (1.3f + i * 0.15f);
@@ -92,13 +92,13 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
         private void DrawDragonEyes(SpriteBatch spriteBatch, Vector2 screenPos) {
             if (ACMAsset.LightShot == null) return;
 
-            // ÁúÑÛÎ»ÖÃÆ«ÒÆ
+            // é¾™çœ¼ä½ç½®åç§»
             Vector2 eyeOffset = NPC.rotation.ToRotationVector2() * 35f;
             Vector2 eyePos = NPC.Center + eyeOffset - screenPos;
 
             float eyePulse = 0.7f + MathF.Sin(globalTime * 5f) * 0.3f;
 
-            // ¸ù¾İ½×¶Î¸Ä±äÑÛ¾¦ÑÕÉ«
+            // æ ¹æ®é˜¶æ®µæ”¹å˜çœ¼ç›é¢œè‰²
             Color eyeColor;
             if (IsPhase3) {
                 eyeColor = Color.Lerp(AoGuangHelper.DragonBlue, Color.Red, 0.3f);
@@ -119,13 +119,13 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
 
         #endregion
 
-        #region ËÀÍöĞ§¹û
+        #region æ­»äº¡æ•ˆæœ
 
         public override void OnKill() {
-            // ±ê¼Ç»÷°Ü
+            // æ ‡è®°å‡»è´¥
             Systems.DownedBossSystem.downedAoGuang = true;
 
-            // ËÀÍöÁ£×Ó±¬·¢
+            // æ­»äº¡ç²’å­çˆ†å‘
             if (!VaultUtils.isServer) {
                 for (int i = 0; i < 120; i++) {
                     float angle = MathHelper.TwoPi * i / 120;
@@ -139,7 +139,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                     Main.dust[dust].noGravity = true;
                 }
 
-                // ¾ŞĞÍË®»¨
+                // å·¨å‹æ°´èŠ±
                 for (int wave = 0; wave < 3; wave++) {
                     for (int i = 0; i < 40; i++) {
                         float angle = MathHelper.TwoPi * i / 40 + wave * 0.3f;

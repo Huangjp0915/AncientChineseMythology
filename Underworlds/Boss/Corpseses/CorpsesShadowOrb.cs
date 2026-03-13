@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework.Graphics;
+ï»¿using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -8,7 +8,7 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.Corpseses
 {
     /// <summary>
-    /// °µÓ°ÄÜÁ¿Çò - ×·×ÙĞÍµ¯Ä»
+    /// æš—å½±èƒ½é‡çƒ - è¿½è¸ªå‹å¼¹å¹•
     /// </summary>
     public class CorpsesShadowOrb : ModProjectile
     {
@@ -34,7 +34,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
         }
 
         public override void AI() {
-            // ×·×ÙÍæ¼Ò
+            // è¿½è¸ªç©å®¶
             Projectile.ai[0]++;
 
             if (Projectile.ai[0] > 20f) {
@@ -51,11 +51,11 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
                 }
             }
 
-            // Ğı×ª¼ÓËÙ
+            // æ—‹è½¬åŠ é€Ÿ
             rotationSpeed += 0.02f;
             Projectile.rotation += rotationSpeed;
 
-            // ¶¯»­
+            // åŠ¨ç”»
             Projectile.frameCounter++;
             if (Projectile.frameCounter >= 5) {
                 Projectile.frameCounter = 0;
@@ -64,7 +64,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
                     Projectile.frame = 0;
             }
 
-            // »·ÈÆÁ£×Ó
+            // ç¯ç»•ç²’å­
             if (Main.rand.NextBool(2)) {
                 float angle = Main.rand.NextFloat(MathHelper.TwoPi);
                 Vector2 offset = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 20f;
@@ -73,10 +73,10 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
                 Main.dust[dust].velocity = -offset.SafeNormalize(Vector2.Zero) * 2f;
             }
 
-            // ·¢¹â
+            // å‘å…‰
             Lighting.AddLight(Projectile.Center, 0.6f, 0.2f, 0.9f);
 
-            // Âö³åĞ§¹û
+            // è„‰å†²æ•ˆæœ
             float pulse = (float)Math.Sin(Projectile.ai[0] * 0.2f) * 0.1f + 1f;
             Projectile.scale = pulse;
         }
@@ -84,7 +84,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
         public override void OnKill(int timeLeft) {
             SoundEngine.PlaySound(SoundID.NPCDeath6 with { Pitch = -0.5f }, Projectile.position);
 
-            // ±¬Õ¨Ğ§¹û
+            // çˆ†ç‚¸æ•ˆæœ
             for (int i = 0; i < 20; i++) {
                 int dust = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height,
                     DustID.Shadowflame, 0, 0, 100, default, 2.5f);
@@ -92,7 +92,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
                 Main.dust[dust].noGravity = true;
             }
 
-            // ²úÉúĞ¡ĞÍ³å»÷²¨
+            // äº§ç”Ÿå°å‹å†²å‡»æ³¢
             if (Main.myPlayer == Projectile.owner) {
                 for (int i = 0; i < 6; i++) {
                     float angle = MathHelper.TwoPi * i / 6f;
@@ -104,11 +104,11 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            // Ê¹ÓÃ¶à²ã»æÖÆ´´½¨ÄÜÁ¿ÇòĞ§¹û
+            // ä½¿ç”¨å¤šå±‚ç»˜åˆ¶åˆ›å»ºèƒ½é‡çƒæ•ˆæœ
             Texture2D glowTexture = ModContent.Request<Texture2D>("Terraria/Images/Misc/Perlin").Value;
             Vector2 origin = glowTexture.Size() / 2f;
 
-            // Íâ²ã·¢¹â
+            // å¤–å±‚å‘å…‰
             for (int i = 0; i < 4; i++) {
                 float angle = Projectile.ai[0] * 0.1f + i * MathHelper.PiOver2;
                 Vector2 offset = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 6f;
@@ -118,7 +118,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
                     glowColor, Projectile.rotation, origin, Projectile.scale * 0.3f, SpriteEffects.None);
             }
 
-            // »æÖÆÍÏÎ²
+            // ç»˜åˆ¶æ‹–å°¾
             for (int i = 0; i < Projectile.oldPos.Length; i++) {
                 float progress = 1f - (i / (float)Projectile.oldPos.Length);
                 Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
@@ -128,7 +128,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
                     Projectile.oldRot[i], origin, Projectile.scale * 0.25f * progress, SpriteEffects.None);
             }
 
-            // ºËĞÄ
+            // æ ¸å¿ƒ
             Color coreColor = new Color(200, 100, 255);
             Main.EntitySpriteDraw(glowTexture, Projectile.Center - Main.screenPosition, null,
                 coreColor, Projectile.rotation, origin, Projectile.scale * 0.25f, SpriteEffects.None);
