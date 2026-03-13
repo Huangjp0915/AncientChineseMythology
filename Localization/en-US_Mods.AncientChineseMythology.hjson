@@ -656,6 +656,16 @@
 		Tooltip: ""
 	}
 
+	VigorSummon: {
+		DisplayName: Sin-Severing Token
+		Tooltip: Summons Vigor, the Sin-Severing Blade
+	}
+
+	ArgusSummon: {
+		DisplayName: Soul-Piercing Bowstring
+		Tooltip: Summons Argus, the Soul-Piercing Arc
+	}
+
 	UmbralStoneItem: {
 		DisplayName: Umbral Stone Item
 		Tooltip: ""
@@ -1601,6 +1611,8 @@ NPCs: {
 	AoshunBody.DisplayName: Aoshun Body
 	AoshunArms.DisplayName: Aoshun Arms
 	AoshunTail.DisplayName: Aoshun Tail
+	Vigor.DisplayName: Vigor, the Sin-Severing Blade
+	Argus.DisplayName: Argus, the Soul-Piercing Arc
 }
 
 Projectiles: {
@@ -2018,6 +2030,11 @@ Projectiles: {
 	GrimoireGazingEye.DisplayName: Grimoire Gazing Eye
 	AberrantEyeballProj.DisplayName: Aberrant Eyeball
 	AberrantBloodBurst.DisplayName: Aberrant Blood Burst
+	RunicCleaveWaves.DisplayName: Runic Cleave Wave
+	RunicEnergyOrbs.DisplayName: Runic Energy Orb
+	StarSightArrows.DisplayName: Star-Sight Arrow
+	SpinningGalacticOrbs.DisplayName: Spinning Galactic Orb
+	AetherealWingblades.DisplayName: Aethereal Wingblade
 	BaihuMetalShard.DisplayName: Baihu Metal Shard
 	BaihuSonicRoar.DisplayName: Baihu Sonic Roar
 	QinglongThunderBolt.DisplayName: Qinglong Thunder Bolt

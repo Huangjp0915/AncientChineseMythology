@@ -705,6 +705,16 @@
 		Tooltip: ""
 	}
 
+	VigorSummon: {
+		DisplayName: 断罪令牌
+		Tooltip: 召唤天将·神威·断罪刃
+	}
+
+	ArgusSummon: {
+		DisplayName: 追魂弓弦
+		Tooltip: 召唤天将·天目·追魂弧
+	}
+
 	UmbralStoneItem: {
 		DisplayName: 幽冥砾岩
 		Tooltip: ""
@@ -1723,6 +1733,8 @@ NPCs: {
 	AoshunBody.DisplayName: Aoshun Body
 	AoshunArms.DisplayName: Aoshun Arms
 	AoshunTail.DisplayName: Aoshun Tail
+	Vigor.DisplayName: 神威·断罪刃
+	Argus.DisplayName: 天目·追魂弧
 }
 
 Projectiles: {
@@ -2140,6 +2152,11 @@ Projectiles: {
 	GrimoireGazingEye.DisplayName: 凝视之眼
 	AberrantEyeballProj.DisplayName: 畸变眼球
 	AberrantBloodBurst.DisplayName: 血液爆射
+	RunicCleaveWaves.DisplayName: 符文横扫光刃
+	RunicEnergyOrbs.DisplayName: 符文能量球
+	StarSightArrows.DisplayName: 星芒追踪箭
+	SpinningGalacticOrbs.DisplayName: 旋转星系球
+	AetherealWingblades.DisplayName: 羽翼光刃
 	// BaihuMetalShard.DisplayName: Baihu Metal Shard
 	// BaihuSonicRoar.DisplayName: Baihu Sonic Roar
 	// QinglongThunderBolt.DisplayName: Qinglong Thunder Bolt

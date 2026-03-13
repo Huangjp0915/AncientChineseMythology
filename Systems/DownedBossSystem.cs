@@ -15,6 +15,8 @@ namespace AncientChineseMythology.Systems
         public static bool downedBaihu = false; //跟踪白虎是否已被击败
         public static bool downedSuzaku = false; //跟踪朱雀是否已被击败
         public static bool downedXuanwu = false; //跟踪玄武是否已被击败
+        public static bool downedVigor = false; //跟踪神威·断罪刃是否已被击败
+        public static bool downedArgus = false; //跟踪天目·追魂弧是否已被击败
         public static bool downedHeavenInvasion = false; //跟踪天庭入侵事件是否已被击退
         public static bool downedUnderworldInvasion = false; //跟踪地府入侵事件是否已被击退
 
@@ -29,6 +31,8 @@ namespace AncientChineseMythology.Systems
             tag["downedBaihu"] = downedBaihu; //保存白虎状态
             tag["downedSuzaku"] = downedSuzaku; //保存朱雀状态
             tag["downedXuanwu"] = downedXuanwu; //保存玄武状态
+            tag["downedVigor"] = downedVigor; //保存神威·断罪刃状态
+            tag["downedArgus"] = downedArgus; //保存天目·追魂弧状态
             tag["downedHeavenInvasion"] = downedHeavenInvasion; //保存天庭入侵状态
             tag["downedUnderworldInvasion"] = downedUnderworldInvasion; //保存地府入侵状态
         }
@@ -44,6 +48,8 @@ namespace AncientChineseMythology.Systems
             downedBaihu = tag.GetBool("downedBaihu"); //加载白虎状态
             downedSuzaku = tag.GetBool("downedSuzaku"); //加载朱雀状态
             downedXuanwu = tag.GetBool("downedXuanwu"); //加载玄武状态
+            downedVigor = tag.GetBool("downedVigor"); //加载神威·断罪刃状态
+            downedArgus = tag.GetBool("downedArgus"); //加载天目·追魂弧状态
             downedHeavenInvasion = tag.GetBool("downedHeavenInvasion"); //加载天庭入侵状态
             downedUnderworldInvasion = tag.GetBool("downedUnderworldInvasion"); //加载地府入侵状态
         }
@@ -60,6 +66,8 @@ namespace AncientChineseMythology.Systems
             downedBaihu = false;
             downedSuzaku = false;
             downedXuanwu = false;
+            downedVigor = false;
+            downedArgus = false;
             downedHeavenInvasion = false;
             downedUnderworldInvasion = false;
         }
