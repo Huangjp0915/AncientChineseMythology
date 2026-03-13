@@ -31,8 +31,8 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
     {
         #region 常量
 
-        private const float Phase2Threshold = 0.60f;
-        private const float Phase3Threshold = 0.30f;
+        internal const float Phase2Threshold = 0.60f;
+        internal const float Phase3Threshold = 0.30f;
         private const float MinKeepDistance = 450f;  // 最小保持距离
         private const float PreferredDistance = 600f; // 偏好距离
         private const float FlashStepSpeed = 55f;    // 瞬移速度

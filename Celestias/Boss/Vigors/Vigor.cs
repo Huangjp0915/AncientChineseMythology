@@ -31,8 +31,8 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
     {
         #region 常量
 
-        private const float Phase2Threshold = 0.60f;
-        private const float Phase3Threshold = 0.30f;
+        internal const float Phase2Threshold = 0.60f;
+        internal const float Phase3Threshold = 0.30f;
         private const int MaxCombo = 5;
         private const int SealDetonateTime = 150;
 

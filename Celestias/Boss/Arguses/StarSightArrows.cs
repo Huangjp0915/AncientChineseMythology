@@ -32,7 +32,7 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
         }
 
         public override void AI() {
-            Projectile.rotation = Projectile.velocity.ToRotation() + MathHelper.PiOver2;
+            Projectile.rotation = Projectile.velocity.ToRotation();
             trailPhase += 0.12f;
 
             // 紫蓝星系轨迹粒子
