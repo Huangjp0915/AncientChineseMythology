@@ -53,9 +53,9 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons
 
         public override void SetDefaults() {
             base.SetDefaults();
-            NPC.damage = 180;
-            NPC.defense = 80;
-            NPC.lifeMax = 500000;
+            NPC.damage = 280;
+            NPC.defense = 110;
+            NPC.lifeMax = 1800000;
             NPC.HitSound = SoundID.NPCHit4;
             NPC.DeathSound = SoundID.NPCDeath14;
             NPC.value = 500000f;

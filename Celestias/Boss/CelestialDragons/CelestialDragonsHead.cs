@@ -1,4 +1,6 @@
-﻿using Terraria;
+﻿using AncientChineseMythology.Celestias.Boss.CelestialDragons.Items;
+using Terraria;
+using Terraria.GameContent.ItemDropRules;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -28,6 +30,15 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons
             NPC.width = (int)(HeadTextureWidth * 0.5f);
             NPC.height = HeadTextureHeight;
             NPC.boss = true;
+        }
+
+        public override void ModifyNPCLoot(NPCLoot npcLoot) {
+            // 天庭巡卫金龙掉落：近战/远程/魔法 三选一
+            npcLoot.Add(ItemDropRule.OneFromOptions(1,
+                ModContent.ItemType<ScalebreakerCleaver>(),
+                ModContent.ItemType<SkyrendDragonbreathLongbow>(),
+                ModContent.ItemType<CelestialEdictScepter>()
+            ));
         }
 
         public override void ChangeSummonType() {

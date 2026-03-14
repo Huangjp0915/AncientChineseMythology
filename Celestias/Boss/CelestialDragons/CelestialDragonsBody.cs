@@ -19,6 +19,11 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons
             NPC.height = BodyTextureHeight;
         }
 
+        /// <summary>体节限伤：身体段受到的伤害降低80%</summary>
+        public override void ModifyIncomingHit(ref NPC.HitModifiers modifiers) {
+            modifiers.FinalDamage *= 0.2f;
+        }
+
         public override void ChangeSummonType() {
             SummonNPCType = ModContent.NPCType<CelestialDragonsBody>();
 

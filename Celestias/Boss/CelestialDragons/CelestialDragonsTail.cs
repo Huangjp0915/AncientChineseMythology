@@ -17,6 +17,11 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons
             NPC.height = TailTextureHeight;
         }
 
+        /// <summary>体节限伤：尾部受到的伤害降低70%</summary>
+        public override void ModifyIncomingHit(ref NPC.HitModifiers modifiers) {
+            modifiers.FinalDamage *= 0.3f;
+        }
+
         public override void ChangeSummonType() {
             // 尾巴不再生成后续节点
             SummonNPCType = 0;

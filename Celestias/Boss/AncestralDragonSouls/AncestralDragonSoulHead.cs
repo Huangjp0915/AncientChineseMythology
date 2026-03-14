@@ -1,9 +1,11 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Celestias.Boss.AncestralDragonSouls.Items;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
+using Terraria.GameContent.ItemDropRules;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -93,9 +95,9 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
             NPC.boss = true;
             NPC.width = 90;
             NPC.height = 90;
-            NPC.lifeMax = 3000000;
-            NPC.damage = 200;
-            NPC.defense = 90;
+            NPC.lifeMax = 9500000;
+            NPC.damage = 360;
+            NPC.defense = 130;
 
             Music = MusicID.LunarBoss; // 可替换为自定义音乐
         }
@@ -855,6 +857,19 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
         }
 
         #endregion
+
+        public override void ModifyNPCLoot(NPCLoot npcLoot) {
+            // 祖龙残魂掉落：近战/远程/魔法 三选一
+            npcLoot.Add(ItemDropRule.OneFromOptions(1,
+                ModContent.ItemType<ArchosaurFerrara>(),
+                ModContent.ItemType<ArchosaurBow>(),
+                ModContent.ItemType<ArchosaurStaff>()
+            ));
+        }
+
+        public override void BossLoot(ref string name, ref int potionType) {
+            potionType = ItemID.SuperHealingPotion;
+        }
 
         public override void OnKill() {
             base.OnKill();

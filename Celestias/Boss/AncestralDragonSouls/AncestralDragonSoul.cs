@@ -38,9 +38,9 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
             base.SetDefaults();
             NPC.width = 80;
             NPC.height = 80;
-            NPC.lifeMax = 2500000; // 超级Boss血量
-            NPC.damage = 180;
-            NPC.defense = 80;
+            NPC.lifeMax = 8000000; // 超级Boss血量
+            NPC.damage = 320;
+            NPC.defense = 120;
             NPC.noTileCollide = true;
             NPC.noGravity = true;
             NPC.knockBackResist = 0f;

@@ -28,9 +28,14 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
             base.SetDefaults();
             NPC.width = 60;
             NPC.height = 60;
-            NPC.lifeMax = 3000000;
-            NPC.damage = 180;
-            NPC.defense = 60;
+            NPC.lifeMax = 9500000;
+            NPC.damage = 300;
+            NPC.defense = 80;
+        }
+
+        /// <summary>体节限伤：尾部受到的伤害降低75%</summary>
+        public override void ModifyIncomingHit(ref NPC.HitModifiers modifiers) {
+            modifiers.FinalDamage *= 0.25f;
         }
 
         public override void AI() {
