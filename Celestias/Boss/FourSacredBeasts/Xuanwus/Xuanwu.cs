@@ -79,13 +79,14 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
         private float shellRotation;
         private bool absoluteDefenseActive;
         private float glowIntensity = 0.8f;
+        private int frameCounter;
 
         #endregion
 
         #region ModNPC重写
 
         public override void SetStaticDefaults() {
-            Main.npcFrameCount[Type] = 1;
+            Main.npcFrameCount[Type] = 10;
             NPCID.Sets.MustAlwaysDraw[Type] = true;
             NPCID.Sets.BossBestiaryPriority.Add(Type);
             NPCID.Sets.MPAllowedEnemies[Type] = true;
@@ -165,6 +166,63 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
         }
 
         public override bool CheckActive() => false;
+
+        public override void FindFrame(int frameHeight) {
+            // 10帧: 第0帧=站立, 第6帧=跳跃/蓄力, 0-9连续播放=行走
+            switch (Phase) {
+                // 站立/静止
+                case BossPhase.Intro:
+                case BossPhase.PhaseTransition_2:
+                case BossPhase.PhaseTransition_3:
+                case BossPhase.Phase1_WaterShield:
+                case BossPhase.Phase2_FrostWave:
+                case BossPhase.Phase3_AbsoluteDefense:
+                    NPC.frame.Y = 0;
+                    frameCounter = 0;
+                    break;
+
+                // 蓄力/跳跃姿态 (第6帧)
+                case BossPhase.Phase1_ShellSpin when SubState == 0:
+                case BossPhase.Phase2_DualAssault when SubState == 0:
+                case BossPhase.Phase3_TidalCrush when SubState == 0:
+                case BossPhase.Phase3_NorthStarJudgment when SubState == 0:
+                    NPC.frame.Y = 6 * frameHeight;
+                    frameCounter = 0;
+                    break;
+
+                // 高速旋转 (快速切帧)
+                case BossPhase.Phase1_ShellSpin when SubState == 1:
+                case BossPhase.Phase2_DualAssault when SubState == 1:
+                    frameCounter++;
+                    if (frameCounter >= 2) {
+                        frameCounter = 0;
+                        NPC.frame.Y += frameHeight;
+                        if (NPC.frame.Y >= frameHeight * 10)
+                            NPC.frame.Y = 0;
+                    }
+                    break;
+
+                // 蛇击: 准备=跳跃帧, 收招=站立帧
+                case BossPhase.Phase2_SnakeStrike:
+                    NPC.frame.Y = SubState == 0 ? 6 * frameHeight : 0;
+                    frameCounter = 0;
+                    break;
+
+                // 默认: 行走动画循环
+                default: {
+                    bool isMoving = NPC.velocity.LengthSquared() > 1f;
+                    int rate = isMoving ? 5 : 8;
+                    frameCounter++;
+                    if (frameCounter >= rate) {
+                        frameCounter = 0;
+                        NPC.frame.Y += frameHeight;
+                        if (NPC.frame.Y >= frameHeight * 10)
+                            NPC.frame.Y = 0;
+                    }
+                    break;
+                }
+            }
+        }
 
         public override void HitEffect(NPC.HitInfo hit) {
             for (int i = 0; i < 4; i++) {

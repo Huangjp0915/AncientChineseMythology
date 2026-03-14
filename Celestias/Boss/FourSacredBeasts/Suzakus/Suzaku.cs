@@ -80,13 +80,14 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
         private float soarAngle;
         private float glowIntensity = 1f;
         private float wingSpread;
+        private int frameCounter;
 
         #endregion
 
         #region ModNPC重写
 
         public override void SetStaticDefaults() {
-            Main.npcFrameCount[Type] = 1;
+            Main.npcFrameCount[Type] = 4;
             NPCID.Sets.MustAlwaysDraw[Type] = true;
             NPCID.Sets.BossBestiaryPriority.Add(Type);
             NPCID.Sets.MPAllowedEnemies[Type] = true;
@@ -167,6 +168,46 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
         }
 
         public override bool CheckActive() => false;
+
+        public override void FindFrame(int frameHeight) {
+            // 4帧: 第0帧=冲刺, 0-3循环=飞行动画
+            switch (Phase) {
+                // 冲刺姿态 (第0帧)
+                case BossPhase.Phase2_PhoenixDive when SubState == 1:
+                case BossPhase.Phase3_PhoenixDance when SubState == 1:
+                    NPC.frame.Y = 0;
+                    frameCounter = 0;
+                    break;
+
+                // 静止/转阶段: 慢速飞行循环
+                case BossPhase.Intro:
+                case BossPhase.PhaseTransition_2:
+                case BossPhase.PhaseTransition_3:
+                case BossPhase.Phase3_Rebirth:
+                    frameCounter++;
+                    if (frameCounter >= 10) {
+                        frameCounter = 0;
+                        NPC.frame.Y += frameHeight;
+                        if (NPC.frame.Y >= frameHeight * 4)
+                            NPC.frame.Y = 0;
+                    }
+                    break;
+
+                // 默认: 正常飞行循环
+                default: {
+                    bool isFast = NPC.velocity.LengthSquared() > 100f;
+                    int rate = isFast ? 4 : 6;
+                    frameCounter++;
+                    if (frameCounter >= rate) {
+                        frameCounter = 0;
+                        NPC.frame.Y += frameHeight;
+                        if (NPC.frame.Y >= frameHeight * 4)
+                            NPC.frame.Y = 0;
+                    }
+                    break;
+                }
+            }
+        }
 
         public override void HitEffect(NPC.HitInfo hit) {
             for (int i = 0; i < 6; i++) {
@@ -1091,25 +1132,23 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
             Rectangle frame = NPC.frame;
             Vector2 origin = frame.Size() / 2f;
 
-            // 纹理正向朝右，朝左飞行时使用垂直翻转来修正旋转导致的上下颠倒
-            bool facingLeft = MathF.Abs(NPC.rotation) > MathHelper.PiOver2;
-            SpriteEffects effects = NPC.spriteDirection < 0 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
+            // 纹理正面朝右：面朝左时水平翻转，同时取反旋转以保持视觉一致
+            bool facingRight = NPC.spriteDirection >= 0;
+            SpriteEffects effects = facingRight ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
+            float drawRotation = facingRight ? NPC.rotation : -NPC.rotation;
 
-            // 龙形残影
+            // 火焰残影
             for (int i = NPCID.Sets.TrailCacheLength[Type] - 1; i > 0; i--) {
                 Vector2 trailPos = NPC.oldPos[i] + NPC.Size / 2f - screenPos;
-                float trailRot = NPC.oldRot[i];
-                bool trailLeft = MathF.Abs(trailRot) > MathHelper.PiOver2;
-                SpriteEffects trailFx = effects;
                 float alpha = 0.5f * (1f - (float)i / NPCID.Sets.TrailCacheLength[Type]);
                 Color trailColor = drawColor * alpha;
                 trailColor.G = (byte)Math.Min(trailColor.G * 1.3f, 255);
-                spriteBatch.Draw(texture, trailPos, frame, trailColor, NPC.rotation, origin,
-                    NPC.scale * (1f - i * 0.015f), trailFx, 0f);
+                spriteBatch.Draw(texture, trailPos, frame, trailColor, drawRotation, origin,
+                    NPC.scale * (1f - i * 0.015f), effects, 0f);
             }
 
             Vector2 drawPos = NPC.Center - screenPos;
-            spriteBatch.Draw(texture, drawPos, frame, drawColor, NPC.rotation, origin, NPC.scale, effects, 0f);
+            spriteBatch.Draw(texture, drawPos, frame, drawColor, drawRotation, origin, NPC.scale, effects, 0f);
             return false;
         }
     }
