@@ -44,18 +44,19 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                     glowColor.A = 0;
 
                     spriteBatch.Draw(segTex, segmentPos[i] - screenPos, null, glowColor,
-                        segmentRot[i] + MathF.PI / 2f, origin, NPC.scale * 1.2f * firePulse, effects, 0f);
+                        segmentRot[i], origin, NPC.scale * 1.2f * firePulse, effects, 0f);
                 }
 
                 // 主体
                 spriteBatch.Draw(segTex, segmentPos[i] - screenPos, null, segColor,
-                    segmentRot[i] + MathF.PI / 2f, origin, NPC.scale, effects, 0f);
+                    segmentRot[i], origin, NPC.scale, effects, 0f);
             }
         }
 
         private void DrawHead(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
             Texture2D headTex = TextureAssets.Npc[Type].Value;
-            Vector2 origin = headTex.Size() / 2f;
+            Rectangle rectangle = headTex.GetRectangle(((int)Main.GameUpdateCount) / 10 % 3, 3);
+            Vector2 origin = rectangle.Size() / 2f;
 
             float firePulse = 1f + MathF.Sin(globalTime * 3f) * 0.08f;
 
@@ -69,23 +70,23 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
             Color fireTint = Color.Lerp(drawColor, AokinHelper.MoltenOrange, 0.2f);
             fireTint = Color.Lerp(fireTint, Color.White, 0.15f);
 
-            SpriteEffects effects = NPC.velocity.X < 0 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
-            float drawRot = NPC.rotation + MathF.PI / 2f;
+            SpriteEffects effects = NPC.velocity.X < 0 ? SpriteEffects.FlipVertically : SpriteEffects.None;
+            float drawRot = NPC.rotation;
 
             // 外层发光
             Color outerGlow = AokinHelper.BlazingGold * 0.4f * firePulse;
             outerGlow.A = 0;
-            spriteBatch.Draw(headTex, NPC.Center - screenPos, null, outerGlow,
+            spriteBatch.Draw(headTex, NPC.Center - screenPos, rectangle, outerGlow,
                 drawRot, origin, NPC.scale * 1.15f * firePulse, effects, 0f);
 
             // 主体
-            spriteBatch.Draw(headTex, NPC.Center - screenPos, null, fireTint * NPC.Opacity,
+            spriteBatch.Draw(headTex, NPC.Center - screenPos, rectangle, fireTint * NPC.Opacity,
                 drawRot, origin, NPC.scale * firePulse, effects, 0f);
 
             // 内部高光
             Color innerGlow = AokinHelper.PureWhite * 0.25f * firePulse;
             innerGlow.A = 0;
-            spriteBatch.Draw(headTex, NPC.Center - screenPos, null, innerGlow,
+            spriteBatch.Draw(headTex, NPC.Center - screenPos, rectangle, innerGlow,
                 drawRot, origin, NPC.scale * 0.8f, effects, 0f);
 
             // 龙眼光效
@@ -95,8 +96,9 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
         private void DrawFireAura(SpriteBatch spriteBatch, Vector2 screenPos, Texture2D tex, Vector2 origin, float pulse) {
             if (flameAuraAlpha <= 0f) return;
 
-            SpriteEffects effects = NPC.velocity.X < 0 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
-            float baseRot = NPC.rotation + MathF.PI / 2f;
+            Rectangle rectangle = tex.GetRectangle(((int)Main.GameUpdateCount) / 10 % 3, 3);
+            SpriteEffects effects = NPC.velocity.X < 0 ? SpriteEffects.FlipVertically : SpriteEffects.None;
+            float baseRot = NPC.rotation;
 
             for (int i = 3; i >= 0; i--) {
                 float layerAlpha = flameAuraAlpha * (0.15f - i * 0.03f);
@@ -107,14 +109,14 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
                 layerColor *= layerAlpha * pulse;
                 layerColor.A = 0;
 
-                spriteBatch.Draw(tex, NPC.Center - screenPos, null, layerColor,
+                spriteBatch.Draw(tex, NPC.Center - screenPos, rectangle, layerColor,
                     baseRot + layerRot * (i % 2 == 0 ? 1 : -1), origin, NPC.scale * layerScale, effects, 0f);
             }
         }
 
         private void DrawFireTrail(SpriteBatch spriteBatch, Vector2 screenPos, Texture2D tex, Vector2 origin) {
             SpriteEffects effects = NPC.velocity.X < 0 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
-
+            Rectangle rectangle = tex.GetRectangle(((int)Main.GameUpdateCount) / 10 % 3, 3);
             for (int i = 0; i < NPC.oldPos.Length; i++) {
                 if (NPC.oldPos[i] == Vector2.Zero) continue;
 
@@ -125,9 +127,9 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
 
                 Vector2 pos = NPC.oldPos[i] + NPC.Size / 2f - screenPos;
                 float trailScale = NPC.scale * (0.9f - i * 0.04f);
-                float trailRot = (NPC.oldRot.Length > i ? NPC.oldRot[i] : NPC.rotation) + MathF.PI / 2f;
+                float trailRot = (NPC.oldRot.Length > i ? NPC.oldRot[i] : NPC.rotation);
 
-                spriteBatch.Draw(tex, pos, null, trailColor, trailRot, origin, trailScale, effects, 0f);
+                spriteBatch.Draw(tex, pos, rectangle, trailColor, trailRot, origin, trailScale, effects, 0f);
             }
         }
 
