@@ -145,14 +145,25 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
         {
             CooldownTimer++;
 
-            // 被动灵魂粒子
-            if (Main.rand.NextBool(6))
+            // 被动灵魂粒子：灵魂向上飘散
+            if (Main.rand.NextBool(4))
             {
                 Dust dust = Dust.NewDustDirect(
-                    Projectile.position - new Vector2(8f), Projectile.width + 16, Projectile.height + 16,
-                    DustID.DungeonSpirit, 0f, -0.5f, 180, default, 0.5f);
+                    Projectile.position - new Vector2(10f), Projectile.width + 20, Projectile.height + 20,
+                    DustID.DungeonSpirit, Main.rand.NextFloat(-0.3f, 0.3f), -Main.rand.NextFloat(0.5f, 1.5f),
+                    160, default, 0.5f + 0.2f * MathF.Sin(Main.GameUpdateCount * 0.1f));
                 dust.noGravity = true;
-                dust.velocity *= 0.2f;
+                dust.velocity *= 0.3f;
+                dust.fadeIn = 1.0f;
+            }
+
+            // 暗影火焰微光（幽鬼火感）
+            if (Main.rand.NextBool(8))
+            {
+                Vector2 flamePos = Projectile.Center + Main.rand.NextVector2Circular(12f, 16f);
+                Dust flame = Dust.NewDustDirect(flamePos, 1, 1, DustID.Shadowflame,
+                    0f, -Main.rand.NextFloat(0.3f, 0.8f), 180, default, 0.4f);
+                flame.noGravity = true;
             }
 
             if (CooldownTimer < AttackCooldown) return;
@@ -177,27 +188,67 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             RitualTimer++;
             float progress = RitualTimer / ChargeUpFrames;
 
-            // 聚气粒子：从外围向中心旋转聚集
-            int particleCount = (int)(3 + 5 * progress);
+            // 聚气粒子：从外围向中心旋转聚集（增强版）
+            int particleCount = (int)(4 + 7 * progress);
             for (int i = 0; i < particleCount; i++)
             {
                 float angle = Main.rand.NextFloat(MathHelper.TwoPi);
-                float radius = Main.rand.NextFloat(80f, 150f) * (1f - progress * 0.5f);
+                float radius = Main.rand.NextFloat(70f, 160f) * (1f - progress * 0.5f);
                 Vector2 pos = Projectile.Center + angle.ToRotationVector2() * radius;
 
                 Vector2 toCenter = (Projectile.Center - pos).SafeNormalize(Vector2.Zero);
                 Vector2 tangent = new(-toCenter.Y, toCenter.X);
-                Vector2 vel = toCenter * (2f + progress * 4f) + tangent * (3f - progress * 2f);
+                Vector2 vel = toCenter * (3f + progress * 5f) + tangent * (3.5f - progress * 2.5f);
 
-                Dust dust = Dust.NewDustDirect(pos, 1, 1, DustID.PurpleTorch,
-                    vel.X, vel.Y, 120, default, 0.6f + 0.4f * progress);
+                int dustType = i % 3 == 0 ? DustID.Shadowflame : DustID.PurpleTorch;
+                Dust dust = Dust.NewDustDirect(pos, 1, 1, dustType,
+                    vel.X, vel.Y, 100, default, 0.6f + 0.5f * progress);
                 dust.noGravity = true;
+                if (dustType == DustID.Shadowflame)
+                    dust.fadeIn = 1.2f;
+            }
+
+            // 内核聚能粒子
+            if (progress > 0.4f)
+            {
+                float coreIntensity = (progress - 0.4f) / 0.6f;
+                for (int j = 0; j < (int)(3 * coreIntensity + 1); j++)
+                {
+                    Vector2 corePos = Projectile.Center + Main.rand.NextVector2Circular(10f, 10f);
+                    Dust core = Dust.NewDustDirect(corePos, 1, 1, DustID.PurpleTorch,
+                        0f, 0f, 60, default, 0.8f + 0.5f * coreIntensity);
+                    core.noGravity = true;
+                    core.velocity *= 0.2f;
+                }
+            }
+
+            // 宝石碎光点缀
+            if (progress > 0.6f && Main.rand.NextBool(3))
+            {
+                float sparkAngle = Main.rand.NextFloat(MathHelper.TwoPi);
+                float sparkR = Main.rand.NextFloat(30f, 60f) * (1f - progress * 0.3f);
+                Vector2 sparkPos = Projectile.Center + sparkAngle.ToRotationVector2() * sparkR;
+                Vector2 toC = (Projectile.Center - sparkPos).SafeNormalize(Vector2.Zero);
+                Dust spark = Dust.NewDustDirect(sparkPos, 1, 1, DustID.GemAmethyst,
+                    toC.X * 5f, toC.Y * 5f, 0, default, 0.5f);
+                spark.noGravity = true;
             }
 
             if (RitualTimer >= ChargeUpFrames)
             {
                 CurrentPhase = RitualPhase.Absorb;
                 SoundEngine.PlaySound(SoundID.NPCDeath52 with { Volume = 0.8f, Pitch = -0.4f }, Projectile.Center);
+
+                // 蓄力完成的爆发波
+                for (int b = 0; b < 12; b++)
+                {
+                    float bAngle = MathHelper.TwoPi * b / 12f;
+                    Vector2 bVel = bAngle.ToRotationVector2() * Main.rand.NextFloat(4f, 8f);
+                    Dust burst = Dust.NewDustDirect(Projectile.Center, 1, 1, DustID.DungeonSpirit,
+                        bVel.X, bVel.Y, 40, default, 1.3f);
+                    burst.noGravity = true;
+                    burst.fadeIn = 1.6f;
+                }
             }
         }
 
@@ -238,18 +289,29 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
                         NetMessage.SendStrikeNPC(npc, hit);
                 }
 
-                // 灵魂被抽离效果：从敌人身上飞向幡旗
+                // 灵魂被抽离效果：多层次灵魂流
                 if (Main.rand.NextBool(2))
                 {
-                    Vector2 dustPos = npc.Center + Main.rand.NextVector2Circular(npc.width * 0.4f, npc.height * 0.4f);
+                    Vector2 dustPos = npc.Center + Main.rand.NextVector2Circular(npc.width * 0.5f, npc.height * 0.5f);
                     Vector2 toSelf = (Projectile.Center - dustPos).SafeNormalize(Vector2.Zero);
                     Vector2 tangent = new(-toSelf.Y, toSelf.X);
-                    Vector2 dustVel = toSelf * Main.rand.NextFloat(6f, 12f) + tangent * Main.rand.NextFloat(-3f, 3f);
+                    Vector2 dustVel = toSelf * Main.rand.NextFloat(7f, 14f) + tangent * Main.rand.NextFloat(-4f, 4f);
 
                     Dust dust = Dust.NewDustDirect(dustPos, 1, 1, DustID.DungeonSpirit,
-                        dustVel.X, dustVel.Y, 60, default, 1.4f);
+                        dustVel.X, dustVel.Y, 40, default, 1.5f + 0.3f * progress);
                     dust.noGravity = true;
-                    dust.fadeIn = 1.8f;
+                    dust.fadeIn = 2.0f;
+                }
+
+                // 暗影伴生粒子
+                if (Main.rand.NextBool(4))
+                {
+                    Vector2 darkPos = npc.Center + Main.rand.NextVector2Circular(npc.width * 0.3f, npc.height * 0.3f);
+                    Vector2 toS = (Projectile.Center - darkPos).SafeNormalize(Vector2.Zero);
+                    Dust dark = Dust.NewDustDirect(darkPos, 1, 1, DustID.Shadowflame,
+                        toS.X * Main.rand.NextFloat(5f, 8f), toS.Y * Main.rand.NextFloat(5f, 8f),
+                        80, default, 0.8f);
+                    dark.noGravity = true;
                 }
             }
 
@@ -267,39 +329,83 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
         /// </summary>
         private void DrawRitualCircle(float progress, float radius)
         {
-            // 八个方向的符阵射线
             int directions = 8;
-            float baseAngle = progress * MathHelper.TwoPi * 0.5f; // 缓慢旋转
+            float baseAngle = progress * MathHelper.TwoPi * 0.5f;
 
+            // ── 八方符阵射线（强化：双层 + 更多节点） ──
             for (int d = 0; d < directions; d++)
             {
                 float angle = baseAngle + MathHelper.TwoPi * d / directions;
 
-                // 每条射线上几个粒子
-                int pointsPerRay = 3;
+                // 外层射线：向内螺旋
+                int pointsPerRay = 5;
                 for (int p = 0; p < pointsPerRay; p++)
                 {
-                    float rayDist = radius * (0.3f + 0.7f * p / pointsPerRay);
+                    float rayDist = radius * (0.2f + 0.8f * p / pointsPerRay);
                     Vector2 pos = Projectile.Center + angle.ToRotationVector2() * rayDist;
 
-                    // 向内螺旋的粒子
                     Vector2 toCenter = (Projectile.Center - pos).SafeNormalize(Vector2.Zero);
-                    Vector2 vel = toCenter * 2f;
+                    Vector2 tangent = new(-toCenter.Y, toCenter.X);
+                    Vector2 vel = toCenter * 2.5f + tangent * 0.5f;
 
-                    Dust dust = Dust.NewDustPerfect(pos, DustID.PurpleTorch, vel, 100, default, 0.5f + 0.3f * (1f - p / (float)pointsPerRay));
+                    int type = p % 2 == 0 ? DustID.PurpleTorch : DustID.ShadowbeamStaff;
+                    float scale = 0.4f + 0.4f * (1f - p / (float)pointsPerRay);
+                    Dust dust = Dust.NewDustPerfect(pos, type, vel, 80, default, scale);
                     dust.noGravity = true;
+                }
+
+                // 内层射线（偏移半角度）
+                float innerAngle = angle + MathHelper.TwoPi / (directions * 2);
+                for (int p = 0; p < 3; p++)
+                {
+                    float rayDist = radius * 0.5f * (0.3f + 0.7f * p / 3f);
+                    Vector2 pos = Projectile.Center + innerAngle.ToRotationVector2() * rayDist;
+                    Vector2 toC = (Projectile.Center - pos).SafeNormalize(Vector2.Zero) * 1.5f;
+
+                    Dust inner = Dust.NewDustPerfect(pos, DustID.Shadowflame, toC, 100, default, 0.4f);
+                    inner.noGravity = true;
                 }
             }
 
-            // 外圈粒子环
-            if (Main.rand.NextBool(2))
+            // ── 对角连接线（符文纹路感） ──
+            if ((int)(RitualTimer) % 4 == 0)
             {
-                float ringAngle = Main.rand.NextFloat(MathHelper.TwoPi);
-                Vector2 ringPos = Projectile.Center + ringAngle.ToRotationVector2() * radius;
-                Vector2 tangent = new Vector2(-MathF.Sin(ringAngle), MathF.Cos(ringAngle));
+                for (int d = 0; d < 4; d++)
+                {
+                    float a1 = baseAngle + MathHelper.TwoPi * d / directions;
+                    float a2 = baseAngle + MathHelper.TwoPi * (d + 4) / directions;
+                    Vector2 p1 = Projectile.Center + a1.ToRotationVector2() * radius * 0.6f;
+                    Vector2 p2 = Projectile.Center + a2.ToRotationVector2() * radius * 0.6f;
+                    Vector2 mid = (p1 + p2) * 0.5f;
+                    Dust link = Dust.NewDustPerfect(mid, DustID.PurpleTorch, Vector2.Zero, 120, default, 0.35f);
+                    link.noGravity = true;
+                }
+            }
 
-                Dust dust = Dust.NewDustPerfect(ringPos, DustID.PurpleTorch, tangent * 2f, 80, default, 0.6f);
-                dust.noGravity = true;
+            // ── 外圈粒子环（双环） ──
+            for (int r = 0; r < 2; r++)
+            {
+                if (!Main.rand.NextBool(2)) continue;
+                float ringAngle = Main.rand.NextFloat(MathHelper.TwoPi);
+                float ringR = radius * (r == 0 ? 1f : 0.55f);
+                Vector2 ringPos = Projectile.Center + ringAngle.ToRotationVector2() * ringR;
+                Vector2 tangent = new Vector2(-MathF.Sin(ringAngle), MathF.Cos(ringAngle));
+                float tangentDir = r == 0 ? 1f : -1f;
+
+                int ringType = r == 0 ? DustID.PurpleTorch : DustID.DungeonSpirit;
+                Dust ring = Dust.NewDustPerfect(ringPos, ringType, tangent * 2.5f * tangentDir, 60, default, 0.5f + 0.2f * r);
+                ring.noGravity = true;
+            }
+
+            // ── 内核脉动 ──
+            float corePulse = 0.5f + 0.5f * MathF.Sin(RitualTimer * 0.35f);
+            for (int c = 0; c < (int)(2 * corePulse + 1); c++)
+            {
+                Vector2 corePos = Projectile.Center + Main.rand.NextVector2Circular(6f, 6f);
+                Dust core = Dust.NewDustDirect(corePos, 1, 1, DustID.PurpleTorch,
+                    0f, 0f, 50, default, 0.8f + 0.4f * corePulse);
+                core.noGravity = true;
+                core.velocity *= 0.15f;
             }
         }
 
@@ -309,16 +415,21 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             RitualTimer++;
             float progress = RitualTimer / (float)DigestFrames;
 
-            // 灵魂向中心收缩消散
-            if (Main.rand.NextBool(2))
+            // 灵魂向中心内爆收缩（多层次）
+            int shrinkCount = (int)(3 * (1f - progress) + 1);
+            for (int s = 0; s < shrinkCount; s++)
             {
+                if (!Main.rand.NextBool(2)) continue;
                 float angle = Main.rand.NextFloat(MathHelper.TwoPi);
-                float radius = Main.rand.NextFloat(20f, 60f) * (1f - progress);
+                float radius = Main.rand.NextFloat(15f, 70f) * (1f - progress);
                 Vector2 pos = Projectile.Center + angle.ToRotationVector2() * radius;
-                Vector2 vel = (Projectile.Center - pos).SafeNormalize(Vector2.Zero) * 4f;
+                Vector2 vel = (Projectile.Center - pos).SafeNormalize(Vector2.Zero) * (4f + 3f * progress);
 
-                Dust dust = Dust.NewDustDirect(pos, 1, 1, DustID.DungeonSpirit, vel.X, vel.Y, 100, default, 1f);
+                int dustType = s % 2 == 0 ? DustID.DungeonSpirit : DustID.Shadowflame;
+                Dust dust = Dust.NewDustDirect(pos, 1, 1, dustType, vel.X, vel.Y, 80, default, 1.0f + 0.3f * progress);
                 dust.noGravity = true;
+                if (dustType == DustID.DungeonSpirit)
+                    dust.fadeIn = 1.3f;
             }
 
             // 消化完成时：灵魂回馈玩家（少量治疗）
@@ -330,13 +441,23 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
                     Main.player[Projectile.owner].Heal(healAmount);
                 }
 
-                // 收束爆发
-                for (int i = 0; i < 8; i++)
+                // 收束爆发（强化版）
+                for (int i = 0; i < 14; i++)
                 {
-                    Dust dust = Dust.NewDustDirect(Projectile.Center, 1, 1, DustID.PurpleTorch,
-                        0f, 0f, 100, default, 0.8f);
-                    dust.noGravity = true;
-                    dust.velocity = Main.rand.NextVector2CircularEdge(3f, 3f);
+                    float bAngle = MathHelper.TwoPi * i / 14f;
+                    Vector2 bVel = bAngle.ToRotationVector2() * Main.rand.NextFloat(3f, 6f);
+                    int bType = i % 3 == 0 ? DustID.DungeonSpirit : (i % 3 == 1 ? DustID.Shadowflame : DustID.PurpleTorch);
+                    Dust burst = Dust.NewDustDirect(Projectile.Center, 1, 1, bType,
+                        bVel.X, bVel.Y, 60, default, 0.9f + Main.rand.NextFloat(0.3f));
+                    burst.noGravity = true;
+                }
+
+                // 宝石碎光
+                for (int g = 0; g < 5; g++)
+                {
+                    Dust gem = Dust.NewDustDirect(Projectile.Center, 1, 1, DustID.GemAmethyst,
+                        Main.rand.NextFloat(-4f, 4f), Main.rand.NextFloat(-4f, 4f), 0, default, 0.6f);
+                    gem.noGravity = true;
                 }
 
                 CooldownTimer = 0;
@@ -383,31 +504,84 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             // ── 光晕脉冲 ──
             float glowBase = CurrentPhase switch
             {
-                RitualPhase.ChargeUp => 0.4f + 0.4f * ACMUtils.QuadIn(RitualTimer / (float)ChargeUpFrames),
-                RitualPhase.Absorb => 0.8f + 0.2f * MathF.Sin(RitualTimer * 0.3f),
-                RitualPhase.Digest => 0.6f * (1f - RitualTimer / (float)DigestFrames),
-                _ => 0.2f + 0.1f * MathF.Sin(Main.GameUpdateCount * 0.08f),
+                RitualPhase.ChargeUp => 0.5f + 0.45f * ACMUtils.QuadIn(RitualTimer / (float)ChargeUpFrames),
+                RitualPhase.Absorb => 0.85f + 0.2f * MathF.Sin(RitualTimer * 0.3f),
+                RitualPhase.Digest => 0.7f * (1f - RitualTimer / (float)DigestFrames),
+                _ => 0.25f + 0.12f * MathF.Sin(Main.GameUpdateCount * 0.08f),
             };
 
-            Color glowColor = new Color(130, 40, 210) * glowBase;
-
-            // 蓄力和吸魂阶段：绘制额外光影层
-            if (CurrentPhase is RitualPhase.ChargeUp or RitualPhase.Absorb)
+            // ── 蓄力阶段：旋转残影 ──
+            if (CurrentPhase == RitualPhase.ChargeUp)
             {
-                Color auraColor = new Color(180, 80, 255) * (glowBase * 0.4f);
+                float spinProgress = ACMUtils.QuadIn(RitualTimer / (float)ChargeUpFrames);
+                int trailCount = (int)(3 + 4 * spinProgress);
+                for (int i = 1; i <= trailCount; i++)
+                {
+                    float pastRotation = Projectile.rotation - i * (0.15f + spinProgress * 0.25f);
+                    float alpha = (1f - (float)i / (trailCount + 1)) * 0.3f * spinProgress;
+                    Color trailColor = Color.Lerp(
+                        new Color(100, 30, 180, 0),
+                        new Color(50, 15, 120, 0),
+                        (float)i / trailCount) * alpha;
+                    float trailScale = Projectile.scale * (0.85f + 0.15f * (1f - (float)i / trailCount));
+
+                    Main.EntitySpriteDraw(texture,
+                        Projectile.Center - Main.screenPosition,
+                        null, trailColor, pastRotation, origin,
+                        trailScale, SpriteEffects.None, 0);
+                }
+            }
+
+            // ── 吸魂阶段：多层光环 ──
+            if (CurrentPhase == RitualPhase.Absorb)
+            {
+                // 外层大光环：脉冲膨胀
+                float outerPulse = 1.45f + 0.12f * MathF.Sin(RitualTimer * 0.2f);
+                Color outerAura = new Color(100, 30, 200, 0) * (glowBase * 0.15f);
+                Main.EntitySpriteDraw(texture,
+                    Projectile.Center - Main.screenPosition,
+                    null, outerAura, Projectile.rotation, origin,
+                    Projectile.scale * outerPulse, SpriteEffects.None, 0);
+
+                // 中层光环：偏蓝色快速脉冲
+                float midPulse = 1.2f + 0.08f * MathF.Sin(RitualTimer * 0.4f + 0.8f);
+                Color midAura = new Color(70, 50, 240, 0) * (glowBase * 0.2f);
+                Main.EntitySpriteDraw(texture,
+                    Projectile.Center - Main.screenPosition,
+                    null, midAura, Projectile.rotation, origin,
+                    Projectile.scale * midPulse, SpriteEffects.None, 0);
+
+                // 内层高亮
+                Color innerAura = new Color(200, 80, 255, 0) * (glowBase * 0.25f);
+                Main.EntitySpriteDraw(texture,
+                    Projectile.Center - Main.screenPosition,
+                    null, innerAura, Projectile.rotation, origin,
+                    Projectile.scale * 1.06f, SpriteEffects.None, 0);
+            }
+            else if (CurrentPhase == RitualPhase.ChargeUp)
+            {
+                // 蓄力光环
+                float chargeProgress = ACMUtils.QuadIn(RitualTimer / (float)ChargeUpFrames);
+                Color auraColor = new Color(180, 80, 255, 0) * (glowBase * 0.35f * chargeProgress);
                 Main.EntitySpriteDraw(texture,
                     Projectile.Center - Main.screenPosition,
                     null, auraColor, Projectile.rotation, origin,
-                    Projectile.scale * 1.35f, SpriteEffects.None, 0);
+                    Projectile.scale * (1.2f + 0.2f * chargeProgress), SpriteEffects.None, 0);
             }
 
-            // 光晕层
+            // ── 通用光晕层（色彩呼吸） ──
+            float colorShift = MathF.Sin(Main.GameUpdateCount * 0.06f) * 0.5f + 0.5f;
+            Color glowColor = Color.Lerp(
+                new Color(130, 40, 210, 0),
+                new Color(80, 50, 255, 0),
+                colorShift) * glowBase;
+
             Main.EntitySpriteDraw(texture,
                 Projectile.Center - Main.screenPosition,
                 null, glowColor, Projectile.rotation, origin,
                 Projectile.scale * 1.15f, SpriteEffects.None, 0);
 
-            // 主纹理
+            // ── 主纹理 ──
             Main.EntitySpriteDraw(texture,
                 Projectile.Center - Main.screenPosition,
                 null, lightColor, Projectile.rotation, origin,

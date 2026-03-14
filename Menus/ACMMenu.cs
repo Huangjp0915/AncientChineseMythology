@@ -149,7 +149,7 @@ namespace AncientChineseMythology.Menus
                 float pulse = 0.6f + MathF.Sin(timer * 1.5f) * 0.15f;
                 sb.Draw(glow, logoDrawCenter,
                     null,
-                    new Color(255, 200, 80) * (pulse * 0.25f),
+                    new Color(255, 200, 80, 0) * (pulse * 0.25f),
                     0f,
                     new Vector2(glow.Width / 2f, glow.Height / 2f),
                     logoScale * 4.5f,
@@ -200,7 +200,7 @@ namespace AncientChineseMythology.Menus
             {
                 ref CloudLayer c = ref clouds[i];
                 float fade = c.Alpha * (0.7f + MathF.Sin(timer * 0.5f + i * 1.3f) * 0.3f);
-                Color col = new Color(160, 140, 200) * (fade * 0.12f);
+                Color col = new Color(160, 140, 200, 0) * (fade * 0.12f);
 
                 sb.Draw(glow,
                     new Vector2(c.X, c.Y),
@@ -232,8 +232,8 @@ namespace AncientChineseMythology.Menus
                 alpha *= 0.6f;
 
                 Color col = m.Hue < 0.5f
-                    ? new Color(255, 210, 100)  // 金色
-                    : new Color(120, 220, 200); // 青玉色
+                    ? new Color(255, 210, 100, 0)  // 金色
+                    : new Color(120, 220, 200, 0); // 青玉色
                 col *= alpha;
 
                 sb.Draw(glow, m.Pos, null, col, 0f,
@@ -253,7 +253,7 @@ namespace AncientChineseMythology.Menus
             int w = Main.screenWidth;
             int h = Main.screenHeight;
             float vScale = Math.Max(w, h) / (float)glow.Width * 1.2f;
-            Color dark = Color.Black * 0.55f;
+            Color dark = Color.Black with { A = 0 } * 0.55f;
 
             // 四角
             Vector2[] corners = [
