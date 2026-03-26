@@ -34,11 +34,11 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
         public enum BossPhase
         {
             Intro,
-            Phase1_Guard,
-            Phase1_IceBarrage,
-            Phase1_WaterShield,
-            Phase1_GravityWell,
-            Phase1_ShellSpin,
+            Phase1_Idle,
+            Phase1_Walk,
+            Phase1_Jump,
+            Phase1_Slam,
+            Phase1_SpinCharge,
             PhaseTransition_2,
             Phase2_SnakeStrike,
             Phase2_VenomSpray,
@@ -80,6 +80,13 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
         private bool absoluteDefenseActive;
         private float glowIntensity = 0.8f;
         private int frameCounter;
+        private int phase1CycleIndex;
+        private Vector2 chargeStart;
+        private Vector2 chargeControl1;
+        private Vector2 chargeControl2;
+        private Vector2 chargeEnd;
+        private float chargeDuration;
+        private int chargeSide = 1;
 
         #endregion
 
@@ -149,6 +156,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
             writer.Write(didPhase3Transition);
             writer.Write(strikeCount);
             writer.Write(absoluteDefenseActive);
+            writer.Write(phase1CycleIndex);
+            writer.Write(chargeSide);
         }
 
         public override void ReceiveExtraAI(BinaryReader reader) {
@@ -158,6 +167,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
             didPhase3Transition = reader.ReadBoolean();
             strikeCount = reader.ReadInt32();
             absoluteDefenseActive = reader.ReadBoolean();
+            phase1CycleIndex = reader.ReadInt32();
+            chargeSide = reader.ReadInt32();
         }
 
         public override bool? DrawHealthBar(byte hbPosition, ref float scale, ref Vector2 position) {
@@ -174,7 +185,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                 case BossPhase.Intro:
                 case BossPhase.PhaseTransition_2:
                 case BossPhase.PhaseTransition_3:
-                case BossPhase.Phase1_WaterShield:
+                case BossPhase.Phase1_Idle:
+                case BossPhase.Phase1_Slam when SubState == 1:
                 case BossPhase.Phase2_FrostWave:
                 case BossPhase.Phase3_AbsoluteDefense:
                     NPC.frame.Y = 0;
@@ -182,7 +194,9 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                     break;
 
                 // 蓄力/跳跃姿态 (第6帧)
-                case BossPhase.Phase1_ShellSpin when SubState == 0:
+                case BossPhase.Phase1_Jump:
+                case BossPhase.Phase1_Slam when SubState == 0:
+                case BossPhase.Phase1_SpinCharge when SubState == 0:
                 case BossPhase.Phase2_DualAssault when SubState == 0:
                 case BossPhase.Phase3_TidalCrush when SubState == 0:
                 case BossPhase.Phase3_NorthStarJudgment when SubState == 0:
@@ -191,7 +205,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                     break;
 
                 // 高速旋转 (快速切帧)
-                case BossPhase.Phase1_ShellSpin when SubState == 1:
+                case BossPhase.Phase1_SpinCharge when SubState == 1:
                 case BossPhase.Phase2_DualAssault when SubState == 1:
                     frameCounter++;
                     if (frameCounter >= 2) {
@@ -277,11 +291,11 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
 
             switch (Phase) {
                 case BossPhase.Intro: RunIntro(target); break;
-                case BossPhase.Phase1_Guard: RunPhase1Guard(target); break;
-                case BossPhase.Phase1_IceBarrage: RunPhase1IceBarrage(target); break;
-                case BossPhase.Phase1_WaterShield: RunPhase1WaterShield(target); break;
-                case BossPhase.Phase1_GravityWell: RunPhase1GravityWell(target); break;
-                case BossPhase.Phase1_ShellSpin: RunPhase1ShellSpin(target); break;
+                case BossPhase.Phase1_Idle: RunPhase1Idle(target); break;
+                case BossPhase.Phase1_Walk: RunPhase1Walk(target); break;
+                case BossPhase.Phase1_Jump: RunPhase1Jump(target); break;
+                case BossPhase.Phase1_Slam: RunPhase1Slam(target); break;
+                case BossPhase.Phase1_SpinCharge: RunPhase1SpinCharge(target); break;
                 case BossPhase.PhaseTransition_2: RunPhaseTransition2(target); break;
                 case BossPhase.Phase2_SnakeStrike: RunPhase2SnakeStrike(target); break;
                 case BossPhase.Phase2_VenomSpray: RunPhase2VenomSpray(target); break;
@@ -298,7 +312,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
             }
 
             // 旋转攻击时使用shellRotation，普通状态使用轻微倾斜
-            bool isSpinning = Phase == BossPhase.Phase1_ShellSpin ||
+            bool isSpinning = (Phase == BossPhase.Phase1_SpinCharge && SubState == 1) ||
                               (Phase == BossPhase.Phase2_DualAssault && SubState == 1);
             if (isSpinning)
                 NPC.rotation = shellRotation;
@@ -336,13 +350,12 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
             NPC.netUpdate = true;
         }
 
-        private BossPhase GetRandomPhase1Attack() {
-            return (BossPhase)(Main.rand.Next(4) switch {
-                0 => (int)BossPhase.Phase1_IceBarrage,
-                1 => (int)BossPhase.Phase1_WaterShield,
-                2 => (int)BossPhase.Phase1_GravityWell,
-                _ => (int)BossPhase.Phase1_ShellSpin
-            });
+        private BossPhase GetNextPhase1Attack() {
+            BossPhase next = phase1CycleIndex % 2 == 0
+                ? BossPhase.Phase1_Walk
+                : BossPhase.Phase1_SpinCharge;
+            phase1CycleIndex++;
+            return next;
         }
 
         private BossPhase GetRandomPhase2Attack() {
@@ -420,7 +433,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                         d.velocity = Main.rand.NextVector2Circular(10, 10);
                     }
                 }
-                TransitionTo(BossPhase.Phase1_Guard);
+                TransitionTo(BossPhase.Phase1_Walk);
             }
         }
 
@@ -428,203 +441,369 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
 
         #region 一阶段：镇龟
 
-        private void RunPhase1Guard(Player target) {
-            driftAngle += 0.015f;
-            float radius = 280f + MathF.Sin(globalTime) * 40f;
-            Vector2 orbitPos = target.Center + new Vector2(MathF.Cos(driftAngle) * radius, MathF.Sin(driftAngle) * radius * 0.4f - 200);
-            NPC.velocity = Vector2.Lerp(NPC.velocity, (orbitPos - NPC.Center) * 0.04f, 0.06f);
+        private float FindGroundY(float worldX, float searchStartY) {
+            int tileX = (int)(worldX / 16f);
+            int startTileY = (int)(searchStartY / 16f);
+            for (int tileY = startTileY; tileY < startTileY + 60; tileY++) {
+                if (tileX >= 0 && tileX < Main.maxTilesX && tileY >= 0 && tileY < Main.maxTilesY &&
+                    WorldGen.SolidTile(tileX, tileY)) {
+                    return tileY * 16f;
+                }
+            }
+            return searchStartY + 500f;
+        }
+
+        /// <summary>
+        /// 攻击循环间的短暂停留，交替选择行走-跳砸 / 旋转曲线冲刺
+        /// </summary>
+        private void RunPhase1Idle(Player target) {
+            Vector2 hoverPos = target.Center + new Vector2(0, -280);
+            NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.04f, 0.06f);
 
             if (Main.netMode != NetmodeID.Server && Main.rand.NextBool(3)) {
                 Dust d = Dust.NewDustDirect(NPC.Center + Main.rand.NextVector2Circular(80, 80), 0, 0, DustID.Ice, 0, -1f, 150, default, 1.2f);
                 d.noGravity = true;
             }
 
-            // 巡航冰弹压制
-            if (PhaseTimer % 20 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                float a = PhaseTimer * 0.15f;
-                for (int arm = 0; arm < 2; arm++) {
-                    float angle = a + arm * MathHelper.Pi;
-                    IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 7f, NPC.damage / 6);
-                }
+            if (PhaseTimer > 50) {
+                TransitionTo(GetNextPhase1Attack());
             }
-
-            if (PhaseTimer > 110) TransitionTo(GetRandomPhase1Attack());
         }
 
-        private void RunPhase1IceBarrage(Player target) {
-            Vector2 hoverPos = target.Center + new Vector2(MathF.Sin(globalTime) * 200f, -300);
-            NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.03f, 0.06f);
+        /// <summary>
+        /// 在地面行走接近玩家，模拟重型龟甲在地面推进的压迫感
+        /// </summary>
+        private void RunPhase1Walk(Player target) {
+            // 搜索地面
+            float groundY = FindGroundY(NPC.Center.X, Math.Min(NPC.Center.Y, target.Center.Y));
+            float targetY = groundY - NPC.height / 2f;
 
-            int interval = Main.expertMode ? 8 : 12;
-            if (AttackTimer % interval == 0) {
-                Vector2 dir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
-                int count = Main.expertMode ? 7 : 5;
-                float spread = MathHelper.ToRadians(50f);
-                for (int i = 0; i < count; i++) {
-                    float angle = -spread / 2 + spread / (count - 1) * i;
-                    Vector2 vel = dir.RotatedBy(angle) * 14f;
-                    IceProjectile(NPC.Center, vel, NPC.damage / 4);
-                }
-                SoundEngine.PlaySound(SoundID.Item28 with { Volume = 0.6f }, NPC.Center);
+            // 垂直：贴向地面
+            float dy = targetY - NPC.Center.Y;
+            if (MathF.Abs(dy) > 8f)
+                NPC.velocity.Y = MathHelper.Lerp(NPC.velocity.Y, MathHelper.Clamp(dy * 0.12f, -12f, 12f), 0.12f);
+            else
+                NPC.velocity.Y = dy * 0.3f;
+
+            // 水平：走向玩家
+            float dir = target.Center.X > NPC.Center.X ? 1f : -1f;
+            float walkSpeed = Main.expertMode ? 7f : 5.5f;
+            NPC.velocity.X = MathHelper.Lerp(NPC.velocity.X, dir * walkSpeed, 0.06f);
+
+            // 行走扬尘
+            if (Main.netMode != NetmodeID.Server && PhaseTimer % 5 == 0) {
+                Vector2 footPos = NPC.Center + new Vector2(Main.rand.NextFloat(-70, 70), NPC.height / 2f - 10);
+                Dust d = Dust.NewDustDirect(footPos, 0, 0, DustID.Smoke, dir * -2f, -1.5f, 140, default, 1.8f);
+                d.noGravity = false;
+            }
+            // 冰霜尾迹
+            if (Main.netMode != NetmodeID.Server && Main.rand.NextBool(3)) {
+                Dust d = Dust.NewDustDirect(NPC.Center + Main.rand.NextVector2Circular(60, 40), 0, 0, DustID.Ice, 0, -1f, 120, default, 1.2f);
+                d.noGravity = true;
             }
 
-            // 同步蜒毒追踪
-            if (AttackTimer % 18 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                Vector2 snakePos = NPC.Center + new Vector2(0, -80);
-                Vector2 vel = (target.Center - snakePos).SafeNormalize(Vector2.Zero) * 12f;
-                Projectile.NewProjectile(NPC.GetSource_FromAI(), snakePos, vel,
-                    ModContent.ProjectileType<XuanwuVenomFang>(), NPC.damage / 5, 0f, Main.myPlayer);
+            // 接近玩家 或 行走超时 → 起跳
+            float distX = MathF.Abs(NPC.Center.X - target.Center.X);
+            if (distX < 250f || PhaseTimer > 160) {
+                TransitionTo(BossPhase.Phase1_Jump);
             }
-
-            if (AttackTimer > 110) TransitionTo(BossPhase.Phase1_Guard);
         }
 
-        private void RunPhase1WaterShield(Player target) {
-            NPC.velocity *= 0.9f;
-            NPC.defense += 50;
+        /// <summary>
+        /// 跳跃到玩家头顶，分为起跳和悬停两个子阶段
+        /// SubState 0: 弧形上升到目标位置（玩家头顶500px）
+        /// SubState 1: 锁定位置蓄力，准备下砸
+        /// </summary>
+        private void RunPhase1Jump(Player target) {
+            if (SubState == 0) {
+                // ── 起跳：记录起点和目标，用缓动曲线飞过去 ──
+                if (AttackTimer <= 1) {
+                    chargeStart = NPC.Center;
+                    // 目标：玩家头顶 500px，X 对齐玩家
+                    chargeEnd = target.Center + new Vector2(0, -500);
+                    NPC.velocity = Vector2.Zero;
 
-            if (Main.netMode != NetmodeID.Server) {
-                for (int i = 0; i < 4; i++) {
-                    float angle = globalTime * 3f + MathHelper.TwoPi / 4 * i;
-                    Vector2 shieldPos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 120f;
-                    Dust d = Dust.NewDustDirect(shieldPos, 0, 0, DustID.Water, 0, 0, 100, default, 2f);
+                    SoundEngine.PlaySound(SoundID.Item14 with { Pitch = -0.8f, Volume = 0.8f }, NPC.Center);
+
+                    // 起跳碎石
+                    if (Main.netMode != NetmodeID.Server) {
+                        for (int i = 0; i < 18; i++) {
+                            Dust d = Dust.NewDustDirect(
+                                NPC.Center + new Vector2(Main.rand.NextFloat(-90, 90), NPC.height / 2f),
+                                0, 0, DustID.Smoke, Main.rand.NextFloat(-5, 5), -4f, 130, default, 2.2f);
+                            d.noGravity = false;
+                        }
+                        for (int i = 0; i < 8; i++) {
+                            Dust d = Dust.NewDustDirect(
+                                NPC.Center + new Vector2(Main.rand.NextFloat(-60, 60), NPC.height / 2f),
+                                0, 0, DustID.Ice, Main.rand.NextFloat(-3, 3), -6f, 100, default, 1.5f);
+                            d.noGravity = true;
+                        }
+                    }
+                    NPC.netUpdate = true;
+                }
+
+                // 用 BackOut 缓动做弧形上升（先快后慢，略微超调再回弹）
+                float riseDuration = 40f;
+                float t = ACMUtils.Clamp01((AttackTimer - 1) / riseDuration);
+                float tEased = ACMUtils.BackOut(t);
+                Vector2 curPos = Vector2.Lerp(chargeStart, chargeEnd, tEased);
+                NPC.velocity = curPos - NPC.Center;
+
+                // 上升粒子
+                if (Main.netMode != NetmodeID.Server && AttackTimer % 3 == 0) {
+                    Dust d = Dust.NewDustDirect(NPC.Center + Main.rand.NextVector2Circular(50, 30), 0, 0, DustID.Ice, 0, 2f, 100, default, 1.5f);
                     d.noGravity = true;
-                    d.velocity = new Vector2(-MathF.Sin(angle), MathF.Cos(angle)) * 3f;
                 }
-            }
 
-            // 双层水盾弹幕
-            if (AttackTimer % 18 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int count = 10;
-                for (int i = 0; i < count; i++) {
-                    float angle = MathHelper.TwoPi / count * i + globalTime * 2f;
-                    Vector2 pos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 120f;
-                    Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.Zero) * 10f;
-                    WaterProjectile(pos, vel, NPC.damage / 5);
+                // 上升完成 → 进入悬停
+                if (t >= 1f) {
+                    SubState = 1;
+                    AttackTimer = 0;
+                    // 锁定当前位置作为悬停点
+                    chargeStart = NPC.Center;
+                    NPC.velocity = Vector2.Zero;
+                    NPC.netUpdate = true;
                 }
             }
-            // 内层冰弹环
-            if (AttackTimer % 25 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int count = 6;
-                for (int i = 0; i < count; i++) {
-                    float angle = MathHelper.TwoPi / count * i + globalTime * 3f;
-                    IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 8f, NPC.damage / 5);
-                }
-            }
+            else {
+                // ── 悬停蓄力（不追踪玩家，锁定位置）──
+                NPC.velocity = (chargeStart - NPC.Center) * 0.2f;
 
-            if (AttackTimer > 120) {
-                NPC.defense -= 50;
-                TransitionTo(BossPhase.Phase1_Guard);
+                // 蓄力震颤（逐渐加强）
+                float shakeStr = MathHelper.Clamp(AttackTimer / 55f, 0f, 1f) * 4f;
+                if (AttackTimer > 10)
+                    NPC.Center += Main.rand.NextVector2Circular(shakeStr, shakeStr);
+
+                // 下砸预示 — 冰粒子向下汇聚
+                if (Main.netMode != NetmodeID.Server) {
+                    int dustCount = AttackTimer > 35 ? 6 : 3;
+                    for (int i = 0; i < dustCount; i++) {
+                        Vector2 dustPos = NPC.Center + Main.rand.NextVector2Circular(70, 40);
+                        Dust d = Dust.NewDustDirect(dustPos, 0, 0, DustID.Ice, 0, 3f + shakeStr, 100, default, 1.8f);
+                        d.noGravity = true;
+                    }
+                }
+
+                if (AttackTimer > 20) {
+                    TransitionTo(BossPhase.Phase1_Slam);
+                }
             }
         }
 
-        private void RunPhase1GravityWell(Player target) {
-            NPC.velocity = Vector2.Lerp(NPC.velocity, (target.Center + new Vector2(0, -250) - NPC.Center) * 0.03f, 0.05f);
+        /// <summary>
+        /// 从高空猛砸地面，落地瞬间爆发大量弹幕
+        /// </summary>
+        private void RunPhase1Slam(Player target) {
+            if (SubState == 0) {
+                // ── 加速下坠 ──
+                NPC.velocity.X = MathHelper.Lerp(NPC.velocity.X, (target.Center.X - NPC.Center.X) * 0.008f, 0.04f);
+                NPC.velocity.Y += 2.2f;
+                if (NPC.velocity.Y > 32f) NPC.velocity.Y = 32f;
 
-            if (AttackTimer >= 25 && AttackTimer <= 110) {
-                float pullStr = 3f;
-                Vector2 pullDir = (NPC.Center - target.Center).SafeNormalize(Vector2.Zero);
-                target.velocity += pullDir * pullStr * (1f / 60f) * 30f;
-
+                // 下落拖尾
                 if (Main.netMode != NetmodeID.Server) {
-                    for (int i = 0; i < 6; i++) {
+                    for (int i = 0; i < 5; i++) {
+                        Dust d = Dust.NewDustDirect(NPC.Center + Main.rand.NextVector2Circular(50, 20),
+                            0, 0, DustID.Ice, Main.rand.NextFloat(-1, 1), -NPC.velocity.Y * 0.12f, 100, default, 2f);
+                        d.noGravity = true;
+                    }
+                }
+
+                // 地面检测
+                float groundY = FindGroundY(NPC.Center.X, NPC.Center.Y);
+                if (NPC.Center.Y + NPC.height / 2f >= groundY || AttackTimer > 90) {
+                    // ── 着地 ──
+                    if (NPC.Center.Y + NPC.height / 2f >= groundY)
+                        NPC.Center = new Vector2(NPC.Center.X, groundY - NPC.height / 2f);
+                    NPC.velocity = Vector2.Zero;
+                    SubState = 1;
+                    AttackTimer = 0;
+
+                    // 震屏
+                    SoundEngine.PlaySound(SoundID.Item14 with { Pitch = -1f, Volume = 1.5f }, NPC.Center);
+                    if (Main.netMode != NetmodeID.Server) {
+                        PunchCameraModifier camMod = new(NPC.Center, Vector2.UnitY, 22f, 14f, 45, 2000f, FullName);
+                        Main.instance.CameraModifiers.Add(camMod);
+                    }
+
+                    // 弹幕爆发
+                    if (Main.netMode != NetmodeID.MultiplayerClient) {
+                        // 全方向冰锥爆发
+                        int burstCount = Main.expertMode ? 16 : 12;
+                        for (int i = 0; i < burstCount; i++) {
+                            float angle = MathHelper.TwoPi / burstCount * i;
+                            float speed = 9f + Main.rand.NextFloat(0, 4f);
+                            IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * speed, NPC.damage / 4);
+                        }
+
+                        // 地面冲击波 — 沿地面左右扩散
+                        int waveCount = Main.expertMode ? 10 : 7;
+                        float waveY = groundY - 20;
+                        for (int i = 1; i <= waveCount; i++) {
+                            float speed = 3.5f + i * 1.8f;
+                            IceProjectile(new Vector2(NPC.Center.X, waveY), new Vector2(speed, -1.5f), NPC.damage / 4, 160);
+                            IceProjectile(new Vector2(NPC.Center.X, waveY), new Vector2(-speed, -1.5f), NPC.damage / 4, 160);
+                        }
+
+                        // 上方散射冰柱
+                        int scatterCount = Main.expertMode ? 8 : 5;
+                        for (int i = 0; i < scatterCount; i++) {
+                            float vx = Main.rand.NextFloat(-6f, 6f);
+                            float vy = -Main.rand.NextFloat(10f, 18f);
+                            IceProjectile(NPC.Center, new Vector2(vx, vy), NPC.damage / 5);
+                        }
+                    }
+
+                    // 落地粉碎粒子
+                    if (Main.netMode != NetmodeID.Server) {
+                        for (int i = 0; i < 35; i++) {
+                            Dust d = Dust.NewDustDirect(
+                                new Vector2(NPC.Center.X + Main.rand.NextFloat(-130, 130), groundY - 10),
+                                0, 0, DustID.Ice, Main.rand.NextFloat(-9, 9), Main.rand.NextFloat(-14, -4), 80, default, 2.5f);
+                            d.noGravity = true;
+                        }
+                        for (int i = 0; i < 25; i++) {
+                            Dust d = Dust.NewDustDirect(
+                                new Vector2(NPC.Center.X + Main.rand.NextFloat(-160, 160), groundY - 5),
+                                0, 0, DustID.Smoke, Main.rand.NextFloat(-7, 7), -2.5f, 150, default, 2.2f);
+                            d.noGravity = false;
+                        }
+                    }
+                    NPC.netUpdate = true;
+                }
+            }
+            else {
+                // ── 落地恢复 ──
+                NPC.velocity *= 0.9f;
+                if (AttackTimer > 45) {
+                    TransitionTo(BossPhase.Phase1_Idle);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 旋转壳体沿贝塞尔曲线冲刺，交替弧度方向，3次冲刺一循环
+        /// </summary>
+        private void RunPhase1SpinCharge(Player target) {
+            if (SubState == 0) {
+                // ── 蓄力 ──
+                shellRotation += 0.06f + AttackTimer * 0.004f;
+                NPC.velocity *= 0.92f;
+
+                // 粒子向中心收束
+                if (Main.netMode != NetmodeID.Server) {
+                    for (int i = 0; i < 3; i++) {
                         float angle = Main.rand.NextFloat(MathHelper.TwoPi);
-                        float dist = Main.rand.NextFloat(200, 400);
+                        float dist = 140f - AttackTimer * 2.5f;
+                        if (dist < 30f) dist = 30f;
                         Vector2 dustPos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * dist;
-                        Dust d = Dust.NewDustDirect(dustPos, 0, 0, DustID.Water, 0, 0, 100, default, 1.5f);
+                        Dust d = Dust.NewDustDirect(dustPos, 0, 0, DustID.Ice, 0, 0, 100, default, 2f);
                         d.noGravity = true;
                         d.velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 5f;
                     }
                 }
 
-                // 双型弹幕压制
-                if (AttackTimer % 14 == 0) {
-                    int count = 8;
-                    for (int i = 0; i < count; i++) {
-                        float angle = MathHelper.TwoPi / count * i + AttackTimer * 0.1f;
-                        Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 8f;
-                        IceProjectile(NPC.Center, vel, NPC.damage / 5);
+                if (AttackTimer > 35) {
+                    // 计算贝塞尔曲线参数
+                    chargeStart = NPC.Center;
+                    Vector2 toTarget = target.Center - NPC.Center;
+                    float totalDist = toTarget.Length();
+                    if (totalDist < 1f) totalDist = 1f;
+                    Vector2 forward = toTarget / totalDist;
+                    Vector2 perp = new Vector2(-forward.Y, forward.X);
+
+                    chargeEnd = target.Center + forward * 180f;
+
+                    // 曲线偏移量随冲刺次数递减，最后一次走S曲线
+                    if (strikeCount < 2) {
+                        float curveOffset = totalDist * 0.55f * chargeSide;
+                        chargeControl1 = chargeStart + toTarget * 0.3f + perp * curveOffset;
+                        chargeControl2 = chargeStart + toTarget * 0.7f + perp * curveOffset * 0.5f;
                     }
-                }
-                // 同步蛇毒追踪
-                if (AttackTimer % 22 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 11f;
-                    for (int i = -1; i <= 1; i += 2) {
-                        Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel.RotatedBy(i * MathHelper.ToRadians(12)),
-                            ModContent.ProjectileType<XuanwuVenomFang>(), NPC.damage / 5, 0f, Main.myPlayer);
+                    else {
+                        // 第3次: S形曲线穿越玩家
+                        float sOffset = totalDist * 0.45f;
+                        chargeControl1 = chargeStart + toTarget * 0.3f + perp * sOffset * chargeSide;
+                        chargeControl2 = chargeStart + toTarget * 0.7f - perp * sOffset * chargeSide;
                     }
-                }
-            }
 
-            if (AttackTimer > 130) TransitionTo(BossPhase.Phase1_Guard);
-        }
+                    chargeDuration = 48f;
+                    chargeSide *= -1;
 
-        private void RunPhase1ShellSpin(Player target) {
-            if (SubState == 0) {
-                shellRotation += 0.05f;
-                NPC.velocity *= 0.9f;
-
-                if (Main.netMode != NetmodeID.Server) {
-                    Dust d = Dust.NewDustDirect(NPC.Center + Main.rand.NextVector2Circular(100, 100), 0, 0, DustID.Ice, 0, 0, 100, default, 2f);
-                    d.noGravity = true;
-                    d.velocity = (NPC.Center - d.position).SafeNormalize(Vector2.Zero) * 4f;
-                }
-
-                // 蓄力时旋转冰弹臂
-                if (AttackTimer % 12 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    float a = AttackTimer * 0.2f;
-                    for (int arm = 0; arm < 2; arm++) {
-                        float angle = a + arm * MathHelper.Pi;
-                        IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 6f, NPC.damage / 6);
-                    }
-                }
-
-                if (AttackTimer > 40) {
                     SubState = 1;
                     AttackTimer = 0;
-                    NPC.velocity = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX) * 26f;
-                    SoundEngine.PlaySound(SoundID.Item28 with { Pitch = -0.5f }, NPC.Center);
+                    SoundEngine.PlaySound(SoundID.Item28 with { Pitch = -0.5f, Volume = 1.2f }, NPC.Center);
+                    NPC.netUpdate = true;
+                }
+            }
+            else if (SubState == 1) {
+                // ── 曲线冲刺 ──
+                shellRotation += 0.28f;
+
+                float t = ACMUtils.Clamp01(AttackTimer / chargeDuration);
+                float tSmooth = ACMUtils.SineInOut(t);
+                Vector2 curvePos = ACMUtils.BezierCubic(chargeStart, chargeControl1, chargeControl2, chargeEnd, tSmooth);
+                NPC.velocity = curvePos - NPC.Center;
+
+                // 冲刺拖尾冰雾
+                if (Main.netMode != NetmodeID.Server) {
+                    for (int i = 0; i < 5; i++) {
+                        Dust d = Dust.NewDustDirect(NPC.Center + Main.rand.NextVector2Circular(35, 35),
+                            0, 0, DustID.Ice, 0, 0, 80, default, 2.2f);
+                        d.noGravity = true;
+                        d.velocity = -NPC.velocity.SafeNormalize(Vector2.Zero) * Main.rand.NextFloat(2f, 5f);
+                    }
+                }
+
+                // 冲刺中散落旋转冰碎
+                if (AttackTimer % 5 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    float shedAngle = shellRotation * 2f;
+                    IceProjectile(NPC.Center,
+                        new Vector2(MathF.Cos(shedAngle), MathF.Sin(shedAngle)) * 7f,
+                        NPC.damage / 5, 120);
+                }
+
+                if (AttackTimer >= (int)chargeDuration) {
+                    SubState = 2;
+                    AttackTimer = 0;
+                    NPC.velocity *= 0.2f;
+
+                    // 冲刺终点冰环
+                    if (Main.netMode != NetmodeID.MultiplayerClient) {
+                        int ringCount = 10;
+                        for (int i = 0; i < ringCount; i++) {
+                            float angle = MathHelper.TwoPi / ringCount * i;
+                            IceProjectile(NPC.Center,
+                                new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 8f,
+                                NPC.damage / 5);
+                        }
+                    }
+
+                    if (Main.netMode != NetmodeID.Server) {
+                        for (int i = 0; i < 12; i++) {
+                            Dust d = Dust.NewDustDirect(NPC.Center, 0, 0, DustID.Ice, 0, 0, 80, default, 2.5f);
+                            d.noGravity = true;
+                            d.velocity = Main.rand.NextVector2Circular(6, 6);
+                        }
+                    }
                     NPC.netUpdate = true;
                 }
             }
             else {
-                shellRotation += 0.2f;
+                // ── 冲刺间短暂恢复 ──
+                NPC.velocity *= 0.88f;
+                shellRotation *= 0.95f;
 
-                if (Main.netMode != NetmodeID.Server) {
-                    for (int i = 0; i < 4; i++) {
-                        Dust d = Dust.NewDustDirect(NPC.Center, 0, 0, DustID.Ice, 0, 0, 80, default, 2f);
-                        d.noGravity = true;
-                        d.velocity = -NPC.velocity * Main.rand.NextFloat(0.05f, 0.15f);
-                    }
-                }
-
-                // 旋转中释放双型碎片
-                if (AttackTimer % 4 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    float angle = shellRotation * 2f;
-                    IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 9f, NPC.damage / 5, 120);
-                }
-                // 垂直蛇毒尾迹
-                if (AttackTimer % 6 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    Vector2 perpDir = new Vector2(-NPC.velocity.Y, NPC.velocity.X).SafeNormalize(Vector2.Zero);
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, perpDir * 5f,
-                        ModContent.ProjectileType<XuanwuVenomFang>(), NPC.damage / 6, 0f, Main.myPlayer);
-                }
-
-                if (AttackTimer > 22) NPC.velocity *= 0.92f;
-                if (AttackTimer > 38) {
-                    // 落地冰环
-                    if (Main.netMode != NetmodeID.MultiplayerClient) {
-                        for (int i = 0; i < 8; i++) {
-                            float angle = MathHelper.TwoPi / 8 * i;
-                            IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 7f, NPC.damage / 5);
-                        }
-                    }
+                if (AttackTimer > 22) {
                     strikeCount++;
-                    if (strikeCount < 4) {
+                    if (strikeCount < 3) {
                         SubState = 0;
                         AttackTimer = 0;
                     }
-                    else TransitionTo(BossPhase.Phase1_Guard);
+                    else {
+                        TransitionTo(BossPhase.Phase1_Idle);
+                    }
                 }
             }
         }
@@ -1214,7 +1393,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
             Rectangle frame = NPC.frame;
             Vector2 origin = frame.Size() / 2f;
 
-            bool isSpinning = Phase == BossPhase.Phase1_ShellSpin ||
+            bool isSpinning = (Phase == BossPhase.Phase1_SpinCharge && SubState == 1) ||
                               (Phase == BossPhase.Phase2_DualAssault && SubState == 1);
 
             SpriteEffects effects = SpriteEffects.None;
