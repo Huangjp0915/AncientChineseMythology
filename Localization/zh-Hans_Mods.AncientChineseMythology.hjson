@@ -1659,6 +1659,7 @@ NPCs: {
 	Angry_gargoyle.DisplayName: 愤怒的石像鬼
 	angry_gargoyle.DisplayName: angry_gargoyle
 	BlackBear.DisplayName: 黑熊金
+	Dazheng.DisplayName: 大椿
 	TaiShangLaoJunNPC.DisplayName: 太上老君
 	BloodCrow.DisplayName: 血鸦
 	Demon.DisplayName: 噩梦梦魇
@@ -2178,6 +2179,9 @@ Projectiles: {
 	// XuanwuVenomFang.DisplayName: Xuanwu Venom Fang
 	// SoulBannerHeldProj.DisplayName: Soul Banner Held Proj
 	// SoulBannerMinion.DisplayName: Soul Banner Minion
+	DazhengVine.DisplayName: 大椿藤蔓
+	DazhengLeaf.DisplayName: 大椿落叶
+	DazhengGoldenPhantom.DisplayName: 黄金幻象
 }
 
 HeavenBiome.DisplayName: Heaven

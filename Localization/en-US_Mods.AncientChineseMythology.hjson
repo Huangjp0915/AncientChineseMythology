@@ -1537,6 +1537,7 @@ NPCs: {
 	Angry_gargoyle.DisplayName: Angry_gargoyle
 	angry_gargoyle.DisplayName: angry_gargoyle
 	BlackBear.DisplayName: Black Bear
+	Dazheng.DisplayName: Dazheng
 	TaiShangLaoJunNPC.DisplayName: Tai Shang Lao Jun N P C
 	BloodCrow.DisplayName: Blood Crow
 	Demon.DisplayName: Demon
@@ -2056,6 +2057,9 @@ Projectiles: {
 	XuanwuVenomFang.DisplayName: Xuanwu Venom Fang
 	SoulBannerHeldProj.DisplayName: Soul Banner Held Proj
 	SoulBannerMinion.DisplayName: Soul Banner Minion
+	DazhengVine.DisplayName: Dazheng Vine
+	DazhengLeaf.DisplayName: Dazheng Leaf
+	DazhengGoldenPhantom.DisplayName: Golden Phantom
 }
 
 HeavenBiome.DisplayName: Heaven
