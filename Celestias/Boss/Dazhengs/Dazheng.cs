@@ -386,15 +386,15 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
         #region 一阶段：自然之力
 
         private void RunPhase1Idle(Player target) {
-            // 待机状态，轻微施压
-            if (PhaseTimer % 30 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+            // 待机状态，轻微施压（给予玩家喘息窗口）
+            if (PhaseTimer % 40 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                 Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 8f;
                 vel = vel.RotatedByRandom(MathHelper.ToRadians(25f));
                 Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
                     ModContent.ProjectileType<DazhengVine>(), NPC.damage / 5, 0f, Main.myPlayer);
             }
 
-            if (PhaseTimer > 80) TransitionTo(GetRandomPhase1Attack());
+            if (PhaseTimer > 120) TransitionTo(GetRandomPhase1Attack());
         }
 
         /// <summary>
@@ -402,8 +402,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
         /// </summary>
         private void RunPhase1VineMaze(Player target) {
             // 构建藤蔓墙壁：横向和纵向交替生成
-            if (AttackTimer % 25 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int wallType = (int)(AttackTimer / 25) % 4;
+            if (AttackTimer % 30 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                int wallType = (int)(AttackTimer / 30) % 4;
 
                 switch (wallType) {
                     case 0: // 左侧横向藤蔓墙（留缺口）
@@ -422,10 +422,10 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 SoundEngine.PlaySound(SoundID.Grass with { Volume = 0.6f }, target.Center);
             }
 
-            // 间隔中穿插追踪藤蔓
-            if (AttackTimer % 15 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 10f;
-                vel = vel.RotatedByRandom(MathHelper.ToRadians(15f));
+            // 墙壁间歇期才释放少量追踪藤蔓（避免填满缝隙）
+            if (AttackTimer % 30 >= 15 && AttackTimer % 10 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 9f;
+                vel = vel.RotatedByRandom(MathHelper.ToRadians(20f));
                 Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
                     ModContent.ProjectileType<DazhengVine>(), NPC.damage / 5, 0f, Main.myPlayer);
             }
@@ -434,9 +434,9 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
         }
 
         private void SpawnVineWall(Vector2 center, int direction, bool horizontal) {
-            int vineCount = Main.expertMode ? 14 : 10;
-            int gapIndex = Main.rand.Next(2, vineCount - 2); // 留出缝隙
-            int gapSize = Main.expertMode ? 2 : 3;
+            int vineCount = Main.expertMode ? 12 : 10;
+            int gapIndex = Main.rand.Next(2, vineCount - 3); // 留出缝隙
+            int gapSize = Main.expertMode ? 3 : 4;
 
             for (int i = 0; i < vineCount; i++) {
                 // 跳过缝隙位置
@@ -465,12 +465,12 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
         /// 藤蔓鞭笞 - 从Boss身体快速伸展的藤蔓鞭
         /// </summary>
         private void RunPhase1VineWhip(Player target) {
-            // 多方向藤蔓鞭笞
-            int whipInterval = Main.expertMode ? 8 : 12;
+            // 多方向藤蔓鞭笞（降低频率，保持单次威胁感）
+            int whipInterval = Main.expertMode ? 14 : 18;
             if (AttackTimer % whipInterval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int whipCount = Main.expertMode ? 5 : 3;
+                int whipCount = Main.expertMode ? 4 : 3;
                 Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
-                float spreadAngle = MathHelper.ToRadians(15f);
+                float spreadAngle = MathHelper.ToRadians(12f);
 
                 for (int i = -whipCount / 2; i <= whipCount / 2; i++) {
                     Vector2 vel = toPlayer.RotatedBy(i * spreadAngle) * 18f;
@@ -484,9 +484,9 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 SoundEngine.PlaySound(SoundID.Item153 with { Pitch = -0.3f }, NPC.Center);
             }
 
-            // 同步落叶施压
-            if (AttackTimer % 20 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int i = 0; i < 4; i++) {
+            // 落叶仅在鞭笞间歇期释放，不同时施压
+            if (AttackTimer % whipInterval >= whipInterval / 2 && AttackTimer % 12 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                for (int i = 0; i < 3; i++) {
                     Vector2 leafPos = target.Center + new Vector2(Main.rand.NextFloat(-400, 400), -600);
                     Vector2 vel = new Vector2(Main.rand.NextFloat(-2f, 2f), Main.rand.NextFloat(6f, 10f));
                     Projectile.NewProjectile(NPC.GetSource_FromAI(), leafPos, vel,
@@ -494,19 +494,19 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 }
             }
 
-            if (AttackTimer > 120) TransitionTo(BossPhase.Phase1_Idle);
+            if (AttackTimer > 140) TransitionTo(BossPhase.Phase1_Idle);
         }
 
         /// <summary>
         /// 树叶风暴 - 从天空降下密集的树叶雨
         /// </summary>
         private void RunPhase1LeafStorm(Player target) {
-            // 天降落叶，波次递增
-            int wave = (int)(AttackTimer / 40);
+            // 天降落叶，波次递增（上限降低，保留可躲空间）
+            int wave = (int)(AttackTimer / 45);
             int leafPerTick = 2 + wave;
-            if (leafPerTick > 8) leafPerTick = 8;
+            if (leafPerTick > 6) leafPerTick = 6;
 
-            if (AttackTimer % LeafRainInterval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+            if (AttackTimer % 15 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                 for (int i = 0; i < leafPerTick; i++) {
                     Vector2 spawnPos = target.Center + new Vector2(
                         Main.rand.NextFloat(-600, 600), -500 - Main.rand.NextFloat(0, 200));
@@ -518,11 +518,11 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 }
             }
 
-            // 侧向藤蔓夹击
-            if (AttackTimer % 50 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+            // 侧向藤蔓夹击（降低频率和数量，避免与叶雨同时覆盖全屏）
+            if (AttackTimer % 75 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                 float side = Main.rand.NextBool() ? -1f : 1f;
-                for (int i = 0; i < 6; i++) {
-                    Vector2 spawnPos = target.Center + new Vector2(side * 600, -250 + i * 100);
+                for (int i = 0; i < 4; i++) {
+                    Vector2 spawnPos = target.Center + new Vector2(side * 600, -200 + i * 120);
                     Vector2 vel = new Vector2(-side * 10f, 0);
                     int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
                         ModContent.ProjectileType<DazhengVine>(), NPC.damage / 4, 0f, Main.myPlayer);
@@ -532,7 +532,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             }
 
             // 警告音效
-            if (AttackTimer % 40 == 0)
+            if (AttackTimer % 45 == 0)
                 SoundEngine.PlaySound(SoundID.Grass with { Volume = 0.5f, Pitch = 0.3f }, target.Center);
 
             if (AttackTimer > 240) TransitionTo(BossPhase.Phase1_Idle);
@@ -597,11 +597,11 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
         /// 藤蔓螺旋 - 从Boss处发射旋转的藤蔓弹幕地狱
         /// </summary>
         private void RunPhase1VineSpiral(Player target) {
-            vineRotation += 0.06f;
+            vineRotation += 0.05f;
 
-            // 双臂螺旋藤蔓
-            if (AttackTimer % VineSpiralInterval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int armCount = Main.expertMode ? 4 : 3;
+            // 螺旋藤蔓（降低臂数和频率，保留视觉旋转感但留出穿越间隙）
+            if (AttackTimer % 10 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                int armCount = Main.expertMode ? 3 : 2;
                 for (int arm = 0; arm < armCount; arm++) {
                     float angle = vineRotation + MathHelper.TwoPi / armCount * arm;
                     Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 9f;
@@ -612,8 +612,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 }
             }
 
-            // 反向旋转的内圈落叶
-            if (AttackTimer % 10 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+            // 反向旋转的内圈落叶（降低频率，不与藤蔓同帧发射）
+            if (AttackTimer % 18 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                 float innerAngle = -vineRotation * 1.5f + AttackTimer * 0.08f;
                 for (int i = 0; i < 2; i++) {
                     float a = innerAngle + i * MathHelper.Pi;
@@ -641,9 +641,11 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
         /// 自然之怒 - 多种攻击综合，体现自然的狂暴力量
         /// </summary>
         private void RunPhase1NatureWrath(Player target) {
-            // 第一波：环形藤蔓爆发
+            // 分波次攻击，每波之间留出反应窗口
+
+            // 第一波（tick 20）：环形藤蔓爆发
             if (AttackTimer == 20 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int ringCount = Main.expertMode ? 16 : 12;
+                int ringCount = Main.expertMode ? 12 : 10;
                 for (int i = 0; i < ringCount; i++) {
                     float angle = MathHelper.TwoPi / ringCount * i;
                     Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 7f;
@@ -655,9 +657,9 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 SoundEngine.PlaySound(SoundID.Item153 with { Pitch = -0.5f }, NPC.Center);
             }
 
-            // 第二波：落叶暴雨
-            if (AttackTimer > 40 && AttackTimer < 120 && AttackTimer % 8 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int i = 0; i < 5; i++) {
+            // 第二波（tick 60-130）：落叶暴雨（环形已散开后才开始）
+            if (AttackTimer > 60 && AttackTimer < 130 && AttackTimer % 12 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                for (int i = 0; i < 3; i++) {
                     Vector2 spawnPos = target.Center + new Vector2(Main.rand.NextFloat(-500, 500), -600);
                     Vector2 vel = new Vector2(Main.rand.NextFloat(-2f, 2f), Main.rand.NextFloat(7f, 13f));
                     Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
@@ -665,9 +667,9 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 }
             }
 
-            // 第三波：黄金弹幕
-            if (AttackTimer == 80 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int phantomCount = 6;
+            // 第三波（tick 140）：黄金弹幕（落叶结束后释放）
+            if (AttackTimer == 140 && Main.netMode != NetmodeID.MultiplayerClient) {
+                int phantomCount = 5;
                 for (int i = 0; i < phantomCount; i++) {
                     float angle = MathHelper.TwoPi / phantomCount * i + MathHelper.ToRadians(30f);
                     Vector2 pos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 250f;
@@ -677,9 +679,9 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 }
             }
 
-            // 持续旋转藤蔓施压
+            // 低威胁旋转藤蔓（仅在后半段，且频率降低）
             vineRotation += 0.04f;
-            if (AttackTimer % 12 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+            if (AttackTimer > 100 && AttackTimer % 20 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                 for (int arm = 0; arm < 2; arm++) {
                     float angle = vineRotation + arm * MathHelper.Pi;
                     Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 8f;
@@ -688,7 +690,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 }
             }
 
-            if (AttackTimer > 160) TransitionTo(BossPhase.Phase1_Idle);
+            if (AttackTimer > 190) TransitionTo(BossPhase.Phase1_Idle);
         }
 
         #endregion
@@ -726,16 +728,16 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                     Main.instance.CameraModifiers.Add(modifier);
                 }
 
-                // 转阶段爆发 - 全向藤蔓+金色弹幕
+                // 转阶段爆发 - 全向藤蔓+金色弹幕（降低密度，保持气势）
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
-                    for (int i = 0; i < 20; i++) {
-                        float angle = MathHelper.TwoPi / 20 * i;
+                    for (int i = 0; i < 14; i++) {
+                        float angle = MathHelper.TwoPi / 14 * i;
                         Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 10f;
                         Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
                             ModContent.ProjectileType<DazhengVine>(), NPC.damage / 3, 0f, Main.myPlayer);
                     }
-                    for (int i = 0; i < 12; i++) {
-                        float angle = MathHelper.TwoPi / 12 * i + MathHelper.ToRadians(15f);
+                    for (int i = 0; i < 8; i++) {
+                        float angle = MathHelper.TwoPi / 8 * i + MathHelper.ToRadians(22f);
                         Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 7f;
                         Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
                             ModContent.ProjectileType<DazhengGoldenPhantom>(), NPC.damage / 3, 0f, Main.myPlayer);
@@ -756,11 +758,11 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
         #region 二阶段：远古觉醒
 
         private void RunPhase2FuryPatrol(Player target) {
-            // 持续施压 - 藤蔓+落叶交替
-            if (PhaseTimer % 10 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+            // 持续施压 - 藤蔓+落叶交替（降低频率，给更多喘息空间）
+            if (PhaseTimer % 14 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                 Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 12f;
                 vel = vel.RotatedByRandom(MathHelper.ToRadians(20f));
-                if (PhaseTimer % 20 == 0) {
+                if (PhaseTimer % 28 == 0) {
                     Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
                         ModContent.ProjectileType<DazhengVine>(), NPC.damage / 4, 0f, Main.myPlayer);
                 } else {
@@ -769,18 +771,18 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 }
             }
 
-            if (PhaseTimer > 60) TransitionTo(GetRandomPhase2Attack());
+            if (PhaseTimer > 90) TransitionTo(GetRandomPhase2Attack());
         }
 
         /// <summary>
         /// 藤蔓地狱 - 极度密集的藤蔓弹幕，多层旋转+墙壁
         /// </summary>
         private void RunPhase2VineHell(Player target) {
-            vineRotation += 0.08f;
+            vineRotation += 0.07f;
 
-            // 四臂螺旋藤蔓
-            if (AttackTimer % 4 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int armCount = 5;
+            // 四臂螺旋藤蔓（降低频率，保留臂间空档）
+            if (AttackTimer % 8 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                int armCount = 4;
                 for (int arm = 0; arm < armCount; arm++) {
                     float angle = vineRotation + MathHelper.TwoPi / armCount * arm;
                     Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 10f;
@@ -791,14 +793,14 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 }
             }
 
-            // 反向旋转藤蔓墙
-            if (AttackTimer % 30 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+            // 藤蔓墙（拉大间隔，不与螺旋同帧）
+            if (AttackTimer % 50 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                 SpawnVineWall(target.Center, Main.rand.NextBool() ? 1 : -1, Main.rand.NextBool());
             }
 
-            // 追踪落叶补刀
-            if (AttackTimer % 15 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int i = 0; i < 3; i++) {
+            // 追踪落叶补刀（降低数量和频率）
+            if (AttackTimer % 25 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                for (int i = 0; i < 2; i++) {
                     Vector2 spawnPos = target.Center + new Vector2(Main.rand.NextFloat(-500, 500), -600);
                     Vector2 vel = new Vector2(Main.rand.NextFloat(-2f, 2f), Main.rand.NextFloat(8f, 14f));
                     Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
@@ -806,16 +808,16 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 }
             }
 
-            if (AttackTimer > 240) TransitionTo(BossPhase.Phase2_FuryPatrol);
+            if (AttackTimer > 220) TransitionTo(BossPhase.Phase2_FuryPatrol);
         }
 
         /// <summary>
         /// 远古根须 - 从玩家周围地面涌出的藤蔓攻击
         /// </summary>
         private void RunPhase2AncientRoots(Player target) {
-            // 从下方涌出的藤蔓柱
-            if (AttackTimer % 18 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int rootCount = Main.expertMode ? 7 : 5;
+            // 从下方涌出的藤蔓柱（降低频率和数量）
+            if (AttackTimer % 28 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                int rootCount = Main.expertMode ? 5 : 4;
                 for (int i = 0; i < rootCount; i++) {
                     Vector2 spawnPos = target.Center + new Vector2(
                         Main.rand.NextFloat(-500, 500), 400);
@@ -828,9 +830,9 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 SoundEngine.PlaySound(SoundID.Item153 with { Pitch = -0.6f, Volume = 0.8f }, target.Center);
             }
 
-            // 从上方落下对称藤蔓
-            if (AttackTimer % 30 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int i = 0; i < 5; i++) {
+            // 从上方落下对称藤蔓（拉大间隔，不与根须同时发射）
+            if (AttackTimer % 28 >= 14 && AttackTimer % 14 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                for (int i = 0; i < 3; i++) {
                     Vector2 spawnPos = target.Center + new Vector2(
                         Main.rand.NextFloat(-400, 400), -500);
                     Vector2 vel = new Vector2(Main.rand.NextFloat(-1.5f, 1.5f), Main.rand.NextFloat(8f, 14f));
@@ -841,18 +843,18 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 }
             }
 
-            // Boss自身释放旋转藤蔓
-            vineRotation += 0.05f;
-            if (AttackTimer % 10 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int arm = 0; arm < 3; arm++) {
-                    float angle = vineRotation + MathHelper.TwoPi / 3 * arm;
+            // Boss自身释放旋转藤蔓（大幅降低频率，避免三源重叠）
+            vineRotation += 0.04f;
+            if (AttackTimer % 22 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                for (int arm = 0; arm < 2; arm++) {
+                    float angle = vineRotation + MathHelper.TwoPi / 2 * arm;
                     Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 7f;
                     Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
                         ModContent.ProjectileType<DazhengVine>(), NPC.damage / 5, 0f, Main.myPlayer);
                 }
             }
 
-            if (AttackTimer > 200) TransitionTo(BossPhase.Phase2_FuryPatrol);
+            if (AttackTimer > 220) TransitionTo(BossPhase.Phase2_FuryPatrol);
         }
 
         /// <summary>
@@ -862,9 +864,9 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             if (PhaseTimer == 1)
                 SoundEngine.PlaySound(SoundID.Item29 with { Pitch = -0.5f, Volume = 1.5f }, NPC.Center);
 
-            // 三波黄金幻象轮流释放
-            if ((AttackTimer == 30 || AttackTimer == 70 || AttackTimer == 110) && Main.netMode != NetmodeID.MultiplayerClient) {
-                int phantomCount = Main.expertMode ? 10 : 8;
+            // 三波黄金幻象轮流释放（拉大波次间隔，降低每波数量）
+            if ((AttackTimer == 30 || AttackTimer == 80 || AttackTimer == 130) && Main.netMode != NetmodeID.MultiplayerClient) {
+                int phantomCount = Main.expertMode ? 8 : 6;
                 float offset = AttackTimer * 0.1f;
                 for (int i = 0; i < phantomCount; i++) {
                     float angle = MathHelper.TwoPi / phantomCount * i + offset;
@@ -881,8 +883,9 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 }
             }
 
-            // 间隔中密集藤蔓施压
-            if (AttackTimer % 8 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+            // 间隔中藤蔓施压（降低频率，不在幻象释放帧附近发射）
+            bool nearPhantomWave = AttackTimer is >= 25 and <= 35 or >= 75 and <= 85 or >= 125 and <= 135;
+            if (!nearPhantomWave && AttackTimer % 16 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                 Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 14f;
                 vel = vel.RotatedByRandom(MathHelper.ToRadians(25f));
                 Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
@@ -898,22 +901,28 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 }
             }
 
-            if (AttackTimer > 160) TransitionTo(BossPhase.Phase2_FuryPatrol);
+            if (AttackTimer > 180) TransitionTo(BossPhase.Phase2_FuryPatrol);
         }
 
         /// <summary>
         /// 生命汲取 - 从外圈向内收缩的藤蔓牢笼
         /// </summary>
         private void RunPhase2LifeDrain(Player target) {
-            // 三层收缩藤蔓牢笼
+            // 藤蔓牢笼（减少层数和每层数量，每层留逃脱缺口）
             if (AttackTimer == 20 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int ring = 0; ring < 4; ring++) {
-                    int vineCount = 24 + ring * 4;
-                    float ringRadius = 500f + ring * 100f;
+                for (int ring = 0; ring < 3; ring++) {
+                    int vineCount = 16 + ring * 3;
+                    float ringRadius = 500f + ring * 120f;
+                    int gapStart = Main.rand.Next(vineCount); // 随机缺口位置
+                    int gapSize = 3 + ring; // 外圈缺口更大
                     for (int i = 0; i < vineCount; i++) {
-                        float angle = MathHelper.TwoPi / vineCount * i + ring * MathHelper.ToRadians(7f);
+                        // 跳过缺口位置，确保每层都有逃生路线
+                        if ((i >= gapStart && i < gapStart + gapSize) ||
+                            (gapStart + gapSize > vineCount && i < (gapStart + gapSize) % vineCount))
+                            continue;
+                        float angle = MathHelper.TwoPi / vineCount * i + ring * MathHelper.ToRadians(10f);
                         Vector2 pos = target.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * ringRadius;
-                        Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.Zero) * (3f + ring * 1.2f);
+                        Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.Zero) * (2.5f + ring * 0.8f);
                         int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, vel,
                             ModContent.ProjectileType<DazhengVine>(), NPC.damage / 4, 0f, Main.myPlayer);
                         if (proj >= 0 && proj < Main.maxProjectiles)
@@ -923,10 +932,10 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 SoundEngine.PlaySound(SoundID.Item153 with { Volume = 1.2f }, target.Center);
             }
 
-            // 同步追踪黄金幻象
-            if (AttackTimer > 40 && AttackTimer % 25 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int i = 0; i < 4; i++) {
-                    float angle = MathHelper.TwoPi / 4 * i + AttackTimer * 0.05f;
+            // 同步追踪黄金幻象（降低频率和数量）
+            if (AttackTimer > 60 && AttackTimer % 40 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                for (int i = 0; i < 3; i++) {
+                    float angle = MathHelper.TwoPi / 3 * i + AttackTimer * 0.05f;
                     Vector2 pos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 200f;
                     Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.UnitY) * 8f;
                     Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, vel,
@@ -934,9 +943,9 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 }
             }
 
-            // 持续落叶雨
-            if (AttackTimer % 10 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int i = 0; i < 4; i++) {
+            // 落叶雨（降低密度）
+            if (AttackTimer % 20 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                for (int i = 0; i < 3; i++) {
                     Vector2 spawnPos = target.Center + new Vector2(Main.rand.NextFloat(-500, 500), -600);
                     Vector2 vel = new Vector2(Main.rand.NextFloat(-3f, 3f), Main.rand.NextFloat(6f, 12f));
                     Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
@@ -944,7 +953,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 }
             }
 
-            if (AttackTimer > 180) TransitionTo(BossPhase.Phase2_FuryPatrol);
+            if (AttackTimer > 200) TransitionTo(BossPhase.Phase2_FuryPatrol);
         }
 
         #endregion
