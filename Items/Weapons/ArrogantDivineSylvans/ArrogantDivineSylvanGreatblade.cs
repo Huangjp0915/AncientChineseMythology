@@ -5,6 +5,8 @@ using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
+using AncientChineseMythology.Celestias.Boss.Dazhengs.Items;
+using AncientChineseMythology.Items.Weapons.DivineWoods;
 
 namespace AncientChineseMythology.Items.Weapons.ArrogantDivineSylvans;
 
@@ -42,6 +44,14 @@ public class ArrogantDivineSylvanGreatblade : ModItem
         Projectile.NewProjectile(source, player.Center, velocity, type, damage, knockback, player.whoAmI, attackType);
         attackType = (attackType + 1) % 3;
         return false;
+    }
+
+    public override void AddRecipes() {
+        CreateRecipe()
+            .AddIngredient<ArrogantDivineSylvan>(15)
+            .AddIngredient<DivineWoodGreatblade>()
+            .AddTile(TileID.MythrilAnvil)
+            .Register();
     }
 }
 

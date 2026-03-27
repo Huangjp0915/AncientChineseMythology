@@ -18,6 +18,7 @@ namespace AncientChineseMythology.Systems
         public static bool downedVigor = false; //跟踪神威·断罪刃是否已被击败
         public static bool downedArgus = false; //跟踪天目·追魂弧是否已被击败
         public static bool downedDazheng = false; //跟踪大椿是否已被击败
+        public static bool downedDryads = false; //跟踪树精是否已被击败
         public static bool downedHeavenInvasion = false; //跟踪天庭入侵事件是否已被击退
         public static bool downedUnderworldInvasion = false; //跟踪地府入侵事件是否已被击退
 
@@ -35,6 +36,7 @@ namespace AncientChineseMythology.Systems
             tag["downedVigor"] = downedVigor; //保存神威·断罪刃状态
             tag["downedArgus"] = downedArgus; //保存天目·追魂弧状态
             tag["downedDazheng"] = downedDazheng; //保存大椿状态
+            tag["downedDryads"] = downedDryads; //保存树精状态
             tag["downedHeavenInvasion"] = downedHeavenInvasion; //保存天庭入侵状态
             tag["downedUnderworldInvasion"] = downedUnderworldInvasion; //保存地府入侵状态
         }
@@ -53,6 +55,7 @@ namespace AncientChineseMythology.Systems
             downedVigor = tag.GetBool("downedVigor"); //加载神威·断罪刃状态
             downedArgus = tag.GetBool("downedArgus"); //加载天目·追魂弧状态
             downedDazheng = tag.GetBool("downedDazheng"); //加载大椿状态
+            downedDryads = tag.GetBool("downedDryads"); //加载树精状态
             downedHeavenInvasion = tag.GetBool("downedHeavenInvasion"); //加载天庭入侵状态
             downedUnderworldInvasion = tag.GetBool("downedUnderworldInvasion"); //加载地府入侵状态
         }
@@ -72,6 +75,7 @@ namespace AncientChineseMythology.Systems
             downedVigor = false;
             downedArgus = false;
             downedDazheng = false;
+            downedDryads = false;
             downedHeavenInvasion = false;
             downedUnderworldInvasion = false;
         }

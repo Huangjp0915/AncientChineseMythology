@@ -5,6 +5,7 @@ using Terraria.Audio;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
+using AncientChineseMythology.Celestias.Boss.Dryades.Items;
 
 namespace AncientChineseMythology.Items.Weapons.DivineWoods;
 
@@ -38,6 +39,13 @@ public class DivineWoodGyratingLeaf : ModItem
 
     public override bool CanUseItem(Player player) {
         return player.ownedProjectileCounts[ModContent.ProjectileType<DivineWoodGyratingLeafProj>()] < 1;
+    }
+
+    public override void AddRecipes() {
+        CreateRecipe()
+            .AddIngredient<Livinglog>(12)
+            .AddTile(TileID.MythrilAnvil)
+            .Register();
     }
 }
 

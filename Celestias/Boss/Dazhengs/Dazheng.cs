@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Systems;
+﻿using AncientChineseMythology.Celestias.Boss.Dazhengs.Items;
+using AncientChineseMythology.Systems;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
@@ -7,6 +8,7 @@ using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
+using Terraria.GameContent.ItemDropRules;
 using Terraria.Graphics.CameraModifiers;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -131,7 +133,10 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
         }
 
         public override void ModifyNPCLoot(NPCLoot npcLoot) {
-            // 掉落占位 - 后续添加专属掉落物
+            // 自然之斧 - 100%掉落
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<TheNaturalAxe>()));
+            // 傲世神木 - 掉落15~25个
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<ArrogantDivineSylvan>(), minimumDropped: 45, maximumDropped: 60));
         }
 
         public override void OnSpawn(IEntitySource source) {

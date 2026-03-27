@@ -1314,6 +1314,25 @@ Items: {
 		Tooltip: ""
 	}
 
+	TheNaturalAxe: {
+		DisplayName: The Natural Axe
+		Tooltip:
+			'''
+			A divine relic left behind by Dazheng, ancestor of all trees
+			Left-click to swing as a powerful axe
+			Right-click to plant tree saplings on nearby ground
+			'''
+	}
+
+	ArrogantDivineSylvan: {
+		DisplayName: Arrogant Divine Sylvan
+		Tooltip:
+			'''
+			Divine wood essence crystallized over eons within Dazheng
+			Contains immortal life force, softly radiating an emerald-gold glow
+			'''
+	}
+
 	ArrogantDivineSylvanGreatblade: {
 		DisplayName: Arrogant Divine Sylvan Greatblade
 		Tooltip:
@@ -1516,6 +1535,11 @@ Items: {
 			Eyeball bursts into a ring of blood projectiles
 			'''
 	}
+
+	Livinglog: {
+		DisplayName: Livinglog
+		Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -1625,6 +1649,7 @@ NPCs: {
 	AoshunTail.DisplayName: Aoshun Tail
 	Vigor.DisplayName: Vigor, the Sin-Severing Blade
 	Argus.DisplayName: Argus, the Soul-Piercing Arc
+	Dryads.DisplayName: Dryads
 }
 
 Projectiles: {
@@ -2060,6 +2085,7 @@ Projectiles: {
 	DazhengVine.DisplayName: Dazheng Vine
 	DazhengLeaf.DisplayName: Dazheng Leaf
 	DazhengGoldenPhantom.DisplayName: Golden Phantom
+	Acanthosphere.DisplayName: Acanthosphere
 }
 
 HeavenBiome.DisplayName: Heaven

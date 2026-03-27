@@ -5,6 +5,7 @@ using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
+using AncientChineseMythology.Celestias.Boss.Dryades.Items;
 
 namespace AncientChineseMythology.Items.Weapons.DivineWoods;
 
@@ -39,6 +40,13 @@ public class DivineWoodBomb : ModItem
         Vector2 launchVel = velocity + new Vector2(0, -3f);
         Projectile.NewProjectile(source, position, launchVel, type, damage, knockback, player.whoAmI);
         return false;
+    }
+
+    public override void AddRecipes() {
+        CreateRecipe()
+            .AddIngredient<Livinglog>(12)
+            .AddTile(TileID.MythrilAnvil)
+            .Register();
     }
 }
 

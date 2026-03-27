@@ -5,6 +5,8 @@ using Terraria.Audio;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
+using AncientChineseMythology.Celestias.Boss.Dazhengs.Items;
+using AncientChineseMythology.Items.Weapons.DivineWoods;
 
 namespace AncientChineseMythology.Items.Weapons.ArrogantDivineSylvans;
 
@@ -40,6 +42,14 @@ public class ArrogantDivineSylvanChakram : ModItem
 
     public override bool CanUseItem(Player player) {
         return player.ownedProjectileCounts[ModContent.ProjectileType<ArrogantSylvanChakramProj>()] < 1;
+    }
+
+    public override void AddRecipes() {
+        CreateRecipe()
+            .AddIngredient<ArrogantDivineSylvan>(15)
+            .AddIngredient<DivineWoodGyratingLeaf>()
+            .AddTile(TileID.MythrilAnvil)
+            .Register();
     }
 }
 

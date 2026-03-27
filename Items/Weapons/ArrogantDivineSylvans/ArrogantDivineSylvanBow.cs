@@ -5,6 +5,8 @@ using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
+using AncientChineseMythology.Celestias.Boss.Dazhengs.Items;
+using AncientChineseMythology.Items.Weapons.DivineWoods;
 
 namespace AncientChineseMythology.Items.Weapons.ArrogantDivineSylvans;
 
@@ -69,6 +71,14 @@ public class ArrogantDivineSylvanBow : ModItem
         }
 
         return false;
+    }
+
+    public override void AddRecipes() {
+        CreateRecipe()
+            .AddIngredient<ArrogantDivineSylvan>(15)
+            .AddIngredient<DivineWoodLongbow>()
+            .AddTile(TileID.MythrilAnvil)
+            .Register();
     }
 }
 

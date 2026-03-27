@@ -6,6 +6,7 @@ using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
+using AncientChineseMythology.Celestias.Boss.Dryades.Items;
 
 namespace AncientChineseMythology.Items.Weapons.DivineWoods;
 
@@ -62,6 +63,13 @@ public class DivineWoodTome : ModItem
         }
 
         return false;
+    }
+
+    public override void AddRecipes() {
+        CreateRecipe()
+            .AddIngredient<Livinglog>(12)
+            .AddTile(TileID.MythrilAnvil)
+            .Register();
     }
 }
 

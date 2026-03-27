@@ -6,6 +6,8 @@ using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
+using AncientChineseMythology.Celestias.Boss.Dazhengs.Items;
+using AncientChineseMythology.Items.Weapons.DivineWoods;
 
 namespace AncientChineseMythology.Items.Weapons.ArrogantDivineSylvans;
 
@@ -45,6 +47,14 @@ public class ArrogantDivineSylvanStaff : ModItem
         Projectile.NewProjectile(source, position, velocity, type, damage, knockback, player.whoAmI);
         SoundEngine.PlaySound(SoundID.Grass with { Volume = 0.9f, Pitch = 0.1f }, player.Center);
         return false;
+    }
+
+    public override void AddRecipes() {
+        CreateRecipe()
+            .AddIngredient<ArrogantDivineSylvan>(15)
+            .AddIngredient<DivineWoodScepter>()
+            .AddTile(TileID.MythrilAnvil)
+            .Register();
     }
 }
 

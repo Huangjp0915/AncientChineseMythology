@@ -1436,6 +1436,25 @@ Items: {
 			'''
 	}
 
+	TheNaturalAxe: {
+		DisplayName: 自然之斧
+		Tooltip:
+			'''
+			大椿——万木之祖遗留的神器
+			左键挥砍，可轻松伐尽世间巨木
+			右键在鼠标附近的地面批量种植树苗
+			'''
+	}
+
+	ArrogantDivineSylvan: {
+		DisplayName: 傲世神木
+		Tooltip:
+			'''
+			大椿体内凝聚亿万年灵韵的神木精华
+			蕴含着不朽的生命之力，微微散发翠金光辉
+			'''
+	}
+
 	ArrogantDivineSylvanGreatblade: {
 		DisplayName: 傲世神木·斩天巨刃
 		Tooltip:
@@ -1638,6 +1657,11 @@ Items: {
 			眼球爆裂释放环形血液弹幕
 			'''
 	}
+
+	Livinglog: {
+		// DisplayName: Livinglog
+		// Tooltip: ""
+	}
 }
 
 NPCs: {
@@ -1747,6 +1771,7 @@ NPCs: {
 	AoshunTail.DisplayName: Aoshun Tail
 	Vigor.DisplayName: 神威·断罪刃
 	Argus.DisplayName: 天目·追魂弧
+	// Dryads.DisplayName: Dryads
 }
 
 Projectiles: {
@@ -2182,6 +2207,7 @@ Projectiles: {
 	DazhengVine.DisplayName: 大椿藤蔓
 	DazhengLeaf.DisplayName: 大椿落叶
 	DazhengGoldenPhantom.DisplayName: 黄金幻象
+	// Acanthosphere.DisplayName: Acanthosphere
 }
 
 HeavenBiome.DisplayName: Heaven
