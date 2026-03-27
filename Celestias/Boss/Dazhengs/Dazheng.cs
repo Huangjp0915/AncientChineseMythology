@@ -269,6 +269,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             // 入场上升期间绘制在物块之后
             NPC.behindTiles = isRising;
             if (isRising) {
+                for(int i = 0; i < 110; i++)
                 Lighting.AddLight(NPC.Center + VaultUtils.RandVr(0, 500), Color.Green.ToVector3() * 10);
             }
 
