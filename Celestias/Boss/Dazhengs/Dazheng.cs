@@ -77,6 +77,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
         private Vector2 spawnPosition;
         private float vineRotation; // 旋转藤蔓角度
         private int attackCycle; // 攻击循环计数
+        private float introRiseOffset; // 入场上升偏移量（>0 = 在地下）
+        private bool isRising; // 是否正在上升出场中
 
         #endregion
 
@@ -136,9 +138,12 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             Phase = BossPhase.Intro;
             PhaseTimer = 0;
             globalTime = 0;
-            // 自动贴地：从召唤位置向下扫描找到地面
+            // 自动贴地：从召唤位置向下扫描找到地面（此为最终目标位置）
             spawnPosition = FindGroundPosition(NPC.Center);
-            NPC.Center = spawnPosition;
+            // 初始位置在地下：整个纹理藏在地面以下
+            introRiseOffset = TextureHeight + 100f;
+            isRising = true;
+            NPC.Center = spawnPosition + new Vector2(0, introRiseOffset);
             if (Main.netMode != NetmodeID.MultiplayerClient)
                 NPC.netUpdate = true;
         }
@@ -176,6 +181,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             writer.Write(spawnPosition.Y);
             writer.Write(vineRotation);
             writer.Write(attackCycle);
+            writer.Write(introRiseOffset);
+            writer.Write(isRising);
         }
 
         public override void ReceiveExtraAI(BinaryReader reader) {
@@ -185,14 +192,24 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             spawnPosition = new Vector2(reader.ReadSingle(), reader.ReadSingle());
             vineRotation = reader.ReadSingle();
             attackCycle = reader.ReadInt32();
+            introRiseOffset = reader.ReadSingle();
+            isRising = reader.ReadBoolean();
         }
 
         public override bool? DrawHealthBar(byte hbPosition, ref float scale, ref Vector2 position) {
             scale = 2f;
+            // 入场上升阶段隐藏血条
+            if (isRising) return false;
             return null;
         }
 
         public override bool CheckActive() => false;
+
+        public override void DrawBehind(int index) {
+            if (isRising) {
+                Main.instance.DrawCacheProjsBehindNPCsAndTiles.Add(index);
+            }
+        }
 
         public override void HitEffect(NPC.HitInfo hit) {
             // 受击时落叶飞溅
@@ -240,10 +257,20 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
         public override void AI() {
             globalTime += 1f / 60f;
 
-            // 固定在原地不动
+            // 固定在原地不动（入场上升期间带偏移）
             NPC.velocity = Vector2.Zero;
-            if (spawnPosition != Vector2.Zero)
-                NPC.Center = spawnPosition;
+            if (spawnPosition != Vector2.Zero) {
+                if (isRising)
+                    NPC.Center = spawnPosition + new Vector2(0, introRiseOffset);
+                else
+                    NPC.Center = spawnPosition;
+            }
+
+            // 入场上升期间绘制在物块之后
+            NPC.behindTiles = isRising;
+            if (isRising) {
+                Lighting.AddLight(NPC.Center + VaultUtils.RandVr(0, 500), Color.Green.ToVector3() * 10);
+            }
 
             NPC.TargetClosest();
             Player target = Main.player[NPC.target];
@@ -340,43 +367,250 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 
         #region 入场演出
 
-        private void RunIntro(Player target) {
-            if (PhaseTimer == 1) {
-                // spawnPosition已在OnSpawn中通过贴地逻辑设置
-                SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.6f, Volume = 1.3f }, NPC.Center);
-            }
+        // 入场演出时间轴常量
+        private const int IntroRumbleEnd = 60;       // 0-60: 地面震动预兆
+        private const int IntroRiseEnd = 210;        // 60-210: 从地下上升
+        private const int IntroEruptEnd = 260;       // 210-260: 破土而出爆发
+        private const int IntroFinish = 290;         // 260-290: 收尾，进入战斗
 
+        private void RunIntro(Player target) {
             NPC.dontTakeDamage = true;
 
-            // 自然能量汇聚效果
-            if (Main.netMode != NetmodeID.Server) {
-                int particleCount = (int)MathHelper.Lerp(3, 15, PhaseTimer / 150f);
-                for (int i = 0; i < particleCount; i++) {
-                    float angle = Main.rand.NextFloat(MathHelper.TwoPi);
-                    float dist = Main.rand.NextFloat(200, 600) * (1f - PhaseTimer / 150f);
-                    Vector2 dustPos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * dist;
-                    Dust d = Dust.NewDustDirect(dustPos, 0, 0, DustID.GreenTorch, 0, 0, 100, default, 2f);
-                    d.noGravity = true;
-                    d.velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 5f;
+            // 地面位置（纹理底部对齐的世界坐标）
+            float groundWorldY = spawnPosition.Y + TextureHeight / 2f;
+
+            // ========== 阶段1：地面震动预兆（0-60）==========
+            if (PhaseTimer <= IntroRumbleEnd) {
+                // 震动音效
+                if (PhaseTimer == 1) {
+                    SoundEngine.PlaySound(SoundID.Item14 with { Pitch = -0.8f, Volume = 0.6f }, 
+                        new Vector2(spawnPosition.X, groundWorldY));
                 }
 
-                // 地面涌出藤蔓粒子
-                for (int i = 0; i < 2; i++) {
-                    Vector2 groundPos = NPC.Center + new Vector2(Main.rand.NextFloat(-400, 400), 200);
-                    Dust d = Dust.NewDustDirect(groundPos, 0, 0, DustID.JungleGrass, 0, -3f, 100, default, 2f);
-                    d.noGravity = true;
+                // 持续微弱屏幕震动，强度递增
+                if (PhaseTimer % 4 == 0 && Main.netMode != NetmodeID.Server) {
+                    float shakeStr = MathHelper.Lerp(1f, 6f, PhaseTimer / (float)IntroRumbleEnd);
+                    PunchCameraModifier modifier = new(
+                        new Vector2(spawnPosition.X, groundWorldY),
+                        Vector2.UnitY.RotatedByRandom(0.3f),
+                        shakeStr, 3f, 4, 2000f, FullName);
+                    Main.instance.CameraModifiers.Add(modifier);
                 }
+
+                // 地面裂缝粒子：从地面位置喷出碎石和绿光
+                if (Main.netMode != NetmodeID.Server) {
+                    int crackIntensity = (int)MathHelper.Lerp(1, 6, PhaseTimer / (float)IntroRumbleEnd);
+                    for (int i = 0; i < crackIntensity; i++) {
+                        // 碎石从地面飞出
+                        Vector2 crackPos = new(
+                            spawnPosition.X + Main.rand.NextFloat(-300, 300),
+                            groundWorldY + Main.rand.NextFloat(-8, 8));
+                        Dust d = Dust.NewDustDirect(crackPos, 0, 0, DustID.WoodFurniture,
+                            Main.rand.NextFloat(-2f, 2f), Main.rand.NextFloat(-5f, -1f),
+                            150, default, Main.rand.NextFloat(1f, 2f));
+                        d.noGravity = false;
+                    }
+                    // 绿色能量从地面裂缝渗出
+                    if (PhaseTimer > 20) {
+                        for (int i = 0; i < crackIntensity / 2 + 1; i++) {
+                            Vector2 glowPos = new(
+                                spawnPosition.X + Main.rand.NextFloat(-200, 200),
+                                groundWorldY + Main.rand.NextFloat(-4, 4));
+                            Dust d = Dust.NewDustDirect(glowPos, 0, 0, DustID.GreenTorch,
+                                0, Main.rand.NextFloat(-3f, -1f), 80, default, 1.8f);
+                            d.noGravity = true;
+                        }
+                    }
+                }
+
+                // 提供地面位置的光照提示
+                Lighting.AddLight(new Vector2(spawnPosition.X, groundWorldY),
+                    new Vector3(0.2f, 0.5f, 0.1f) * (PhaseTimer / (float)IntroRumbleEnd));
             }
 
-            if (PhaseTimer >= 150) {
-                NPC.dontTakeDamage = false;
+            // ========== 阶段2：从地下上升（60-210）==========
+            if (PhaseTimer > IntroRumbleEnd && PhaseTimer <= IntroRiseEnd) {
+                float riseProgress = (PhaseTimer - IntroRumbleEnd) / (float)(IntroRiseEnd - IntroRumbleEnd);
+                // 缓入缓出：慢→快→慢的上升节奏
+                float easedProgress = riseProgress < 0.5f
+                    ? 4f * riseProgress * riseProgress * riseProgress
+                    : 1f - MathF.Pow(-2f * riseProgress + 2f, 3f) / 2f;
+
+                float totalRise = TextureHeight + 100f;
+                introRiseOffset = totalRise * (1f - easedProgress);
+
+                // 上升音效
+                if (PhaseTimer == IntroRumbleEnd + 1) {
+                    SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.8f, Volume = 0.8f },
+                        new Vector2(spawnPosition.X, groundWorldY));
+                }
+                // 上升中段的加速音效
+                if (PhaseTimer == IntroRumbleEnd + 75) {
+                    SoundEngine.PlaySound(SoundID.Item14 with { Pitch = -0.4f, Volume = 0.9f },
+                        new Vector2(spawnPosition.X, groundWorldY));
+                }
+
+                // 上升过程中的地面特效
+                if (Main.netMode != NetmodeID.Server) {
+                    // 计算当前上升速度用于特效强度
+                    float riseSpeed = MathHelper.Clamp(
+                        (riseProgress > 0.1f && riseProgress < 0.9f) ? 1.5f : 0.5f, 0f, 2f);
+
+                    // 地面翻涌泥土
+                    for (int i = 0; i < (int)(4 * riseSpeed); i++) {
+                        Vector2 dirtPos = new(
+                            spawnPosition.X + Main.rand.NextFloat(-350, 350),
+                            groundWorldY + Main.rand.NextFloat(-20, 10));
+                        Dust d = Dust.NewDustDirect(dirtPos, 0, 0, DustID.WoodFurniture,
+                            Main.rand.NextFloat(-3f, 3f), Main.rand.NextFloat(-6f, -2f),
+                            120, default, Main.rand.NextFloat(1.5f, 2.5f));
+                        d.noGravity = false;
+                    }
+
+                    // 藤蔓先于树身从地面钻出
+                    if (riseProgress > 0.15f) {
+                        for (int i = 0; i < 3; i++) {
+                            Vector2 vinePos = new(
+                                spawnPosition.X + Main.rand.NextFloat(-400, 400),
+                                groundWorldY - Main.rand.NextFloat(0, 30));
+                            Dust d = Dust.NewDustDirect(vinePos, 0, 0, DustID.JungleGrass,
+                                Main.rand.NextFloat(-1f, 1f), Main.rand.NextFloat(-4f, -1f),
+                                100, default, 2f);
+                            d.noGravity = true;
+                        }
+                    }
+
+                    // NPC周围的自然能量光环
+                    if (riseProgress > 0.3f) {
+                        int energyCount = (int)(6 * riseProgress);
+                        for (int i = 0; i < energyCount; i++) {
+                            float angle = Main.rand.NextFloat(MathHelper.TwoPi);
+                            float dist = Main.rand.NextFloat(100, 400) * (1f - riseProgress * 0.5f);
+                            Vector2 ePos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * dist;
+                            Dust d = Dust.NewDustDirect(ePos, 0, 0, DustID.GreenTorch,
+                                0, 0, 80, default, 2f);
+                            d.noGravity = true;
+                            d.velocity = (NPC.Center - ePos).SafeNormalize(Vector2.Zero) * 4f;
+                        }
+                    }
+
+                    // 持续屏幕震动
+                    if (PhaseTimer % 6 == 0) {
+                        float shakeStr = 3f + riseSpeed * 4f;
+                        PunchCameraModifier modifier = new(
+                            NPC.Center, Vector2.UnitY.RotatedByRandom(0.4f),
+                            shakeStr, 4f, 5, 2500f, FullName);
+                        Main.instance.CameraModifiers.Add(modifier);
+                    }
+                }
+
+                // 光照随上升增强
+                float lightStr = MathHelper.Lerp(0.3f, 0.8f, riseProgress);
+                Lighting.AddLight(NPC.Center, new Vector3(0.3f, 0.6f, 0.15f) * lightStr);
+            }
+
+            // ========== 阶段3：破土而出爆发（210-260）==========
+            if (PhaseTimer == IntroRiseEnd) {
+                // 完全到达目标位置
+                introRiseOffset = 0f;
+                isRising = false;
+
+                // 爆发音效
+                SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.5f, Volume = 1.4f }, NPC.Center);
+                SoundEngine.PlaySound(SoundID.Item14 with { Pitch = -0.6f, Volume = 1.2f }, NPC.Center);
+
+                // 强力屏幕震动
                 if (Main.netMode != NetmodeID.Server) {
                     PunchCameraModifier modifier = new(NPC.Center,
                         (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(),
-                        20f, 10f, 40, 2000f, FullName);
+                        25f, 12f, 60, 3000f, FullName);
                     Main.instance.CameraModifiers.Add(modifier);
                 }
-                SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.3f }, NPC.Center);
+
+                // 爆发泥土碎石四散
+                if (Main.netMode != NetmodeID.Server) {
+                    for (int i = 0; i < 40; i++) {
+                        float angle = Main.rand.NextFloat(MathHelper.TwoPi);
+                        float speed = Main.rand.NextFloat(4f, 12f);
+                        Vector2 debrisPos = new(spawnPosition.X + Main.rand.NextFloat(-200, 200),
+                            groundWorldY + Main.rand.NextFloat(-30, 10));
+                        Dust d = Dust.NewDustDirect(debrisPos, 0, 0, DustID.WoodFurniture,
+                            MathF.Cos(angle) * speed, MathF.Sin(angle) * speed - 3f,
+                            100, default, Main.rand.NextFloat(2f, 3.5f));
+                        d.noGravity = false;
+                    }
+                    // 绿色自然能量环形爆发
+                    for (int i = 0; i < 30; i++) {
+                        float angle = MathHelper.TwoPi / 30 * i;
+                        float speed = Main.rand.NextFloat(6f, 14f);
+                        Dust d = Dust.NewDustDirect(NPC.Center, 0, 0, DustID.GreenTorch,
+                            MathF.Cos(angle) * speed, MathF.Sin(angle) * speed,
+                            60, default, 2.5f);
+                        d.noGravity = true;
+                    }
+                    // 金色粒子环
+                    for (int i = 0; i < 20; i++) {
+                        float angle = MathHelper.TwoPi / 20 * i;
+                        Dust d = Dust.NewDustDirect(NPC.Center, 0, 0, DustID.GoldFlame,
+                            MathF.Cos(angle) * 8f, MathF.Sin(angle) * 8f,
+                            80, default, 3f);
+                        d.noGravity = true;
+                    }
+                }
+
+                NPC.netUpdate = true;
+            }
+
+            // 爆发后的余波特效
+            if (PhaseTimer > IntroRiseEnd && PhaseTimer <= IntroEruptEnd) {
+                float eruptFade = 1f - (PhaseTimer - IntroRiseEnd) / (float)(IntroEruptEnd - IntroRiseEnd);
+
+                if (Main.netMode != NetmodeID.Server) {
+                    // 持续扩散的能量波
+                    int waveCount = (int)(8 * eruptFade);
+                    for (int i = 0; i < waveCount; i++) {
+                        float angle = Main.rand.NextFloat(MathHelper.TwoPi);
+                        float dist = Main.rand.NextFloat(100, 500);
+                        Vector2 ePos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * dist;
+                        Dust d = Dust.NewDustDirect(ePos, 0, 0, DustID.GreenTorch,
+                            0, -1f, 80, default, 2f * eruptFade);
+                        d.noGravity = true;
+                    }
+
+                    // 飘落叶片
+                    if (PhaseTimer % 3 == 0) {
+                        for (int i = 0; i < 4; i++) {
+                            Vector2 leafPos = NPC.Center + new Vector2(
+                                Main.rand.NextFloat(-TextureWidth / 2, TextureWidth / 2),
+                                Main.rand.NextFloat(-TextureHeight / 2, 0));
+                            Dust d = Dust.NewDustDirect(leafPos, 0, 0, DustID.GrassBlades,
+                                Main.rand.NextFloat(-2f, 2f), Main.rand.NextFloat(1f, 4f),
+                                100, default, 2f);
+                            d.noGravity = false;
+                        }
+                    }
+                }
+
+                // 光照脉冲
+                Lighting.AddLight(NPC.Center, new Vector3(0.5f, 0.8f, 0.3f) * eruptFade);
+            }
+
+            // ========== 阶段4：收尾进入战斗（260-290）==========
+            if (PhaseTimer >= IntroEruptEnd && PhaseTimer < IntroFinish) {
+                // 最终稳定阶段的柔和光辉
+                if (Main.netMode != NetmodeID.Server && PhaseTimer % 4 == 0) {
+                    for (int i = 0; i < 3; i++) {
+                        Vector2 dustPos = NPC.Center + Main.rand.NextVector2Circular(200, 200);
+                        Dust d = Dust.NewDustDirect(dustPos, 0, 0, DustID.GreenTorch,
+                            0, -1f, 100, default, 1.5f);
+                        d.noGravity = true;
+                    }
+                }
+            }
+
+            if (PhaseTimer >= IntroFinish) {
+                NPC.dontTakeDamage = false;
+                SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.3f, Volume = 1.1f }, NPC.Center);
                 TransitionTo(BossPhase.Phase1_Idle);
             }
         }
