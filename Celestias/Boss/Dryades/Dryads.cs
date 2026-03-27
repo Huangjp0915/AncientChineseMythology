@@ -350,7 +350,6 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
             PhaseTimer = 0;
             AttackTimer = 0;
             SubState = 0;
-            attackCycle = 0;
             NPC.netUpdate = true;
         }
 
@@ -545,6 +544,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
             // ========== 进入战斗（240）==========
             if (PhaseTimer >= IntroFinish) {
                 NPC.dontTakeDamage = false;
+                attackCycle = 0;
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.2f, Volume = 0.9f }, NPC.Center);
                 TransitionTo(BossPhase.Phase1_Idle);
             }
@@ -696,7 +696,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
 
                 SoundEngine.PlaySound(SoundID.Item14 with { Pitch = -0.3f, Volume = 0.9f }, NPC.Center);
 
-                // 冒出时爆发刺球
+                // 冒出时爆发藤蔓
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
                     int spikeCount = isPhase2 ? 8 : 5;
                     for (int i = 0; i < spikeCount; i++) {
@@ -704,7 +704,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                         Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * (isPhase2 ? 7f : 5f);
                         vel.Y -= 3f;
                         Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                            ModContent.ProjectileType<Acanthosphere>(), NPC.damage / 4, 1f, Main.myPlayer);
+                            ModContent.ProjectileType<DryadsVine>(), NPC.damage / 4, 1f, Main.myPlayer);
                     }
                 }
 
@@ -741,7 +741,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                 Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 6f;
                 vel = vel.RotatedByRandom(MathHelper.ToRadians(15f));
                 Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                    ModContent.ProjectileType<Acanthosphere>(), NPC.damage / 5, 0.5f, Main.myPlayer);
+                    ModContent.ProjectileType<DryadsLeaf>(), NPC.damage / 5, 0.5f, Main.myPlayer);
             }
 
             if (PhaseTimer > 100) TransitionTo(GetRandomPhase1Attack());
@@ -758,7 +758,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                         Main.rand.NextFloat(-400, 400), 300);
                     Vector2 vel = new Vector2(Main.rand.NextFloat(-1.5f, 1.5f), -Main.rand.NextFloat(8f, 14f));
                     Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
-                        ModContent.ProjectileType<Acanthosphere>(), NPC.damage / 4, 1f, Main.myPlayer);
+                        ModContent.ProjectileType<DryadsVine>(), NPC.damage / 4, 1f, Main.myPlayer);
                 }
                 SoundEngine.PlaySound(SoundID.Item153 with { Pitch = -0.5f, Volume = 0.7f }, target.Center);
             }
@@ -815,7 +815,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                         Main.rand.NextFloat(-2.5f, 2.5f),
                         Main.rand.NextFloat(5f, 10f));
                     Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
-                        ModContent.ProjectileType<Acanthosphere>(), NPC.damage / 5, 0.5f, Main.myPlayer);
+                        ModContent.ProjectileType<DryadsLeaf>(), NPC.damage / 5, 0.5f, Main.myPlayer);
                 }
             }
 
@@ -839,7 +839,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                 for (int i = -lashCount / 2; i <= lashCount / 2; i++) {
                     Vector2 vel = toPlayer.RotatedBy(i * spreadAngle) * 14f;
                     Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                        ModContent.ProjectileType<Acanthosphere>(), NPC.damage / 4, 1.5f, Main.myPlayer);
+                        ModContent.ProjectileType<DryadsVine>(), NPC.damage / 4, 1.5f, Main.myPlayer);
                 }
                 SoundEngine.PlaySound(SoundID.Item153 with { Pitch = -0.2f, Volume = 0.7f }, NPC.Center);
             }
@@ -888,7 +888,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                         float angle = MathHelper.TwoPi / 12 * i;
                         Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 8f;
                         Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                            ModContent.ProjectileType<Acanthosphere>(), NPC.damage / 3, 1f, Main.myPlayer);
+                            ModContent.ProjectileType<DryadsLeaf>(), NPC.damage / 3, 1f, Main.myPlayer);
                     }
                 }
             }
@@ -897,6 +897,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                 NPC.dontTakeDamage = false;
                 NPC.defense += 15;
                 NPC.damage = (int)(NPC.damage * 1.2f);
+                attackCycle = 0;
                 TransitionTo(BossPhase.Phase2_Idle);
             }
         }
@@ -910,7 +911,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                 Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 8f;
                 vel = vel.RotatedByRandom(MathHelper.ToRadians(20f));
                 Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                    ModContent.ProjectileType<Acanthosphere>(), NPC.damage / 5, 0.5f, Main.myPlayer);
+                    ModContent.ProjectileType<DryadsLeaf>(), NPC.damage / 5, 0.5f, Main.myPlayer);
             }
 
             if (PhaseTimer > 80) TransitionTo(GetRandomPhase2Attack());
@@ -927,7 +928,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                         Main.rand.NextFloat(-500, 500), 350);
                     Vector2 vel = new Vector2(Main.rand.NextFloat(-2f, 2f), -Main.rand.NextFloat(10f, 16f));
                     Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
-                        ModContent.ProjectileType<Acanthosphere>(), NPC.damage / 3, 1f, Main.myPlayer);
+                        ModContent.ProjectileType<DryadsVine>(), NPC.damage / 3, 1f, Main.myPlayer);
                 }
                 SoundEngine.PlaySound(SoundID.Item153 with { Pitch = -0.6f, Volume = 0.8f }, target.Center);
             }
@@ -938,7 +939,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                         Main.rand.NextFloat(-400, 400), -500);
                     Vector2 vel = new Vector2(Main.rand.NextFloat(-1f, 1f), Main.rand.NextFloat(6f, 10f));
                     Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
-                        ModContent.ProjectileType<Acanthosphere>(), NPC.damage / 4, 0.5f, Main.myPlayer);
+                        ModContent.ProjectileType<DryadsLeaf>(), NPC.damage / 4, 0.5f, Main.myPlayer);
                 }
             }
 
@@ -980,7 +981,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                     float angle = MathHelper.TwoPi / ringCount * i;
                     Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 6f;
                     Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                        ModContent.ProjectileType<Acanthosphere>(), NPC.damage / 4, 1f, Main.myPlayer);
+                        ModContent.ProjectileType<DryadsLeaf>(), NPC.damage / 4, 1f, Main.myPlayer);
                 }
                 SoundEngine.PlaySound(SoundID.Item153 with { Pitch = -0.5f }, NPC.Center);
             }
@@ -990,7 +991,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                     Vector2 spawnPos = target.Center + new Vector2(Main.rand.NextFloat(-450, 450), 350);
                     Vector2 vel = new Vector2(Main.rand.NextFloat(-1.5f, 1.5f), -Main.rand.NextFloat(9f, 14f));
                     Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
-                        ModContent.ProjectileType<Acanthosphere>(), NPC.damage / 4, 1f, Main.myPlayer);
+                        ModContent.ProjectileType<DryadsVine>(), NPC.damage / 4, 1f, Main.myPlayer);
                 }
             }
 
@@ -1000,7 +1001,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                     Vector2 spawnPos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 200f;
                     Vector2 vel = (target.Center - spawnPos).SafeNormalize(Vector2.UnitY) * 10f;
                     Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
-                        ModContent.ProjectileType<Acanthosphere>(), NPC.damage / 3, 1f, Main.myPlayer);
+                        ModContent.ProjectileType<DryadsVine>(), NPC.damage / 3, 1f, Main.myPlayer);
                 }
             }
 

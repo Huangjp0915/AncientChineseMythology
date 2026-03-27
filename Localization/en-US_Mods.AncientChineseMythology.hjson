@@ -2086,6 +2086,8 @@ Projectiles: {
 	DazhengLeaf.DisplayName: Dazheng Leaf
 	DazhengGoldenPhantom.DisplayName: Golden Phantom
 	Acanthosphere.DisplayName: Acanthosphere
+	DryadsLeaf.DisplayName: Dryads Leaf
+	DryadsVine.DisplayName: Dryads Vine
 }
 
 HeavenBiome.DisplayName: Heaven

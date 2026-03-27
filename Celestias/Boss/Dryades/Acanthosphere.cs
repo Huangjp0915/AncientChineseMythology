@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
+using Terraria.Audio;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -26,9 +27,9 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
             Projectile.height = 30;
             Projectile.hostile = true;
             Projectile.friendly = false;
-            Projectile.tileCollide = false;
+            Projectile.tileCollide = true;
             Projectile.penetrate = 3;
-            Projectile.timeLeft = 300;
+            Projectile.timeLeft = 480;
             Projectile.ignoreWater = true;
         }
 
@@ -39,7 +40,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
 
             // 轻微受重力影响（抛物线感）
             if (Projectile.velocity.Y < 16f)
-                Projectile.velocity.Y += 0.08f;
+                Projectile.velocity.Y += 0.15f;
 
             // 绿色粒子尾迹
             if (Main.rand.NextBool(3)) {
@@ -54,6 +55,28 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
 
             // 光照
             Lighting.AddLight(Projectile.Center, 0.1f, 0.2f, 0.05f);
+        }
+
+        public override bool OnTileCollide(Vector2 oldVelocity) {
+            Projectile.ai[0]++;
+            if (Projectile.ai[0] >= 5) {
+                Projectile.Kill();
+                return false;
+            }
+
+            if (MathF.Abs(Projectile.velocity.X - oldVelocity.X) > float.Epsilon)
+                Projectile.velocity.X = -oldVelocity.X * 0.85f;
+            if (MathF.Abs(Projectile.velocity.Y - oldVelocity.Y) > float.Epsilon)
+                Projectile.velocity.Y = -oldVelocity.Y * 0.7f;
+
+            for (int i = 0; i < 3; i++) {
+                Dust d = Dust.NewDustDirect(Projectile.Center, 0, 0, DustID.WoodFurniture,
+                    Main.rand.NextFloat(-1f, 1f), Main.rand.NextFloat(-2f, 0f), 130, default, 1f);
+                d.noGravity = false;
+            }
+
+            SoundEngine.PlaySound(SoundID.Item10 with { Volume = 0.5f, Pitch = -0.3f }, Projectile.Center);
+            return false;
         }
 
         public override void OnKill(int timeLeft) {
