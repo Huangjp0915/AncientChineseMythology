@@ -2210,6 +2210,7 @@ Projectiles: {
 	// Acanthosphere.DisplayName: Acanthosphere
 	// DryadsLeaf.DisplayName: Dryads Leaf
 	// DryadsVine.DisplayName: Dryads Vine
+	// DazhengArenaBarrier.DisplayName: Dazheng Arena Barrier
 }
 
 HeavenBiome.DisplayName: Heaven

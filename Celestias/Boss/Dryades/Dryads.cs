@@ -146,6 +146,16 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
         }
 
         /// <summary>
+        /// 判断指定位块是否为真正的坚实地面（排除平台、桌子等SolidTop物块和被致动的物块）
+        /// </summary>
+        private static bool IsSolidGround(Tile tile) {
+            return tile.HasTile
+                && Main.tileSolid[tile.TileType]
+                && !Main.tileSolidTop[tile.TileType]
+                && !tile.IsActuated;
+        }
+
+        /// <summary>
         /// 从给定位置向下扫描找到固体地面
         /// 树精底部对齐地面，但树根60像素需埋入地下
         /// 所以Center = 地面Y - TextureHeight/2 + RootBuryOffset
@@ -157,7 +167,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
             int groundTileY = startTileY;
             for (int y = startTileY; y < startTileY + 150 && y < Main.maxTilesY - 1; y++) {
                 Tile tile = Framing.GetTileSafely(tileX, y);
-                if (tile.HasTile && Main.tileSolid[tile.TileType]) {
+                if (IsSolidGround(tile)) {
                     groundTileY = y;
                     break;
                 }
@@ -170,12 +180,54 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
         }
 
         /// <summary>
-        /// 从玩家位置附近找到最近的地面，用于潜地冒出
+        /// 从玩家位置附近找到最近的坚实地面，用于潜地冒出。
+        /// 多次采样，优先选择真正的坚实地面而非平台。
         /// </summary>
         private Vector2 FindGroundNearPlayer(Player player) {
-            float offsetX = Main.rand.NextFloat(-300, 300);
-            Vector2 searchStart = player.Center + new Vector2(offsetX, -400);
-            return FindGroundPosition(searchStart);
+            const int Candidates = 5;
+            const float SearchRangeX = 300f;
+
+            Vector2 bestPos = Vector2.Zero;
+            float bestDist = float.MaxValue;
+            bool bestIsSolid = false;
+
+            for (int i = 0; i < Candidates; i++) {
+                float offsetX = Main.rand.NextFloat(-SearchRangeX, SearchRangeX);
+                Vector2 searchStart = player.Center + new Vector2(offsetX, -400);
+
+                int tileX = (int)(searchStart.X / 16f);
+                int startTileY = (int)(searchStart.Y / 16f);
+
+                bool foundSolid = false;
+                int groundTileY = startTileY;
+
+                for (int y = startTileY; y < startTileY + 150 && y < Main.maxTilesY - 1; y++) {
+                    Tile tile = Framing.GetTileSafely(tileX, y);
+                    if (IsSolidGround(tile)) {
+                        groundTileY = y;
+                        foundSolid = true;
+                        break;
+                    }
+                }
+
+                float groundWorldY = groundTileY * 16f;
+                float centerY = groundWorldY - TextureHeight / 2f + RootBuryOffset;
+                Vector2 candidatePos = new(searchStart.X, centerY);
+                float dist = Vector2.Distance(player.Center, candidatePos);
+
+                // 坚实地面优先；同类地面中选最近的
+                if ((foundSolid && !bestIsSolid) || (foundSolid == bestIsSolid && dist < bestDist)) {
+                    bestPos = candidatePos;
+                    bestDist = dist;
+                    bestIsSolid = foundSolid;
+                }
+            }
+
+            // 如果所有候选都没找到坚实地面，回退到普通扫描
+            if (bestPos == Vector2.Zero)
+                return FindGroundPosition(player.Center + new Vector2(0, -400));
+
+            return bestPos;
         }
 
         public override void SendExtraAI(BinaryWriter writer) {

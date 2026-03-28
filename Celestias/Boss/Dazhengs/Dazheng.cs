@@ -617,6 +617,14 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             if (PhaseTimer >= IntroFinish) {
                 NPC.dontTakeDamage = false;
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.3f, Volume = 1.1f }, NPC.Center);
+
+                // 生成限制圈
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
+                        ModContent.ProjectileType<DazhengArenaBarrier>(),
+                        0, 0f, Main.myPlayer, NPC.whoAmI, DazhengArenaBarrier.Phase1Radius);
+                }
+
                 TransitionTo(BossPhase.Phase1_Idle);
             }
         }
@@ -966,6 +974,18 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                         (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(),
                         25f, 12f, 60, 3000f, FullName);
                     Main.instance.CameraModifiers.Add(modifier);
+                }
+
+                // 二阶段收缩限制圈
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    foreach (Projectile proj in Main.ActiveProjectiles) {
+                        if (proj.type == ModContent.ProjectileType<DazhengArenaBarrier>() &&
+                            (int)proj.ai[0] == NPC.whoAmI) {
+                            proj.ai[1] = DazhengArenaBarrier.Phase2Radius;
+                            proj.netUpdate = true;
+                            break;
+                        }
+                    }
                 }
 
                 // 转阶段爆发 - 全向藤蔓+金色弹幕（降低密度，保持气势）
