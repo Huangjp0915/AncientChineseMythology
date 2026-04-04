@@ -1,5 +1,6 @@
 ﻿using AncientChineseMythology.Systems;
 using Microsoft.Xna.Framework.Graphics;
+using ReLogic.Content;
 using System;
 using System.IO;
 using Terraria;
@@ -87,6 +88,18 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
         private Vector2 chargeEnd;
         private float chargeDuration;
         private int chargeSide = 1;
+
+        //着色器与视觉演出
+        private static Asset<Effect> frostDistortionRef;
+        private static Asset<Effect> causticsRef;
+        private static Texture2D noiseTexture;
+        private float frostIntensity;
+        private float frostTargetIntensity;
+        private float causticsIntensity;
+        private float causticsTargetIntensity;
+        private float shieldVisual; //六边形盾可视化强度
+        private float snakeHeadExtend; //蛇头伸出程度(0~1)
+        private float phaseFlash; //阶段转换闪光
 
         #endregion
 
@@ -324,6 +337,46 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
             // 冰水光源
             float iceGlow = absoluteDefenseActive ? 2f : (IsPhase3 ? 1.5f : 1f);
             Lighting.AddLight(NPC.Center, new Vector3(0.3f, 0.5f, 0.9f) * glowIntensity * iceGlow);
+
+            //视觉强度平滑过渡
+            UpdateVisualIntensities();
+        }
+
+        private void UpdateVisualIntensities() {
+            float lerpSpeed = 0.05f;
+            frostIntensity = MathHelper.Lerp(frostIntensity, frostTargetIntensity, lerpSpeed);
+            causticsIntensity = MathHelper.Lerp(causticsIntensity, causticsTargetIntensity, lerpSpeed);
+
+            //默认目标: 根据阶段常驻轻微焦散
+            if (IsPhase3)
+                causticsTargetIntensity = MathHelper.Max(causticsTargetIntensity, 0.15f);
+            else if (IsPhase2)
+                causticsTargetIntensity = MathHelper.Max(causticsTargetIntensity, 0.08f);
+            else
+                causticsTargetIntensity = MathHelper.Max(causticsTargetIntensity, 0f);
+
+            //蛇头伸出: 二阶段慢速伸出
+            float snakeTarget = IsPhase2 || IsPhase3 ? 1f : 0f;
+            snakeHeadExtend = MathHelper.Lerp(snakeHeadExtend, snakeTarget, 0.02f);
+
+            //盾可视化自然衰减
+            if (!absoluteDefenseActive)
+                shieldVisual = MathHelper.Lerp(shieldVisual, 0f, 0.06f);
+
+            //闪光衰减
+            phaseFlash *= 0.9f;
+
+            //着色器强度在没有特殊攻击时自然回落
+            frostTargetIntensity *= 0.97f;
+            if (causticsTargetIntensity > 0.15f && !IsAttackUsingCaustics())
+                causticsTargetIntensity *= 0.97f;
+        }
+
+        private bool IsAttackUsingCaustics() {
+            return Phase == BossPhase.Phase3_TidalCrush ||
+                   Phase == BossPhase.Phase2_FrostWave ||
+                   Phase == BossPhase.Phase2_DualAssault ||
+                   (Phase == BossPhase.Phase3_Drift && IsPhase3);
         }
 
         private void CheckPhaseTransition() {
@@ -691,6 +744,9 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                 shellRotation += 0.06f + AttackTimer * 0.004f;
                 NPC.velocity *= 0.92f;
 
+                //蓄力时冰霜扭曲逐渐增强
+                frostTargetIntensity = MathHelper.Lerp(0f, 0.3f, ACMUtils.Clamp01(AttackTimer / 35f));
+
                 // 粒子向中心收束
                 if (Main.netMode != NetmodeID.Server) {
                     for (int i = 0; i < 3; i++) {
@@ -741,6 +797,9 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                 // ── 曲线冲刺 ──
                 shellRotation += 0.28f;
 
+                //冲刺中保持冰霜扭曲
+                frostTargetIntensity = 0.2f;
+
                 float t = ACMUtils.Clamp01(AttackTimer / chargeDuration);
                 float tSmooth = ACMUtils.SineInOut(t);
                 Vector2 curvePos = ACMUtils.BezierCubic(chargeStart, chargeControl1, chargeControl2, chargeEnd, tSmooth);
@@ -768,6 +827,10 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                     SubState = 2;
                     AttackTimer = 0;
                     NPC.velocity *= 0.2f;
+
+                    //冲刺终点: 冰霜脉冲
+                    frostTargetIntensity = 0.5f;
+                    phaseFlash = 0.3f;
 
                     // 冲刺终点冰环
                     if (Main.netMode != NetmodeID.MultiplayerClient) {
@@ -816,6 +879,17 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
             NPC.velocity *= 0.9f;
             NPC.dontTakeDamage = true;
 
+            //0-40: 裂纹粒子扩散 + 冰霜着色器缓升
+            if (PhaseTimer <= 40) {
+                frostTargetIntensity = MathHelper.Lerp(0f, 0.3f, PhaseTimer / 40f);
+            }
+
+            //40-70: 水面焦散开始 + 蛇头伸出
+            if (PhaseTimer > 40 && PhaseTimer <= 70) {
+                causticsTargetIntensity = MathHelper.Lerp(0f, 0.35f, (PhaseTimer - 40f) / 30f);
+                snakeHeadExtend = MathHelper.Lerp(0f, 1f, (PhaseTimer - 40f) / 30f);
+            }
+
             // 蛇觉醒特效 - 水流涌动
             if (Main.netMode != NetmodeID.Server) {
                 for (int i = 0; i < 10; i++) {
@@ -837,6 +911,10 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
 
             if (PhaseTimer == 80) {
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.3f, Volume = 1.5f }, NPC.Center);
+                //蛇觉醒: 焦散闪烁 + 相位闪白
+                phaseFlash = 0.5f;
+                causticsTargetIntensity = 0.5f;
+                frostTargetIntensity = 0.1f;
                 if (Main.netMode != NetmodeID.Server) {
                     PunchCameraModifier modifier = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 20f, 10f, 45, 2000f, FullName);
                     Main.instance.CameraModifiers.Add(modifier);
@@ -848,6 +926,9 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                 NPC.defense += 10;
                 NPC.damage = (int)(NPC.damage * 1.15f);
                 glowIntensity = 1.2f;
+                //进入P2后焦散保持低底色
+                causticsTargetIntensity = 0.08f;
+                frostTargetIntensity = 0f;
                 TransitionTo(BossPhase.Phase2_SnakeStrike);
             }
         }
@@ -856,6 +937,19 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
             NPC.velocity *= 0.85f;
             NPC.dontTakeDamage = true;
             NPC.Center += Main.rand.NextVector2Circular(4, 4);
+
+            //0-50: 漩涡收拢 + 冰霜/焦散双升
+            if (PhaseTimer <= 50) {
+                float prog = PhaseTimer / 50f;
+                frostTargetIntensity = MathHelper.Lerp(0f, 0.6f, prog);
+                causticsTargetIntensity = MathHelper.Lerp(0f, 0.5f, prog);
+            }
+            //50-70: 最高强度蓄力
+            if (PhaseTimer > 50 && PhaseTimer <= 70) {
+                frostTargetIntensity = 0.7f;
+                causticsTargetIntensity = 0.55f;
+                shieldVisual = MathHelper.Lerp(shieldVisual, 0.8f, 0.08f);
+            }
 
             if (Main.netMode != NetmodeID.Server) {
                 for (int i = 0; i < 15; i++) {
@@ -875,6 +969,11 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
 
             if (PhaseTimer == 70) {
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.8f, Volume = 2f }, NPC.Center);
+                //玄武合一: 全屏闪白 + 着色器骤降
+                phaseFlash = 1f;
+                frostTargetIntensity = 0.2f;
+                causticsTargetIntensity = 0.15f;
+                shieldVisual = 0f;
                 if (Main.netMode != NetmodeID.Server) {
                     PunchCameraModifier modifier = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 30f, 15f, 60, 3000f, FullName);
                     Main.instance.CameraModifiers.Add(modifier);
@@ -890,11 +989,20 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                 }
             }
 
+            //100-130: P3环境焦散底色建立
+            if (PhaseTimer > 100 && PhaseTimer <= 130) {
+                causticsTargetIntensity = MathHelper.Lerp(0f, 0.1f, (PhaseTimer - 100f) / 30f);
+                frostTargetIntensity = MathHelper.Lerp(frostTargetIntensity, 0.05f, 0.05f);
+            }
+
             if (PhaseTimer >= 130) {
                 NPC.dontTakeDamage = false;
                 NPC.defense += 20;
                 NPC.damage = (int)(NPC.damage * 1.25f);
                 glowIntensity = 1.8f;
+                //P3常驻低焦散
+                causticsTargetIntensity = 0.1f;
+                frostTargetIntensity = 0.03f;
                 TransitionTo(BossPhase.Phase3_Drift);
             }
         }
@@ -1006,6 +1114,11 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
         private void RunPhase2DualAssault(Player target) {
             if (SubState == 0) {
                 NPC.velocity *= 0.85f;
+
+                //蓄力: 蛇头抬起 + 焦散出现
+                causticsTargetIntensity = MathHelper.Lerp(0.1f, 0.35f, ACMUtils.Clamp01(AttackTimer / 22f));
+                snakeHeadExtend = MathHelper.Lerp(snakeHeadExtend, 1f, 0.08f);
+
                 // 蓄力时旋转冰臂
                 if (AttackTimer % 10 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                     float a = AttackTimer * 0.2f;
@@ -1022,7 +1135,10 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
             else {
                 shellRotation += 0.1f;
 
-                // 滑行中蛇头连续射击
+                //冲刺中焦散持续
+                causticsTargetIntensity = 0.3f;
+
+                // 蛇头独立追踪射击: 每3发一组追踪毒牙
                 if (AttackTimer % 5 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                     Vector2 snakePos = NPC.Center + new Vector2(0, -80);
                     Vector2 vel = (target.Center - snakePos).SafeNormalize(Vector2.Zero) * 16f;
@@ -1035,7 +1151,6 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                 if (AttackTimer % 6 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                     float angle = shellRotation;
                     IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 9f, NPC.damage / 5, 120);
-                    // 垂直尾迹
                     Vector2 perpDir = new Vector2(-NPC.velocity.Y, NPC.velocity.X).SafeNormalize(Vector2.Zero);
                     IceProjectile(NPC.Center + perpDir * 40f, perpDir * 5f, NPC.damage / 6, 100);
                 }
@@ -1050,13 +1165,21 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
 
                 if (AttackTimer > 22) NPC.velocity *= 0.92f;
                 if (AttackTimer > 40) {
-                    // 结束时放冰环
+                    //终结: 龟壳砸地冰环 + 蛇头毒雾扇形
                     if (Main.netMode != NetmodeID.MultiplayerClient) {
                         for (int i = 0; i < 8; i++) {
                             float angle = MathHelper.TwoPi / 8 * i;
                             IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 7f, NPC.damage / 5);
                         }
+                        //蛇头毒雾扇
+                        Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
+                        for (int i = -3; i <= 3; i++) {
+                            Vector2 venomVel = toPlayer.RotatedBy(i * MathHelper.ToRadians(8f)) * 14f;
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center + new Vector2(0, -80), venomVel,
+                                ModContent.ProjectileType<XuanwuVenomFang>(), NPC.damage / 5, 0f, Main.myPlayer);
+                        }
                     }
+                    phaseFlash = 0.2f;
                     strikeCount++;
                     if (strikeCount < 4) {
                         SubState = 0;
@@ -1144,6 +1267,17 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
             absoluteDefenseActive = true;
             NPC.dontTakeDamage = true;
 
+            //激活时冰霜脉冲
+            if (AttackTimer == 1) {
+                frostTargetIntensity = 0.6f;
+                phaseFlash = 0.4f;
+                SoundEngine.PlaySound(SoundID.Item28 with { Pitch = -0.8f, Volume = 1.3f }, NPC.Center);
+            }
+
+            //六边形盾可视化
+            shieldVisual = MathHelper.Lerp(shieldVisual, 1f, 0.08f);
+            frostTargetIntensity = MathHelper.Max(frostTargetIntensity, 0.25f);
+
             if (Main.netMode != NetmodeID.Server) {
                 for (int i = 0; i < 8; i++) {
                     float angle = globalTime * 4f + MathHelper.TwoPi / 8 * i;
@@ -1175,7 +1309,31 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
             if (AttackTimer > 100) {
                 absoluteDefenseActive = false;
                 NPC.dontTakeDamage = false;
+                //盾碎裂闪光
+                phaseFlash = 0.5f;
+                frostTargetIntensity = 0.4f;
+                if (Main.netMode != NetmodeID.Server) {
+                    PunchCameraModifier modifier = new(NPC.Center, Vector2.UnitY, 10f, 6f, 25, 1500f, FullName);
+                    Main.instance.CameraModifiers.Add(modifier);
+                }
                 TransitionTo(BossPhase.Phase3_Drift);
+            }
+        }
+
+        /// <summary>
+        /// 绝对防御受击反射 — 近战攻击时发射反射冰锥
+        /// </summary>
+        public override void ModifyIncomingHit(ref NPC.HitModifiers modifiers) {
+            if (absoluteDefenseActive && Main.netMode != NetmodeID.MultiplayerClient) {
+                //受击方向反射冰锥
+                Player attacker = Main.player[NPC.target];
+                Vector2 reflectDir = (attacker.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
+                for (int i = -1; i <= 1; i++) {
+                    Vector2 vel = reflectDir.RotatedBy(i * MathHelper.ToRadians(15f)) * 12f;
+                    IceProjectile(NPC.Center + reflectDir * 80f, vel, NPC.damage / 6, 120);
+                }
+                //盾闪光反馈
+                shieldVisual = MathHelper.Min(shieldVisual + 0.3f, 1.5f);
             }
         }
 
@@ -1268,9 +1426,15 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
 
         private void RunPhase3NorthStarJudgment(Player target) {
             if (SubState == 0) {
-                NPC.velocity *= 0.88f;
+                //预兆: Boss飞到玩家正上方
+                Vector2 abovePos = target.Center + new Vector2(0, -450);
+                NPC.velocity = Vector2.Lerp(NPC.velocity, (abovePos - NPC.Center) * 0.05f, 0.06f);
                 NPC.dontTakeDamage = true;
-                NPC.Center += Main.rand.NextVector2Circular(5, 5);
+                NPC.Center += Main.rand.NextVector2Circular(3f + AttackTimer * 0.03f, 3f + AttackTimer * 0.03f);
+
+                //冰霜扭曲持续增强
+                frostTargetIntensity = MathHelper.Lerp(0.1f, 0.7f, ACMUtils.Clamp01(AttackTimer / 80f));
+                causticsTargetIntensity = MathHelper.Lerp(0.05f, 0.3f, ACMUtils.Clamp01(AttackTimer / 80f));
 
                 if (Main.netMode != NetmodeID.Server) {
                     for (int i = 0; i < 12; i++) {
@@ -1299,6 +1463,11 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                     NPC.dontTakeDamage = false;
                     SoundEngine.PlaySound(SoundID.Roar with { Pitch = -1f, Volume = 2f }, NPC.Center);
 
+                    //释放瞬间: 全屏冰霜脉冲 + 闪白
+                    frostTargetIntensity = 0.9f;
+                    phaseFlash = 0.8f;
+                    causticsTargetIntensity = 0.5f;
+
                     if (Main.netMode != NetmodeID.Server) {
                         PunchCameraModifier modifier = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 30f, 15f, 60, 3000f, FullName);
                         Main.instance.CameraModifiers.Add(modifier);
@@ -1310,6 +1479,14 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                             float angle = MathHelper.TwoPi / 8 * dir;
                             for (int i = 0; i < 12; i++) {
                                 IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * (4f + i * 3f), NPC.damage / 3);
+                            }
+                        }
+                        //7道北斗星光射线 — 从Boss向下方扇形释放
+                        for (int star = 0; star < 7; star++) {
+                            float starAngle = MathHelper.PiOver2 - MathHelper.ToRadians(45f) + MathHelper.ToRadians(90f) / 6f * star;
+                            for (int i = 0; i < 6; i++) {
+                                float speed = 8f + i * 4f;
+                                IceProjectile(NPC.Center, new Vector2(MathF.Cos(starAngle), MathF.Sin(starAngle)) * speed, NPC.damage / 3, 200);
                             }
                         }
                         // 4环蛇毒水弹
@@ -1400,23 +1577,407 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
             float drawRotation = NPC.rotation;
 
             if (!isSpinning) {
-                // 普通状态：纹理朝右，面朝左时水平翻转
                 bool facingRight = NPC.spriteDirection == 1;
                 effects = facingRight ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
                 drawRotation = facingRight ? NPC.rotation : -NPC.rotation;
             }
 
-            // 玄武水冰残影
-            for (int i = NPCID.Sets.TrailCacheLength[Type] - 1; i > 0; i--) {
-                Vector2 trailPos = NPC.oldPos[i] + NPC.Size / 2f - screenPos;
-                float alpha = 0.3f * (1f - (float)i / NPCID.Sets.TrailCacheLength[Type]);
-                Color trailColor = new Color(0.3f, 0.5f + alpha, 1f) * alpha;
-                spriteBatch.Draw(texture, trailPos, frame, trailColor, drawRotation, origin, NPC.scale, effects, 0f);
+            Vector2 drawPos = NPC.Center - screenPos;
+
+            //层1: 冰气光环 — SoftGlow大尺寸，颜色随阶段变化
+            DrawIceAura(spriteBatch, drawPos);
+
+            //层2: 旋转冰晶环 — BlankStar围绕Boss旋转
+            DrawOrbitingCrystals(spriteBatch, drawPos);
+
+            //层3: 绝对防御六边形盾
+            if (shieldVisual > 0.01f)
+                DrawHexShield(spriteBatch, drawPos);
+
+            //层4: 增强残影 — 颜色区分阶段
+            DrawEnhancedTrail(spriteBatch, texture, frame, origin, screenPos, drawRotation, effects);
+
+            //层5: 蛇头视觉(二阶段起)
+            if (snakeHeadExtend > 0.01f)
+                DrawSnakeHead(spriteBatch, drawPos);
+
+            //主体绘制
+            spriteBatch.Draw(texture, drawPos, frame, drawColor, drawRotation, origin, NPC.scale, effects, 0f);
+
+            //层6: 阶段转换闪光
+            if (phaseFlash > 0.01f)
+                DrawPhaseFlash(spriteBatch, drawPos);
+
+            return false;
+        }
+
+        public override void PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+            //着色器后处理在PostDraw中绘制，确保覆盖所有内容
+            if (Main.dedServ) return;
+            DrawShaderEffects(spriteBatch);
+        }
+
+        #endregion
+
+        #region 着色器管理
+
+        private static void EnsureNoiseTexture() {
+            if (noiseTexture == null || noiseTexture.IsDisposed)
+                noiseTexture = GenerateNoiseTexture(Main.graphics.GraphicsDevice);
+        }
+
+        private static Effect GetFrostEffect() {
+            frostDistortionRef ??= ModContent.Request<Effect>(
+                "AncientChineseMythology/Effects/XuanwuFrostDistortion",
+                AssetRequestMode.ImmediateLoad);
+            return frostDistortionRef?.Value;
+        }
+
+        private static Effect GetCausticsEffect() {
+            causticsRef ??= ModContent.Request<Effect>(
+                "AncientChineseMythology/Effects/XuanwuCaustics",
+                AssetRequestMode.ImmediateLoad);
+            return causticsRef?.Value;
+        }
+
+        private void DrawShaderEffects(SpriteBatch sb) {
+            EnsureNoiseTexture();
+            if (noiseTexture == null) return;
+
+            Vector2 screenCenter = (NPC.Center - Main.screenPosition) / new Vector2(Main.screenWidth, Main.screenHeight);
+            float aspect = (float)Main.screenWidth / Main.screenHeight;
+
+            //冰霜扭曲
+            if (frostIntensity > 0.01f) {
+                Effect frost = GetFrostEffect();
+                if (frost != null) {
+                    frost.Parameters["uTime"]?.SetValue(globalTime);
+                    frost.Parameters["uCenter"]?.SetValue(screenCenter);
+                    frost.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(frostIntensity, 0f, 1f));
+                    frost.Parameters["uFrostRadius"]?.SetValue(0.5f);
+                    frost.Parameters["uCrystalScale"]?.SetValue(IsPhase3 ? 5f : 3.5f);
+                    frost.Parameters["uAspect"]?.SetValue(aspect);
+
+                    Main.graphics.GraphicsDevice.Textures[1] = noiseTexture;
+                    Main.graphics.GraphicsDevice.SamplerStates[1] = SamplerState.LinearWrap;
+
+                    sb.End();
+                    sb.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.LinearClamp,
+                        DepthStencilState.None, RasterizerState.CullNone, frost, Matrix.Identity);
+
+                    sb.Draw(Main.screenTarget, Vector2.Zero, Color.White);
+
+                    sb.End();
+                    sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
+                        DepthStencilState.None, RasterizerState.CullNone, null,
+                        Main.GameViewMatrix.TransformationMatrix);
+                }
             }
 
-            Vector2 drawPos = NPC.Center - screenPos;
-            spriteBatch.Draw(texture, drawPos, frame, drawColor, drawRotation, origin, NPC.scale, effects, 0f);
-            return false;
+            //水面焦散
+            if (causticsIntensity > 0.01f) {
+                Effect caustics = GetCausticsEffect();
+                if (caustics != null) {
+                    caustics.Parameters["uTime"]?.SetValue(globalTime);
+                    caustics.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(causticsIntensity, 0f, 1f));
+                    caustics.Parameters["uWaveSpeed"]?.SetValue(IsPhase3 ? 1.5f : 1f);
+                    caustics.Parameters["uCausticsScale"]?.SetValue(3f);
+
+                    Vector4 tint = IsPhase3
+                        ? new Vector4(0.4f, 0.7f, 0.95f, 0.5f)
+                        : new Vector4(0.2f, 0.5f, 0.85f, 0.3f);
+                    caustics.Parameters["uColorTint"]?.SetValue(tint);
+
+                    Main.graphics.GraphicsDevice.Textures[1] = noiseTexture;
+                    Main.graphics.GraphicsDevice.SamplerStates[1] = SamplerState.LinearWrap;
+
+                    sb.End();
+                    sb.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.LinearClamp,
+                        DepthStencilState.None, RasterizerState.CullNone, caustics, Matrix.Identity);
+
+                    sb.Draw(Main.screenTarget, Vector2.Zero, Color.White);
+
+                    sb.End();
+                    sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
+                        DepthStencilState.None, RasterizerState.CullNone, null,
+                        Main.GameViewMatrix.TransformationMatrix);
+                }
+            }
+        }
+
+        #endregion
+
+        #region 视觉层绘制
+
+        private void DrawIceAura(SpriteBatch sb, Vector2 drawPos) {
+            Texture2D glow = ACMAsset.SoftGlow;
+            if (glow == null) return;
+            Vector2 go = glow.Size() / 2f;
+
+            //阶段颜色: P1冰蓝, P2冰蓝+毒绿, P3极光白
+            Color auraColor;
+            float auraScale;
+            if (IsPhase3) {
+                float pulse = MathF.Sin(globalTime * 2f) * 0.15f + 0.85f;
+                auraColor = new Color(180, 220, 255, 0) * (0.35f * pulse * glowIntensity);
+                auraScale = 3.5f + MathF.Sin(globalTime * 1.5f) * 0.3f;
+            }
+            else if (IsPhase2) {
+                float t = MathF.Sin(globalTime * 1.2f) * 0.5f + 0.5f;
+                Color ice = new Color(80, 160, 240, 0);
+                Color venom = new Color(60, 200, 80, 0);
+                auraColor = Color.Lerp(ice, venom, t) * (0.25f * glowIntensity);
+                auraScale = 2.8f;
+            }
+            else {
+                auraColor = new Color(60, 140, 220, 0) * (0.2f * glowIntensity);
+                auraScale = 2.2f + MathF.Sin(globalTime * 0.8f) * 0.15f;
+            }
+
+            sb.Draw(glow, drawPos, null, auraColor, 0f, go, auraScale, SpriteEffects.None, 0f);
+
+            //内层高亮
+            Color coreColor = new Color(150, 210, 255, 0) * (0.15f * glowIntensity);
+            sb.Draw(glow, drawPos, null, coreColor, 0f, go, auraScale * 0.5f, SpriteEffects.None, 0f);
+        }
+
+        private void DrawOrbitingCrystals(SpriteBatch sb, Vector2 drawPos) {
+            Texture2D star = ACMAsset.BlankStar;
+            if (star == null) return;
+            Vector2 so = star.Size() / 2f;
+
+            int count = IsPhase3 ? 8 : (IsPhase2 ? 6 : 4);
+            float radius = IsPhase3 ? 160f : (IsPhase2 ? 140f : 120f);
+            float speed = IsPhase3 ? 2f : (IsPhase2 ? 1.5f : 1f);
+            float crystalScale = IsPhase3 ? 0.15f : 0.12f;
+
+            for (int i = 0; i < count; i++) {
+                float angle = globalTime * speed + MathHelper.TwoPi / count * i;
+                //椭圆化
+                Vector2 offset = new(MathF.Cos(angle) * radius, MathF.Sin(angle) * radius * 0.4f);
+                Vector2 crystalPos = drawPos + offset;
+
+                float pulse = MathF.Sin(globalTime * 3f + i * 1.5f) * 0.3f + 0.7f;
+                Color cc = new Color(120, 200, 255, 0) * (pulse * 0.5f);
+                float rot = -angle * 0.5f;
+
+                sb.Draw(star, crystalPos, null, cc, rot, so, crystalScale, SpriteEffects.None, 0f);
+
+                //每个冰晶下方一个小型SoftGlow光点
+                Texture2D glow = ACMAsset.SoftGlow;
+                if (glow != null) {
+                    Vector2 go = glow.Size() / 2f;
+                    Color gc = new Color(80, 160, 240, 0) * (pulse * 0.2f);
+                    sb.Draw(glow, crystalPos, null, gc, 0f, go, 0.4f, SpriteEffects.None, 0f);
+                }
+            }
+        }
+
+        private void DrawHexShield(SpriteBatch sb, Vector2 drawPos) {
+            Texture2D glow = ACMAsset.SoftGlow;
+            Texture2D star = ACMAsset.BlankStar;
+            if (glow == null || star == null) return;
+            Vector2 go = glow.Size() / 2f;
+            Vector2 so = star.Size() / 2f;
+
+            float alpha = shieldVisual;
+            float shieldRadius = 160f + MathF.Sin(globalTime * 3f) * 10f;
+
+            //六个顶点的六边形盾
+            for (int i = 0; i < 6; i++) {
+                float angle = MathHelper.TwoPi / 6f * i + globalTime * 0.5f;
+                Vector2 point = drawPos + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * shieldRadius;
+
+                //顶点SoftGlow
+                Color pointColor = new Color(100, 200, 255, 0) * (alpha * 0.6f);
+                sb.Draw(glow, point, null, pointColor, 0f, go, 0.6f, SpriteEffects.None, 0f);
+
+                //顶点BlankStar旋转
+                Color starColor = new Color(180, 240, 255, 0) * (alpha * 0.4f);
+                sb.Draw(star, point, null, starColor, globalTime * 2f + i, so, 0.1f, SpriteEffects.None, 0f);
+
+                //边: 用多个小SoftGlow连接两个顶点
+                float nextAngle = MathHelper.TwoPi / 6f * ((i + 1) % 6) + globalTime * 0.5f;
+                Vector2 nextPoint = drawPos + new Vector2(MathF.Cos(nextAngle), MathF.Sin(nextAngle)) * shieldRadius;
+                int segments = 5;
+                for (int s = 1; s < segments; s++) {
+                    float t = (float)s / segments;
+                    Vector2 edgePos = Vector2.Lerp(point, nextPoint, t);
+                    float edgePulse = MathF.Sin(globalTime * 4f + s + i * 2f) * 0.3f + 0.7f;
+                    Color edgeColor = new Color(80, 180, 255, 0) * (alpha * 0.3f * edgePulse);
+                    sb.Draw(glow, edgePos, null, edgeColor, 0f, go, 0.25f, SpriteEffects.None, 0f);
+                }
+            }
+
+            //中心护盾辉光
+            Color centerShield = new Color(60, 150, 240, 0) * (alpha * 0.15f);
+            sb.Draw(glow, drawPos, null, centerShield, 0f, go, shieldRadius / (glow.Width / 2f), SpriteEffects.None, 0f);
+        }
+
+        private void DrawEnhancedTrail(SpriteBatch sb, Texture2D texture, Rectangle frame, Vector2 origin,
+            Vector2 screenPos, float drawRotation, SpriteEffects effects) {
+            int trailLen = NPCID.Sets.TrailCacheLength[Type];
+            Texture2D glow = ACMAsset.SoftGlow;
+
+            for (int i = trailLen - 1; i > 0; i--) {
+                if (NPC.oldPos[i] == Vector2.Zero) continue;
+                Vector2 trailPos = NPC.oldPos[i] + NPC.Size / 2f - screenPos;
+                float progress = (float)i / trailLen;
+                float alpha = 0.35f * (1f - progress);
+
+                //阶段颜色区分
+                Color trailColor;
+                if (IsPhase3) {
+                    trailColor = Color.Lerp(new Color(180, 230, 255), new Color(100, 180, 255), progress) * alpha;
+                }
+                else if (IsPhase2) {
+                    //蓝绿交替
+                    float t = MathF.Sin(globalTime + i) * 0.5f + 0.5f;
+                    Color ice = new Color(80, 160, 255);
+                    Color venom = new Color(60, 180, 100);
+                    trailColor = Color.Lerp(ice, venom, t) * alpha;
+                }
+                else {
+                    trailColor = new Color(60, 120, 220) * alpha;
+                }
+
+                float trailScale = NPC.scale * (1f - progress * 0.08f);
+                sb.Draw(texture, trailPos, frame, trailColor, drawRotation, origin, trailScale, effects, 0f);
+
+                //残影外发光
+                if (glow != null && i % 2 == 0) {
+                    Vector2 go = glow.Size() / 2f;
+                    Color glowC = trailColor with { A = 0 } * 0.3f;
+                    sb.Draw(glow, trailPos, null, glowC, 0f, go, 1.2f, SpriteEffects.None, 0f);
+                }
+            }
+        }
+
+        private void DrawSnakeHead(SpriteBatch sb, Vector2 drawPos) {
+            Texture2D shot = ACMAsset.LightShot;
+            Texture2D glow = ACMAsset.SoftGlow;
+            if (shot == null || glow == null) return;
+
+            float extend = snakeHeadExtend;
+            Vector2 snakeOffset = new(NPC.spriteDirection * 30f, -90f - extend * 40f);
+            Vector2 snakePos = drawPos + snakeOffset;
+
+            //蛇头朝向: 正在蛇击攻击时朝向玩家，否则朝上
+            float snakeRot;
+            if (Phase == BossPhase.Phase2_SnakeStrike && SubState == 0) {
+                Player tgt = Main.player[NPC.target];
+                snakeRot = (tgt.Center - NPC.Center).ToRotation();
+            }
+            else {
+                snakeRot = -MathHelper.PiOver2 + MathF.Sin(globalTime * 2f) * 0.15f;
+            }
+
+            Vector2 shotOrigin = shot.Size() / 2f;
+            Vector2 glowOrigin = glow.Size() / 2f;
+
+            //蛇头主体 — LightShot (毒绿)
+            Color headColor = new Color(80, 220, 60, 0) * (0.7f * extend);
+            sb.Draw(shot, snakePos, null, headColor, snakeRot, shotOrigin, 0.6f * extend, SpriteEffects.None, 0f);
+
+            //蛇眼光点
+            Color eyeColor = new Color(200, 255, 80, 0) * (0.8f * extend);
+            float eyePulse = MathF.Sin(globalTime * 5f) * 0.15f + 0.85f;
+            sb.Draw(glow, snakePos, null, eyeColor * eyePulse, 0f, glowOrigin, 0.25f * extend, SpriteEffects.None, 0f);
+
+            //蛇颈能量拖尾 — GlaciateWave
+            Texture2D wave = ACMAsset.GlaciateWave;
+            if (wave != null) {
+                Vector2 neckPos = drawPos + new Vector2(NPC.spriteDirection * 20f, -60f);
+                Vector2 wo = wave.Size() / 2f;
+                Color neckColor = new Color(50, 180, 50, 0) * (0.3f * extend);
+                float neckRot = snakeRot + MathHelper.PiOver2;
+                sb.Draw(wave, neckPos, null, neckColor, neckRot, wo, new Vector2(0.15f, 0.3f) * extend, SpriteEffects.None, 0f);
+            }
+        }
+
+        private void DrawPhaseFlash(SpriteBatch sb, Vector2 drawPos) {
+            Texture2D glow = ACMAsset.SoftGlow;
+            if (glow == null) return;
+            Vector2 go = glow.Size() / 2f;
+
+            float flashScale = phaseFlash * 15f;
+            Color flashColor = new Color(200, 240, 255, 0) * (phaseFlash * 0.8f);
+            sb.Draw(glow, drawPos, null, flashColor, 0f, go, flashScale, SpriteEffects.None, 0f);
+        }
+
+        #endregion
+
+        #region 着色器噪声纹理生成
+
+        private static Texture2D GenerateNoiseTexture(GraphicsDevice device, int size = 256) {
+            Color[] pixels = new Color[size * size];
+            byte[][] channels = new byte[3][];
+
+            for (int c = 0; c < 3; c++) {
+                channels[c] = new byte[size * size];
+                float[,] noise = GenerateTileableFBM(size, octaves: 5, seed: 77 + c * 131);
+                for (int y = 0; y < size; y++)
+                    for (int x = 0; x < size; x++)
+                        channels[c][y * size + x] = (byte)(noise[x, y] * 255);
+            }
+
+            for (int i = 0; i < pixels.Length; i++)
+                pixels[i] = new Color(channels[0][i], channels[1][i], channels[2][i], (byte)255);
+
+            Texture2D tex = new(device, size, size, false, SurfaceFormat.Color);
+            tex.SetData(pixels);
+            return tex;
+        }
+
+        private static float[,] GenerateTileableFBM(int size, int octaves, int seed) {
+            float[,] result = new float[size, size];
+            Random rng = new(seed);
+            float amplitude = 1f;
+            float frequency = 1f;
+            float maxValue = 0f;
+
+            for (int oct = 0; oct < octaves; oct++) {
+                int grid = Math.Max(2, (int)(4 * frequency));
+                float[] lattice = new float[(grid + 1) * (grid + 1)];
+                for (int i = 0; i < lattice.Length; i++)
+                    lattice[i] = (float)rng.NextDouble();
+
+                for (int i = 0; i <= grid; i++) {
+                    lattice[i * (grid + 1) + grid] = lattice[i * (grid + 1)];
+                    lattice[grid * (grid + 1) + i] = lattice[i];
+                }
+                lattice[grid * (grid + 1) + grid] = lattice[0];
+
+                for (int y = 0; y < size; y++) {
+                    for (int x = 0; x < size; x++) {
+                        float fx = (float)x / size * grid;
+                        float fy = (float)y / size * grid;
+                        int ix = Math.Min((int)fx, grid - 1);
+                        int iy = Math.Min((int)fy, grid - 1);
+                        float tx = fx - ix;
+                        float ty = fy - iy;
+                        tx = tx * tx * (3 - 2 * tx);
+                        ty = ty * ty * (3 - 2 * ty);
+                        float v00 = lattice[iy * (grid + 1) + ix];
+                        float v10 = lattice[iy * (grid + 1) + ix + 1];
+                        float v01 = lattice[(iy + 1) * (grid + 1) + ix];
+                        float v11 = lattice[(iy + 1) * (grid + 1) + ix + 1];
+                        float vx0 = v00 + (v10 - v00) * tx;
+                        float vx1 = v01 + (v11 - v01) * tx;
+                        result[x, y] += (vx0 + (vx1 - vx0) * ty) * amplitude;
+                    }
+                }
+                maxValue += amplitude;
+                amplitude *= 0.5f;
+                frequency *= 2f;
+            }
+
+            if (maxValue > 0) {
+                for (int y = 0; y < size; y++)
+                    for (int x = 0; x < size; x++)
+                        result[x, y] /= maxValue;
+            }
+            return result;
         }
 
         #endregion
