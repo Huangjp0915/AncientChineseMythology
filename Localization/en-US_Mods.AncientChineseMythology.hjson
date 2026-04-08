@@ -2089,6 +2089,7 @@ Projectiles: {
 	DryadsLeaf.DisplayName: Dryads Leaf
 	DryadsVine.DisplayName: Dryads Vine
 	DazhengArenaBarrier.DisplayName: Dazheng Arena Barrier
+	XuanwuIcePillar.DisplayName: Xuanwu Ice Pillar
 }
 
 HeavenBiome.DisplayName: Heaven

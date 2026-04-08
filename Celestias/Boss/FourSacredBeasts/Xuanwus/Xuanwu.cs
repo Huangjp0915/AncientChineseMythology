@@ -47,12 +47,14 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
             Phase2_IceStorm,
             Phase2_DualAssault,
             Phase2_FrostWave,
+            Phase2_IcePillarSurge,
             PhaseTransition_3,
             Phase3_AbsoluteDefense,
             Phase3_TidalCrush,
             Phase3_Blizzard,
             Phase3_NorthStarJudgment,
             Phase3_YinYangBalance,
+            Phase3_FrostPillarField,
             Phase3_Drift
         }
 
@@ -335,12 +337,14 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                 case BossPhase.Phase2_IceStorm: RunPhase2IceStorm(target); break;
                 case BossPhase.Phase2_DualAssault: RunPhase2DualAssault(target); break;
                 case BossPhase.Phase2_FrostWave: RunPhase2FrostWave(target); break;
+                case BossPhase.Phase2_IcePillarSurge: RunPhase2IcePillarSurge(target); break;
                 case BossPhase.PhaseTransition_3: RunPhaseTransition3(target); break;
                 case BossPhase.Phase3_AbsoluteDefense: RunPhase3AbsoluteDefense(target); break;
                 case BossPhase.Phase3_TidalCrush: RunPhase3TidalCrush(target); break;
                 case BossPhase.Phase3_Blizzard: RunPhase3Blizzard(target); break;
                 case BossPhase.Phase3_NorthStarJudgment: RunPhase3NorthStarJudgment(target); break;
                 case BossPhase.Phase3_YinYangBalance: RunPhase3YinYangBalance(target); break;
+                case BossPhase.Phase3_FrostPillarField: RunPhase3FrostPillarField(target); break;
                 case BossPhase.Phase3_Drift: RunPhase3Drift(target); break;
             }
 
@@ -447,22 +451,24 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
         }
 
         private BossPhase GetRandomPhase2Attack() {
-            return (BossPhase)(Main.rand.Next(5) switch {
+            return (BossPhase)(Main.rand.Next(6) switch {
                 0 => (int)BossPhase.Phase2_SnakeStrike,
                 1 => (int)BossPhase.Phase2_VenomSpray,
                 2 => (int)BossPhase.Phase2_IceStorm,
                 3 => (int)BossPhase.Phase2_DualAssault,
-                _ => (int)BossPhase.Phase2_FrostWave
+                4 => (int)BossPhase.Phase2_FrostWave,
+                _ => (int)BossPhase.Phase2_IcePillarSurge
             });
         }
 
         private BossPhase GetRandomPhase3Attack() {
-            return (BossPhase)(Main.rand.Next(5) switch {
+            return (BossPhase)(Main.rand.Next(6) switch {
                 0 => (int)BossPhase.Phase3_AbsoluteDefense,
                 1 => (int)BossPhase.Phase3_TidalCrush,
                 2 => (int)BossPhase.Phase3_Blizzard,
                 3 => (int)BossPhase.Phase3_NorthStarJudgment,
-                _ => (int)BossPhase.Phase3_YinYangBalance
+                4 => (int)BossPhase.Phase3_YinYangBalance,
+                _ => (int)BossPhase.Phase3_FrostPillarField
             });
         }
 
@@ -533,6 +539,113 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                 VenomProjectile(center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * spd, damage, 1, rotSpeed);
                 //B链(对称偏移π)
                 VenomProjectile(center, new Vector2(MathF.Cos(angle + MathHelper.Pi), MathF.Sin(angle + MathHelper.Pi)) * spd, damage, 1, rotSpeed);
+            }
+        }
+
+        //冰裂扇形: Mode 1冰裂弹，分裂后覆盖范围加倍
+        private void FractureFan(Vector2 center, Player target, int count, int damage, float spreadDeg = 60f, int splitDelay = 35) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+            Vector2 dir = (target.Center - center).SafeNormalize(Vector2.UnitY);
+            float spread = MathHelper.ToRadians(spreadDeg);
+            for (int i = 0; i < count; i++) {
+                float angle = -spread / 2 + spread / (count - 1) * i;
+                Vector2 vel = dir.RotatedBy(angle) * 12f;
+                IceProjectile(center, vel, damage, splitDelay + 80, 1, splitDelay + i * 3);
+            }
+        }
+
+        //冰域围笼: Mode 2冰域锚在目标周围形成包围
+        private void AnchorCage(Player target, int count, float radius, int damage, int duration = 90) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+            for (int i = 0; i < count; i++) {
+                float angle = MathHelper.TwoPi / count * i;
+                Vector2 targetPos = target.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * radius;
+                Vector2 vel = (targetPos - NPC.Center).SafeNormalize(Vector2.UnitX) * 18f;
+                IceProjectile(NPC.Center, vel, damage, duration + 60, 2, duration);
+            }
+        }
+
+        //弧光狩猎群: Mode 3弧线追猎冰锥
+        private void ArcSwarm(Vector2 center, int count, float speed, int damage) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+            for (int i = 0; i < count; i++) {
+                float angle = MathHelper.TwoPi / count * i;
+                Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * speed;
+                IceProjectile(center, vel, damage, 300, 3, NPC.target);
+            }
+        }
+
+        //毒域地毯: Mode 2毒域弹覆盖地面区域
+        private void VenomCarpet(Player target, int count, int damage, float spread = 500f, int poolDuration = 150) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+            for (int i = 0; i < count; i++) {
+                float x = target.Center.X - spread / 2 + spread / MathF.Max(count - 1, 1) * i;
+                Vector2 pos = new Vector2(x, target.Center.Y - 500);
+                Vector2 vel = new Vector2(Main.rand.NextFloat(-1f, 1f), Main.rand.NextFloat(12f, 16f));
+                VenomProjectile(pos, vel, damage, 2, poolDuration);
+            }
+        }
+
+        //闪蛇齐射: Mode 1闪蛇毒牙
+        private void FlickerSalvo(Vector2 center, Player target, int count, float speed, int damage, float spreadDeg = 15f) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+            Vector2 dir = (target.Center - center).SafeNormalize(Vector2.UnitX);
+            float spread = MathHelper.ToRadians(spreadDeg);
+            for (int i = 0; i < count; i++) {
+                float angle = (i - (count - 1) * 0.5f) * spread;
+                Vector2 vel = dir.RotatedBy(angle) * speed;
+                VenomProjectile(center, vel, damage, 1, 18f + Main.rand.NextFloat(-3f, 3f));
+            }
+        }
+
+        //连锁咬阵: Mode 3连锁咬围攻
+        private void ChainBiteBarrage(Player target, int count, float radius, int damage, int bounces = 3) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+            for (int i = 0; i < count; i++) {
+                float angle = MathHelper.TwoPi / count * i + Main.rand.NextFloat(-0.2f, 0.2f);
+                Vector2 spawnPos = target.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * radius;
+                Vector2 vel = (target.Center - spawnPos).SafeNormalize(Vector2.UnitX) * 3f;
+                VenomProjectile(spawnPos, vel, damage, 3, bounces);
+            }
+        }
+
+        //冰柱生成: 在指定位置召唤冰柱
+        private int SpawnIcePillar(Vector2 pos, int damage, int mode = 0, float modeParam = 30f, float height = 240f, float width = 1f) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return -1;
+            int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, Vector2.Zero,
+                ModContent.ProjectileType<XuanwuIcePillar>(), damage, 0f, Main.myPlayer, mode, modeParam);
+            return proj;
+        }
+
+        //冰柱追踪阵: 在玩家脚下依次刺出冰柱
+        private void PillarChase(Player target, int count, int damage, float spacing = 100f, int delayPerPillar = 8) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+            Vector2 moveDir = target.velocity.LengthSquared() > 1f
+                ? target.velocity.SafeNormalize(Vector2.UnitX)
+                : (NPC.Center - target.Center).SafeNormalize(Vector2.UnitX);
+            for (int i = 0; i < count; i++) {
+                Vector2 pos = target.Center + moveDir * (i * spacing) + new Vector2(0, target.height / 2f);
+                SpawnIcePillar(pos, damage, 0, 15 + i * delayPerPillar);
+            }
+        }
+
+        //冰柱牢笼: 围绕玩家一圈刺出冰柱封锁
+        private void PillarPrison(Player target, int count, float radius, int damage, int delay = 25) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+            for (int i = 0; i < count; i++) {
+                float angle = MathHelper.TwoPi / count * i;
+                Vector2 pos = target.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * radius;
+                SpawnIcePillar(pos, damage, 0, delay + i * 3);
+            }
+        }
+
+        //冰柱地刺波: 从Boss向玩家方向依次刺出一排冰柱
+        private void PillarWave(Vector2 start, Vector2 direction, int count, int damage, float spacing = 80f, int delayPerPillar = 5) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+            Vector2 dir = direction.SafeNormalize(Vector2.UnitX);
+            for (int i = 0; i < count; i++) {
+                Vector2 pos = start + dir * (i * spacing);
+                SpawnIcePillar(pos, damage, 0, 20 + i * delayPerPillar);
             }
         }
 
@@ -776,25 +889,23 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                         Main.instance.CameraModifiers.Add(camMod);
                     }
 
-                    // 弹幕爆发 —— 帘幕波次设计
+                    // 弹幕爆发
                     if (Main.netMode != NetmodeID.MultiplayerClient) {
-                        // 地面帘幕波: 左右递进冰柱(速度时差模拟依次升起)
-                        int waveCount = Main.expertMode ? 10 : 7;
-                        float waveY = groundY - 20;
-                        CurtainWave(NPC.Center, groundY, waveCount, NPC.damage / 4);
-
-                        // 正上方3颗延迟追踪冰锥(Mode 2, 30帧延迟)
-                        for (int i = -1; i <= 1; i++) {
-                            IceProjectile(NPC.Center, new Vector2(i * 2f, -12f), NPC.damage / 4, 240, 2, 30f);
+                        //冰裂弹幕从砸击点上升后分裂形成弹幕雨
+                        int fracCount = Main.expertMode ? 8 : 5;
+                        for (int i = 0; i < fracCount; i++) {
+                            float vx = Main.rand.NextFloat(-5f, 5f);
+                            float vy = -Main.rand.NextFloat(10f, 16f);
+                            IceProjectile(NPC.Center, new Vector2(vx, vy), NPC.damage / 4, 120, 1, 28 + i * 3);
                         }
-
-                        // 上方散射正弦冰柱(Mode 1)
-                        int scatterCount = Main.expertMode ? 8 : 5;
-                        for (int i = 0; i < scatterCount; i++) {
-                            float vx = Main.rand.NextFloat(-6f, 6f);
-                            float vy = -Main.rand.NextFloat(10f, 18f);
-                            IceProjectile(NPC.Center, new Vector2(vx, vy), NPC.damage / 5, 180, 1, Main.rand.NextFloat(0f, MathHelper.TwoPi));
+                        //两侧玄冰锚封锁退路
+                        for (int side = -1; side <= 1; side += 2) {
+                            Vector2 anchorPos = NPC.Center + new Vector2(side * 250f, -80f);
+                            Vector2 vel = new Vector2(side * 8f, -6f);
+                            IceProjectile(anchorPos, vel, NPC.damage / 5, 150, 2, 80f);
                         }
+                        //弧光追猎尾随压制
+                        ArcSwarm(NPC.Center + new Vector2(0, -60), 3, 6f, NPC.damage / 5);
                     }
 
                     // 落地粉碎粒子
@@ -929,12 +1040,11 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                     }
                 }
 
-                // 冲刺中散落正弦波冰碎(Mode 1)
-                if (AttackTimer % 5 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                //冲刺中释放弧光追猎冰锥(曲线回旋追击玩家)
+                if (AttackTimer % 7 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                     float shedAngle = shellRotation * 2f;
-                    IceProjectile(NPC.Center,
-                        new Vector2(MathF.Cos(shedAngle), MathF.Sin(shedAngle)) * 7f,
-                        NPC.damage / 5, 120, 1, Main.rand.NextFloat(0f, MathHelper.TwoPi)); //Mode 1正弦波, 随机相位
+                    Vector2 shedVel = new Vector2(MathF.Cos(shedAngle), MathF.Sin(shedAngle)) * 5f;
+                    IceProjectile(NPC.Center, shedVel, NPC.damage / 5, 240, 3, NPC.target);
                 }
 
                 if (AttackTimer >= (int)chargeDuration) {
@@ -948,14 +1058,12 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                     frostTargetIntensity = 0.5f;
                     phaseFlash = 0.3f;
 
-                    // 冲刺终点: 黄金角螺旋冰碎 + 延迟追踪冰锥
+                    //冲刺终点: 冰裂分叉爆发 + 弧光追猎
                     if (Main.netMode != NetmodeID.MultiplayerClient) {
-                        FibonacciSpiral(NPC.Center, 12, 8f, NPC.damage / 5, true, 0, 0f); //黄金角直射
-                        //3颗延迟追踪冰锥(Mode 2, 25帧延迟)
-                        for (int i = -1; i <= 1; i++) {
-                            Vector2 hVel = new Vector2(i * 3f, -4f);
-                            IceProjectile(NPC.Center, hVel, NPC.damage / 5, 240, 2, 25f);
-                        }
+                        //冰裂扇形覆盖
+                        FractureFan(NPC.Center, target, Main.expertMode ? 7 : 5, NPC.damage / 5, 90f, 30);
+                        //弧光追猎从终点散开
+                        ArcSwarm(NPC.Center, 4, 7f, NPC.damage / 5);
                     }
 
                     if (Main.netMode != NetmodeID.Server) {
@@ -1147,19 +1255,10 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
 
                     if (Main.netMode != NetmodeID.MultiplayerClient) {
                         Vector2 snakePos = NPC.Center + new Vector2(0, -80);
-                        Vector2 vel = (target.Center - snakePos).SafeNormalize(Vector2.UnitX) * 22f;
-                        //蛇形路径毒牙(Mode 1)
-                        for (int i = -2; i <= 2; i++) {
-                            Vector2 v = vel.RotatedBy(i * MathHelper.ToRadians(6f));
-                            VenomProjectile(snakePos, v, NPC.damage / 4, 1, 0.15f + MathF.Abs(i) * 0.03f);
-                        }
-                        // 同步轨道冰爆(Mode 3: 围绕Boss旋转后释放)
-                        for (int i = 0; i < 6; i++) {
-                            float angle = MathHelper.TwoPi / 6 * i;
-                            IceProjectile(NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 60f,
-                                new Vector2(MathF.Cos(angle + MathHelper.PiOver2), MathF.Sin(angle + MathHelper.PiOver2)) * 4f,
-                                NPC.damage / 5, 180, 3, NPC.whoAmI);
-                        }
+                        //闪蛇齐射: 随机闪避的毒牙群
+                        FlickerSalvo(snakePos, target, 5, 18f, NPC.damage / 4, 12f);
+                        //玄冰锚包围: 在目标周围布置冰域
+                        AnchorCage(target, 4, 200f, NPC.damage / 5, 70);
                     }
                     SoundEngine.PlaySound(SoundID.Item103 with { Pitch = 0.3f }, NPC.Center);
                     NPC.netUpdate = true;
@@ -1187,24 +1286,23 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
             NPC.velocity = newCenter - NPC.Center;
 
             if (AttackTimer % 10 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                Vector2 dir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
-                int count = Main.expertMode ? 9 : 7;
-                float spread = MathHelper.ToRadians(70f);
-                for (int i = 0; i < count; i++) {
-                    float angle = -spread / 2 + spread / (count - 1) * i;
-                    Vector2 vel = dir.RotatedBy(angle) * Main.rand.NextFloat(12f, 16f);
-                    //蛇形路径毒牙(Mode 1, 不同频率产生层次感)
-                    VenomProjectile(NPC.Center, vel, NPC.damage / 4, 1, 0.1f + i * 0.01f);
-                }
+                //闪蛇交叉扫射
+                FlickerSalvo(NPC.Center, target, Main.expertMode ? 7 : 5, 14f, NPC.damage / 4, 18f);
                 SoundEngine.PlaySound(SoundID.Item103 with { Volume = 0.5f }, NPC.Center);
             }
 
-            // 同步冰弹: 延迟追踪(Mode 2)
+            //冰域封锁与弧光追猎交替
             if (AttackTimer % 16 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 8f;
-                IceProjectile(NPC.Center, vel, NPC.damage / 5, 240, 2, 35f); //35帧延迟后追踪
-                IceProjectile(NPC.Center, vel.RotatedBy(MathHelper.ToRadians(20)), NPC.damage / 5, 240, 2, 40f);
-                IceProjectile(NPC.Center, vel.RotatedBy(-MathHelper.ToRadians(20)), NPC.damage / 5, 240, 2, 40f);
+                if (AttackTimer % 32 == 0) {
+                    //玄冰锚: 在玩家前方布置冰域陷阱
+                    Vector2 predictPos = target.Center + target.velocity * 20f;
+                    Vector2 vel = (predictPos - NPC.Center).SafeNormalize(Vector2.UnitX) * 14f;
+                    IceProjectile(NPC.Center, vel, NPC.damage / 5, 150, 2, 80f);
+                }
+                else {
+                    //弧光追猎: 曲线追踪冰锥
+                    ArcSwarm(NPC.Center, 2, 8f, NPC.damage / 5);
+                }
             }
 
             if (AttackTimer > 90) TransitionTo(GetRandomPhase2Attack());
@@ -1218,25 +1316,25 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
 
             int interval = Main.expertMode ? 3 : 5;
             if (AttackTimer % interval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                //瞄准预判冰雨: 使用LeadTarget计算提前量
-                int count = Main.expertMode ? 4 : 3;
+                //冰裂分叉雨: 从高空落下后分裂扩散
+                int count = Main.expertMode ? 3 : 2;
                 for (int i = 0; i < count; i++) {
-                    float x = target.Center.X + Main.rand.NextFloat(-550, 550);
+                    float x = target.Center.X + Main.rand.NextFloat(-400, 400);
                     Vector2 pos = new Vector2(x, target.Center.Y - 650);
-                    Vector2 aimDir = ACMUtils.LeadTarget(pos, target.Center, target.velocity, 16f);
-                    Vector2 vel = aimDir * 16f + new Vector2(Main.rand.NextFloat(-1f, 1f), 0);
-                    IceProjectile(pos, vel, NPC.damage / 4, 200, 0, 0f);
+                    Vector2 aimDir = ACMUtils.LeadTarget(pos, target.Center, target.velocity, 14f);
+                    Vector2 vel = aimDir * 14f;
+                    IceProjectile(pos, vel, NPC.damage / 4, 160, 1, 30 + Main.rand.Next(8));
                 }
             }
 
-            // 双侧蛇毒: 收束螺旋(Mode 2围绕玩家收紧)
-            if (AttackTimer % 22 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int side = -1; side <= 1; side += 2) {
-                    for (int i = 0; i < 4; i++) {
-                        Vector2 pos = target.Center + new Vector2(side * 600, -200 + i * 120);
-                        VenomProjectile(pos, new Vector2(-side * 10f, 0), NPC.damage / 5, 2, NPC.target); //Mode 2收束螺旋围绕玩家
-                    }
-                }
+            //毒域地毯封锁退路
+            if (AttackTimer % 30 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                VenomCarpet(target, Main.expertMode ? 4 : 3, NPC.damage / 5, 400f, 120);
+            }
+
+            //地面冰柱交替刺出(和空中冰雨配合上下夺命)
+            if (AttackTimer % 25 == 0 && AttackTimer > 15 && Main.netMode != NetmodeID.MultiplayerClient) {
+                PillarChase(target, 3, NPC.damage / 5, 110f, 6);
             }
 
             if (AttackTimer > 120) TransitionTo(GetRandomPhase2Attack());
@@ -1252,12 +1350,11 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                 causticsTargetIntensity = MathHelper.Lerp(0.1f, 0.35f, ACMUtils.Clamp01(AttackTimer / 22f));
                 snakeHeadExtend = MathHelper.Lerp(snakeHeadExtend, 1f, 0.08f);
 
-                // 蓄力时轨道冰碎(Mode 3引力轨道: 绕Boss旋转后释放)
+                //蓄力时冰裂弹预热
                 if (AttackTimer % 10 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    float a = AttackTimer * 0.2f;
-                    IceProjectile(NPC.Center + new Vector2(MathF.Cos(a), MathF.Sin(a)) * 80f,
-                        new Vector2(MathF.Cos(a + MathHelper.PiOver2), MathF.Sin(a + MathHelper.PiOver2)) * 5f,
-                        NPC.damage / 6, 180, 3, NPC.whoAmI); //Mode 3轨道, 锤点=Boss NPC索引
+                    float a = AttackTimer * 0.25f;
+                    Vector2 vel = new Vector2(MathF.Cos(a), MathF.Sin(a)) * 7f;
+                    IceProjectile(NPC.Center, vel, NPC.damage / 6, 120, 1, 20);
                 }
                 if (AttackTimer > 22) {
                     SubState = 1;
@@ -1273,20 +1370,18 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                 //冲刺中焦散持续
                 causticsTargetIntensity = 0.3f;
 
-                // 蛇头独立追踪射击: 蛇形路径毒牙(Mode 1)
+                //蛇头闪蛇追击
                 if (AttackTimer % 5 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                     Vector2 snakePos = NPC.Center + new Vector2(0, -80);
                     Vector2 vel = (target.Center - snakePos).SafeNormalize(Vector2.Zero) * 16f;
                     vel = vel.RotatedByRandom(MathHelper.ToRadians(8f));
-                    VenomProjectile(snakePos, vel, NPC.damage / 4, 1, 0.15f); //Mode 1蛇形路径
+                    VenomProjectile(snakePos, vel, NPC.damage / 4, 1, 18f + Main.rand.NextFloat(-3, 3));
                 }
 
-                // 龟甲释放冰碎 + 垂直冰尾迹
+                //龟甲弧光冰锥散射
                 if (AttackTimer % 6 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                     float angle = shellRotation;
-                    IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 9f, NPC.damage / 5, 120);
-                    Vector2 perpDir = new Vector2(-NPC.velocity.Y, NPC.velocity.X).SafeNormalize(Vector2.Zero);
-                    IceProjectile(NPC.Center + perpDir * 40f, perpDir * 5f, NPC.damage / 6, 100);
+                    IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 9f, NPC.damage / 5, 240, 3, NPC.target);
                 }
 
                 if (Main.netMode != NetmodeID.Server) {
@@ -1303,23 +1398,12 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                     NPC.velocity = ncd - NPC.Center;
                 }
                 if (AttackTimer > 40) {
-                    //终结: 交叉十字冰柱(4轴×8颗轮替) + 蛇形毒雾扇
+                    //终结: 冰裂扇形 + 连锁咬围攻 + 冰柱刺出
                     if (Main.netMode != NetmodeID.MultiplayerClient) {
-                        //交叉十字: 4轴×4颗
-                        for (int axis = 0; axis < 4; axis++) {
-                            float baseAngle = axis * MathHelper.PiOver2 + strikeCount * MathHelper.ToRadians(22.5f);
-                            for (int i = 0; i < 4; i++) {
-                                float spd = 5f + i * 2.5f;
-                                IceProjectile(NPC.Center, new Vector2(MathF.Cos(baseAngle), MathF.Sin(baseAngle)) * spd,
-                                    NPC.damage / 5, 160, 0, 0f);
-                            }
-                        }
-                        //蛇头毒雾扇: 蛇形路径(Mode 1)
-                        Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
-                        for (int i = -3; i <= 3; i++) {
-                            Vector2 venomVel = toPlayer.RotatedBy(i * MathHelper.ToRadians(8f)) * 14f;
-                            VenomProjectile(NPC.Center + new Vector2(0, -80), venomVel, NPC.damage / 5, 1, 0.12f + MathF.Abs(i) * 0.02f);
-                        }
+                        FractureFan(NPC.Center, target, 6, NPC.damage / 5, 80f, 25 + strikeCount * 3);
+                        ChainBiteBarrage(target, 3, 280f, NPC.damage / 5, 2);
+                        //冲刺终点地面冰柱爆发
+                        PillarPrison(target, 6, 160f, NPC.damage / 5, 18);
                     }
                     phaseFlash = 0.2f;
                     strikeCount++;
@@ -1344,27 +1428,16 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
                     int waveIdx = (int)(AttackTimer - 25) / 25; //0,1,2
                     if (waveIdx == 0) {
-                        //第1波: 密集窄角高速扇形(直射)
-                        int count = Main.expertMode ? 20 : 14;
-                        float spread = MathHelper.ToRadians(60f);
-                        Vector2 dir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
-                        for (int i = 0; i < count; i++) {
-                            float angle = -spread / 2 + spread / (count - 1) * i;
-                            IceProjectile(NPC.Center, dir.RotatedBy(angle) * 12f, NPC.damage / 4, 160, 0, 0f);
-                        }
+                        //第1波: 冰裂分叉扇形(命中后扩散为弹幕网)
+                        FractureFan(NPC.Center, target, Main.expertMode ? 9 : 6, NPC.damage / 4, 70f, 28);
                     }
                     else if (waveIdx == 1) {
-                        //第2波: 稀疏全周正弦波(Mode 1慢速)
-                        int count = Main.expertMode ? 16 : 12;
-                        for (int i = 0; i < count; i++) {
-                            float angle = MathHelper.TwoPi / count * i;
-                            IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 6f,
-                                NPC.damage / 4, 200, 1, i * 0.5f); //不同相位错开
-                        }
+                        //第2波: 玄冰锚阵(围笼+冰域叠加)
+                        AnchorCage(target, Main.expertMode ? 6 : 4, 180f, NPC.damage / 4, 90);
                     }
                     else {
-                        //第3波: 斐波那契螺旋追踪(Mode 2延迟追踪)
-                        FibonacciSpiral(NPC.Center, Main.expertMode ? 18 : 12, 5f, NPC.damage / 4, true, 2, 20f);
+                        //第3波: 弧光追猎群(全方位曲线收束)
+                        ArcSwarm(NPC.Center, Main.expertMode ? 10 : 7, 8f, NPC.damage / 4);
                     }
                 }
 
@@ -1377,12 +1450,64 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                 }
             }
 
-            // 同步蛇毒: DNA双螺旋扩展
+            //毒域地毯 + 连锁咬交替压制
             if (AttackTimer % 18 == 0 && AttackTimer > 20 && Main.netMode != NetmodeID.MultiplayerClient) {
-                SpiralDNA(NPC.Center, 5, 9f, NPC.damage / 5, 0.2f);
+                if (AttackTimer % 36 == 0)
+                    VenomCarpet(target, 3, NPC.damage / 5, 350f, 100);
+                else
+                    ChainBiteBarrage(target, 2, 250f, NPC.damage / 5, 2);
             }
 
             if (AttackTimer > 90) TransitionTo(GetRandomPhase2Attack());
+        }
+
+        private void RunPhase2IcePillarSurge(Player target) {
+            //冰柱涌动: Boss悬停，地面依次刺出冰柱追踪玩家
+            Vector2 hoverPos = target.Center + new Vector2(0, -350);
+            Vector2 newCenter = ACMUtils.SpringDamp2D(NPC.Center, hoverPos, ref springVel, 2f, 5f, 1f / 60f);
+            NPC.velocity = newCenter - NPC.Center;
+
+            //阶段1(0-30帧): 追踪冰柱 — 在玩家脚下依次刺出
+            if (AttackTimer < 30) {
+                int pillarInterval = Main.expertMode ? 8 : 12;
+                if (AttackTimer % pillarInterval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    //在玩家移动方向前方刺出冰柱, 交错偏移
+                    Vector2 basePos = target.Center + new Vector2(0, target.height / 2f);
+                    Vector2 moveDir = target.velocity.LengthSquared() > 1f
+                        ? target.velocity.SafeNormalize(Vector2.UnitX) : Vector2.UnitX;
+                    //当前位置+前方预判
+                    SpawnIcePillar(basePos, NPC.damage / 4, 0, 18);
+                    SpawnIcePillar(basePos + moveDir * 120f, NPC.damage / 4, 0, 24);
+                    if (Main.expertMode)
+                        SpawnIcePillar(basePos + moveDir * 240f, NPC.damage / 4, 0, 30);
+                }
+            }
+            //阶段2(30-55帧): 冰柱牢笼 — 包围玩家
+            else if (AttackTimer == 30) {
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    int count = Main.expertMode ? 10 : 8;
+                    PillarPrison(target, count, 180f, NPC.damage / 4, 22);
+                    SoundEngine.PlaySound(SoundID.Item28 with { Pitch = -0.6f, Volume = 1.2f }, target.Center);
+                }
+            }
+            //阶段3(55-75帧): 冰柱地刺波 — 从Boss向玩家方向推进
+            else if (AttackTimer == 55) {
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    Vector2 dir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
+                    int waveCount = Main.expertMode ? 10 : 7;
+                    PillarWave(NPC.Center + dir * 100f, dir, waveCount, NPC.damage / 4, 90f, 4);
+                    //两侧夹击波
+                    Vector2 sideDir = new Vector2(-dir.Y, dir.X);
+                    PillarWave(target.Center + sideDir * 200f, -sideDir, 5, NPC.damage / 5, 80f, 5);
+                    PillarWave(target.Center - sideDir * 200f, sideDir, 5, NPC.damage / 5, 80f, 5);
+                }
+                SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.3f, Volume = 0.8f }, NPC.Center);
+            }
+
+            //P2冰霜增强
+            frostTargetIntensity = MathHelper.Max(frostTargetIntensity, 0.15f + AttackTimer * 0.003f);
+
+            if (AttackTimer > 100) TransitionTo(GetRandomPhase2Attack());
         }
 
         #endregion
@@ -1407,18 +1532,18 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                 d.noGravity = true;
             }
 
-            // 玄天巡航: 正弦波冰碎(Mode 1) + 蛇形毒牙(Mode 1)
+            //玄天巡航: 弧光冰锥 + 闪蛇毒牙
             if (PhaseTimer % 10 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                 float a = PhaseTimer * 0.18f;
                 for (int arm = 0; arm < 3; arm++) {
                     float angle = a + arm * MathHelper.TwoPi / 3f;
                     IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 8f,
-                        NPC.damage / 6, 160, 1, arm * 0.8f); //不同相位的正弦波
+                        NPC.damage / 6, 240, 3, NPC.target);
                 }
             }
             if (PhaseTimer % 18 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                 Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 12f;
-                VenomProjectile(NPC.Center, vel, NPC.damage / 6, 1, 0.18f); //蛇形路径
+                VenomProjectile(NPC.Center, vel, NPC.damage / 6, 1, 20f);
             }
 
             if (PhaseTimer > 75) TransitionTo(GetRandomPhase3Attack());
@@ -1454,16 +1579,12 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                 }
             }
 
-            // 双型反击: 黄金角螺旋 + 蛇毒收束螺旋
+            //双型反击: 弧光追猎 + 连锁咬围攻
             if (AttackTimer % 14 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                FibonacciSpiral(NPC.Center, 14, 11f, NPC.damage / 4, true, 0, 0f);
+                ArcSwarm(NPC.Center, 8, 11f, NPC.damage / 4);
             }
             if (AttackTimer % 20 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                //收束螺旋围绕玩家(Mode 2)
-                for (int i = -1; i <= 1; i++) {
-                    Vector2 offset = new Vector2(i * 120f, -60f);
-                    VenomProjectile(NPC.Center + offset, new Vector2(i * 5f, -3f), NPC.damage / 4, 2, NPC.target);
-                }
+                ChainBiteBarrage(target, 3, 300f, NPC.damage / 4, 3);
             }
 
             if (AttackTimer > 100) {
@@ -1490,7 +1611,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                 Vector2 reflectDir = (attacker.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
                 for (int i = -1; i <= 1; i++) {
                     Vector2 vel = reflectDir.RotatedBy(i * MathHelper.ToRadians(15f)) * 5f;
-                    IceProjectile(NPC.Center + reflectDir * 80f, vel, NPC.damage / 6, 300, 2, 120f); //Mode 2延迟追踪, 120帧后锁定
+                    IceProjectile(NPC.Center + reflectDir * 80f, vel, NPC.damage / 6, 200, 1, 20); //冰裂分叉反射
                 }
                 //盾闪光反馈
                 shieldVisual = MathHelper.Min(shieldVisual + 0.3f, 1.5f);
@@ -1512,12 +1633,12 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                     }
                 }
 
-                // 蓄力时旋转冰臂
+                //蓄力时冰裂弹预热
                 if (AttackTimer % 10 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                     float a = AttackTimer * 0.2f;
                     for (int arm = 0; arm < 2; arm++) {
                         float angle = a + arm * MathHelper.Pi;
-                        IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 7f, NPC.damage / 6);
+                        IceProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 7f, NPC.damage / 6, 120, 1, 18);
                     }
                 }
 
@@ -1535,12 +1656,10 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                                 WaterProjectile(NPC.Center, new Vector2(-speed, -2f + wave * 0.8f), NPC.damage / 3);
                             }
                         }
-                        // 蛇毒雨: 抛物线毒液(Mode 3重力落下)
-                        for (int i = 0; i < 10; i++) {
-                            float x = target.Center.X + Main.rand.NextFloat(-500, 500);
-                            Vector2 pos = new Vector2(x, target.Center.Y - 600);
-                            VenomProjectile(pos, new Vector2(0, Main.rand.NextFloat(12f, 18f)), NPC.damage / 4, 3, 0f); //Mode 3抛物线
-                        }
+                        //毒域地毯: 覆盖落点区域
+                        VenomCarpet(target, 6, NPC.damage / 4, 600f, 120);
+                        //潮汐冲击处冰柱从地面刺出
+                        PillarWave(target.Center + new Vector2(-400, 0), Vector2.UnitX, 8, NPC.damage / 4, 100f, 4);
                     }
 
                     if (Main.netMode != NetmodeID.Server) {
@@ -1566,25 +1685,28 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
 
             int interval = Main.expertMode ? 2 : 3;
             if (AttackTimer % interval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                //瞄准预判冰雪: LeadTarget计算提前量
-                int count = Main.expertMode ? 5 : 4;
+                //暴风雪: 冰裂分叉从高空落下，分裂后形成弹幕密网
+                int count = Main.expertMode ? 4 : 3;
                 for (int i = 0; i < count; i++) {
                     float x = target.Center.X + Main.rand.NextFloat(-700, 700);
                     Vector2 pos = new Vector2(x, target.Center.Y - 700);
-                    Vector2 aimDir = ACMUtils.LeadTarget(pos, target.Center, target.velocity, 16f);
-                    Vector2 vel = aimDir * 16f + new Vector2(Main.rand.NextFloat(-1.5f, 1.5f), 0);
-                    IceProjectile(pos, vel, NPC.damage / 4, 200, 0, 0f);
+                    Vector2 aimDir = ACMUtils.LeadTarget(pos, target.Center, target.velocity, 14f);
+                    Vector2 vel = aimDir * 14f;
+                    IceProjectile(pos, vel, NPC.damage / 4, 180, 1, 25 + Main.rand.Next(10));
                 }
             }
 
-            // 双侧蛇毒: 收束螺旋(Mode 2围绕玩家)
+            //闪蛇+毒域交替围攻
             if (AttackTimer % 22 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int side = -1; side <= 1; side += 2) {
-                    for (int i = 0; i < 5; i++) {
-                        Vector2 pos = target.Center + new Vector2(side * 650, -250 + i * 120);
-                        VenomProjectile(pos, new Vector2(-side * 10f, 0), NPC.damage / 5, 2, NPC.target);
-                    }
-                }
+                if (AttackTimer % 44 == 0)
+                    FlickerSalvo(NPC.Center, target, 4, 12f, NPC.damage / 5, 20f);
+                else
+                    VenomCarpet(target, 3, NPC.damage / 5, 500f, 130);
+            }
+
+            //暴风雪中冰柱追踪玩家脚下
+            if (AttackTimer % 35 == 0 && AttackTimer > 20 && Main.netMode != NetmodeID.MultiplayerClient) {
+                PillarChase(target, 4, NPC.damage / 5, 120f, 5);
             }
 
             if (AttackTimer > 150) TransitionTo(BossPhase.Phase3_Drift);
@@ -1615,14 +1737,13 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                     }
                 }
 
-                // 蓄力时轨道冰臂(Mode 3围绕Boss旋转)
+                //蓄力时冰裂弹预热(旋转三臂)
                 if (AttackTimer % 8 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                     float a = AttackTimer * 0.15f;
                     for (int arm = 0; arm < 3; arm++) {
                         float angle = a + arm * MathHelper.TwoPi / 3f;
-                        IceProjectile(NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 100f,
-                            new Vector2(MathF.Cos(angle + MathHelper.PiOver2), MathF.Sin(angle + MathHelper.PiOver2)) * 3f,
-                            NPC.damage / 5, 200, 3, NPC.whoAmI);
+                        Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 6f;
+                        IceProjectile(NPC.Center, vel, NPC.damage / 5, 160, 1, 18 + arm * 4);
                     }
                 }
 
@@ -1642,22 +1763,18 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                         Main.instance.CameraModifiers.Add(modifier);
                     }
 
-                    // 北辰星柱: 7组北斗轨道冰柱(Mode 3悬浮后依次释放)
+                    //北辰星柱: 冰域围笼 + 弧光追猎 + 冰裂扇形
                     if (Main.netMode != NetmodeID.MultiplayerClient) {
-                        //7道北斗星光: 轨道冰柱(Mode 3)形成星座图案
-                        for (int star = 0; star < 7; star++) {
-                            float starAngle = MathHelper.PiOver2 - MathHelper.ToRadians(45f) + MathHelper.ToRadians(90f) / 6f * star;
-                            for (int i = 0; i < 6; i++) {
-                                float dist = 80f + i * 50f;
-                                Vector2 orbPos = NPC.Center + new Vector2(MathF.Cos(starAngle), MathF.Sin(starAngle)) * dist;
-                                Vector2 tangent = new Vector2(-MathF.Sin(starAngle), MathF.Cos(starAngle)) * 3f;
-                                IceProjectile(orbPos, tangent, NPC.damage / 3, 200, 3, NPC.whoAmI); //轨道围绕Boss
-                            }
-                        }
-                        //8方向黄金角螺旋爆发
-                        FibonacciSpiral(NPC.Center, 20, 10f, NPC.damage / 3, true, 0, 0f);
-                        // DNA双螺旋蛇毒扩展
-                        SpiralDNA(NPC.Center, 16, 7f, NPC.damage / 3, 0.18f);
+                        //七星冰域围笼: 7个冰锚在玩家周围形成北斗阵
+                        AnchorCage(target, 7, 300f, NPC.damage / 3, 120);
+                        //冰柱牢笼: 从地面刺出封锁退路
+                        PillarPrison(target, 10, 250f, NPC.damage / 3, 12);
+                        //弧光狩猎群从Boss中心涌出
+                        ArcSwarm(NPC.Center, 12, 10f, NPC.damage / 3);
+                        //冰裂扇形补充弹幕密度
+                        FractureFan(NPC.Center, target, 8, NPC.damage / 3, 120f, 22);
+                        //连锁咬围攻
+                        ChainBiteBarrage(target, 4, 350f, NPC.damage / 3, 3);
                     }
                     NPC.netUpdate = true;
                 }
@@ -1667,9 +1784,9 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                 Vector2 nc = ACMUtils.SpringDamp2D(NPC.Center, NPC.Center, ref springVel, 0.5f, 8f, 1f / 60f);
                 NPC.velocity = nc - NPC.Center;
 
-                // 爆发后预判追踪压制
+                //爆发后闪蛇追压
                 if (AttackTimer % 10 == 0 && AttackTimer < 50 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    LeadTargetSalvo(NPC.Center, target, 3, 13f, NPC.damage / 5, 0.08f);
+                    FlickerSalvo(NPC.Center, target, 3, 13f, NPC.damage / 5, 15f);
                 }
 
                 if (AttackTimer > 60) TransitionTo(BossPhase.Phase3_Drift);
@@ -1682,26 +1799,110 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
             Vector2 newCenter = ACMUtils.SpringDamp2D(NPC.Center, hoverPos, ref springVel, 2.5f, 5f, 1f / 60f);
             NPC.velocity = newCenter - NPC.Center;
 
-            // 同时双型攻击: 预判冰柱齐射 + 蛇形毒牙
+            //阴阳交织: 冰阳(弧光追猎) + 毒阴(闪蛇+连锁咬)
             int interval = Main.expertMode ? 5 : 8;
             if (AttackTimer % interval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                //预判齐射(Mode 2延迟追踪)
-                LeadTargetSalvo(NPC.Center, target, 5, 15f, NPC.damage / 4, 0.06f);
-                // 蛇形毒牙窄扇(Mode 1)
-                Vector2 dir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
-                for (int i = -1; i <= 1; i += 2) {
-                    Vector2 venomVel = dir.RotatedBy(i * MathHelper.ToRadians(25)) * 13f;
-                    VenomProjectile(NPC.Center, venomVel, NPC.damage / 4, 1, 0.16f);
-                }
+                //弧光追猎冰锥从两翼出击
+                ArcSwarm(NPC.Center, 4, 12f, NPC.damage / 4);
+                //闪蛇毒牙夹击
+                FlickerSalvo(NPC.Center, target, 3, 14f, NPC.damage / 4, 20f);
             }
 
-            // 双型环射: 黄金角螺旋 + DNA毒液
+            //冰域+连锁咬切换围攻
             if (AttackTimer % 20 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                FibonacciSpiral(NPC.Center, 10, 7f, NPC.damage / 5, true, 1, AttackTimer * 0.1f); //正弦波螺旋
-                SpiralDNA(NPC.Center, 4, 9f, NPC.damage / 5, 0.22f);
+                if (AttackTimer % 40 == 0)
+                    AnchorCage(target, 4, 200f, NPC.damage / 5, 80);
+                else
+                    ChainBiteBarrage(target, 3, 280f, NPC.damage / 5, 3);
             }
 
             if (AttackTimer > 150) TransitionTo(BossPhase.Phase3_Drift);
+        }
+
+        private void RunPhase3FrostPillarField(Player target) {
+            //极寒冰柱域: Boss悬空不动，大规模冰柱阵覆盖战场
+            Vector2 anchorPos = NPC.Center;
+            Vector2 newCenter = ACMUtils.SpringDamp2D(NPC.Center, anchorPos, ref springVel, 0.5f, 12f, 1f / 60f);
+            NPC.velocity = newCenter - NPC.Center;
+
+            //全程冰霜强化
+            frostTargetIntensity = MathHelper.Max(frostTargetIntensity, 0.3f + AttackTimer * 0.003f);
+
+            //阶段A(0-20帧): 蓄力颤抖 + 环境预兆
+            if (AttackTimer <= 20) {
+                NPC.Center += Main.rand.NextVector2Circular(2f + AttackTimer * 0.15f, 2f + AttackTimer * 0.15f);
+                causticsTargetIntensity = MathHelper.Lerp(0.05f, 0.25f, AttackTimer / 20f);
+                if (AttackTimer == 1)
+                    SoundEngine.PlaySound(SoundID.Item28 with { Pitch = -0.8f, Volume = 1f }, NPC.Center);
+            }
+            //阶段B(20帧): 中央巨型冰柱 + 十字交叉冰柱波
+            else if (AttackTimer == 20) {
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    //玩家正下方巨型冰柱
+                    SpawnIcePillar(target.Center + new Vector2(0, target.height / 2f), NPC.damage / 3, 0, 15);
+
+                    //十字4方向冰柱波
+                    for (int axis = 0; axis < 4; axis++) {
+                        float angle = axis * MathHelper.PiOver2;
+                        Vector2 dir = new Vector2(MathF.Cos(angle), MathF.Sin(angle));
+                        PillarWave(target.Center + dir * 80f, dir, Main.expertMode ? 8 : 6, NPC.damage / 4, 100f, 4);
+                    }
+                }
+                phaseFlash = 0.3f;
+                SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.5f, Volume = 1.5f }, target.Center);
+
+                if (Main.netMode != NetmodeID.Server) {
+                    Main.instance.CameraModifiers.Add(
+                        new Terraria.Graphics.CameraModifiers.PunchCameraModifier(
+                            target.Center, Vector2.UnitY, 15f, 8f, 25, 1500f, FullName));
+                }
+            }
+            //阶段C(45帧): 螺旋冰柱阵 — 围绕玩家螺旋展开
+            else if (AttackTimer == 45) {
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    int spiralCount = Main.expertMode ? 18 : 12;
+                    for (int i = 0; i < spiralCount; i++) {
+                        float angle = i * ACMUtils.GoldenAngle;
+                        float dist = 100f + i * 35f;
+                        Vector2 pos = target.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * dist;
+                        SpawnIcePillar(pos, NPC.damage / 4, 0, 15 + i * 2);
+                    }
+                }
+                SoundEngine.PlaySound(SoundID.Item70 with { Pitch = -0.5f, Volume = 1.2f }, target.Center);
+            }
+            //阶段D(70帧): 冰柱牢笼收紧
+            else if (AttackTimer == 70) {
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    //外圈大牢笼
+                    PillarPrison(target, 12, 280f, NPC.damage / 4, 20);
+                    //内圈小牢笼(留出缝隙)
+                    int innerCount = Main.expertMode ? 8 : 6;
+                    for (int i = 0; i < innerCount; i++) {
+                        float angle = MathHelper.TwoPi / innerCount * i + MathHelper.ToRadians(15f);
+                        Vector2 pos = target.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 140f;
+                        SpawnIcePillar(pos, NPC.damage / 4, 0, 30 + i * 3);
+                    }
+                }
+            }
+            //阶段E(90帧): 弧光追猎补刀
+            else if (AttackTimer == 90) {
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    ArcSwarm(NPC.Center, 6, 10f, NPC.damage / 5);
+                }
+            }
+
+            //散布粒子
+            if (Main.netMode != NetmodeID.Server && AttackTimer > 15) {
+                for (int i = 0; i < 4; i++) {
+                    float angle = Main.rand.NextFloat(MathHelper.TwoPi);
+                    float dist = Main.rand.NextFloat(100, 500);
+                    Vector2 dustPos = target.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * dist;
+                    Dust d = Dust.NewDustDirect(dustPos, 0, 0, DustID.Ice, 0, -2f, 80, default, 2f);
+                    d.noGravity = true;
+                }
+            }
+
+            if (AttackTimer > 130) TransitionTo(BossPhase.Phase3_Drift);
         }
 
         #endregion
