@@ -33,6 +33,11 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
             NPC.defense = 80;
         }
 
+        public override void OnSpawn(Terraria.DataStructures.IEntitySource source) {
+            base.OnSpawn(source);
+            segmentIndex = SummonCount;
+        }
+
         /// <summary>体节限伤：尾部受到的伤害降低75%</summary>
         public override void ModifyIncomingHit(ref NPC.HitModifiers modifiers) {
             modifiers.FinalDamage *= 0.25f;

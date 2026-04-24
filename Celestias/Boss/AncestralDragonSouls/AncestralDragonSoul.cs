@@ -34,6 +34,12 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
         /// <summary>灵魂脉动相位</summary>
         protected float soulPulsePhase;
 
+        /// <summary>体节索引,用于蛇形波计算。头部为0,尾部为SummonMax</summary>
+        public int segmentIndex = 0;
+
+        /// <summary>是否为分裂出的副本龙</summary>
+        public bool IsTwin;
+
         public override void SetDefaults() {
             base.SetDefaults();
             NPC.width = 80;
@@ -90,6 +96,47 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
             // 龙魂发光效果
             float pulseIntensity = 0.6f + MathF.Sin(soulPulsePhase) * 0.2f;
             Lighting.AddLight(NPC.Center, new Vector3(0.9f, 0.95f, 1f) * pulseIntensity);
+        }
+
+        /// <summary>
+        /// 蛇形鞭梢运动:父节点锚点+垂直正弦摆动+速度传递+拖尾延迟
+        /// 相比原版的硬Lerp,这种算法让身体拥有更强的惯性感和鞭打张力,体现超级Boss的压迫感
+        /// </summary>
+        public override void ChangePos() {
+            if (FatherNPC == null || !FatherNPC.active) {
+                return;
+            }
+
+            Vector2 toParent = FatherNPC.Center - NPC.Center;
+            float targetDist = (FatherNPC.width + NPC.width) / 2f;
+            Vector2 dirToParent = toParent.SafeNormalize(Vector2.UnitY);
+
+            // 锚点:父节点后方固定距离
+            Vector2 anchor = FatherNPC.Center - dirToParent * targetDist;
+
+            // 蛇形波:沿身体传导,越靠近尾部幅度越大
+            float segPhase = globalTime * 5.2f - segmentIndex * 0.42f;
+            float parentSpeed = FatherNPC.velocity.Length();
+            float speedFactor = MathHelper.Clamp(parentSpeed / 18f, 0.35f, 1.5f);
+            float segFactor = MathHelper.Clamp(segmentIndex / 30f, 0.4f, 1.3f);
+            float waveAmp = 15f * speedFactor * segFactor;
+            Vector2 perp = dirToParent.RotatedBy(MathHelper.PiOver2);
+            anchor += perp * MathF.Sin(segPhase) * waveAmp;
+
+            // 拖尾式插值,保留惯性
+            Vector2 newCenter = Vector2.Lerp(NPC.Center, anchor, 0.4f);
+            Vector2 delta = anchor - newCenter;
+
+            // 继承父节点速度让整条龙体甩动更富张力
+            NPC.velocity = delta + FatherNPC.velocity * 0.18f;
+
+            // 限速保护
+            const float maxSpeed = 55f;
+            if (NPC.velocity.LengthSquared() > maxSpeed * maxSpeed) {
+                NPC.velocity = NPC.velocity.SafeNormalize(Vector2.Zero) * maxSpeed;
+            }
+
+            NPC.Center = new Vector2((int)newCenter.X, (int)newCenter.Y);
         }
 
         /// <summary>生成身体段之间的连接粒子</summary>

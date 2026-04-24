@@ -2212,6 +2212,10 @@ Projectiles: {
 	// DryadsVine.DisplayName: Dryads Vine
 	// DazhengArenaBarrier.DisplayName: Dazheng Arena Barrier
 	// XuanwuIcePillar.DisplayName: Xuanwu Ice Pillar
+	// AncestralSoulSigil.DisplayName: Ancestral Soul Sigil
+	// DragonScaleShard.DisplayName: Dragon Scale Shard
+	// SoulTetherChain.DisplayName: Soul Tether Chain
+	// YinYangBinderOrb.DisplayName: Yin Yang Binder Orb
 }
 
 HeavenBiome.DisplayName: Heaven

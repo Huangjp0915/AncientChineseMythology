@@ -15,7 +15,6 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
     {
         public override WormType NPCWormType => WormType.Body;
 
-        private int segmentIndex = 0;
         private float localPulseOffset;
 
         public override void ChangeSummonType() {
