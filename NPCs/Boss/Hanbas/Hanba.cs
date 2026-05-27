@@ -1,4 +1,6 @@
-﻿using AncientChineseMythology.Items.Weapons.Bosses;
+﻿using AncientChineseMythology.Items.Materials;
+using AncientChineseMythology.Items.Weapons.Bosses;
+using AncientChineseMythology.Systems;
 using InnoVault.PRT;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
@@ -64,7 +66,12 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
         }
 
         public override void ModifyNPCLoot(NPCLoot npcLoot) {
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<YaoQiFragment>(), 1, 10, 20));
             npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<HanbaBook>()));
+        }
+
+        public override void OnKill() {
+            DownedBossSystem.downedHanba = true;
         }
 
         public override void SendExtraAI(BinaryWriter writer) {

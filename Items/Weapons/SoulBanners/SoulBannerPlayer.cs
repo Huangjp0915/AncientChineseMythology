@@ -25,7 +25,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
         public HashSet<int> defeatedBossTiers = new();
 
         // ══════════════════════════════════════════════
-        //  Boss 阶层定义
+        //  Boss 阶层定义（v3.3.1 · PROGRESSION_DESIGN_SPEC §3.3）
         // ══════════════════════════════════════════════
 
         public struct BossTier
@@ -60,39 +60,67 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             get {
                 _tiers ??= new BossTier[]
                 {
-                    // ── 肉山前 ──
+                    // ── 肉山前（T1–8 · 无赢勾）──
                     new( 1,    50, () => NPCID.KingSlime,        "史莱姆王"),
                     new( 2,   120, () => NPCID.EyeofCthulhu,    "克苏鲁之眼"),
                     new( 3,   200, () => ModContent.NPCType<NPCs.Boss.BlackBear.BlackBear>(), "黑熊精"),
                     new( 4,   300, () => NPCID.EaterofWorldsHead,"世吞/克脑",  () => NPCID.BrainofCthulhu),
                     new( 5,   420, () => NPCID.QueenBee,         "蜂后"),
                     new( 6,   560, () => NPCID.SkeletronHead,    "骷髅王"),
-                    new( 7,   720, () => ModContent.NPCType<NPCs.Boss.Yingous.Yingou>(), "犬戎"),
-                    new( 8,   880, () => NPCID.Deerclops,        "鹿角怪"),
-                    new( 9,  1100, () => NPCID.WallofFlesh,      "血肉墙"),
+                    new( 7,   880, () => NPCID.Deerclops,        "鹿角怪"),
+                    new( 8,  1100, () => NPCID.WallofFlesh,      "血肉墙"),
 
-                    // ── 困难模式 ──
-                    new(10,  1350, () => ModContent.NPCType<NPCs.Boss.NiutouMamian.NiuTou>(), "牛头马面"),
-                    new(11,  1600, () => NPCID.QueenSlimeBoss,   "史莱姆皇后"),
-                    new(12,  1900, () => NPCID.TheDestroyer,     "毁灭者"),
-                    new(13,  2200, () => NPCID.Retinazer,        "双子魔眼",   () => NPCID.Spazmatism),
-                    new(14,  2550, () => NPCID.SkeletronPrime,   "机械骷髅王"),
-                    new(15,  2900, () => ModContent.NPCType<NPCs.Boss.Hanbas.Hanba>(), "旱魃"),
+                    // ── 困难模式 · Plantera 前/邻接（T9–16）──
+                    new( 9,  1350, () => ModContent.NPCType<NPCs.Boss.NiutouMamian.NiuTou>(), "牛头马面",
+                        () => ModContent.NPCType<NPCs.Boss.NiutouMamian.MaMian>()),
+                    new(10,  1600, () => NPCID.QueenSlimeBoss,   "史莱姆皇后"),
+                    new(11,  1900, () => NPCID.TheDestroyer,     "毁灭者"),
+                    new(12,  2200, () => NPCID.Retinazer,        "双子魔眼",   () => NPCID.Spazmatism),
+                    new(13,  2550, () => NPCID.SkeletronPrime,   "机械骷髅王"),
+                    new(15,  2900, () => ModContent.NPCType<NPCs.Boss.KyuubiKitsunes.KyuubiKitsune>(), "九尾狐"),
                     new(16,  3300, () => NPCID.Plantera,         "世纪之花"),
-                    new(17,  3700, () => ModContent.NPCType<NPCs.Boss.Hoqings.Hoqing>(), "后卿"),
-                    new(18,  4150, () => NPCID.Golem,            "石巨人"),
-                    new(19,  4600, () => NPCID.HallowBoss,       "光之女皇"),
-                    new(20,  5100, () => NPCID.DukeFishron,      "猪龙鱼公爵"),
-                    new(21,  5600, () => ModContent.NPCType<NPCs.Boss.Jiangcens.Jiangcen>(), "蛟尘"),
-                    new(22,  6150, () => NPCID.CultistBoss,      "拜月教邪教徒"),
-                    new(23,  6700, () => NPCID.MoonLordCore,     "月亮领主"),
 
-                    // ── 月后（模组终局）──
-                    new(24,  7400, () => ModContent.NPCType<NPCs.Boss.KyuubiKitsunes.KyuubiKitsune>(), "九尾狐"),
-                    new(25,  8100, () => ModContent.NPCType<Celestias.Boss.Vigors.Vigor>(), "神威"),
-                    new(26,  8900, () => ModContent.NPCType<Celestias.Boss.Arguses.Argus>(), "百目"),
-                    new(27,  9700, () => ModContent.NPCType<Celestias.Boss.Vaisravanas.Vaisravana>(), "毗沙门天"),
-                    new(28, 10500, () => ModContent.NPCType<Celestias.Boss.Aoshuns.Aoshun>(), "敖顺"),
+                    // ── 困难模式 · Plantera 后 → 月灵（T17–21）──
+                    new(17,  3700, () => NPCID.Golem,            "石巨人"),
+                    new(18,  4150, () => NPCID.HallowBoss,       "光之女皇"),
+                    new(19,  4600, () => NPCID.DukeFishron,      "猪龙鱼公爵"),
+                    new(20,  6150, () => NPCID.CultistBoss,      "拜月教邪教徒"),
+                    new(21,  6700, () => NPCID.MoonLordCore,     "月亮领主"),
+
+                    // ── 月后 · 四大僵尸（T24–27）──
+                    new(24,  7400, () => ModContent.NPCType<NPCs.Boss.Hanbas.Hanba>(), "旱魃"),
+                    new(25,  8150, () => ModContent.NPCType<NPCs.Boss.Hoqings.Hoqing>(), "后卿"),
+                    new(26,  8900, () => ModContent.NPCType<NPCs.Boss.Yingous.Yingou>(), "赢勾"),
+                    new(27,  9650, () => ModContent.NPCType<NPCs.Boss.Jiangcens.Jiangcen>(), "将臣"),
+
+                    // ── 月后 · 天庭线（T28–44）──
+                    new(28, 11200, () => ModContent.NPCType<Celestias.Boss.Vigors.Vigor>(), "神威"),
+                    new(29, 12050, () => ModContent.NPCType<Celestias.Boss.Arguses.Argus>(), "百目"),
+                    new(30, 12900, () => ModContent.NPCType<Celestias.Boss.AoGuangs.AoGuang>(), "敖广"),
+                    new(31, 13750, () => ModContent.NPCType<Celestias.Boss.Aokins.Aokin>(), "敖钦"),
+                    new(32, 14600, () => ModContent.NPCType<Celestias.Boss.Aoyuans.Aoyuan>(), "敖闰"),
+                    new(33, 15450, () => ModContent.NPCType<Celestias.Boss.Aoshuns.Aoshun>(), "敖顺"),
+                    new(34, 16300, () => ModContent.NPCType<Celestias.Boss.Vaisravanas.Vaisravana>(), "毗沙门天"),
+                    new(35, 17150, () => ModContent.NPCType<Celestias.Boss.Dryades.Dryads>(), "树精"),
+                    new(36, 18000, () => ModContent.NPCType<Celestias.Boss.Dazhengs.Dazheng>(), "大椿"),
+                    new(37, 18950, () => ModContent.NPCType<Celestias.Boss.FourSacredBeasts.Qinlongs.Qinlong>(), "青龙"),
+                    new(38, 19900, () => ModContent.NPCType<Celestias.Boss.FourSacredBeasts.Baihus.Baihu>(), "白虎"),
+                    new(39, 20850, () => ModContent.NPCType<Celestias.Boss.FourSacredBeasts.Suzakus.Suzaku>(), "朱雀"),
+                    new(40, 21800, () => ModContent.NPCType<Celestias.Boss.FourSacredBeasts.Xuanwus.Xuanwu>(), "玄武"),
+                    new(41, 22750, () => ModContent.NPCType<Celestias.Boss.AncestralDragonSouls.AncestralDragonSoulHead>(), "祖龙残魂"),
+                    new(42, 23700, () => ModContent.NPCType<Celestias.Boss.CelestialDragons.CelestialDragonsHead>(), "天御金龙"),
+                    new(43, 24650, () => ModContent.NPCType<Celestias.Boss.CelestialOverseers.CelestialOverseer>(), "天庭观察者"),
+                    new(44, 25600, () => ModContent.NPCType<NPCs.Boss.AzureDragons.AzureDragonHead>(), "苍龙真身"),
+
+                    // ── 月后 · 地府线（T46–52）──
+                    new(46, 28350, () => ModContent.NPCType<Underworlds.Boss.BAWImpermanences.BlackImpermanence>(), "黑白无常",
+                        () => ModContent.NPCType<Underworlds.Boss.BAWImpermanences.WhiteImpermanence>()),
+                    new(47, 29750, () => ModContent.NPCType<Underworlds.Boss.Spectres.Spectre>(), "怨灵"),
+                    new(48, 31200, () => ModContent.NPCType<Underworlds.Boss.NetherKitsunes.NetherKitsune>(), "幽冥妖狐"),
+                    new(49, 32700, () => ModContent.NPCType<Underworlds.Boss.NetherDragons.NetherDragonHead>(), "幽冥龙"),
+                    new(50, 34250, () => ModContent.NPCType<Underworlds.Boss.Corpseses.Corpses>(), "尸骸"),
+                    new(51, 35850, () => ModContent.NPCType<Underworlds.Boss.AwakeningNethers.AwakeningNetherHead>(), "觉醒幽冥龙"),
+                    new(52, 37500, () => ModContent.NPCType<Underworlds.Boss.YinEmperors.YinEmperor>(), "阴天子"),
                 };
                 return _tiers;
             }

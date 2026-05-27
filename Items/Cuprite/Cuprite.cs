@@ -22,6 +22,7 @@ namespace AncientChineseMythology.Items.Cuprite
         public override void AddRecipes() {
             Recipe recipe = CreateRecipe();
             recipe.AddIngredient(ModContent.ItemType<CupriteOre>(), 4);
+            recipe.AddIngredient(ItemID.HellstoneBar, 2);
             recipe.AddTile(TileID.Hellforge);
             recipe.Register();
         }

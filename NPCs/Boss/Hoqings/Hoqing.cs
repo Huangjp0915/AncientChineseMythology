@@ -1,4 +1,6 @@
-﻿using AncientChineseMythology.Items.Weapons.Bosses;
+﻿using AncientChineseMythology.Items.Materials;
+using AncientChineseMythology.Items.Weapons.Bosses;
+using AncientChineseMythology.Systems;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using System;
@@ -50,7 +52,12 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
         }
 
         public override void ModifyNPCLoot(NPCLoot npcLoot) {
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<YaoQiFragment>(), 1, 10, 20));
             npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<HoqingFireSummon>()));
+        }
+
+        public override void OnKill() {
+            DownedBossSystem.downedHoqing = true;
         }
 
         public override void SendExtraAI(BinaryWriter writer) {

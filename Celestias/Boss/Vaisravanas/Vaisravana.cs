@@ -1,8 +1,13 @@
 ﻿using System;
 using System.IO;
+using AncientChineseMythology.Celestias.Boss.Vaisravanas.Items;
+using AncientChineseMythology.Items.Materials;
+using AncientChineseMythology.Systems;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
+using Terraria.GameContent.ItemDropRules;
+using Terraria.Graphics.CameraModifiers;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -200,6 +205,28 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
         }
 
         public override bool CheckActive() => false;
+
+        public override void BossLoot(ref int potionType) {
+            potionType = ItemID.SuperHealingPotion;
+        }
+
+        public override void ModifyNPCLoot(NPCLoot npcLoot) {
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<GeneralOrder>(), 1, 1, 3));
+            npcLoot.Add(ItemDropRule.OneFromOptions(1,
+                ModContent.ItemType<TreasurePagodaStaff>(),
+                ModContent.ItemType<VaultshadeVoidshot>(),
+                ModContent.ItemType<CelestialCircletScepter>()
+            ));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<TreasurePagodaCharm>(), 4));
+        }
+
+        public override void OnKill() {
+            DownedBossSystem.downedVaisravana = true;
+            if (Main.netMode != NetmodeID.Server) {
+                PunchCameraModifier mod = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 25f, 12f, 60, 2000f, FullName);
+                Main.instance.CameraModifiers.Add(mod);
+            }
+        }
 
         #endregion
 

@@ -1,4 +1,6 @@
-﻿using AncientChineseMythology.Systems;
+﻿using AncientChineseMythology.Celestias.Boss.Vigors.Items;
+using AncientChineseMythology.Items.Materials;
+using AncientChineseMythology.Systems;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.IO;
@@ -6,6 +8,7 @@ using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
+using Terraria.GameContent.ItemDropRules;
 using Terraria.Graphics.CameraModifiers;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -143,7 +146,14 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
 
         public override void BossLoot(ref int potionType) => potionType = ItemID.SuperHealingPotion;
 
-        public override void ModifyNPCLoot(NPCLoot npcLoot) { }
+        public override void ModifyNPCLoot(NPCLoot npcLoot) {
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<GeneralOrder>()));
+            npcLoot.Add(ItemDropRule.OneFromOptions(1,
+                ModContent.ItemType<SinSeveringBlade>(),
+                ModContent.ItemType<AureateVoidrender>(),
+                ModContent.ItemType<VerdictSealHammer>()
+            ));
+        }
 
         public override void OnSpawn(IEntitySource source) {
             Phase = BossPhase.Intro;

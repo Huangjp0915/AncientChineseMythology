@@ -16,7 +16,7 @@ namespace AncientChineseMythology.Items
         }
 
         public override bool CanUseItem(Player player) {
-            return !NPC.AnyNPCs(ModContent.NPCType<Yingou>());
+            return NPC.downedMoonlord && !NPC.AnyNPCs(ModContent.NPCType<Yingou>());
         }
 
         public override bool? UseItem(Player player) {

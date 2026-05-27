@@ -2,8 +2,11 @@
 using System.IO;
 using Terraria;
 using Terraria.DataStructures;
+using Terraria.GameContent.ItemDropRules;
 using Terraria.ID;
 using Terraria.ModLoader;
+using AncientChineseMythology.Celestias.Boss.Aokins.Items;
+using AncientChineseMythology.Items.Materials;
 
 namespace AncientChineseMythology.Celestias.Boss.Aokins
 {
@@ -142,6 +145,15 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
 
         public override void BossLoot(ref int potionType) {
             potionType = ItemID.GreaterHealingPotion;
+        }
+
+        public override void ModifyNPCLoot(NPCLoot npcLoot) {
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<DragonKingScale>(), 1, 8, 12));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<InfernoDragonSpear>(), 5));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<FlamecoilChakram>(), 5));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<CrimsonMaelstromBow>(), 5));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<DraconicEmber>(), 5));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<MeteorCallerStaff>(), 5));
         }
 
         public override void OnSpawn(IEntitySource source) {

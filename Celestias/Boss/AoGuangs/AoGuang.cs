@@ -1,4 +1,6 @@
 ﻿using AncientChineseMythology.Celestias.Boss.AoGuangs.Items;
+using AncientChineseMythology.Celestias.Boss.AoGuangs.Items;
+using AncientChineseMythology.Items.Materials;
 using System;
 using System.IO;
 using Terraria;
@@ -168,6 +170,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
         }
 
         public override void ModifyNPCLoot(NPCLoot npcLoot) {
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<DragonKingScale>(), 1, 8, 12));
             npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<AbyssalDragonblade>(), 5));
             npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<JadeDragonChakram>(), 5));
             npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<MaelstromBow>(), 5));

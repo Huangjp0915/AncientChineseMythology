@@ -6,6 +6,11 @@ namespace AncientChineseMythology.Global
     public class XuanTieBleedGlobalNPC : GlobalNPC
     {
         public override bool InstancePerEntity => true;
+        public int bleedStacks;
+
+        public override void OnKill(NPC npc) {
+            bleedStacks = 0;
+        }
 
         public override void UpdateLifeRegen(NPC npc, ref int damage) {
             if (npc.HasBuff(ModContent.BuffType<Buffs.XuanTieBleed>())) {

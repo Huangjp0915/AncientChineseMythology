@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Players;
+﻿using AncientChineseMythology.Items.Materials;
+using AncientChineseMythology.Players;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
@@ -17,7 +18,7 @@ namespace AncientChineseMythology.Items.Weapons
 
         public override void SetDefaults() {
             //基础属性设置
-            Item.damage = 1688; //高伤害，符合棺材钉的威力
+            Item.damage = 420;
             Item.DamageType = DamageClass.Melee; //远程武器类型
             Item.width = 34;
             Item.height = 34;
@@ -66,21 +67,19 @@ namespace AncientChineseMythology.Items.Weapons
         }
 
         public override void AddRecipes() {
-            Recipe recipe = CreateRecipe();
-            recipe.AddIngredient(ItemID.IronBar, 15); //铁锭
-            recipe.AddIngredient(ItemID.Bone, 10); //骨头
-            recipe.AddIngredient(ItemID.SoulofNight, 5); //夜明之魂，增加诡异感
-            recipe.AddIngredient(ItemID.Ectoplasm, 3); //灵气，增加灵异属性
-            recipe.AddTile(TileID.MythrilAnvil); //秘银砧
-            recipe.Register();
+            CreateRecipe()
+                .AddIngredient<CoffinNailFragment>(1)
+                .AddIngredient(ItemID.SoulofNight, 8)
+                .AddIngredient(ItemID.Ectoplasm, 6)
+                .AddIngredient(ItemID.HallowedBar, 5)
+                .AddTile(TileID.MythrilAnvil)
+                .Register();
         }
 
         public override void ModifyTooltips(List<TooltipLine> tooltips) {
-            //添加自定义描述
-            tooltips.Add(new TooltipLine(Mod, "CoffinNailDesc1", "[c/8B0000:来自神秘世界的诡异武器]"));
-            tooltips.Add(new TooltipLine(Mod, "CoffinNailDesc2", "[c/DC143C:投掷时会产生恐怖的红色轨迹]"));
-            tooltips.Add(new TooltipLine(Mod, "CoffinNailDesc3", "[c/B22222:击中敌人后会爆发出诡异的血色能量]"));
-            tooltips.Add(new TooltipLine(Mod, "CoffinNailDesc4", "[c/696969:'就算是鬼，也要被钉死在这里' - 杨间]"));
+            tooltips.Add(new TooltipLine(Mod, "CoffinNailDesc1", "[c/8B0000:镇尸钉 — 僵尸始祖所惧]"));
+            tooltips.Add(new TooltipLine(Mod, "CoffinNailDesc2", "[c/DC143C:投掷时拖曳血色轨迹]"));
+            tooltips.Add(new TooltipLine(Mod, "CoffinNailDesc3", "[c/B22222:命中爆发冥府之力]"));
         }
 
         public override Color? GetAlpha(Color lightColor) {

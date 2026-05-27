@@ -1,8 +1,11 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using System;
+using AncientChineseMythology.Underworlds.Boss.NetherDragons.Items;
+using AncientChineseMythology.Underworlds.Items.Materials;
 using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent;
+using Terraria.GameContent.ItemDropRules;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -65,6 +68,16 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             NPC.lifeMax = 120000;
             NPC.damage = 100;
             NPC.defense = 40;
+        }
+
+        public override void ModifyNPCLoot(NPCLoot npcLoot) {
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<NetherDragonScale>(), 1, 8, 12));
+            npcLoot.Add(ItemDropRule.OneFromOptions(1,
+                ModContent.ItemType<NetherStaff>(),
+                ModContent.ItemType<Netherlayer>(),
+                ModContent.ItemType<Netherthrower>(),
+                ModContent.ItemType<NetherSutom>()
+            ));
         }
 
         public override void OnSpawn(Terraria.DataStructures.IEntitySource source) {

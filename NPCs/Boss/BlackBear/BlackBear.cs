@@ -488,7 +488,6 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
                 NPC.dontTakeDamage = true; //防止在播放死亡动画时受到伤害
                 NPC.netUpdate = true;
                 currentState = BearState.Die;
-                AncientChineseMythologySystem.downedBlackBear = true;
             }
         }
 

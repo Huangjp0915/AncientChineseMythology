@@ -1,10 +1,15 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items;
+using AncientChineseMythology.Items.Materials;
+using AncientChineseMythology.Systems;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.IO;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
+using Terraria.GameContent.ItemDropRules;
+using Terraria.Graphics.CameraModifiers;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -230,6 +235,32 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
         }
 
         public override bool CheckActive() => false;
+
+        public override void BossLoot(ref int potionType) {
+            potionType = ItemID.SuperHealingPotion;
+        }
+
+        public override void ModifyNPCLoot(NPCLoot npcLoot) {
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<OverseersEye>(), 1, 8, 12));
+            npcLoot.Add(ItemDropRule.OneFromOptions(1,
+                ModContent.ItemType<CelestialWatcherStaff>(),
+                ModContent.ItemType<AllSeeingJadeTome>(),
+                ModContent.ItemType<CelestialGearGreatsword>(),
+                ModContent.ItemType<CelestialMechanismBow>(),
+                ModContent.ItemType<CelestialJudgmentChakram>(),
+                ModContent.ItemType<GoldenPhoenixSummonStaff>(),
+                ModContent.ItemType<ClockworkPhoenixSpear>(),
+                ModContent.ItemType<JadeDragonCloudDao>()
+            ));
+        }
+
+        public override void OnKill() {
+            DownedBossSystem.downedCelestialOverseer = true;
+            if (Main.netMode != NetmodeID.Server) {
+                PunchCameraModifier mod = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 25f, 12f, 60, 2000f, FullName);
+                Main.instance.CameraModifiers.Add(mod);
+            }
+        }
 
         #endregion
 

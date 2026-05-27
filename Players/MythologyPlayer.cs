@@ -1,4 +1,5 @@
 ﻿using AncientChineseMythology.Items.Summons;
+using AncientChineseMythology.Systems;
 using System;
 using Terraria;
 using Terraria.ModLoader;
@@ -61,7 +62,16 @@ public class MythologyPlayer : ModPlayer
         if (StageExp < CultivationProgression.ExpFor(Major, Minor)) return false;
         if (KillsThisMajor < CultivationProgression.KillsForMajorUp[Major]) return false;
 
+        if (!RealmGateChecker.CanAdvance(Major, out _)) return false;
+
         return true;
+    }
+
+    public bool TryGetAdvanceBlockReason(out string reason) {
+        if (RealmGateChecker.CanAdvance(Major, out reason)) {
+            return false;
+        }
+        return !string.IsNullOrEmpty(reason);
     }
 
     public void AdvanceMajor(Player player) {

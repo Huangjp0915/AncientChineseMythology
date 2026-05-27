@@ -1,4 +1,6 @@
 ﻿using AncientChineseMythology.Underworlds.Boss.BAWImpermanences.Items;
+using AncientChineseMythology.Systems;
+using AncientChineseMythology.Underworlds.Items.Materials;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -95,6 +97,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         }
 
         public override void ModifyNPCLoot(NPCLoot npcLoot) {
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<ImpermanenceSoul>(), 1, 2, 4));
             npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<DemonicAnnihilation>(), 2));
             npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<NetherworldSickle>(), 2));
         }
@@ -608,6 +611,12 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 rec.Size() * 0.5f, NPC.scale * 1.08f, spe, 0);
 
             return false;
+        }
+
+        public override void OnKill() {
+            if (Main.netMode != NetmodeID.MultiplayerClient) {
+                DownedBossSystem.downedBlackImpermanence = true;
+            }
         }
 
         #endregion

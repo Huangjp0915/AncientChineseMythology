@@ -381,6 +381,32 @@ Items: {
 		Tooltip: ""
 	}
 
+	XuanTieHelmet: {
+		SetBonus: 攻击叠加玄铁流血；三层爆发8%武器伤范围打击；移动速度+10%
+		DisplayName: 玄铁头盔
+		Tooltip: ""
+	}
+
+	XuanTieBreastplate: {
+		DisplayName: 玄铁胸甲
+		Tooltip: ""
+	}
+
+	XuanTieLeggings: {
+		DisplayName: 玄铁护胫
+		Tooltip: ""
+	}
+
+	UnderworldPairSummons: {
+		DisplayName: 冥途双引符
+		Tooltip: 在恶魔祭坛使用，召唤牛头马面（需击败血肉墙）
+	}
+
+	KyuubiSummonsHairpin: {
+		DisplayName: 九尾狐毫
+		Tooltip: 召唤九尾妖狐（需击败世纪之花）
+	}
+
 	CupriteBreastplate: {
 		DisplayName: 赤铜甲
 		Tooltip: ""

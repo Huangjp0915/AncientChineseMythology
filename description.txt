@@ -1,57 +1,6 @@
-﻿将西游记、封神演义、巫妖大战、洪荒等融入这个mod，刚开始制作，还请各位多多期待
+﻿【洪荒 Primordial】v3.3.0 — 中国神话大型冒险模组
+融合封神、西游、冥府、洪荒与修仙。天柱天界与地府幽冥双 endgame，130+武器、40+Boss、16阶修炼。
 
-【洪荒】
-乱世之中，截教余孽暗流涌动，山海界裂痕不断，妖气四处滋生——人、仙、妖三界危机再临！在这款融合了中国神话元素的模组中，你将邂逅全新NPC，获取中国特色武器和药水，了解中国相关神话故事。
-
-该版本新增：
-4个NPC
-2个Boss
-5个小怪
-12种buff
-18种武器
-5种配饰
-5种药剂
-23种物品
-3种锭
-3种矿石
-1种合成台
-1个小世界
-2个环境
-4种草药
-1种坐骑
-1种发光宠物
-1种新职业
-
-
-全新的核心玩法
-
-快来加入《洪荒》，迎战暗潮中的诸多妖魔，一同守护三界的安宁吧！
-
--------------------------------------------------------------------
-
-This mod integrates Journey to the West, Investiture of the Gods, War of Liches, and Primordial Chaos. It has just started, so please look forward to it.
-
-[Primordial Chaos]
-In the troubled times, the remnants of Jiejiao are surging, the mountain and sea worlds are constantly cracked, and demonic spirits are growing everywhere - the crisis of the three worlds of humans, immortals, and demons is coming again! In this mod that incorporates Chinese mythological elements, you will encounter new NPCs, obtain Chinese-style weapons and potions, and learn about Chinese mythological stories.
-
-This version adds:
-4 NPCs
-2 Bosses
-5 monsters
-11 buffs
-17 weapons
-5 accessories
-5 potions
-22 items
-2 ingots
-1 ore
-1 synthesis table
-2 small worlds
-2 environments
-4 herbs
-1 mount
-1 luminous pet
-
-New core gameplay
-
-Come and join "Primordial Chaos" to fight against the many demons in the dark tide and protect the peace of the three realms together!
+► 核心：修仙渡劫 · 万魂幡 · 天柱/地府入侵 · 金箍棒链 · 月后四僵尸/四海/四象/酆都
+► 内容：7 NPC · 40+ Boss · 130+ 武器 · 47 材料 · 30+ 八卦阵
+► 依赖：InnoVault

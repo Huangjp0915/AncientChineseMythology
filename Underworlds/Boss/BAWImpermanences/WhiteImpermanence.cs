@@ -1,4 +1,6 @@
 ﻿using AncientChineseMythology.Underworlds.Boss.BAWImpermanences.Items;
+using AncientChineseMythology.Systems;
+using AncientChineseMythology.Underworlds.Items.Materials;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -104,6 +106,7 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         }
 
         public override void ModifyNPCLoot(NPCLoot npcLoot) {
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<ImpermanenceSoul>(), 1, 2, 4));
             npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<Ferryman>(), 2));
             npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<DemonSoulStaff>(), 2));
         }
@@ -660,6 +663,12 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
             }
 
             return false;
+        }
+
+        public override void OnKill() {
+            if (Main.netMode != NetmodeID.MultiplayerClient) {
+                DownedBossSystem.downedWhiteImpermanence = true;
+            }
         }
 
         #endregion

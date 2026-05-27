@@ -1,8 +1,11 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using System.IO;
 using Terraria;
+using Terraria.GameContent.ItemDropRules;
 using Terraria.ID;
 using Terraria.ModLoader;
+using AncientChineseMythology.Celestias.Boss.Aoyuans.Items;
+using AncientChineseMythology.Items.Materials;
 
 namespace AncientChineseMythology.Celestias.Boss.Aoyuans
 {
@@ -145,6 +148,15 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
 
         public override void BossLoot(ref int potionType) {
             potionType = ItemID.GreaterHealingPotion;
+        }
+
+        public override void ModifyNPCLoot(NPCLoot npcLoot) {
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<DragonKingScale>(), 1, 8, 12));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<GlacialDragonblade>(), 5));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<PermafrostTrident>(), 5));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<VortexPrimordialStain>(), 5));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<InkscaledFlowFan>(), 5));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<BlizzardPiercer>(), 5));
         }
 
         public override void SendExtraAI(BinaryWriter writer) {

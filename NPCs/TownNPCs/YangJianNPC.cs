@@ -73,7 +73,7 @@ namespace AncientChineseMythology.NPCs.TownNPCs
         public override bool CanTownNPCSpawn(int numTownNPCs) {
             if (NPC.AnyNPCs(Type)) return false;
 
-            return AncientChineseMythologySystem.downedBlackBear;
+            return DownedBossSystem.downedBlackBear;
         }
 
         public override bool CanChat() => true;

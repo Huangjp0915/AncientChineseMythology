@@ -1,4 +1,6 @@
-﻿using AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items;
+﻿using AncientChineseMythology.Items.Materials;
+using AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items;
+using AncientChineseMythology.Systems;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.IO;
@@ -166,7 +168,13 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         }
 
         public override void ModifyNPCLoot(NPCLoot npcLoot) {
+            npcLoot.Add(ItemDropRule.Common(ItemID.GoldCoin, 1, 15, 25));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<YaoQiFragment>(), 1, 12, 18));
             npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<KyuubiBook>()));
+        }
+
+        public override void OnKill() {
+            DownedBossSystem.downedKyuubi = true;
         }
 
         public override void OnSpawn(IEntitySource source) {

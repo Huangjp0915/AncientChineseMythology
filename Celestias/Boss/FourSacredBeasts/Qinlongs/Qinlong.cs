@@ -1,4 +1,6 @@
-﻿using AncientChineseMythology.Systems;
+﻿using AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items;
+using AncientChineseMythology.Items.Materials;
+using AncientChineseMythology.Systems;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.IO;
@@ -6,6 +8,7 @@ using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
+using Terraria.GameContent.ItemDropRules;
 using Terraria.Graphics.CameraModifiers;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -129,7 +132,12 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
         }
 
         public override void ModifyNPCLoot(NPCLoot npcLoot) {
-            // 掉落占位 - 后续添加专属掉落物
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<QingLongSpirit>(), 1, 6, 10));
+            npcLoot.Add(ItemDropRule.OneFromOptions(1,
+                ModContent.ItemType<AzureTorrentBlades>(),
+                ModContent.ItemType<WindserpentDao>(),
+                ModContent.ItemType<ThunderclapLongbow>()
+            ));
         }
 
         public override void OnSpawn(IEntitySource source) {

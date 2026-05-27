@@ -1,4 +1,6 @@
-﻿using AncientChineseMythology.Items.Weapons.Bosses;
+﻿using AncientChineseMythology.Items.Materials;
+using AncientChineseMythology.Items.Weapons.Bosses;
+using AncientChineseMythology.Systems;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.IO;
@@ -146,7 +148,13 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
         }
 
         public override void ModifyNPCLoot(NPCLoot npcLoot) {
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<YaoQiFragment>(), 1, 10, 20));
             npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<YingouKnife>()));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<CoffinNailFragment>(), 3));
+        }
+
+        public override void OnKill() {
+            DownedBossSystem.downedYingou = true;
         }
 
         public override void SendExtraAI(BinaryWriter writer) {

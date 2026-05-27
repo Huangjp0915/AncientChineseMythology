@@ -1,4 +1,6 @@
-﻿using AncientChineseMythology.Items.Weapons.Bosses;
+﻿using AncientChineseMythology.Items.Materials;
+using AncientChineseMythology.Items.Weapons.Bosses;
+using AncientChineseMythology.Systems;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -46,7 +48,12 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
         }
 
         public override void ModifyNPCLoot(NPCLoot npcLoot) {
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<YaoQiFragment>(), 1, 10, 20));
             npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<JiangcenHammerItem>()));
+        }
+
+        public override void OnKill() {
+            DownedBossSystem.downedJiangcen = true;
         }
 
         public override bool CheckActive() {

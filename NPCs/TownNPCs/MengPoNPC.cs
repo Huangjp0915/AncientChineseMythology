@@ -1,4 +1,5 @@
 ﻿using AncientChineseMythology.Items.Potions;
+using AncientChineseMythology.Underworlds.Items;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using Terraria;
@@ -105,10 +106,15 @@ namespace AncientChineseMythology.NPCs.TownNPCs
         }
 
         public override void AddShops() {
-            new NPCShop(Type)
+            var shop = new NPCShop(Type)
                 .Add<XuanYuanDan>()
-                .Add<PoJingDan>()
-                .Register();
+                .Add<PoJingDan>();
+
+            shop.Add(new Item(ModContent.ItemType<UnderworldInvasionSummon>()) {
+                shopCustomPrice = Item.buyPrice(gold: 5)
+            }, new Condition("Mods.AncientChineseMythology.Shop.MoonLord", () => NPC.downedMoonlord));
+
+            shop.Register();
         }
 
         public override void TownNPCAttackStrength(ref int damage, ref float knockback) {

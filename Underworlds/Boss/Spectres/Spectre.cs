@@ -1,10 +1,15 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.IO;
+using AncientChineseMythology.Systems;
+using AncientChineseMythology.Underworlds.Boss.Spectres.Items;
+using AncientChineseMythology.Underworlds.Items;
+using AncientChineseMythology.Underworlds.Items.Materials;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
+using Terraria.GameContent.ItemDropRules;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -811,6 +816,12 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
 
         public override bool CheckActive() => false;
 
+        public override void ModifyNPCLoot(NPCLoot npcLoot) {
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<SpectreGrudgeCore>(), 1, 4, 7));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<SoulFragment>(), 1, 3, 5));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<WraithLantern>(), 7));
+        }
+
         public override void OnKill() {
             // 死亡特效
             SoundEngine.PlaySound(SoundID.NPCDeath52 with { Pitch = -0.3f, Volume = 1.5f }, NPC.Center);
@@ -830,6 +841,10 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
                     Main.npc[idx].life = 0;
                     Main.npc[idx].active = false;
                 }
+            }
+
+            if (Main.netMode != NetmodeID.MultiplayerClient) {
+                DownedBossSystem.downedSpectre = true;
             }
         }
     }

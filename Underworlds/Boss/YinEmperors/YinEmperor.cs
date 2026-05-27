@@ -1,10 +1,14 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.IO;
+using AncientChineseMythology.Systems;
+using AncientChineseMythology.Underworlds.Boss.YinEmperors.Items;
+using AncientChineseMythology.Underworlds.Items.Materials;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
+using Terraria.GameContent.ItemDropRules;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -135,6 +139,17 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
         public override void BossLoot(ref int potionType) {
             potionType = ItemID.SuperHealingPotion;
+        }
+
+        public override void ModifyNPCLoot(NPCLoot npcLoot) {
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<YinImperialSeal>()));
+            npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<YinEssence>(), 1, 18, 24));
+            npcLoot.Add(ItemDropRule.Common(ItemID.SuperHealingPotion, 1, 25, 40));
+            npcLoot.Add(ItemDropRule.OneFromOptions(1,
+                ModContent.ItemType<FengduImperialCrown>(),
+                ModContent.ItemType<SoulBannerUnderworldRelic>(),
+                ModContent.ItemType<GhostGateKey>()
+            ));
         }
 
         public override bool? DrawHealthBar(byte hbPosition, ref float scale, ref Vector2 position) {
@@ -1132,6 +1147,10 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
             Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>()?.ShakeScreen(30, 100);
             SoundEngine.PlaySound(SoundID.NPCDeath14 with { Pitch = -0.6f, Volume = 2f }, NPC.Center);
+
+            if (Main.netMode != NetmodeID.MultiplayerClient) {
+                DownedBossSystem.downedYinEmperor = true;
+            }
         }
 
         #endregion

@@ -1,4 +1,5 @@
 ﻿using AncientChineseMythology.Projectiles;
+using AncientChineseMythology.Systems;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -114,8 +115,10 @@ namespace AncientChineseMythology.NPCs.Boss.Archosaur
         public override void OnSpawn(IEntitySource source) =>
             SoundEngine.PlaySound(SummonSfx, NPC.Center);
 
-        public override void OnKill() =>
+        public override void OnKill() {
+            DownedBossSystem.downedArchosaur = true;
             SoundEngine.PlaySound(DeathSfx, NPC.Center);
+        }
 
         public override void AI() {
             //====== 基础移动 ======

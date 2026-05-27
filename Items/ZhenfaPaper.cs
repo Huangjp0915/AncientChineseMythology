@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Players;
+﻿using AncientChineseMythology.Items.Materials;
+using AncientChineseMythology.Players;
 using Terraria;
 using Terraria.GameContent.Creative;
 using Terraria.ID;
@@ -48,6 +49,14 @@ namespace AncientChineseMythology.Items
             //只有能用时才会走到这里，因此必定解锁成功
             player.GetModPlayer<ZhenfaPlayer>().DiscoverRandomRecipe();
             return true; //正常消耗
+        }
+
+        public override void AddRecipes() {
+            // 土地公等价交易：1 奇异石 → 5 阵法纸（spec §3.4）
+            CreateRecipe(5)
+                .AddIngredient<StrangeStone>(1)
+                .AddTile(TileID.WorkBenches)
+                .Register();
         }
     }
 }

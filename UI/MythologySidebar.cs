@@ -128,9 +128,13 @@ public class MythologySidebar : UIState
         );
 
         MythologyPlayer mp = Main.LocalPlayer.GetModPlayer<MythologyPlayer>();
-        bool ready = mp.CanMajorAdvance();
-        _ascendBtn.SetImage(ready ? _btnOn : _btnOff);
-        _ascendBtn.SetVisibility(ready ? 1f : 0.35f, ready ? 1f : 0.35f);
+        bool statsReady = mp.Minor == CultivationProgression.MinorPerMajor - 1
+            && mp.StageExp >= CultivationProgression.ExpFor(mp.Major, mp.Minor)
+            && mp.KillsThisMajor >= CultivationProgression.KillsForMajorUp[mp.Major]
+            && mp.Major < CultivationProgression.MajorNames.Length - 1;
+        bool gateReady = statsReady && RealmGateChecker.CanAdvance(mp.Major, out _);
+        _ascendBtn.SetImage(gateReady ? _btnOn : _btnOff);
+        _ascendBtn.SetVisibility(statsReady ? 1f : 0.35f, statsReady ? 1f : 0.35f);
     }
 
     private static int StartExp(int maj, int min) => min == 0 ? 0 : CultivationProgression.ExpFor(maj, min - 1);
@@ -139,7 +143,16 @@ public class MythologySidebar : UIState
     private void PromoteButtonClicked(UIMouseEvent evt, UIElement listeningElement) {
         Player p = Main.player[Main.myPlayer];
         MythologyPlayer mp = p.GetModPlayer<MythologyPlayer>();
-        if (!mp.CanMajorAdvance()) return;
+        if (!mp.CanMajorAdvance()) {
+            bool statsReady = mp.Minor == CultivationProgression.MinorPerMajor - 1
+                && mp.StageExp >= CultivationProgression.ExpFor(mp.Major, mp.Minor)
+                && mp.KillsThisMajor >= CultivationProgression.KillsForMajorUp[mp.Major]
+                && mp.Major < CultivationProgression.MajorNames.Length - 1;
+            if (statsReady && mp.TryGetAdvanceBlockReason(out string reason)) {
+                Main.NewText(reason, Color.OrangeRed);
+            }
+            return;
+        }
 
         //场上已存在任意云体则退出
         if (NPC.AnyNPCs(ModContent.NPCType<TribulationCloudPurple>()) ||

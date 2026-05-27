@@ -24,7 +24,7 @@ namespace AncientChineseMythology.RedwoodCoffins
             coffinsGenerated = tag.GetInt("CoffinsGenerated");
         }
 
-        public override void OnWorldLoad() {
+        public override void OnWorldUnload() {
             coffinsGenerated = 0;
         }
 
@@ -47,12 +47,6 @@ namespace AncientChineseMythology.RedwoodCoffins
                 return;
 
             checkTimer = 0;
-
-            if (TileProcessorLoader.TP_ID_To_InWorld_Count.TryGetValue(TileProcessorLoader.GetModuleID<RedwoodCoffinTP>(), out var num)) {
-                if (num > 0) {
-                    return;
-                }
-            }
 
             // 尝试在有玩家的地下区域生成棺材
             TryGenerateCoffin();

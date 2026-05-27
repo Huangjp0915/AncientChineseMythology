@@ -11,7 +11,7 @@ namespace AncientChineseMythology.Items.Weapons.Sticks
         }
 
         public override void SetDefaults() {
-            Item.damage = 32;
+            Item.damage = 200;
             Item.DamageType = DamageClass.Melee;
             Item.width = 48;
             Item.height = 48;
@@ -27,19 +27,15 @@ namespace AncientChineseMythology.Items.Weapons.Sticks
 
         public override string Texture => "Terraria/Images/Item_676";
 
-        /*public override void AddRecipes()
-        {
+        public override void AddRecipes() {
             Recipe recipe = CreateRecipe();
             recipe.AddIngredient(ModContent.ItemType<RuyiStick>(), 1);
-            recipe.AddIngredient(ItemID.SoulofFright, 50); //恐惧之魂
-            recipe.AddIngredient(ItemID.SoulofMight, 50); //视域之魂
-            recipe.AddIngredient(ItemID.SoulofSight, 50); //力量之魂
-            recipe.AddIngredient(ItemID.SoulofFlight , 30); //飞翔之魂
-            recipe.AddIngredient(ItemID.SoulofLight, 30); //光明之魂
-            recipe.AddIngredient(ItemID.SoulofNight, 30); //黑暗之魂
-            recipe.AddIngredient(ModContent.ItemType<YaoQiFragment>(), 80);
-            recipe.AddTile(TileID.Anvils);
+            recipe.AddIngredient(ItemID.SoulofFright, 15);
+            recipe.AddIngredient(ItemID.SoulofMight, 15);
+            recipe.AddIngredient(ItemID.SoulofSight, 15);
+            recipe.AddIngredient(ItemID.SoulofFlight, 10);
+            recipe.AddTile(TileID.MythrilAnvil);
             recipe.Register();
-        }*/
+        }
     }
 }

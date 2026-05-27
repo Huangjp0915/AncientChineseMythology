@@ -92,7 +92,7 @@ namespace AncientChineseMythology.NPCs.Boss.TribulationCloud
 
         private void DoLightningStrike(Player player) {
             MythologyPlayer mp = player.GetModPlayer<MythologyPlayer>();
-            int damage = BaseStrikeDamage + PerMajorIncrement ^ mp.Major +
+            int damage = BaseStrikeDamage + PerMajorIncrement * mp.Major +
                          PerStrikeIncrement * strikesDone;
 
             //难度系数

@@ -4,6 +4,7 @@ using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
+using Terraria.GameContent.ItemDropRules;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -150,6 +151,11 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
             NPCID.Sets.TrailingMode[Type] = 3;
             NPCID.Sets.TrailCacheLength[Type] = 10;
         }
+
+        public override void ModifyNPCLoot(NPCLoot npcLoot) {
+            NiuMaLoot.AddBossLoot(npcLoot, ModContent.NPCType<MaMian>());
+        }
+
         private float Draw_Alpha = 1;
         private bool Draw_Tail = false;
         public override bool PreDraw(SpriteBatch sb, Vector2 scrPos, Color col) {
@@ -542,6 +548,11 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
             NPCID.Sets.TrailingMode[Type] = 3;
             NPCID.Sets.TrailCacheLength[Type] = 10;
         }
+
+        public override void ModifyNPCLoot(NPCLoot npcLoot) {
+            NiuMaLoot.AddBossLoot(npcLoot, ModContent.NPCType<NiuTou>());
+        }
+
         public Player player => Main.player[NPC.target];
         public int NPC_NiuTou_Count = 0;
         private NPC NPC_NiuTou => Main.npc[NPC_NiuTou_Count];
