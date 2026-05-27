@@ -4,6 +4,7 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Celestias.Boss.Vaisravanas.Items
 {
+    // PLACEHOLDER: see docs/PLACEHOLDER_CONTENT_REGISTRY.md
     /// <summary>毗沙门主题武器/饰品占位 — Phase 2 掉落绑定。</summary>
     public class TreasurePagodaStaff : ModItem
     {

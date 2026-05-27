@@ -392,11 +392,7 @@ Items: {
 
 	AureateVoidrender: {
 		DisplayName: Aureate Voidrender
-		Tooltip:
-			'''
-			A colossal blade that tears through the void itself
-			Every swing unleashes a gold-violet void slash wave
-			'''
+		Tooltip: (Placeholder) Full mechanics pending · Vigor golden void blade · 1120 melee damage
 	}
 
 	CelestialHubAnnihilator: {
@@ -410,47 +406,27 @@ Items: {
 
 	CelestialCircletScepter: {
 		DisplayName: Celestial Circlet Scepter
-		Tooltip:
-			'''
-			Releases 5 spiraling celestial energy rings
-			The rings converge then streak toward the nearest enemy
-			'''
+		Tooltip: (Placeholder) Full mechanics pending · Vaisravana circlet scepter · 1300 magic damage
 	}
 
 	GeoarchonRupturer: {
 		DisplayName: Geoarchon Rupturer
-		Tooltip:
-			'''
-			Resonates with earth-force, cracking the abyss asunder
-			Summons seven geo-energy pillars at the target location
-			'''
+		Tooltip: (Placeholder) Full mechanics pending · Xuanwu earth rupture staff · 1500 magic damage
 	}
 
 	AurelianCataclysmSmasher: {
 		DisplayName: Aurelian Cataclysm Smasher
-		Tooltip:
-			'''
-			A catastrophic golden war hammer that shatters all in one blow
-			On hit, triggers a ground-rending golden shockwave across the field
-			'''
+		Tooltip: (Placeholder) Full mechanics pending · Baihu golden cataclysm hammer · 1580 melee damage
 	}
 
 	AzureRuinBlade: {
 		DisplayName: Azure Ruin Blade
-		Tooltip:
-			'''
-			Gathering the might of the azure sea, unleash a surging tidal slash
-			Releases a crashing blue tidal wave on swing
-			'''
+		Tooltip: (Placeholder) Full mechanics pending · Aoshun tidal thunder blade · 420 melee damage
 	}
 
 	GeocrystalShatterblade: {
 		DisplayName: Geocrystal Shatterblade
-		Tooltip:
-			'''
-			Channeling the earth's crystal core, each swing erupts in molten fury
-			On hit, triggers a lava crystal burst that shakes the ground
-			'''
+		Tooltip: (Placeholder) Full mechanics pending · Xuanwu geocrystal blade · 1450 melee damage
 	}
 
 	QuadraseaCataclysmicEdge: {
@@ -464,29 +440,17 @@ Items: {
 
 	VortexPrimordialStain: {
 		DisplayName: Vortex Primordial Stain
-		Tooltip:
-			'''
-			Infused with primordial vortex energy, fires three tracking teal-coral orbs
-			Orbs coil in serpentine paths before homing in on the nearest enemy
-			'''
+		Tooltip: (Placeholder) Full mechanics pending · Aoyuan primordial vortex tome · 365 magic damage
 	}
 
 	LuminanceStellarCannon: {
 		DisplayName: Luminance Stellar Cannon
-		Tooltip:
-			'''
-			Condenses starlight into the barrel, firing a piercing white-blue energy bolt
-			Triggers a stellar burst explosion on impact
-			'''
+		Tooltip: (Placeholder) Full mechanics pending · Argus stellar cannon · 1200 ranged damage
 	}
 
 	LuminousIrisAnnihilator: {
 		DisplayName: Luminous Iris Annihilator
-		Tooltip:
-			'''
-			Concentrates brilliant rainbow light, unleashing a devastating golden shell
-			Detonates in a cascade of golden radiance on impact
-			'''
+		Tooltip: (Placeholder) Full mechanics pending · Argus iris annihilator · 1180 ranged damage
 	}
 
 	TwilightGlazeGreatbow: {
@@ -500,25 +464,17 @@ Items: {
 
 	StarfireAnnihilator: {
 		DisplayName: Starfire Annihilator
-		Tooltip:
-			'''
-			Channels the power of coral starfire, launching a high-speed bolt through multiple foes
-			Detonates in a coral-teal star explosion on impact
-			'''
+		Tooltip: (Placeholder) Full mechanics pending · Suzaku starfire gun · 1520 ranged damage
 	}
 
 	VaultshadeVoidshot: {
 		DisplayName: Vaultshade Voidshot
-		Tooltip:
-			'''
-			A brown-tech sniper rifle that fires a growing void bolt as it travels
-			On impact, triggers a purple void implosion that draws enemies in
-			'''
+		Tooltip: (Placeholder) Full mechanics pending · Vaisravana void sniper · 1280 ranged damage
 	}
 
 	ArgentPulseObliterator: {
 		DisplayName: Argent Pulse Obliterator
-		Tooltip: Rapidly fires silver-blue energy bolts; every 8th shot triggers an overcharged triple burst
+		Tooltip: (Placeholder) Full mechanics pending · Baihu argent pulse gun · 1450 ranged damage
 	}
 
 	ArcaneRepulsionArray: {
@@ -532,38 +488,22 @@ Items: {
 
 	AzureTorrentBlades: {
 		DisplayName: Azure Torrent Blades
-		Tooltip:
-			'''
-			Summons azure blades that hover in sheaths, then dash out spinning with blue radiance
-			Multiple blades can be summoned; they deal contact damage while rapidly rotating
-			'''
+		Tooltip: (Placeholder) Full mechanics pending · Qinglong azure twin blades · 1480 melee damage
 	}
 
 	DraconicEmber: {
 		DisplayName: Draconic Ember
-		Tooltip:
-			'''
-			Summons a lava wyrm that aggressively hunts enemies and periodically launches ember eggs
-			Ember eggs explode on contact, scorching all who stand in the way
-			'''
+		Tooltip: (Placeholder) Full mechanics pending · Aokin ember summon staff · 340 summon damage
 	}
 
 	InkscaledFlowFan: {
 		DisplayName: Inkscaled Flow Fan
-		Tooltip:
-			'''
-			Summons ink-scaled fish that swim in wave patterns and home in on enemies
-			Multiple fish can be summoned to overwhelm foes
-			'''
+		Tooltip: (Placeholder) Full mechanics pending · Aoyuan ink-scaled flow fan · 370 magic damage
 	}
 
 	SolarisEternalVerdict: {
 		DisplayName: Solaris Eternal Verdict
-		Tooltip:
-			'''
-			Summons a radiant solar eye that hovers above you and fires sun ray bursts at nearby enemies
-			Sun rays penetrate through multiple targets, delivering the Eternal Verdict
-			'''
+		Tooltip: (Placeholder) Full mechanics pending · Suzaku solar verdict staff · 1600 summon damage
 	}
 
 	XuanTieBar: {
@@ -1540,6 +1480,292 @@ Items: {
 		DisplayName: Livinglog
 		Tooltip: ""
 	}
+
+	XuanTieHelmet: {
+		SetBonus: Mods.AncientChineseMythology.Items.XuanTieHelmet.SetBonus
+		DisplayName: Xuan Tie Helmet
+		Tooltip: Post-mechanical Xuan Tie armor · Set bonus: stacking bleed burst
+	}
+
+	CrimsonMaelstromBow: {
+		DisplayName: Crimson Maelstrom Bow
+		Tooltip: (Placeholder) Full mechanics pending · Ao Guang fire bow · 360 ranged damage
+	}
+
+	FlamecoilChakram: {
+		DisplayName: Flamecoil Chakram
+		Tooltip: (Placeholder) Full mechanics pending · Twin fire chakram · 355 melee damage
+	}
+
+	InfernoDragonSpear: {
+		DisplayName: Inferno Dragon Spear
+		Tooltip: (Placeholder) Full mechanics pending · Flame dragon spear · 350 melee damage
+	}
+
+	MeteorCallerStaff: {
+		DisplayName: Meteor Caller Staff
+		Tooltip: (Placeholder) Full mechanics pending · Meteor summoning staff · 365 magic damage
+	}
+
+	LightningEdictTome: {
+		DisplayName: Lightning Edict Tome
+		Tooltip: (Placeholder) Full mechanics pending · Thunder edict tome · 385 magic damage
+	}
+
+	StormchainWhip: {
+		DisplayName: Stormchain Whip
+		Tooltip: (Placeholder) Full mechanics pending · Lightning chain whip · 375 whip damage
+	}
+
+	TempestRepeater: {
+		DisplayName: Tempest Repeater
+		Tooltip: (Placeholder) Full mechanics pending · Storm repeater · 380 ranged damage
+	}
+
+	ThunderlordHalberd: {
+		DisplayName: Thunderlord Halberd
+		Tooltip: (Placeholder) Full mechanics pending · Thunder halberd · 370 melee damage
+	}
+
+	BlizzardPiercer: {
+		DisplayName: Blizzard Piercer
+		Tooltip: (Placeholder) Full mechanics pending · Blizzard piercing bow · 375 ranged damage
+	}
+
+	GlacialDragonblade: {
+		DisplayName: Glacial Dragonblade
+		Tooltip: (Placeholder) Full mechanics pending · Glacial dragon blade · 355 melee damage
+	}
+
+	PermafrostTrident: {
+		DisplayName: Permafrost Trident
+		Tooltip: (Placeholder) Full mechanics pending · Permafrost trident · 360 melee damage
+	}
+
+	SoulPiercingArc: {
+		DisplayName: Soul Piercing Arc
+		Tooltip: (Placeholder) Full mechanics pending · Argus soul-piercing bow · 1150 ranged damage
+	}
+
+	BlackTortoiseShield: {
+		DisplayName: Black Tortoise Shield
+		Tooltip: (Placeholder) Full mechanics pending · Black Tortoise shield-blade · 1550 melee damage
+	}
+
+	FourSymbolsTablet: {
+		DisplayName: Four Symbols Tablet
+		Tooltip: (Placeholder) Sacred beast summon pending · Craft after four dragon kings · See §5.4
+	}
+
+	PhoenixFlameStaff: {
+		DisplayName: Phoenix Flame Staff
+		Tooltip: (Placeholder) Full mechanics pending · Suzaku phoenix flame staff · 1480 magic damage
+	}
+
+	ThunderclapLongbow: {
+		DisplayName: Thunderclap Longbow
+		Tooltip: (Placeholder) Full mechanics pending · Qinglong thunder longbow · 1550 ranged damage
+	}
+
+	WhiteTigerClaws: {
+		DisplayName: White Tiger Claws
+		Tooltip: (Placeholder) Full mechanics pending · Baihu tiger claws · 1500 melee damage
+	}
+
+	WindserpentDao: {
+		DisplayName: Windserpent Dao
+		Tooltip: (Placeholder) Full mechanics pending · Qinglong wind serpent dao · 1520 melee damage
+	}
+
+	TreasurePagodaCharm: {
+		DisplayName: Treasure Pagoda Charm
+		Tooltip: (Placeholder) Accessory mechanics pending · Vaisravana pagoda ward · 25% drop
+	}
+
+	TreasurePagodaStaff: {
+		DisplayName: Treasure Pagoda Staff
+		Tooltip: (Placeholder) Full mechanics pending · Treasure pagoda staff · 1320 magic damage
+	}
+
+	SinSeveringBlade: {
+		DisplayName: Sin Severing Blade
+		Tooltip: (Placeholder) Full mechanics pending · Vigor sin-severing greatsword · 1180 melee damage
+	}
+
+	VerdictSealHammer: {
+		DisplayName: Verdict Seal Hammer
+		Tooltip: (Placeholder) Full mechanics pending · Vigor verdict seal hammer · 1250 melee damage
+	}
+
+	XuanTieBreastplate: {
+		DisplayName: Xuan Tie Breastplate
+		Tooltip: Post-mechanical Xuan Tie armor · Part of the Xuan Tie bleed set
+	}
+
+	XuanTieLeggings: {
+		DisplayName: Xuan Tie Leggings
+		Tooltip: Post-mechanical Xuan Tie armor · +10% movement speed with set
+	}
+
+	BaihuSpirit: {
+		DisplayName: Baihu Spirit
+		Tooltip: Essence of the White Tiger sacred beast · Used in sacred beast crafting
+	}
+
+	CoffinNailFragment: {
+		DisplayName: Coffin Nail Fragment
+		Tooltip: Coffin nail shard from Yingou · 1/3 drop · Craft material for Coffin Nail
+	}
+
+	DragonKingScale: {
+		DisplayName: Dragon King Scale
+		Tooltip: Shared drop from the four dragon kings · 8–12 per kill · Pearl and tablet crafting
+	}
+
+	GeneralOrder: {
+		DisplayName: General Order
+		Tooltip: (Placeholder) Celestial general token · 100% from Vigor/Argus · Vaisravana summon chain
+	}
+
+	MaMianSeal: {
+		DisplayName: Ma Mian Seal
+		Tooltip: (Placeholder) Horse-Face underworld seal · Niu-Ma boss drop · Summon material
+	}
+
+	NiuTouSeal: {
+		DisplayName: Niu Tou Seal
+		Tooltip: (Placeholder) Ox-Head underworld seal · Niu-Ma boss drop · Summon material
+	}
+
+	OverseersEye: {
+		DisplayName: Overseer's Eye
+		Tooltip: (Placeholder) Celestial overseer material · 8–12 per kill · Backup overseer weapon recipes
+	}
+
+	SuzakuSpirit: {
+		DisplayName: Suzaku Spirit
+		Tooltip: Essence of the Vermilion Bird sacred beast · Used in sacred beast crafting
+	}
+
+	XuanwuSpirit: {
+		DisplayName: Xuanwu Spirit
+		Tooltip: Essence of the Black Tortoise sacred beast · Used in sacred beast crafting
+	}
+
+	KyuubiSummonsHairpin: {
+		DisplayName: Kyuubi Summons Hairpin
+		Tooltip: Summons the Kyuubi Kitsune · Requires Plantera to be defeated
+	}
+
+	UnderworldPairSummons: {
+		DisplayName: Underworld Pair Summons
+		Tooltip: Use at a Demon Altar to summon Ox-Head and Horse-Face · Requires Hardmode
+	}
+
+	NetherChainBlade: {
+		DisplayName: Nether Chain Blade
+		Tooltip: (Placeholder) Full mechanics pending · Niu-Ma chain blade · 58 melee damage
+	}
+
+	SoulHookWhip: {
+		DisplayName: Soul Hook Whip
+		Tooltip: (Partial) Vanilla whip projectile · Niu-Ma soul hook · 52 whip damage · Theme rework pending
+	}
+
+	CupriteDeadwoodMusket: {
+		DisplayName: Cuprite Deadwood Musket
+		Tooltip: Cuprite woodland musket upgrade · WoF-era ranged bridge · Base woodland stats + cuprite
+	}
+
+	CupriteEmeraldTwigStaff: {
+		DisplayName: Cuprite Emerald Twig Staff
+		Tooltip: Cuprite emerald twig staff upgrade · WoF-era magic bridge
+	}
+
+	CupriteMossBomb: {
+		DisplayName: Cuprite Moss Bomb
+		Tooltip: Cuprite moss bomb upgrade · WoF-era thrown weapon bridge
+	}
+
+	CupriteNatureGrimoire: {
+		DisplayName: Cuprite Nature Grimoire
+		Tooltip: Cuprite nature grimoire upgrade · WoF-era summon bridge
+	}
+
+	CupriteWoodlandGreatsword: {
+		DisplayName: Cuprite Woodland Greatsword
+		Tooltip: Cuprite woodland greatsword · 42 damage · 1/3 chance to poison on hit
+	}
+
+	XuanTieHunterBow: {
+		DisplayName: Xuan Tie Hunter Bow
+		Tooltip: Xuan Tie hunter bow upgrade · 38 ranged damage · Synergizes with Xuan Tie bleed set
+	}
+
+	XuanTieRootBoomerang: {
+		DisplayName: Xuan Tie Root Boomerang
+		Tooltip: Xuan Tie root boomerang upgrade · WoF-era melee/ranged bridge
+	}
+
+	WraithLantern: {
+		DisplayName: Wraith Lantern
+		Tooltip: (Partial) Spectre drop · 118 magic damage · Wraith-fire lantern · Custom mechanics pending
+	}
+
+	FengduImperialCrown: {
+		DisplayName: Fengdu Imperial Crown
+		Tooltip: (Placeholder) Yin Emperor drop · 33% · Endgame accessory pending
+	}
+
+	GhostGateKey: {
+		DisplayName: Ghost Gate Key
+		Tooltip: (Placeholder) Yin Emperor drop · 33% · Ghost Gate access item pending
+	}
+
+	SoulBannerUnderworldRelic: {
+		DisplayName: Soul Banner Underworld Relic
+		Tooltip: (Placeholder) Yin Emperor drop · 33% · Soul Banner underworld relic pending
+	}
+
+	YinEmperorEdict: {
+		DisplayName: Yin Emperor Edict
+		Tooltip: (Placeholder) Summons the Yin Emperor · Requires Awakening Nether defeated · Recipe pending balance
+	}
+
+	AwakenedNetherCore: {
+		DisplayName: Awakened Nether Core
+		Tooltip: Awakened Nether Dragon heart · 100% drop · Key material for Yin Emperor edict
+	}
+
+	ImpermanenceSoul: {
+		DisplayName: Impermanence Soul
+		Tooltip: (Placeholder) Black/White Impermanence soul · 2–4 each · Revenant EX upgrade material
+	}
+
+	NetherDragonScale: {
+		DisplayName: Nether Dragon Scale
+		Tooltip: (Placeholder) Nether Dragon scale · 8–12 per kill · Underworld ore chain material
+	}
+
+	SpectreGrudgeCore: {
+		DisplayName: Spectre Grudge Core
+		Tooltip: (Placeholder) Spectre grudge core · 4–7 per kill · Dakki and Revenant EX material
+	}
+
+	VoidDragonSinew: {
+		DisplayName: Void Dragon Sinew
+		Tooltip: (Placeholder) Void dragon sinew · 3–5 from Awakening Nether · Fengdu weapon boost material
+	}
+
+	YinEssence: {
+		DisplayName: Yin Essence
+		Tooltip: (Placeholder) Yin Emperor essence · 18–24 per kill · Fengdu armor and ascension material
+	}
+
+	YinImperialSeal: {
+		DisplayName: Yin Imperial Seal
+		Tooltip: (Placeholder) Yin Emperor imperial seal · 100% drop · Cultivation G7 gate item
+	}
 }
 
 NPCs: {
@@ -2094,6 +2320,7 @@ Projectiles: {
 	DragonScaleShard.DisplayName: Dragon Scale Shard
 	SoulTetherChain.DisplayName: Soul Tether Chain
 	YinYangBinderOrb.DisplayName: Yin Yang Binder Orb
+	SoulHookWhipProjectile.DisplayName: Soul Hook Whip Projectile
 }
 
 HeavenBiome.DisplayName: Heaven
@@ -2321,3 +2548,4 @@ WorldGen: {
 }
 
 "Keybinds.Toggle Cultivation Panel.DisplayName": Toggle  Cultivation  Panel
+Shop.MoonLord: Mods.AncientChineseMythology.Shop.MoonLord

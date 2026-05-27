@@ -4,6 +4,7 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Celestias.Boss.Vigors.Items
 {
+    // PLACEHOLDER: see docs/PLACEHOLDER_CONTENT_REGISTRY.md
     /// <summary>神威主题武器占位 — Phase 2 掉落绑定，完整机制待后续。</summary>
     public class SinSeveringBlade : ModItem
     {

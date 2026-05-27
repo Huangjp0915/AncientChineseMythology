@@ -381,32 +381,6 @@ Items: {
 		Tooltip: ""
 	}
 
-	XuanTieHelmet: {
-		SetBonus: 攻击叠加玄铁流血；三层爆发8%武器伤范围打击；移动速度+10%
-		DisplayName: 玄铁头盔
-		Tooltip: ""
-	}
-
-	XuanTieBreastplate: {
-		DisplayName: 玄铁胸甲
-		Tooltip: ""
-	}
-
-	XuanTieLeggings: {
-		DisplayName: 玄铁护胫
-		Tooltip: ""
-	}
-
-	UnderworldPairSummons: {
-		DisplayName: 冥途双引符
-		Tooltip: 在恶魔祭坛使用，召唤牛头马面（需击败血肉墙）
-	}
-
-	KyuubiSummonsHairpin: {
-		DisplayName: 九尾狐毫
-		Tooltip: 召唤九尾妖狐（需击败世纪之花）
-	}
-
 	CupriteBreastplate: {
 		DisplayName: 赤铜甲
 		Tooltip: ""
@@ -463,11 +437,7 @@ Items: {
 
 	AureateVoidrender: {
 		DisplayName: 辉金虚空斩裂刃
-		Tooltip:
-			'''
-			撕裂虚空的巨刃，挥舞时金芒迸射
-			每次挥击都会释放穿透虚空的金-紫双色斩浪
-			'''
+		Tooltip: （占位）机制待实装 · 神威金装虚空刃 · 1120 近战伤害
 	}
 
 	CelestialHubAnnihilator: {
@@ -480,48 +450,28 @@ Items: {
 	}
 
 	CelestialCircletScepter: {
-		DisplayName: 天枢耀能环流杖
-		Tooltip:
-			'''
-			汇聚天枢的能量，释放5枚旋转耀能光环
-			光环螺旋收束后追踪最近的目标冲刺贯穿
-			'''
+		DisplayName: 天冠权杖
+		Tooltip: （占位）机制待实装 · 毗沙门天冠权杖 · 1300 魔法伤害
 	}
 
 	GeoarchonRupturer: {
 		DisplayName: 坤铉破渊权杖
-		Tooltip:
-			'''
-			坤力共鸣，大地震裂，渊底崩塌
-			在目标位置召唤七根地能裂穴能量柱
-			'''
+		Tooltip: （占位）机制待实装 · 玄武地尊裂岩杖 · 1500 魔法伤害
 	}
 
 	AurelianCataclysmSmasher: {
 		DisplayName: 万劫狂金震碎者
-		Tooltip:
-			'''
-			集万劫之力于一击，砸碎一切的狂金重锤
-			命中时掀起全场金色裂地冲击波，令大地颤抖
-			'''
+		Tooltip: （占位）机制待实装 · 白虎金纹灾锤 · 1580 近战伤害
 	}
 
 	AzureRuinBlade: {
-		DisplayName: 蔚蓝毁刃
-		Tooltip:
-			'''
-			凝聚蔚蓝大海之力，斩出奔涌潮砍
-			挥击时释放汹涌的蓝色潮汐剑气
-			'''
+		DisplayName: 苍海毁刃
+		Tooltip: （占位）机制待实装 · 敖顺潮汐雷刃 · 420 近战伤害
 	}
 
 	GeocrystalShatterblade: {
 		DisplayName: 地晶裂碎大剑
-		Tooltip:
-			'''
-			源自地核晶体之力，招招迸发熔岩爆裂
-			命中时引发熔岩晶爆，撼动大地
-			'''
+		Tooltip: （占位）机制待实装 · 玄武地晶碎刃 · 1450 近战伤害
 	}
 
 	QuadraseaCataclysmicEdge: {
@@ -534,30 +484,18 @@ Items: {
 	}
 
 	VortexPrimordialStain: {
-		DisplayName: 漩流玄印权杖
-		Tooltip:
-			'''
-			蕴含漩涡原初之力，发射青珊瑚追踪光球
-			光球起初蜿蜒飞行，随后追踪最近的敌人
-			'''
+		DisplayName: 漩流玄印魔书
+		Tooltip: （占位）机制待实装 · 敖闰原初漩涡魔书 · 365 魔法伤害
 	}
 
 	LuminanceStellarCannon: {
-		DisplayName: 星光凝聚炮
-		Tooltip:
-			'''
-			集星光之能于炮膛，射出穿透白蓝能束
-			命中后引发星能爆裂，照亮黑暗
-			'''
+		DisplayName: 光华星炮
+		Tooltip: （占位）机制待实装 · 百目聚星炮 · 1200 远程伤害
 	}
 
 	LuminousIrisAnnihilator: {
-		DisplayName: 耀虹湮灭手炮
-		Tooltip:
-			'''
-			凝聚万彩虹光，发射毁天灭地的金色炮弹
-			命中后引发漫天金光爆炸
-			'''
+		DisplayName: 虹膜湮灭手铳
+		Tooltip: （占位）机制待实装 · 百目虹膜手铳 · 1180 远程伤害
 	}
 
 	TwilightGlazeGreatbow: {
@@ -570,26 +508,18 @@ Items: {
 	}
 
 	StarfireAnnihilator: {
-		DisplayName: 星火寂灭重炮
-		Tooltip:
-			'''
-			引导珊瑚星火的力量，发射能穿透多个敌人的高速星弹
-			命中时引爆出珊瑚青色的星辰爆炸
-			'''
+		DisplayName: 星火灭杀枪
+		Tooltip: （占位）机制待实装 · 朱雀星火枪 · 1520 远程伤害
 	}
 
 	VaultshadeVoidshot: {
-		DisplayName: 穹闪破空狙击
-		Tooltip:
-			'''
-			一把褐色的科技狙击枪，发射随着飞行不断扩大的虚空弹
-			命中时触发紫色的虚空内爆，将敌人吸入其中
-			'''
+		DisplayName: 库藏虚空狙
+		Tooltip: （占位）机制待实装 · 毗沙门库藏狙 · 1280 远程伤害
 	}
 
 	ArgentPulseObliterator: {
-		DisplayName: 银脉湮灭冲锋枪
-		Tooltip: 高速连射银蓝能量脉冲弹，每8发触发超载三连矢
+		DisplayName: 银脉湮灭枪
+		Tooltip: （占位）机制待实装 · 白虎银脉冲枪 · 1450 远程伤害
 	}
 
 	ArcaneRepulsionArray: {
@@ -602,39 +532,23 @@ Items: {
 	}
 
 	AzureTorrentBlades: {
-		DisplayName: 列斩幽蓝剑意
-		Tooltip:
-			'''
-			召唤悬浮在剑鞘中的幽蓝剑意，随后带着蓝色光辉旋转冲出
-			可召唤多把剑刃；它们在高速旋转时造成接触伤害
-			'''
+		DisplayName: 青涛双流刃
+		Tooltip: （占位）机制待实装 · 青龙青水流光双刃 · 1480 近战伤害
 	}
 
 	DraconicEmber: {
-		DisplayName: 劫火龙裔之卵
-		Tooltip:
-			'''
-			召唤一条熔岩蛟龙，它会疯狂猎杀敌人并定期发射余烬之卵
-			余烬之卵触碰即会爆炸，焚烧挡在路上的一切
-			'''
+		DisplayName: 龙魂余烬杖
+		Tooltip: （占位）机制待实装 · 敖钦龙魂召唤杖 · 340 召唤伤害
 	}
 
 	InkscaledFlowFan: {
-		DisplayName: 墨鳞水折画灵扇
-		Tooltip:
-			'''
-			召唤呈波浪状游动并追踪敌人的墨鳞游鱼
-			可召唤多条游鱼来淹没敌人
-			'''
+		DisplayName: 墨鳞流风扇
+		Tooltip: （占位）机制待实装 · 敖闰墨鳞水扇 · 370 魔法伤害
 	}
 
 	SolarisEternalVerdict: {
-		DisplayName: 烈阳永恒裁断
-		Tooltip:
-			'''
-			召唤一颗璀璨的烈阳之眼悬浮在你上方，向附近的敌人爆发太阳射线
-			太阳射线可穿透多个目标，降下永恒的裁断
-			'''
+		DisplayName: 日轮永恒审判杖
+		Tooltip: （占位）机制待实装 · 朱雀日轮审判杖 · 1600 召唤伤害
 	}
 
 	XuanTieBar: {
@@ -1688,6 +1602,292 @@ Items: {
 		// DisplayName: Livinglog
 		// Tooltip: ""
 	}
+
+	XuanTieHelmet: {
+		SetBonus: 攻击叠加玄铁流血；三层爆发8%武器伤范围打击；移动速度+10%
+		DisplayName: 玄铁头盔
+		Tooltip: 三王后玄铁护甲 · 套装：玄铁流血叠层爆发
+	}
+
+	CrimsonMaelstromBow: {
+		DisplayName: 赤潮旋涡弓
+		Tooltip: （占位）机制待实装 · 敖钦火龙主题弓 · 360 远程伤害
+	}
+
+	FlamecoilChakram: {
+		DisplayName: 焰缠双环
+		Tooltip: （占位）机制待实装 · 双环交缠火轮 · 355 近战伤害
+	}
+
+	InfernoDragonSpear: {
+		DisplayName: 焚天龙枪
+		Tooltip: （占位）机制待实装 · 焰纹龙枪 · 350 近战伤害
+	}
+
+	MeteorCallerStaff: {
+		DisplayName: 唤流星杖
+		Tooltip: （占位）机制待实装 · 流星唤魔 · 365 魔法伤害
+	}
+
+	LightningEdictTome: {
+		DisplayName: 雷敕天书
+		Tooltip: （占位）机制待实装 · 雷霆敕令魔书 · 385 魔法伤害
+	}
+
+	StormchainWhip: {
+		DisplayName: 风暴链鞭
+		Tooltip: （占位）机制待实装 · 闪电链鞭 · 375 鞭伤害
+	}
+
+	TempestRepeater: {
+		DisplayName: 暴风连弩
+		Tooltip: （占位）机制待实装 · 风暴连弩 · 380 远程伤害
+	}
+
+	ThunderlordHalberd: {
+		DisplayName: 雷尊方天戟
+		Tooltip: （占位）机制待实装 · 雷纹方天戟 · 370 近战伤害
+	}
+
+	BlizzardPiercer: {
+		DisplayName: 暴雪穿云弓
+		Tooltip: （占位）机制待实装 · 冰龙穿云弓 · 375 远程伤害
+	}
+
+	GlacialDragonblade: {
+		DisplayName: 冰龙镰刃
+		Tooltip: （占位）机制待实装 · 霜纹龙刃 · 355 近战伤害
+	}
+
+	PermafrostTrident: {
+		DisplayName: 永冻三叉戟
+		Tooltip: （占位）机制待实装 · 西海永冻戟 · 360 近战伤害
+	}
+
+	SoulPiercingArc: {
+		DisplayName: 穿魂弧弓
+		Tooltip: （占位）机制待实装 · 百目穿魂弓 · 1150 远程伤害
+	}
+
+	BlackTortoiseShield: {
+		DisplayName: 玄龟盾
+		Tooltip: （占位）机制待实装 · 玄武龟甲盾刃 · 1550 近战伤害
+	}
+
+	FourSymbolsTablet: {
+		DisplayName: 四象碑
+		Tooltip: （占位）四圣兽召唤待实装 · 四海龙王后合成 · 见设计书 §5.4
+	}
+
+	PhoenixFlameStaff: {
+		DisplayName: 凤凰焰杖
+		Tooltip: （占位）机制待实装 · 朱雀涅槃焰杖 · 1480 魔法伤害
+	}
+
+	ThunderclapLongbow: {
+		DisplayName: 雷鼓长弓
+		Tooltip: （占位）机制待实装 · 青龙雷鼓弓 · 1550 远程伤害
+	}
+
+	WhiteTigerClaws: {
+		DisplayName: 白虎爪
+		Tooltip: （占位）机制待实装 · 白虎撕裂爪 · 1500 近战伤害
+	}
+
+	WindserpentDao: {
+		DisplayName: 风蛇长刀
+		Tooltip: （占位）机制待实装 · 青龙风蛇刀 · 1520 近战伤害
+	}
+
+	TreasurePagodaCharm: {
+		DisplayName: 宝塔护符
+		Tooltip: （占位）饰品机制待实装 · 毗沙门宝塔护体 · 25% 掉落
+	}
+
+	TreasurePagodaStaff: {
+		DisplayName: 宝塔法杖
+		Tooltip: （占位）机制待实装 · 多宝塔杖 · 1320 魔法伤害
+	}
+
+	SinSeveringBlade: {
+		DisplayName: 断罪巨剑
+		Tooltip: （占位）机制待实装 · 神威断罪刃 · 1180 近战伤害
+	}
+
+	VerdictSealHammer: {
+		DisplayName: 裁决印锤
+		Tooltip: （占位）机制待实装 · 神威裁决锤 · 1250 近战伤害
+	}
+
+	XuanTieBreastplate: {
+		DisplayName: 玄铁胸甲
+		Tooltip: 三王后玄铁护甲 · 套装：三层流血爆发范围打击
+	}
+
+	XuanTieLeggings: {
+		DisplayName: 玄铁护胫
+		Tooltip: 三王后玄铁护甲 · 套装：+10% 移动速度
+	}
+
+	BaihuSpirit: {
+		DisplayName: 白虎之灵
+		Tooltip: 西方庚金圣兽陨落所遗一缕先天道韵 · 四圣兽合成材料
+	}
+
+	CoffinNailFragment: {
+		DisplayName: 尸钉残片
+		Tooltip: 赢勾所遗镇尸钉碎片 · 1/3 掉落 · 镇尸钉合成材料
+	}
+
+	DragonKingScale: {
+		DisplayName: 龙王鳞
+		Tooltip: 四海龙王共享掉落 · 每次 8–12 · 海珠与四象碑合成
+	}
+
+	GeneralOrder: {
+		DisplayName: 将军令
+		Tooltip: （占位）天将线共享材料 · 神威/百目 100% · 毗沙门召唤链
+	}
+
+	MaMianSeal: {
+		DisplayName: 马面印
+		Tooltip: （占位）地府马面之印 · 牛头马面掉落 · 召唤材料
+	}
+
+	NiuTouSeal: {
+		DisplayName: 牛头印
+		Tooltip: （占位）地府牛头之印 · 牛头马面掉落 · 召唤材料
+	}
+
+	OverseersEye: {
+		DisplayName: 观察者之眼
+		Tooltip: （占位）天庭观察者材料 · 每次 8–12 · 观察者武器备份合成
+	}
+
+	SuzakuSpirit: {
+		DisplayName: 朱雀之灵
+		Tooltip: 南方离火圣兽陨落所遗一缕先天道韵 · 四圣兽合成材料
+	}
+
+	XuanwuSpirit: {
+		DisplayName: 玄武之灵
+		Tooltip: 北方玄水圣兽陨落所遗一缕先天道韵 · 四圣兽合成材料
+	}
+
+	KyuubiSummonsHairpin: {
+		DisplayName: 九尾狐毫
+		Tooltip: 召唤九尾妖狐（需击败世纪之花）
+	}
+
+	UnderworldPairSummons: {
+		DisplayName: 冥途双引符
+		Tooltip: 在恶魔祭坛使用，召唤牛头马面（需击败血肉墙）
+	}
+
+	NetherChainBlade: {
+		DisplayName: 冥链刃
+		Tooltip: （占位）机制待实装 · 牛头马面链刃 · 58 近战伤害
+	}
+
+	SoulHookWhip: {
+		DisplayName: 勾魂索
+		Tooltip: （部分实装）原版鞭弹幕 · 牛头马面勾魂鞭 · 52 鞭伤害 · 主题机制待重做
+	}
+
+	CupriteDeadwoodMusket: {
+		DisplayName: 赤铜枯木火铳
+		Tooltip: 林地火铳赤铜升级 · 肉后前期远程过渡
+	}
+
+	CupriteEmeraldTwigStaff: {
+		DisplayName: 赤铜翠枝法杖
+		Tooltip: 林地法杖赤铜升级 · 肉后前期魔法过渡
+	}
+
+	CupriteMossBomb: {
+		DisplayName: 赤铜苔藓炸弹
+		Tooltip: 林地炸弹赤铜升级 · 肉后前期投掷过渡
+	}
+
+	CupriteNatureGrimoire: {
+		DisplayName: 赤铜自然秘典
+		Tooltip: 林地秘典赤铜升级 · 肉后前期召唤过渡
+	}
+
+	CupriteWoodlandGreatsword: {
+		DisplayName: 赤铜林地巨剑
+		Tooltip: 林地巨剑赤铜升级 · 42 伤害 · 1/3 概率中毒
+	}
+
+	XuanTieHunterBow: {
+		DisplayName: 玄铁猎弓
+		Tooltip: 藤弓玄铁升级 · 38 远程伤害 · 与玄铁流血套装协同
+	}
+
+	XuanTieRootBoomerang: {
+		DisplayName: 玄铁根回旋镖
+		Tooltip: 根回旋镖玄铁升级 · 肉后前期回旋过渡
+	}
+
+	WraithLantern: {
+		DisplayName: 鬼火灯笼
+		Tooltip: （部分实装）怨灵掉落 · 118 魔法伤害 · 双鬼火 · 主题机制待实装
+	}
+
+	FengduImperialCrown: {
+		DisplayName: 酆帝冠
+		Tooltip: （占位）阴天子 33% 掉落 · 终局饰品待实装
+	}
+
+	GhostGateKey: {
+		DisplayName: 鬼门关钥匙
+		Tooltip: （占位）阴天子 33% 掉落 · 鬼门关通行待实装
+	}
+
+	SoulBannerUnderworldRelic: {
+		DisplayName: 地府万魂 relic
+		Tooltip: （占位）阴天子 33% 掉落 · 万魂幡地府 relic 待实装
+	}
+
+	YinEmperorEdict: {
+		DisplayName: 阴天子诏书
+		Tooltip: （占位）召唤阴天子 · 需击败觉醒冥龙 · 配方待平衡
+	}
+
+	AwakenedNetherCore: {
+		DisplayName: 觉醒龙心
+		Tooltip: 觉醒幽冥龙之心 · 100% 掉落 · 阴天子诏书主材
+	}
+
+	ImpermanenceSoul: {
+		DisplayName: 无常之魂
+		Tooltip: （占位）黑白无常各 2–4 · 枉骸 EX 升级材料
+	}
+
+	NetherDragonScale: {
+		DisplayName: 幽冥龙鳞
+		Tooltip: （占位）幽冥龙 8–12 · 幽冥矿链共享材料
+	}
+
+	SpectreGrudgeCore: {
+		DisplayName: 怨灵核
+		Tooltip: （占位）怨灵 4–7 · 妲己链与枉骸 EX 材料
+	}
+
+	VoidDragonSinew: {
+		DisplayName: 虚空龙筋
+		Tooltip: （占位）觉醒冥龙 3–5 · 酆都武器强化材料
+	}
+
+	YinEssence: {
+		DisplayName: 阴元精华
+		Tooltip: （占位）阴天子 18–24 · 酆都阴元盔甲与准圣门控
+	}
+
+	YinImperialSeal: {
+		DisplayName: 阴帝印玺
+		Tooltip: （占位）阴天子 100% · 修仙 G7 门控印玺
+	}
 }
 
 NPCs: {
@@ -2242,6 +2442,7 @@ Projectiles: {
 	// DragonScaleShard.DisplayName: Dragon Scale Shard
 	// SoulTetherChain.DisplayName: Soul Tether Chain
 	// YinYangBinderOrb.DisplayName: Yin Yang Binder Orb
+	// SoulHookWhipProjectile.DisplayName: Soul Hook Whip Projectile
 }
 
 HeavenBiome.DisplayName: Heaven
@@ -2469,3 +2670,4 @@ WorldGen: {
 }
 
 "Keybinds.Toggle Cultivation Panel.DisplayName": 修炼面板
+// Shop.MoonLord: Mods.AncientChineseMythology.Shop.MoonLord

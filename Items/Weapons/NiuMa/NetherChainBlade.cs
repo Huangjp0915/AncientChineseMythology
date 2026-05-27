@@ -4,6 +4,7 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Items.Weapons.NiuMa
 {
+    // PLACEHOLDER: see docs/PLACEHOLDER_CONTENT_REGISTRY.md
     public class NetherChainBlade : ModItem
     {
         public override void SetDefaults() {

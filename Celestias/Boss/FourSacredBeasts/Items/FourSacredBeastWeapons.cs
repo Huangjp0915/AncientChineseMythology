@@ -7,6 +7,7 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
 {
+    // PLACEHOLDER: see docs/PLACEHOLDER_CONTENT_REGISTRY.md
     /// <summary>四圣兽主题武器占位 — Phase 2 掉落绑定；灵材合成桥待完善。</summary>
     public class AzureTorrentBlades : ModItem
     {

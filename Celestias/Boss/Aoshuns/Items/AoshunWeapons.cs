@@ -4,6 +4,7 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Celestias.Boss.Aoshuns.Items
 {
+    // PLACEHOLDER: see docs/PLACEHOLDER_CONTENT_REGISTRY.md
     /// <summary>敖顺主题武器占位 — Phase 1 掉落绑定，完整机制待 Phase 2。</summary>
     public class ThunderlordHalberd : ModItem
     {
