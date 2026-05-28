@@ -376,10 +376,10 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
     {
         private ref float RingIndex => ref Projectile.ai[0];
         private ref float FlightTimer => ref Projectile.ai[1];
-        private ref float IsReturning => ref Projectile.localAI[0];
-        private ref float CoilPhase => ref Projectile.localAI[1];
-        private ref float CoreX => ref Projectile.localAI[2];
-        private ref float CoreY => ref Projectile.localAI[3];
+        private ref float IsReturning => ref Projectile.ai[2];
+        private ref float CoilPhase => ref Projectile.localAI[0];
+        private ref float CoreX => ref Projectile.localAI[1];
+        private ref float CoreY => ref Projectile.localAI[2];
 
         private Player Owner => Main.player[Projectile.owner];
 

@@ -2265,8 +2265,6 @@ Projectiles: {
 	GoldenPhoenixMinion.DisplayName: 金凤凰随从
 	JadeDragonSlash.DisplayName: 玉龙斩
 	JadeDragonWave.DisplayName: 玉龙波
-	PhoenixFlameRebirth.DisplayName: 涅槃凤凰焰
-	PhoenixFlameRebirthEmber.DisplayName: 涅槃余烬
 	PhoenixFlameWave.DisplayName: 凤凰焰波
 	PhoenixMinionFlame.DisplayName: 凤凰随从火焰
 	PhoenixSpark.DisplayName: 凤凰火花
@@ -2517,6 +2515,46 @@ Projectiles: {
 	// SoulTetherChain.DisplayName: Soul Tether Chain
 	// YinYangBinderOrb.DisplayName: Yin Yang Binder Orb
 	// SoulHookWhipProjectile.DisplayName: Soul Hook Whip Projectile
+	// CrimsonStormArrow.DisplayName: Crimson Storm Arrow
+	// FlamecoilChakramProjectile.DisplayName: Flamecoil Chakram Projectile
+	// InfernoDragonSpearThrust.DisplayName: Inferno Dragon Spear Thrust
+	// InfernoScorchGust.DisplayName: Inferno Scorch Gust
+	// MeteorCallerDragonSigil.DisplayName: Meteor Caller Dragon Sigil
+	// MeteorCallerMeteor.DisplayName: Meteor Caller Meteor
+	// MiniCrimsonFireTornado.DisplayName: Mini Crimson Fire Tornado
+	// LightningEdictArray.DisplayName: Lightning Edict Array
+	// LightningEdictStrike.DisplayName: Lightning Edict Strike
+	// LightningEdictTalisman.DisplayName: Lightning Edict Talisman
+	// StormchainWhipProjectile.DisplayName: Stormchain Whip Projectile
+	// TempestBolt.DisplayName: Tempest Bolt
+	// TempestStormMark.DisplayName: Tempest Storm Mark
+	// ThunderlordChainArc.DisplayName: Thunderlord Chain Arc
+	// ThunderlordHalberdThrust.DisplayName: Thunderlord Halberd Thrust
+	// BlizzardPiercerArrow.DisplayName: Blizzard Piercer Arrow
+	// GlacialDragonSlash.DisplayName: Glacial Dragon Slash
+	// PermafrostTridentProjectile.DisplayName: Permafrost Trident Projectile
+	// PrimordialInkVortexOrb.DisplayName: Primordial Ink Vortex Orb
+	// SoulPierceMark.DisplayName: Soul Pierce Mark
+	// SoulPiercingArrow.DisplayName: Soul Piercing Arrow
+	// AzureTorrentBladesOrbit.DisplayName: Azure Torrent Blades Orbit
+	// AzureTorrentBladesSwing.DisplayName: Azure Torrent Blades Swing
+	PhoenixFlameRebirth.DisplayName: 涅槃凤凰焰
+	PhoenixFlameRebirthEmber.DisplayName: 涅槃余烬
+	// ThunderclapArrow.DisplayName: Thunderclap Arrow
+	// ThunderclapBolt.DisplayName: Thunderclap Bolt
+	// WindserpentSlash.DisplayName: Windserpent Slash
+	// WindserpentSweepTornado.DisplayName: Windserpent Sweep Tornado
+	// TreasurePagodaPhantom.DisplayName: Treasure Pagoda Phantom
+	// TreasurePagodaStack.DisplayName: Treasure Pagoda Stack
+	// VaultshadeVoidBolt.DisplayName: Vaultshade Void Bolt
+	// VaultshadeVoidCollapse.DisplayName: Vaultshade Void Collapse
+	// SinSeveringBladeSwing.DisplayName: Sin Severing Blade Swing
+	// SinSeveringCleave.DisplayName: Sin Severing Cleave
+	// VerdictSealShockwave.DisplayName: Verdict Seal Shockwave
+	// VerdictSealShockwavePulse.DisplayName: Verdict Seal Shockwave Pulse
+	// NetherChainBladeProjectile.DisplayName: Nether Chain Blade Projectile
+	// WraithLanternGhost.DisplayName: Wraith Lantern Ghost
+	// WraithLanternTether.DisplayName: Wraith Lantern Tether
 }
 
 HeavenBiome.DisplayName: Heaven
@@ -2738,6 +2776,21 @@ Buffs: {
 	SolarisEternalVerdictBuff: {
 		DisplayName: 太阳不灭裁决
 		Description: 太阳看眼为你而战！
+	}
+
+	InkscaledFlowFanDebuff: {
+		// DisplayName: Inkscaled Flow Fan Debuff
+		// Description: Mods.AncientChineseMythology.Buffs.InkscaledFlowFanDebuff.Description
+	}
+
+	SinMarkDebuff: {
+		// DisplayName: Sin Mark Debuff
+		// Description: Mods.AncientChineseMythology.Buffs.SinMarkDebuff.Description
+	}
+
+	VerdictSealSlowDebuff: {
+		// DisplayName: Verdict Seal Slow Debuff
+		// Description: Mods.AncientChineseMythology.Buffs.VerdictSealSlowDebuff.Description
 	}
 }
 

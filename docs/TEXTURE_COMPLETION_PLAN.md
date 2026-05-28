@@ -11,6 +11,7 @@
 | 优先级 | 范围 | 状态 | 策略 |
 |--------|------|------|------|
 | **P0** | 22 个缺 PNG 的 ModItem | ✅ **已修复**（2026-05-28 占位复制） | 复制现有 PNG 至 autoload 路径 |
+| **P0b** | 9 个缺 PNG 的 ModBuff / ModProjectile（占位武器阶段） | ✅ **已修复**（2026-05-28 占位复制） | Buff → `BlankBuff`；震波/风刃 → `GlaciateWave`；回旋 → `JadeDragonChakramProjectile`；宝塔 → `VaisravanaTower` |
 | **P1** | 47 个 `Terraria/Images/Item_*` 引用 | ⏳ 待美术 | 按 Boss 主题分配正式贴图 |
 | **P2** | `Textures/` 目录 Git 追踪 | 📋 建议见 §四 | 纳入版本控制 + LFS 可选 |
 
@@ -60,6 +61,22 @@
 | 22 | `Items/Weapons/Woodlands/Upgrades/XuanTieRootBoomerang.png` | `Items/Weapons/Woodlands/RootBoomerang.png` | 玄铁根回旋镖 |
 
 **验证：** 上述 22 路径均已存在；`dotnet build` 通过（0 错误）。
+
+### 2.3 P0b 执行记录（9/9 已完成 — ModBuff / ModProjectile）
+
+| # | 目标路径 | 复制来源 | 占位说明 |
+|---|----------|----------|----------|
+| 1 | `Celestias/Boss/Aokins/Items/DraconicEmberBuff.png` | `Textures/Buffs/BlankBuff.png` | 龙魂余烬召唤 buff |
+| 2 | `Celestias/Boss/Aokins/Items/FlamecoilChakramProjectile.png` | `Celestias/Boss/AoGuangs/Items/JadeDragonChakramProjectile.png` | 焰缠双环回旋弹幕 |
+| 3 | `Celestias/Boss/FourSacredBeasts/Items/AurelianShockwave.png` | `Textures/Masking/GlaciateWave.png` | 金裂地冲击波 |
+| 4 | `Celestias/Boss/FourSacredBeasts/Items/AzureTorrentBladesBuff.png` | `Textures/Buffs/BlankBuff.png` | 蔚蓝剑群协战 buff |
+| 5 | `Celestias/Boss/FourSacredBeasts/Items/SolarisEternalVerdictBuff.png` | `Textures/Buffs/BlankBuff.png` | 日轮审判召唤 buff |
+| 6 | `Celestias/Boss/FourSacredBeasts/Items/WindserpentSlash.png` | `Textures/Masking/GlaciateWave.png` | 风蛇刀气 |
+| 7 | `Celestias/Boss/Vaisravanas/Items/TreasurePagodaStack.png` | `Celestias/Boss/Vaisravanas/VaisravanaTower.png` | 层叠宝塔驻留体 |
+| 8 | `Celestias/Boss/Vigors/Items/VerdictSealShockwave.png` | `Textures/Masking/GlaciateWave.png` | 裁决震波 |
+| 9 | `Celestias/Boss/Vigors/Items/VerdictSealShockwavePulse.png` | `Textures/Masking/GlaciateWave.png` | 裁决震波脉冲 |
+
+**验证：** 全模组 ModBuff / ModProjectile 审计 0 缺图；`dotnet build` 通过（0 错误）。
 
 ---
 
