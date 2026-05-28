@@ -11,7 +11,6 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
 {
-    // PLACEHOLDER: see docs/PLACEHOLDER_CONTENT_REGISTRY.md
     /// <summary>
     /// 焚天龙枪 — 敖钦掉落的长枪近战
     /// 焰纹突刺、焚风 trail、点燃叠层（最高 8 层）

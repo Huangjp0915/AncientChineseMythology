@@ -442,7 +442,7 @@ Items: {
 
 	GeocrystalShatterblade: {
 		DisplayName: Geocrystal Shatterblade
-		Tooltip: (Placeholder) Full mechanics pending · Xuanwu geocrystal blade · 1450 melee damage
+		Tooltip: Melee swings erupt molten geocrystal bursts on hit · 1450 melee damage
 	}
 
 	QuadraseaCataclysmicEdge: {
@@ -456,7 +456,7 @@ Items: {
 
 	VortexPrimordialStain: {
 		DisplayName: Vortex Primordial Stain
-		Tooltip: (Placeholder) Full mechanics pending · Aoyuan primordial vortex tome · 365 magic damage
+		Tooltip: Fires three ink-vortex orbs that serpent-track foes · 365 magic damage
 	}
 
 	LuminanceStellarCannon: {
@@ -488,7 +488,7 @@ Items: {
 
 	StarfireAnnihilator: {
 		DisplayName: Starfire Annihilator
-		Tooltip: (Placeholder) Full mechanics pending · Suzaku starfire gun · 1520 ranged damage
+		Tooltip: Piercing coral starfire shells bloom into a starfire sea blast after piercing · 1520 ranged damage
 	}
 
 	VaultshadeVoidshot: {
@@ -520,7 +520,12 @@ Items: {
 
 	AzureTorrentBlades: {
 		DisplayName: Azure Torrent Blades
-		Tooltip: (Placeholder) Full mechanics pending · Qinglong azure twin blades · 1480 melee damage
+		Tooltip:
+			'''
+			Rapid alternating dual-blade slashes; sheath torrent blades spiral out
+			Right-click deploys an orbiting azure blade swarm
+			1480 melee damage
+			'''
 	}
 
 	DraconicEmber: {
@@ -530,12 +535,12 @@ Items: {
 
 	InkscaledFlowFan: {
 		DisplayName: Inkscaled Flow Fan
-		Tooltip: (Placeholder) Full mechanics pending · Aoyuan ink-scaled flow fan · 370 magic damage
+		Tooltip: Fans out homing ink-scaled fish; hits apply stacking tidal erosion DoT · 370 magic damage
 	}
 
 	SolarisEternalVerdict: {
 		DisplayName: Solaris Eternal Verdict
-		Tooltip: (Placeholder) Full mechanics pending · Suzaku solar verdict staff · 1600 summon damage
+		Tooltip: Summons a hovering solar eye that periodically fires piercing sunbeams · 1600 summon damage
 	}
 
 	XuanTieBar: {
@@ -1536,7 +1541,7 @@ Items: {
 
 	MeteorCallerStaff: {
 		DisplayName: Meteor Caller Staff
-		Tooltip: (Placeholder) Full mechanics pending · Meteor summoning staff · 365 magic damage
+		Tooltip: Channel a dragon sigil at the cursor, then rain multiple flame meteors · 365 magic damage
 	}
 
 	LightningEdictTome: {
@@ -1551,7 +1556,7 @@ Items: {
 
 	TempestRepeater: {
 		DisplayName: Tempest Repeater
-		Tooltip: (Placeholder) Full mechanics pending · Storm repeater · 380 ranged damage
+		Tooltip: Fires a triple volley of storm bolts; hits stack storm marks that detonate · 380 ranged damage
 	}
 
 	ThunderlordHalberd: {
@@ -1595,7 +1600,7 @@ Items: {
 
 	PhoenixFlameStaff: {
 		DisplayName: Phoenix Flame Staff
-		Tooltip: (Placeholder) Full mechanics pending · Suzaku phoenix flame staff · 1480 magic damage
+		Tooltip: Launches phoenix flame orbs that rebirth into homing embers on hit or expiry · 1480 magic damage
 	}
 
 	ThunderclapLongbow: {
@@ -1615,7 +1620,7 @@ Items: {
 
 	WindserpentDao: {
 		DisplayName: Windserpent Dao
-		Tooltip: (Placeholder) Full mechanics pending · Qinglong wind serpent dao · 1520 melee damage
+		Tooltip: Slashes release wind-serpent blades; every fourth strike summons a homing tornado · 1520 melee damage
 	}
 
 	TreasurePagodaCharm: {

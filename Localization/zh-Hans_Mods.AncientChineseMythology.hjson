@@ -455,7 +455,11 @@ Items: {
 
 	CelestialCircletScepter: {
 		DisplayName: 天冠权杖
-		Tooltip: （占位）机制待实装 · 毗沙门天冠权杖 · 1300 魔法伤害
+		Tooltip:
+			'''
+			释放五枚耀能环螺旋收束后追踪冲刺
+			1300 魔法伤害
+			'''
 	}
 
 	GeoarchonRupturer: {
@@ -483,7 +487,7 @@ Items: {
 
 	GeocrystalShatterblade: {
 		DisplayName: 地晶裂碎大剑
-		Tooltip: （占位）机制待实装 · 玄武地晶碎刃 · 1450 近战伤害
+		Tooltip: 挥砍命中时迸射熔岩地晶爆裂 · 1450 近战伤害
 	}
 
 	QuadraseaCataclysmicEdge: {
@@ -497,7 +501,7 @@ Items: {
 
 	VortexPrimordialStain: {
 		DisplayName: 漩流玄印魔书
-		Tooltip: （占位）机制待实装 · 敖闰原初漩涡魔书 · 365 魔法伤害
+		Tooltip: 释放三枚水墨漩涡 orb，蛇形追踪敌人 · 365 魔法伤害
 	}
 
 	LuminanceStellarCannon: {
@@ -529,7 +533,7 @@ Items: {
 
 	StarfireAnnihilator: {
 		DisplayName: 星火灭杀枪
-		Tooltip: （占位）机制待实装 · 朱雀星火枪 · 1520 远程伤害
+		Tooltip: 发射穿透珊瑚星火弹，贯穿后绽放星火星海爆裂 · 1520 远程伤害
 	}
 
 	VaultshadeVoidshot: {
@@ -561,7 +565,12 @@ Items: {
 
 	AzureTorrentBlades: {
 		DisplayName: 青涛双流刃
-		Tooltip: （占位）机制待实装 · 青龙青水流光双刃 · 1480 近战伤害
+		Tooltip:
+			'''
+			极快交替双刀斩击，鞘中飞出旋转激流剑
+			右键展开蔚蓝剑群环绕协战
+			1480 近战伤害
+			'''
 	}
 
 	DraconicEmber: {
@@ -571,12 +580,12 @@ Items: {
 
 	InkscaledFlowFan: {
 		DisplayName: 墨鳞流风扇
-		Tooltip: （占位）机制待实装 · 敖闰墨鳞水扇 · 370 魔法伤害
+		Tooltip: 扇形涌出墨鳞游鱼追踪敌人，命中叠加潮涌 DoT · 370 魔法伤害
 	}
 
 	SolarisEternalVerdict: {
 		DisplayName: 日轮永恒审判杖
-		Tooltip: （占位）机制待实装 · 朱雀日轮审判杖 · 1600 召唤伤害
+		Tooltip: 召唤悬浮日轮眼，周期性发射穿透阳光射线 · 1600 召唤伤害
 	}
 
 	XuanTieBar: {
@@ -1654,7 +1663,7 @@ Items: {
 
 	MeteorCallerStaff: {
 		DisplayName: 唤流星杖
-		Tooltip: （占位）机制待实装 · 流星唤魔 · 365 魔法伤害
+		Tooltip: 长按在光标处刻印龙纹法阵，松手降下多枚焰陨流星 · 365 魔法伤害
 	}
 
 	LightningEdictTome: {
@@ -1669,12 +1678,12 @@ Items: {
 
 	TempestRepeater: {
 		DisplayName: 暴风连弩
-		Tooltip: （占位）机制待实装 · 风暴连弩 · 380 远程伤害
+		Tooltip: 每次齐射三支雷暴弩箭，命中叠加雷暴标记并引爆 · 380 远程伤害
 	}
 
 	ThunderlordHalberd: {
 		DisplayName: 雷尊方天戟
-		Tooltip: （占位）机制待实装 · 雷纹方天戟 · 370 近战伤害
+		Tooltip: 雷击突刺，命中与戳刺顶点向附近敌人弹射连锁闪电弧 · 370 近战伤害
 	}
 
 	BlizzardPiercer: {
@@ -1713,7 +1722,7 @@ Items: {
 
 	PhoenixFlameStaff: {
 		DisplayName: 凤凰焰杖
-		Tooltip: （占位）机制待实装 · 朱雀涅槃焰杖 · 1480 魔法伤害
+		Tooltip: 释放涅槃凤凰焰弹，命中或消散后浴火重生为追踪余烬 · 1480 魔法伤害
 	}
 
 	ThunderclapLongbow: {
@@ -1733,7 +1742,7 @@ Items: {
 
 	WindserpentDao: {
 		DisplayName: 风蛇长刀
-		Tooltip: （占位）机制待实装 · 青龙风蛇刀 · 1520 近战伤害
+		Tooltip: 挥砍释放风蛇刀气，每四刀横扫释放追踪龙卷 · 1520 近战伤害
 	}
 
 	TreasurePagodaCharm: {

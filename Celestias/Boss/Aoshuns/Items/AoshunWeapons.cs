@@ -315,6 +315,10 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns.Items
             Projectile.DamageType = DamageClass.SummonMeleeSpeed;
         }
 
+        public override void OnSpawn(IEntitySource source) {
+            LastHitNpc = 0f;
+        }
+
         public override bool PreAI() {
             List<Vector2> points = Projectile.WhipPointsForCollision;
             points.Clear();
