@@ -7,8 +7,9 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres.Items
 {
     /// <summary>
     /// 鬼火灯笼 — 怨灵可选掉落，魔法武器
+    /// 释放双鬼火灯笼，怨灵锁链在灯笼间灼烧敌人。
     /// </summary>
-    internal class WraithLantern : ModItem
+    public class WraithLantern : ModItem
     {
         public override void SetStaticDefaults() {
             Item.staff[Item.type] = true;
@@ -27,20 +28,48 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres.Items
             Item.rare = ItemRarityID.Yellow;
             Item.UseSound = SoundID.Item20;
             Item.autoReuse = true;
-            Item.shoot = ProjectileID.LostSoulFriendly;
+            Item.shoot = ModContent.ProjectileType<WraithLanternGhost>();
             Item.shootSpeed = 10f;
             Item.mana = 12;
             Item.noMelee = true;
         }
 
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
-            Vector2 toMouse = (Main.MouseWorld - player.Center).SafeNormalize(Vector2.UnitY);
-            for (int i = 0; i < 2; i++) {
-                float spread = (i - 0.5f) * 0.15f;
-                Vector2 dir = toMouse.RotatedBy(spread);
-                Projectile.NewProjectile(source, player.Center + dir * 24f, dir * Item.shootSpeed, type, damage, knockback, player.whoAmI);
-            }
+            ClearOwnedLanternSet(player);
+
+            Vector2 aim = (Main.MouseWorld - player.Center).SafeNormalize(Vector2.UnitY);
+            int ghostType = ModContent.ProjectileType<WraithLanternGhost>();
+            int tetherType = ModContent.ProjectileType<WraithLanternTether>();
+
+            int left = Projectile.NewProjectile(source, player.Center, aim * Item.shootSpeed, ghostType, damage, knockback, player.whoAmI, 0f);
+            int right = Projectile.NewProjectile(source, player.Center, aim * Item.shootSpeed, ghostType, damage, knockback, player.whoAmI, 1f);
+
+            if (left < 0 || right < 0) return false;
+
+            Projectile projLeft = Main.projectile[left];
+            Projectile projRight = Main.projectile[right];
+            projLeft.ai[1] = right;
+            projRight.ai[1] = left;
+            projLeft.originalDamage = Item.damage;
+            projRight.originalDamage = Item.damage;
+
+            int tetherDamage = (int)(damage * 0.42f);
+            Projectile.NewProjectile(source, player.Center, Vector2.Zero, tetherType, tetherDamage, 0f, player.whoAmI, left, right);
+
             return false;
+        }
+
+        private static void ClearOwnedLanternSet(Player player) {
+            int ghostType = ModContent.ProjectileType<WraithLanternGhost>();
+            int tetherType = ModContent.ProjectileType<WraithLanternTether>();
+
+            for (int i = 0; i < Main.maxProjectiles; i++) {
+                Projectile proj = Main.projectile[i];
+                if (!proj.active || proj.owner != player.whoAmI) continue;
+                if (proj.type == ghostType || proj.type == tetherType) {
+                    proj.Kill();
+                }
+            }
         }
     }
 }

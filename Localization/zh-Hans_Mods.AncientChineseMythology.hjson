@@ -437,7 +437,11 @@ Items: {
 
 	AureateVoidrender: {
 		DisplayName: 辉金虚空斩裂刃
-		Tooltip: （占位）机制待实装 · 神威金装虚空刃 · 1120 近战伤害
+		Tooltip:
+			'''
+			神威断罪所铸的高速金装虚空刃
+			每次挥砍释放三道穿透型金紫虚空斩浪，适合高速清图
+			'''
 	}
 
 	CelestialHubAnnihilator: {
@@ -456,17 +460,25 @@ Items: {
 
 	GeoarchonRupturer: {
 		DisplayName: 坤铉破渊权杖
-		Tooltip: （占位）机制待实装 · 玄武地尊裂岩杖 · 1500 魔法伤害
+		Tooltip:
+			'''
+			在光标处刻印地脉裂穴阵
+			预兆后自地面刺出七柱地能岩柱
+			'''
 	}
 
 	AurelianCataclysmSmasher: {
 		DisplayName: 万劫狂金震碎者
-		Tooltip: （占位）机制待实装 · 白虎金纹灾锤 · 1580 近战伤害
+		Tooltip:
+			'''
+			白虎金纹灾锤 · 1580 近战伤害
+			掷出回旋金锤，触地或命中时沿地面裂放五道金纹冲击波
+			'''
 	}
 
 	AzureRuinBlade: {
 		DisplayName: 苍海毁刃
-		Tooltip: （占位）机制待实装 · 敖顺潮汐雷刃 · 420 近战伤害
+		Tooltip: 持握挥砍，斩击中段释放蔚蓝潮汐雷浪 · 雷浪可连锁附近敌人
 	}
 
 	GeocrystalShatterblade: {
@@ -490,12 +502,20 @@ Items: {
 
 	LuminanceStellarCannon: {
 		DisplayName: 光华星炮
-		Tooltip: （占位）机制待实装 · 百目聚星炮 · 1200 远程伤害
+		Tooltip:
+			'''
+			百目天目所铸的聚星重炮
+			蓄聚紫蓝星光射出光华能束，命中后引发恒星爆发
+			'''
 	}
 
 	LuminousIrisAnnihilator: {
 		DisplayName: 虹膜湮灭手铳
-		Tooltip: （占位）机制待实装 · 百目虹膜手铳 · 1180 远程伤害
+		Tooltip:
+			'''
+			百目虹膜手铳，将子弹化为耀金虹膜光弹
+			长按蓄力环聚虹膜，松手释放金色光弹连射爆发
+			'''
 	}
 
 	TwilightGlazeGreatbow: {
@@ -514,12 +534,20 @@ Items: {
 
 	VaultshadeVoidshot: {
 		DisplayName: 库藏虚空狙
-		Tooltip: （占位）机制待实装 · 毗沙门库藏狙 · 1280 远程伤害
+		Tooltip:
+			'''
+			发射随飞行持续生长的虚空弹
+			命中后触发虚空坍缩，将附近敌人拉向中心
+			'''
 	}
 
 	ArgentPulseObliterator: {
 		DisplayName: 银脉湮灭枪
-		Tooltip: （占位）机制待实装 · 白虎银脉冲枪 · 1450 远程伤害
+		Tooltip:
+			'''
+			白虎银脉冲枪 · 1450 远程伤害
+			极快连射银脉冲弹丸；每第八发释放三重脉冲爆发，命中后绽放银纹冲击波
+			'''
 	}
 
 	ArcaneRepulsionArray: {
@@ -538,7 +566,7 @@ Items: {
 
 	DraconicEmber: {
 		DisplayName: 龙魂余烬杖
-		Tooltip: （占位）机制待实装 · 敖钦龙魂召唤杖 · 340 召唤伤害
+		Tooltip: 召唤余烬幼龙助战 · 周期吐出熔岩蛋范围灼烧 · 340 召唤伤害
 	}
 
 	InkscaledFlowFan: {
@@ -1611,17 +1639,17 @@ Items: {
 
 	CrimsonMaelstromBow: {
 		DisplayName: 赤潮旋涡弓
-		Tooltip: （占位）机制待实装 · 敖钦火龙主题弓 · 360 远程伤害
+		Tooltip: 将箭矢化为赤旋风暴箭 · 命中生成小型火龙卷 · 360 远程伤害
 	}
 
 	FlamecoilChakram: {
 		DisplayName: 焰缠双环
-		Tooltip: （占位）机制待实装 · 双环交缠火轮 · 355 近战伤害
+		Tooltip: 双环交缠飞出，回程二次命中 · 点燃敌人 · 355 近战伤害
 	}
 
 	InfernoDragonSpear: {
 		DisplayName: 焚天龙枪
-		Tooltip: （占位）机制待实装 · 焰纹龙枪 · 350 近战伤害
+		Tooltip: 焰纹龙枪突刺，焚风 trail，点燃叠层（最高 8 层）· 350 近战伤害
 	}
 
 	MeteorCallerStaff: {
@@ -1631,12 +1659,12 @@ Items: {
 
 	LightningEdictTome: {
 		DisplayName: 雷敕天书
-		Tooltip: （占位）机制待实装 · 雷霆敕令魔书 · 385 魔法伤害
+		Tooltip: 在光标处展开落雷符箓阵列并射出追踪雷符；阵内周期性霆击，命中引发落雷 · 385 魔法伤害
 	}
 
 	StormchainWhip: {
 		DisplayName: 风暴链鞭
-		Tooltip: （占位）机制待实装 · 闪电链鞭 · 375 鞭伤害
+		Tooltip: 鞭击感电敌人，在命中目标间弹射连锁闪电 · 375 召唤鞭伤害
 	}
 
 	TempestRepeater: {
@@ -1651,27 +1679,31 @@ Items: {
 
 	BlizzardPiercer: {
 		DisplayName: 暴雪穿云弓
-		Tooltip: （占位）机制待实装 · 冰龙穿云弓 · 375 远程伤害
+		Tooltip: 发射穿透敌阵的暴雪穿云箭，累计 6 次 frost 穿透后下一箭释放强化暴雪 surge · 375 远程伤害
 	}
 
 	GlacialDragonblade: {
 		DisplayName: 冰龙镰刃
-		Tooltip: （占位）机制待实装 · 霜纹龙刃 · 355 近战伤害
+		Tooltip: 西海龙王寒鳞所铸的快刃\n挥砍释放冰龙弧斩，每三刀强化龙息弧波\n命中附加霜灼与霜冻减速 · 355 近战伤害
 	}
 
 	PermafrostTrident: {
 		DisplayName: 永冻三叉戟
-		Tooltip: （占位）机制待实装 · 西海永冻戟 · 360 近战伤害
+		Tooltip: 西海永冻之戟，寒潮与冰晶同铸\n戳刺后投出三叉戟并自动回收\n回收路径伤害提升，命中附加霜冻减速 · 360 近战伤害
 	}
 
 	SoulPiercingArc: {
 		DisplayName: 穿魂弧弓
-		Tooltip: （占位）机制待实装 · 百目穿魂弓 · 1150 远程伤害
+		Tooltip:
+			'''
+			百目追魂弧，以瞳纹为弦的穿魂弓
+			将箭矢化为瞳纹追踪箭，命中叠加弱点标记，满层穿魂引爆
+			'''
 	}
 
 	BlackTortoiseShield: {
 		DisplayName: 玄龟盾
-		Tooltip: （占位）机制待实装 · 玄武龟甲盾刃 · 1550 近战伤害
+		Tooltip: 左键盾击冲刺 · 右键举盾减伤25%并反还115%所受伤害
 	}
 
 	FourSymbolsTablet: {
@@ -1686,12 +1718,17 @@ Items: {
 
 	ThunderclapLongbow: {
 		DisplayName: 雷鼓长弓
-		Tooltip: （占位）机制待实装 · 青龙雷鼓弓 · 1550 远程伤害
+		Tooltip: 穿透雷电箭 · 长按雷鼓蓄力释放无限穿透天雷矢 · 1550 远程伤害
 	}
 
 	WhiteTigerClaws: {
 		DisplayName: 白虎爪
-		Tooltip: （占位）机制待实装 · 白虎撕裂爪 · 1500 近战伤害
+		Tooltip:
+			'''
+			白虎撕裂爪 · 1500 近战伤害
+			四段虎爪连击，逐段加深撕裂流血
+			终结爪击释放三道银纹爪波
+			'''
 	}
 
 	WindserpentDao: {
@@ -1701,22 +1738,37 @@ Items: {
 
 	TreasurePagodaCharm: {
 		DisplayName: 宝塔护符
-		Tooltip: （占位）饰品机制待实装 · 毗沙门宝塔护体 · 25% 掉落
+		Tooltip: 减伤15%、+10防御、100%荆棘 · 受击时反震宝塔虚影反击
 	}
 
 	TreasurePagodaStaff: {
 		DisplayName: 宝塔法杖
-		Tooltip: （占位）机制待实装 · 多宝塔杖 · 1320 魔法伤害
+		Tooltip:
+			'''
+			在光标处召唤层叠宝塔
+			拾取钱币为宝塔增伤
+			1320 魔法伤害
+			'''
 	}
 
 	SinSeveringBlade: {
 		DisplayName: 断罪巨剑
-		Tooltip: （占位）机制待实装 · 神威断罪刃 · 1180 近战伤害
+		Tooltip: 挥砍施加罪孽标记；对已标记敌人必定暴击 · 1180 近战伤害
+	}
+
+	SinMarkDebuff: {
+		DisplayName: 罪孽标记
+		Description: 断罪裁决加身，将承受巨剑的必暴击
 	}
 
 	VerdictSealHammer: {
 		DisplayName: 裁决印锤
-		Tooltip: （占位）机制待实装 · 神威裁决锤 · 1250 近战伤害
+		Tooltip: 重击释放全场裁决震波并施加封印缓速 · 1250 近战伤害
+	}
+
+	VerdictSealSlowDebuff: {
+		DisplayName: 裁决封印
+		Description: 符文印锁束缚四肢，移动大幅受限
 	}
 
 	XuanTieBreastplate: {
@@ -1786,12 +1838,14 @@ Items: {
 
 	NetherChainBlade: {
 		DisplayName: 冥链刃
-		Tooltip: （占位）机制待实装 · 牛头马面链刃 · 58 近战伤害
+		Tooltip: 掷出链刃后自动回收
+		Tooltip2: 可勾连两名敌人，链间周期性造成冥火伤害
 	}
 
 	SoulHookWhip: {
 		DisplayName: 勾魂索
-		Tooltip: （部分实装）原版鞭弹幕 · 牛头马面勾魂鞭 · 52 鞭伤害 · 主题机制待重做
+		Tooltip: 冥府勾魂鞭，命中时将敌人拽向自身
+		Tooltip2: 施加灵魂侵蚀：持续冥火伤害，并维持勾魂牵引
 	}
 
 	CupriteDeadwoodMusket: {
@@ -1831,8 +1885,11 @@ Items: {
 
 	WraithLantern: {
 		DisplayName: 鬼火灯笼
-		Tooltip: （部分实装）怨灵掉落 · 118 魔法伤害 · 双鬼火 · 主题机制待实装
+		Tooltip: 怨灵掉落 · 118 魔法伤害 · 双鬼火灯笼环绕锚点 · 怨灵锁链持续灼烧
 	}
+
+	WraithLanternGhost.DisplayName: 鬼火
+	WraithLanternTether.DisplayName: 怨灵锁链
 
 	FengduImperialCrown: {
 		DisplayName: 酆帝冠
@@ -2041,10 +2098,16 @@ Projectiles: {
 	GanJiangSwordProj.DisplayName: 干将剑
 	GanJiangSwordProj_2.DisplayName: 干将莫邪
 	AurelianCataclysmSmasherProj.DisplayName: 万劫狂金锤
+	ArgentPulseBullet.DisplayName: 银脉冲弹
+	WhiteTigerClawsSwing.DisplayName: 白虎爪
+	WhiteTigerClawRip.DisplayName: 银纹爪波
+	ArgentPulseBurstShot.DisplayName: 银脉冲爆发弹
+	ArgentPulseRipple.DisplayName: 银脉冲冲击
 	AurelianShockwave.DisplayName: 金裂冒冲波
 	AzureRuinBladeSwing.DisplayName: 蔚蓝毁刃
 	AzureRuinTidal.DisplayName: 蔚蓝潮汐剑气
 	GeocrystalShatterbladeSwing.DisplayName: 地晶裂碎大剑
+	BlackTortoiseShieldBash.DisplayName: 玄龟盾击
 	GeocrystalBurst.DisplayName: 地晶熔岩爆裂
 	QuadraseaEdgeSwing.DisplayName: 四海灾变锋刃
 	QuadraseaWave.DisplayName: 四海珊瑚剑气
@@ -2193,6 +2256,8 @@ Projectiles: {
 	GoldenPhoenixMinion.DisplayName: 金凤凰随从
 	JadeDragonSlash.DisplayName: 玉龙斩
 	JadeDragonWave.DisplayName: 玉龙波
+	PhoenixFlameRebirth.DisplayName: 涅槃凤凰焰
+	PhoenixFlameRebirthEmber.DisplayName: 涅槃余烬
 	PhoenixFlameWave.DisplayName: 凤凰焰波
 	PhoenixMinionFlame.DisplayName: 凤凰随从火焰
 	PhoenixSpark.DisplayName: 凤凰火花
@@ -2574,6 +2639,11 @@ Buffs: {
 	SoulBannerMinionBuff: {
 		DisplayName: 万魂幡
 		Description: 万魂幡悬浮于头顶，持续吸取周围敌人的灵魂
+	}
+
+	SoulHookWhipDebuff: {
+		DisplayName: 灵魂侵蚀
+		Description: 灵魂被勾魂索锁定，遭受冥火侵蚀并被持续牵引
 	}
 
 	ChengYingBuff: {

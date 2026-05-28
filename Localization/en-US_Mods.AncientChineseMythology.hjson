@@ -392,7 +392,11 @@ Items: {
 
 	AureateVoidrender: {
 		DisplayName: Aureate Voidrender
-		Tooltip: (Placeholder) Full mechanics pending · Vigor golden void blade · 1120 melee damage
+		Tooltip:
+			'''
+			A fast golden void blade forged from Vigor's judgment
+			Each swing launches three piercing void slash waves for rapid crowd clearing
+			'''
 	}
 
 	CelestialHubAnnihilator: {
@@ -406,22 +410,34 @@ Items: {
 
 	CelestialCircletScepter: {
 		DisplayName: Celestial Circlet Scepter
-		Tooltip: (Placeholder) Full mechanics pending · Vaisravana circlet scepter · 1300 magic damage
+		Tooltip:
+			'''
+			A mage scepter forged from Vaisravana's celestial circlet authority
+			Each cast releases five radiant rings that spiral inward, then dash toward foes
+			'''
 	}
 
 	GeoarchonRupturer: {
 		DisplayName: Geoarchon Rupturer
-		Tooltip: (Placeholder) Full mechanics pending · Xuanwu earth rupture staff · 1500 magic damage
+		Tooltip:
+			'''
+			Inscribes a geoarchon rupture sigil at the cursor
+			After a brief warning, seven earth-energy pillars erupt from the ground
+			'''
 	}
 
 	AurelianCataclysmSmasher: {
 		DisplayName: Aurelian Cataclysm Smasher
-		Tooltip: (Placeholder) Full mechanics pending · Baihu golden cataclysm hammer · 1580 melee damage
+		Tooltip:
+			'''
+			Baihu golden cataclysm hammer — 1580 melee damage
+			Throws a returning hammer that splits the earth with golden shockwaves on impact
+			'''
 	}
 
 	AzureRuinBlade: {
 		DisplayName: Azure Ruin Blade
-		Tooltip: (Placeholder) Full mechanics pending · Aoshun tidal thunder blade · 420 melee damage
+		Tooltip: Held swing releases a tidal lightning wave mid-slash · Chains arcs to nearby foes
 	}
 
 	GeocrystalShatterblade: {
@@ -445,12 +461,20 @@ Items: {
 
 	LuminanceStellarCannon: {
 		DisplayName: Luminance Stellar Cannon
-		Tooltip: (Placeholder) Full mechanics pending · Argus stellar cannon · 1200 ranged damage
+		Tooltip:
+			'''
+			Argus's hundred-eyed stellar cannon
+			Gathers violet starlight into a single luminance shell; impact triggers a stellar burst
+			'''
 	}
 
 	LuminousIrisAnnihilator: {
 		DisplayName: Luminous Iris Annihilator
-		Tooltip: (Placeholder) Full mechanics pending · Argus iris annihilator · 1180 ranged damage
+		Tooltip:
+			'''
+			Argus iris handgun that converts bullets into luminous golden shells
+			Hold to charge an iris ring, then release a golden shell burst on full charge
+			'''
 	}
 
 	TwilightGlazeGreatbow: {
@@ -469,12 +493,20 @@ Items: {
 
 	VaultshadeVoidshot: {
 		DisplayName: Vaultshade Voidshot
-		Tooltip: (Placeholder) Full mechanics pending · Vaisravana void sniper · 1280 ranged damage
+		Tooltip:
+			'''
+			Fires a growing void bolt that swells in flight
+			Impact triggers a void collapse that pulls nearby enemies inward
+			'''
 	}
 
 	ArgentPulseObliterator: {
 		DisplayName: Argent Pulse Obliterator
-		Tooltip: (Placeholder) Full mechanics pending · Baihu argent pulse gun · 1450 ranged damage
+		Tooltip:
+			'''
+			Baihu argent pulse gun — 1450 ranged damage
+			Rapid silver pulse rounds; every eighth shot unleashes a triple pulse burst that blooms into silver shockwaves on impact
+			'''
 	}
 
 	ArcaneRepulsionArray: {
@@ -493,7 +525,7 @@ Items: {
 
 	DraconicEmber: {
 		DisplayName: Draconic Ember
-		Tooltip: (Placeholder) Full mechanics pending · Aokin ember summon staff · 340 summon damage
+		Tooltip: Summons an ember wyrmling · periodically spits lava eggs for AoE burn · 340 summon damage
 	}
 
 	InkscaledFlowFan: {
@@ -1489,17 +1521,17 @@ Items: {
 
 	CrimsonMaelstromBow: {
 		DisplayName: Crimson Maelstrom Bow
-		Tooltip: (Placeholder) Full mechanics pending · Ao Guang fire bow · 360 ranged damage
+		Tooltip: Converts arrows into crimson storm bolts · Spawns a small fire tornado on hit · 360 ranged damage
 	}
 
 	FlamecoilChakram: {
 		DisplayName: Flamecoil Chakram
-		Tooltip: (Placeholder) Full mechanics pending · Twin fire chakram · 355 melee damage
+		Tooltip: Twin flame chakrams weave outward and return for a second hit · Ignites foes · 355 melee damage
 	}
 
 	InfernoDragonSpear: {
 		DisplayName: Inferno Dragon Spear
-		Tooltip: (Placeholder) Full mechanics pending · Flame dragon spear · 350 melee damage
+		Tooltip: Flame-pattern thrust, scorch-wind trail, ignited stacks (up to 8) · 350 melee damage
 	}
 
 	MeteorCallerStaff: {
@@ -1509,12 +1541,12 @@ Items: {
 
 	LightningEdictTome: {
 		DisplayName: Lightning Edict Tome
-		Tooltip: (Placeholder) Full mechanics pending · Thunder edict tome · 385 magic damage
+		Tooltip: Deploys a talisman lightning array at the cursor and fires tracking thunder seals; the array strikes periodically and hits call down bolts · 385 magic damage
 	}
 
 	StormchainWhip: {
 		DisplayName: Stormchain Whip
-		Tooltip: (Placeholder) Full mechanics pending · Lightning chain whip · 375 whip damage
+		Tooltip: Electrifies struck foes and chains lightning between hit targets · 375 summon whip damage
 	}
 
 	TempestRepeater: {
@@ -1524,32 +1556,36 @@ Items: {
 
 	ThunderlordHalberd: {
 		DisplayName: Thunderlord Halberd
-		Tooltip: (Placeholder) Full mechanics pending · Thunder halberd · 370 melee damage
+		Tooltip: Thunder halberd thrust with chain lightning arcs · 370 melee damage
 	}
 
 	BlizzardPiercer: {
 		DisplayName: Blizzard Piercer
-		Tooltip: (Placeholder) Full mechanics pending · Blizzard piercing bow · 375 ranged damage
+		Tooltip: Blizzard cloud-piercing arrows stack frost pierces; every 6 pierces, the next shot unleashes an empowered blizzard surge · 375 ranged damage
 	}
 
 	GlacialDragonblade: {
 		DisplayName: Glacial Dragonblade
-		Tooltip: (Placeholder) Full mechanics pending · Glacial dragon blade · 355 melee damage
+		Tooltip: A swift blade forged from the West Sea Dragon King's frost scales\nSwing to release glacial dragon arc slashes; every third strike unleashes an empowered wave\nHits inflict Frostburn and frost slow · 355 melee damage
 	}
 
 	PermafrostTrident: {
 		DisplayName: Permafrost Trident
-		Tooltip: (Placeholder) Full mechanics pending · Permafrost trident · 360 melee damage
+		Tooltip: A West Sea trident forged from permafrost tide and ice crystal\nThrust, then throw; the trident returns automatically\nReturn path deals bonus damage and inflicts frost slow · 360 melee damage
 	}
 
 	SoulPiercingArc: {
 		DisplayName: Soul Piercing Arc
-		Tooltip: (Placeholder) Full mechanics pending · Argus soul-piercing bow · 1150 ranged damage
+		Tooltip:
+			'''
+			Argus soul-piercing bow strung with iris pupil threads
+			Converts arrows into homing iris arrows that stack Weakness Marks; full stacks detonate for a soul pierce burst
+			'''
 	}
 
 	BlackTortoiseShield: {
 		DisplayName: Black Tortoise Shield
-		Tooltip: (Placeholder) Full mechanics pending · Black Tortoise shield-blade · 1550 melee damage
+		Tooltip: Left-click shield bash · Right-click block reduces damage 25% and reflects 115% of incoming damage
 	}
 
 	FourSymbolsTablet: {
@@ -1564,12 +1600,17 @@ Items: {
 
 	ThunderclapLongbow: {
 		DisplayName: Thunderclap Longbow
-		Tooltip: (Placeholder) Full mechanics pending · Qinglong thunder longbow · 1550 ranged damage
+		Tooltip: Piercing thunder arrows · Hold to drum-charge and release an infinite-pierce sky-bolt · 1550 ranged damage
 	}
 
 	WhiteTigerClaws: {
 		DisplayName: White Tiger Claws
-		Tooltip: (Placeholder) Full mechanics pending · Baihu tiger claws · 1500 melee damage
+		Tooltip:
+			'''
+			Baihu tiger claws · 1500 melee damage
+			Four-hit claw combo with escalating bleed
+			Finisher releases three silver claw rip waves
+			'''
 	}
 
 	WindserpentDao: {
@@ -1579,22 +1620,37 @@ Items: {
 
 	TreasurePagodaCharm: {
 		DisplayName: Treasure Pagoda Charm
-		Tooltip: (Placeholder) Accessory mechanics pending · Vaisravana pagoda ward · 25% drop
+		Tooltip: 15% damage reduction, +10 defense, 100% thorns · On hit, summons a treasure pagoda phantom that retaliates
 	}
 
 	TreasurePagodaStaff: {
 		DisplayName: Treasure Pagoda Staff
-		Tooltip: (Placeholder) Full mechanics pending · Treasure pagoda staff · 1320 magic damage
+		Tooltip:
+			'''
+			Summons stacking treasure pagodas at the cursor
+			Pick up coins to empower pagoda damage
+			1320 magic damage
+			'''
 	}
 
 	SinSeveringBlade: {
 		DisplayName: Sin Severing Blade
-		Tooltip: (Placeholder) Full mechanics pending · Vigor sin-severing greatsword · 1180 melee damage
+		Tooltip: Swings apply Sin Mark; marked foes always take crits · 1180 melee damage
+	}
+
+	SinMarkDebuff: {
+		DisplayName: Sin Mark
+		Description: Condemned by the severing blade; your sins invite a critical verdict
 	}
 
 	VerdictSealHammer: {
 		DisplayName: Verdict Seal Hammer
-		Tooltip: (Placeholder) Full mechanics pending · Vigor verdict seal hammer · 1250 melee damage
+		Tooltip: Slams release a field-wide verdict shockwave and apply seal slow · 1250 melee damage
+	}
+
+	VerdictSealSlowDebuff: {
+		DisplayName: Verdict Seal
+		Description: Runic seals bind your limbs; movement is heavily slowed
 	}
 
 	XuanTieBreastplate: {
@@ -1664,12 +1720,14 @@ Items: {
 
 	NetherChainBlade: {
 		DisplayName: Nether Chain Blade
-		Tooltip: (Placeholder) Full mechanics pending · Niu-Ma chain blade · 58 melee damage
+		Tooltip: Throws a chained blade that returns to you
+		Tooltip2: Hooks up to two enemies; the nether chain between them pulses with shadowflame damage
 	}
 
 	SoulHookWhip: {
 		DisplayName: Soul Hook Whip
-		Tooltip: (Partial) Vanilla whip projectile · Niu-Ma soul hook · 52 whip damage · Theme rework pending
+		Tooltip: A nether soul-hook whip that yanks struck foes toward you
+		Tooltip2: Inflicts soul erosion — ongoing shadowflame damage and a lingering soul pull
 	}
 
 	CupriteDeadwoodMusket: {
@@ -1709,8 +1767,11 @@ Items: {
 
 	WraithLantern: {
 		DisplayName: Wraith Lantern
-		Tooltip: (Partial) Spectre drop · 118 magic damage · Wraith-fire lantern · Custom mechanics pending
+		Tooltip: Spectre drop · 118 magic damage · Twin wraith-fire lanterns orbit an anchor · Grudge tether burns along the chain
 	}
+
+	WraithLanternGhost.DisplayName: Wraith Fire
+	WraithLanternTether.DisplayName: Grudge Tether
 
 	FengduImperialCrown: {
 		DisplayName: Fengdu Imperial Crown
@@ -1919,10 +1980,16 @@ Projectiles: {
 	GanJiangSwordProj.DisplayName: Gan Jiang Sword Proj
 	GanJiangSwordProj_2.DisplayName: Gan Jiang Sword Proj_2
 	AurelianCataclysmSmasherProj.DisplayName: Aurelian Cataclysm Smasher
+	ArgentPulseBullet.DisplayName: Argent Pulse
+	WhiteTigerClawsSwing.DisplayName: White Tiger Claws
+	WhiteTigerClawRip.DisplayName: Silver Claw Rip
+	ArgentPulseBurstShot.DisplayName: Argent Pulse Burst
+	ArgentPulseRipple.DisplayName: Argent Pulse Ripple
 	AurelianShockwave.DisplayName: Aurelian Shockwave
 	AzureRuinBladeSwing.DisplayName: Azure Ruin Blade
 	AzureRuinTidal.DisplayName: Azure Ruin Tidal Wave
 	GeocrystalShatterbladeSwing.DisplayName: Geocrystal Shatterblade
+	BlackTortoiseShieldBash.DisplayName: Black Tortoise Shield Bash
 	GeocrystalBurst.DisplayName: Geocrystal Lava Burst
 	QuadraseaEdgeSwing.DisplayName: Quadrasea Cataclysmic Edge
 	QuadraseaWave.DisplayName: Quadrasea Coral Wave
@@ -2452,6 +2519,11 @@ Buffs: {
 	SoulBannerMinionBuff: {
 		DisplayName: Soul Banner
 		Description: The Soul Banner floats above, continuously absorbing enemy souls
+	}
+
+	SoulHookWhipDebuff: {
+		DisplayName: Soul Erosion
+		Description: Your soul is hooked and eroded by nether flames
 	}
 
 	ChengYingBuff: {

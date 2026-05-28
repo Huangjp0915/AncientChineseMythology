@@ -15,13 +15,12 @@
 | **天将武器/饰品** | 9 | 0 | 0 | 9 |
 | **四圣兽武器** | 12 | 0 | 0 | 12 |
 | **观察者** | 0 | 0 | 0* | 0* |
-| **地府 Phase 2** | 8 材料 + 0 武器† | 1† | — | 9 |
+| **地府 Phase 2** | 8 材料 + 0 武器 | 0 | 1 | 9 |
 | **前期占位** | 2 | 8 | 1‡ | 11 |
 | **材料/召唤物** | 10 | 3 | 1 | 14 |
 | **合计（本表登记）** | **56** | **12** | **2** | **70** |
 
 \* 观察者 **8 件现有武器**（天眼杖等）已实装，不在本占位表；仅 `OverseersEye` 材料登记。  
-† `WraithLantern` 为 PARTIAL（原版 `LostSoul` 弹幕，无主题机制）。  
 ‡ `XuanTie` 三件套套装奖励已实装（`XuanTieSetBonusPlayer`）。
 
 ### 按 SB Tier 的 STUB 武器分布
@@ -52,7 +51,7 @@
 | 类名 | 伤害 | 定位 | 作用 | 理想效果 | 状态 | 优先级 |
 |------|------|------|------|----------|------|--------|
 | `InfernoDragonSpear` | 350 近战 | Boss 掉落 | 火系近战主力 | 焰纹龙枪突刺 + 焚风 trail + 点燃叠层 | STUB | P1 |
-| `FlamecoilChakram` | 355 近战 | Boss 掉落 | 中距回旋输出 | 双环交缠飞出、回程二次命中、火 coil 残焰 | STUB | P1 |
+| `FlamecoilChakram` | 355 近战 | Boss 掉落 | 中距回旋输出 | 双环交缠飞出、回程二次命中、火 coil 残焰 | COMPLETE | — |
 | `CrimsonMaelstromBow` | 360 远程 | Boss 掉落 | 风暴弓物理 | 赤旋箭袋、命中生成小型火龙卷 | STUB | P1 |
 | `DraconicEmber` | 340 召唤 | Boss 掉落 | 火系召唤入门 | 余烬幼龙跟随、周期吐熔岩蛋 AoE | STUB | P1 |
 | `MeteorCallerStaff` | 365 魔法 | Boss 掉落 | 火系法师 | 唤流星雨（非单次 Meteor1），龙纹法阵前摇 | STUB | P1 |
@@ -63,7 +62,7 @@
 
 | 类名 | 伤害 | 定位 | 作用 | 理想效果 | 状态 | 优先级 |
 |------|------|------|------|----------|------|--------|
-| `GlacialDragonblade` | 355 近战 | Boss 掉落 | 冰系快刀 | 冰龙镰刃弧斩 + 霜冻减速 | STUB | P1 |
+| `GlacialDragonblade` | 355 近战 | Boss 掉落 | 冰系快刀 | 冰龙镰刃弧斩 + 霜冻减速 | COMPLETE | — |
 | `PermafrostTrident` | 360 近战 | Boss 掉落 | 矛系控场 | 三叉戟投掷回收、永冻戳刺、水冰双属性 | STUB | P1 |
 | `VortexPrimordialStain` | 365 魔法 | Boss 掉落 | 水系法师 | 三枚水墨漩涡 orb 蛇形追踪 | STUB | P1 |
 | `InkscaledFlowFan` | 370 魔法 | Boss 掉落 | 扇形召唤/魔 | 墨鳞游鱼扇形涌出、潮涌 DoT | STUB | P1 |
@@ -78,7 +77,7 @@
 | `ThunderlordHalberd` | 370 近战 | Boss 掉落 | 雷系重戳 | 方天戟雷击戳刺、链式 arc 弹跳 | STUB | P1 |
 | `StormchainWhip` | 375 鞭/召近 | Boss 掉落 | 雷链控场 | 闪电链鞭、链接多目标感电 | STUB | P1 |
 | `TempestRepeater` | 380 远程 | Boss 掉落 | 风暴连弩 | 三连弩箭 + 雷暴标记引爆 | STUB | P1 |
-| `LightningEdictTome` | 385 魔法 | Boss 掉落 | 雷系法师 | 雷敕天书、落雷符箓阵列 | STUB | P1 |
+| `LightningEdictTome` | 385 魔法 | Boss 掉落 | 雷系法师 | 雷敕天书、落雷符箓阵列 | BUILD | P1 |
 | `AzureRuinBlade` | 420 近战 | Boss 掉落 | 雷水终局刀 | 苍海毁刃、挥砍释放潮汐雷浪（§5.2 表） | STUB | P1 |
 
 **文件：** `Celestias/Boss/Aoshuns/Items/AoshunWeapons.cs`  
@@ -135,7 +134,7 @@
 | 青龙 | `AzureTorrentBlades` | 1480 | 双刀速攻 | 青水流光双短刃、鞘中飞出旋转 | STUB | P1 |
 | 青龙 | `WindserpentDao` | 1520 | 长刀 | 风蛇刀气、横扫龙卷 | STUB | P1 |
 | 青龙 | `ThunderclapLongbow` | 1550 | 雷弓 | 雷鼓蓄力、穿透 thunder 箭 | STUB | P1 |
-| 白虎 | `AurelianCataclysmSmasher` | 1580 | 重锤 | 金纹灾 hammer、裂地冲击波 | STUB | P1 |
+| 白虎 | `AurelianCataclysmSmasher` | 1580 | 重锤 | 金纹灾 hammer、裂地冲击波 | COMPLETE | P1 |
 | 白虎 | `ArgentPulseObliterator` | 1450 | 速射枪 | 银脉冲、每 8 发三重 burst | STUB | P1 |
 | 白虎 | `WhiteTigerClaws` | 1500 | 拳套 | 虎爪连击、撕裂流血 | STUB | P1 |
 | 朱雀 | `StarfireAnnihilator` | 1520 | 星火枪 | 珊瑚星火弹、穿透爆炸 | STUB | P1 |
@@ -164,7 +163,7 @@
 | 类名 | 来源 | 定位 | 作用 | 理想效果 | 状态 | P |
 |------|------|------|------|----------|------|---|
 | `SpectreGrudgeCore` | Spectre 100% · 4–7 | 合成材料 | 妲己/枉骸链 | 怨灵核 → EX 武器升阶 | STUB | P2 |
-| `WraithLantern` | Spectre ~14% | Boss 掉落武器 | 早期地府魔武 | 双鬼火灯笼、怨灵 tether DoT | PARTIAL | P2 |
+| `WraithLantern` | Spectre ~14% | Boss 掉落武器 | 早期地府魔武 | 双鬼火灯笼、怨灵 tether DoT | COMPLETE | P2 |
 | `ImpermanenceSoul` | 黑白无常各 100% · 2–4 | 合成材料 | EX 升级 | 无常之魂 → 冥府链刃 720 等 | STUB | P2 |
 | `NetherDragonScale` | 幽冥龙 100% · 8–12 | 合成材料 | 幽冥矿链 | 同龙王鳞地位 | STUB | P2 |
 | `AwakenedNetherCore` | 觉醒冥龙 100% | 召唤材料 | 阴天子门控 | 酆帝诏书主材 | STUB | P2 |
