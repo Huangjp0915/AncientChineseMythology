@@ -14,6 +14,7 @@ float  uAspect;         // 屏幕宽高比 width/height
 float2 uResolution;     // 屏幕分辨率(像素)
 float2 uBossUV;         // Boss中心屏幕归一化坐标 0~1
 float  uPulse;          // Boss心跳脉冲相位(外部递增)
+float  uFlash;          // 分裂/双魂回拢/解锁的一次性亮拍 0~1.5 (以Boss为中心的太初辉爆)
 
 // 阶段色板
 static const float3 SkyTop_A   = float3(0.04, 0.06, 0.14); // 一阶段顶端: 深玄青
@@ -245,6 +246,17 @@ float4 SkyPS(float4 color : COLOR0, float2 uv : TEXCOORD0) : COLOR0
     float gate = smoothstep(0.35, 0.0, uv.y);
     gate *= 0.5 + 0.5 * sin(t * 0.5);
     col += SampleAccent(phase) * gate * 0.15 * uIntensity;
+
+    // ==========================================
+    //  大节拍亮拍 — 以Boss为中心的太初辉爆 (分裂/回拢/解锁)
+    // ==========================================
+    if (uFlash > 0.001)
+    {
+        float fburst = exp(-dist * 2.2) * uFlash;
+        float fring  = pow(0.5 + 0.5 * sin(dist * 22.0 - uTime * 6.0), 8.0) * exp(-dist * 2.8) * uFlash;
+        float3 flashCol = lerp(CloudLight, SampleAccent(phase), 0.4);
+        col += flashCol * (fburst * 1.2 + fring * 0.8);
+    }
 
     // ==========================================
     //  整体暗角 — 聚焦视线

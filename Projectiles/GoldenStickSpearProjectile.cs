@@ -8,6 +8,7 @@ using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
+using AncientChineseMythology.Helpers;
 
 namespace AncientChineseMythology.Projectiles
 {
@@ -177,6 +178,9 @@ namespace AncientChineseMythology.Projectiles
             //重置投射物的碰撞检测，以便可以多次击中敌人
             Projectile.localNPCImmunity[target.whoAmI] = 10; //设置局部NPC命中冷却时间
             target.immune[Projectile.owner] = 0; //确保敌人不会对投射物的拥有者免疫
+            //金辉命中演出
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Gold, scale: 1f, owner: Projectile.owner);
         }
         public struct CustomVertex : IVertexType
         {
@@ -196,6 +200,11 @@ namespace AncientChineseMythology.Projectiles
             }
         }
         public override bool PreDraw(ref Microsoft.Xna.Framework.Color lightColor) {
+            //长矛线统一拖尾 (§3.2): 金棍 = 金辉
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 9f,
+                outerColor: new Color(160, 110, 30, 150), innerColor: new Color(255, 230, 150, 205),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.5f);
+
             Microsoft.Xna.Framework.Vector2 origin;
             float rotationOffset;
             SpriteEffects effects; //贴图效果

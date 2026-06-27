@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using Terraria;
@@ -67,6 +68,12 @@ namespace AncientChineseMythology.Items.Weapons.Bosses
             return VaultUtils.CircleIntersectsRectangle(Projectile.Center, Projectile.ai[0] * 16, targetHitbox);
         }
 
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            // 旱魃焦土命中演出 (径向辉光 + 冲击环, 更新阶段安全)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Scorch, scale: 1f, owner: Projectile.owner);
+        }
+
         public override bool PreDraw(ref Color lightColor) {
             Texture2D value = TextureAssets.Projectile[Type].Value;
 
@@ -105,6 +112,9 @@ namespace AncientChineseMythology.Items.Weapons.Bosses
                 0
             );
 
+            // 焦土橙焰脉动 (廉价柔光, 不占全屏名额; 代偿 GenericWarp 热浪)
+            float warm = 0.4f + Projectile.ai[0] / 30f * 1.4f;
+            WeaponVFX.DrawGlowBurst(Projectile.Center, warm, new Color(255, 140, 45) * (0.7f * (1f - progress)));
             return false;
         }
     }

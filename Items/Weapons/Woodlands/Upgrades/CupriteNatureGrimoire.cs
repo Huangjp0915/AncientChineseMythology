@@ -1,5 +1,6 @@
+using AncientChineseMythology.Helpers;
 using AncientChineseMythology.Items.Materials;
-using System;
+using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
@@ -7,6 +8,10 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Items.Weapons.Woodlands.Upgrades;
 
+/// <summary>
+/// 赤铜自然秘典 — 扇形发射"燃叶" <see cref="CupriteNatureLeaf"/>。
+/// 可见质变: 飘叶燃烧 (橙焰拖尾 + 余烬), 命中"毒+灼"双 DoT + 赤铜灼烧演出。
+/// </summary>
 public class CupriteNatureGrimoire : ModItem
 {
     public override void SetDefaults() {
@@ -24,7 +29,7 @@ public class CupriteNatureGrimoire : ModItem
         Item.UseSound = SoundID.Item8;
         Item.autoReuse = true;
         Item.noMelee = true;
-        Item.shoot = ModContent.ProjectileType<NatureGrimoireLeaf>();
+        Item.shoot = ModContent.ProjectileType<CupriteNatureLeaf>();
         Item.shootSpeed = 9f;
         Item.mana = 9;
     }
@@ -46,5 +51,36 @@ public class CupriteNatureGrimoire : ModItem
             .AddIngredient<YaoQiFragment>(4)
             .AddTile(TileID.Anvils)
             .Register();
+    }
+}
+
+/// <summary>
+/// 燃叶 — 继承 <see cref="NatureGrimoireLeaf"/> 飘动/动画机制, 增强为赤铜灼烧表现。
+/// </summary>
+public class CupriteNatureLeaf : NatureGrimoireLeaf
+{
+    public override void AI() {
+        base.AI();
+        if (Main.rand.NextBool(3)) {
+            Dust d = Dust.NewDustPerfect(Projectile.Center, DustID.Torch,
+                Main.rand.NextVector2Circular(0.6f, 0.6f), 80, default, 0.8f);
+            d.noGravity = true;
+        }
+        Lighting.AddLight(Projectile.Center, 0.3f, 0.18f, 0.05f);
+    }
+
+    public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+        base.OnHitNPC(target, hit, damageDone); // 原版毒
+        target.AddBuff(BuffID.OnFire, 120);
+        ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+            ACMWeaponBurst.CupriteBurn, scale: 0.75f, owner: Projectile.owner);
+    }
+
+    public override bool PreDraw(ref Color lightColor) {
+        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 7f,
+            outerColor: new Color(180, 60, 20, 130), innerColor: new Color(255, 180, 80, 180),
+            uvScroll: -Main.GlobalTimeWrappedHourly * 1.5f);
+        WeaponVFX.DrawGlowBurst(Projectile.Center, 0.35f, new Color(255, 150, 60));
+        return true; // 保留原版动画叶片本体
     }
 }

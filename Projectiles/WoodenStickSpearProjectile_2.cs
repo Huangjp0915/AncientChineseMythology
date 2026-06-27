@@ -5,6 +5,7 @@ using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
+using AncientChineseMythology.Helpers;
 
 namespace AncientChineseMythology.Projectiles
 {
@@ -72,6 +73,9 @@ namespace AncientChineseMythology.Projectiles
             player.velocity *= 0.1f;
         }
         public override bool PreDraw(ref Microsoft.Xna.Framework.Color lightColor) {
+            //冲刺核心木褐辉光 (统一长矛线主题色)
+            WeaponVFX.DrawGlowBurst(Projectile.Center, 0.5f, new Color(150, 120, 70));
+
             Texture2D texture = TextureAssets.Projectile[Type].Value;
 
             ProjectileID.Sets.TrailingMode[Type] = 2; //设置尾迹模式为2，即尾迹为圆形

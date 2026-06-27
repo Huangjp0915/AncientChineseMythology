@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -381,10 +382,25 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
                 Dust d = Dust.NewDustPerfect(target.Center, DustID.GoldFlame, vel, 100, default, 2f);
                 d.noGravity = true;
             }
+
+            // 仅刺出阶段命中 (CanDamage 限定) → 九尾金橙狐火演出
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Fox, scale: 0.8f, owner: Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
             if (joints == null) return false;
+
+            // 狐火金橙双层 ribbon 覆盖在尾骨体上 (外暗内亮) + 尾尖柔光
+            if (glowIntensity > 0.05f) {
+                Color outer = new Color(200, 70, 25, (int)(160 * glowIntensity));
+                Color inner = new Color(255, 215, 120, (int)(200 * glowIntensity));
+                WeaponVFX.DrawRibbonTrail(joints, baseWidth: 18f,
+                    outerColor: outer, innerColor: inner,
+                    uvScroll: -Main.GlobalTimeWrappedHourly * 2f);
+                WeaponVFX.DrawGlowBurst(joints[JointCount - 1], 0.5f + glowIntensity * 0.8f,
+                    new Color(255, 200, 90) * glowIntensity);
+            }
 
             Texture2D bodyTex = KyuubiKitsune.MissesBody;
             Texture2D tipTex = KyuubiKitsune.MissesTop;

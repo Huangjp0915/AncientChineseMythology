@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -7,6 +8,7 @@ using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 using AncientChineseMythology.Celestias.Boss.Dryades.Items;
+using AncientChineseMythology.Helpers;
 
 namespace AncientChineseMythology.Items.Weapons.DivineWoods;
 
@@ -138,6 +140,9 @@ public class DivineWoodVineWhipHead : ModProjectile
             }
         }
 
+        ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+            ACMWeaponBurst.DivineWood, scale: 0.9f, owner: Projectile.owner);
+
         SoundEngine.PlaySound(SoundID.Grass with { Volume = 0.5f, Pitch = 0.5f }, target.Center);
     }
 
@@ -150,33 +155,29 @@ public class DivineWoodVineWhipHead : ModProjectile
     }
 
     public override bool PreDraw(ref Color lightColor) {
-        SpriteBatch sb = Main.spriteBatch;
         Player owner = Main.player[Projectile.owner];
 
-        // === 链式藤蔓绘制：玩家中心到弹幕中心 ===
-        Texture2D vineTex = TextureAssets.Chains[13].Value; // Jungle/vine chain texture
+        // === 连续藤蔓带：玩家中心 → 弹幕头部 (双层 ribbon 取代逐节链贴图) ===
         Vector2 start = owner.MountedCenter;
         Vector2 end = Projectile.Center;
         Vector2 diff = end - start;
         float totalDist = diff.Length();
         Vector2 direction = diff.SafeNormalize(Vector2.Zero);
-        float segmentLen = vineTex.Height / 2;
-        int segmentCount = (int)(totalDist / segmentLen);
-        float chainRot = direction.ToRotation() + MathHelper.PiOver2;
+        Vector2 perp = new(-direction.Y, direction.X);
+        int segmentCount = Math.Max(2, (int)(totalDist / 16f));
 
-        for (int i = 0; i < segmentCount; i++) {
+        var vine = new Vector2[segmentCount + 1];
+        for (int i = 0; i <= segmentCount; i++) {
             float progress = (float)i / segmentCount;
-            Vector2 segPos = start + direction * (i * segmentLen);
-            // 正弦偏移让藤蔓弯曲
             float wave = MathF.Sin(progress * MathF.PI * 2f + Timer * 0.15f) * 12f * (1f - progress);
-            Vector2 perp = new(-direction.Y, direction.X);
-            Vector2 drawPos = segPos + perp * wave - Main.screenPosition;
-            Color segColor = Color.Lerp(new Color(60, 180, 60), new Color(30, 120, 30), progress);
-            sb.Draw(vineTex, drawPos, null, segColor * 0.9f, chainRot, vineTex.Size() * 0.5f,
-                1f, SpriteEffects.None, 0);
+            vine[i] = start + direction * (totalDist * progress) + perp * wave;
         }
+        WeaponVFX.DrawRibbonTrail(vine, baseWidth: 16f,
+            outerColor: new Color(20, 110, 55, 170), innerColor: new Color(170, 255, 150, 210),
+            tex: ACMAsset.GlaciateWave, uvScroll: -Main.GlobalTimeWrappedHourly * 1.4f);
 
         // === 头部特效绘制 ===
+        SpriteBatch sb = Main.spriteBatch;
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
             DepthStencilState.None, RasterizerState.CullNone, null,
@@ -184,6 +185,7 @@ public class DivineWoodVineWhipHead : ModProjectile
 
         Texture2D sg = ACMAsset.SoftGlow;
         Texture2D sparkle = ACMAsset.Sparkle;
+        Texture2D slash = ACMAsset.SlashBurst;
 
         float pulse = 0.6f + 0.2f * MathF.Sin(Timer * 0.25f);
 
@@ -197,20 +199,25 @@ public class DivineWoodVineWhipHead : ModProjectile
             sg.Size() * 0.5f,
             0.30f, SpriteEffects.None, 0);
 
-        // 头部尖端Sparkle
+        // 头部尖端叶爆 (SlashBurst 放射) + Sparkle
+        for (int k = 0; k < 4; k++) {
+            float bAngle = Projectile.rotation + k * MathHelper.PiOver2 + Timer * 0.04f;
+            sb.Draw(slash, Projectile.Center - Main.screenPosition, null,
+                new Color(120, 255, 150) * (0.40f * pulse), bAngle,
+                new Vector2(slash.Width * 0.5f, slash.Height),
+                new Vector2(0.10f, 0.32f), SpriteEffects.None, 0);
+        }
         sb.Draw(sparkle, Projectile.Center - Main.screenPosition, null,
             new Color(100, 255, 120) * (0.45f * pulse),
             Timer * 0.08f,
             sparkle.Size() * 0.5f,
             0.25f, SpriteEffects.None, 0);
 
-        // 沿链身发光节点
-        for (int i = 0; i < segmentCount; i += 3) {
+        // 沿藤身发光节点
+        for (int i = 0; i <= segmentCount; i += 3) {
             float progress = (float)i / segmentCount;
-            Vector2 segPos = start + direction * (i * segmentLen);
             float wave = MathF.Sin(progress * MathF.PI * 2f + Timer * 0.15f) * 12f * (1f - progress);
-            Vector2 perp = new(-direction.Y, direction.X);
-            Vector2 glowPos = segPos + perp * wave - Main.screenPosition;
+            Vector2 glowPos = start + direction * (totalDist * progress) + perp * wave - Main.screenPosition;
             sb.Draw(sg, glowPos, null,
                 new Color(60, 200, 70) * (0.20f * pulse), 0f,
                 sg.Size() * 0.5f,

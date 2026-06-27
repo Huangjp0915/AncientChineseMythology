@@ -1,4 +1,7 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Boss.Spectres;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -110,14 +113,9 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences.Items
                 }
             }
 
-            // 幽魂粒子
-            if (Main.rand.NextBool(2)) {
-                var d = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(6, 6), DustID.SpectreStaff);
-                d.noGravity = true;
-                d.scale = 0.7f * ghostAlpha;
-                d.velocity = -Projectile.velocity * 0.1f;
-                d.alpha = 100;
-            }
+            // 幽魂粒子 (SpectreHelper 青黄魂火拖尾)
+            if (Main.rand.NextBool(2))
+                SpectreHelper.CreateSpectreTrail(Projectile.Center, Projectile.velocity, isGhostArrow ? 0.9f : 0.7f);
 
             Lighting.AddLight(Projectile.Center, new Color(180, 200, 255).ToVector3() * 0.3f * ghostAlpha);
         }
@@ -138,44 +136,24 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences.Items
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            SpriteBatch sb = Main.spriteBatch;
-            var tex = BAWHelper.DustTexture;
-            if (tex == null) return false;
+            if (Main.dedServ) return false;
 
-            Vector2 origin = tex.Size() / 2f;
+            Color core = isGhostArrow ? new Color(160, 225, 255) : new Color(205, 235, 255);
+            Color edge = isGhostArrow ? SpectreHelper.SpectreCyan : new Color(120, 180, 255);
 
-            // 绘制幽灵拖尾
-            for (int i = Projectile.oldPos.Length - 1; i >= 0; i--) {
-                if (Projectile.oldPos[i] == Vector2.Zero) continue;
+            // 双层幽魂箭迹
+            Color outer = edge; outer.A = (byte)(150 * ghostAlpha);
+            Color inner = Color.Lerp(core, Color.White, 0.3f); inner.A = (byte)(210 * ghostAlpha);
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: isGhostArrow ? 9f : 7f,
+                outerColor: outer, innerColor: inner, tex: ACMAsset.SoftGlow,
+                uvScroll: -Main.GlobalTimeWrappedHourly * 2f);
 
-                float progress = 1f - (float)i / Projectile.oldPos.Length;
-                float trailAlpha = progress * 0.5f * ghostAlpha;
-                float trailScale = (0.4f + progress * 0.6f) * (isGhostArrow ? 1.2f : 1f);
+            // 箭身 BeamGrad 魂矢
+            Vector2 dir = Projectile.velocity.SafeNormalize(Vector2.UnitX);
+            ACMShaders.DrawBeam(Projectile.Center - dir * 22f, Projectile.Center + dir * 10f,
+                isGhostArrow ? 7f : 5f, Color.Lerp(core, Color.White, 0.4f), edge, ghostAlpha, flowSpeed: 2.5f);
 
-                Color trailColor = isGhostArrow
-                    ? new Color(150, 200, 255) * trailAlpha
-                    : new Color(180, 220, 255) * trailAlpha;
-                trailColor.A = 0;
-
-                Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
-                sb.Draw(tex, drawPos, null, trailColor, Projectile.oldRot[i], origin, trailScale, SpriteEffects.None, 0);
-            }
-
-            // 箭矢主体 - 使用幽灵光球效果
-            float arrowPulse = 1f + MathF.Sin(pulsePhase) * 0.15f;
-            Color coreColor = isGhostArrow ? new Color(150, 220, 255) : new Color(200, 230, 255);
-            Color glowColor = isGhostArrow ? new Color(100, 180, 255) : new Color(150, 200, 255);
-
-            BAWHelper.DrawGhostOrb(sb, Projectile.Center, coreColor * ghostAlpha, glowColor,
-                0.8f * arrowPulse, pulsePhase);
-
-            // 箭头指示（三角形光效）
-            Vector2 tipOffset = Projectile.velocity.SafeNormalize(Vector2.Zero) * 8f;
-            Color tipColor = Color.White * ghostAlpha * 0.6f;
-            tipColor.A = 0;
-            sb.Draw(tex, Projectile.Center + tipOffset - Main.screenPosition, null, tipColor,
-                Projectile.rotation, origin, 0.4f * arrowPulse, SpriteEffects.None, 0);
-
+            WeaponVFX.DrawGlowBurst(Projectile.Center, isGhostArrow ? 0.6f : 0.45f, core);
             return false;
         }
 
@@ -193,12 +171,15 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences.Items
 
             // 命中特效
             SoundEngine.PlaySound(SoundID.NPCHit54 with { Pitch = 0.5f, Volume = 0.6f }, target.Center);
-            for (int i = 0; i < 8; i++) {
+            for (int i = 0; i < 6; i++) {
                 var d = Dust.NewDustPerfect(target.Center, DustID.SpectreStaff);
                 d.noGravity = true;
                 d.scale = 1.0f;
                 d.velocity = Main.rand.NextVector2Circular(4, 4);
             }
+            // 命中演出 (更新阶段禁止直接绘制 — IRON RULE 1)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.SoulFire, scale: 0.7f, owner: Projectile.owner);
         }
 
         public override void OnKill(int timeLeft) {
@@ -261,14 +242,9 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences.Items
 
             Projectile.rotation += 0.1f;
 
-            // 粒子
-            if (Main.rand.NextBool(3)) {
-                var d = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(8, 8), DustID.SpectreStaff);
-                d.noGravity = true;
-                d.scale = 0.6f * ghostAlpha;
-                d.velocity = -Projectile.velocity * 0.1f;
-                d.alpha = 120;
-            }
+            // 粒子 (SpectreHelper 魂火拖尾)
+            if (Main.rand.NextBool(3))
+                SpectreHelper.CreateSpectreTrail(Projectile.Center, Projectile.velocity, 0.7f * ghostAlpha + 0.3f);
 
             Lighting.AddLight(Projectile.Center, new Color(150, 180, 255).ToVector3() * 0.25f * ghostAlpha);
         }
@@ -289,36 +265,19 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences.Items
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            SpriteBatch sb = Main.spriteBatch;
-            var tex = BAWHelper.DustTexture;
-            if (tex == null) return false;
+            if (Main.dedServ) return false;
 
-            Vector2 origin = tex.Size() / 2f;
+            // 双层幽魂拖尾
+            Color outer = SpectreHelper.SpectreCyan; outer.A = (byte)(140 * ghostAlpha);
+            Color inner = new Color(190, 230, 255); inner.A = (byte)(200 * ghostAlpha);
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 9f,
+                outerColor: outer, innerColor: inner, tex: ACMAsset.SoftGlow,
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.6f);
 
-            // 绘制拖尾
-            for (int i = Projectile.oldPos.Length - 1; i >= 0; i--) {
-                if (Projectile.oldPos[i] == Vector2.Zero) continue;
-
-                float progress = 1f - (float)i / Projectile.oldPos.Length;
-                float trailAlpha = progress * 0.35f * ghostAlpha;
-                float trailScale = 0.5f + progress * 0.5f;
-
-                Color trailColor = new Color(120, 180, 255) * trailAlpha;
-                trailColor.A = 0;
-
-                Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
-                float wobble = MathF.Sin(wobblePhase + i * 0.4f) * 2f;
-                drawPos.Y += wobble;
-
-                sb.Draw(tex, drawPos, null, trailColor, Projectile.oldRot[i], origin, trailScale, SpriteEffects.None, 0);
-            }
-
-            // 主体幽魂
-            BAWHelper.DrawGhostOrb(sb, Projectile.Center,
-                new Color(180, 220, 255) * ghostAlpha,
-                new Color(100, 160, 255),
-                0.9f, pulsePhase);
-
+            // 追踪幽魂核: 径向泛光 + 柔光
+            float pulse = 1f + MathF.Sin(pulsePhase) * 0.2f;
+            WeaponVFX.DrawRadialBloom(Projectile.Center, 0.045f, ghostAlpha * 0.5f, SpectreHelper.SpectreCyan, 6f);
+            WeaponVFX.DrawGlowBurst(Projectile.Center, 0.7f * pulse * ghostAlpha + 0.15f, new Color(180, 225, 255));
             return false;
         }
 

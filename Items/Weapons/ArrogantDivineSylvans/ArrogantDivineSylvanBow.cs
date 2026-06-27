@@ -6,6 +6,7 @@ using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 using AncientChineseMythology.Celestias.Boss.Dazhengs.Items;
+using AncientChineseMythology.Helpers;
 using AncientChineseMythology.Items.Weapons.DivineWoods;
 
 namespace AncientChineseMythology.Items.Weapons.ArrogantDivineSylvans;
@@ -68,6 +69,8 @@ public class ArrogantDivineSylvanBow : ModItem
                 ModContent.ProjectileType<ArrogantSylvanWorldTreeArrow>(),
                 (int)(damage * 2.5f), knockback * 2f, player.whoAmI);
             SoundEngine.PlaySound(SoundID.Item92 with { Volume = 1.2f, Pitch = -0.3f }, player.Center);
+            // 世界树之矢触发技 → 短暂金翠染屏定调 (占全屏唯一名额, 同屏≤1 自动仲裁)
+            ArrogantSylvanScreenTint.Spawn(source, player.Center, player.whoAmI);
         }
 
         return false;
@@ -129,10 +132,19 @@ public class ArrogantSylvanLeafLance : ModProjectile
                 Main.rand.NextVector2Circular(7f, 7f), 40, default, 2.5f);
             d.noGravity = true;
         }
+        ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+            ACMWeaponBurst.ArrogantSylvan, scale: 1.2f, owner: Projectile.owner);
     }
 
     public override bool PreDraw(ref Color lightColor) {
         SpriteBatch sb = Main.spriteBatch;
+
+        // 主箭金翠流光束核 (ACMShaders.DrawBeam: 金芯 + 翠边)
+        Vector2 bdir = Projectile.velocity.SafeNormalize(Vector2.UnitX);
+        ACMShaders.DrawBeam(Projectile.Center - bdir * 90f, Projectile.Center + bdir * 12f,
+            halfWidth: 9f, core: new Color(255, 230, 130, 220), edge: new Color(120, 220, 120, 0),
+            intensity: 0.95f, flowSpeed: 1.8f, flowScale: 2.2f, coreSharp: 2.2f);
+
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
             DepthStencilState.None, RasterizerState.CullNone, null,
@@ -256,6 +268,12 @@ public class ArrogantSylvanSpiralLeaf : ModProjectile
 
     public override bool PreDraw(ref Color lightColor) {
         SpriteBatch sb = Main.spriteBatch;
+
+        // 螺旋叶刃金翠双层 ribbon (§B.1)
+        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 12f,
+            outerColor: new Color(200, 150, 40, 150), innerColor: new Color(190, 255, 150, 200),
+            uvScroll: -(float)Main.timeForVisualEffects * 0.05f);
+
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
             DepthStencilState.None, RasterizerState.CullNone, null,
@@ -350,6 +368,8 @@ public class ArrogantSylvanWorldTreeArrow : ModProjectile
                 Main.rand.NextVector2Circular(10f, 10f), 30, default, 3f);
             d.noGravity = true;
         }
+        ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+            ACMWeaponBurst.ArrogantSylvan, scale: 1.4f, owner: Projectile.owner);
 
         if (Projectile.owner == Main.myPlayer && Main.rand.NextBool(2)) {
             for (int i = 0; i < 6; i++) {
@@ -364,6 +384,13 @@ public class ArrogantSylvanWorldTreeArrow : ModProjectile
 
     public override bool PreDraw(ref Color lightColor) {
         SpriteBatch sb = Main.spriteBatch;
+
+        // 世界树之矢: 加粗金翠流光束核 (ACMShaders.DrawBeam)
+        Vector2 wdir = Projectile.velocity.SafeNormalize(Vector2.UnitX);
+        ACMShaders.DrawBeam(Projectile.Center - wdir * 150f, Projectile.Center + wdir * 24f,
+            halfWidth: 20f, core: new Color(255, 235, 150, 230), edge: new Color(120, 230, 120, 0),
+            intensity: 1f, flowSpeed: 1.6f, flowScale: 2f, coreSharp: 2f);
+
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
             DepthStencilState.None, RasterizerState.CullNone, null,

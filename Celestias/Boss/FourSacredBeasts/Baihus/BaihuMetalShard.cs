@@ -108,6 +108,10 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
             return false;
         }
 
+        public override void OnHitPlayer(Player target, Player.HurtInfo info) {
+            BaihuClawMark.Apply(target, 240);
+        }
+
         public override void OnKill(int timeLeft) {
             // 碎裂闪光
             for (int i = 0; i < 6; i++) {

@@ -8,6 +8,7 @@ using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
+using AncientChineseMythology.Helpers;
 
 namespace AncientChineseMythology.Projectiles
 {
@@ -185,6 +186,11 @@ namespace AncientChineseMythology.Projectiles
             }
         }
         public override bool PreDraw(ref Microsoft.Xna.Framework.Color lightColor) {
+            //长矛线统一拖尾 (§3.2): 铁棍 = 更宽, 钢蓝
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 8f,
+                outerColor: new Color(70, 90, 120, 150), innerColor: new Color(180, 200, 230, 200),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.3f);
+
             Microsoft.Xna.Framework.Vector2 origin;
             float rotationOffset;
             SpriteEffects effects; //贴图效果

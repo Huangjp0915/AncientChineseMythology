@@ -2,6 +2,7 @@
 using System;
 using Terraria;
 using Terraria.GameContent;
+using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 {
@@ -127,6 +128,57 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 
         public override void BossHeadRotation(ref float rotation) {
             rotation = NPC.rotation;
+        }
+
+        /// <summary>
+        /// V2「雷暴临界」演出 — 满电时蛇身段间连成一张通电电网（body-as-electric-net）。
+        /// 仅在接近满电时渐显的纯视觉电链（伤害仍由现有蛇身接触/弹幕承担，非新增伤害源）；
+        /// 用硬化 API <see cref="ACMShaders.DrawBeam"/> 在相邻段间画青白电弧。受 TrailQuality 降级 + 服务端零绘制。
+        /// </summary>
+        public override void PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+            if (Main.dedServ)
+                return;
+            if (MythologyConfig.Trail == TrailQualityLevel.Off)
+                return;
+
+            float chargeRatio = MathHelper.Clamp(StormCharge / MaxStormCharge, 0f, 1f);
+            // 仅在 ≥82% 电量渐显，满电最盛 → 把"雷暴临界"留为高潮瞬间而非常驻
+            float netT = MathHelper.Clamp((chargeRatio - 0.82f) / 0.18f, 0f, 1f);
+            netT = netT * netT * (3f - 2f * netT);
+            if (netT <= 0.01f)
+                return;
+
+            float pulse = 0.7f + MathF.Sin(globalTime * 6f) * 0.3f;
+            float intensity = netT * pulse;
+            float halfWidth = 7f * pulse;
+            bool sparse = MythologyConfig.Trail == TrailQualityLevel.Med;
+
+            Color core = TelegraphColors.Lightning;
+            Color edge = AoshunHelper.ThunderPurple;
+
+            int drawn = 0;
+            foreach (NPC seg in Main.ActiveNPCs) {
+                if (seg.realLife != NPC.whoAmI || seg.whoAmI == NPC.whoAmI)
+                    continue;
+                if (seg.type != ModContent.NPCType<AoshunBody>() &&
+                    seg.type != ModContent.NPCType<AoshunArms>() &&
+                    seg.type != ModContent.NPCType<AoshunTail>())
+                    continue;
+
+                int prevIndex = (int)seg.ai[1];
+                if (prevIndex < 0 || prevIndex >= Main.maxNPCs)
+                    continue;
+                NPC prev = Main.npc[prevIndex];
+                if (!prev.active)
+                    continue;
+
+                drawn++;
+                if (sparse && (drawn & 1) == 0)
+                    continue; // 中端质量: 隔段连接，呈网格断点感且减半批次
+
+                ACMShaders.DrawBeam(prev.Center, seg.Center, halfWidth, core, edge, intensity,
+                    flowSpeed: 2.2f, flowScale: 2.6f, coreSharp: 2.4f);
+            }
         }
 
         #endregion

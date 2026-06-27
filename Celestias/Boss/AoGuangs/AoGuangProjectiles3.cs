@@ -279,9 +279,10 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             if (Projectile.timeLeft > 90) {
                 spikeAlpha = MathHelper.Lerp(spikeAlpha, 0.5f, 0.1f);
 
-                // 预警粒子
+                // 致命喷发预警 (红=致命, 喷发前可读)
                 if (Main.netMode != NetmodeID.Server && Projectile.timeLeft % 3 == 0) {
-                    int dust = Dust.NewDust(Projectile.Center, 0, 0, DustID.BlueTorch, 0, -3f, 150, default, 1.5f);
+                    int dust = Dust.NewDust(Projectile.Center, 0, 0, DustID.RedTorch, 0, -3f, 150,
+                        TelegraphColors.Lethal, 1.5f);
                     Main.dust[dust].noGravity = true;
                 }
             }
@@ -290,7 +291,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 if (!hasErupted) {
                     hasErupted = true;
                     SoundEngine.PlaySound(SoundID.Item21 with { Pitch = -0.2f, Volume = 1f }, Projectile.Center);
-                    Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(6, 15);
+                    ACMUtils.AddScreenShake(5f);
                 }
 
                 float progress = 1f - (Projectile.timeLeft - 40) / 50f;
@@ -435,6 +436,14 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 // 旋转90度使其垂直
                 Main.spriteBatch.Draw(tex, screenPos, null, layerColor, -MathHelper.PiOver2, origin, scale, SpriteEffects.None, 0f);
             }
+
+            // 致命前沿描边 (红=致命, 明示水墙横扫方向)
+            float dir = Projectile.velocity.X >= 0 ? 1f : -1f;
+            Vector2 edgePos = screenPos + new Vector2(dir * 28f, 0f);
+            Color edge = TelegraphColors.Lethal;
+            edge.A = 0;
+            Vector2 edgeScale = new Vector2(wallHeight / tex.Width, 0.07f);
+            Main.spriteBatch.Draw(tex, edgePos, null, edge * 0.8f, -MathHelper.PiOver2, origin, edgeScale, SpriteEffects.None, 0f);
 
             return false;
         }

@@ -19,6 +19,13 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
         private float orbitAngle = 0f;
         private int attackTimer = 0;
 
+        // 俯冲突袭 (telegraphed lunge) —— 让"必杀的冤魂"有真实威胁与可读预告
+        private int lungeState; // 0=游荡 1=预告 2=俯冲
+        private int lungeTimer;
+        private Vector2 lungeDir;
+        private const int LungeWindup = 36;
+        private const int LungeInterval = 200;
+
         // 宿主Boss索引
         private int OwnerIndex => (int)NPC.ai[0];
 
@@ -87,20 +94,66 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
         }
 
         private void RunCombatAI(Player target) {
-            // 在玩家周围游荡
-            float orbitRadius = 180f + MathF.Sin(pulsePhase * 0.5f) * 30f;
-            Vector2 targetPos = target.Center + new Vector2(
-                MathF.Cos(orbitAngle + NPC.whoAmI * MathHelper.PiOver2) * orbitRadius,
-                MathF.Sin(orbitAngle + NPC.whoAmI * MathHelper.PiOver2) * orbitRadius * 0.6f
-            );
+            switch (lungeState) {
+                case 0: // 游荡 + 远程
+                    float orbitRadius = 180f + MathF.Sin(pulsePhase * 0.5f) * 30f;
+                    Vector2 targetPos = target.Center + new Vector2(
+                        MathF.Cos(orbitAngle + NPC.whoAmI * MathHelper.PiOver2) * orbitRadius,
+                        MathF.Sin(orbitAngle + NPC.whoAmI * MathHelper.PiOver2) * orbitRadius * 0.6f
+                    );
+                    NPC.velocity = Vector2.Lerp(NPC.velocity, (targetPos - NPC.Center) * 0.08f, 0.06f);
 
-            Vector2 toTarget = targetPos - NPC.Center;
-            NPC.velocity = Vector2.Lerp(NPC.velocity, toTarget * 0.08f, 0.06f);
+                    if (attackTimer % 90 == 0)
+                        ShootAtTarget(target);
 
-            // 攻击
-            if (attackTimer % 90 == 0) {
-                ShootAtTarget(target);
+                    if (attackTimer % LungeInterval == LungeInterval - 1) {
+                        lungeState = 1;
+                        lungeTimer = 0;
+                    }
+                    break;
+
+                case 1: // 预告：减速锁定方向 (青白预告线见 PreDraw)
+                    NPC.velocity *= 0.9f;
+                    lungeDir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
+                    lungeTimer++;
+                    if (!Main.dedServ && lungeTimer % 3 == 0) {
+                        var d = Dust.NewDustPerfect(NPC.Center + lungeDir * 30f, DustID.IceTorch);
+                        d.noGravity = true; d.scale = 1.1f;
+                        d.velocity = lungeDir * 3f;
+                    }
+                    if (lungeTimer >= LungeWindup) {
+                        lungeState = 2;
+                        lungeTimer = 0;
+                        NPC.velocity = lungeDir * 17f;
+                        SoundEngine.PlaySound(SoundID.Item8 with { Pitch = 0.4f, Volume = 0.7f }, NPC.Center);
+                    }
+                    break;
+
+                case 2: // 俯冲
+                    NPC.velocity *= 0.97f;
+                    lungeTimer++;
+                    if (!Main.dedServ)
+                        SpectreHelper.CreateSpectreTrail(NPC.Center, NPC.velocity, 1.2f);
+                    if (lungeTimer >= 40)
+                        lungeState = 0;
+                    break;
             }
+
+            NPC.rotation = NPC.velocity.X * 0.04f;
+        }
+
+        public override void OnHitPlayer(Player target, Player.HurtInfo info) {
+            UnderworldField.AddSoulErosion(target, 1); // 冤魂接触挂魂蚀
+        }
+
+        public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+            // 俯冲预告线 (青白, 非红 — 接触伤害靠玩家读冲刺线)
+            if (lungeState == 1) {
+                float prog = lungeTimer / (float)LungeWindup;
+                ACMShaders.DrawBeam(NPC.Center, NPC.Center + lungeDir * 360f,
+                    MathHelper.Lerp(4f, 10f, prog), TelegraphColors.Lightning, SpectreHelper.SpectreCyan, 0.3f + 0.5f * prog);
+            }
+            return DrawMinionBody(spriteBatch, screenPos);
         }
 
         private void ShootAtTarget(Player target) {
@@ -132,7 +185,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
             }
         }
 
-        public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+        private bool DrawMinionBody(SpriteBatch spriteBatch, Vector2 screenPos) {
             Texture2D tex = TextureAssets.Npc[NPC.type].Value;
             Vector2 origin = tex.Size() / 2f;
 

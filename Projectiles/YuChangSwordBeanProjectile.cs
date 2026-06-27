@@ -1,13 +1,23 @@
-﻿using Terraria;
+﻿using AncientChineseMythology.Helpers;
+using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Projectiles
 {
+    /// <summary>
+    /// 鱼肠剑·剑豆 (左键四连发) — 可见质变 (纯表现): 宝石青紫双层拖尾, 命中追加宝石爆发。机制/伤害不变。
+    /// </summary>
     public class YuChangSwordBeanProjectile : ModProjectile
     {
 
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/YuChangSwordBean";
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.TrailCacheLength[Type] = 12;
+            ProjectileID.Sets.TrailingMode[Type] = 0;
+        }
+
         public override void SetDefaults() {
             Projectile.width = 50;  //贴图宽度
             Projectile.height = 50; //贴图高度
@@ -41,6 +51,16 @@ namespace AncientChineseMythology.Projectiles
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
             //生成金色爆炸粒子
             SpawnGoldenExplosion(target.Center);
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Gem, scale: 0.9f, owner: Projectile.owner);
+        }
+
+        public override bool PreDraw(ref Microsoft.Xna.Framework.Color lightColor) {
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 7f,
+                outerColor: new Microsoft.Xna.Framework.Color(95, 60, 185, 140),
+                innerColor: new Microsoft.Xna.Framework.Color(150, 230, 255, 200),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.4f);
+            return true;
         }
 
         private void SpawnGoldenExplosion(Vector2 position) {

@@ -2,6 +2,7 @@
 using Terraria;
 using Terraria.Audio;
 using Terraria.ID;
+using Terraria.ModLoader;
 
 namespace AncientChineseMythology.NPCs.Boss.AzureDragons
 {
@@ -45,7 +46,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
 
             if (StateTimer == 120) {
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.2f, Volume = 1.8f }, NPC.Center);
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(18, 60);
+                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(14, 60);
 
                 // 出场雷暴爆发
                 if (!VaultUtils.isServer) {
@@ -145,7 +146,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                             Vector2 vel = angle.ToRotationVector2() * 14f;
                             Projectile.NewProjectile(
                                 NPC.GetSource_FromAI(), NPC.Center + toTarget * 40f, vel,
-                                ProjectileID.CultistBossLightningOrb, NPC.damage / 4, 2f
+                                ModContent.ProjectileType<AzureBolt>(), NPC.damage / 4, 2f
                             );
                         }
                     }
@@ -168,9 +169,10 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
         }
 
         /// <summary>
-        /// 雷球轰击 - 在玩家周围生成多个雷球，短暂延迟后爆炸
+        /// 地面雷柱 (V2 替换原雷球) — 在玩家附近标记若干落点, 约 1.5s 预告后劈下可读雷柱。
+        /// 玩家须横向走位躲到未标记的安全列 (toolkit §C.1 AoE 预警三要素)。
         /// </summary>
-        private void RunPhase1ThunderOrbs(Player target) {
+        private void RunPhase1ThunderRods(Player target) {
             switch ((int)SubState) {
                 case 0: // 悬停蓄力
                     Vector2 hoverPos = target.Center + new Vector2(0, -450);
@@ -182,34 +184,31 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                         Main.dust[dust].velocity = Main.rand.NextVector2Circular(3, 3);
                     }
 
-                    if (AttackTimer >= 60) {
+                    if (AttackTimer >= 45) {
                         SubState = 1;
                         AttackTimer = 0;
 
                         SoundEngine.PlaySound(SoundID.Item93 with { Pitch = -0.2f, Volume = 1.3f }, NPC.Center);
 
-                        // 在玩家周围生成雷球
+                        // 服务器决定落点(同步): 在玩家两侧标记雷柱, 留出安全缝隙
                         if (Main.netMode != NetmodeID.MultiplayerClient) {
-                            int orbCount = Main.expertMode ? 8 : 6;
-                            for (int i = 0; i < orbCount; i++) {
-                                float angle = MathHelper.TwoPi * i / orbCount;
-                                float radius = 300f + Main.rand.NextFloat(-50f, 50f);
-                                Vector2 spawnPos = target.Center + angle.ToRotationVector2() * radius;
-                                Vector2 vel = (target.Center - spawnPos).SafeNormalize(Vector2.Zero) * 8f;
-
-                                Projectile.NewProjectile(
-                                    NPC.GetSource_FromAI(), spawnPos, vel,
-                                    ProjectileID.CultistBossLightningOrbArc, NPC.damage / 4, 2f
-                                );
+                            int rodCount = Main.expertMode ? 5 : 4;
+                            float spacing = 220f;
+                            // 整体随机偏移, 使安全缝隙位置每次不同(可读但需要走位)
+                            float baseX = target.Center.X + Main.rand.NextFloat(-110f, 110f);
+                            for (int i = 0; i < rodCount; i++) {
+                                float x = baseX + (i - (rodCount - 1) / 2f) * spacing;
+                                Vector2 strikePos = new Vector2(x, target.Center.Y);
+                                int telegraph = 90;   // ~1.5s
+                                SpawnThunderRod(strikePos, telegraph + i * 6, 16);
                             }
                         }
                     }
                     break;
 
-                case 1: // 等待雷球爆炸
+                case 1: // 等待落雷
                     NPC.velocity *= 0.9f;
 
-                    // 电弧粒子效果
                     if (!VaultUtils.isServer && AttackTimer % 5 == 0) {
                         for (int i = 0; i < 8; i++) {
                             Vector2 dustPos = NPC.Center + Main.rand.NextVector2Circular(100, 100);
@@ -218,11 +217,21 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                         }
                     }
 
-                    if (AttackTimer >= 80) {
+                    if (AttackTimer >= 130) {
                         TransitionTo(AIState.Phase1_Orbit);
                     }
                     break;
             }
+        }
+
+        /// <summary>生成一根雷霆落雷柱(服务器权威, 投射物自动同步)。</summary>
+        private void SpawnThunderRod(Vector2 strikePos, int telegraphTicks, int strikeActive) {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
+            Projectile.NewProjectile(
+                NPC.GetSource_FromAI(), strikePos, Vector2.Zero,
+                ModContent.ProjectileType<AzureThunderRod>(), NPC.damage / 4, 3f,
+                ai0: telegraphTicks, ai1: strikeActive);
         }
 
         /// <summary>
@@ -318,7 +327,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
 
             if (StateTimer == 50) {
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0f, Volume = 2f }, NPC.Center);
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(22, 60);
+                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(12, 60);
 
                 // 爆发电弧
                 if (!VaultUtils.isServer) {
@@ -359,7 +368,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
 
             if (StateTimer == 40) {
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.4f, Volume = 2.5f }, NPC.Center);
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(30, 80);
+                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(12, 80);
             }
 
             if (StateTimer == 70) {
@@ -377,8 +386,20 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
 
             if (StateTimer > 100) {
                 NPC.dontTakeDamage = false;
-                TransitionTo(AIState.Phase3_ThunderJudgment);
+                TransitionTo(AIState.Phase3_ThunderTribunal);
             }
+        }
+
+        #endregion
+
+        #region 律令辅助
+
+        /// <summary>按当前雷霆律令把方向约束到单轴 (横扫=水平 / 纵贯=竖直)。</summary>
+        private Vector2 EdictAxisToward(Vector2 from, Vector2 to, float speed) {
+            Vector2 d = to - from;
+            if (EdictHorizontal)
+                return new Vector2(d.X >= 0 ? 1f : -1f, 0f) * speed;
+            return new Vector2(0f, d.Y >= 0 ? 1f : -1f) * speed;
         }
 
         #endregion
@@ -405,13 +426,13 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                 }
             }
 
-            // 追踪过程中周期性释放雷电弹
+            // 雷霆律令: 弹道严格遵守当前律令轴 (横扫/纵贯), 由天闪提前告知
             int shootInterval = Main.expertMode ? 20 : 30;
             if (StateTimer % shootInterval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                Vector2 vel = toTarget.RotatedByRandom(0.3f) * 12f;
+                Vector2 vel = EdictAxisToward(NPC.Center, target.Center, 12f);
                 Projectile.NewProjectile(
                     NPC.GetSource_FromAI(), NPC.Center, vel,
-                    ProjectileID.CultistBossLightningOrbArc, NPC.damage / 4, 2f
+                    ModContent.ProjectileType<AzureBolt>(), NPC.damage / 4, 2f
                 );
             }
 
@@ -440,7 +461,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                         SubState = 1;
                         AttackTimer = 0;
                         SoundEngine.PlaySound(SoundID.Item93 with { Pitch = 0.2f, Volume = 1.5f }, NPC.Center);
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(15, 40);
+                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(12, 40);
                     }
                     break;
 
@@ -448,18 +469,25 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                     NPC.velocity *= 0.9f;
 
                     if (AttackTimer == 1 && Main.netMode != NetmodeID.MultiplayerClient) {
-                        // 纵横交错的闪电
-                        int lines = Main.expertMode ? 6 : 4;
-                        for (int i = 0; i < lines; i++) {
-                            float angle = MathHelper.TwoPi * i / lines;
-                            Vector2 dir = angle.ToRotationVector2();
-                            for (int j = 1; j <= 3; j++) {
-                                Vector2 spawnPos = target.Center + dir * (j * 200);
-                                Projectile.NewProjectile(
-                                    NPC.GetSource_FromAI(), spawnPos, Vector2.Zero,
-                                    ProjectileID.CultistBossLightningOrbArc, NPC.damage / 5, 1f
-                                );
+                        // 律令矩阵: 沿当前律令轴的平行弹道阵 (横扫=多排水平 / 纵贯=多列竖直)
+                        int lanes = Main.expertMode ? 7 : 5;
+                        float laneSpacing = 165f;
+                        float speed = 13f;
+                        bool horiz = EdictHorizontal;
+                        int type = ModContent.ProjectileType<AzureBolt>();
+                        for (int i = 0; i < lanes; i++) {
+                            float off = (i - (lanes - 1) / 2f) * laneSpacing;
+                            Vector2 spawnPos, vel;
+                            if (horiz) {
+                                int side = i % 2 == 0 ? -1 : 1;
+                                spawnPos = new Vector2(target.Center.X - side * 950f, target.Center.Y + off);
+                                vel = new Vector2(side, 0f) * speed;
                             }
+                            else {
+                                spawnPos = new Vector2(target.Center.X + off, target.Center.Y - 950f);
+                                vel = new Vector2(0f, 1f) * speed;
+                            }
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel, type, NPC.damage / 5, 1f);
                         }
                     }
 
@@ -503,12 +531,12 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                 }
             }
 
-            // 旋风过程中释放弹幕
+            // 旋风过程中释放弹幕 (遵守律令轴)
             if (StateTimer % 15 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                Vector2 vel = NPC.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2) * 10f;
+                Vector2 vel = EdictAxisToward(NPC.Center, target.Center, 10f);
                 Projectile.NewProjectile(
                     NPC.GetSource_FromAI(), NPC.Center, vel,
-                    ProjectileID.CultistBossLightningOrb, NPC.damage / 5, 1f
+                    ModContent.ProjectileType<AzureBolt>(), NPC.damage / 5, 1f
                 );
             }
 
@@ -552,7 +580,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                         AttackTimer = 0;
 
                         SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.8f, Volume = 0.9f }, NPC.Center);
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(14, 20);
+                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(12, 20);
                     }
                     break;
 
@@ -588,51 +616,121 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
         #region 三阶段 - 天威降世
 
         /// <summary>
-        /// 雷霆审判 - 全屏范围连续落雷+能量弹幕倾泻
+        /// 网格化雷霆审判庭 (V2 招牌 set-piece) — 替换原"随机落雷洪流"。
+        /// 场地划为可读列网格, 每波按图案点亮"危险列"并劈下雷柱, 玩家走"安全列";
+        /// 同时风域周期性把玩家横向推动, 走位与雷网联动。波次有限 (TribunalWaveCount),
+        /// 满后强制转入移动招式 (消除"加速喷弹"反模式)。落点由服务器决定, 雷柱投射物自动同步。
         /// </summary>
-        private void RunPhase3ThunderJudgment(Player target) {
-            // 居高临下
-            Vector2 highPos = target.Center + new Vector2(MathF.Sin(globalTime) * 200, -500);
+        private void RunPhase3ThunderTribunal(Player target) {
+            // 居高临下俯瞰审判庭; 竞技场中心锁定为入场时玩家位置
+            if (State == AIState.Phase3_ThunderTribunal && StateTimer == 1) {
+                ArenaCenter = target.Center;
+                tribunalWave = 0;
+            }
+            Vector2 highPos = ArenaCenter + new Vector2(MathF.Sin(globalTime * 0.8f) * 180f, -560f);
             SmoothOrbit(highPos, 40f);
 
-            // 持续落雷
-            int strikeInterval = Main.expertMode ? 8 : 12;
-            if (StateTimer % strikeInterval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                // 在玩家周围随机位置生成向下的闪电弹幕
-                Vector2 strikePos = target.Center + Main.rand.NextVector2Circular(500, 200);
-                strikePos.Y -= 800;
-                Vector2 vel = new Vector2(Main.rand.NextFloat(-2f, 2f), 18f);
+            // —— 风域: 周期性横向推力 (纯本地视觉/手感, 由同步的 WindDir 派生, 每端推自己玩家) ——
+            ApplyWindField(target);
 
-                Projectile.NewProjectile(
-                    NPC.GetSource_FromAI(), strikePos, vel,
-                    ProjectileID.CultistBossLightningOrbArc, NPC.damage / 4, 2f
-                );
+            const int gridColumns = 11;
+            const float colSpacing = 165f;
+            int telegraph = Main.expertMode ? 70 : 85;  // ~1.2~1.4s 处决级前摇
+            const int strikeActive = 16;
+            int wavePeriod = telegraph + strikeActive + 40;
+
+            switch ((int)SubState) {
+                case 0: // 蓄力 → 投放一波危险列
+                    NPC.velocity *= 0.94f;
+
+                    if (!VaultUtils.isServer && AttackTimer % 4 == 0) {
+                        Vector2 dp = NPC.Center + Main.rand.NextVector2Circular(120, 120);
+                        int dt = Main.rand.NextBool() ? DustID.Electric : DustID.BlueTorch;
+                        int d = Dust.NewDust(dp, 0, 0, dt, 0, 0, 60, default, 2.2f);
+                        Main.dust[d].noGravity = true;
+                        Main.dust[d].velocity = (NPC.Center - dp).SafeNormalize(Vector2.Zero) * 6f;
+                    }
+
+                    if (AttackTimer >= 26) {
+                        SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.2f, Volume = 1.1f }, NPC.Center);
+                        ACMUtils.AddScreenShake(8f);
+
+                        if (Main.netMode != NetmodeID.MultiplayerClient)
+                            SpawnTribunalWave(tribunalWave, gridColumns, colSpacing, telegraph, strikeActive);
+
+                        SubState = 1;
+                        AttackTimer = 0;
+                    }
+                    break;
+
+                case 1: // 等待本波雷柱解算
+                    NPC.velocity *= 0.92f;
+
+                    if (AttackTimer >= wavePeriod) {
+                        tribunalWave++;
+                        if (tribunalWave >= TribunalWaveCount) {
+                            // 限幅: 强制转入移动招式
+                            TransitionTo(AIState.Phase3_CelestialFury);
+                        }
+                        else {
+                            SubState = 0;
+                            AttackTimer = 0;
+                        }
+                    }
+                    break;
             }
+        }
 
-            // 同时释放追踪能量弹
-            if (StateTimer % 30 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int i = 0; i < 3; i++) {
-                    float angle = Main.rand.NextFloat(MathHelper.TwoPi);
-                    Vector2 vel = angle.ToRotationVector2() * 10f;
-                    Projectile.NewProjectile(
-                        NPC.GetSource_FromAI(), NPC.Center, vel,
-                        ProjectileID.CultistBossLightningOrb, NPC.damage / 5, 1f
-                    );
+        /// <summary>投放一波审判庭危险列 (按波次切换图案: 横扫 / 梳齿 / 向心收束)。</summary>
+        private void SpawnTribunalWave(int wave, int columns, float spacing, int telegraph, int strikeActive) {
+            float originX = ArenaCenter.X - (columns - 1) / 2f * spacing;
+            float strikeY = ArenaCenter.Y;
+            int pattern = wave % 3;
+
+            for (int c = 0; c < columns; c++) {
+                float x = originX + c * spacing;
+                int delay;
+                bool strike;
+                switch (pattern) {
+                    case 0: // 横扫: 从左到右逐列推进, 留 1 列动态安全缝
+                        strike = true;
+                        delay = c * 9;
+                        break;
+                    case 1: // 梳齿: 奇偶两小波 (先偶后奇), 安全列在另一组
+                        strike = true;
+                        delay = (c % 2) * 40;
+                        break;
+                    default: // 向心收束: 从两端向中央夹击, 中央最后留缝最短
+                        strike = c != columns / 2;   // 正中央安全
+                        delay = (int)(MathF.Abs(c - (columns - 1) / 2f) * -9 + (columns / 2) * 9);
+                        break;
                 }
+                if (!strike)
+                    continue;
+                Vector2 strikePos = new Vector2(x, strikeY);
+                SpawnThunderRod(strikePos, telegraph + Math.Max(0, delay), strikeActive);
             }
+        }
 
-            // 雷暴视觉效果
-            if (!VaultUtils.isServer) {
-                for (int i = 0; i < 6; i++) {
-                    Vector2 dustPos = NPC.Center + Main.rand.NextVector2Circular(150, 150);
-                    int dustType = Main.rand.NextBool() ? DustID.Electric : DustID.BlueTorch;
-                    int dust = Dust.NewDust(dustPos, 0, 0, dustType, 0, 0, 50, default, 2f);
-                    Main.dust[dust].noGravity = true;
-                }
-            }
+        /// <summary>风域: 周期性横向推动本地玩家, 与雷网走位联动 (MP 安全: 每端推自己玩家)。</summary>
+        private void ApplyWindField(Player target) {
+            if (Main.dedServ)
+                return;
+            Player p = Main.LocalPlayer;
+            if (!p.active || p.dead)
+                return;
+            // 仅在审判庭范围内施加, 强度温和保证公平
+            if (Vector2.DistanceSquared(p.Center, ArenaCenter) > (ArenaRadius * 1.6f) * (ArenaRadius * 1.6f))
+                return;
+            float force = WindDir * 0.32f;
+            p.velocity.X += force;
 
-            if (StateTimer > 300) {
-                TransitionTo(PickPhase3Attack());
+            // 风向预告: 顺风方向的青色风线
+            if (Main.rand.NextBool(3)) {
+                Vector2 dp = p.Center + new Vector2(Main.rand.NextFloat(-500f, 500f), Main.rand.NextFloat(-300f, 300f));
+                int d = Dust.NewDust(dp, 0, 0, DustID.BlueTorch, MathF.Sign(force) * 6f, 0, 120, default, 1.1f);
+                Main.dust[d].noGravity = true;
+                Main.dust[d].velocity = new Vector2(MathF.Sign(force) * Main.rand.NextFloat(4f, 9f), 0f);
             }
         }
 
@@ -664,11 +762,11 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                 Vector2 vel = NPC.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2) * 12f;
                 Projectile.NewProjectile(
                     NPC.GetSource_FromAI(), NPC.Center, vel,
-                    ProjectileID.CultistBossLightningOrbArc, NPC.damage / 5, 1f
+                    ModContent.ProjectileType<AzureBolt>(), NPC.damage / 5, 1f
                 );
                 Projectile.NewProjectile(
                     NPC.GetSource_FromAI(), NPC.Center, -vel,
-                    ProjectileID.CultistBossLightningOrbArc, NPC.damage / 5, 1f
+                    ModContent.ProjectileType<AzureBolt>(), NPC.damage / 5, 1f
                 );
             }
 
@@ -676,7 +774,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
             if (progress > 0.9f && SubState == 0) {
                 SubState = 1;
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.3f, Volume = 2f }, NPC.Center);
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(25, 60);
+                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(12, 60);
 
                 // 爆发电弧
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
@@ -685,7 +783,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                         Vector2 vel = angle.ToRotationVector2() * 15f;
                         Projectile.NewProjectile(
                             NPC.GetSource_FromAI(), NPC.Center, vel,
-                            ProjectileID.CultistBossLightningOrb, NPC.damage / 4, 2f
+                            ModContent.ProjectileType<AzureBolt>(), NPC.damage / 4, 2f
                         );
                     }
                 }
@@ -739,7 +837,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
 
                         SubState = 2;
                         AttackTimer = 0;
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(20, 40);
+                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(12, 40);
                     }
                     break;
 
@@ -765,11 +863,11 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                         Vector2 perpendicular = NPC.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
                         Projectile.NewProjectile(
                             NPC.GetSource_FromAI(), NPC.Center, perpendicular * 8f,
-                            ProjectileID.CultistBossLightningOrbArc, NPC.damage / 5, 1f
+                            ModContent.ProjectileType<AzureBolt>(), NPC.damage / 5, 1f
                         );
                         Projectile.NewProjectile(
                             NPC.GetSource_FromAI(), NPC.Center, -perpendicular * 8f,
-                            ProjectileID.CultistBossLightningOrbArc, NPC.damage / 5, 1f
+                            ModContent.ProjectileType<AzureBolt>(), NPC.damage / 5, 1f
                         );
                     }
 
@@ -783,7 +881,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                                 Main.dust[dust].noGravity = true;
                             }
                         }
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(18, 30);
+                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(6, 30);
 
                         TransitionTo(PickPhase3Attack());
                     }

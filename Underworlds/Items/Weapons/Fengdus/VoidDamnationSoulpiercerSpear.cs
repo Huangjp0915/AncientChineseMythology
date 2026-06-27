@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
 using AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs;
 using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
@@ -195,7 +196,8 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
             target.AddBuff(BuffID.BrokenArmor, 600);
             target.AddBuff(BuffID.Slow, 600);
 
-            for (int i = 0; i < 25; i++) {
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center, ACMWeaponBurst.FengduVoid, 1.1f, Projectile.owner);
+            for (int i = 0; i < 10; i++) {
                 Vector2 vel = (Owner.Center - target.Center).SafeNormalize(Vector2.Zero) * Main.rand.NextFloat(6f, 16f);
                 vel = vel.RotatedByRandom(MathHelper.ToRadians(35));
                 Dust soul = Dust.NewDustPerfect(target.Center, DustID.BlueTorch, vel, 60, default, Main.rand.NextFloat(2f, 3.5f));
@@ -206,6 +208,12 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
                 Owner.Heal(Main.rand.Next(50, 100));
                 SoundEngine.PlaySound(SoundID.Item14 with { Volume = 1.5f, Pitch = -0.5f }, target.Center);
 
+                // 击杀: 虚空溶解魂碎演出 + 致命泛光
+                ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center, ACMWeaponBurst.LethalRed, 1.8f, Projectile.owner);
+                if (Main.myPlayer == Projectile.owner)
+                    Projectile.NewProjectile(Projectile.GetSource_OnHit(target), target.Center, Vector2.Zero,
+                        ModContent.ProjectileType<VoidSoulShatter>(), 0, 0f, Projectile.owner, target.rotation);
+
                 for (int i = 0; i < Main.maxNPCs; i++) {
                     NPC nearby = Main.npc[i];
                     if (!nearby.CanBeChasedBy() || nearby.whoAmI == target.whoAmI) continue;
@@ -215,8 +223,8 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
                     }
                 }
 
-                for (int i = 0; i < 50; i++) {
-                    float angle = MathHelper.TwoPi / 50f * i;
+                for (int i = 0; i < 20; i++) {
+                    float angle = MathHelper.TwoPi / 20f * i;
                     Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * Main.rand.NextFloat(10f, 20f);
                     Dust ring = Dust.NewDustPerfect(target.Center, DustID.BlueTorch, vel, 40, default, Main.rand.NextFloat(2.5f, 4f));
                     ring.noGravity = true;
@@ -263,15 +271,14 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
                 Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null, glowColor,
                     Projectile.rotation + rotationOffset, origin, Projectile.scale * 1.15f, effects, 0);
 
-                Texture2D slashBurst = ACMAsset.SlashBurst;
-                if (slashBurst != null) {
-                    Vector2 tipPos = Projectile.Center + Projectile.rotation.ToRotationVector2() * 55f - Main.screenPosition;
-                    Vector2 sbOrigin = slashBurst.Size() / 2f;
-                    Color tipGlow = new Color(80, 120, 255) * 0.6f;
-                    tipGlow.A = 0;
-                    float pulse = 0.15f + MathF.Sin(Timer * 0.4f) * 0.05f;
-                    Main.EntitySpriteDraw(slashBurst, tipPos, null, tipGlow, Projectile.rotation + MathHelper.PiOver2, sbOrigin, new Vector2(pulse * 0.4f, pulse), SpriteEffects.None, 0);
-                }
+                // BeamGrad 穿心矛锋 (从手柄根部到矛尖的虚空蓝锋线)
+                Vector2 dir = Projectile.rotation.ToRotationVector2();
+                Vector2 tip = Projectile.Center + dir * 70f;
+                Vector2 baseP = Projectile.Center - dir * 40f;
+                ACMShaders.DrawBeam(baseP, tip, 16f,
+                    new Color(150, 200, 255), new Color(40, 50, 200), 0.9f,
+                    flowSpeed: 2.4f, flowScale: 2.2f, coreSharp: 3f);
+                WeaponVFX.DrawGlowBurst(tip, 1.4f, new Color(80, 120, 255) * 0.6f);
             }
             return false;
         }
@@ -348,6 +355,14 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
             float opacity = MathHelper.Clamp(1f - Timer / 120f, 0f, 1f);
             Vector2 dir = Projectile.rotation.ToRotationVector2();
 
+            // BeamGrad 虚空裂缝主体 (沿突刺路径的一道发光裂口, 微闪)
+            Vector2 riftStart = Projectile.Center;
+            Vector2 riftEnd = Projectile.Center + dir * RiftLength;
+            float flicker = 0.8f + MathF.Sin(Timer * 0.35f) * 0.15f;
+            ACMShaders.DrawBeam(riftStart, riftEnd, MathHelper.Lerp(4f, 14f, opacity),
+                new Color(150, 190, 255), new Color(30, 18, 90), opacity * flicker,
+                flowSpeed: 1.2f, flowScale: 3f, coreSharp: 2f);
+
             Texture2D lightningBranch = ACMAsset.LightningBranch;
             if (lightningBranch != null) {
                 Vector2 origin = new Vector2(lightningBranch.Width / 2f, lightningBranch.Height);
@@ -378,6 +393,77 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
                     Main.EntitySpriteDraw(softGlow, pos, null, glow, 0f, glowOrigin, pulse, SpriteEffects.None, 0);
                 }
             }
+            return false;
+        }
+
+        // 虚空裂隙的签名时刻: GenericWarp rift 扭曲带 (沿裂隙中点, 本武器唯一全屏后处理)
+        public override void PostDraw(Color lightColor) {
+            if (Main.dedServ || Main.gameMenu)
+                return;
+            float opacity = MathHelper.Clamp(1f - Timer / 120f, 0f, 1f);
+            float warp = opacity * 0.8f;
+            if (warp < 0.05f || !ACMShaders.RequestFullscreenSlot())
+                return;
+            Effect fx = ACMShaders.GenericWarp;
+            if (fx == null)
+                return;
+            Vector2 mid = Projectile.Center + Projectile.rotation.ToRotationVector2() * RiftLength * 0.5f;
+            ACMShaders.SetCommonParams(fx, mid, warp);
+            fx.Parameters["uRadius"]?.SetValue(0.5f);
+            fx.Parameters["uWarpScale"]?.SetValue(1.6f);
+            fx.Parameters["uChroma"]?.SetValue(0.6f);
+            fx.Parameters["uRadialPull"]?.SetValue(0.4f);
+            fx.Parameters["uMode"]?.SetValue(3f); // rift 裂隙档
+            fx.Parameters["uTint"]?.SetValue(new Vector4(0.16f, 0.22f, 0.6f, 0.5f));
+            ACMShaders.ApplyScreenPostProcess(Main.spriteBatch, fx, bindNoise: true);
+        }
+    }
+
+    /// <summary>
+    /// 虚空魂碎 (纯视觉, 本地客户端): 用 DissolveBurn 把一枚虚空魂盘灼烧消融, 表现"穿心击杀魂飞魄散"。
+    /// </summary>
+    public class VoidSoulShatter : ModProjectile
+    {
+        public override string Texture => "Terraria/Images/Projectile_1";
+        private const int Life = 26;
+        private float Spin => Projectile.ai[0];
+
+        public override void SetDefaults() {
+            Projectile.width = 2;
+            Projectile.height = 2;
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = Life;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.alpha = 255;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+        public override bool? CanDamage() => false;
+        public override void AI() => Projectile.velocity = Vector2.Zero;
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+            float life = MathHelper.Clamp(Projectile.timeLeft / (float)Life, 0f, 1f);
+            float threshold = 1f - life; // 0→1 逐渐溶解
+
+            Texture2D disc = ACMAsset.SoftGlow;
+            if (disc != null) {
+                Vector2 origin = disc.Size() / 2f;
+                Color baseCol = new Color(120, 90, 220) * 0.9f;
+                baseCol.A = 0;
+                WeaponVFX.ApplyDissolveBurn(disc, Projectile.Center, null, baseCol,
+                    Spin, origin, 2.4f, threshold, life, new Color(170, 120, 255),
+                    edgeWidth: 0.12f, noiseScale: 2.5f);
+            }
+
+            // 魂碎崩散冲击环
+            float r = MathHelper.Lerp(10f, 110f, 1f - life);
+            WeaponVFX.DrawShockwaveRing(Projectile.Center, r, 12f, life * 0.7f,
+                new Color(190, 130, 255), new Color(40, 12, 80));
             return false;
         }
     }

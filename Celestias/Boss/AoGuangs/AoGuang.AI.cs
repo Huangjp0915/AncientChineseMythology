@@ -36,6 +36,9 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             // 更新视觉效果
             UpdateVisualEffects();
 
+            // V2 海之沉浸屏幕演出（纯本地视觉）
+            UpdateScreenFx(target);
+
             PhaseTimer++;
             AttackTimer++;
 
@@ -157,6 +160,46 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             }
         }
 
+        /// <summary>
+        /// V2「海之沉浸」屏幕演出标量驱动（纯本地视觉, 服务端早退）。
+        /// 设计契约 — 水位叙事 = 危险底色: P1 涨潮(浅蓝氛围) → P2 没顶(折射加深) → P3 深渊(全屏水下 + 向心吸力)。
+        /// 昂贵的 GenericWarp(refraction) 全屏后处理由 <see cref="PostDraw"/> 单独申请名额; 这里只推进标量并发布
+        /// 氛围底色(ElementalScreenTint)与潮涌泛光(RadialBloom)给 <see cref="AoGuangSubmersionScreenSystem"/>。
+        /// </summary>
+        private void UpdateScreenFx(Player target) {
+            if (Main.dedServ)
+                return;
+
+            // —— 潮汐氛围底色: 随阶段加深(水位叙事) ——
+            float tintTarget = IsPhase3 ? 0.5f : (IsPhase2 ? 0.32f : 0.1f);
+
+            // —— 折射强度: P2 没顶常驻轻度, P3 深渊加深; 签名时刻拉满 ——
+            float warpTarget = IsPhase3 ? 0.4f : (IsPhase2 ? 0.24f : 0f);
+
+            // —— 深渊漩涡向心吸力(签名 set-piece) ——
+            float inwardTarget = 0f;
+            if (Phase == BossPhase.Phase3_AbyssalVortex && SubState >= 1) {
+                warpTarget = Math.Max(warpTarget, 0.7f);
+                tintTarget = Math.Max(tintTarget, 0.6f);
+                inwardTarget = 1f;
+            }
+            // —— 没顶相变·龙吟揭幕: 折射猛涨 ——
+            if (Phase == BossPhase.PhaseTransition_2)
+                warpTarget = Math.Max(warpTarget, 0.6f);
+            if (Phase == BossPhase.PhaseTransition_3)
+                warpTarget = Math.Max(warpTarget, 0.65f);
+
+            tideTint = MathHelper.Lerp(tideTint, tintTarget, 0.03f);
+            submersionWarp = MathHelper.Lerp(submersionWarp, warpTarget, warpTarget > submersionWarp ? 0.06f : 0.03f);
+            vortexInward = MathHelper.Lerp(vortexInward, inwardTarget, 0.05f);
+
+            // —— 潮涌泛光逐帧衰减(事件触发置 1) ——
+            if (waterBloom > 0f)
+                waterBloom = Math.Max(0f, waterBloom - 0.025f);
+
+            AoGuangSubmersionScreenSystem.Publish(NPC.Center, tideTint, waterBloom, globalTime);
+        }
+
         private void CheckPhaseTransition() {
             if (!didPhase2Transition && IsPhase2 && !IsPhase3 &&
                 Phase != BossPhase.PhaseTransition_2 && Phase != BossPhase.Intro) {
@@ -251,7 +294,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
 
             if (PhaseTimer == 120) {
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.2f }, NPC.Center);
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(15, 50);
+                ACMUtils.AddScreenShake(14f);
             }
 
             if (PhaseTimer > 180) {
@@ -301,7 +344,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 barrierTornadoIds[1] = rightTornado;
 
                 SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.5f, Volume = 1.5f }, NPC.Center);
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(20, 60);
+                ACMUtils.AddScreenShake(12f);
             }
 
             // 龙王威压粒子
@@ -346,7 +389,8 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
 
             if (PhaseTimer == 60) {
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.1f, Volume = 1.5f }, NPC.Center);
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(20, 60);
+                ACMUtils.AddScreenShake(12f);
+                waterBloom = 1f; // 没顶相变·潮涌泛光
 
                 // 爆发水花
                 if (!VaultUtils.isServer) {
@@ -392,7 +436,8 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
 
             if (PhaseTimer == 70) {
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.3f, Volume = 2f }, NPC.Center);
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(25, 80);
+                ACMUtils.AddScreenShake(12f);
+                waterBloom = 1f; // 深渊相变·潮涌泛光
 
                 // 爆发海啸
                 if (!VaultUtils.isServer) {

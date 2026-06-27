@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
 using AncientChineseMythology.Underworlds.Items.Weapons.Revenants;
 using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
@@ -178,22 +179,26 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
                         }
                     }
                 }
+                // 升级演出: 蓝魂多线连锁 (BeamGrad), 仅本机生成
+                DamnedSoulChain.Spawn(Projectile.GetSource_OnHit(target), target.Center, Projectile.owner);
+                WeaponVFX.AddScreenShake(target.Center, 3f);
             }
+
+            // 命中冲击演出 (径向辉光 + 冲击环)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.AbyssPurple, scale: hit.Crit ? 1.4f : 1f, owner: Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            // 蓝魂双层带状箭迹 (外宽深蓝 + 内窄亮青)
+            WeaponVFX.DrawProjectileTrail(Projectile, 14f,
+                new Color(30, 70, 190), new Color(150, 220, 255),
+                uvScroll: HomingTimer * 0.03f);
+
             Texture2D softGlow = ACMAsset.SoftGlow;
             Texture2D blankStar = ACMAsset.BlankStar;
             if (softGlow != null) {
                 Vector2 glowOrigin = softGlow.Size() / 2f;
-                for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                    if (Projectile.oldPos[i] == Vector2.Zero) continue;
-                    float progress = 1f - (float)i / Projectile.oldPos.Length;
-                    Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                    Color trailColor = Color.Lerp(new Color(40, 80, 200), new Color(150, 220, 255), progress) * progress * 0.6f;
-                    trailColor.A = 0;
-                    Main.EntitySpriteDraw(softGlow, drawPos, null, trailColor, 0f, glowOrigin, 0.7f * progress, SpriteEffects.None, 0);
-                }
                 Color mainGlow = new Color(120, 200, 255) * 0.8f;
                 mainGlow.A = 0;
                 Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, mainGlow, 0f, glowOrigin, 1f, SpriteEffects.None, 0);
@@ -218,6 +223,67 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
                 );
                 death.noGravity = true;
             }
+        }
+    }
+
+    /// <summary>
+    /// 万劫连锁演出弹幕 (纯视觉, damage=0): 暴击连锁瞬间从命中点向周围敌人拉出 BeamGrad 蓝魂多线,
+    /// 加冲击环 + 径向辉光。绘制只在 PreDraw。
+    /// </summary>
+    public class DamnedSoulChain : ModProjectile
+    {
+        public override string Texture => "Terraria/Images/Projectile_1";
+        private const int Life = 32;
+        private const float ChainRange = 360f;
+
+        public static void Spawn(IEntitySource source, Vector2 worldPos, int owner) {
+            if (Main.dedServ || Main.myPlayer != owner)
+                return;
+            Projectile.NewProjectile(source, worldPos, Vector2.Zero,
+                ModContent.ProjectileType<DamnedSoulChain>(), 0, 0f, owner);
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = 2;
+            Projectile.height = 2;
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = Life;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.alpha = 255;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+        public override void AI() => Projectile.velocity = Vector2.Zero;
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+
+            float life = 1f - Projectile.timeLeft / (float)Life;
+            float fade = MathHelper.Clamp(life < 0.2f ? life / 0.2f : 1f - (life - 0.2f) / 0.8f, 0f, 1f);
+
+            int web = 0;
+            for (int i = 0; i < Main.maxNPCs && web < 6; i++) {
+                NPC npc = Main.npc[i];
+                if (!npc.active || npc.friendly || npc.dontTakeDamage)
+                    continue;
+                if (Vector2.Distance(Projectile.Center, npc.Center) > ChainRange)
+                    continue;
+                ACMShaders.DrawBeam(Projectile.Center, npc.Center, 6f * fade,
+                    new Color(170, 225, 255), new Color(40, 90, 220), fade * 0.9f,
+                    flowSpeed: 2.6f, flowScale: 2.6f);
+                web++;
+            }
+
+            WeaponVFX.DrawShockwaveRing(Projectile.Center, 12f + life * 90f, 9f, fade * 0.8f,
+                new Color(160, 220, 255), new Color(40, 80, 180));
+            if (fade > 0.4f)
+                WeaponVFX.DrawRadialBloom(Projectile.Center, 0.07f, fade * 0.6f, new Color(120, 200, 255), 8f);
+
+            return false;
         }
     }
 }

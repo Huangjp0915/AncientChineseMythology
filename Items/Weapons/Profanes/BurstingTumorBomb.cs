@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -127,6 +128,10 @@ public class TumorBombProj : ModProjectile
 
         SoundEngine.PlaySound(SoundID.NPCDeath1 with { Volume = 1.2f, Pitch = -0.5f }, Projectile.Center);
 
+        // 大型血肉爆裂演出 (冲击环 + 径向辉光)
+        ACMWeaponBurst.Spawn(Projectile.GetSource_Death(), Projectile.Center,
+            ACMWeaponBurst.Profane, scale: 1.8f, owner: Projectile.owner);
+
         if (Main.myPlayer == Projectile.owner) {
             // 爆炸VFX弹幕
             Projectile.NewProjectile(
@@ -165,7 +170,7 @@ public class TumorBombProj : ModProjectile
             }
         }
 
-        Main.player[Projectile.owner].GetModPlayer<ScreenShakePlayer>().ShakeScreen(8, 10);
+        WeaponVFX.AddScreenShake(Projectile.Center, 6f);
         Projectile.Kill();
     }
 }
@@ -226,6 +231,21 @@ public class TumorBlastVFX : ModProjectile
         float alpha = ACMUtils.QuadOut(1f - prog) * 0.90f;
         float scale = MathHelper.SmoothStep(0f, 16f, ACMUtils.QuadOut(prog));
 
+        // 大血肉冲击环 (在自管批之前调用)
+        WeaponVFX.DrawShockwaveRing(Projectile.Center, 24f + prog * 220f, 16f, alpha * 0.9f,
+            new Color(240, 100, 52), new Color(86, 16, 8));
+
+        // 血肉溶解灼烧边 (用炸弹贴图喂 DissolveBurn)
+        Texture2D bombTex = ModContent.Request<Texture2D>(
+            "AncientChineseMythology/Items/Weapons/Profanes/BurstingTumorBomb",
+            ReLogic.Content.AssetRequestMode.ImmediateLoad).Value;
+        if (bombTex != null) {
+            WeaponVFX.ApplyDissolveBurn(bombTex, Projectile.Center, null,
+                new Color(140, 12, 18), 0f, bombTex.Size() * 0.5f, 0.9f + prog * 0.5f,
+                threshold: prog, intensity: (1f - prog) * 0.85f,
+                edgeColor: new Color(240, 100, 52, 220), edgeWidth: 0.10f, noiseScale: 2.5f);
+        }
+
         SpriteBatch sb = Main.spriteBatch;
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
@@ -239,7 +259,7 @@ public class TumorBlastVFX : ModProjectile
         for (int k = 0; k < 10; k++) {
             float bAngle = k * MathF.PI / 5f + Timer * 0.015f;
             bool strong = (k % 2 == 0);
-            Color bColor = strong ? new Color(200, 30, 20) : new Color(255, 100, 80);
+            Color bColor = strong ? new Color(165, 45, 14) : new Color(240, 100, 52);
             float bLen = strong ? scale * 0.60f : scale * 0.40f;
             sb.Draw(burst, Projectile.Center - Main.screenPosition, null,
                 bColor * (alpha * 0.70f), bAngle,
@@ -249,7 +269,7 @@ public class TumorBlastVFX : ModProjectile
 
         // 大范围血雾
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-            new Color(200, 30, 20) * (alpha * 0.40f), 0f,
+            new Color(86, 16, 8) * (alpha * 0.40f), 0f,
             sg.Size() * 0.5f,
             scale * 0.55f, SpriteEffects.None, 0);
 
@@ -279,6 +299,11 @@ public class TumorFragment : ModProjectile
 
     private ref float Timer => ref Projectile.ai[0];
     private const int SPREAD_TIME = 20;
+
+    public override void SetStaticDefaults() {
+        ProjectileID.Sets.TrailingMode[Type] = 0;
+        ProjectileID.Sets.TrailCacheLength[Type] = 12;
+    }
 
     public override void SetDefaults() {
         Projectile.width = 12;
@@ -337,6 +362,11 @@ public class TumorFragment : ModProjectile
     }
 
     public override bool PreDraw(ref Color lightColor) {
+        // 统一双层暗红血肉拖尾
+        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 7f,
+            outerColor: new Color(86, 16, 8), innerColor: new Color(240, 100, 52),
+            uvScroll: -Main.GlobalTimeWrappedHourly * 1.6f);
+
         SpriteBatch sb = Main.spriteBatch;
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
@@ -347,11 +377,11 @@ public class TumorFragment : ModProjectile
         Texture2D sg = ACMAsset.SoftGlow;
 
         sb.Draw(star, Projectile.Center - Main.screenPosition, null,
-            new Color(200, 30, 20), Projectile.rotation,
+            new Color(165, 45, 14), Projectile.rotation,
             star.Size() * 0.5f,
             0.30f, SpriteEffects.None, 0);
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-            new Color(200, 40, 30) * 0.50f, 0f,
+            new Color(180, 35, 30) * 0.50f, 0f,
             sg.Size() * 0.5f,
             0.20f, SpriteEffects.None, 0);
 

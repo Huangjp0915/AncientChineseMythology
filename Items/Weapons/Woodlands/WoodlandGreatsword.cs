@@ -1,4 +1,6 @@
-﻿using Terraria;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework;
+using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -31,6 +33,16 @@ public class WoodlandGreatsword : ModItem
         if (Main.rand.NextBool(4)) {
             target.AddBuff(BuffID.Poisoned, 120);
         }
+
+        // 命中翠绿演出 (径向辉光 + 冲击环) + 飞散叶尘
+        for (int i = 0; i < 6; i++) {
+            int type = Main.rand.NextBool() ? DustID.Grass : DustID.GrassBlades;
+            Dust d = Dust.NewDustPerfect(target.Center, type,
+                Main.rand.NextVector2Circular(3.5f, 3.5f), 60, default, Main.rand.NextFloat(1f, 1.5f));
+            d.noGravity = true;
+        }
+        ACMWeaponBurst.Spawn(player.GetSource_OnHit(target), target.Center,
+            ACMWeaponBurst.Nature, scale: 1f, owner: player.whoAmI);
     }
 
     public override void MeleeEffects(Player player, Rectangle hitbox) {

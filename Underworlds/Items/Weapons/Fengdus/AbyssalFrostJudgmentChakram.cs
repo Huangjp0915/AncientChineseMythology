@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
 using AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs;
 using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
@@ -231,7 +232,8 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
 
             HitCounter++;
 
-            for (int i = 0; i < 20; i++) {
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center, ACMWeaponBurst.Water, 1f, Projectile.owner);
+            for (int i = 0; i < 8; i++) {
                 Vector2 vel = Main.rand.NextVector2CircularEdge(10f, 10f);
                 Dust burst = Dust.NewDustPerfect(target.Center, DustID.FrostStaff, vel, 40, default, Main.rand.NextFloat(2f, 3f));
                 burst.noGravity = true;
@@ -250,8 +252,14 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
                     }
                 }
 
-                for (int i = 0; i < 60; i++) {
-                    float angle = MathHelper.TwoPi / 60f * i;
+                // 绝对零度审判: 全屏冰幕 + 霜爆泛光 (本武器签名全屏时刻)
+                if (Main.myPlayer == Projectile.owner)
+                    Projectile.NewProjectile(Projectile.GetSource_OnHit(target), target.Center, Vector2.Zero,
+                        ModContent.ProjectileType<FrostJudgmentFlash>(), 0, 0f, Projectile.owner);
+                WeaponVFX.AddScreenShake(target.Center, 6f);
+
+                for (int i = 0; i < 24; i++) {
+                    float angle = MathHelper.TwoPi / 24f * i;
                     float radius = Main.rand.NextFloat(8f, 18f);
                     Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * radius;
                     Dust freeze = Dust.NewDustPerfect(target.Center, DustID.IceTorch, vel, 40, default, Main.rand.NextFloat(2.5f, 4f));
@@ -274,40 +282,33 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
             Texture2D texture = TextureAssets.Projectile[Type].Value;
             Vector2 origin = texture.Size() / 2f;
 
-            for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                if (Projectile.oldPos[i] == Vector2.Zero) continue;
-                float progress = 1f - (float)i / Projectile.oldPos.Length;
-                Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                Color trailColor = Color.Lerp(new Color(60, 120, 200), new Color(200, 240, 255), progress) * progress * 0.5f;
-                trailColor.A = 0;
-                float scale = Projectile.scale * progress;
-                Main.EntitySpriteDraw(texture, drawPos, null, trailColor, Projectile.oldRot[i], origin, scale, SpriteEffects.None, 0);
+            // 冰蓝轨道残影 (双层 ribbon: 外宽深冰 + 内窄冰白) —— 公转时如一道判官冰轮的弧痕
+            WeaponVFX.DrawProjectileTrail(Projectile, 30f,
+                new Color(40, 120, 210) * 0.9f, new Color(210, 245, 255),
+                ACMAsset.GlaciateWave, uvScroll: 0.05f, subdivisions: 3);
+
+            // 冲刺时的 BeamGrad 冰锋 (沿速度方向的锐利冲刺轨迹)
+            if (State == ChakramState.Dashing) {
+                Vector2 dir = Projectile.velocity.SafeNormalize(Vector2.UnitX);
+                ACMShaders.DrawBeam(Projectile.Center - dir * 80f, Projectile.Center + dir * 36f, 18f,
+                    new Color(220, 245, 255), new Color(40, 110, 210), 0.9f,
+                    flowSpeed: 2.6f, flowScale: 2.2f, coreSharp: 2.8f);
             }
 
-            Color mainColor = Color.Lerp(lightColor, new Color(200, 240, 255), 0.5f);
-            Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null, mainColor, Projectile.rotation, origin, Projectile.scale, SpriteEffects.None, 0);
-
-            Texture2D glaciate = ACMAsset.GlaciateWave;
-            if (glaciate != null && State == ChakramState.Dashing) {
-                Vector2 gOrigin = glaciate.Size() / 2f;
-                Color iceTrail = new Color(150, 220, 255) * 0.5f;
-                iceTrail.A = 0;
-                Main.EntitySpriteDraw(glaciate, Projectile.Center - Main.screenPosition, null, iceTrail, Projectile.velocity.ToRotation(), gOrigin, new Vector2(0.6f, 0.25f), SpriteEffects.None, 0);
-            }
-
+            // 旋转的冰判符轮 (判官冰轮的符纹环)
             Texture2D blankStar = ACMAsset.BlankStar;
             if (blankStar != null) {
                 Vector2 starOrigin = blankStar.Size() / 2f;
-                float pulse = 0.3f + MathF.Sin(Timer * 0.15f) * 0.1f;
-                Color starColor = new Color(180, 230, 255) * 0.6f;
+                float pulse = 0.34f + MathF.Sin(Timer * 0.15f) * 0.08f;
+                Color starColor = new Color(170, 225, 255) * 0.55f;
                 starColor.A = 0;
-                Main.EntitySpriteDraw(blankStar, Projectile.Center - Main.screenPosition, null, starColor, Timer * 0.1f, starOrigin, pulse, SpriteEffects.None, 0);
+                Main.EntitySpriteDraw(blankStar, Projectile.Center - Main.screenPosition, null, starColor, -Timer * 0.06f, starOrigin, pulse, SpriteEffects.None, 0);
             }
 
-            Color glowColor = new Color(120, 200, 255) * 0.3f;
-            glowColor.A = 0;
-            Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null, glowColor, Projectile.rotation, origin, Projectile.scale * 1.2f, SpriteEffects.None, 0);
-
+            // 冰晕 + 本体
+            WeaponVFX.DrawGlowBurst(Projectile.Center, Projectile.scale * 1.3f, new Color(110, 190, 255) * 0.4f);
+            Color mainColor = Color.Lerp(lightColor, new Color(200, 240, 255), 0.5f);
+            Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null, mainColor, Projectile.rotation, origin, Projectile.scale, SpriteEffects.None, 0);
             return false;
         }
 
@@ -319,6 +320,55 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
                     60, default, Main.rand.NextFloat(1.5f, 2.5f));
                 death.noGravity = true;
             }
+        }
+    }
+
+    /// <summary>
+    /// 绝对零度审判演出 (纯视觉, 本地客户端): ElementalScreenTint 冰幕 + RadialBloom 霜爆。
+    /// </summary>
+    public class FrostJudgmentFlash : ModProjectile
+    {
+        public override string Texture => "Terraria/Images/Projectile_1";
+        private const int Life = 30;
+
+        public override void SetDefaults() {
+            Projectile.width = 2;
+            Projectile.height = 2;
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = Life;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.alpha = 255;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+        public override bool? CanDamage() => false;
+        public override void AI() => Projectile.velocity = Vector2.Zero;
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+            float life = MathHelper.Clamp(Projectile.timeLeft / (float)Life, 0f, 1f);
+
+            // 冰幕染屏 (上=冰白雾, 下=深冰蓝压底)
+            Effect tintFx = ACMShaders.ElementalScreenTint;
+            if (tintFx != null) {
+                ACMShaders.SetCommonParams(tintFx, Projectile.Center, life);
+                tintFx.Parameters["uTint"]?.SetValue(new Vector4(TelegraphColors.Frost.ToVector3(), 0.33f * life));
+                tintFx.Parameters["uTint2"]?.SetValue(new Vector4(TelegraphColors.DeepFrost.ToVector3(), 0f));
+                tintFx.Parameters["uVignette"]?.SetValue(0.46f);
+                tintFx.Parameters["uFogScale"]?.SetValue(2.5f);
+                SpriteBatch sb = Main.spriteBatch;
+                sb.End();
+                ACMShaders.DrawFullscreenOverlay(tintFx, BlendState.AlphaBlend);
+                ACMShaders.RestoreDefaultBatch(sb);
+            }
+
+            // 霜爆泛光 (向外炸开的冰白核)
+            WeaponVFX.DrawRadialBloom(Projectile.Center, 0.22f, life * 0.85f, TelegraphColors.IceWhite, 12f);
+            return false;
         }
     }
 }

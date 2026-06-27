@@ -14,11 +14,16 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 {
     /// <summary>
-    /// 毗沙门天王 - 北方多闻天王，月后大后期Boss
-    /// 仙气类白色主题，持宝塔的护法天王
-    /// 一阶段：宝塔威光，神圣光弹和光束
-    /// 二阶段：天王降临，召唤夜叉，四方圣光
-    /// 三阶段：四天王威，终极宝塔光
+    /// 毗沙门天王 - 北方多闻天王 / 财神 · 四大天王之首 · 天将线终局门控 Boss (T35)
+    ///
+    /// 重做核心：与「天庭观察者」拆分换皮，建立独立的【财宝·宝塔·守护】身份。
+    /// 签名机制：宝塔充能（Pagoda Stack）——四座环绕宝塔各持 0-3 点充能，
+    /// Boss 的攻击由宝塔充能驱动；玩家贴近宝塔的「赐福区」可窃取一点充能，
+    /// 将本应瞬发的攻击转化为带预告的安全光束（防御/走位主导，而非更多弹幕）。
+    /// 一阶段：宝塔威光——充能驱动的控场弹幕，教学赐福窃取。
+    /// 二阶段：天王降临——召唤四方夜叉锚点 + 随地形起伏的仙气地波 + 守护反击窗口。
+    /// 三阶段：库藏封印——脚本化 A/B/C 三幕轮替（金环收束 / 夜叉镜射 / 终极宝塔），
+    ///         绝不退化为低血量加速喷弹。
     /// </summary>
     [AutoloadBossHead]
     internal partial class Vaisravana : ModNPC
@@ -33,6 +38,15 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
         /// <summary>宝塔环绕数量</summary>
         public const int TowerCount = 4;
+
+        /// <summary>单座宝塔最大充能</summary>
+        public const int MaxTowerCharge = 3;
+
+        /// <summary>赐福区半径——玩家进入即可窃取宝塔充能</summary>
+        public const float BlessingRadius = 130f;
+
+        /// <summary>窃取充能可暂存的上限（用于转化后续攻击）</summary>
+        public const int MaxPendingBlessing = 3;
 
         #endregion
 
@@ -66,27 +80,37 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
         private float[] towerDistances;
         private float towerOrbitSpeed;
 
-        // 攻击控制
-        private Vector2 dashTarget;
-        private Vector2 dashVelocity;
-        private int dashCount;
-        private int maxDashCount;
+        // 宝塔充能机制（签名机制）
+        private int[] towerCharges;          // 各塔当前充能 0..MaxTowerCharge
+        private int[] towerRechargeTimer;    // 各塔回充计时
+        private int pendingBlessing;         // 已窃取、可转化下次攻击的赐福数
+        private int blessingStealCooldown;   // 窃取冷却
+        private int lastBlessedTower = -1;   // 最近被窃取的塔（用于绘制反馈）
+        private int blessingFlash;           // 窃取闪光计时（绘制用）
 
-        // 光柱控制
-        private Vector2[] pillarPositions;
+        // 攻击控制
+        private Vector2 dashTarget;          // 网络同步保留
+        private Vector2 dashVelocity;        // SpringDamp2D 阻尼累积
+        private int dashCount;               // 网络同步保留
 
         // 星辰控制
         private int starCount;
         private Vector2[] starPositions;
 
-        // 激光控制
+        // 激光 / 镜轴控制
         private float laserAngle;
         private float laserSweepDirection;
-        private int laserChargeTime;
 
-        // 夜叉仆从控制
+        // 夜叉仆从控制（四方锚点）
         private int[] yakshaMinionIds;
-        private bool hasSpawnedMinions;
+
+        // 守护反击窗口（借鉴玄武 绝对防御）
+        private bool guardActive;
+        private int guardReflectCooldown;
+        private float guardVisual;
+
+        // 三阶段库藏封印轮替
+        private int sealCycle;               // 0=金环 1=镜射 2=终极
 
         // 视觉效果
         private float haloRotation;
@@ -140,24 +164,15 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             seed = Main.rand.Next(10000);
             random = new Random(seed);
 
-            // 初始化宝塔
-            towerAngles = new float[TowerCount];
-            towerDistances = new float[TowerCount];
-            for (int i = 0; i < TowerCount; i++) {
-                towerAngles[i] = MathHelper.TwoPi * i / TowerCount;
-                towerDistances[i] = 180f + Main.rand.NextFloat(-20f, 20f);
-            }
+            InitializeTowers();
             towerOrbitSpeed = 0.015f;
-
-            // 初始化光柱
-            pillarPositions = new Vector2[12];
 
             // 初始化星辰
             starPositions = new Vector2[16];
 
             // 初始化仆从
-            yakshaMinionIds = new int[4];
-            hasSpawnedMinions = false;
+            yakshaMinionIds = new int[TowerCount];
+            for (int i = 0; i < yakshaMinionIds.Length; i++) yakshaMinionIds[i] = -1;
 
             // 初始化视觉效果
             haloRotation = 0f;
@@ -181,6 +196,11 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             writer.Write(didPhase3Transition);
             writer.WriteVector2(dashTarget);
             writer.Write(dashCount);
+            writer.Write((byte)pendingBlessing);
+            writer.Write((byte)sealCycle);
+            writer.Write(guardActive);
+            if (towerCharges == null) InitializeTowers();
+            for (int i = 0; i < TowerCount; i++) writer.Write((byte)towerCharges[i]);
         }
 
         public override void ReceiveExtraAI(BinaryReader reader) {
@@ -191,6 +211,11 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             didPhase3Transition = reader.ReadBoolean();
             dashTarget = reader.ReadVector2();
             dashCount = reader.ReadInt32();
+            pendingBlessing = reader.ReadByte();
+            sealCycle = reader.ReadByte();
+            guardActive = reader.ReadBoolean();
+            if (towerCharges == null) InitializeTowers();
+            for (int i = 0; i < TowerCount; i++) towerCharges[i] = reader.ReadByte();
 
             random ??= new Random(seed);
         }
@@ -228,6 +253,33 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             }
         }
 
+        /// <summary>
+        /// 守护反击 — 处于「守护姿态」窗口时无敌并向攻击者迸射招财金镖（财神反震）。
+        /// 借鉴玄武 绝对防御 的受击反射，但主题为「劫财反震」。
+        /// </summary>
+        public override void ModifyIncomingHit(ref NPC.HitModifiers modifiers) {
+            if (!guardActive)
+                return;
+
+            // 守护窗口内伤害归零
+            modifiers.FinalDamage *= 0f;
+
+            if (Main.netMode == NetmodeID.MultiplayerClient || guardReflectCooldown > 0)
+                return;
+
+            guardReflectCooldown = 14;
+            guardVisual = MathHelper.Min(guardVisual + 0.4f, 1.6f);
+
+            Player attacker = Main.player[NPC.target];
+            Vector2 reflectDir = (attacker.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
+            for (int i = -1; i <= 1; i++) {
+                Vector2 vel = reflectDir.RotatedBy(i * MathHelper.ToRadians(14f)) * 12f;
+                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center + reflectDir * 70f, vel,
+                    ModContent.ProjectileType<TreasureTowerOrb>(), NPC.damage / 4, 2f, Main.myPlayer);
+            }
+            SoundEngine.PlaySound(SoundID.Item27 with { Pitch = 0.4f }, NPC.Center);
+        }
+
         #endregion
 
         #region AI主循环
@@ -236,8 +288,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             random ??= new Random(seed);
             globalTime += 1f / 60f;
 
-            // 初始化宝塔（如果需要）
-            if (towerAngles == null) {
+            if (towerAngles == null || towerCharges == null) {
                 InitializeTowers();
             }
 
@@ -256,31 +307,29 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                 }
             }
 
-            // 检查阶段转换
             CheckPhaseTransition();
-
-            // 更新视觉效果
             UpdateVisualEffects();
-
-            // 更新宝塔轨道
             UpdateTowers();
+            UpdatePagodaCharges(target);
+
+            if (!VaultUtils.isServer)
+                PublishScreenState();
+
+            if (guardReflectCooldown > 0) guardReflectCooldown--;
+            guardVisual = MathHelper.Lerp(guardVisual, guardActive ? 1.4f : 0f, 0.12f);
 
             PhaseTimer++;
             AttackTimer++;
 
-            // 根据当前阶段执行AI
             switch (Phase) {
                 case BossPhase.Intro:
                     RunIntro(target);
                     break;
-                case BossPhase.Phase1_TowerGlory:
-                    RunPhase1TowerGlory(target);
+                case BossPhase.Phase1_Hub:
+                    RunPhase1Hub(target);
                     break;
-                case BossPhase.Phase1_TowerBeam:
-                    RunPhase1TowerBeam(target);
-                    break;
-                case BossPhase.Phase1_HolyBarrage:
-                    RunPhase1HolyBarrage(target);
+                case BossPhase.Phase1_TowerVolley:
+                    RunPhase1TowerVolley(target);
                     break;
                 case BossPhase.Phase1_SweepingLight:
                     RunPhase1SweepingLight(target);
@@ -291,8 +340,8 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                 case BossPhase.PhaseTransition_2:
                     RunPhaseTransition2(target);
                     break;
-                case BossPhase.Phase2_Descend:
-                    RunPhase2Descend(target);
+                case BossPhase.Phase2_Hub:
+                    RunPhase2Hub(target);
                     break;
                 case BossPhase.Phase2_YakshaSummon:
                     RunPhase2YakshaSummon(target);
@@ -303,29 +352,23 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                 case BossPhase.Phase2_ImmortalWave:
                     RunPhase2ImmortalWave(target);
                     break;
-                case BossPhase.Phase2_DivineDash:
-                    RunPhase2DivineDash(target);
-                    break;
-                case BossPhase.Phase2_HaloStorm:
-                    RunPhase2HaloStorm(target);
+                case BossPhase.Phase2_GuardianStance:
+                    RunPhase2GuardianStance(target);
                     break;
                 case BossPhase.PhaseTransition_3:
                     RunPhaseTransition3(target);
                     break;
-                case BossPhase.Phase3_FourKingsWrath:
-                    RunPhase3FourKingsWrath(target);
+                case BossPhase.Phase3_SealRings:
+                    RunPhase3SealRings(target);
                     break;
-                case BossPhase.Phase3_TowerJudgment:
-                    RunPhase3TowerJudgment(target);
+                case BossPhase.Phase3_YakshaMirror:
+                    RunPhase3YakshaMirror(target);
                     break;
                 case BossPhase.Phase3_UltimateTower:
                     RunPhase3UltimateTower(target);
                     break;
-                case BossPhase.Phase3_YakshaSync:
-                    RunPhase3YakshaSync(target);
-                    break;
-                case BossPhase.Phase3_FinalRadiance:
-                    RunPhase3FinalRadiance(target);
+                case BossPhase.Phase3_SealBeat:
+                    RunPhase3SealBeat(target);
                     break;
             }
 
@@ -335,16 +378,20 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             // 宝塔光照
             for (int i = 0; i < TowerCount; i++) {
                 Vector2 towerPos = GetTowerPosition(i);
-                Lighting.AddLight(towerPos, new Vector3(1f, 0.95f, 0.85f) * 0.6f);
+                float chargeGlow = 0.4f + towerCharges[i] * 0.18f;
+                Lighting.AddLight(towerPos, new Vector3(1f, 0.92f, 0.7f) * chargeGlow);
             }
         }
 
         private void InitializeTowers() {
             towerAngles = new float[TowerCount];
             towerDistances = new float[TowerCount];
+            towerCharges = new int[TowerCount];
+            towerRechargeTimer = new int[TowerCount];
             for (int i = 0; i < TowerCount; i++) {
                 towerAngles[i] = MathHelper.TwoPi * i / TowerCount;
                 towerDistances[i] = 180f;
+                towerCharges[i] = MaxTowerCharge;
             }
         }
 
@@ -352,13 +399,86 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             for (int i = 0; i < TowerCount; i++) {
                 towerAngles[i] += towerOrbitSpeed;
 
-                // 轻微的距离波动
                 float baseDistance = 180f;
                 if (IsPhase2) baseDistance = 210f;
                 if (IsPhase3) baseDistance = 240f;
 
                 towerDistances[i] = baseDistance + MathF.Sin(globalTime * 1.8f + i * 0.6f) * 18f;
             }
+        }
+
+        /// <summary>
+        /// 宝塔充能机制核心：自动回充 + 玩家赐福窃取。
+        /// 玩家飞入某座宝塔的赐福区且该塔有充能时，窃取一点充能并暂存为「赐福」，
+        /// 用于把下一次瞬发攻击转化为带预告的安全光束。
+        /// </summary>
+        private void UpdatePagodaCharges(Player target) {
+            if (blessingStealCooldown > 0) blessingStealCooldown--;
+            if (blessingFlash > 0) blessingFlash--;
+
+            // 自动回充（出场/转阶段不回充，避免堆叠）
+            bool canRecharge = Phase != BossPhase.Intro &&
+                               Phase != BossPhase.PhaseTransition_2 &&
+                               Phase != BossPhase.PhaseTransition_3;
+            int rechargeInterval = IsPhase3 ? 150 : (IsPhase2 ? 190 : 230);
+            if (canRecharge) {
+                for (int i = 0; i < TowerCount; i++) {
+                    if (towerCharges[i] >= MaxTowerCharge) { towerRechargeTimer[i] = 0; continue; }
+                    towerRechargeTimer[i]++;
+                    if (towerRechargeTimer[i] >= rechargeInterval) {
+                        towerRechargeTimer[i] = 0;
+                        towerCharges[i]++;
+                        NPC.netUpdate = true;
+                    }
+                }
+            }
+
+            // 赐福窃取（仅服务器/单机判定）
+            if (Main.netMode != NetmodeID.MultiplayerClient && blessingStealCooldown <= 0 && pendingBlessing < MaxPendingBlessing) {
+                for (int i = 0; i < TowerCount; i++) {
+                    if (towerCharges[i] <= 0) continue;
+                    if (Vector2.DistanceSquared(target.Center, GetTowerPosition(i)) <= BlessingRadius * BlessingRadius) {
+                        towerCharges[i]--;
+                        pendingBlessing++;
+                        blessingStealCooldown = 40;
+                        lastBlessedTower = i;
+                        blessingFlash = 26;
+                        NPC.netUpdate = true;
+                        if (Main.netMode != NetmodeID.Server) {
+                            SoundEngine.PlaySound(SoundID.CoinPickup with { Pitch = 0.3f, Volume = 0.7f }, target.Center);
+                            // 赐福窃取金闪：财宝泛光 + 轻震反馈"我抢到了"
+                            VaisravanaTreasureScreenSystem.PulseBloom(0.55f);
+                            ACMScreenShakeSystem.Add(2f);
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        /// <summary>消费一点赐福。返回 true 表示本次攻击应使用「安全预告」变体。</summary>
+        private bool ConsumeBlessing() {
+            if (pendingBlessing > 0) {
+                pendingBlessing--;
+                NPC.netUpdate = true;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>消费一点指定/随机宝塔充能，返回是否成功（用于把攻击强度与塔挂钩）。</summary>
+        private bool ConsumeTowerCharge(int index) {
+            if (index >= 0 && index < TowerCount && towerCharges[index] > 0) {
+                towerCharges[index]--;
+                return true;
+            }
+            return false;
+        }
+
+        private int ChargedTowerCount() {
+            int c = 0;
+            for (int i = 0; i < TowerCount; i++) if (towerCharges[i] > 0) c++;
+            return c;
         }
 
         private Vector2 GetTowerPosition(int index) {
@@ -368,11 +488,42 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             return NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * distance;
         }
 
+        /// <summary>
+        /// 向 <see cref="VaisravanaTreasureScreenSystem"/> 发布库藏金幕氛围标量（纯本地视觉, 仅客户端）。
+        /// 库藏开启度随阶段升高; 终极宝塔（Pagoda Apex）蓄力期点亮地面坛城符文并加深金幕。
+        /// </summary>
+        private void PublishScreenState() {
+            // 库藏开启度：一阶段微金、二阶段渐浓、三阶段金光笼罩
+            float goldTint = 0.05f;
+            if (IsPhase3) goldTint = 0.30f;
+            else if (IsPhase2) goldTint = 0.14f;
+
+            // 终极宝塔坛城符文（70 tick 蓄力逐圈点亮 + 蓄满发射期保持）
+            bool runeActive = false;
+            float runeIntensity = 0f;
+            float runeRadius = 320f;
+            if (Phase == BossPhase.Phase3_UltimateTower) {
+                runeActive = true;
+                if ((int)SubState == 0) {
+                    float charge = MathHelper.Clamp(PhaseTimer / 70f, 0f, 1f);
+                    runeIntensity = charge;
+                    runeRadius = MathHelper.Lerp(240f, 560f, charge);
+                    goldTint = Math.Max(goldTint, 0.30f + charge * 0.40f);
+                }
+                else {
+                    runeIntensity = 1f;
+                    runeRadius = 560f;
+                    goldTint = Math.Max(goldTint, 0.55f);
+                }
+            }
+
+            VaisravanaTreasureScreenSystem.Publish(NPC.Center, goldTint, runeActive, NPC.Center,
+                runeRadius, runeIntensity, (float)Main.GlobalTimeWrappedHourly);
+        }
+
         private void UpdateVisualEffects() {
-            // 光环旋转
             haloRotation += 0.008f;
 
-            // 根据阶段调整光环
             if (IsPhase3) {
                 haloScale = 1.5f + MathF.Sin(globalTime * 3.5f) * 0.2f;
                 glowIntensity = 1.6f;
@@ -409,7 +560,17 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             PhaseTimer = 0;
             AttackTimer = 0;
             SubState = 0;
+            guardActive = false;
+            NPC.dontTakeDamage = false;
             NPC.netUpdate = true;
+        }
+
+        /// <summary>方向 dir(0=北,1=东,2=南,3=西) 的夜叉是否存活。</summary>
+        private bool YakshaAlive(int dir) {
+            if (yakshaMinionIds == null) return false;
+            int id = yakshaMinionIds[dir];
+            return id >= 0 && id < Main.maxNPCs && Main.npc[id].active &&
+                   Main.npc[id].type == ModContent.NPCType<YakshaMinion>();
         }
 
         #endregion
@@ -419,43 +580,40 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
         private void RunIntro(Player target) {
             introProgress = MathHelper.Clamp(PhaseTimer / 180f, 0f, 1f);
 
-            // 从天而降，带有神圣仙光
             Vector2 introOffset = new Vector2(0, -650) * (1f - ACMUtils.SineInOut(introProgress));
             Vector2 desiredPos = target.Center + new Vector2(0, -360) + introOffset;
 
             NPC.Center = Vector2.Lerp(NPC.Center, desiredPos, 0.025f);
             NPC.velocity *= 0.9f;
 
-            // 仙气粒子效果
             if (!VaultUtils.isServer && PhaseTimer % 2 == 0) {
-                // 白色仙光粒
                 for (int i = 0; i < 5; i++) {
                     Vector2 dustPos = NPC.Center + Main.rand.NextVector2CircularEdge(170, 170) * (1f - introProgress);
                     int dust = Dust.NewDust(dustPos, 0, 0, DustID.WhiteTorch, 0, 0, 100, default, 2f);
                     Main.dust[dust].noGravity = true;
                     Main.dust[dust].velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 5f;
                 }
-
-                // 星光粒子
                 for (int i = 0; i < 2; i++) {
                     Vector2 dustPos = NPC.Center + Main.rand.NextVector2Circular(120, 120);
-                    int dust = Dust.NewDust(dustPos, 0, 0, DustID.WhiteTorch, 0, -1.5f, 150, default, 1.3f);
+                    int dust = Dust.NewDust(dustPos, 0, 0, DustID.GoldFlame, 0, -1.5f, 150, default, 1.3f);
                     Main.dust[dust].noGravity = true;
                 }
             }
 
-            // 神圣音效
             if (PhaseTimer == 55) {
                 SoundEngine.PlaySound(SoundID.Item29 with { Pitch = -0.2f, Volume = 1.5f }, NPC.Center);
             }
 
             if (PhaseTimer == 115) {
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.1f }, NPC.Center);
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(14, 45);
+                if (!VaultUtils.isServer) {
+                    ACMScreenShakeSystem.Add(14f);
+                    VaisravanaTreasureScreenSystem.PulseBloom(0.5f);
+                }
             }
 
             if (PhaseTimer > 180) {
-                TransitionTo(BossPhase.Phase1_TowerGlory);
+                TransitionTo(BossPhase.Phase1_Hub);
             }
         }
 

@@ -3,18 +3,32 @@ using AncientChineseMythology.Items.Weapons.Bows;
 using AncientChineseMythology.Items.Weapons.SummoningStaffs;
 using AncientChineseMythology.Items.Weapons.Swords;
 using AncientChineseMythology.Systems;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent.ItemDropRules;
-using Terraria.Graphics.CameraModifiers;
 using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.NPCs.Boss.BlackBear
 {
+    /// <summary>
+    /// 黑熊精 Black Bear —— 早期丛林试炼熊 (Tutorial Bruiser, V2)。
+    /// 设计目标: 当好"Boss 会进入新阶段"的入门教学样板 —— P2 是<b>换规则而非加数值</b>。
+    ///
+    /// P1 (100~50%): 地面追击 + 近战挥击 (Attack_1) + 扑投 (Attack_2) + 招牌"熊抱冲撞" (BearHug:
+    ///   张臂蓄力 1s → 直线前扑, 玩家向侧面闪)。
+    /// 半血 i-frame 节拍 (Enrage): 一次咆哮砸地短演出 (裂地 ArenaRunic + 泛光 + 屏震 + 短暂无敌), 不被秒过场。
+    /// P2 "狂怒" (换规则): 场地蜂蜜滴落灾害 (落点地影预警的下落弹) + 头饰光环 (原 Proj3 改为环绕玩家 3s 后向内收拢的复发光环)。
+    /// 新接入 Attack_3 "立地震地" (站立蓄力 2s → 地面冲击波锥), 给远程玩家输出窗口。
+    ///
+    /// 伤害契约 (King Slime 式): <b>仅攻击激活帧</b>有接触伤害 (其余帧 <see cref="NPC.damage"/>=0); 移除旧"扩大碰撞框每 0.5s 强制扣血"垃圾。
+    /// 表现 (早期 Boss, 克制用量): telegraph 走 <see cref="TelegraphColors"/> + <see cref="ACMShaders.ArenaRunic"/> 地纹 / <see cref="ACMShaders.DrawBeam"/> 冲撞线;
+    ///   砸地泛光 <see cref="ACMShaders.DrawRadialBloomAt"/>; 屏震 <see cref="ACMScreenShakeSystem"/>。红=致命唯一色, 服务端零绘制, 遵从 <see cref="MythologyConfig"/>。
+    /// </summary>
     [AutoloadBossHead]
     public class BlackBear : ModNPC
     {
@@ -22,35 +36,42 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
         {
             Idle,
             Run,
-            Attack_1,
-            Attack_2,
-            Attack_3,
+            Attack_1,   // 近战挥击
+            Attack_2,   // 扑投弹幕
+            Attack_3,   // 立地震地 (蓄力 → 地面冲击波锥)
+            BearHug,    // 熊抱冲撞 (张臂蓄力 → 直线前扑)
+            Enrage,     // 半血相变节拍
             Die
         }
 
         private BearState currentState = BearState.Idle;
 
-        //动画帧控制
+        // —— 动画帧控制 ——
         private int currentFrame = 0;
         private int frameTimer = 0;
 
-        //攻击控制
-        private bool didDamageThisAttack = false;
+        // —— FSM ——
+        private int stateTimer = 0;          // 当前状态已持续帧数
+        private int attackCooldown = 90;     // 距下次出招的冷却
+        private bool furyTriggered = false;  // 是否已触发过半血相变
+        private float lungeDirX = 1f;        // 熊抱冲撞锁定的水平方向
 
-        //攻击后冷却
-        private int cooldownTimer = 180;
-        private int coolCount = 0;
-        private bool isShootDiadema = false;
-        //攻击距离
-        private float attackRange = 180f;
+        // —— 接触伤害 (仅激活帧) ——
+        private const int ContactDamage = 55;
 
-        //运动
-        private float runSpeed = 13.0f;
-        private float distanceThreshold = 200f;
+        // —— P2 狂怒灾害节流 ——
+        private int honeyTimer = 0;
+        private int haloTimer = 0;
+
+        // —— 演出强度 (供 PreDraw 读取; 在 AI 中衰减) ——
+        private float slamFlash = 0f;
+        private float enrageFlash = 0f;
+
+        // —— 运动 ——
+        private float runSpeed = 11.0f;
         private bool onGround = false;
-        private int jumpCooldown = 0;
 
-        //精灵图
+        // —— 精灵图 ——
         private Texture2D dieTexture;
         private Texture2D attackTexture_1;
         private Texture2D attackTexture_1_1;
@@ -63,22 +84,19 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
 
         private int deathIdleTimer = 0;
 
-        //死亡
+        // —— 死亡 ——
         private bool isDying = false;
         private int dieTimer = 0;
 
-        //用于“碰到玩家就伤害”的冷却
-        private int contactDamageCooldown = 0;
-        private int contactDamageMaxCD = 30; //0.5秒
-
-        //追踪玩家的时间
-        private int runTime = 0;
-        private const int LostSightThreshold = 600; //600 帧 ≈ 10 秒
+        // —— 追踪/脱战 ——
+        private const int LostSightThreshold = 600; // ≈10 秒
         private int lostSightTimer = 0;
 
-        //使用静态占位图
+        private bool Fury => NPC.life * 2 < NPC.lifeMax; // <50%
+
+        // 使用静态占位图
         public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear";
-        //Boss头像
+        // Boss 头像
         public override string BossHeadTexture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear_Head_Boss";
 
         public override void SetDefaults() {
@@ -93,9 +111,9 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
             idleTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Boss/BlackBear/idle_344").Value;
             idleTexture_1 = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Boss/BlackBear/idle_344_1").Value;
 
-            NPC.width = 220; //假设待命动画有4帧
-            NPC.height = 280; //待命动画每帧高度为344
-            NPC.damage = 55;
+            NPC.width = 220;
+            NPC.height = 280;
+            NPC.damage = ContactDamage;
             NPC.defense = 20;
             NPC.lifeMax = 8888;
             NPC.knockBackResist = 0f;
@@ -122,330 +140,429 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
                 return;
             }
             Player player = Main.player[NPC.target];
+
+            // 演出强度衰减
+            slamFlash *= 0.9f;
+            enrageFlash *= 0.92f;
+
             if (player.dead) {
-                NPC.noTileCollide = false; //NPC 与地块发生碰撞
-                //保持 Idle 状态，Boss原地不动
-                currentState = BearState.Idle;
-                NPC.velocity.X = 0f;
-                //Boos动画
-                frameTimer++;
-                if (frameTimer > 10) {
-                    frameTimer = 0;
-                    currentFrame++;
-                }
-                //增加死亡后等待时间
-                deathIdleTimer++;
-                //5秒后开始淡出（5秒=300 tick）
-                if (deathIdleTimer > 300) {
-                    //每 tick 增加透明度 5（你可以根据需要调整淡出速度）
-                    NPC.alpha += 5;
-                    if (NPC.alpha >= 255) {
-                        //完全透明后关闭 Boss
-                        NPC.active = false;
-                    }
-                }
+                HandlePlayerDeadIdle();
                 return;
             }
-
-            //重置死亡等待计时器（如果玩家活着）
             deathIdleTimer = 0;
 
             if (Main.netMode != NetmodeID.MultiplayerClient)
                 NPC.timeLeft = 300;
 
-            //检测是否在地面（使用 collideY 判断）
             onGround = NPC.collideY && NPC.velocity.Y >= 0f;
 
-            if (isDying)//死亡阶段
-            {
-                NPC.damage = 0;
-                if (dieTimer == 0)
-                    currentFrame = 0;
+            if (isDying) {
+                HandleDeath(player);
+                UpdateAnimation();
+                return;
+            }
+
+            // 默认: 无接触伤害 (King Slime 式, 仅攻击激活帧开启)
+            NPC.damage = 0;
+
+            // —— 半血相变节拍 (i-frame beat) ——
+            if (Fury && !furyTriggered && currentState != BearState.Enrage) {
+                EnterState(BearState.Enrage);
+                furyTriggered = true;
+                NPC.dontTakeDamage = true;
+                enrageFlash = 1f;
                 NPC.velocity.X = 0f;
-                dieTimer++;
-                int totalDie = 6; //死亡动画有6帧
-                if (dieTimer > (totalDie * 13) * 2) {
-                    DownedBossSystem.downedBlackBear = true;//在boos列表中标记 Boss 已死亡
-                    SoundEngine.PlaySound(new SoundStyle("AncientChineseMythology/Sounds/BlackBear/BlackBear_Roar"), player.Center);
-                    NPC.NPCLoot();
-                    NPC.active = false;
-                }
+                NPC.netUpdate = true;
+                ACMScreenShakeSystem.Add(10f);
+                SoundEngine.PlaySound(new SoundStyle("AncientChineseMythology/Sounds/BlackBear/BlackBear_Roar"), NPC.Center);
+            }
+
+            // —— P2 狂怒环境灾害 (换规则: 蜂蜜滴落 + 复发光环) ——
+            if (Fury && currentState != BearState.Enrage)
+                UpdateFuryHazards(player);
+
+            switch (currentState) {
+                case BearState.Run: DoRun(player); break;
+                case BearState.Attack_1: DoSwipe(player); break;
+                case BearState.Attack_2: DoToss(player); break;
+                case BearState.Attack_3: DoSlam(player); break;
+                case BearState.BearHug: DoBearHug(player); break;
+                case BearState.Enrage: DoEnrage(player); break;
+                case BearState.Idle:
+                default: DoIdle(player); break;
+            }
+
+            if (!onGround)
+                NPC.velocity.Y += 0.3f;
+            if (NPC.velocity.Y > 18f)
+                NPC.velocity.Y = 18f;
+
+            UpdateDespawnSight(player);
+            UpdateAnimation();
+            stateTimer++;
+        }
+
+        // ============================================================
+        //  状态处理
+        // ============================================================
+
+        private void EnterState(BearState s) {
+            currentState = s;
+            stateTimer = 0;
+            currentFrame = 0;
+            frameTimer = 0;
+        }
+
+        private void FaceTarget(Player player) {
+            NPC.direction = NPC.spriteDirection = (player.Center.X > NPC.Center.X) ? 1 : -1;
+        }
+
+        private void DoIdle(Player player) {
+            FaceTarget(player);
+            NPC.velocity.X *= 0.8f;
+            NPC.noTileCollide = false;
+            if (attackCooldown > 0)
+                attackCooldown--;
+            if (stateTimer >= 18)
+                EnterState(BearState.Run);
+        }
+
+        private void DoRun(Player player) {
+            DoChaseMovement(player);
+            if (attackCooldown > 0)
+                attackCooldown--;
+
+            if (attackCooldown <= 0 && onGround)
+                ChooseAttack(player);
+        }
+
+        private void ChooseAttack(Player player) {
+            float dist = Vector2.Distance(NPC.Center, player.Center);
+            float roll = Main.rand.NextFloat();
+
+            if (dist < 280f) {
+                // 近身: 挥击为主, 偶尔熊抱
+                EnterState(roll < 0.55f ? BearState.Attack_1 : BearState.BearHug);
+            }
+            else if (dist < 750f) {
+                // 中距: 熊抱冲撞 / 扑投 / 偶尔震地
+                if (roll < 0.40f) EnterState(BearState.BearHug);
+                else if (roll < 0.75f) EnterState(BearState.Attack_2);
+                else EnterState(BearState.Attack_3);
             }
             else {
-                switch (currentState)//根据状态切换动画
-                {
-                    //移动
-                    case BearState.Run:
-                        float dist = Vector2.Distance(NPC.Center, player.Center);
-                        if ((player.Center.Y + NPC.height < NPC.Center.Y && (dist > distanceThreshold * 1.5 && runTime >= 180)) && onGround || (runTime >= 240)) {
-                            currentState = BearState.Attack_2;
-                            runTime = 0;
-                            didDamageThisAttack = true;
-                            NPC.velocity.X = NPC.direction * runSpeed;
-                        }
-                        else {
-                            runTime++;
-                        }
+                // 远距: 震地 (给远程窗口) 或扑投
+                EnterState(roll < 0.6f ? BearState.Attack_3 : BearState.Attack_2);
+            }
+        }
 
-                        if (dist < distanceThreshold && onGround) {
-                            currentState = BearState.Attack_1;
-                            didDamageThisAttack = true;
-                        }
+        private void EndAttack() {
+            attackCooldown = Fury ? 65 : 90; // P2 节奏略快, 但每招仍有清晰前摇 (非加跑速)
+            EnterState(BearState.Idle);
+        }
 
-                        //控制 NPC 的左右移动
-                        if (player.position.X > NPC.position.X) {
-                            NPC.spriteDirection = 1;
-                            NPC.direction = 1; //向右移动
-                        }
-                        else {
-                            NPC.spriteDirection = -1;
-                            NPC.direction = -1; //向左移动
-                        }
+        // —— Attack_1: 近战挥击 (短前摇 + 激活帧地面冲击波) ——
+        private void DoSwipe(Player player) {
+            NPC.velocity.X *= 0.6f;
+            const int windup = 24;
+            const int activeStart = 24;
+            const int activeEnd = 38;
+            const int total = 52;
 
-                        //控制 NPC 的跳跃
-                        //检测前方是否有障碍物
-                        int checkDistance = 2; //用于决定检查的距离
-                        int tileX = (int)((NPC.position.X + (NPC.direction == 1 ? NPC.width : 0)) / 16) + (NPC.direction == 1 ? checkDistance : -checkDistance); //获取前方的方块位置
-                        int tileY = (int)((NPC.position.Y + NPC.height) / 16); //NPC底部的Y坐标，稍微向上偏移一点
+            if (stateTimer < windup)
+                FaceTarget(player);
 
-                        bool isOnPlatform = false; //是否在平台上
+            // 激活帧: 开接触伤害 + 一次地面冲击波弹
+            if (stateTimer >= activeStart && stateTimer <= activeEnd)
+                NPC.damage = ContactDamage;
 
-                        //检查 tile 是否存在
-                        if (Main.tile[tileX, tileY] != null && Main.tile[tileX, tileY].HasTile) {
-                            if (Main.tile[tileX, tileY].TileType == TileID.Platforms) {
-                                isOnPlatform = true; //NPC在平台上
-                            }
-                        }
-
-                        //在平台上，NPC会跟随玩家上下移动
-                        if (Math.Abs(player.Center.Y - NPC.Center.Y) < 800) //如果玩家上下的距离在一定范围内
-                        {
-                            if (player.Center.Y > NPC.Center.Y + NPC.height / 2 && isOnPlatform) //玩家在NPC下方
-                            {
-                                NPC.velocity.Y += 0.1f; //向下移动
-                                NPC.noTileCollide = true; //NPC 不与地块发生碰撞
-                            }
-                            else {
-                                NPC.noTileCollide = false; //NPC 与地块发生碰撞
-                            }
-                        }
-
-                        if (Math.Abs(player.position.X - NPC.position.X) < 200 && player.position.Y > NPC.position.Y + NPC.height) {
-                            if (isOnPlatform) {
-                                NPC.velocity.Y += 0.1f; //向下移动
-                                NPC.noTileCollide = true; //NPC 不与地块发生碰撞
-                            }
-                        }
-
-                        //控制 NPC 的水属性
-                        if (NPC.wet) {
-                            if (NPC.honeyWet) { //消除蜂蜜的下落速率影响，使 NPC 在蜂蜜中正常下落
-                                NPC.GravityMultiplier /= NPC.GravityWetMultipliers[LiquidID.Honey];
-                                NPC.MaxFallSpeedMultiplier /= NPC.MaxFallSpeedWetMultipliers[LiquidID.Honey];
-                            }
-                            else if (!NPC.lavaWet && !NPC.shimmerWet) { //移除水的下落速度影响，然后添加蜂蜜的下落速度影响，使 NPC 在水中以蜂蜜的速度下落
-                                NPC.GravityMultiplier *= NPC.GravityWetMultipliers[LiquidID.Honey] / NPC.GravityWetMultipliers[LiquidID.Water];
-                                NPC.MaxFallSpeedMultiplier *= NPC.MaxFallSpeedWetMultipliers[LiquidID.Honey] / NPC.MaxFallSpeedWetMultipliers[LiquidID.Water];
-                            }
-                        }
-
-                        if (NPC.collideY || NPC.collideX) {
-                            {
-                                if (NPC.life > NPC.lifeMax * 0.5f) {
-                                    NPC.direction = (player.Center.X > NPC.Center.X) ? 1 : -1;
-                                    NPC.spriteDirection = NPC.direction;
-                                    if (NPC.Center.X - player.Center.X > 600 || player.Center.X - NPC.Center.X > 600)
-                                        NPC.velocity.X = NPC.direction * (runSpeed - 6);
-                                    else if (NPC.Center.X - player.Center.X > 400 || player.Center.X - NPC.Center.X > 400)
-                                        NPC.velocity.X = NPC.direction * (runSpeed - 7);
-                                    else if (NPC.Center.X - player.Center.X > 200 || player.Center.X - NPC.Center.X > 200)
-                                        NPC.velocity.X = NPC.direction * (runSpeed - 8);
-                                }
-                                else {
-                                    NPC.direction = (player.Center.X > NPC.Center.X) ? 1 : -1;
-                                    NPC.spriteDirection = NPC.direction;
-                                    if (NPC.Center.X - player.Center.X > 600 || player.Center.X - NPC.Center.X > 600)
-                                        NPC.velocity.X = NPC.direction * (runSpeed - 4);
-                                    else if (NPC.Center.X - player.Center.X > 400 || player.Center.X - NPC.Center.X > 400)
-                                        NPC.velocity.X = NPC.direction * (runSpeed - 5);
-                                    else if (NPC.Center.X - player.Center.X > 200 || player.Center.X - NPC.Center.X > 200)
-                                        NPC.velocity.X = NPC.direction * (runSpeed - 6);
-                                }
-                            }
-                        }
-                        if (currentState == BearState.Run && NPC.position == NPC.oldPosition
-                            )
-                            NPC.velocity.Y = -12f - Main.rand.Next(0, 5); //设置跳跃的速度
-                        if (NPC.velocity.Y < -10f)
-                            NPC.noTileCollide = true;//不与物块碰撞 
-
-                        //如果前方有方块，则跳跃
-                        if (Main.tile[tileX, tileY] != null && Main.tile[tileX, tileY].HasTile)//这里需要修改，NPC.position.X 应该为 NPC.position.X + NPC.width / 2
-                        {
-                            if (NPC.collideX) {
-                                NPC.velocity.Y = -12f - Main.rand.Next(0, 5); //设置跳跃的速度
-                            }
-                            ////如果玩家在NPC上方，则向上跳跃
-                            if (NPC.Center.Y > player.Center.Y && NPC.Center.X < player.Center.X + NPC.width
-                                && NPC.Center.X > player.Center.X - NPC.width && NPC.collideY) {
-                                NPC.velocity.Y = -12f - (NPC.Center.Y - player.Center.Y) / 30f; //设置跳跃的速度
-                            }
-                        }
-                        break;
-                    //攻击
-                    case BearState.Attack_1:
-                        //攻击时原地减速
-                        NPC.velocity.X *= 0f;
-                        if (didDamageThisAttack && currentFrame == 6) {
-                            PunchCameraModifier modifier = new(NPC.Center, (Main.rand.NextFloat() * ((float)Math.PI * 2f)).ToRotationVector2(), 6f, 6f, 60, 1000f, FullName);//定义屏幕震动
-                            Main.instance.CameraModifiers.Add(modifier);//屏幕震动
-                            SoundEngine.PlaySound(new SoundStyle("AncientChineseMythology/Sounds/BlackBear/BlackBear_Attack_1"), NPC.Center);
-                            SoundEngine.PlaySound(new SoundStyle("AncientChineseMythology/Sounds/BlackBear/BlackBear_Roar"), player.Center);
-                            didDamageThisAttack = false;
-                            float attackDist = Vector2.Distance(NPC.Center, player.Center);
-                            if (attackDist <= attackRange * 4) {
-                                //计算击退方向：从 Boss 指向玩家
-                                Vector2 knockbackDir = (player.Center - NPC.Center);
-                                if (knockbackDir != Vector2.Zero)
-                                    knockbackDir.Normalize();
-                                else
-                                    knockbackDir = new Vector2(NPC.spriteDirection, 0);
-                                int projectileType = ModContent.ProjectileType<BlackBear_Proj1>();
-                                //发射主弹幕
-                                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center + new Vector2(-NPC.width / 6, -NPC.height / 12), NPC.velocity * 0, projectileType, 0, Main.myPlayer);
-                                if (attackDist <= attackRange * 2) {
-                                    //造成伤害，并施加强大击退
-                                    player.Hurt(PlayerDeathReason.ByNPC(NPC.whoAmI), NPC.damage, NPC.spriteDirection);
-                                    player.velocity += knockbackDir * 10f;
-                                    //粒子效果
-                                    for (int i = 0; i < 6; i++)//粒子效果
-                                    {
-                                        int dust = Dust.NewDust(player.position + player.velocity, player.width, player.height,
-                                        DustID.YellowStarfish, player.velocity.X * 1f, NPC.velocity.Y * 1f);
-                                        Main.dust[dust].color = Color.LightYellow; //设置颜色
-                                        Main.dust[dust].scale = 1.5f; //设置大小
-                                    }
-                                    for (int i = 0; i < 4; i++)//粒子效果
-                                    {
-                                        int dust = Dust.NewDust(player.position + player.velocity, player.width, player.height,
-                                        DustID.YellowStarfish, player.velocity.X * 1f, NPC.velocity.Y * 1f);
-                                        Main.dust[dust].color = Color.DarkGoldenrod; //设置颜色
-                                        Main.dust[dust].scale = 1.5f; //设置大小
-                                    }
-                                }
-                            }
-                        }
-                        if (coolCount == 0)
-                            currentFrame = 0;
-
-                        coolCount++;
-                        //当攻击动画播放完毕，进入冷却（5秒）
-                        if (coolCount >= 50) //攻击动画有10帧
-                        {
-                            didDamageThisAttack = false;
-                            coolCount = 0;
-                            cooldownTimer = 180;
-                            currentState = BearState.Idle;
-                        }
-                        break;
-                    case BearState.Attack_2:
-                        //停止移动
-                        NPC.velocity.X = 0f;
-
-                        //发射 8 到 12 个 BlackBear_Proj2 弹幕
-                        if (currentFrame == 6 && didDamageThisAttack) {
-                            SoundEngine.PlaySound(new SoundStyle("AncientChineseMythology/Sounds/BlackBear/BlackBear_Roar"), player.Center);
-                            didDamageThisAttack = false;
-                            int projectileCount = Main.rand.Next(8, 12);
-                            for (int i = 0; i < projectileCount; i++) {
-                                int projectileType = ModContent.ProjectileType<BlackBear_Proj2>();
-                                Vector2 spawnPosition = NPC.Center + new Vector2(Main.rand.NextFloat(-NPC.width / 2, NPC.width / 2), -NPC.height / 2);
-                                Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPosition, Vector2.Zero, projectileType, NPC.damage / 2, 0, Main.myPlayer);
-                            }
-                        }
-                        if (coolCount == 0)
-                            currentFrame = 0;
-                        coolCount++;
-                        //当攻击动画播放完毕，进入冷却（5秒）
-                        if (coolCount >= 50) //攻击动画有10帧
-                        {
-                            didDamageThisAttack = false;
-                            coolCount = 0;
-                            cooldownTimer = 180;
-                            currentState = BearState.Idle;
-                        }
-                        break;
-
-                    //待命
-                    case BearState.Idle:
-                        NPC.direction = (player.Center.X > NPC.Center.X) ? 1 : -1;
-                        NPC.spriteDirection = NPC.direction;
-                        if (cooldownTimer < 0) {
-                            currentState = BearState.Run;
-                        }
-                        else {
-                            cooldownTimer--;
-                            //Main.NewText(cooldownTimer);
-                            currentState = BearState.Idle;
-                            NPC.velocity.X = 0f;
-                            NPC.noTileCollide = false; //NPC 与地块发生碰撞
-                        }
-                        break;
-                    //死亡
-                    case BearState.Die:
-                        NPC.direction = (player.Center.X > NPC.Center.X) ? 1 : -1;
-                        NPC.spriteDirection = NPC.direction;
-                        break;
+            if (stateTimer == activeStart) {
+                SoundEngine.PlaySound(new SoundStyle("AncientChineseMythology/Sounds/BlackBear/BlackBear_Attack_1"), NPC.Center);
+                ACMScreenShakeSystem.Add(5f);
+                // 地面冲击波为可读地纹/视觉 (damage=0); 实际伤害走激活帧接触
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    int type = ModContent.ProjectileType<BlackBear_Proj1>();
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center + new Vector2(-NPC.width / 6f, -NPC.height / 12f),
+                        Vector2.Zero, type, 0, 0f, Main.myPlayer);
                 }
-                if (NPC.life < NPC.lifeMax * 0.5f) {
-                    if (!isShootDiadema) {
-                        int projectileType = ModContent.ProjectileType<BlackBear_Proj3>();
-                        //发射主弹幕
-                        Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center + new Vector2(0, -172), NPC.velocity * 0, projectileType, NPC.damage, Main.myPlayer);
-                        isShootDiadema = true;
-                    }
-                }
-                if (!onGround)
-                    NPC.velocity.Y += 0.3f;
-                if (jumpCooldown > 0)
-                    jumpCooldown--;
             }
 
-            //每帧检查接触伤害
-            CheckContactDamage();
+            if (stateTimer >= total)
+                EndAttack();
+        }
 
-            Player target = Main.player[NPC.target];
+        // —— Attack_2: 扑投蜂窝弹 ——
+        private void DoToss(Player player) {
+            NPC.velocity.X *= 0.85f;
+            const int windup = 30;
+            const int total = 56;
 
-            //判断距离<2000 像素且没有地形阻挡
-            bool canSeePlayer = !target.dead &&
-                                target.active &&
-                                Vector2.Distance(NPC.Center, target.Center) < 2000f &&
-                                Collision.CanHitLine(NPC.Center, 1, 1, target.Center, 1, 1);
+            if (stateTimer < windup)
+                FaceTarget(player);
+
+            if (stateTimer == windup) {
+                SoundEngine.PlaySound(new SoundStyle("AncientChineseMythology/Sounds/BlackBear/BlackBear_Roar"), player.Center);
+                ACMScreenShakeSystem.Add(3f);
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    int count = Main.rand.Next(7, 11);
+                    int type = ModContent.ProjectileType<BlackBear_Proj2>();
+                    for (int i = 0; i < count; i++) {
+                        Vector2 spawn = NPC.Center + new Vector2(Main.rand.NextFloat(-NPC.width / 2f, NPC.width / 2f), -NPC.height / 2f);
+                        // owner = 目标玩家索引: 供 Proj2 在 OnSpawn 朝该玩家瞄准 (MP 安全)
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), spawn, Vector2.Zero, type, 20, 0f, NPC.target);
+                    }
+                }
+            }
+
+            if (stateTimer >= total)
+                EndAttack();
+        }
+
+        // —— Attack_3: 立地震地 (2s 蓄力 → 地面冲击波锥) ——
+        private void DoSlam(Player player) {
+            NPC.velocity.X *= 0.5f; // 站立不动 → 远程输出窗口
+            const int charge = 120;   // 2s 蓄力
+            const int total = 150;
+
+            if (stateTimer < 20)
+                FaceTarget(player);
+
+            // 蓄力期 dust 蓄势 (越接近释放越密)
+            if (!Main.dedServ && stateTimer < charge && stateTimer % 3 == 0) {
+                float prog = stateTimer / (float)charge;
+                Vector2 p = NPC.Bottom + new Vector2(Main.rand.NextFloat(-60f, 60f), 0f);
+                Dust d = Dust.NewDustPerfect(p, DustID.Torch, new Vector2(0, -Main.rand.NextFloat(2f, 5f) * (0.4f + prog)), 100, Color.OrangeRed, 1.2f);
+                d.noGravity = true;
+            }
+
+            if (stateTimer == charge) {
+                slamFlash = 1f;
+                ACMScreenShakeSystem.Add(9f);
+                SoundEngine.PlaySound(new SoundStyle("AncientChineseMythology/Sounds/BlackBear/BlackBear_Attack_1"), NPC.Center);
+                SoundEngine.PlaySound(new SoundStyle("AncientChineseMythology/Sounds/BlackBear/BlackBear_Roar"), NPC.Center);
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    int type = ModContent.ProjectileType<BlackBearGroundShock>();
+                    // 双向地面冲击波锥 (各两道不同速度, 玩家跳跃可躲)
+                    foreach (int dir in new[] { -1, 1 }) {
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Bottom, new Vector2(dir * 9f, 0f), type, 40, 6f, Main.myPlayer, dir);
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Bottom, new Vector2(dir * 13f, 0f), type, 40, 6f, Main.myPlayer, dir);
+                    }
+                }
+            }
+
+            if (stateTimer >= total)
+                EndAttack();
+        }
+
+        // —— BearHug: 熊抱冲撞 (张臂蓄力 1s → 直线前扑) ——
+        private void DoBearHug(Player player) {
+            const int windup = 60;     // 1s 张臂蓄力 (锁方向)
+            const int lungeEnd = 95;   // 前扑窗口
+            const int total = 120;
+
+            if (stateTimer < windup) {
+                NPC.velocity.X *= 0.7f;
+                FaceTarget(player);
+                lungeDirX = NPC.direction;
+                // 蓄力 dust
+                if (!Main.dedServ && stateTimer % 4 == 0) {
+                    Vector2 p = NPC.Center + new Vector2(lungeDirX * NPC.width * 0.4f, Main.rand.NextFloat(-40f, 40f));
+                    Dust d = Dust.NewDustPerfect(p, DustID.GoldFlame, new Vector2(lungeDirX * 2f, 0f), 100, default, 1.3f);
+                    d.noGravity = true;
+                }
+            }
+            else if (stateTimer < lungeEnd) {
+                // 前扑: 高速直线 + 接触伤害激活
+                if (stateTimer == windup) {
+                    SoundEngine.PlaySound(new SoundStyle("AncientChineseMythology/Sounds/BlackBear/BlackBear_Attack_1"), NPC.Center);
+                    ACMScreenShakeSystem.Add(6f);
+                }
+                NPC.direction = NPC.spriteDirection = (int)lungeDirX;
+                NPC.velocity.X = lungeDirX * 18f;
+                NPC.damage = ContactDamage;
+            }
+            else {
+                NPC.velocity.X *= 0.85f; // 收势
+            }
+
+            if (stateTimer >= total)
+                EndAttack();
+        }
+
+        // —— Enrage: 半血相变咆哮 (短无敌, 不被秒过场) ——
+        private void DoEnrage(Player player) {
+            NPC.velocity.X *= 0.6f;
+            const int total = 70;
+            FaceTarget(player);
+
+            if (stateTimer == 30) {
+                slamFlash = 1f;
+                ACMScreenShakeSystem.Add(8f);
+            }
+
+            if (stateTimer >= total) {
+                NPC.dontTakeDamage = false;
+                attackCooldown = 30;
+                honeyTimer = 40;
+                haloTimer = 90;
+                EnterState(BearState.Idle);
+            }
+        }
+
+        // ============================================================
+        //  P2 狂怒环境灾害
+        // ============================================================
+        private void UpdateFuryHazards(Player player) {
+            // 蜂蜜滴落: 落点地影预警的下落弹
+            if (honeyTimer > 0)
+                honeyTimer--;
+            if (honeyTimer <= 0) {
+                honeyTimer = 55;
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    int type = ModContent.ProjectileType<BlackBearHoneyDrip>();
+                    int drips = Main.rand.Next(1, 3);
+                    for (int i = 0; i < drips; i++) {
+                        float targetX = player.Center.X + Main.rand.NextFloat(-360f, 360f);
+                        Vector2 spawn = new Vector2(targetX, player.Center.Y - 620f);
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), spawn, new Vector2(0f, 0.1f), type, 28, 0f, Main.myPlayer);
+                    }
+                }
+            }
+
+            // 头饰光环: 环绕玩家 3s 后向内收拢 (复发, 非一次性)
+            if (haloTimer > 0)
+                haloTimer--;
+            if (haloTimer <= 0) {
+                haloTimer = 360;
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    int type = ModContent.ProjectileType<BlackBear_Proj3>();
+                    const int orbs = 6;
+                    for (int i = 0; i < orbs; i++) {
+                        float ang = MathHelper.TwoPi * i / orbs;
+                        // owner = 目标玩家索引, 供光环环绕该玩家 (MP 安全)
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), player.Center, Vector2.Zero, type, 30, 0f, NPC.target, ang);
+                    }
+                }
+            }
+        }
+
+        // ============================================================
+        //  地面追击运动 (保留物理, 统一速度: P2 不加跑速)
+        // ============================================================
+        private void DoChaseMovement(Player player) {
+            FaceTarget(player);
+
+            float targetVX = NPC.direction * runSpeed;
+            NPC.velocity.X = MathHelper.Lerp(NPC.velocity.X, targetVX, 0.09f);
+
+            // 前方/底部方块检测 (平台跟随 + 卡墙起跳)
+            int checkDistance = 2;
+            int tileX = (int)((NPC.position.X + (NPC.direction == 1 ? NPC.width : 0)) / 16) + (NPC.direction == 1 ? checkDistance : -checkDistance);
+            int tileY = (int)((NPC.position.Y + NPC.height) / 16);
+
+            bool isOnPlatform = false;
+            if (Main.tile[tileX, tileY] != null && Main.tile[tileX, tileY].HasTile && Main.tile[tileX, tileY].TileType == TileID.Platforms)
+                isOnPlatform = true;
+
+            // 玩家在下方且脚下是平台 → 下穿
+            NPC.noTileCollide = false;
+            if (Math.Abs(player.Center.Y - NPC.Center.Y) < 800 &&
+                player.Center.Y > NPC.Center.Y + NPC.height / 2 && isOnPlatform) {
+                NPC.velocity.Y += 0.1f;
+                NPC.noTileCollide = true;
+            }
+
+            // 蜂蜜/水中按蜂蜜下落速率, 避免漂浮
+            if (NPC.wet) {
+                if (NPC.honeyWet) {
+                    NPC.GravityMultiplier /= NPC.GravityWetMultipliers[LiquidID.Honey];
+                    NPC.MaxFallSpeedMultiplier /= NPC.MaxFallSpeedWetMultipliers[LiquidID.Honey];
+                }
+                else if (!NPC.lavaWet && !NPC.shimmerWet) {
+                    NPC.GravityMultiplier *= NPC.GravityWetMultipliers[LiquidID.Honey] / NPC.GravityWetMultipliers[LiquidID.Water];
+                    NPC.MaxFallSpeedMultiplier *= NPC.MaxFallSpeedWetMultipliers[LiquidID.Honey] / NPC.MaxFallSpeedWetMultipliers[LiquidID.Water];
+                }
+            }
+
+            // 卡墙 / 玩家在上方 → 起跳
+            if (onGround) {
+                if (NPC.collideX)
+                    NPC.velocity.Y = -11f;
+                if (player.Center.Y < NPC.Center.Y - 80f && Math.Abs(player.Center.X - NPC.Center.X) < 220f)
+                    NPC.velocity.Y = -12f - MathHelper.Clamp((NPC.Center.Y - player.Center.Y) / 30f, 0f, 4f);
+                // 防卡死: 原地不动则小跳
+                if (NPC.position == NPC.oldPosition)
+                    NPC.velocity.Y = -10f;
+            }
+            if (NPC.velocity.Y < -10f)
+                NPC.noTileCollide = true;
+        }
+
+        // ============================================================
+        //  生命周期辅助
+        // ============================================================
+        private void HandlePlayerDeadIdle() {
+            NPC.noTileCollide = false;
+            currentState = BearState.Idle;
+            NPC.velocity.X = 0f;
+            frameTimer++;
+            if (frameTimer > 10) { frameTimer = 0; currentFrame++; }
+            deathIdleTimer++;
+            if (deathIdleTimer > 300) {
+                NPC.alpha += 5;
+                if (NPC.alpha >= 255)
+                    NPC.active = false;
+            }
+        }
+
+        private void HandleDeath(Player player) {
+            NPC.damage = 0;
+            if (dieTimer == 0) {
+                currentFrame = 0;
+                currentState = BearState.Die;
+            }
+            NPC.velocity.X = 0f;
+            dieTimer++;
+            int totalDie = 6;
+            if (dieTimer > (totalDie * 13) * 2) {
+                DownedBossSystem.downedBlackBear = true;
+                SoundEngine.PlaySound(new SoundStyle("AncientChineseMythology/Sounds/BlackBear/BlackBear_Roar"), player.Center);
+                NPC.NPCLoot();
+                NPC.active = false;
+            }
+        }
+
+        private void UpdateDespawnSight(Player player) {
+            bool canSeePlayer = !player.dead && player.active &&
+                Vector2.Distance(NPC.Center, player.Center) < 2000f &&
+                Collision.CanHitLine(NPC.Center, 1, 1, player.Center, 1, 1);
 
             if (canSeePlayer) {
-                lostSightTimer = 0;                 //重置计数
+                lostSightTimer = 0;
             }
             else {
                 lostSightTimer++;
                 if (lostSightTimer >= LostSightThreshold) {
-                    //单机 / 服务端：直接让 timeLeft 归零即可
                     if (Main.netMode != NetmodeID.MultiplayerClient) {
-                        NPC.life = 0;               //触发 HitEffect / OnKill 动画
+                        NPC.life = 0;
                         NPC.HitEffect();
-                        NPC.checkDead();            //立刻调用死亡处理
-                        NPC.active = false;         //从世界里移除
+                        NPC.checkDead();
+                        NPC.active = false;
                     }
                     else {
-                        //客户端只负责把 timeLeft 设 0，让服务器同步
                         NPC.timeLeft = 0;
                     }
                 }
             }
+        }
 
-            //更新动画计时
+        private void UpdateAnimation() {
             frameTimer++;
+            bool isAttack = currentState == BearState.Attack_1 || currentState == BearState.Attack_2 ||
+                            currentState == BearState.Attack_3 || currentState == BearState.BearHug;
             if ((currentState == BearState.Idle && frameTimer >= 12) ||
-                ((currentState == BearState.Attack_1 || currentState == BearState.Attack_2) && frameTimer >= 6) ||
+                (currentState == BearState.Enrage && frameTimer >= 8) ||
+                (isAttack && frameTimer >= 6) ||
                 (currentState == BearState.Run && frameTimer >= 8) ||
                 (currentState == BearState.Die && frameTimer >= 10 && currentFrame < 5)) {
                 frameTimer = 0;
@@ -453,49 +570,22 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
             }
         }
 
-        private void CheckContactDamage() {
-            //如果正在死亡状态，则不检测接触伤害
-            if (NPC.damage == 0)
-                return;
-
-            if (contactDamageCooldown > 0)
-                return;
-
-            //扩大碰撞区域，使 Boss 贴图边缘也能伤害玩家
-            Rectangle expandedHitbox = NPC.Hitbox;
-            expandedHitbox.Inflate(NPC.width / 2, NPC.height / 2);
-
-            for (int i = 0; i < Main.maxPlayers; i++) {
-                Player p = Main.player[i];
-                if (!p.active || p.dead)
-                    continue;
-                if (expandedHitbox.Intersects(p.Hitbox)) {
-                    p.Hurt(PlayerDeathReason.ByNPC(NPC.whoAmI), NPC.damage, NPC.direction);
-                    for (int j = 0; j < 5; j++) {
-                        Dust d = Dust.NewDustDirect(NPC.position, NPC.width, NPC.height, DustID.Torch, 0, 0, 100, Color.OrangeRed, 1.5f);
-                        d.noGravity = true;
-                    }
-                    contactDamageCooldown = contactDamageMaxCD;
-                    break;
-                }
-            }
-        }
         public override void HitEffect(NPC.HitInfo hit) {
-            //死亡动画
             if (!isDying && NPC.life <= 0) {
                 isDying = true;
-                NPC.life = 1; //确保 NPC 不会被重复击杀
-                NPC.dontTakeDamage = true; //防止在播放死亡动画时受到伤害
+                NPC.life = 1;
+                NPC.dontTakeDamage = true;
                 NPC.netUpdate = true;
                 currentState = BearState.Die;
             }
         }
 
         public override void ModifyIncomingHit(ref NPC.HitModifiers modifiers) {
-            if (currentState == BearState.Run) {
-                modifiers.FinalDamage *= 0.8f;//减少伤害
-            }
+            // 冲撞/扑击中略减伤, 鼓励玩家躲招后再输出
+            if (currentState == BearState.BearHug || currentState == BearState.Run)
+                modifiers.FinalDamage *= 0.85f;
         }
+
         private void DespawnLogic() {
             NPC.velocity.X = 0f;
             NPC.velocity.Y -= 0.2f;
@@ -503,52 +593,33 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
                 NPC.timeLeft = 10;
         }
 
+        // ============================================================
+        //  绘制 (含预警)
+        // ============================================================
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
             if (Main.dedServ)
-                return true;
+                return false;
+
+            DrawTelegraphs(spriteBatch);
 
             Texture2D texture;
             int frameHeight;
             int totalFrames;
+            bool fury = Fury;
 
             switch (currentState) {
                 case BearState.Die:
-                    texture = dieTexture;
-                    frameHeight = 328;
-                    totalFrames = 6;
-                    break;
+                    texture = dieTexture; frameHeight = 328; totalFrames = 6; break;
                 case BearState.Attack_1:
-                    if (NPC.life > NPC.lifeMax * 0.5f)
-                        texture = attackTexture_1;
-                    else
-                        texture = attackTexture_1_1;
-                    frameHeight = 328;
-                    totalFrames = 10;
-                    break;
+                case BearState.BearHug:
+                    texture = fury ? attackTexture_1_1 : attackTexture_1; frameHeight = 328; totalFrames = 10; break;
                 case BearState.Attack_2:
-                    if (NPC.life > NPC.lifeMax * 0.5f)
-                        texture = attackTexture_2;
-                    else
-                        texture = attackTexture_2_2;
-                    frameHeight = 328;
-                    totalFrames = 10;
-                    break;
+                case BearState.Attack_3:
+                    texture = fury ? attackTexture_2_2 : attackTexture_2; frameHeight = 328; totalFrames = 10; break;
                 case BearState.Run:
-                    if (NPC.life > NPC.lifeMax * 0.5f)
-                        texture = runTexture;
-                    else
-                        texture = runTexture_1;
-                    frameHeight = 332;
-                    totalFrames = 6;
-                    break;
+                    texture = fury ? runTexture_1 : runTexture; frameHeight = 332; totalFrames = 6; break;
                 default:
-                    if (NPC.life > NPC.lifeMax * 0.5f)
-                        texture = idleTexture;
-                    else
-                        texture = idleTexture_1;
-                    frameHeight = 344;
-                    totalFrames = 4;
-                    break;
+                    texture = fury ? idleTexture_1 : idleTexture; frameHeight = 344; totalFrames = 4; break;
             }
 
             int index = currentFrame % totalFrames;
@@ -557,8 +628,70 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
             Vector2 drawPos = NPC.Bottom - screenPos;
             Vector2 origin = new Vector2(texture.Width / 2f, frameHeight);
             SpriteEffects effects = (NPC.spriteDirection == 1) ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
+
+            // 狂怒态: 暖橙发光描边 (轻量, 让新手一眼看出"它进阶了")
+            if (fury) {
+                float pulse = 0.35f + 0.15f * (float)Math.Sin(Main.GlobalTimeWrappedHourly * 6f);
+                Color glow = TelegraphColors.Flame * pulse;
+                glow.A = 0;
+                for (int i = 0; i < 4; i++) {
+                    Vector2 off = (MathHelper.PiOver2 * i).ToRotationVector2() * 3f;
+                    spriteBatch.Draw(texture, drawPos + off, sourceRectangle, glow, 0f, origin, 1f, effects, 0f);
+                }
+            }
+
             spriteBatch.Draw(texture, drawPos, sourceRectangle, drawColor * NPC.Opacity, 0f, origin, 1f, effects, 0f);
             return false;
+        }
+
+        private void DrawTelegraphs(SpriteBatch sb) {
+            // 熊抱冲撞: 红色冲撞预警线 (蓄力期渐强)
+            if (currentState == BearState.BearHug && stateTimer < 60) {
+                float prog = MathHelper.Clamp(stateTimer / 60f, 0f, 1f);
+                Vector2 end = NPC.Center + new Vector2(lungeDirX, 0f) * 700f;
+                ACMShaders.DrawBeam(NPC.Center, end, 6f * (0.4f + 0.6f * prog),
+                    TelegraphColors.Lethal, TelegraphColors.Lethal * 0.35f, 0.25f + 0.55f * prog,
+                    flowSpeed: 1.2f, flowScale: 3f, coreSharp: 3f);
+            }
+
+            // 立地震地: 裂地地纹 (红, 蓄力渐强) + 蓄力泛光
+            if (currentState == BearState.Attack_3 && stateTimer < 120) {
+                float prog = MathHelper.Clamp(stateTimer / 120f, 0f, 1f);
+                DrawGroundDecal(sb, NPC.Bottom, 480f * (0.5f + 0.5f * prog), 0.55f * prog);
+                if (prog > 0.15f)
+                    ACMShaders.DrawRadialBloomAt(NPC.Center, 0.10f + 0.10f * prog, 0.35f * prog, TelegraphColors.Flame, rayCount: 8f);
+            }
+
+            // 砸地/震地释放泛光
+            if (slamFlash > 0.02f)
+                ACMShaders.DrawRadialBloomAt(NPC.Bottom, 0.22f, slamFlash, TelegraphColors.Flame, rayCount: 12f);
+
+            // 半血相变: 裂地 + 泛光
+            if (enrageFlash > 0.02f) {
+                DrawGroundDecal(sb, NPC.Bottom, 520f, enrageFlash * 0.6f);
+                ACMShaders.DrawRadialBloomAt(NPC.Center, 0.24f, enrageFlash, TelegraphColors.Flame, rayCount: 14f);
+            }
+        }
+
+        // 地纹 (ArenaRunic) 落点圈 —— 缺着色器自动跳过 (只少一层装饰)
+        private void DrawGroundDecal(SpriteBatch sb, Vector2 worldCenter, float worldRadius, float intensity) {
+            if (intensity <= 0.01f)
+                return;
+            Effect fx = ACMShaders.ArenaRunic;
+            if (fx == null)
+                return;
+            ACMShaders.WorldDecalParams(worldCenter, worldRadius, out Vector2 uv, out float radFrac, out float aspect);
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(intensity, 0f, 1f));
+            fx.Parameters["uCenter"]?.SetValue(uv);
+            fx.Parameters["uRadius"]?.SetValue(radFrac);
+            fx.Parameters["uAspect"]?.SetValue(aspect);
+            fx.Parameters["uShape"]?.SetValue(0f);
+            fx.Parameters["uMode"]?.SetValue(0f);
+            fx.Parameters["uRuneFreq"]?.SetValue(10f);
+            fx.Parameters["uColorPrimary"]?.SetValue(TelegraphColors.Flame.ToVector4());
+            fx.Parameters["uColorSecondary"]?.SetValue(TelegraphColors.Lethal.ToVector4());
+            ACMShaders.DrawScreenSpaceDecal(sb, fx, BlendState.Additive);
         }
 
         public override void ModifyNPCLoot(NPCLoot npcLoot) {

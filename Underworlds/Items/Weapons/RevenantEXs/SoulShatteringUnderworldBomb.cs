@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
 using AncientChineseMythology.Underworlds.Items.Weapons.Revenants;
 using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
@@ -168,6 +169,10 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
 
             Lighting.AddLight(explosionCenter, 3f, 1.5f, 4f);
 
+            // 升级演出: 一段大爆 GenericWarp 虚空冲击扭曲 + 层叠冲击环 (仅本机)
+            SoulShatterBlastFX.Spawn(Projectile.GetSource_FromThis(), explosionCenter, 0, Projectile.owner);
+            WeaponVFX.AddScreenShake(explosionCenter, 6f);
+
             // 范围debuff
             for (int i = 0; i < Main.maxNPCs; i++) {
                 NPC npc = Main.npc[i];
@@ -306,6 +311,10 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
 
             Lighting.AddLight(explosionCenter, 2f, 1f, 2.5f);
 
+            // 升级演出: 二段子雷 ElementalScreenTint 染屏 + 层叠冲击环 (仅本机)
+            SoulShatterBlastFX.Spawn(Projectile.GetSource_FromThis(), explosionCenter, 1, Projectile.owner);
+            WeaponVFX.AddScreenShake(explosionCenter, 4f);
+
             for (int i = 0; i < Main.maxNPCs; i++) {
                 NPC npc = Main.npc[i];
                 if (!npc.active || npc.friendly) continue;
@@ -335,6 +344,95 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
                 glowColor.A = 0;
                 Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, glowColor, 0f, glowOrigin, pulse, SpriteEffects.None, 0);
             }
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 碎魂两级爆炸演出弹幕 (纯视觉, damage=0)。stage=0 主雷大爆: GenericWarp 虚空冲击扭曲 + 层叠冲击环;
+    /// stage=1 子雷二段爆: ElementalScreenTint 短促紫染屏 (≤0.15) + 层叠冲击环。全屏后处理走单一名额; 绘制只在 PreDraw。
+    /// </summary>
+    public class SoulShatterBlastFX : ModProjectile
+    {
+        public override string Texture => "Terraria/Images/Projectile_1";
+        private const int Life = 38;
+        private int Stage => (int)Projectile.ai[0];
+
+        public static void Spawn(IEntitySource source, Vector2 worldPos, int stage, int owner) {
+            if (Main.dedServ || Main.myPlayer != owner)
+                return;
+            Projectile.NewProjectile(source, worldPos, Vector2.Zero,
+                ModContent.ProjectileType<SoulShatterBlastFX>(), 0, 0f, owner, stage);
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = 2;
+            Projectile.height = 2;
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = Life;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.alpha = 255;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+        public override void AI() => Projectile.velocity = Vector2.Zero;
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+
+            float life = 1f - Projectile.timeLeft / (float)Life;
+            float fade = MathHelper.Clamp(life < 0.15f ? life / 0.15f : 1f - (life - 0.15f) / 0.85f, 0f, 1f);
+            bool main = Stage == 0;
+            float baseR = main ? 26f : 16f;
+            float grow = main ? 320f : 200f;
+            SpriteBatch sb = Main.spriteBatch;
+
+            // —— 层叠冲击环 (三环, 相位错开) ——
+            for (int r = 0; r < 3; r++) {
+                float phase = MathHelper.Clamp(life - r * 0.12f, 0f, 1f);
+                if (phase <= 0f) continue;
+                float ringFade = MathHelper.Clamp(1f - phase, 0f, 1f) * fade;
+                WeaponVFX.DrawShockwaveRing(Projectile.Center, baseR + phase * grow, main ? 18f : 12f, ringFade * 0.85f,
+                    new Color(220, 130, 255), new Color(90, 30, 160));
+            }
+
+            if (main) {
+                // —— GenericWarp 虚空冲击扭曲 (向外推) ——
+                Effect warp = ACMShaders.GenericWarp;
+                if (warp != null && fade > 0.05f && ACMShaders.RequestFullscreenSlot()) {
+                    ACMShaders.SetCommonParams(warp, Projectile.Center, fade);
+                    warp.Parameters["uRadius"]?.SetValue(0.5f + life * 0.3f);
+                    warp.Parameters["uWarpScale"]?.SetValue(1.6f);
+                    warp.Parameters["uChroma"]?.SetValue(0.6f);
+                    warp.Parameters["uRadialPull"]?.SetValue(-0.5f); // 向外推(爆炸)
+                    warp.Parameters["uMode"]?.SetValue(4f);          // void
+                    warp.Parameters["uTint"]?.SetValue(new Vector4(0.35f, 0.16f, 0.5f, 0.6f));
+                    ACMShaders.ApplyScreenPostProcess(sb, warp, bindNoise: true);
+                }
+                if (fade > 0.4f)
+                    WeaponVFX.DrawRadialBloom(Projectile.Center, 0.14f, fade * 0.8f, new Color(190, 110, 255), 8f);
+            }
+            else {
+                // —— ElementalScreenTint 短促紫染屏 (≤0.15, 程序化 overlay) ——
+                Effect tint = ACMShaders.ElementalScreenTint;
+                if (tint != null && fade > 0.05f) {
+                    tint.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+                    tint.Parameters["uIntensity"]?.SetValue(fade * 0.13f);
+                    tint.Parameters["uAspect"]?.SetValue((float)Main.screenWidth / Main.screenHeight);
+                    tint.Parameters["uTint"]?.SetValue(new Vector4(0.4f, 0.18f, 0.55f, 0.85f));
+                    tint.Parameters["uTint2"]?.SetValue(new Vector4(0.12f, 0.05f, 0.2f, 1f));
+                    tint.Parameters["uVignette"]?.SetValue(0.5f);
+                    tint.Parameters["uFogScale"]?.SetValue(2.8f);
+                    sb.End();
+                    ACMShaders.DrawFullscreenOverlay(tint, BlendState.AlphaBlend);
+                    ACMShaders.RestoreDefaultBatch(sb);
+                }
+            }
+
             return false;
         }
     }

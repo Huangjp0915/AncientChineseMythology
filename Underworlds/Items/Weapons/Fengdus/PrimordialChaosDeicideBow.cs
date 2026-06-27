@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
 using AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs;
 using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
@@ -117,7 +118,8 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
             target.AddBuff(BuffID.Frostburn2, 600);
             target.AddBuff(BuffID.ShadowFlame, 600);
 
-            for (int i = 0; i < 25; i++) {
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center, ACMWeaponBurst.AbyssPurple, 1f, Projectile.owner);
+            for (int i = 0; i < 8; i++) {
                 Vector2 vel = Main.rand.NextVector2Circular(10f, 10f);
                 Dust burst = Dust.NewDustPerfect(target.Center, DustID.PurpleTorch, vel, 60, default, Main.rand.NextFloat(2f, 3f));
                 burst.noGravity = true;
@@ -126,6 +128,9 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
 
         public override void OnKill(int timeLeft) {
             SoundEngine.PlaySound(SoundID.Item14 with { Volume = 0.8f, Pitch = 0.2f }, Projectile.Center);
+
+            // 撕裂混元之门的"破口"泛光
+            ACMWeaponBurst.Spawn(Projectile.GetSource_FromThis(), Projectile.Center, ACMWeaponBurst.AbyssPurple, 2.2f, Projectile.owner);
 
             int rainZone = ModContent.ProjectileType<ChaosRainZone>();
             Projectile.NewProjectile(Projectile.GetSource_FromThis(), Projectile.Center, Vector2.Zero,
@@ -145,30 +150,18 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            Texture2D lightningBranch = ACMAsset.LightningBranch;
-            if (lightningBranch != null) {
-                Vector2 origin = lightningBranch.Size() / 2f;
-                for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                    if (Projectile.oldPos[i] == Vector2.Zero) continue;
-                    float progress = 1f - (float)i / Projectile.oldPos.Length;
-                    Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                    Color trailColor = Color.Lerp(new Color(60, 20, 160), new Color(180, 100, 255), progress) * progress * 0.5f;
-                    trailColor.A = 0;
-                    float scale = 0.08f * progress;
-                    Main.EntitySpriteDraw(lightningBranch, drawPos, null, trailColor, Projectile.oldRot[i] - MathHelper.PiOver2, origin, new Vector2(scale * 0.4f, scale), SpriteEffects.None, 0);
-                }
-            }
+            // 弑神冰矢: 双层 ribbon 拖尾 (外暗紫 + 内冰白)
+            WeaponVFX.DrawProjectileTrail(Projectile, 18f,
+                new Color(80, 30, 180) * 0.9f, new Color(190, 150, 255),
+                ACMAsset.SoftGlow, uvScroll: 0.06f, subdivisions: 3);
 
-            Texture2D softGlow = ACMAsset.SoftGlow;
-            if (softGlow != null) {
-                Vector2 glowOrigin = softGlow.Size() / 2f;
-                Color headGlow = new Color(160, 80, 255) * 0.9f;
-                headGlow.A = 0;
-                Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, headGlow, 0f, glowOrigin, 1.2f, SpriteEffects.None, 0);
-                Color outerGlow = new Color(80, 40, 200) * 0.4f;
-                outerGlow.A = 0;
-                Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, outerGlow, 0f, glowOrigin, 2f, SpriteEffects.None, 0);
-            }
+            // BeamGrad 主箭锋线 (沿飞行方向的冰紫锐锋)
+            Vector2 dir = Projectile.velocity.SafeNormalize(Vector2.UnitX);
+            ACMShaders.DrawBeam(Projectile.Center - dir * 46f, Projectile.Center + dir * 14f, 11f,
+                new Color(200, 170, 255), new Color(50, 30, 170), 0.95f,
+                flowSpeed: 2.8f, flowScale: 2.2f, coreSharp: 3f);
+
+            WeaponVFX.DrawGlowBurst(Projectile.Center, 1.2f, new Color(150, 90, 255) * 0.8f);
             return false;
         }
     }
@@ -220,32 +213,36 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
 
         public override bool PreDraw(ref Color lightColor) {
             float progress = Timer / 180f;
-            float opacity = 1f - progress * 0.5f;
+            float fadeIn = MathHelper.Clamp(Timer / 18f, 0f, 1f);
+            float opacity = fadeIn * (1f - progress * 0.5f);
 
-            Texture2D smoke = ACMAsset.Smoke;
-            if (smoke != null) {
-                int frame = (int)(Timer * 0.2f) % 16;
-                int frameX = frame % 4;
-                int frameY = frame / 4;
-                int frameW = smoke.Width / 4;
-                int frameH = smoke.Height / 4;
-                Rectangle sourceRect = new Rectangle(frameX * frameW, frameY * frameH, frameW, frameH);
-                Vector2 smokeOrigin = new Vector2(frameW / 2f, frameH / 2f);
-                Color portalColor = new Color(100, 40, 220) * opacity * 0.5f;
-                portalColor.A = 0;
-                Main.EntitySpriteDraw(smoke, Projectile.Center - Main.screenPosition, sourceRect, portalColor, Timer * 0.04f, smokeOrigin, 0.4f, SpriteEffects.None, 0);
-                Color portalColor2 = new Color(180, 80, 255) * opacity * 0.3f;
-                portalColor2.A = 0;
-                Main.EntitySpriteDraw(smoke, Projectile.Center - Main.screenPosition, sourceRect, portalColor2, -Timer * 0.03f, smokeOrigin, 0.6f, SpriteEffects.None, 0);
+            // 混元之门: ArenaRunic 法阵符环地纹 (世界对齐的混元结界口)
+            Effect runic = ACMShaders.ArenaRunic;
+            if (runic != null) {
+                ACMShaders.WorldDecalParams(Projectile.Center, 160f, out Vector2 uv, out float rFrac, out float aspect);
+                runic.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+                runic.Parameters["uCenter"]?.SetValue(uv);
+                runic.Parameters["uRadius"]?.SetValue(rFrac);
+                runic.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(opacity, 0f, 1f));
+                runic.Parameters["uAspect"]?.SetValue(aspect);
+                runic.Parameters["uColorPrimary"]?.SetValue(new Color(150, 90, 255).ToVector4());
+                runic.Parameters["uColorSecondary"]?.SetValue(new Color(120, 200, 255).ToVector4());
+                runic.Parameters["uRuneFreq"]?.SetValue(13f);
+                runic.Parameters["uMode"]?.SetValue(0f);  // 法阵地纹
+                runic.Parameters["uShape"]?.SetValue(0f);
+                ACMShaders.DrawScreenSpaceDecal(Main.spriteBatch, runic);
             }
 
-            Texture2D blankStar = ACMAsset.BlankStar;
-            if (blankStar != null) {
-                Vector2 starOrigin = blankStar.Size() / 2f;
-                Color starColor = new Color(200, 120, 255) * opacity * 0.7f;
-                starColor.A = 0;
-                float pulse = 0.5f + MathF.Sin(Timer * 0.15f) * 0.15f;
-                Main.EntitySpriteDraw(blankStar, Projectile.Center - Main.screenPosition, null, starColor, Timer * 0.08f, starOrigin, pulse, SpriteEffects.None, 0);
+            // 门心暗芯 + 紫晕
+            Texture2D softGlow = ACMAsset.SoftGlow;
+            if (softGlow != null) {
+                Vector2 origin = softGlow.Size() / 2f;
+                Color dark = new Color(14, 6, 30) * (0.8f * opacity);
+                dark.A = 0;
+                Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, dark, 0f, origin, 2.4f + MathF.Sin(Timer * 0.12f) * 0.3f, SpriteEffects.None, 0);
+                Color halo = new Color(150, 90, 255) * (opacity * 0.5f);
+                halo.A = 0;
+                Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, halo, 0f, origin, 3.4f, SpriteEffects.None, 0);
             }
             return false;
         }
@@ -257,6 +254,11 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
     public class ChaosRainArrow : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Underworlds/Items/Weapons/Fengdus/PrimordialChaosDeicideBow";
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.TrailCacheLength[Projectile.type] = 10;
+            ProjectileID.Sets.TrailingMode[Projectile.type] = 2;
+        }
 
         public override void SetDefaults() {
             Projectile.width = 14;
@@ -300,13 +302,12 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            Texture2D softGlow = ACMAsset.SoftGlow;
-            if (softGlow != null) {
-                Vector2 origin = softGlow.Size() / 2f;
-                Color glowColor = new Color(140, 60, 220) * 0.6f;
-                glowColor.A = 0;
-                Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, glowColor, 0f, origin, 0.7f, SpriteEffects.None, 0);
-            }
+            // 堕天羽箭: 轻量双层 ribbon 飘带 (外暗紫 + 内冰白)
+            WeaponVFX.DrawProjectileTrail(Projectile, 9f,
+                new Color(90, 40, 200) * 0.8f, new Color(180, 140, 255),
+                ACMAsset.SoftGlow, uvScroll: 0.08f, subdivisions: 1);
+
+            WeaponVFX.DrawGlowBurst(Projectile.Center, 0.7f, new Color(140, 60, 220) * 0.6f);
             return false;
         }
 

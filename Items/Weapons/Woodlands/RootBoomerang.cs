@@ -1,4 +1,6 @@
 ﻿using System;
+using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -53,6 +55,11 @@ public class RootBoomerangProj : ModProjectile
     public override string Texture
         => "AncientChineseMythology/Items/Weapons/Woodlands/RootBoomerang";
 
+    public override void SetStaticDefaults() {
+        ProjectileID.Sets.TrailCacheLength[Type] = 14;
+        ProjectileID.Sets.TrailingMode[Type] = 0;
+    }
+
     public override void SetDefaults() {
         Projectile.width = 22;
         Projectile.height = 22;
@@ -105,5 +112,17 @@ public class RootBoomerangProj : ModProjectile
                 Main.rand.NextVector2Circular(3f, 3f), 60, default, 1.2f);
             d.noGravity = true;
         }
+        ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+            ACMWeaponBurst.Nature, scale: 0.8f, owner: Projectile.owner);
+    }
+
+    public override bool PreDraw(ref Color lightColor) {
+        // 旋飞木纹弧光双层拖尾; 返回阶段提升内层亮度
+        bool returning = Projectile.ai[0] >= 30f;
+        int innerAlpha = returning ? 220 : 150;
+        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 9f,
+            outerColor: new Color(90, 70, 40, 150), innerColor: new Color(170, 220, 120, innerAlpha),
+            uvScroll: -Main.GlobalTimeWrappedHourly * 1.2f);
+        return true; // 保留镖体贴图
     }
 }

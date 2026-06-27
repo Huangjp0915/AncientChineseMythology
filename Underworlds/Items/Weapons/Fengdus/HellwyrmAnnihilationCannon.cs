@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
 using AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs;
 using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
@@ -151,7 +152,8 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
             target.AddBuff(BuffID.OnFire3, 600);
             target.AddBuff(BuffID.Ichor, 600);
 
-            for (int i = 0; i < 15; i++) {
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center, ACMWeaponBurst.Scorch, 1f, Projectile.owner);
+            for (int i = 0; i < 6; i++) {
                 Vector2 vel = Main.rand.NextVector2Circular(8f, 8f);
                 Dust burst = Dust.NewDustPerfect(target.Center, DustID.Torch, vel, 60, new Color(255, 140, 30), Main.rand.NextFloat(2f, 3f));
                 burst.noGravity = true;
@@ -177,43 +179,31 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
             float progress = Timer / 90f;
             float opacity = 1f - progress * 0.6f;
 
-            Texture2D smoke = ACMAsset.Smoke;
-            if (smoke != null) {
-                int frame = (int)(Timer * 0.4f) % 16;
-                int frameX = frame % 4;
-                int frameY = frame / 4;
-                int frameW = smoke.Width / 4;
-                int frameH = smoke.Height / 4;
-                Rectangle sourceRect = new Rectangle(frameX * frameW, frameY * frameH, frameW, frameH);
-                Vector2 smokeOrigin = new Vector2(frameW / 2f, frameH / 2f);
-
-                Color fireColor = Color.Lerp(new Color(255, 180, 40), new Color(200, 60, 10), progress) * opacity * 0.7f;
-                fireColor.A = 0;
-                float smokeScale = 0.15f * Projectile.scale;
-                Main.EntitySpriteDraw(smoke, Projectile.Center - Main.screenPosition, sourceRect, fireColor, Projectile.rotation, smokeOrigin, smokeScale, SpriteEffects.None, 0);
-
-                Color darkSmoke = new Color(40, 10, 5) * opacity * 0.4f;
-                darkSmoke.A = 0;
-                Main.EntitySpriteDraw(smoke, Projectile.Center - Main.screenPosition, sourceRect, darkSmoke, Projectile.rotation + 0.5f, smokeOrigin, smokeScale * 1.3f, SpriteEffects.None, 0);
-            }
+            // 冥龙息: BeamGrad 由细到粗的吐纳梯度光束 (尾细→首粗), 取代烟雾帧
+            Vector2 dir = Projectile.velocity.SafeNormalize(Projectile.rotation.ToRotationVector2());
+            float headWidth = 22f * Projectile.scale;
+            float beamLen = 90f * Projectile.scale;
+            Vector2 head = Projectile.Center + dir * (18f * Projectile.scale);
+            Vector2 tail = Projectile.Center - dir * beamLen;
+            // 尾段(窄) → 首段(宽): 两段叠加近似 thin→wide 渐变
+            ACMShaders.DrawBeam(tail, Projectile.Center, headWidth * 0.45f,
+                new Color(255, 150, 40), new Color(120, 24, 6), opacity,
+                flowSpeed: 2.6f, flowScale: 2.4f, coreSharp: 2f);
+            ACMShaders.DrawBeam(Projectile.Center, head, headWidth,
+                new Color(255, 210, 90), new Color(200, 60, 12), opacity,
+                flowSpeed: 2.6f, flowScale: 2.0f, coreSharp: 1.7f);
 
             Texture2D emberShards = ACMAsset.EmberShards;
             if (emberShards != null) {
                 Vector2 emberOrigin = emberShards.Size() / 2f;
                 Color emberColor = new Color(255, 120, 20) * opacity * 0.6f;
                 emberColor.A = 0;
-                float emberScale = 0.2f * Projectile.scale;
+                float emberScale = 0.22f * Projectile.scale;
                 Main.EntitySpriteDraw(emberShards, Projectile.Center - Main.screenPosition, null, emberColor, Timer * 0.1f, emberOrigin, emberScale, SpriteEffects.None, 0);
             }
 
-            Texture2D softGlow = ACMAsset.SoftGlow;
-            if (softGlow != null) {
-                Vector2 glowOrigin = softGlow.Size() / 2f;
-                Color coreGlow = new Color(255, 200, 80) * opacity * 0.9f;
-                coreGlow.A = 0;
-                float pulse = 1f + MathF.Sin(Timer * 0.3f) * 0.2f;
-                Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, coreGlow, 0f, glowOrigin, Projectile.scale * pulse, SpriteEffects.None, 0);
-            }
+            // 龙息炽芯
+            WeaponVFX.DrawGlowBurst(head, Projectile.scale * (1f + MathF.Sin(Timer * 0.3f) * 0.15f), new Color(255, 190, 80) * (opacity * 0.85f));
             return false;
         }
 
@@ -283,12 +273,19 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
 
                 SoundEngine.PlaySound(SoundID.Item14 with { Volume = 1.8f, Pitch = -0.8f }, target.Center);
 
-                for (int i = 0; i < 50; i++) {
+                // 延迟引爆: RadialBloom + ElementalScreenTint 火幕 (本武器签名全屏时刻)
+                ACMWeaponBurst.Spawn(Projectile.GetSource_FromThis(), target.Center, ACMWeaponBurst.Scorch, 2.6f, Projectile.owner);
+                if (Main.myPlayer == Projectile.owner)
+                    Projectile.NewProjectile(Projectile.GetSource_FromThis(), target.Center, Vector2.Zero,
+                        ModContent.ProjectileType<DragonDetonationFlash>(), 0, 0f, Projectile.owner);
+                WeaponVFX.AddScreenShake(target.Center, 8f);
+
+                for (int i = 0; i < 20; i++) {
                     Vector2 vel = Main.rand.NextVector2CircularEdge(16f, 16f);
                     Dust ring = Dust.NewDustPerfect(target.Center, DustID.Torch, vel, 40, new Color(255, 80, 10), Main.rand.NextFloat(3f, 5f));
                     ring.noGravity = true;
                 }
-                for (int i = 0; i < 30; i++) {
+                for (int i = 0; i < 12; i++) {
                     Vector2 vel = Main.rand.NextVector2Circular(12f, 12f);
                     vel.Y -= 4f;
                     Dust smoke = Dust.NewDustPerfect(target.Center, DustID.Smoke, vel, 200, new Color(40, 15, 5), Main.rand.NextFloat(3f, 5f));
@@ -310,6 +307,53 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
                 float scale = 0.3f + progress * 0.5f;
                 Main.EntitySpriteDraw(sparkle, Projectile.Center - Main.screenPosition, null, sparkColor, Timer * 0.2f, origin, scale, SpriteEffects.None, 0);
             }
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 冥龙引爆演出 (纯视觉, 本地客户端): ElementalScreenTint 火幕 + RadialBloom 赤金爆心。
+    /// </summary>
+    public class DragonDetonationFlash : ModProjectile
+    {
+        public override string Texture => "Terraria/Images/Projectile_1";
+        private const int Life = 24;
+
+        public override void SetDefaults() {
+            Projectile.width = 2;
+            Projectile.height = 2;
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = Life;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.alpha = 255;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+        public override bool? CanDamage() => false;
+        public override void AI() => Projectile.velocity = Vector2.Zero;
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+            float life = MathHelper.Clamp(Projectile.timeLeft / (float)Life, 0f, 1f);
+
+            Effect tintFx = ACMShaders.ElementalScreenTint;
+            if (tintFx != null) {
+                ACMShaders.SetCommonParams(tintFx, Projectile.Center, life);
+                tintFx.Parameters["uTint"]?.SetValue(new Vector4(TelegraphColors.Flame.ToVector3(), 0.32f * life));
+                tintFx.Parameters["uTint2"]?.SetValue(new Vector4(new Color(120, 24, 8).ToVector3(), 0f));
+                tintFx.Parameters["uVignette"]?.SetValue(0.46f);
+                tintFx.Parameters["uFogScale"]?.SetValue(2.3f);
+                SpriteBatch sb = Main.spriteBatch;
+                sb.End();
+                ACMShaders.DrawFullscreenOverlay(tintFx, BlendState.AlphaBlend);
+                ACMShaders.RestoreDefaultBatch(sb);
+            }
+
+            WeaponVFX.DrawRadialBloom(Projectile.Center, 0.24f, life * 0.9f, new Color(255, 170, 70), 12f);
             return false;
         }
     }

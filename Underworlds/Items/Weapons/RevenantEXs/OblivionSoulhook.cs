@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
 using AncientChineseMythology.Underworlds.Items.Weapons.Revenants;
 using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
@@ -215,7 +216,14 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
                     Dust ring = Dust.NewDustPerfect(target.Center, DustID.GreenTorch, vel, 60, default, Main.rand.NextFloat(2f, 3.5f));
                     ring.noGravity = true;
                 }
+                // 升级演出: 寂灭虚空 (GenericWarp void + ElementalScreenTint), 仅本机生成
+                OblivionVoidFinisher.Spawn(Projectile.GetSource_OnHit(target), target.Center, Projectile.owner);
+                WeaponVFX.AddScreenShake(target.Center, 7f);
             }
+
+            // 命中冲击演出 (鬼绿径向辉光 + 冲击环)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.GhostGreen, scale: 1.2f, owner: Projectile.owner);
 
             SoundEngine.PlaySound(SoundID.NPCDeath6 with { Volume = 0.6f, Pitch = 0.4f }, target.Center);
         }
@@ -251,6 +259,14 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
                 Projectile.rotation + rotationOffset, origin, Projectile.scale, effects, 0);
 
             if (CurrentStage == AttackStage.Thrust) {
+                // 寂灭枪身 BeamGrad 冷绿光束 (从持握点沿枪身到枪尖)
+                Vector2 beamStart = Owner.MountedCenter;
+                Vector2 beamEnd = Projectile.Center + Projectile.rotation.ToRotationVector2() * 50f;
+                float beamI = MathHelper.Clamp(ThrustDistance / MaxThrustDistance, 0.2f, 1f);
+                ACMShaders.DrawBeam(beamStart, beamEnd, 16f * beamI,
+                    new Color(150, 255, 190), new Color(30, 150, 90), beamI,
+                    flowSpeed: 2.2f, flowScale: 2.4f, coreSharp: 2.4f);
+
                 Color glowColor = new Color(100, 255, 140) * 0.5f;
                 glowColor.A = 0;
                 Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null, glowColor,
@@ -275,6 +291,81 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
                     Main.EntitySpriteDraw(softGlow, tipPos, null, circleGlow, 0f, sgOrigin, pulse, SpriteEffects.None, 0);
                 }
             }
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 寂灭虚空演出弹幕 (纯视觉, damage=0): 击杀寂灭爆发瞬间在敌群中心展开 GenericWarp 虚空吸入扭曲
+    /// + 短促 ElementalScreenTint 鬼绿染屏 (≤0.15) + 冲击环。全屏后处理走单一名额; 绘制只在 PreDraw。
+    /// </summary>
+    public class OblivionVoidFinisher : ModProjectile
+    {
+        public override string Texture => "Terraria/Images/Projectile_1";
+        private const int Life = 40;
+
+        public static void Spawn(IEntitySource source, Vector2 worldPos, int owner) {
+            if (Main.dedServ || Main.myPlayer != owner)
+                return;
+            Projectile.NewProjectile(source, worldPos, Vector2.Zero,
+                ModContent.ProjectileType<OblivionVoidFinisher>(), 0, 0f, owner);
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = 2;
+            Projectile.height = 2;
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = Life;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.alpha = 255;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+        public override void AI() => Projectile.velocity = Vector2.Zero;
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+
+            float life = 1f - Projectile.timeLeft / (float)Life;
+            float fade = MathHelper.Clamp(life < 0.18f ? life / 0.18f : 1f - (life - 0.18f) / 0.82f, 0f, 1f);
+            SpriteBatch sb = Main.spriteBatch;
+
+            // —— 冲击环 (鬼绿双环, 扩张) ——
+            WeaponVFX.DrawShockwaveRing(Projectile.Center, 18f + life * 240f, 16f, fade * 0.9f,
+                new Color(160, 255, 180), new Color(30, 130, 80));
+
+            // —— GenericWarp 虚空吸入扭曲 (占单一全屏名额) ——
+            Effect warp = ACMShaders.GenericWarp;
+            if (warp != null && fade > 0.05f && ACMShaders.RequestFullscreenSlot()) {
+                ACMShaders.SetCommonParams(warp, Projectile.Center, fade);
+                warp.Parameters["uRadius"]?.SetValue(0.6f);
+                warp.Parameters["uWarpScale"]?.SetValue(1.4f);
+                warp.Parameters["uChroma"]?.SetValue(0.5f);
+                warp.Parameters["uRadialPull"]?.SetValue(0.7f); // 向心吸入(黑洞感)
+                warp.Parameters["uMode"]?.SetValue(4f);          // void
+                warp.Parameters["uTint"]?.SetValue(new Vector4(0.16f, 0.4f, 0.26f, 0.7f));
+                ACMShaders.ApplyScreenPostProcess(sb, warp, bindNoise: true);
+            }
+
+            // —— ElementalScreenTint 鬼绿染屏 (短促, ≤0.15, 程序化 overlay) ——
+            Effect tint = ACMShaders.ElementalScreenTint;
+            if (tint != null && fade > 0.05f) {
+                tint.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+                tint.Parameters["uIntensity"]?.SetValue(fade * 0.14f);
+                tint.Parameters["uAspect"]?.SetValue((float)Main.screenWidth / Main.screenHeight);
+                tint.Parameters["uTint"]?.SetValue(new Vector4(0.12f, 0.45f, 0.28f, 0.85f));
+                tint.Parameters["uTint2"]?.SetValue(new Vector4(0.03f, 0.12f, 0.08f, 1f));
+                tint.Parameters["uVignette"]?.SetValue(0.5f);
+                tint.Parameters["uFogScale"]?.SetValue(2.6f);
+                sb.End();
+                ACMShaders.DrawFullscreenOverlay(tint, BlendState.AlphaBlend);
+                ACMShaders.RestoreDefaultBatch(sb);
+            }
+
             return false;
         }
     }

@@ -72,17 +72,34 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
         }
 
         public override void HoldItem(Player player) {
+            int stacks = player.GetModPlayer<AzureTorrentPlayer>().TidalStacks;
+            float charge = stacks / (float)AzureTorrentPlayer.MaxStacks;
+
             if (Main.rand.NextBool(6)) {
                 Vector2 pos = player.Center + Main.rand.NextVector2Circular(42f, 42f);
                 int dust = Dust.NewDust(pos, 0, 0, DustID.Water, 0f, -0.4f, 70, AzureTorrentPalette.FlowGlow, 1.4f);
                 Main.dust[dust].noGravity = true;
             }
+
+            if (charge > 0f && Main.rand.NextFloat() < charge) {
+                float ringRadius = MathHelper.Lerp(56f, 30f, charge);
+                float ang = Main.rand.NextFloat(MathHelper.TwoPi);
+                Vector2 pos = player.Center + ang.ToRotationVector2() * ringRadius;
+                Dust swirl = Dust.NewDustPerfect(pos, DustID.BlueTorch,
+                    (player.Center - pos).SafeNormalize(Vector2.Zero) * (2f + charge * 4f), 60,
+                    Color.Lerp(AzureTorrentPalette.AzureStream, AzureTorrentPalette.JadeRipple, charge), 1f + charge);
+                swirl.noGravity = true;
+            }
+
+            if (stacks >= AzureTorrentPlayer.MaxStacks)
+                Lighting.AddLight(player.Center, AzureTorrentPalette.FlowGlow.ToVector3() * 0.6f);
         }
 
         public override void ModifyTooltips(System.Collections.Generic.List<TooltipLine> tooltips) {
             tooltips.Add(new TooltipLine(Mod, "QinglongLore", "「青鳞藏鞘，激流双刃」"));
             tooltips.Add(new TooltipLine(Mod, "QinglongEffect", "极快交替双刀斩击，鞘中飞出旋转激流剑"));
             tooltips.Add(new TooltipLine(Mod, "QinglongEffect2", "右键展开蔚蓝剑群，环绕协战并突袭敌人"));
+            tooltips.Add(new TooltipLine(Mod, "QinglongEffect3", "命中积攒潮涌，满层后下一斩爆发吞噬之潮——巨型激流之涡撕裂全场"));
         }
 
         public override void AddRecipes() {
@@ -126,6 +143,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
         }
 
         private bool _torrentLaunched;
+        private bool _novaUnleashed;
         private Player Owner => Main.player[Projectile.owner];
 
         public override void SetStaticDefaults() {
@@ -180,6 +198,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
                     if (Timer >= prepEnd) {
                         SoundEngine.PlaySound(SoundID.Item1 with { Pitch = 0.45f, Volume = 0.85f }, Owner.position);
                         CurrentStage = Stage.Execute;
+                        TryUnleashTidalNova();
                     }
                     break;
 
@@ -215,6 +234,25 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
             Projectile.scale = 0.92f * Owner.GetAdjustedItemScale(Owner.HeldItem);
             Owner.heldProj = Projectile.whoAmI;
             Timer++;
+        }
+
+        private void TryUnleashTidalNova() {
+            if (_novaUnleashed || Owner.whoAmI != Main.myPlayer)
+                return;
+
+            AzureTorrentPlayer flow = Owner.GetModPlayer<AzureTorrentPlayer>();
+            if (flow.TidalStacks < AzureTorrentPlayer.MaxStacks)
+                return;
+
+            _novaUnleashed = true;
+            flow.TidalStacks = 0;
+
+            int novaDamage = (int)(Owner.GetTotalDamage(DamageClass.Melee).ApplyTo(Owner.HeldItem.damage) * 1.35f);
+            Projectile.NewProjectile(Owner.GetSource_ItemUse(Owner.HeldItem), Owner.Center, Vector2.Zero,
+                ModContent.ProjectileType<AzureTidalNova>(), novaDamage, Owner.HeldItem.knockBack * 1.3f, Owner.whoAmI);
+
+            SoundEngine.PlaySound(SoundID.Item84 with { Pitch = -0.2f, Volume = 0.95f }, Owner.Center);
+            Owner.GetModPlayer<ScreenShakePlayer>().ShakeScreen(6, 12);
         }
 
         private void LaunchSheathTorrents() {
@@ -260,10 +298,19 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
 
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
             target.AddBuff(BuffID.Wet, 240);
+            Owner.GetModPlayer<AzureTorrentPlayer>().AddTidal(1);
+
             for (int i = 0; i < 8; i++) {
                 Dust d = Dust.NewDustPerfect(target.Center, DustID.Water,
                     Main.rand.NextVector2Circular(5f, 5f), 50, AzureTorrentPalette.AzureStream, 1.6f);
                 d.noGravity = true;
+            }
+
+            for (int i = 0; i < 12; i++) {
+                float ang = MathHelper.TwoPi * i / 12f;
+                Dust ring = Dust.NewDustPerfect(target.Center + ang.ToRotationVector2() * 18f,
+                    DustID.BlueTorch, ang.ToRotationVector2() * 3f, 90, AzureTorrentPalette.FlowGlow, 1.1f);
+                ring.noGravity = true;
             }
         }
 
@@ -364,6 +411,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
 
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
             target.AddBuff(BuffID.Wet, 300);
+            Main.player[Projectile.owner].GetModPlayer<AzureTorrentPlayer>().AddTidal(1);
             for (int i = 0; i < 10; i++) {
                 Vector2 vel = Main.rand.NextVector2CircularEdge(6f, 6f);
                 Dust d = Dust.NewDustPerfect(target.Center, DustID.BlueTorch, vel, 60, AzureTorrentPalette.JadeRipple, 1.5f);
@@ -489,6 +537,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
 
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
             target.AddBuff(BuffID.Wet, 180);
+            Owner.GetModPlayer<AzureTorrentPlayer>().AddTidal(1);
             _lunging = false;
             LungeTimer = 0f;
         }
@@ -539,10 +588,132 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
         }
     }
 
+    /// <summary>青涛潮涌叠层 — 青龙双刀命中积攒，满层解放吞噬之潮。</summary>
+    public class AzureTorrentPlayer : ModPlayer
+    {
+        public const int MaxStacks = 10;
+        public int TidalStacks;
+        private int _decayTimer;
+
+        public void AddTidal(int amount) {
+            TidalStacks = Math.Min(MaxStacks, TidalStacks + amount);
+            _decayTimer = 150;
+        }
+
+        public override void PostUpdate() {
+            if (_decayTimer > 0) {
+                _decayTimer--;
+            }
+            else if (TidalStacks > 0) {
+                TidalStacks--;
+                _decayTimer = 40;
+            }
+        }
+    }
+
+    /// <summary>吞噬之潮 — 满层潮涌解放的巨型激流之涡，扩张吸卷并撕裂全场。</summary>
+    public class AzureTidalNova : ModProjectile
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+
+        private const float MaxRadius = 360f;
+
+        private ref float Age => ref Projectile.ai[0];
+
+        public override void SetDefaults() {
+            Projectile.width = Projectile.height = 16;
+            Projectile.friendly = true;
+            Projectile.DamageType = DamageClass.Melee;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = 46;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 10;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+
+        public override void AI() {
+            Age++;
+            float radius = CurrentRadius();
+
+            foreach (NPC npc in Main.ActiveNPCs) {
+                if (!npc.CanBeChasedBy(this) || npc.boss)
+                    continue;
+                float dist = Vector2.Distance(npc.Center, Projectile.Center);
+                if (dist < radius + 120f && dist > 40f) {
+                    npc.velocity += (Projectile.Center - npc.Center).SafeNormalize(Vector2.Zero) * 0.55f;
+                }
+            }
+
+            if (Main.netMode != NetmodeID.Server) {
+                for (int i = 0; i < 5; i++) {
+                    float ang = Main.rand.NextFloat(MathHelper.TwoPi);
+                    Vector2 pos = Projectile.Center + ang.ToRotationVector2() * Main.rand.NextFloat(radius * 0.6f, radius);
+                    int dustType = Main.rand.NextBool() ? DustID.Water : DustID.BlueTorch;
+                    Dust d = Dust.NewDustPerfect(pos, dustType, ang.ToRotationVector2().RotatedBy(MathHelper.PiOver2) * 4f,
+                        70, AzureTorrentPalette.FlowGlow, 1.5f);
+                    d.noGravity = true;
+                }
+                Lighting.AddLight(Projectile.Center, AzureTorrentPalette.AzureStream.ToVector3() * 0.9f);
+            }
+        }
+
+        private float CurrentRadius() => MathHelper.SmoothStep(0f, MaxRadius, Math.Min(Age / 30f, 1f));
+
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            target.AddBuff(BuffID.Wet, 360);
+        }
+
+        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
+            return VaultUtils.CircleIntersectsRectangle(Projectile.Center, CurrentRadius(), targetHitbox);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (ACMAsset.SoftGlow == null)
+                return false;
+
+            float prog = Age / 46f;
+            float alpha = ACMUtils.QuadOut(1f - prog) * 0.85f;
+            float scale = CurrentRadius() / (ACMAsset.SoftGlow.Width * 0.5f);
+
+            SpriteBatch sb = Main.spriteBatch;
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+
+            Vector2 drawPos = Projectile.Center - Main.screenPosition;
+            Vector2 origin = ACMAsset.SoftGlow.Size() * 0.5f;
+
+            Color outer = AzureTorrentPalette.AzureStream * alpha * 0.6f;
+            outer.A = 0;
+            sb.Draw(ACMAsset.SoftGlow, drawPos, null, outer, 0f, origin, scale, SpriteEffects.None, 0f);
+
+            Color inner = AzureTorrentPalette.FlowGlow * alpha * 0.7f;
+            inner.A = 0;
+            sb.Draw(ACMAsset.SoftGlow, drawPos, null, inner, 0f, origin, scale * 0.55f, SpriteEffects.None, 0f);
+
+            if (ACMAsset.Sparkle != null) {
+                Color spark = AzureTorrentPalette.JadeRipple * (alpha * 0.6f);
+                spark.A = 0;
+                sb.Draw(ACMAsset.Sparkle, drawPos, null, spark, Age * 0.12f,
+                    ACMAsset.Sparkle.Size() * 0.5f, scale * 0.5f, SpriteEffects.None, 0f);
+            }
+
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+
+            return false;
+        }
+    }
+
     /// <summary>风蛇长刀 — 挥砍释放风蛇刀气，每四刀横扫释放追踪龙卷。</summary>
     public class WindserpentDao : ModItem
     {
         private int slashCounter;
+        private int dashCooldown;
 
         public override void SetDefaults() {
             Item.damage = 1520;
@@ -560,7 +731,28 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
             Item.crit = 10;
         }
 
+        public override bool AltFunctionUse(Player player) => true;
+
+        public override void HoldItem(Player player) {
+            if (dashCooldown > 0)
+                dashCooldown--;
+        }
+
+        public override bool CanUseItem(Player player) {
+            if (player.altFunctionUse == 2)
+                return dashCooldown <= 0;
+            return true;
+        }
+
+        public override float UseSpeedMultiplier(Player player) => player.altFunctionUse == 2 ? 1.6f : 1f;
+
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
+            if (player.altFunctionUse == 2) {
+                PerformWindDash(player, source, velocity, damage, knockback);
+                dashCooldown = 80;
+                return false;
+            }
+
             slashCounter++;
 
             Projectile.NewProjectile(source, position, velocity, type, damage, knockback, player.whoAmI);
@@ -583,6 +775,29 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
             return false;
         }
 
+        private void PerformWindDash(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 velocity, int damage, float knockback) {
+            Vector2 dir = velocity.SafeNormalize(Vector2.UnitX);
+            player.velocity = dir * 27f;
+            player.GiveImmuneTimeForCollisionAttack(18);
+
+            SoundEngine.PlaySound(SoundID.Item122 with { Pitch = 0.35f, Volume = 0.95f }, player.Center);
+
+            for (int i = -2; i <= 2; i++) {
+                Vector2 slashVel = dir.RotatedBy(MathHelper.ToRadians(10f * i)) * Item.shootSpeed * 1.1f;
+                Projectile.NewProjectile(source, player.Center, slashVel,
+                    ModContent.ProjectileType<WindserpentSlash>(), (int)(damage * 0.9f), knockback, player.whoAmI);
+            }
+
+            if (Main.netMode != NetmodeID.Server) {
+                for (int i = 0; i < 22; i++) {
+                    Vector2 vel = -dir.RotatedByRandom(0.6f) * Main.rand.NextFloat(2f, 8f);
+                    Dust d = Dust.NewDustPerfect(player.Center + Main.rand.NextVector2Circular(16f, 16f),
+                        DustID.GreenTorch, vel, 90, default, 1.6f);
+                    d.noGravity = true;
+                }
+            }
+        }
+
         public override void MeleeEffects(Player player, Rectangle hitbox) {
             if (Main.rand.NextBool(2)) {
                 Vector2 dustPos = new Vector2(hitbox.X + Main.rand.Next(hitbox.Width), hitbox.Y + Main.rand.Next(hitbox.Height));
@@ -601,6 +816,12 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
                 Dust d = Dust.NewDustDirect(target.Center, 0, 0, DustID.GreenTorch, vel.X, vel.Y, 80, default, 1.5f);
                 d.noGravity = true;
             }
+        }
+
+        public override void ModifyTooltips(List<TooltipLine> tooltips) {
+            tooltips.Add(new TooltipLine(Mod, "WindserpentLore", "「风从蛇形，刀走龙势」"));
+            tooltips.Add(new TooltipLine(Mod, "WindserpentEffect", "挥砍释放蛇形追踪刀气，每第四刀召唤横扫追踪龙卷"));
+            tooltips.Add(new TooltipLine(Mod, "WindserpentEffect2", "右键化身风蛇突进，沿途撕开五道滑流刀气"));
         }
 
         public override void AddRecipes() {
@@ -754,6 +975,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
             tooltips.Add(new TooltipLine(Mod, "QinglongBowLore", "「雷鼓一响，天矢穿云」"));
             tooltips.Add(new TooltipLine(Mod, "QinglongBowEffect", "将箭矢化为穿透雷电箭，命中时释放雷爆"));
             tooltips.Add(new TooltipLine(Mod, "QinglongBowEffect2", "长按雷鼓蓄力，松手释放无限穿透的天雷矢"));
+            tooltips.Add(new TooltipLine(Mod, "QinglongBowEffect3", "命中召唤天落雷柱，满蓄天矢更引连锁落雷击向附近之敌"));
         }
 
         public override void AddRecipes() {
@@ -791,6 +1013,12 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
 
         public override bool CanUseItem(Player player) {
             return player.ownedProjectileCounts[ModContent.ProjectileType<AurelianCataclysmSmasherProj>()] < 1;
+        }
+
+        public override void ModifyTooltips(List<TooltipLine> tooltips) {
+            tooltips.Add(new TooltipLine(Mod, "AurelianLore", "「金锤落地，山河皆裂」"));
+            tooltips.Add(new TooltipLine(Mod, "AurelianEffect", "掷出回旋灾锤，触地或命中裂地释放金纹冲击波"));
+            tooltips.Add(new TooltipLine(Mod, "AurelianEffect2", "震波撕裂护甲（破甲），灾锤回手时砸地引爆双向裂地震潮"));
         }
 
         public override void AddRecipes() {
@@ -839,6 +1067,26 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
             pulseCounter++;
             Vector2 muzzleDir = velocity.SafeNormalize(Vector2.UnitX);
             Vector2 muzzlePos = position + muzzleDir * 46f;
+
+            if (pulseCounter % 24 == 0) {
+                Projectile.NewProjectile(source, muzzlePos, muzzleDir * 26f,
+                    ModContent.ProjectileType<ArgentPulseRail>(), (int)(damage * 2.2f), knockback * 1.6f, player.whoAmI);
+
+                SoundEngine.PlaySound(SoundID.Item92 with { Pitch = -0.2f, Volume = 1f }, muzzlePos);
+
+                if (Main.netMode != NetmodeID.Server) {
+                    for (int i = 0; i < 20; i++) {
+                        Vector2 burstVel = muzzleDir.RotatedByRandom(0.5f) * Main.rand.NextFloat(4f, 14f);
+                        Dust d = Dust.NewDustPerfect(muzzlePos, DustID.Silver, burstVel, 70, default, 2f);
+                        d.noGravity = true;
+                    }
+                }
+
+                if (player.whoAmI == Main.myPlayer)
+                    player.GetModPlayer<ScreenShakePlayer>().ShakeScreen(6, 10);
+
+                return false;
+            }
 
             if (pulseCounter % 8 == 0) {
                 for (int i = -1; i <= 1; i++) {
@@ -892,6 +1140,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
             tooltips.Add(new TooltipLine(Mod, "ArgentPulseLore", "「银脉贯膛，脉冲湮灭」"));
             tooltips.Add(new TooltipLine(Mod, "ArgentPulseEffect", "极快连射银脉冲弹丸"));
             tooltips.Add(new TooltipLine(Mod, "ArgentPulseEffect2", "每第八发释放三重脉冲爆发，命中绽放银纹冲击"));
+            tooltips.Add(new TooltipLine(Mod, "ArgentPulseEffect3", "持续射击充能，每第二十四发轰出贯穿一切的银脉冲轨道炮"));
         }
 
         public override void AddRecipes() {
@@ -1183,10 +1432,82 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
         }
     }
 
+    /// <summary>银脉冲轨道炮弹 — 充能后轰出的贯穿一切银脉冲射弹。</summary>
+    public class ArgentPulseRail : ModProjectile
+    {
+        public override string Texture => "AncientChineseMythology/Textures/Masking/LightShot";
+
+        private static readonly Color SilverCore = new(235, 240, 250);
+        private static readonly Color ArgentGlow = new(180, 195, 220);
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.TrailCacheLength[Type] = 24;
+            ProjectileID.Sets.TrailingMode[Type] = 2;
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = 20;
+            Projectile.height = 20;
+            Projectile.friendly = true;
+            Projectile.DamageType = DamageClass.Ranged;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = 70;
+            Projectile.tileCollide = true;
+            Projectile.ignoreWater = true;
+            Projectile.extraUpdates = 3;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 12;
+        }
+
+        public override void AI() {
+            Projectile.rotation = Projectile.velocity.ToRotation();
+
+            if (Main.rand.NextBool()) {
+                Dust d = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(6f, 6f), DustID.Silver,
+                    -Projectile.velocity * 0.1f + Main.rand.NextVector2Circular(2f, 2f), 80, default, 1.5f);
+                d.noGravity = true;
+            }
+
+            Lighting.AddLight(Projectile.Center, SilverCore.ToVector3() * 0.8f);
+        }
+
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            for (int i = 0; i < 10; i++) {
+                Vector2 vel = Main.rand.NextVector2CircularEdge(6f, 6f);
+                Dust d = Dust.NewDustPerfect(target.Center, DustID.Silver, vel, 60, default, 1.7f);
+                d.noGravity = true;
+            }
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            Texture2D tex = ACMAsset.LightShot ?? TextureAssets.Projectile[Type].Value;
+            Vector2 origin = tex.Size() * 0.5f;
+
+            for (int i = Projectile.oldPos.Length - 1; i > 0; i--) {
+                if (Projectile.oldPos[i] == Vector2.Zero)
+                    continue;
+
+                float progress = 1f - i / (float)Projectile.oldPos.Length;
+                Color trailColor = Color.Lerp(ArgentGlow, SilverCore, progress) * (0.7f * progress);
+                trailColor.A = 0;
+                Main.spriteBatch.Draw(tex, Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition, null,
+                    trailColor, Projectile.oldRot[i], origin, new Vector2(0.9f * progress, 0.32f), SpriteEffects.None, 0f);
+            }
+
+            Vector2 drawPos = Projectile.Center - Main.screenPosition;
+            Color glow = SilverCore;
+            glow.A = 0;
+            Main.spriteBatch.Draw(tex, drawPos, null, glow * 0.7f, Projectile.rotation, origin, new Vector2(1.4f, 0.4f), SpriteEffects.None, 0f);
+            Main.spriteBatch.Draw(tex, drawPos, null, Color.White * 0.95f, Projectile.rotation, origin, new Vector2(1f, 0.28f), SpriteEffects.None, 0f);
+            return false;
+        }
+    }
+
     /// <summary>白虎爪 — 白虎 apex 拳套，四段虎爪连击并撕裂流血。</summary>
     public class WhiteTigerClaws : ModItem
     {
         private int attackType;
+        private int pounceCooldown;
 
         public override void SetDefaults() {
             Item.damage = 1500;
@@ -1206,13 +1527,59 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
             Item.shootSpeed = 1f;
         }
 
+        public override bool AltFunctionUse(Player player) => true;
+
+        public override bool CanUseItem(Player player) {
+            if (player.altFunctionUse == 2)
+                return pounceCooldown <= 0;
+            return true;
+        }
+
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
+            if (player.altFunctionUse == 2) {
+                PerformPounce(player, source, velocity, damage, knockback);
+                pounceCooldown = 70;
+                return false;
+            }
+
             Projectile.NewProjectile(source, player.Center, velocity, type, damage, knockback, player.whoAmI, attackType);
             attackType = (attackType + 1) % 4;
             return false;
         }
 
+        private void PerformPounce(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 velocity, int damage, float knockback) {
+            Vector2 dir = (Main.MouseWorld - player.Center).SafeNormalize(Vector2.UnitX);
+            player.velocity = dir * 32f;
+            player.GiveImmuneTimeForCollisionAttack(20);
+
+            SoundEngine.PlaySound(SoundID.Zombie5 with { Pitch = 0.5f, Volume = 0.9f }, player.Center);
+            SoundEngine.PlaySound(SoundID.NPCHit7 with { Pitch = 0.1f, Volume = 0.85f }, player.Center);
+
+            int ripDamage = (int)(damage * 1.1f);
+            for (int i = -1; i <= 1; i++) {
+                Vector2 vel = dir.RotatedBy(MathHelper.ToRadians(13f * i)) * 22f;
+                Projectile.NewProjectile(source, player.Center + dir * 18f, vel,
+                    ModContent.ProjectileType<WhiteTigerClawRip>(), ripDamage, knockback, player.whoAmI);
+            }
+
+            if (Main.netMode != NetmodeID.Server) {
+                for (int i = 0; i < 24; i++) {
+                    Vector2 vel = -dir.RotatedByRandom(0.5f) * Main.rand.NextFloat(3f, 9f);
+                    int dustType = Main.rand.NextBool() ? DustID.Silver : DustID.Blood;
+                    Color color = dustType == DustID.Blood ? WhiteTigerPalette.RipCrimson : WhiteTigerPalette.SilverGlow;
+                    Dust d = Dust.NewDustPerfect(player.Center + Main.rand.NextVector2Circular(14f, 14f), dustType, vel, 70, color, 1.5f);
+                    d.noGravity = true;
+                }
+            }
+
+            if (player.whoAmI == Main.myPlayer)
+                player.GetModPlayer<ScreenShakePlayer>().ShakeScreen(4, 8);
+        }
+
         public override void HoldItem(Player player) {
+            if (pounceCooldown > 0)
+                pounceCooldown--;
+
             if (Main.rand.NextBool(5)) {
                 Vector2 pos = player.Center + Main.rand.NextVector2Circular(36f, 36f);
                 int dust = Dust.NewDust(pos, 0, 0, DustID.Silver, 0f, 0f, 80, default, 1.3f);
@@ -1225,6 +1592,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
             tooltips.Add(new TooltipLine(Mod, "WhiteTigerLore", "「金纹虎爪，撕裂万物」"));
             tooltips.Add(new TooltipLine(Mod, "WhiteTigerEffect", "四段虎爪连击，逐段加深撕裂流血"));
             tooltips.Add(new TooltipLine(Mod, "WhiteTigerEffect2", "终结爪击释放三道银纹爪波"));
+            tooltips.Add(new TooltipLine(Mod, "WhiteTigerEffect3", "右键猛虎扑：朝光标暴扑突进，沿途三爪深撕重创"));
         }
 
         public override void AddRecipes() {
@@ -1242,6 +1610,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
     /// <summary>星火灭杀枪 — 朱雀掉落，发射穿透珊瑚星火弹，贯穿后绽放星火星海爆裂。</summary>
     public class StarfireAnnihilator : ModItem
     {
+        private int novaCooldown;
+
         public override void SetDefaults() {
             Item.damage = 1520;
             Item.DamageType = DamageClass.Ranged;
@@ -1261,6 +1631,19 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
             Item.crit = 8;
         }
 
+        public override bool AltFunctionUse(Player player) => true;
+
+        public override void HoldItem(Player player) {
+            if (novaCooldown > 0)
+                novaCooldown--;
+        }
+
+        public override bool CanUseItem(Player player) {
+            if (player.altFunctionUse == 2)
+                return novaCooldown <= 0;
+            return true;
+        }
+
         public override void ModifyShootStats(Player player, ref Vector2 position, ref Vector2 velocity, ref int type, ref int damage, ref float knockback) {
             type = ModContent.ProjectileType<StarfireShell>();
         }
@@ -1268,6 +1651,26 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
             Vector2 muzzleDir = velocity.SafeNormalize(Vector2.UnitX);
             Vector2 muzzlePos = position + muzzleDir * 48f;
+
+            if (player.altFunctionUse == 2) {
+                novaCooldown = 150;
+                Projectile.NewProjectile(source, muzzlePos, muzzleDir * 9f,
+                    ModContent.ProjectileType<StarfireSupernova>(), (int)(damage * 1.6f), knockback, player.whoAmI);
+                SoundEngine.PlaySound(SoundID.Item92 with { Pitch = -0.35f, Volume = 1f }, muzzlePos);
+
+                if (Main.netMode != NetmodeID.Server) {
+                    for (int i = 0; i < 18; i++) {
+                        Vector2 vel = muzzleDir.RotatedByRandom(0.4f) * Main.rand.NextFloat(2f, 7f);
+                        Dust d = Dust.NewDustPerfect(muzzlePos, DustID.SolarFlare, vel, 60, default, 1.8f);
+                        d.noGravity = true;
+                    }
+                }
+
+                if (player.whoAmI == Main.myPlayer)
+                    player.GetModPlayer<ScreenShakePlayer>().ShakeScreen(4, 8);
+
+                return false;
+            }
 
             if (Main.netMode != NetmodeID.Server) {
                 for (int i = 0; i < 10; i++) {
@@ -1286,6 +1689,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
             tooltips.Add(new TooltipLine(Mod, "StarfireLore", "「珊瑚作芯，星火贯渊」"));
             tooltips.Add(new TooltipLine(Mod, "StarfireEffect", "发射穿透珊瑚星火弹"));
             tooltips.Add(new TooltipLine(Mod, "StarfireEffect2", "贯穿敌人后绽放星火星海爆裂"));
+            tooltips.Add(new TooltipLine(Mod, "StarfireEffect3", "右键凝聚珊瑚超新星，缓缓推进吸卷群敌，炸裂为漫天星火"));
         }
 
         public override void AddRecipes() {
@@ -1497,6 +1901,124 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
         }
     }
 
+    /// <summary>珊瑚超新星 — 缓缓推进、吸卷群敌后炸裂为漫天星火的右键弹幕。</summary>
+    public class StarfireSupernova : ModProjectile
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+
+        private static readonly Color CoralCore = new(255, 130, 90);
+        private static readonly Color StarfireGlow = new(255, 210, 80);
+
+        private ref float Phase => ref Projectile.ai[0];
+        private ref float Detonated => ref Projectile.ai[1];
+
+        public override void SetDefaults() {
+            Projectile.width = Projectile.height = 44;
+            Projectile.friendly = true;
+            Projectile.DamageType = DamageClass.Ranged;
+            Projectile.penetrate = 1;
+            Projectile.timeLeft = 110;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 12;
+        }
+
+        public override void AI() {
+            Phase += 0.12f;
+            Projectile.velocity *= 0.985f;
+
+            foreach (NPC npc in Main.ActiveNPCs) {
+                if (!npc.CanBeChasedBy(this) || npc.boss)
+                    continue;
+                float dist = Vector2.Distance(npc.Center, Projectile.Center);
+                if (dist < 320f && dist > 30f) {
+                    npc.velocity += (Projectile.Center - npc.Center).SafeNormalize(Vector2.Zero) * 0.45f;
+                }
+            }
+
+            if (Main.netMode != NetmodeID.Server) {
+                for (int i = 0; i < 3; i++) {
+                    float ang = Main.rand.NextFloat(MathHelper.TwoPi);
+                    Vector2 pos = Projectile.Center + ang.ToRotationVector2() * Main.rand.NextFloat(40f, 90f);
+                    int dustType = Main.rand.NextBool() ? DustID.SolarFlare : DustID.Torch;
+                    Dust d = Dust.NewDustPerfect(pos, dustType, (Projectile.Center - pos).SafeNormalize(Vector2.Zero) * 4f, 60, default, 1.6f);
+                    d.noGravity = true;
+                }
+                Lighting.AddLight(Projectile.Center, Vector3.Lerp(CoralCore.ToVector3(), StarfireGlow.ToVector3(), 0.5f) * 1.1f);
+            }
+        }
+
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            target.AddBuff(BuffID.OnFire3, 300);
+        }
+
+        public override void OnKill(int timeLeft) {
+            if (Detonated >= 1f)
+                return;
+            Detonated = 1f;
+
+            SoundEngine.PlaySound(SoundID.Item14 with { Pitch = -0.2f, Volume = 0.95f }, Projectile.Center);
+
+            if (Main.netMode != NetmodeID.MultiplayerClient) {
+                Projectile.NewProjectile(Projectile.GetSource_Death(), Projectile.Center, Vector2.Zero,
+                    ModContent.ProjectileType<StarfireExplosion>(), (int)(Projectile.damage * 0.65f), Projectile.knockBack * 0.4f, Projectile.owner);
+
+                int shardType = ModContent.ProjectileType<StarfireShell>();
+                for (int i = 0; i < 12; i++) {
+                    float ang = MathHelper.TwoPi * i / 12f;
+                    Projectile.NewProjectile(Projectile.GetSource_Death(), Projectile.Center, ang.ToRotationVector2() * 16f,
+                        shardType, (int)(Projectile.damage * 0.4f), Projectile.knockBack * 0.3f, Projectile.owner);
+                }
+            }
+
+            if (Main.netMode != NetmodeID.Server) {
+                for (int i = 0; i < 36; i++) {
+                    Vector2 vel = Main.rand.NextVector2CircularEdge(9f, 9f);
+                    int dustType = i % 2 == 0 ? DustID.SolarFlare : DustID.Torch;
+                    Dust d = Dust.NewDustPerfect(Projectile.Center, dustType, vel, 60, default, 2.2f);
+                    d.noGravity = true;
+                }
+            }
+
+            if (Projectile.owner == Main.myPlayer)
+                Main.player[Projectile.owner].GetModPlayer<ScreenShakePlayer>().ShakeScreen(7, 12);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (ACMAsset.SoftGlow == null)
+                return false;
+
+            float pulse = 1f + MathF.Sin(Phase * 2f) * 0.12f;
+            SpriteBatch sb = Main.spriteBatch;
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+
+            Vector2 drawPos = Projectile.Center - Main.screenPosition;
+            Vector2 origin = ACMAsset.SoftGlow.Size() * 0.5f;
+
+            Color outer = CoralCore * 0.55f;
+            outer.A = 0;
+            sb.Draw(ACMAsset.SoftGlow, drawPos, null, outer, 0f, origin, 1.6f * pulse, SpriteEffects.None, 0f);
+
+            Color inner = StarfireGlow * 0.85f;
+            inner.A = 0;
+            sb.Draw(ACMAsset.SoftGlow, drawPos, null, inner, 0f, origin, 0.85f * pulse, SpriteEffects.None, 0f);
+
+            if (ACMAsset.Sparkle != null) {
+                Color spark = Color.White * 0.6f;
+                spark.A = 0;
+                sb.Draw(ACMAsset.Sparkle, drawPos, null, spark, Phase, ACMAsset.Sparkle.Size() * 0.5f, 0.7f * pulse, SpriteEffects.None, 0f);
+            }
+
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+            return false;
+        }
+    }
+
     /// <summary>日轮永恒审判 — 召唤悬浮日轮眼，向敌人发射穿透阳光射线。</summary>
     public class SolarisEternalVerdict : ModItem
     {
@@ -1535,6 +2057,12 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
             return false;
         }
 
+        public override void ModifyTooltips(System.Collections.Generic.List<TooltipLine> tooltips) {
+            tooltips.Add(new TooltipLine(Mod, "SolarisLore", "「日轮当空，万恶受审」"));
+            tooltips.Add(new TooltipLine(Mod, "SolarisEffect", "召唤悬浮日轮眼，向敌人发射穿透阳光射线"));
+            tooltips.Add(new TooltipLine(Mod, "SolarisEffect2", "持续锁定积蓄日蚀之力，满蓄时倾泻五道扇形日炎审判"));
+        }
+
         public override string Texture => "Terraria/Images/Item_" + ItemID.OpticStaff;
     }
 
@@ -1561,6 +2089,9 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
     {
         private ref float AttackCooldown => ref Projectile.localAI[0];
         private ref float HoverPhase => ref Projectile.localAI[1];
+        private ref float JudgmentCharge => ref Projectile.ai[0];
+
+        private const float JudgmentThreshold = 280f;
 
         public override string Texture => "Terraria/Images/Projectile_" + ProjectileID.EyeLaser;
 
@@ -1606,6 +2137,17 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
                 AttackCooldown = 28;
             }
 
+            if (target != null) {
+                JudgmentCharge++;
+                if (JudgmentCharge >= JudgmentThreshold) {
+                    JudgmentCharge = 0f;
+                    FireJudgmentVolley(target);
+                }
+            }
+            else if (JudgmentCharge > 0f) {
+                JudgmentCharge = MathF.Max(0f, JudgmentCharge - 0.5f);
+            }
+
             Vector2 hoverPos = player.Center + new Vector2(
                 MathF.Cos(HoverPhase) * 90f,
                 MathF.Sin(HoverPhase * 0.7f) * 50f - 60f);
@@ -1649,6 +2191,28 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
                 Projectile.owner);
 
             SoundEngine.PlaySound(SoundID.Item12 with { Pitch = 0.4f, Volume = 0.5f }, Projectile.Center);
+        }
+
+        private void FireJudgmentVolley(NPC target) {
+            SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.1f, Volume = 0.9f }, Projectile.Center);
+
+            if (Main.netMode != NetmodeID.MultiplayerClient) {
+                Vector2 baseDir = (target.Center - Projectile.Center).SafeNormalize(Vector2.UnitY);
+                for (int i = -2; i <= 2; i++) {
+                    Vector2 dir = baseDir.RotatedBy(MathHelper.ToRadians(11f * i));
+                    Projectile.NewProjectile(Projectile.GetSource_FromAI(), Projectile.Center, dir * 20f,
+                        ModContent.ProjectileType<SolarisRay>(), (int)(Projectile.damage * 1.25f), Projectile.knockBack * 1.2f, Projectile.owner);
+                }
+            }
+
+            if (Main.netMode != NetmodeID.Server) {
+                for (int i = 0; i < 28; i++) {
+                    float ang = MathHelper.TwoPi * i / 28f;
+                    Dust d = Dust.NewDustPerfect(Projectile.Center, DustID.SolarFlare, ang.ToRotationVector2() * Main.rand.NextFloat(4f, 9f), 60, default, 2f);
+                    d.noGravity = true;
+                }
+                Lighting.AddLight(Projectile.Center, new Vector3(1f, 0.85f, 0.4f) * 1.4f);
+            }
         }
 
         private static NPC FindTarget(Player player, float maxDistance) {
@@ -1774,6 +2338,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
     /// </summary>
     public class PhoenixFlameStaff : ModItem
     {
+        private int castCounter;
+
         public override void SetDefaults() {
             Item.damage = 1480;
             Item.DamageType = DamageClass.Magic;
@@ -1800,6 +2366,15 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
             Vector2 direction = velocity.SafeNormalize(Vector2.UnitX);
             Vector2 spawnPos = player.Center + direction * 28f;
 
+            castCounter++;
+            if (castCounter >= 5) {
+                castCounter = 0;
+                Projectile.NewProjectile(source, spawnPos, direction * Item.shootSpeed * 1.25f,
+                    ModContent.ProjectileType<PhoenixDive>(), (int)(damage * 1.6f), knockback * 1.4f, player.whoAmI);
+                SoundEngine.PlaySound(SoundID.Item74 with { Pitch = -0.15f, Volume = 0.95f }, player.Center);
+                return false;
+            }
+
             Projectile.NewProjectile(source, spawnPos, velocity, type, damage, knockback, player.whoAmI);
 
             if (Main.rand.NextBool(3)) {
@@ -1809,6 +2384,12 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
             }
 
             return false;
+        }
+
+        public override void ModifyTooltips(System.Collections.Generic.List<TooltipLine> tooltips) {
+            tooltips.Add(new TooltipLine(Mod, "PhoenixLore", "「焚尽成灰，浴火重生」"));
+            tooltips.Add(new TooltipLine(Mod, "PhoenixEffect", "释放涅槃凤凰焰，命中或消散后浴火重生为追踪余烬"));
+            tooltips.Add(new TooltipLine(Mod, "PhoenixEffect2", "每第五次施法俯冲一只涅槃凤凰，贯穿灼烧并炸开漫天火羽"));
         }
     }
 
@@ -2042,10 +2623,123 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
         }
     }
 
+    /// <summary>涅槃凤凰俯冲 — 每第五次施法召唤的大型凤凰，贯穿灼烧并炸开漫天火羽。</summary>
+    public class PhoenixDive : ModProjectile
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+
+        private ref float FlamePhase => ref Projectile.ai[0];
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.TrailingMode[Type] = 2;
+            ProjectileID.Sets.TrailCacheLength[Type] = 18;
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = Projectile.height = 46;
+            Projectile.friendly = true;
+            Projectile.DamageType = DamageClass.Magic;
+            Projectile.penetrate = 5;
+            Projectile.timeLeft = 150;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 14;
+        }
+
+        public override void AI() {
+            FlamePhase += 0.18f;
+            Projectile.rotation = Projectile.velocity.ToRotation();
+
+            NPC target = FindClosestNPC(680f);
+            if (target != null && Projectile.timeLeft > 24) {
+                Vector2 toTarget = (target.Center - Projectile.Center).SafeNormalize(Vector2.Zero);
+                float newAngle = MathHelper.Lerp(Projectile.velocity.ToRotation(), toTarget.ToRotation(), 0.08f);
+                Projectile.velocity = newAngle.ToRotationVector2() * MathF.Min(Projectile.velocity.Length() + 0.4f, 24f);
+            }
+
+            if (Main.netMode != NetmodeID.Server) {
+                for (int i = 0; i < 2; i++) {
+                    int dustType = Main.rand.NextBool() ? DustID.Torch : DustID.GoldFlame;
+                    Dust d = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(14f, 14f), dustType,
+                        -Projectile.velocity * 0.12f + Main.rand.NextVector2Circular(1.5f, 1.5f), 90, default, 2f);
+                    d.noGravity = true;
+                }
+                Lighting.AddLight(Projectile.Center, new Vector3(1f, 0.6f, 0.2f) * 1.1f);
+            }
+        }
+
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            target.AddBuff(BuffID.OnFire3, 360);
+        }
+
+        public override void OnKill(int timeLeft) {
+            SoundEngine.PlaySound(SoundID.Item74 with { Pitch = 0.1f, Volume = 0.85f }, Projectile.Center);
+
+            if (Main.netMode != NetmodeID.MultiplayerClient) {
+                int emberType = ModContent.ProjectileType<PhoenixFlameRebirthEmber>();
+                for (int i = 0; i < 10; i++) {
+                    float ang = MathHelper.TwoPi * i / 10f;
+                    Projectile.NewProjectile(Projectile.GetSource_Death(), Projectile.Center, ang.ToRotationVector2() * Main.rand.NextFloat(9f, 14f),
+                        emberType, (int)(Projectile.damage * 0.4f), Projectile.knockBack * 0.5f, Projectile.owner);
+                }
+            }
+
+            if (Main.netMode != NetmodeID.Server) {
+                for (int i = 0; i < 28; i++) {
+                    Vector2 vel = Main.rand.NextVector2CircularEdge(8f, 8f);
+                    int dustType = Main.rand.NextBool() ? DustID.Torch : DustID.GoldFlame;
+                    Dust d = Dust.NewDustPerfect(Projectile.Center, dustType, vel, 70, default, 2.2f);
+                    d.noGravity = true;
+                }
+            }
+        }
+
+        private NPC FindClosestNPC(float maxDist) {
+            NPC closest = null;
+            float closestDist = maxDist;
+            foreach (NPC npc in Main.ActiveNPCs) {
+                if (!npc.CanBeChasedBy())
+                    continue;
+                float dist = Vector2.Distance(npc.Center, Projectile.Center);
+                if (dist < closestDist) {
+                    closestDist = dist;
+                    closest = npc;
+                }
+            }
+            return closest;
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            Texture2D texture = ACMAsset.GlaciateWave ?? TextureAssets.Projectile[Type].Value;
+            Vector2 origin = new(0f, texture.Height / 2f);
+            float pulse = 1f + MathF.Sin(FlamePhase * 2f) * 0.15f;
+
+            for (int i = 0; i < Projectile.oldPos.Length; i++) {
+                if (Projectile.oldPos[i] == Vector2.Zero)
+                    continue;
+
+                float progress = 1f - (float)i / Projectile.oldPos.Length;
+                Color trailColor = Color.Lerp(new Color(255, 210, 90), new Color(255, 70, 30), 1f - progress) * (progress * 0.55f);
+                trailColor.A = 0;
+                Vector2 trailPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
+                Main.spriteBatch.Draw(texture, trailPos, null, trailColor, Projectile.oldRot[i], origin,
+                    new Vector2(1.5f * progress * pulse, 0.6f * progress), SpriteEffects.None, 0f);
+            }
+
+            Color bodyColor = new Color(255, 170, 60) * 0.85f * pulse;
+            bodyColor.A = 0;
+            Main.spriteBatch.Draw(texture, Projectile.Center - Main.screenPosition, null, bodyColor, Projectile.rotation, origin,
+                new Vector2(1.7f * pulse, 0.7f * pulse), SpriteEffects.None, 0f);
+            return false;
+        }
+    }
+
     /// <summary>地晶裂碎大剑 — 玄武掉落，挥砍命中时迸射熔岩地晶爆裂。</summary>
     public class GeocrystalShatterblade : ModItem
     {
         private int attackType;
+        private int lanceCooldown;
 
         public override void SetDefaults() {
             Item.damage = 1450;
@@ -2065,7 +2759,18 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
             Item.shootSpeed = 3f;
         }
 
+        public override bool AltFunctionUse(Player player) => true;
+
+        public override bool CanUseItem(Player player) {
+            if (player.altFunctionUse == 2)
+                return lanceCooldown <= 0;
+            return true;
+        }
+
         public override void HoldItem(Player player) {
+            if (lanceCooldown > 0)
+                lanceCooldown--;
+
             if (Main.rand.NextBool(6)) {
                 Vector2 pos = player.Center + Main.rand.NextVector2Circular(52f, 52f);
                 int dustType = Main.rand.NextBool() ? DustID.Torch : DustID.Stone;
@@ -2082,14 +2787,47 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
         }
 
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
+            if (player.altFunctionUse == 2) {
+                FireCrystalLance(player, source, velocity, damage, knockback);
+                lanceCooldown = 60;
+                return false;
+            }
+
             Projectile.NewProjectile(source, player.Center, velocity, type, damage, knockback, player.whoAmI, attackType);
             attackType = (attackType + 1) % 2;
             return false;
         }
 
+        private void FireCrystalLance(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 velocity, int damage, float knockback) {
+            Vector2 dir = (Main.MouseWorld - player.Center).SafeNormalize(Vector2.UnitX);
+            Vector2 muzzle = player.Center + dir * 36f;
+
+            SoundEngine.PlaySound(SoundID.Item70 with { Pitch = -0.3f, Volume = 0.95f }, player.Center);
+
+            int shardType = ModContent.ProjectileType<GeocrystalBurst>();
+            int shardDamage = (int)(damage * 0.7f);
+            for (int i = -3; i <= 3; i++) {
+                Vector2 vel = dir.RotatedBy(MathHelper.ToRadians(8f * i)) * Main.rand.NextFloat(12f, 17f);
+                Projectile.NewProjectile(source, muzzle, vel, shardType, shardDamage, knockback * 0.6f, player.whoAmI);
+            }
+
+            if (Main.netMode != NetmodeID.Server) {
+                for (int i = 0; i < 20; i++) {
+                    Vector2 vel = dir.RotatedByRandom(0.5f) * Main.rand.NextFloat(3f, 10f);
+                    int dustType = Main.rand.NextBool() ? DustID.Torch : DustID.Stone;
+                    Dust d = Dust.NewDustPerfect(muzzle, dustType, vel, 70, default, 1.8f);
+                    d.noGravity = true;
+                }
+            }
+
+            if (player.whoAmI == Main.myPlayer)
+                player.GetModPlayer<ScreenShakePlayer>().ShakeScreen(4, 8);
+        }
+
         public override void ModifyTooltips(System.Collections.Generic.List<TooltipLine> tooltips) {
             tooltips.Add(new TooltipLine(Mod, "GeocrystalLore", "玄武壳甲深处凝结的地晶熔刃"));
-            tooltips.Add(new TooltipLine(Mod, "GeocrystalEffect", "挥砍命中敌人时迸射熔岩地晶爆裂"));
+            tooltips.Add(new TooltipLine(Mod, "GeocrystalEffect", "挥砍命中敌人时迸射熔岩地晶爆裂，连击共鸣愈盛、迸射愈烈"));
+            tooltips.Add(new TooltipLine(Mod, "GeocrystalEffect2", "右键劈出地晶熔枪，扇形迸射七道熔岩晶刺"));
         }
 
         public override string Texture => "Terraria/Images/Item_" + ItemID.BreakerBlade;
@@ -2128,27 +2866,39 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
                 .Register();
         }
 
+        public override bool AltFunctionUse(Player player) => true;
+
+        public override void ModifyManaCost(Player player, ref float reduce, ref float mult) {
+            if (player.altFunctionUse == 2)
+                mult *= 2.4f;
+        }
+
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
             Vector2 target = Main.MouseWorld;
+            bool mega = player.altFunctionUse == 2;
+            float mode = mega ? 1f : 0f;
+            int castDamage = mega ? (int)(damage * 1.25f) : damage;
 
-            Projectile.NewProjectile(source, target, Vector2.Zero, type, damage, knockback, player.whoAmI);
+            Projectile.NewProjectile(source, target, Vector2.Zero, type, castDamage, knockback, player.whoAmI, mode);
 
             if (player.whoAmI == Main.myPlayer) {
-                for (int i = 0; i < 10; i++) {
+                int count = mega ? 20 : 10;
+                for (int i = 0; i < count; i++) {
                     Vector2 vel = Main.rand.NextVector2CircularEdge(3f, 3f);
                     int dust = Dust.NewDust(target + new Vector2(Main.rand.NextFloat(-24f, 24f), -2f), 0, 0, DustID.Stone, vel.X, vel.Y, 80, default, 1.2f);
                     Main.dust[dust].noGravity = true;
                 }
             }
 
-            SoundEngine.PlaySound(SoundID.Item74 with { Pitch = -0.2f, Volume = 0.7f }, target);
+            SoundEngine.PlaySound(SoundID.Item74 with { Pitch = mega ? -0.4f : -0.2f, Volume = mega ? 0.95f : 0.7f }, target);
             return false;
         }
 
         public override void ModifyTooltips(System.Collections.Generic.List<TooltipLine> tooltips) {
             tooltips.Add(new TooltipLine(Mod, "GeoarchonLore", "「坤脉既裂，七柱镇渊」"));
-            tooltips.Add(new TooltipLine(Mod, "GeoarchonEffect", "在光标处刻印地脉裂穴阵"));
-            tooltips.Add(new TooltipLine(Mod, "GeoarchonEffect2", "预兆后自地面刺出七柱地能岩柱"));
+            tooltips.Add(new TooltipLine(Mod, "GeoarchonEffect", "在光标处刻印地脉裂穴阵，预兆后自地面刺出七柱地能岩柱"));
+            tooltips.Add(new TooltipLine(Mod, "GeoarchonEffect2", "岩柱崩碎时迸射上冲地晶残刺"));
+            tooltips.Add(new TooltipLine(Mod, "GeoarchonEffect3", "右键倾注法力，展开十二柱镇渊大裂阵"));
         }
 
         public override string Texture => "Terraria/Images/Item_" + ItemID.StaffofEarth;
@@ -2205,6 +2955,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
             tooltips.Add(new TooltipLine(Mod, "BlackTortoiseLore", "「龟甲为盾，格挡即反刃」"));
             tooltips.Add(new TooltipLine(Mod, "BlackTortoiseEffect", "左键释放玄龟盾击冲刺"));
             tooltips.Add(new TooltipLine(Mod, "BlackTortoiseEffect2", "右键举盾：龟甲纹减伤25%，格挡反还115%所受伤害"));
+            tooltips.Add(new TooltipLine(Mod, "BlackTortoiseEffect3", "成功格挡反震时迸发玄武结界，震退并冻伤四周之敌"));
         }
 
         public override string Texture => "Terraria/Images/Item_" + ItemID.AnkhShield;

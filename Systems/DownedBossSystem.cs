@@ -30,6 +30,7 @@ namespace AncientChineseMythology.Systems
         public static bool downedBlackImpermanence = false;
         public static bool downedWhiteImpermanence = false;
         public static bool downedSpectre = false;
+        public static bool downedCorpses = false;
         public static bool downedNetherDragon = false;
         public static bool downedYinEmperor = false;
         public static bool downedKyuubi = false;
@@ -63,6 +64,7 @@ namespace AncientChineseMythology.Systems
             tag["downedBlackImpermanence"] = downedBlackImpermanence;
             tag["downedWhiteImpermanence"] = downedWhiteImpermanence;
             tag["downedSpectre"] = downedSpectre;
+            tag["downedCorpses"] = downedCorpses;
             tag["downedNetherDragon"] = downedNetherDragon;
             tag["downedYinEmperor"] = downedYinEmperor;
             tag["downedKyuubi"] = downedKyuubi;
@@ -97,6 +99,7 @@ namespace AncientChineseMythology.Systems
             downedBlackImpermanence = tag.GetBool("downedBlackImpermanence");
             downedWhiteImpermanence = tag.GetBool("downedWhiteImpermanence");
             downedSpectre = tag.GetBool("downedSpectre");
+            downedCorpses = tag.GetBool("downedCorpses");
             downedNetherDragon = tag.GetBool("downedNetherDragon");
             downedYinEmperor = tag.GetBool("downedYinEmperor");
             downedKyuubi = tag.GetBool("downedKyuubi");
@@ -131,6 +134,7 @@ namespace AncientChineseMythology.Systems
             downedBlackImpermanence = false;
             downedWhiteImpermanence = false;
             downedSpectre = false;
+            downedCorpses = false;
             downedNetherDragon = false;
             downedYinEmperor = false;
             downedKyuubi = false;

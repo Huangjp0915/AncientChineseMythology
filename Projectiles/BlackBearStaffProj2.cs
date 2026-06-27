@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.DataStructures;
@@ -43,6 +44,12 @@ namespace AncientChineseMythology.Projectiles
             //模拟重力
             Projectile.velocity.Y += 0.2f; //向下的速度影响
             Projectile.rotation += 0.5f; //旋转速度
+        }
+
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            // 黑熊落爪命中演出 (暖青铜)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Bronze, scale: 0.9f, owner: Projectile.owner);
         }
 
         [Obsolete]

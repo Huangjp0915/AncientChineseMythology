@@ -7,6 +7,7 @@ using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 using AncientChineseMythology.Celestias.Boss.Dazhengs.Items;
+using AncientChineseMythology.Helpers;
 using AncientChineseMythology.Items.Weapons.DivineWoods;
 
 namespace AncientChineseMythology.Items.Weapons.ArrogantDivineSylvans;
@@ -153,6 +154,9 @@ public class ArrogantSylvanVineWhipHead : ModProjectile
 
     private void TriggerVineNova() {
         SoundEngine.PlaySound(SoundID.Item17 with { Volume = 1.2f, Pitch = 0.2f }, Projectile.Center);
+        ACMWeaponBurst.Spawn(Projectile.GetSource_FromThis(), Projectile.Center,
+            ACMWeaponBurst.ArrogantSylvan, scale: 1.4f, owner: Projectile.owner);
+        WeaponVFX.AddScreenShake(Projectile.Center, 10f);
 
         if (Projectile.owner == Main.myPlayer) {
             // 16道藤蔓新星爆发
@@ -195,6 +199,8 @@ public class ArrogantSylvanVineWhipHead : ModProjectile
         }
 
         SoundEngine.PlaySound(SoundID.Grass with { Volume = 0.6f, Pitch = 0.4f }, target.Center);
+        ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+            ACMWeaponBurst.ArrogantSylvan, scale: 1f, owner: Projectile.owner);
     }
 
     public override void OnKill(int timeLeft) {
@@ -208,6 +214,11 @@ public class ArrogantSylvanVineWhipHead : ModProjectile
     public override bool PreDraw(ref Color lightColor) {
         SpriteBatch sb = Main.spriteBatch;
         Player owner = Main.player[Projectile.owner];
+
+        // 头部金翠双层 ribbon 拖尾 (§B.1)
+        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 16f,
+            outerColor: new Color(200, 150, 40, 150), innerColor: new Color(190, 255, 150, 200),
+            uvScroll: -(float)Main.timeForVisualEffects * 0.04f);
 
         // === 链式藤蔓绘制 ===
         Texture2D vineTex = TextureAssets.Chains[13].Value;
@@ -336,6 +347,12 @@ public class ArrogantSylvanTendril : ModProjectile
 
     public override bool PreDraw(ref Color lightColor) {
         SpriteBatch sb = Main.spriteBatch;
+
+        // 分支触手金翠双层 ribbon (§B.1)
+        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 9f,
+            outerColor: new Color(200, 150, 40, 150), innerColor: new Color(190, 255, 150, 200),
+            uvScroll: -(float)Main.timeForVisualEffects * 0.05f);
+
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
             DepthStencilState.None, RasterizerState.CullNone, null,
@@ -418,6 +435,13 @@ public class ArrogantSylvanVineNova : ModProjectile
         float prog = 1f - Projectile.timeLeft / 60f;
         float alpha = ACMUtils.QuadOut(1f - prog) * 0.92f;
         float scale = MathHelper.SmoothStep(0f, 20f, ACMUtils.QuadOut(prog));
+
+        // 藤蔓新星金翠双环冲击波 (§B.8)
+        float ringR = MathHelper.SmoothStep(10f, 320f, ACMUtils.QuadOut(prog));
+        WeaponVFX.DrawShockwaveRing(Projectile.Center, ringR, 16f, alpha,
+            new Color(190, 255, 150), new Color(200, 150, 40));
+        WeaponVFX.DrawShockwaveRing(Projectile.Center, ringR * 0.62f, 10f, alpha * 0.8f,
+            new Color(230, 240, 150), new Color(80, 200, 90));
 
         SpriteBatch sb = Main.spriteBatch;
         sb.End();

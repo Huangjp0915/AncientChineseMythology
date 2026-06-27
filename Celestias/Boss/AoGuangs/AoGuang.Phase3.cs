@@ -17,27 +17,29 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             switch ((int)SubState) {
                 case 0: // 初始化
                     chargeCount = 0;
-                    maxChargeCount = Main.expertMode ? 6 : 5;
+                    // V2 抛光: 降低连冲次数(原 6/5), 配合每次冲刺后的恢复拍, 减弱 spam 感
+                    maxChargeCount = Main.expertMode ? 4 : 3;
                     SubState = 1;
                     AttackTimer = 0;
                     break;
 
-                case 1: // 蓄力
+                case 1: // 蓄力 (致命冲刺线预警, 略延长可读)
                     NPC.velocity *= 0.8f;
 
-                    // 更强的瞄准指示
+                    // 致命冲刺线预警 (红=致命, 渐强)
                     if (!VaultUtils.isServer) {
                         Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero);
-                        for (int i = 0; i < 5; i++) {
-                            Vector2 dustPos = NPC.Center + toPlayer * (40 + i * 25);
-                            int dustType = Main.rand.NextBool() ? DustID.BlueTorch : DustID.Water;
-                            int dust = Dust.NewDust(dustPos, 0, 0, dustType, 0, 0, 100, default, 2f);
+                        int count = 6 + (int)(AttackTimer / 5f);
+                        for (int i = 0; i < count; i++) {
+                            Vector2 dustPos = NPC.Center + toPlayer * (40 + i * 40);
+                            int dust = Dust.NewDust(dustPos, 0, 0, DustID.RedTorch, 0, 0, 100,
+                                TelegraphColors.Lethal, 1.5f);
                             Main.dust[dust].noGravity = true;
                             Main.dust[dust].velocity = Vector2.Zero;
                         }
                     }
 
-                    if (AttackTimer >= 18) {
+                    if (AttackTimer >= 24) {
                         chargeTarget = target.Center + target.velocity * 8f;
                         Vector2 toTarget = (chargeTarget - NPC.Center).SafeNormalize(Vector2.UnitY);
                         float chargeSpeed = Main.expertMode ? 42f : 35f;
@@ -47,7 +49,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                         AttackTimer = 0;
 
                         SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.7f, Volume = 1f }, NPC.Center);
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(15, 25);
+                        ACMUtils.AddScreenShake(11f);
                     }
                     break;
 
@@ -89,9 +91,17 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                             TransitionTo(GetRandomPhase3Attack());
                         }
                         else {
-                            SubState = 1;
+                            SubState = 3; // V2: 冲刺后短恢复拍, 给玩家可读窗口
                             AttackTimer = 0;
                         }
+                    }
+                    break;
+
+                case 3: // 恢复 (冲刺间窗口, 缓速漂移)
+                    NPC.velocity *= 0.9f;
+                    if (AttackTimer >= 16) {
+                        SubState = 1;
+                        AttackTimer = 0;
                     }
                     break;
             }
@@ -166,11 +176,22 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                             Main.dust[dust].noGravity = true;
                             Main.dust[dust].velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 15f;
                         }
+
+                        // 致命激光路径预警 (红=致命, 处决级渐强)
+                        if (AttackTimer > 12) {
+                            Vector2 beamDir = breathAngle.ToRotationVector2();
+                            for (int i = 0; i < 16; i++) {
+                                Vector2 lp = NPC.Center + beamDir * (70 + i * 160);
+                                int d = Dust.NewDust(lp, 0, 0, DustID.RedTorch, 0, 0, 110, TelegraphColors.Lethal, 1.5f);
+                                Main.dust[d].noGravity = true;
+                                Main.dust[d].velocity = beamDir * 2f;
+                            }
+                        }
                     }
 
-                    // 震动增强
+                    // 震动增强 (取 max 不累加)
                     if (AttackTimer % 8 == 0) {
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(AttackTimer / 6f, 8);
+                        ACMUtils.AddScreenShake(MathHelper.Clamp(AttackTimer / 8f, 0f, 12f));
                     }
 
                     if (AttackTimer >= 50) {
@@ -192,7 +213,8 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                         }
 
                         SoundEngine.PlaySound(SoundID.Zombie104 with { Pitch = 0.3f, Volume = 1.8f }, NPC.Center);
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(25, 120);
+                        ACMUtils.AddScreenShake(12f);
+                        waterBloom = 1f; // 潮汐激光释放·水爆泛光
                     }
                     break;
 
@@ -269,7 +291,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                         Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
                         NPC.velocity = toPlayer * 35f;
                         SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.4f }, NPC.Center);
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(18, 35);
+                        ACMUtils.AddScreenShake(11f);
 
                         // 爆发水花
                         if (!VaultUtils.isServer) {
@@ -386,7 +408,8 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                             );
                         }
                         SoundEngine.PlaySound(SoundID.Item122 with { Pitch = 0f, Volume = 2f }, NPC.Center);
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(30, 80);
+                        ACMUtils.AddScreenShake(12f);
+                        waterBloom = 1f; // 终极海啸·水爆泛光
                     }
 
                     if (AttackTimer > 120) {
@@ -488,7 +511,8 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                         );
 
                         SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.5f, Volume = 1.5f }, target.Center);
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(20, 80);
+                        ACMUtils.AddScreenShake(12f);
+                        waterBloom = 1f; // 深渊漩涡降临·水爆泛光
                     }
 
                     // 从上方发射水柱

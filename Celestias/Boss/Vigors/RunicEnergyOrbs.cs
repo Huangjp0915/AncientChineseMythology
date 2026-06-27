@@ -111,6 +111,28 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
             Texture2D texture = TextureAssets.Projectile[Type].Value;
             Vector2 origin = texture.Size() / 2f;
 
+            // 符印封锁模式: 引爆将近时由暗转亮的可读地纹光环 (暖金=危险预警)
+            if (Projectile.ai[0] == 1f) {
+                Texture2D glow = ACMAsset.SoftGlow;
+                if (glow != null) {
+                    float urgency = MathHelper.Clamp(1f - Projectile.ai[1] / 150f, 0f, 1f);
+                    Vector2 gPos = Projectile.Center - Main.screenPosition;
+                    Vector2 gOrigin = glow.Size() / 2f;
+                    float ringPulse = 0.5f + MathF.Sin(spinPhase * 3f) * 0.5f;
+
+                    // 外环: 随引爆将近收缩+提亮
+                    float outerScale = (0.55f - urgency * 0.18f + ringPulse * 0.06f) * 0.6f;
+                    Color outer = Color.Lerp(new Color(180, 130, 40), new Color(255, 210, 90), urgency) * (0.35f + urgency * 0.5f);
+                    sb.Draw(glow, gPos, null, outer, 0f, gOrigin, outerScale, SpriteEffects.None, 0f);
+
+                    // 内核: 引爆临界白金闪
+                    if (urgency > 0.6f) {
+                        Color core = Color.Lerp(new Color(255, 220, 120), Color.White, (urgency - 0.6f) / 0.4f) * (urgency * 0.6f);
+                        sb.Draw(glow, gPos, null, core, 0f, gOrigin, outerScale * 0.5f * ringPulse, SpriteEffects.None, 0f);
+                    }
+                }
+            }
+
             float pulse = 1f + MathF.Sin(spinPhase * 4f) * 0.15f;
 
             // 残影

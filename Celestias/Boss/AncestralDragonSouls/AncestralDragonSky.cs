@@ -34,11 +34,20 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
         private float phase;// 0=常态 0.5=二阶段 1.0=暴怒
         private float pulsePhase;
         private float bossHealthPercent = 1f;
+        private float flash;
 
         private const float FadeInSpeed = 0.012f;
         private const float FadeOutSpeed = 0.02f;
 
         private static Asset<Effect> skyEffectRef;
+
+        // 分裂/回拢/解锁等大节拍触发的天幕亮拍 (静态待发, 由实例消费)
+        private static float pendingFlash;
+
+        /// <summary>由 Boss 在分裂/双魂回拢/碎片解锁等节拍触发一次天幕亮拍 (纯本地视觉)。</summary>
+        public static void TriggerFlash(float amount) {
+            if (amount > pendingFlash) pendingFlash = amount;
+        }
 
         void IACMLoader.LoadData() {
             SkyManager.Instance[SkyName] = this;
@@ -67,6 +76,11 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
             float delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
             globalTime += delta;
             pulsePhase += delta * MathHelper.Lerp(1.6f, 4.0f, phase);
+
+            // 消费待发亮拍并衰减
+            if (pendingFlash > flash) flash = pendingFlash;
+            pendingFlash = 0f;
+            flash = MathHelper.Lerp(flash, 0f, 0.06f);
 
             NPC boss = FindBoss();
             bool shouldBeActive = boss != null && boss.active;
@@ -141,6 +155,7 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
             fx.Parameters["uResolution"]?.SetValue(new Vector2(Main.screenWidth, Main.screenHeight));
             fx.Parameters["uBossUV"]?.SetValue(bossUV);
             fx.Parameters["uPulse"]?.SetValue(pulsePhase);
+            fx.Parameters["uFlash"]?.SetValue(MathHelper.Clamp(flash, 0f, 1.5f));
 
             // 切换SpriteBatch为带shader的Immediate模式, 全屏绘制后恢复
             spriteBatch.End();

@@ -81,6 +81,11 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
             Projectile.scale = pulse;
         }
 
+        public override void OnHitPlayer(Player target, Player.HurtInfo info) {
+            // 地府身份层: 暗影球命中叠魂蚀
+            Underworlds.UnderworldField.AddSoulErosion(target, 1);
+        }
+
         public override void OnKill(int timeLeft) {
             SoundEngine.PlaySound(SoundID.NPCDeath6 with { Pitch = -0.5f }, Projectile.position);
 

@@ -697,6 +697,10 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
                 float urgency = Math.Clamp(1f - Projectile.ai[0] / 90f, 0f, 1f);
                 float pulse = 1f + MathF.Sin(sealPhase * 4f) * 0.3f * urgency;
 
+                // 致命预警语言: 早期青白电弧(主题) → 命中前最后阶段转纯红(全局红=致命契约)
+                float lethalRamp = Math.Clamp((urgency - 0.6f) / 0.4f, 0f, 1f);
+                Color teleColor = Color.Lerp(TelegraphColors.Lightning, TelegraphColors.Lethal, lethalRamp);
+
                 // === LightningBranch 旋转符文圈（多个围绕中心旋转） ===
                 Texture2D branchTex = ACMAsset.LightningBranch;
                 if (branchTex != null) {
@@ -706,7 +710,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
                         float angle = sealPhase * 2f + MathHelper.TwoPi * r / runes;
                         float radius = 25f + urgency * 15f;
                         Vector2 runePos = drawPos + angle.ToRotationVector2() * radius;
-                        Color runeColor = Color.Lerp(AoshunHelper.LightningBlue, AoshunHelper.ElectricWhite, urgency) * (0.3f + urgency * 0.4f);
+                        Color runeColor = teleColor * (0.3f + urgency * 0.5f);
                         runeColor.A = 0;
                         float runeScale = (0.06f + urgency * 0.04f) * pulse;
                         sb.Draw(branchTex, runePos, null, runeColor, angle + MathHelper.PiOver2, branchOrigin, runeScale, SpriteEffects.None, 0f);
@@ -717,7 +721,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
                 Texture2D glowTex = ACMAsset.SoftGlow;
                 if (glowTex != null) {
                     Vector2 glowOrigin = glowTex.Size() / 2f;
-                    Color markColor = AoshunHelper.ThunderPurple * (0.2f + urgency * 0.3f);
+                    Color markColor = Color.Lerp(AoshunHelper.ThunderPurple, TelegraphColors.Lethal, lethalRamp) * (0.2f + urgency * 0.35f);
                     markColor.A = 0;
                     sb.Draw(glowTex, drawPos, null, markColor, 0f, glowOrigin, (0.5f + urgency * 0.3f) * pulse, SpriteEffects.None, 0f);
                 }

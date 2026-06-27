@@ -103,7 +103,7 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
             float fadeRatio = (float)segmentIndex / 80f;
             float segmentAlpha = 1f - fadeRatio * 0.25f;
 
-            float soulPulse = 1f + MathF.Sin(soulPulsePhase) * 0.06f;
+            float soulPulse = (1f + MathF.Sin(soulPulsePhase) * 0.06f) * MergeScaleMul();
 
             // 外层光晕
             DrawSegmentGlow(spriteBatch, screenPos, tex, origin, soulPulse, segmentAlpha);

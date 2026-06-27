@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -7,6 +8,7 @@ using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 using AncientChineseMythology.Celestias.Boss.Dryades.Items;
+using AncientChineseMythology.Helpers;
 
 namespace AncientChineseMythology.Items.Weapons.DivineWoods;
 
@@ -163,9 +165,15 @@ public class DivineWoodTomeLeaf : ModProjectile
                 petalVel, ModContent.ProjectileType<DivineWoodTomePetal>(),
                 Projectile.damage / 2, 1f, Projectile.owner);
         }
+
+        ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+            ACMWeaponBurst.DivineWood, scale: 0.7f, owner: Projectile.owner);
     }
 
     public override bool PreDraw(ref Color lightColor) {
+        // 统一翡翠 SoftGlow 外发光 (每片叶子)
+        WeaponVFX.DrawGlowBurst(Projectile.Center, 0.5f, new Color(90, 230, 120) * 0.6f);
+
         Texture2D tex = TextureAssets.Projectile[Type].Value;
         int fh = tex.Height / Main.projFrames[Type];
         Rectangle src = new(0, Projectile.frame * fh, tex.Width, fh);

@@ -85,8 +85,8 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans.Items
         public override void ModifyTooltips(System.Collections.Generic.List<TooltipLine> tooltips) {
             tooltips.Add(new TooltipLine(Mod, "AoyuanLore", "西海龙王寒鳞所铸的快刃"));
             tooltips.Add(new TooltipLine(Mod, "AoyuanEffect", "挥砍释放冰龙弧斩"));
-            tooltips.Add(new TooltipLine(Mod, "AoyuanEffect2", "每三刀释放强化龙息弧波"));
-            tooltips.Add(new TooltipLine(Mod, "AoyuanEffect3", "命中附加霜灼与霜冻减速"));
+            tooltips.Add(new TooltipLine(Mod, "AoyuanEffect2", "每三刀释放强化龙息弧波，并迸射追踪霜晶碎片"));
+            tooltips.Add(new TooltipLine(Mod, "AoyuanEffect3", "命中附加霜灼与霜冻减速；强化斩对受冻敌人造成碎裂暴伤"));
         }
     }
 
@@ -142,11 +142,27 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans.Items
             Lighting.AddLight(Projectile.Center, AoyuanHelper.FrostCyan.ToVector3() * (Empowered >= 1f ? 0.9f : 0.6f));
         }
 
+        public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers) {
+            // 寒霜碎裂：对已被冰冻减速 / 霜灼的敌人，强化弧斩造成碎裂暴伤
+            if (Empowered >= 1f && (target.HasBuff(BuffID.Frostburn2) || target.HasBuff(BuffID.Slow) || target.HasBuff(BuffID.Chilled) || target.HasBuff(BuffID.Frozen))) {
+                modifiers.SourceDamage *= 1.3f;
+            }
+        }
+
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
             target.AddBuff(BuffID.Frostburn2, Empowered >= 1f ? 480 : 300);
             target.AddBuff(BuffID.Slow, Empowered >= 1f ? 180 : 90);
 
             AoyuanHelper.CreateIceBurst(target.Center, 60f, 2, 10);
+
+            // 强化弧斩迸发追踪霜晶碎片
+            if (Empowered >= 1f && Main.myPlayer == Projectile.owner) {
+                for (int i = 0; i < 3; i++) {
+                    Vector2 vel = (Projectile.velocity.SafeNormalize(Vector2.UnitX).RotatedBy((i - 1) * 0.5f)) * 9f;
+                    Projectile.NewProjectile(Projectile.GetSource_FromThis(), target.Center, vel,
+                        ModContent.ProjectileType<GlacialIceShard>(), (int)(Projectile.damage * 0.45f), Projectile.knockBack * 0.4f, Projectile.owner);
+                }
+            }
 
             for (int i = 0; i < 8; i++) {
                 Vector2 vel = Main.rand.NextVector2CircularEdge(5, 5);
@@ -199,6 +215,94 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans.Items
         }
     }
 
+    /// <summary>霜晶碎片 — 冰龙强化弧斩迸射的追踪冰刺。</summary>
+    public class GlacialIceShard : ModProjectile
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+
+        private float homingStrength;
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.TrailingMode[Type] = 2;
+            ProjectileID.Sets.TrailCacheLength[Type] = 8;
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = Projectile.height = 14;
+            Projectile.friendly = true;
+            Projectile.DamageType = DamageClass.Melee;
+            Projectile.penetrate = 2;
+            Projectile.timeLeft = 90;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.extraUpdates = 1;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 10;
+        }
+
+        public override void AI() {
+            if (homingStrength < 0.14f) {
+                homingStrength += 0.006f;
+            }
+
+            NPC target = FindClosestNPC(520f);
+            if (target != null) {
+                Vector2 toTarget = Projectile.DirectionTo(target.Center);
+                float speed = Math.Max(Projectile.velocity.Length(), 10f);
+                Projectile.velocity = Vector2.Lerp(Projectile.velocity, toTarget * speed, homingStrength);
+            }
+
+            Projectile.rotation = Projectile.velocity.ToRotation();
+
+            if (Main.netMode != NetmodeID.Server && Main.rand.NextBool()) {
+                var d = Dust.NewDustPerfect(Projectile.Center, Main.rand.NextBool() ? DustID.IceTorch : DustID.FrostStaff);
+                d.noGravity = true;
+                d.scale = 1.2f;
+                d.velocity = -Projectile.velocity * 0.15f;
+            }
+
+            Lighting.AddLight(Projectile.Center, AoyuanHelper.FrostCyan.ToVector3() * 0.5f);
+        }
+
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            target.AddBuff(BuffID.Frostburn2, 240);
+            target.AddBuff(BuffID.Slow, 90);
+            AoyuanHelper.CreateIceBurst(target.Center, 40f, 2, 8);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            Texture2D tex = ACMAsset.SoftGlow ?? TextureAssets.Projectile[Type].Value;
+            Vector2 origin = tex.Size() / 2f;
+
+            for (int i = 0; i < Projectile.oldPos.Length; i++) {
+                if (Projectile.oldPos[i] == Vector2.Zero) continue;
+                float progress = 1f - (float)i / Projectile.oldPos.Length;
+                Color c = Color.Lerp(AoyuanHelper.IceCrystalWhite, AoyuanHelper.DeepSeaBlue, 1f - progress) * progress * 0.5f;
+                c.A = 0;
+                Main.spriteBatch.Draw(tex, Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition, null, c, 0f, origin, 0.45f * progress, SpriteEffects.None, 0f);
+            }
+
+            Color core = AoyuanHelper.IceCrystalWhite * 0.8f;
+            core.A = 0;
+            Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, core, 0f, origin, 0.4f, SpriteEffects.None, 0f);
+            return false;
+        }
+
+        private NPC FindClosestNPC(float maxRange) {
+            NPC closest = null;
+            float closestDist = maxRange;
+            foreach (NPC npc in Main.ActiveNPCs) {
+                if (!npc.CanBeChasedBy(this)) continue;
+                float dist = Vector2.Distance(Projectile.Center, npc.Center);
+                if (dist < closestDist) {
+                    closestDist = dist;
+                    closest = npc;
+                }
+            }
+            return closest;
+        }
+    }
+
     /// <summary>
     /// 永冻三叉戟 - 敖闰掉落的矛系控场武器
     /// 永冻戳刺后投出，回收路径上附加霜冻减速与水冰双属性
@@ -246,7 +350,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans.Items
             tooltips.Add(new TooltipLine(Mod, "AoyuanLore", "西海永冻之戟，寒潮与冰晶同铸"));
             tooltips.Add(new TooltipLine(Mod, "AoyuanEffect", "戳刺后投出三叉戟，自动回收"));
             tooltips.Add(new TooltipLine(Mod, "AoyuanEffect2", "回收路径伤害提升，命中附加霜冻减速"));
-            tooltips.Add(new TooltipLine(Mod, "AoyuanEffect3", "水冰双属性控场"));
+            tooltips.Add(new TooltipLine(Mod, "AoyuanEffect3", "飞行顶点插地展开永冻领域，减速并冻伤其中敌人"));
         }
     }
 
@@ -356,6 +460,16 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans.Items
                 Phase = TridentPhase.Returning;
                 PhaseTimer = 0f;
                 Projectile.netUpdate = true;
+
+                // 永冻领域：三叉戟飞行到顶点后插地展开冰封领域，减速并冻伤驻足敌人
+                if (Main.myPlayer == Projectile.owner) {
+                    Projectile.NewProjectile(Projectile.GetSource_FromThis(), Projectile.Center, Vector2.Zero,
+                        ModContent.ProjectileType<PermafrostField>(), Math.Max(1, (int)(Projectile.damage * 0.3f)), 0f, Projectile.owner);
+                }
+                if (!Main.dedServ) {
+                    SoundEngine.PlaySound(SoundID.Item28 with { Pitch = -0.2f, Volume = 0.7f }, Projectile.Center);
+                    AoyuanHelper.CreateFrostVortex(Projectile.Center, 60f, 1.1f, 24);
+                }
             }
         }
 
@@ -476,6 +590,93 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans.Items
         }
     }
 
+    /// <summary>永冻领域 — 永冻三叉戟插地展开的冰封区域，减速并持续冻伤其中敌人。</summary>
+    public class PermafrostField : ModProjectile
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+
+        private float fieldScale;
+        private float runeSpin;
+
+        public override void SetDefaults() {
+            Projectile.width = Projectile.height = 150;
+            Projectile.friendly = true;
+            Projectile.DamageType = DamageClass.Melee;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = 210;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 40;
+        }
+
+        public override void AI() {
+            Projectile.velocity = Vector2.Zero;
+            fieldScale = MathHelper.Lerp(fieldScale, 1f, 0.1f);
+            runeSpin += 0.02f;
+
+            float radius = 90f * fieldScale;
+            foreach (NPC npc in Main.ActiveNPCs) {
+                if (!npc.CanBeChasedBy()) continue;
+                if (Vector2.Distance(npc.Center, Projectile.Center) > radius) continue;
+                npc.AddBuff(BuffID.Slow, 30);
+                npc.AddBuff(BuffID.Chilled, 30);
+            }
+
+            if (Main.netMode != NetmodeID.Server) {
+                for (int i = 0; i < 2; i++) {
+                    float angle = Main.rand.NextFloat(MathHelper.TwoPi);
+                    Vector2 pos = Projectile.Center + angle.ToRotationVector2() * radius * Main.rand.NextFloat(0.4f, 1f);
+                    var d = Dust.NewDustPerfect(pos, Main.rand.NextBool() ? DustID.IceTorch : DustID.FrostStaff);
+                    d.noGravity = true;
+                    d.scale = 1.4f * fieldScale;
+                    d.velocity = new Vector2(0f, -Main.rand.NextFloat(0.5f, 2f));
+                }
+            }
+
+            Lighting.AddLight(Projectile.Center, AoyuanHelper.FrostCyan.ToVector3() * 0.55f * fieldScale);
+        }
+
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            target.AddBuff(BuffID.Frostburn2, 120);
+        }
+
+        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
+            Vector2 targetCenter = new Vector2(targetHitbox.Center.X, targetHitbox.Center.Y);
+            return Vector2.Distance(targetCenter, Projectile.Center) < 90f * fieldScale;
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            float fade = Math.Min(Projectile.timeLeft / 40f, 1f);
+            float radius = 90f * fieldScale;
+
+            AoyuanHelper.DrawFrostAura(Main.spriteBatch, Projectile.Center, radius * 0.8f, runeSpin, 0.4f * fade);
+
+            if (ACMAsset.SoftGlow != null) {
+                Texture2D glow = ACMAsset.SoftGlow;
+                Vector2 origin = glow.Size() / 2f;
+                Color c = AoyuanHelper.DeepSeaBlue * 0.3f * fade;
+                c.A = 0;
+                Main.spriteBatch.Draw(glow, Projectile.Center - Main.screenPosition, null, c, 0f, origin,
+                    new Vector2(2.6f, 1.4f) * fieldScale, SpriteEffects.None, 0f);
+            }
+
+            if (ACMAsset.BlankStar != null) {
+                Texture2D star = ACMAsset.BlankStar;
+                Vector2 origin = star.Size() / 2f;
+                for (int i = 0; i < 6; i++) {
+                    float angle = runeSpin * 4f + MathHelper.TwoPi * i / 6f;
+                    Vector2 pos = Projectile.Center + angle.ToRotationVector2() * radius * 0.85f - Main.screenPosition;
+                    Color c = AoyuanHelper.IceCrystalWhite * 0.5f * fade;
+                    c.A = 0;
+                    Main.spriteBatch.Draw(star, pos, null, c, angle, origin, 0.18f * fieldScale, SpriteEffects.None, 0f);
+                }
+            }
+
+            return false;
+        }
+    }
+
     /// <summary>
     /// 漩涡原染魔典 - 敖闰掉落的水系魔法书
     /// 释放三枚水墨漩涡 orb，蛇形追踪最近敌人
@@ -535,6 +736,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans.Items
         public override void ModifyTooltips(System.Collections.Generic.List<TooltipLine> tooltips) {
             tooltips.Add(new TooltipLine(Mod, "AoyuanLore", "西海原初之墨凝成的漩涡魔典"));
             tooltips.Add(new TooltipLine(Mod, "AoyuanEffect", "释放三枚水墨漩涡 orb，蛇形追踪敌人"));
+            tooltips.Add(new TooltipLine(Mod, "AoyuanEffect2", "命中烙下墨染印记，对受印记敌人额外侵蚀增伤"));
         }
 
         public override string Texture => "Terraria/Images/Item_" + ItemID.BookofSkulls;
@@ -621,8 +823,16 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans.Items
             Lighting.AddLight(Projectile.Center, AoyuanHelper.DeepSeaBlue.ToVector3() * 0.55f);
         }
 
+        public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers) {
+            // 墨染标记的敌人受到漩涡额外侵蚀伤害
+            if (target.HasBuff(ModContent.BuffType<PrimordialInkMark>())) {
+                modifiers.SourceDamage *= 1.25f;
+            }
+        }
+
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
             target.AddBuff(BuffID.Frostburn2, 180);
+            target.AddBuff(ModContent.BuffType<PrimordialInkMark>(), 300);
 
             if (Main.netMode == NetmodeID.Server) {
                 return;
@@ -692,6 +902,35 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans.Items
             }
 
             return closest;
+        }
+    }
+
+    /// <summary>墨染印记 — 漩涡魔典烙下的侵蚀标记，持续削蚀生命。</summary>
+    public class PrimordialInkMark : ModBuff
+    {
+        public override string Texture => "AncientChineseMythology/Textures/Buffs/BlankBuff";
+
+        public override void SetStaticDefaults() {
+            Main.debuff[Type] = true;
+            Main.buffNoSave[Type] = true;
+            Main.pvpBuff[Type] = true;
+        }
+
+        public override void Update(NPC npc, ref int buffIndex) {
+            if (npc.lifeRegen > 0) {
+                npc.lifeRegen = 0;
+            }
+
+            npc.lifeRegen -= 14;
+
+            if (Main.netMode == NetmodeID.Server || !Main.rand.NextBool(6)) {
+                return;
+            }
+
+            Vector2 offset = Main.rand.NextVector2Circular(npc.width * 0.35f, npc.height * 0.3f);
+            var d = Dust.NewDustPerfect(npc.Center + offset, DustID.FrostStaff, Main.rand.NextVector2Circular(1.2f, 1.2f), 120, default, 1.3f);
+            d.noGravity = true;
+            d.color = Color.Lerp(AoyuanHelper.AbyssBlack, AoyuanHelper.DeepSeaBlue, Main.rand.NextFloat());
         }
     }
 
@@ -766,7 +1005,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans.Items
         public override void ModifyTooltips(System.Collections.Generic.List<TooltipLine> tooltips) {
             tooltips.Add(new TooltipLine(Mod, "AoyuanLore", "西海墨鳞凝成的流风扇"));
             tooltips.Add(new TooltipLine(Mod, "AoyuanEffect", "扇形涌出墨鳞游鱼，逐敌而游"));
-            tooltips.Add(new TooltipLine(Mod, "AoyuanEffect2", "命中叠加潮涌 DoT，持续侵蚀生命"));
+            tooltips.Add(new TooltipLine(Mod, "AoyuanEffect2", "命中叠加潮涌层数，层数越高侵蚀越烈，满层引爆潮汐迸发"));
         }
     }
 
@@ -786,7 +1025,8 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans.Items
                 npc.lifeRegen = 0;
             }
 
-            npc.lifeRegen -= 10;
+            int stacks = npc.GetGlobalNPC<InkscaledStackNPC>().tideStacks;
+            npc.lifeRegen -= 10 + stacks * 4;
 
             if (Main.netMode == NetmodeID.Server || !Main.rand.NextBool(5)) {
                 return;
@@ -794,9 +1034,72 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans.Items
 
             Vector2 offset = Main.rand.NextVector2Circular(npc.width * 0.35f, npc.height * 0.3f);
             int dustType = Main.rand.NextBool(3) ? DustID.Wet : DustID.FrostStaff;
-            var d = Dust.NewDustPerfect(npc.Center + offset, dustType, Main.rand.NextVector2Circular(1.5f, 1.5f), 120, default, 1.4f);
+            var d = Dust.NewDustPerfect(npc.Center + offset, dustType, Main.rand.NextVector2Circular(1.5f, 1.5f), 120, default, 1.4f + stacks * 0.1f);
             d.noGravity = true;
             d.color = Color.Lerp(AoyuanHelper.DeepSeaBlue, AoyuanHelper.WestSeaTeal, Main.rand.NextFloat());
+        }
+    }
+
+    /// <summary>潮涌层数追踪 — 墨鳞游鱼叠加潮涌，满层引爆潮汐迸发。</summary>
+    public class InkscaledStackNPC : GlobalNPC
+    {
+        public const int MaxStacks = 6;
+
+        public override bool InstancePerEntity => true;
+
+        public int tideStacks;
+        public int decayTimer;
+
+        public static void AddStack(NPC npc, int owner, int baseDamage) {
+            if (!npc.active || npc.friendly || npc.dontTakeDamage) return;
+
+            var s = npc.GetGlobalNPC<InkscaledStackNPC>();
+            s.tideStacks = Math.Min(MaxStacks, s.tideStacks + 1);
+            s.decayTimer = 300;
+
+            if (s.tideStacks >= MaxStacks) {
+                s.tideStacks = 0;
+                s.decayTimer = 0;
+                TidalBurst(npc, baseDamage);
+            }
+        }
+
+        private static void TidalBurst(NPC center, int baseDamage) {
+            Vector2 c = center.Center;
+            int dmg = (int)(baseDamage * 1.8f);
+            SoundEngine.PlaySound(SoundID.Item21 with { Pitch = -0.2f, Volume = 0.85f }, c);
+
+            if (Main.netMode != NetmodeID.MultiplayerClient) {
+                foreach (NPC other in Main.ActiveNPCs) {
+                    if (!other.CanBeChasedBy()) continue;
+                    if (Vector2.Distance(other.Center, c) > 170f) continue;
+                    other.SimpleStrikeNPC(dmg, 0, false, 2f);
+                    other.AddBuff(BuffID.Wet, 240);
+                    other.AddBuff(ModContent.BuffType<InkscaledFlowFanDebuff>(), 240);
+                }
+            }
+
+            if (Main.dedServ) return;
+
+            AoyuanHelper.CreateFrostVortex(c, 150f, 1.4f, 32);
+            for (int i = 0; i < 22; i++) {
+                float a = MathHelper.TwoPi * i / 22f;
+                var d = Dust.NewDustPerfect(c, Main.rand.NextBool() ? DustID.Wet : DustID.FrostStaff, a.ToRotationVector2() * Main.rand.NextFloat(5f, 11f), 100, default, 2f);
+                d.noGravity = true;
+            }
+        }
+
+        public override void AI(NPC npc) {
+            if (tideStacks <= 0) return;
+            if (--decayTimer <= 0) {
+                tideStacks = Math.Max(0, tideStacks - 1);
+                decayTimer = 120;
+            }
+        }
+
+        public override void OnKill(NPC npc) {
+            tideStacks = 0;
+            decayTimer = 0;
         }
     }
 
@@ -867,6 +1170,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans.Items
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
             target.AddBuff(ModContent.BuffType<InkscaledFlowFanDebuff>(), 300);
             target.AddBuff(BuffID.Wet, 180);
+            InkscaledStackNPC.AddStack(target, Projectile.owner, Projectile.damage);
 
             if (Main.netMode == NetmodeID.Server) {
                 return;
@@ -1028,6 +1332,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans.Items
             tooltips.Add(new TooltipLine(Mod, "AoyuanLore", "西海暴雪凝成的穿云神弓"));
             tooltips.Add(new TooltipLine(Mod, "AoyuanEffect", "发射穿透敌阵的暴雪穿云箭"));
             tooltips.Add(new TooltipLine(Mod, "AoyuanEffect2", $"累计 {FrostPierceThreshold} 次 frost 穿透后，下一箭释放强化暴雪箭"));
+            tooltips.Add(new TooltipLine(Mod, "AoyuanEffect3", "强化暴雪箭命中时召落天降冰锥，洞穿目标"));
         }
     }
 
@@ -1135,6 +1440,16 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans.Items
             target.AddBuff(BuffID.Frostburn2, frostDuration);
             target.AddBuff(BuffID.Slow, BlizzardSurge >= 1f ? 120 : 60);
 
+            // 暴雪 surge 箭命中召落天降冰锥
+            if (BlizzardSurge >= 1f && Main.myPlayer == Projectile.owner) {
+                for (int i = 0; i < 4; i++) {
+                    Vector2 spawnPos = target.Center + new Vector2(Main.rand.NextFloat(-90f, 90f), -Main.rand.NextFloat(360f, 520f));
+                    Vector2 vel = new Vector2(Main.rand.NextFloat(-1.5f, 1.5f), Main.rand.NextFloat(15f, 20f));
+                    Projectile.NewProjectile(Projectile.GetSource_FromThis(), spawnPos, vel,
+                        ModContent.ProjectileType<BlizzardIcicle>(), (int)(Projectile.damage * 0.5f), Projectile.knockBack * 0.3f, Projectile.owner);
+                }
+            }
+
             if (Main.netMode == NetmodeID.Server) {
                 return;
             }
@@ -1194,6 +1509,79 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans.Items
                 int dustType = Main.rand.NextBool() ? DustID.IceTorch : DustID.FrostStaff;
                 int dust = Dust.NewDust(Projectile.Center, 0, 0, dustType, vel.X, vel.Y, 120, default, 1.5f);
                 Main.dust[dust].noGravity = true;
+            }
+        }
+    }
+
+    /// <summary>天降冰锥 — 强化暴雪箭命中后召落的穿刺冰锥。</summary>
+    public class BlizzardIcicle : ModProjectile
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.TrailingMode[Type] = 2;
+            ProjectileID.Sets.TrailCacheLength[Type] = 8;
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = Projectile.height = 14;
+            Projectile.friendly = true;
+            Projectile.DamageType = DamageClass.Ranged;
+            Projectile.penetrate = 2;
+            Projectile.timeLeft = 120;
+            Projectile.tileCollide = true;
+            Projectile.ignoreWater = true;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 10;
+        }
+
+        public override void AI() {
+            Projectile.velocity.Y += 0.25f;
+            if (Projectile.velocity.Y > 24f) Projectile.velocity.Y = 24f;
+            Projectile.rotation = Projectile.velocity.ToRotation() + MathHelper.PiOver2;
+
+            if (Main.netMode != NetmodeID.Server && Main.rand.NextBool()) {
+                var d = Dust.NewDustPerfect(Projectile.Center, Main.rand.NextBool() ? DustID.IceTorch : DustID.FrostStaff);
+                d.noGravity = true;
+                d.scale = 1.3f;
+                d.velocity = -Projectile.velocity * 0.1f;
+            }
+
+            Lighting.AddLight(Projectile.Center, AoyuanHelper.FrostCyan.ToVector3() * 0.5f);
+        }
+
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            target.AddBuff(BuffID.Frostburn2, 240);
+            target.AddBuff(BuffID.Slow, 60);
+            AoyuanHelper.CreateIceBurst(target.Center, 44f, 2, 8);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            Texture2D tex = ACMAsset.SoftGlow ?? TextureAssets.Projectile[Type].Value;
+            Vector2 origin = tex.Size() / 2f;
+
+            for (int i = 0; i < Projectile.oldPos.Length; i++) {
+                if (Projectile.oldPos[i] == Vector2.Zero) continue;
+                float progress = 1f - (float)i / Projectile.oldPos.Length;
+                Color c = Color.Lerp(AoyuanHelper.IceCrystalWhite, AoyuanHelper.DeepSeaBlue, 1f - progress) * progress * 0.5f;
+                c.A = 0;
+                Main.spriteBatch.Draw(tex, Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition, null, c,
+                    Projectile.rotation, origin, new Vector2(0.3f, 0.55f) * progress, SpriteEffects.None, 0f);
+            }
+
+            Color core = AoyuanHelper.IceCrystalWhite * 0.85f;
+            core.A = 0;
+            Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, core, Projectile.rotation, origin,
+                new Vector2(0.32f, 0.6f), SpriteEffects.None, 0f);
+            return false;
+        }
+
+        public override void OnKill(int timeLeft) {
+            if (Main.dedServ) return;
+            for (int i = 0; i < 8; i++) {
+                var d = Dust.NewDustPerfect(Projectile.Center, Main.rand.NextBool() ? DustID.IceTorch : DustID.FrostStaff, Main.rand.NextVector2Circular(3f, 3f));
+                d.noGravity = true;
+                d.scale = 1.4f;
             }
         }
     }

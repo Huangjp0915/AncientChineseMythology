@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -59,6 +60,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers.Items
             // 施法特效
             SoundEngine.PlaySound(SoundID.Item125 with { Pitch = 0.1f, Volume = 1.1f }, targetPos);
             AwakeningNetherHelper.CreateSoulBurst(targetPos, 80f, 2, 16);
+            ACMWeaponBurst.Spawn(source, targetPos, ACMWeaponBurst.AbyssPurple, scale: 1.2f, owner: player.whoAmI);
 
             // 从玩家到目标位置的能量连接
             AwakeningNetherHelper.CreateDimensionTear(player.Center, targetPos, 0.5f);
@@ -269,8 +271,19 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers.Items
             }
         }
 
+        // 同屏 ArenaRunic 地纹每帧仅画一次 (多法阵不叠多张全屏 decal)
+        private static ulong _lastRunicFrame;
+
         public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
             SpriteBatch sb = Main.spriteBatch;
+
+            // 蚀魂法阵地纹 (ArenaRunic · 法阵模式), 每帧仅一座法阵承担, 省全屏开销
+            if (circleScale > 0.05f && _lastRunicFrame != Main.GameUpdateCount) {
+                _lastRunicFrame = Main.GameUpdateCount;
+                DrawErosionArray(sb);
+            }
 
             // 绘制法阵
             DrawMagicCircle(sb);
@@ -281,7 +294,31 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers.Items
             // 绘制中心核心
             DrawCore(sb);
 
+            // 中心径向泛光 (RadialBloom, 名额仲裁; 被占退化为柔光)
+            WeaponVFX.DrawRadialBloom(Projectile.Center, 0.06f * circleScale, 0.6f * circleScale,
+                AwakeningNetherHelper.AwakeningPurple, 6f);
+
             return false;
+        }
+
+        // 蚀魂侵蚀符阵地纹 — 程序化 SDF 符文环 (替代纯 dust 旋转环)
+        private void DrawErosionArray(SpriteBatch sb) {
+            Effect fx = ACMShaders.ArenaRunic;
+            if (fx == null)
+                return;
+            float worldRadius = 130f * circleScale;
+            ACMShaders.WorldDecalParams(Projectile.Center, worldRadius, out Vector2 uv, out float rFrac, out float aspect);
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uCenter"]?.SetValue(uv);
+            fx.Parameters["uRadius"]?.SetValue(rFrac);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(circleScale, 0f, 1f) * 0.85f);
+            fx.Parameters["uAspect"]?.SetValue(aspect);
+            fx.Parameters["uColorPrimary"]?.SetValue(AwakeningNetherHelper.AwakeningPurple.ToVector4());
+            fx.Parameters["uColorSecondary"]?.SetValue(AwakeningNetherHelper.NetherCyan.ToVector4());
+            fx.Parameters["uRuneFreq"]?.SetValue(13f);
+            fx.Parameters["uMode"]?.SetValue(0f);  // 法阵
+            fx.Parameters["uShape"]?.SetValue(0f); // 圆
+            ACMShaders.DrawScreenSpaceDecal(sb, fx);
         }
 
         private void DrawMagicCircle(SpriteBatch sb) {
@@ -349,12 +386,14 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers.Items
                     if (dist < 1500f && dist > 50f) {
                         // 只绘制一次（索引小的绘制）
                         if (Projectile.whoAmI < proj.whoAmI) {
-                            Color chainColor = Color.Lerp(AwakeningNetherHelper.AwakeningPurple,
-                                AwakeningNetherHelper.SoulPink, MathF.Sin(pulsePhase) * 0.5f + 0.5f);
-                            chainColor *= circleScale * 0.6f;
-
-                            AwakeningNetherHelper.DrawEnergyBeam(sb, Projectile.Center, proj.Center,
-                                chainColor, 8f * circleScale, pulsePhase, true);
+                            float chainPulse = MathF.Sin(pulsePhase) * 0.5f + 0.5f;
+                            Color chainCore = Color.Lerp(AwakeningNetherHelper.SoulPink,
+                                AwakeningNetherHelper.NetherCyan, chainPulse);
+                            // 灵魂连锁 → BeamGrad 流动光束
+                            ACMShaders.DrawBeam(Projectile.Center, proj.Center, 9f * circleScale,
+                                chainCore with { A = 210 },
+                                AwakeningNetherHelper.VoidDarkPurple with { A = 120 },
+                                circleScale, 1.6f, 2.2f, 2.2f);
                         }
                     }
                 }

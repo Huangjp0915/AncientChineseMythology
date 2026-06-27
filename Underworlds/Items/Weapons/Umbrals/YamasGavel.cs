@@ -1,4 +1,6 @@
-﻿using AncientChineseMythology.Underworlds.Tiles;
+﻿using System;
+using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
@@ -221,8 +223,8 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
                 target.AddBuff(BuffID.Confused, 120); //2秒混乱
             }
 
-            //击中爆发黄金烈焰
-            for (int i = 0; i < 15; i++) {
+            //击中爆发黄金烈焰 (保留少量作火星)
+            for (int i = 0; i < 6; i++) {
                 Vector2 vel = Main.rand.NextVector2Circular(8f, 8f);
                 Dust burst = Dust.NewDustPerfect(
                     target.Center,
@@ -233,6 +235,21 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
                     Main.rand.NextFloat(1.8f, 2.5f)
                 );
                 burst.noGravity = true;
+            }
+
+            //金焰审判辉光演出
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Gold, scale: 1.1f, owner: Projectile.owner);
+            WeaponVFX.AddScreenShake(target.Center, 3.5f);
+
+            //命中短驻审判符环 (同屏只保留一个, 避免全屏装饰叠加)
+            if (Projectile.owner == Main.myPlayer) {
+                Player owner = Main.player[Projectile.owner];
+                int runeType = ModContent.ProjectileType<YamasJudgmentRune>();
+                if (owner.ownedProjectileCounts[runeType] < 1) {
+                    Projectile.NewProjectile(Projectile.GetSource_OnHit(target), target.Center, Vector2.Zero,
+                        runeType, 0, 0f, Projectile.owner);
+                }
             }
 
             //击中音效
@@ -252,31 +269,11 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
         public override bool PreDraw(ref Color lightColor) {
             Texture2D texture = TextureAssets.Projectile[Type].Value;
             Vector2 origin = texture.Size() / 2f;
-            //绘制黄金烈焰拖尾
-            for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                if (Projectile.oldPos[i] == Vector2.Zero) continue;
 
-                float progress = 1f - (float)i / Projectile.oldPos.Length;
-                Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-
-                //黄色到橙红色渐变
-                Color trailColor = Color.Lerp(new Color(255, 100, 30), new Color(255, 220, 100), progress) * progress * 0.6f;
-                trailColor.A = 0;
-
-                float scale = Projectile.scale * progress;
-
-                Main.EntitySpriteDraw(
-                    texture,
-                    drawPos,
-                    null,
-                    trailColor,
-                    Projectile.oldRot[i],
-                    origin,
-                    scale,
-                    SpriteEffects.None,
-                    0
-                );
-            }
+            //黄金烈焰双层 ribbon 拖尾 (外宽橙红 + 内窄金黄, 流动 UV)
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 26f,
+                outerColor: new Color(255, 90, 25, 150), innerColor: new Color(255, 225, 120, 200),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.6f);
 
             //绘制主体
             Color mainColor = Color.Lerp(lightColor, new Color(255, 230, 150), 0.4f);
@@ -326,6 +323,68 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
                 );
                 death.noGravity = true;
             }
+        }
+    }
+
+    /// <summary>
+    /// 阎罗审判符环 - 命中点短驻的程序化金色法阵 (纯视觉, 用 ArenaRunic 着色器绘制)。
+    /// 张开→收束的呼吸式审判符文环, 同屏同主人仅一个 (避免全屏装饰叠加)。
+    /// </summary>
+    public class YamasJudgmentRune : ModProjectile
+    {
+        public override string Texture => "Terraria/Images/Projectile_1";
+
+        private const int LifeTime = 34;
+
+        public override void SetDefaults() {
+            Projectile.width = 2;
+            Projectile.height = 2;
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = LifeTime;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.alpha = 255;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+
+        public override void AI() {
+            Lighting.AddLight(Projectile.Center, 0.6f, 0.45f, 0.12f);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+
+            Effect fx = ACMShaders.ArenaRunic;
+            float life = 1f - Projectile.timeLeft / (float)LifeTime; // 0→1
+            float intensity = MathF.Sin(life * MathHelper.Pi) * 0.9f; // 张开→收束
+
+            if (fx == null || intensity <= 0.01f) {
+                //着色器缺失时退化为冲击环, 保证有反馈
+                WeaponVFX.DrawShockwaveRing(Projectile.Center, 30f + life * 60f, 8f, intensity,
+                    new Color(255, 230, 140), new Color(200, 120, 30));
+                return false;
+            }
+
+            //世界中心 → 屏幕 UV
+            Vector2 uv = (Projectile.Center - Main.screenPosition) / new Vector2(Main.screenWidth, Main.screenHeight);
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uCenter"]?.SetValue(uv);
+            fx.Parameters["uRadius"]?.SetValue(0.085f);
+            fx.Parameters["uIntensity"]?.SetValue(intensity);
+            fx.Parameters["uAspect"]?.SetValue((float)Main.screenWidth / Main.screenHeight);
+            fx.Parameters["uColorPrimary"]?.SetValue(new Color(255, 220, 120).ToVector4());
+            fx.Parameters["uColorSecondary"]?.SetValue(new Color(255, 120, 30).ToVector4());
+            fx.Parameters["uRuneFreq"]?.SetValue(10f);
+            fx.Parameters["uMode"]?.SetValue(0f);
+            fx.Parameters["uShape"]?.SetValue(0f);
+
+            //PreDraw 处于活动批中: 用 DrawScreenSpaceDecal (内部 End→画→恢复默认批)
+            ACMShaders.DrawScreenSpaceDecal(Main.spriteBatch, fx, BlendState.AlphaBlend);
+            return false;
         }
     }
 }

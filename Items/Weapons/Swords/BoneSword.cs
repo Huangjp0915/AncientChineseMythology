@@ -1,11 +1,17 @@
-﻿using AncientChineseMythology.Items.Materials;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Items.Materials;
 using AncientChineseMythology.Projectiles;
+using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Items.Weapons.Swords
 {
+    /// <summary>
+    /// 骨剑 — 超快挥速 (useTime 6)。可见质变 (纯表现, 极廉价): 挥砍偶发骨白小尘,
+    /// 偶发命中触发轻量 <see cref="ACMWeaponBurst"/> 骨白爆发。机制/伤害不变。
+    /// </summary>
     public class BoneSword : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Swords/BoneSword"; //使用物品的纹理作为投射物的纹理
@@ -28,6 +34,24 @@ namespace AncientChineseMythology.Items.Weapons.Swords
             Item.shoot = ModContent.ProjectileType<BlankProjectile>(); //射击类型
             Item.shootSpeed = 16;
             Item.noUseGraphic = false; //显示使用图标
+        }
+
+        // 极廉价骨白尘 (挥速极快, 强力门控避免刷屏)
+        public override void MeleeEffects(Player player, Rectangle hitbox) {
+            if (Main.rand.NextBool(4)) {
+                Dust d = Dust.NewDustDirect(new Vector2(hitbox.X, hitbox.Y), hitbox.Width, hitbox.Height, DustID.Bone);
+                d.noGravity = true;
+                d.velocity *= 0.3f;
+                d.scale = Main.rand.NextFloat(0.6f, 0.9f);
+            }
+        }
+
+        public override void OnHitNPC(Player player, NPC target, NPC.HitInfo hit, int damageDone) {
+            // 仅偶发触发, 保持极低开销
+            if (Main.rand.NextBool(5)) {
+                ACMWeaponBurst.Spawn(player.GetSource_OnHit(target), target.Center,
+                    ACMWeaponBurst.Bone, scale: 0.7f, owner: player.whoAmI);
+            }
         }
 
         public override void AddRecipes() {

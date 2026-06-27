@@ -51,6 +51,9 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
         private float bossHealthPercent = 1f;
         private bool isPhase2;
 
+        // 四季天幕染色 (向当前主导季节平滑过渡)
+        private Color seasonTint = DazhengSeasons.Tint(0);
+
         // 颜色定义 — 大椿：墨绿 / 琥珀金 / 古木褐
         private static readonly Color DeepMoss = new(10, 30, 12);
         private static readonly Color AncientAmber = new(140, 100, 30);
@@ -123,6 +126,9 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 if (!active) Activate(Vector2.Zero);
                 bossHealthPercent = (float)boss.life / boss.lifeMax;
                 isPhase2 = bossHealthPercent < Dazheng.Phase2Threshold;
+
+                if (boss.ModNPC is Dazheng dz)
+                    seasonTint = Color.Lerp(seasonTint, DazhengSeasons.Tint(dz.CurrentSeason), 0.02f);
 
                 float target = isPhase2 ? MaxIntensity * 1.15f : MaxIntensity;
                 intensity = MathHelper.Lerp(intensity, target, FadeInSpeed);
@@ -203,6 +209,12 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             Color breathC = AncientAmber * breath;
             breathC.A = 0;
             sb.Draw(pixel, screen, breathC);
+
+            // 四季天幕染色: 顶部季节色轻洗 (随主导季节平滑过渡)
+            float seasonWash = (0.5f + MathF.Sin(globalTime * 0.9f) * 0.5f) * intensity * 0.06f;
+            Color washC = seasonTint * seasonWash;
+            washC.A = 0;
+            sb.Draw(pixel, new Rectangle(0, 0, Main.screenWidth, (int)(Main.screenHeight * 0.5f)), washC);
         }
 
         #endregion

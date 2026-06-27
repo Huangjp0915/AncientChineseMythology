@@ -1162,5 +1162,255 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
             return false;
         }
     }
+
+    /// <summary>
+    /// 阴阳超载脉冲 (Yin-Yang Overdrive) — 狂暴终曲强制机制控制弹。
+    /// 围绕竞技场中心张开一圈阴阳灵珠环 (留一道缓慢旋转的"安全缝", 翠玉色); 蓄力满后环身转赤红并
+    /// 释放一次**全屏魂蚀脉冲**: 此刻**不在安全缝内**的玩家被抽走当前/上限血量的固定百分比 (失败惩罚)。
+    /// 红色只在致命释放帧出现; 蓄力期为主题青白 + 翠玉安全缝。每客户端只对本地玩家结算 (MP 安全)。
+    /// </summary>
+    public class YinYangOverdrivePulse : ModProjectile
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+
+        private const int TelegraphDur = 150;
+        private const int LethalFrame = TelegraphDur;
+        private const int FadeDur = 26;
+        private const float RingRadius = 540f;
+        private const float GapHalfWidth = 0.62f;   // 安全缝半角(弧度)
+        private const int OrbCount = 22;
+
+        private ref float GapBaseAngle => ref Projectile.ai[0];
+        private bool hasPulsed;
+
+        public override void SetStaticDefaults() { }
+
+        public override void SetDefaults() {
+            Projectile.width = 60;
+            Projectile.height = 60;
+            Projectile.friendly = false;
+            Projectile.hostile = false;     // 不靠接触造成伤害, 仅在释放帧手动结算
+            Projectile.penetrate = -1;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.timeLeft = TelegraphDur + LethalFrame + FadeDur;
+        }
+
+        private float Age => (TelegraphDur + LethalFrame + FadeDur) - Projectile.timeLeft;
+        private float GapCenter => GapBaseAngle + Age * 0.012f;
+
+        public override void AI() {
+            float age = Age;
+
+            // 蓄力期: 向心粒子 + 音效渐强
+            if (Main.netMode != NetmodeID.Server && age < TelegraphDur && age % 6 == 0) {
+                float a = Main.rand.NextFloat(MathHelper.TwoPi);
+                Vector2 pos = Projectile.Center + a.ToRotationVector2() * RingRadius;
+                int dust = Dust.NewDust(pos, 0, 0, Main.rand.NextBool() ? DustID.WhiteTorch : DustID.Clentaminator_Cyan,
+                    0, 0, 120, Color.White, 1.4f);
+                Main.dust[dust].noGravity = true;
+                Main.dust[dust].velocity = (Projectile.Center - pos).SafeNormalize(Vector2.Zero) * 3f;
+            }
+
+            if (Main.netMode != NetmodeID.Server && (int)age == TelegraphDur - 30) {
+                SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.4f, Volume = 1f }, Projectile.Center);
+            }
+
+            // 致命释放: 全屏魂蚀脉冲 (每客户端结算本地玩家)
+            if (age >= LethalFrame && !hasPulsed) {
+                hasPulsed = true;
+                if (Main.netMode != NetmodeID.Server) {
+                    SoundEngine.PlaySound(SoundID.Item73 with { Pitch = -0.2f, Volume = 1.1f }, Projectile.Center);
+                    ACMUtils.AddScreenShake(9f);
+                    for (int i = 0; i < 50; i++) {
+                        float a = MathHelper.TwoPi * i / 50f;
+                        Vector2 vel = a.ToRotationVector2() * Main.rand.NextFloat(6f, 16f);
+                        int dust = Dust.NewDust(Projectile.Center, 0, 0, DustID.Clentaminator_Cyan, vel.X, vel.Y, 80, Color.White, 2f);
+                        Main.dust[dust].noGravity = true;
+                    }
+
+                    Player p = Main.LocalPlayer;
+                    if (p != null && p.active && !p.dead && !p.creativeGodMode) {
+                        float ang = (p.Center - Projectile.Center).ToRotation();
+                        float diff = MathHelper.WrapAngle(ang - GapCenter);
+                        if (Math.Abs(diff) > GapHalfWidth) {
+                            int drain = Math.Max(60, (int)(p.statLifeMax2 * 0.28f));
+                            p.Hurt(Terraria.DataStructures.PlayerDeathReason.ByCustomReason(
+                                Terraria.Localization.NetworkText.FromLiteral(p.name + " was drained by the Ancestral Dragon Soul.")),
+                                drain, 0, dodgeable: false);
+                        }
+                    }
+                }
+            }
+
+            Lighting.AddLight(Projectile.Center, new Vector3(0.6f, 0.7f, 0.95f) * 1.2f);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            Texture2D glow = ACMAsset.LightShot ?? ACMAsset.SoftGlow;
+            if (glow == null)
+                return false;
+
+            float age = Age;
+            float charge = MathHelper.Clamp(age / TelegraphDur, 0f, 1f);
+            bool lethal = age >= LethalFrame;
+            float fade = age >= LethalFrame ? MathHelper.Clamp(1f - (age - LethalFrame) / FadeDur, 0f, 1f) : 1f;
+
+            Vector2 center = Projectile.Center - Main.screenPosition;
+            float gapCenter = GapCenter;
+
+            for (int i = 0; i < OrbCount; i++) {
+                float a = MathHelper.TwoPi * i / OrbCount;
+                float diff = MathHelper.WrapAngle(a - gapCenter);
+                bool inGap = Math.Abs(diff) < GapHalfWidth;
+
+                Vector2 pos = center + a.ToRotationVector2() * RingRadius;
+                float orbPulse = 0.8f + MathF.Sin(age * 0.18f + i) * 0.2f;
+
+                Color col;
+                if (inGap) {
+                    col = TelegraphColors.Safe;      // 安全缝: 翠玉
+                }
+                else if (lethal) {
+                    col = TelegraphColors.Lethal;    // 致命: 纯红 (仅释放帧)
+                }
+                else {
+                    // 阴阳: 白/青交替, 蓄力越满越亮
+                    col = (i % 2 == 0) ? Color.White : new Color(150, 215, 255);
+                    col = Color.Lerp(col, new Color(255, 150, 170), charge * 0.4f);
+                }
+                col *= fade * (0.6f + charge * 0.4f);
+                col.A = 0;
+                spriteBatch_DrawOrb(glow, pos, col, (inGap ? 0.7f : 0.95f) * orbPulse);
+            }
+
+            // 安全缝指示弧 (翠玉光带)
+            if (!lethal) {
+                Texture2D spk = ACMAsset.Sparkle;
+                if (spk != null) {
+                    Vector2 gapPos = center + gapCenter.ToRotationVector2() * RingRadius;
+                    Color sc = TelegraphColors.Safe * (0.4f + charge * 0.5f);
+                    sc.A = 0;
+                    Main.spriteBatch.Draw(spk, gapPos, null, sc, age * 0.05f, spk.Size() / 2f, 1.4f, SpriteEffects.None, 0f);
+                }
+            }
+
+            return false;
+        }
+
+        private static void spriteBatch_DrawOrb(Texture2D tex, Vector2 pos, Color col, float scale) {
+            Main.spriteBatch.Draw(tex, pos, null, col, 0f, tex.Size() / 2f, scale, SpriteEffects.None, 0f);
+            Color core = Color.White * (col.A == 0 ? 0.5f : 0.5f);
+            core.A = 0;
+            Main.spriteBatch.Draw(tex, pos, null, core * 0.5f, 0f, tex.Size() / 2f, scale * 0.55f, SpriteEffects.None, 0f);
+        }
+    }
+
+    /// <summary>
+    /// 太初回拢扫线 (Primordial Recall Beam) — 双魂回拢 i-frame 过场中的处决扫线。
+    /// 绕竞技场中心缓慢旋转的一条贯穿直径; 先以金白 (Holy) 拉直预警, 蓄满后转赤红 (Lethal) 横扫造成伤害。
+    /// 两条 90° 错位 = X 形处决线。Boss 此刻无敌, 但玩家须读线走位。
+    /// </summary>
+    public class PrimordialRecallBeam : ModProjectile
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+
+        private const float BeamLength = 1700f;
+        private const int TelegraphDur = 80;
+        private const int LethalDur = 130;
+
+        private ref float AngleOffset => ref Projectile.ai[0];   // X 错位 (0 / PiOver2)
+        private ref float SpinSign => ref Projectile.ai[1];      // 旋转方向
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.DrawScreenCheckFluff[Type] = 2400;
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = 40;
+            Projectile.height = 40;
+            Projectile.friendly = false;
+            Projectile.hostile = true;
+            Projectile.penetrate = -1;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.timeLeft = TelegraphDur + LethalDur;
+        }
+
+        private float Age => (TelegraphDur + LethalDur) - Projectile.timeLeft;
+        private bool Lethal => Age >= TelegraphDur;
+        private float CurrentAngle => AngleOffset + Age * 0.010f * (SpinSign >= 0 ? 1f : -1f);
+
+        public override void AI() {
+            // 中心由 spawn 时设定, 保持不动 (竞技场中心)
+            Projectile.velocity = Vector2.Zero;
+
+            if (Lethal && Main.netMode != NetmodeID.Server) {
+                Vector2 dir = CurrentAngle.ToRotationVector2();
+                for (int s = -1; s <= 1; s += 2) {
+                    for (int i = 0; i < 6; i++) {
+                        float dist = Main.rand.NextFloat(BeamLength);
+                        Vector2 pos = Projectile.Center + dir * dist * s;
+                        int dust = Dust.NewDust(pos, 0, 0, DustID.RedTorch, 0, 0, 120, Color.White, 1.6f);
+                        Main.dust[dust].noGravity = true;
+                        Main.dust[dust].velocity = dir.RotatedBy(MathHelper.PiOver2) * Main.rand.NextFloatDirection() * 2f;
+                    }
+                }
+            }
+
+            Vector2 ldir = CurrentAngle.ToRotationVector2();
+            for (int i = -6; i <= 6; i++) {
+                Lighting.AddLight(Projectile.Center + ldir * (i * 130), new Vector3(1f, Lethal ? 0.4f : 0.85f, Lethal ? 0.4f : 0.7f) * 0.8f);
+            }
+        }
+
+        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
+            if (!Lethal)
+                return false;
+            float point = 0f;
+            Vector2 dir = CurrentAngle.ToRotationVector2();
+            Vector2 a = Projectile.Center - dir * BeamLength;
+            Vector2 b = Projectile.Center + dir * BeamLength;
+            return Collision.CheckAABBvLineCollision(targetHitbox.TopLeft(), targetHitbox.Size(), a, b, 44f, ref point);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            Texture2D tex = ACMAsset.SlashBurst;
+            if (tex == null)
+                return false;
+
+            float age = Age;
+            float grow = Lethal ? 1f : MathHelper.Clamp(age / TelegraphDur, 0f, 1f);
+            float fade = Projectile.timeLeft < 24 ? Projectile.timeLeft / 24f : 1f;
+            Vector2 dir = CurrentAngle.ToRotationVector2();
+            Vector2 center = Projectile.Center - Main.screenPosition;
+            float drawRot = CurrentAngle + MathHelper.PiOver2;
+            Vector2 origin = new Vector2(tex.Width / 2f, tex.Height);
+
+            Color baseCol = Lethal ? TelegraphColors.Lethal : TelegraphColors.Holy;
+
+            // 双向直径: 各画一条半线
+            for (int s = -1; s <= 1; s += 2) {
+                float halfRot = drawRot + (s < 0 ? MathHelper.Pi : 0f);
+                for (int layer = 3; layer >= 0; layer--) {
+                    float lw = (0.20f + layer * 0.16f) * grow * (Lethal ? 1f : 0.4f);
+                    float la = (0.85f - layer * 0.2f) * fade;
+                    Color lc = Color.Lerp(Color.White, baseCol, layer / 3f) * la;
+                    lc.A = 0;
+                    Vector2 scale = new Vector2(lw, BeamLength / tex.Height);
+                    Main.spriteBatch.Draw(tex, center, null, lc, halfRot, origin, scale, SpriteEffects.None, 0f);
+                }
+            }
+
+            // 中心枢纽光球
+            if (ACMAsset.LightShot != null) {
+                Color hub = baseCol * fade * 0.9f;
+                hub.A = 0;
+                Main.spriteBatch.Draw(ACMAsset.LightShot, center, null, hub, 0f, ACMAsset.LightShot.Size() / 2f, 2.4f * grow, SpriteEffects.None, 0f);
+            }
+
+            return false;
+        }
+    }
 }
 

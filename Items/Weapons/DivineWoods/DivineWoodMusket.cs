@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -6,6 +7,7 @@ using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 using AncientChineseMythology.Celestias.Boss.Dryades.Items;
+using AncientChineseMythology.Helpers;
 
 namespace AncientChineseMythology.Items.Weapons.DivineWoods;
 
@@ -122,6 +124,11 @@ public class DivineWoodThornNeedle : ModProjectile
     }
 
     public override bool PreDraw(ref Color lightColor) {
+        // 绿芯双层 ribbon 拖尾
+        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 6f,
+            outerColor: new Color(20, 110, 55, 150), innerColor: new Color(170, 255, 150, 200),
+            tex: ACMAsset.LightShot, uvScroll: -Main.GlobalTimeWrappedHourly * 2.5f);
+
         SpriteBatch sb = Main.spriteBatch;
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
@@ -130,16 +137,6 @@ public class DivineWoodThornNeedle : ModProjectile
 
         Texture2D lsh = ACMAsset.LightShot;
         Texture2D sg = ACMAsset.SoftGlow;
-
-        for (int i = 1; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
-            if (Projectile.oldPos[i] == Vector2.Zero) continue;
-            float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.55f;
-            sb.Draw(lsh,
-                Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition,
-                null, new Color(50, 180, 60) * a, Projectile.oldRot[i],
-                lsh.Size() * 0.5f,
-                new Vector2(0.35f + i * 0.01f, 0.08f), SpriteEffects.None, 0);
-        }
 
         sb.Draw(lsh, Projectile.Center - Main.screenPosition, null,
             new Color(80, 230, 90), Projectile.rotation,
@@ -209,9 +206,10 @@ public class DivineWoodSeedMortar : ModProjectile
             boom.noGravity = true;
         }
 
-        if (Main.player[Projectile.owner].whoAmI == Main.myPlayer) {
-            Main.player[Projectile.owner].GetModPlayer<ScreenShakePlayer>().ShakeScreen(5, 8);
-        }
+        // 落地荆棘领域绽放演出 (DrawShockwaveRing + 径向辉光由演出弹幕承载) + 轻度震屏
+        ACMWeaponBurst.Spawn(Projectile.GetSource_Death(), Projectile.Center,
+            ACMWeaponBurst.DivineWood, scale: 1.5f, owner: Projectile.owner);
+        WeaponVFX.AddScreenShake(Projectile.Center, 4f);
     }
 
     public override bool PreDraw(ref Color lightColor) {
@@ -294,6 +292,11 @@ public class DivineWoodThornFieldExplosion : ModProjectile
         float prog = 1f - Projectile.timeLeft / 45f;
         float alpha = ACMUtils.QuadOut(1f - prog) * 0.88f;
         float scale = MathHelper.SmoothStep(0f, 12f, ACMUtils.QuadOut(prog));
+
+        // 荆棘领域扩张冲击环 (绿)
+        float ringR = Projectile.ai[0] * 10f;
+        WeaponVFX.DrawShockwaveRing(Projectile.Center, ringR, 12f, alpha * 0.8f,
+            new Color(170, 255, 150), new Color(20, 110, 55));
 
         SpriteBatch sb = Main.spriteBatch;
         sb.End();

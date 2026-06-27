@@ -156,6 +156,13 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
         private float globalTime;
         private float stormAuraAlpha;
 
+        // V2 风暴屏幕演出标量（纯本地视觉，AoshunStormScreenSystem 驱动）
+        private float stormTintFx;          // 风暴压暗强度 0~1（平滑跟随电量/阶段）
+        private bool stormWasFullyCharged;  // 满电"雷暴临界"边沿检测（一次性演出）
+        private bool stormEyeActive;        // 风暴之眼安全区是否生效
+        private Vector2 stormEyeCenter;     // 风暴之眼中心（世界）
+        private float stormEyeRadius;       // 风暴之眼当前半径（世界像素）
+
         // 攻击历史（避免连续相同攻击）
         private AoshunAttackType lastAttack = (AoshunAttackType)(-1);
 

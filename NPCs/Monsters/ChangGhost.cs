@@ -57,12 +57,10 @@ namespace AncientChineseMythology.NPCs.Monsters
             bool inBloodSea = spawnInfo.Player.InModBiome(ModContent.GetInstance<BloodSeaBiome>());
             if (!inBloodSea || spawnInfo.PlayerSafe) return 0f;
 
-            //生成点必须有实心地面（陆地或水底陆地）且处于地表层
-            bool solidBelow = WorldGen.SolidTile(spawnInfo.SpawnTileX, spawnInfo.SpawnTileY + 1);
-            bool validGround = solidBelow;
-            bool isSurface = spawnInfo.SpawnTileY < Main.worldSurface;
+            //生成点需有实心地面（盆地岸壁 / 湖床），血海现为地下盆地，不再限制地表
+            bool validGround = WorldGen.SolidTile(spawnInfo.SpawnTileX, spawnInfo.SpawnTileY + 1);
 
-            return validGround && isSurface ? 0.25f : 0f;
+            return validGround ? 0.25f : 0f;
         }
 
         //──────────────────── AI ────────────────────

@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -58,8 +59,8 @@ public class EmeraldTwigBolt : ModProjectile
         => "AncientChineseMythology/Textures/Masking/LightShot";
 
     public override void SetStaticDefaults() {
-        ProjectileID.Sets.TrailingMode[Type] = 2;
-        ProjectileID.Sets.TrailCacheLength[Type] = 6;
+        ProjectileID.Sets.TrailCacheLength[Type] = 14;
+        ProjectileID.Sets.TrailingMode[Type] = 0;
     }
 
     public override void SetDefaults() {
@@ -88,36 +89,12 @@ public class EmeraldTwigBolt : ModProjectile
     }
 
     public override bool PreDraw(ref Color lightColor) {
-        var sb = Main.spriteBatch;
-        var lightShot = ACMAsset.LightShot;
-        var softGlow = ACMAsset.SoftGlow;
-        var origin = lightShot.Size() / 2f;
-        var glowOrigin = softGlow.Size() / 2f;
-
-        sb.End();
-        sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
-            DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
-
-        // 拖尾
-        for (int i = 1; i < Projectile.oldPos.Length; i++) {
-            Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-            float progress = 1f - (float)i / Projectile.oldPos.Length;
-            float scale = 0.25f * progress;
-            Color trailColor = new Color(30, 160, 50) * progress * 0.6f;
-            sb.Draw(lightShot, drawPos, null, trailColor, Projectile.oldRot[i], origin, scale, SpriteEffects.None, 0f);
-        }
-
-        // 主体
-        Vector2 mainPos = Projectile.Center - Main.screenPosition;
-        sb.Draw(lightShot, mainPos, null, new Color(60, 200, 70), Projectile.rotation, origin, new Vector2(0.3f, 0.1f), SpriteEffects.None, 0f);
-
-        // 柔光
-        sb.Draw(softGlow, mainPos, null, new Color(40, 180, 55) * 0.45f, 0f, glowOrigin, 0.5f, SpriteEffects.None, 0f);
-
-        sb.End();
-        sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp,
-            DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
-
+        // 翡翠双层拖尾 (外暗深翠 + 内亮嫩绿)
+        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 7f,
+            outerColor: new Color(40, 150, 60, 150), innerColor: new Color(190, 255, 150, 200),
+            uvScroll: -Main.GlobalTimeWrappedHourly * 2f);
+        // 翠绿能量核心
+        WeaponVFX.DrawGlowBurst(Projectile.Center, 0.4f, new Color(120, 230, 90));
         return false;
     }
 
@@ -127,6 +104,8 @@ public class EmeraldTwigBolt : ModProjectile
                 Main.rand.NextVector2Circular(3f, 3f), 60, default, 1.1f);
             d.noGravity = true;
         }
+        ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+            ACMWeaponBurst.Nature, scale: 0.8f, owner: Projectile.owner);
     }
 
     public override void OnKill(int timeLeft) {

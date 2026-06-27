@@ -122,8 +122,38 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
             return false;
         }
 
+        /// <summary>获取头部敖闰实例（绝对零度弱点机制使用）</summary>
+        private Aoyuan Head {
+            get {
+                int idx = (int)NPC.ai[3];
+                if (idx >= 0 && idx < Main.maxNPCs && Main.npc[idx].active && Main.npc[idx].ModNPC is Aoyuan a)
+                    return a;
+                return null;
+            }
+        }
+
+        /// <summary>当前身体段是否暴露冰晶弱点（绝对零度蓄力中）</summary>
+        public bool WeakPointActive => Head is { WeakPointsExposed: true };
+
         public override void ModifyIncomingHit(ref NPC.HitModifiers modifiers) {
-            modifiers.FinalDamage *= 0.1f;
+            // 平时身体段高减伤（仅作护盾）；绝对零度蓄力时弱点暴露，可被有效击破
+            modifiers.FinalDamage *= WeakPointActive ? 0.6f : 0.1f;
+        }
+
+        public override void OnHitByProjectile(Projectile projectile, NPC.HitInfo hit, int damageDone) {
+            AccumulateWeakPoint(damageDone);
+        }
+
+        public override void OnHitByItem(Player player, Item item, NPC.HitInfo hit, int damageDone) {
+            AccumulateWeakPoint(damageDone);
+        }
+
+        private void AccumulateWeakPoint(int dmg) {
+            Aoyuan head = Head;
+            if (head != null && head.WeakPointsExposed) {
+                head.WeakPointDamageTaken += dmg;
+                head.NPC.netUpdate = true;
+            }
         }
 
         public override bool? DrawHealthBar(byte hbPosition, ref float scale, ref Vector2 position) {
@@ -150,6 +180,16 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
             spriteBatch.Draw(texture, NPC.Center - screenPos, NPC.frame, drawColor, NPC.rotation,
                 NPC.frame.Size() / 2, NPC.scale,
                 NPC.spriteDirection == -1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally, 0f);
+
+            // 绝对零度蓄力时：身体段冰晶弱点高亮，提示玩家攻击此处打断大招
+            if (WeakPointActive && ACMAsset.BlankStar != null) {
+                Texture2D star = ACMAsset.BlankStar;
+                float pulse = 0.6f + MathF.Sin(Main.GlobalTimeWrappedHourly * 8f + NPC.whoAmI) * 0.4f;
+                Color c = AoyuanHelper.IceCrystalWhite * pulse;
+                c.A = 0;
+                spriteBatch.Draw(star, NPC.Center - screenPos, null, c,
+                    Main.GlobalTimeWrappedHourly * 3f, star.Size() / 2f, 0.3f * pulse, SpriteEffects.None, 0f);
+            }
             return false;
         }
     }

@@ -8,6 +8,7 @@ using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
+using AncientChineseMythology.Helpers;
 using Color = Microsoft.Xna.Framework.Color;
 using Rectangle = Microsoft.Xna.Framework.Rectangle;
 
@@ -154,6 +155,9 @@ namespace AncientChineseMythology.Projectiles
             Owner.velocity *= 0.5f; //玩家速度减半
         }
         public override bool PreDraw(ref Microsoft.Xna.Framework.Color lightColor) {
+            //蓄力上举核心致命红辉光
+            WeaponVFX.DrawGlowBurst(Projectile.Center, 0.7f, new Color(250, 40, 56));
+
             Texture2D texture = TextureAssets.Projectile[Type].Value;
             Vector2 origin = new Vector2(texture.Width / 2, texture.Height / Main.projFrames[Type] / 2); //设置原点为中心;
             Rectangle rectangle = new Rectangle(
@@ -281,6 +285,10 @@ namespace AncientChineseMythology.Projectiles
 
             //触发屏幕震动效果
             Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(10, 20);
+            //定海神针落地: 相变级屏震 + 致命纯红落点演出
+            WeaponVFX.AddScreenShake(Projectile.Center, 10f);
+            ACMWeaponBurst.Spawn(Projectile.GetSource_FromAI(), Projectile.Center,
+                ACMWeaponBurst.Fatal, scale: 1.6f, owner: Projectile.owner);
 
             //播放碰撞音效
             SoundEngine.PlaySound(SoundID.Item14, Projectile.position);
@@ -393,6 +401,10 @@ namespace AncientChineseMythology.Projectiles
             //重置投射物的碰撞检测，以便可以多次击中敌人
             Projectile.localNPCImmunity[target.whoAmI] = 10; //设置局部NPC命中冷却时间
             target.immune[Projectile.owner] = 0; //确保敌人不会对投射物的拥有者免疫
+            //定海神针放大突刺命中: 相变级屏震 + 致命纯红爆裂
+            WeaponVFX.AddScreenShake(target.Center, 10f);
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Fatal, scale: 1.6f, owner: Projectile.owner);
 
             //计算召唤物与目标之间的距离
             Vector2 toTarget = target.Center - Projectile.Center;
@@ -431,6 +443,14 @@ namespace AncientChineseMythology.Projectiles
             }
         }
         public override bool PreDraw(ref Microsoft.Xna.Framework.Color lightColor) {
+            //定海神针放大突刺: 致命纯红粗拖尾
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 14f,
+                outerColor: new Color(120, 10, 20, 170), innerColor: new Color(250, 40, 56, 220),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 2.2f);
+            //蓄力 (Prepare 阶段) 矛尖致命红径向预警
+            if (Projectile.localAI[0] == 0f)
+                WeaponVFX.DrawRadialBloom(Projectile.Center, 0.08f, 0.6f, new Color(250, 40, 56), 10f);
+
             Microsoft.Xna.Framework.Vector2 origin;
             float rotationOffset;
             SpriteEffects effects; //贴图效果

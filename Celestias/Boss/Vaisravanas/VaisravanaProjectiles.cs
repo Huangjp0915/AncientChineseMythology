@@ -409,22 +409,22 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
             Projectile.rotation = LaserAngle;
 
-            // 粒子
+            // 粒子（金色库藏屑）
             if (!VaultUtils.isServer) {
                 Vector2 laserDir = LaserAngle.ToRotationVector2();
                 for (int i = 0; i < 6; i++) {
                     float dist = Main.rand.NextFloat(LaserLength);
                     Vector2 dustPos = Projectile.Center + laserDir * dist + Main.rand.NextVector2Circular(20, 20);
-                    int dust = Dust.NewDust(dustPos, 0, 0, DustID.WhiteTorch, 0, 0, 100, default, 1.5f);
+                    int dust = Dust.NewDust(dustPos, 0, 0, DustID.GoldFlame, 0, 0, 100, default, 1.6f);
                     Main.dust[dust].noGravity = true;
                     Main.dust[dust].velocity = laserDir * 2f;
                 }
             }
 
-            // 光照
+            // 光照（暖金）
             for (int i = 0; i < 12; i++) {
                 Vector2 lightPos = Projectile.Center + LaserAngle.ToRotationVector2() * (i * 200);
-                Lighting.AddLight(lightPos, new Vector3(1f, 0.98f, 0.95f) * 1.8f);
+                Lighting.AddLight(lightPos, new Vector3(1f, 0.9f, 0.6f) * 1.8f);
             }
         }
 
@@ -436,39 +436,32 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            if (ACMAsset.GlaciateWave == null) return false;
-
-            Texture2D laserTex = ACMAsset.GlaciateWave;
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
-            Vector2 origin = new Vector2(0, laserTex.Height / 2f);
 
             float progress = 1f - (float)Projectile.timeLeft / LaserDuration;
             float alpha = progress < 0.1f ? progress / 0.1f : (progress > 0.85f ? (1f - progress) / 0.15f : 1f);
-            float width = 0.5f * alpha;
 
-            Vector2 scale = new Vector2(LaserLength / laserTex.Width, width);
+            // 终极宝塔·贯穿全屏金柱：BeamGrad 金带（暖金核 + 金边）。"财神镇压"戏剧顶点。
+            Vector2 dir = LaserAngle.ToRotationVector2();
+            Vector2 start = Projectile.Center;
+            Vector2 end = Projectile.Center + dir * LaserLength;
+            float halfWidth = 70f * alpha;
+            Color core = TelegraphColors.Holy; core.A = 255;       // 暖白金芯（过曝）
+            Color edge = TelegraphColors.Gold; edge.A = 150;       // 琉璃金边
+            ACMShaders.DrawBeam(start, end, halfWidth, core, edge, alpha,
+                flowSpeed: 2.0f, flowScale: 2.2f, coreSharp: 2.0f, coreGlow: 1.2f * alpha);
 
-            // 多层渐变
-            for (int layer = 3; layer >= 0; layer--) {
-                float layerWidth = 1f + layer * 0.6f;
-                float layerAlpha = 1f - layer * 0.2f;
-                Color layerColor = Color.Lerp(VaisravanaHelper.PureWhite, VaisravanaHelper.CelestialAzure, layer / 3f) * alpha * layerAlpha;
-                layerColor.A = 0;
-                Main.spriteBatch.Draw(laserTex, drawPos, null, layerColor, LaserAngle, origin, scale * new Vector2(1f, layerWidth), SpriteEffects.None, 0f);
-            }
+            // 起点库藏金爆（DrawRadialBloomAt 占本帧全屏名额, 仅此处一处）
+            ACMShaders.DrawRadialBloomAt(Projectile.Center, 0.16f, 0.7f * alpha, TelegraphColors.Gold,
+                rayCount: 16f, falloff: 2.2f);
 
-            // 起点爆发
-            if (ACMAsset.Sparkle != null) {
-                Color burstColor = VaisravanaHelper.PureWhite * alpha;
-                burstColor.A = 0;
-                float burstRot = (float)Main.GameUpdateCount * 0.08f;
-                Main.spriteBatch.Draw(ACMAsset.Sparkle, drawPos, null, burstColor, burstRot, ACMAsset.Sparkle.Size() / 2f, 2.5f * alpha, SpriteEffects.None, 0f);
-            }
-
+            // 起点核心光球（加性, 收尾点缀）
             if (ACMAsset.LightShot != null) {
-                Color orbColor = VaisravanaHelper.DivineWhite * alpha;
-                orbColor.A = 0;
-                Main.spriteBatch.Draw(ACMAsset.LightShot, drawPos, null, orbColor, 0f, ACMAsset.LightShot.Size() / 2f, 3f * alpha, SpriteEffects.None, 0f);
+                SpriteBatch sb = Main.spriteBatch;
+                Color orbColor = VaisravanaHelper.DivineWhite * alpha; orbColor.A = 0;
+                sb.Draw(ACMAsset.LightShot, drawPos, null, orbColor, 0f, ACMAsset.LightShot.Size() / 2f, 2.4f * alpha, SpriteEffects.None, 0f);
+                Color goldOrb = TelegraphColors.Gold * alpha; goldOrb.A = 0;
+                sb.Draw(ACMAsset.LightShot, drawPos, null, goldOrb, 0f, ACMAsset.LightShot.Size() / 2f, 3.6f * alpha, SpriteEffects.None, 0f);
             }
 
             return false;
@@ -512,8 +505,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
             Projectile.Center = owner.Center;
 
-            // 缓慢旋转
-            LaserAngle += 0.012f;
+            // 固定方位激光（夜叉锚定安全道机制依赖固定方向，不再旋转）
             Projectile.rotation = LaserAngle;
 
             // 粒子
@@ -602,13 +594,15 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
         }
 
         private ref float OwnerIndex => ref NPC.ai[0];
-        private ref float MinionIndex => ref NPC.ai[1];
-        private ref float AttackMode => ref NPC.ai[2];
+        private ref float MinionIndex => ref NPC.ai[1];  // 0=北 1=东 2=南 3=西 锚定方向
         private ref float AttackTimer => ref NPC.ai[3];
 
-        private float orbitAngle;
-        private float orbitRadius = 280f;
         private float globalTime;
+
+        // 四方锚点角度：0=北 1=东 2=南 3=西
+        private static readonly float[] CardinalAngle = {
+            -MathHelper.PiOver2, 0f, MathHelper.PiOver2, MathHelper.Pi
+        };
 
         public override void AI() {
             globalTime += 1f / 60f;
@@ -628,71 +622,32 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                 return;
             }
 
-            // 环绕运动
-            orbitAngle += 0.018f + MinionIndex * 0.004f;
-            float targetRadius = 280f + MathF.Sin(globalTime * 1.5f + MinionIndex) * 40f;
-            orbitRadius = MathHelper.Lerp(orbitRadius, targetRadius, 0.04f);
+            // 四方锚点：固定守在所属方向（区别于环绕，杀序更可读）
+            int dir = ((int)MinionIndex % 4 + 4) % 4;
+            float anchorRadius = 250f + MathF.Sin(globalTime * 1.6f + dir) * 26f;
+            Vector2 anchorPos = owner.Center + CardinalAngle[dir].ToRotationVector2() * anchorRadius;
+            NPC.velocity = (anchorPos - NPC.Center) * 0.09f;
 
-            Vector2 orbitOffset = orbitAngle.ToRotationVector2() * orbitRadius;
-            Vector2 targetPos = owner.Center + orbitOffset;
-
-            // 平滑移动
-            NPC.velocity = (targetPos - NPC.Center) * 0.08f;
-
-            // 面向玩家
             NPC.rotation = (target.Center - NPC.Center).ToRotation();
 
             AttackTimer++;
-
-            // 攻击模式
-            if (AttackMode == 1) {
-                AttackMode = 0;
-            }
-            else {
-                float attackCooldown = Main.expertMode ? 70f : 90f;
-                if (AttackTimer >= attackCooldown) {
-                    AttackTimer = 0;
-                    FireAtTarget(target);
-                }
+            float attackCooldown = Main.expertMode ? 80f : 105f;
+            if (AttackTimer >= attackCooldown) {
+                AttackTimer = 0;
+                FireAtTarget(target);
             }
 
-            // 光照
-            Lighting.AddLight(NPC.Center, new Vector3(1f, 0.98f, 0.95f) * 0.5f);
+            Lighting.AddLight(NPC.Center, new Vector3(1f, 0.92f, 0.7f) * 0.55f);
         }
 
         private void FireAtTarget(Player target) {
             if (Main.netMode == NetmodeID.MultiplayerClient) return;
 
             Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero);
-
-            int attackType = Main.rand.Next(2);
-            switch (attackType) {
-                case 0: // 宝塔神光弹
-                    Projectile.NewProjectile(
-                        NPC.GetSource_FromAI(),
-                        NPC.Center,
-                        toTarget * 11f,
-                        ModContent.ProjectileType<TreasureTowerOrb>(),
-                        NPC.damage / 2,
-                        1f,
-                        Main.myPlayer
-                    );
-                    break;
-
-                case 1: // 三发散射
-                    for (int i = -1; i <= 1; i++) {
-                        Vector2 vel = toTarget.RotatedBy(MathHelper.ToRadians(12 * i)) * 9f;
-                        Projectile.NewProjectile(
-                            NPC.GetSource_FromAI(),
-                            NPC.Center,
-                            vel,
-                            ModContent.ProjectileType<TreasureTowerOrb>(),
-                            NPC.damage / 3,
-                            1f,
-                            Main.myPlayer
-                        );
-                    }
-                    break;
+            for (int i = -1; i <= 1; i++) {
+                Vector2 vel = toTarget.RotatedBy(MathHelper.ToRadians(11 * i)) * 9.5f;
+                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                    ModContent.ProjectileType<TreasureTowerOrb>(), NPC.damage / 3, 1f, Main.myPlayer);
             }
 
             SoundEngine.PlaySound(SoundID.Item29 with { Pitch = 0.4f }, NPC.Center);
@@ -703,18 +658,26 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             Vector2 drawPos = NPC.Center - screenPos;
             Vector2 origin = texture.Size() / 2f;
 
-            // 拖尾
+            // 财神金光晕（加性 SoftGlow，护法夜叉的金气锚点）
+            if (ACMAsset.SoftGlow != null) {
+                float pulse = 1f + MathF.Sin(globalTime * 3f) * 0.08f;
+                Color halo = VaisravanaHelper.TowerGold * 0.5f; halo.A = 0;
+                spriteBatch.Draw(ACMAsset.SoftGlow, drawPos, null, halo, 0f, ACMAsset.SoftGlow.Size() / 2f,
+                    NPC.width / 40f * 1.4f * pulse, SpriteEffects.None, 0f);
+            }
+
+            // 拖尾（金）
             for (int i = 0; i < NPC.oldPos.Length; i++) {
                 if (NPC.oldPos[i] == Vector2.Zero) continue;
                 float progress = 1f - (float)i / NPC.oldPos.Length;
-                Color trailColor = VaisravanaHelper.SpiritSilver * progress * 0.3f;
+                Color trailColor = VaisravanaHelper.TowerGold * progress * 0.3f;
                 trailColor.A = 0;
                 Vector2 trailPos = NPC.oldPos[i] + NPC.Size / 2f - screenPos;
                 spriteBatch.Draw(texture, trailPos, null, trailColor, NPC.oldRot[i], origin, NPC.scale * progress, SpriteEffects.None, 0f);
             }
 
-            // 外层光晕
-            Color glowColor = VaisravanaHelper.CelestialAzure * 0.4f;
+            // 外层金光晕
+            Color glowColor = TelegraphColors.Gold * 0.45f;
             glowColor.A = 0;
             spriteBatch.Draw(texture, drawPos, null, glowColor, NPC.rotation, origin, NPC.scale * 1.25f, SpriteEffects.None, 0f);
 

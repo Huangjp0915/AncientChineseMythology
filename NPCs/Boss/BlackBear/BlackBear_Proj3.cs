@@ -1,7 +1,7 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
-using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -10,127 +10,127 @@ using Rectangle = Microsoft.Xna.Framework.Rectangle;
 
 namespace AncientChineseMythology.NPCs.Boss.BlackBear
 {
+    /// <summary>
+    /// 黑熊精头饰光环 (V2 改造)。原版是"半血一次性发射头饰弹", V2 改为 P2 <b>复发</b>机制:
+    /// 由 Boss 在玩家周围生成一圈 (默认 6 颗), 环绕玩家 3s (含间隙, 可穿缝) → 向内收拢 (致命扫拢, 逼玩家离环) → 消散。
+    /// 教学意图: 让新手第一次体会"换阶段=出现新机制", 而非单纯换贴图。
+    /// owner = 目标玩家索引; ai[0] = 起始角; ai[1] = 计时。
+    /// </summary>
     public class BlackBear_Proj3 : ModProjectile
     {
-        private int attackTimer = 300;
-        private int attackDuration = 0; //攻击持续时间
-        private Vector2 targetPosition;
-        private bool isAttacking = false;
-        private int opacityTimer = 0; //透明度计时器
+        private const int OrbitTicks = 180;   // 环绕 3s
+        private const int CollapseTicks = 45; // 收拢
+        private const float OrbitRadius = 240f;
+        private const float CollapseRadius = 28f;
 
-        public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear_Proj3"; //使用物品的纹理作为投射物的纹理
+        public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear_Proj3";
 
         public override void SetDefaults() {
-            Projectile.hostile = true; //敌方伤害
-            Projectile.width = 80; //弹幕宽度
-            Projectile.height = 56; //弹幕高度
-            Projectile.friendly = false; //友方弹幕
-            Projectile.tileCollide = false; //不与瓷砖碰撞
-            Projectile.DamageType = DamageClass.Default; //伤害类型
-            Projectile.penetrate = 1; //穿透
-            Projectile.ignoreWater = true; //无视液体
-            Projectile.timeLeft = 360; //存在时间，单位为帧
-            Projectile.alpha = 1; //透明度
-            Projectile.light = 0f; //发光亮度
+            Projectile.hostile = true;
+            Projectile.width = 56;
+            Projectile.height = 40;
+            Projectile.friendly = false;
+            Projectile.tileCollide = false;
+            Projectile.DamageType = DamageClass.Default;
+            Projectile.penetrate = -1;
+            Projectile.ignoreWater = true;
+            Projectile.timeLeft = OrbitTicks + CollapseTicks + 20;
+            Projectile.alpha = 255; // 淡入
+            Projectile.light = 0.3f;
         }
 
-        public override void OnSpawn(IEntitySource source) {
-            Projectile.damage = 0; //弹幕伤害为 0
-        }
+        private ref float BaseAngle => ref Projectile.ai[0];
+        private ref float Timer => ref Projectile.ai[1];
+        private ref float BaseDamage => ref Projectile.ai[2];
+
+        private Player Target => Main.player[(int)MathHelper.Clamp(Projectile.owner, 0, Main.maxPlayers - 1)];
 
         public override void AI() {
-            //透明度变化逻辑
-            opacityTimer++;
-            Projectile.alpha = (int)(1 + 100 * Math.Sin(opacityTimer * 0.1));
-
-            //使弹幕时刻跟随敌人 BlackBear
-            NPC owner = Main.npc[Projectile.owner];
-            Player player = Main.player[Main.myPlayer];
-            targetPosition = player.Center;
-            Vector2 direction = targetPosition - Projectile.Center + new Vector2(0, -100);
-            direction.Normalize();
-            if (Projectile.Distance(targetPosition + new Vector2(0, -100)) < 20 && !isAttacking) {
-                isAttacking = true;
-                Projectile.Center = player.Center + new Vector2(0, -100);
-            }
-            else if (!isAttacking)
-                Projectile.velocity = direction * 36f; //设置速度
-            else
-                Projectile.velocity = Vector2.Zero; //停止移动
-
-            if (owner.life > 1) {
-                Projectile.timeLeft = 10;
-                attackDuration++;
-            }
-            if (owner.life <= 1 || owner.type != ModContent.NPCType<BlackBear>() || !owner.active) {
-                //扩散的金色粒子
-                for (int i = 0; i < 10; i++) {
-                    Vector2 position = Projectile.position + new Vector2(Main.rand.Next(-10, 10), Main.rand.Next(-10, 10));
-                    int dustType = DustID.Gold;
-                    int dustIndex = Dust.NewDust(position, 0, 0, dustType, 0, 0, 100, default);
-                    Main.dust[dustIndex].noGravity = true;
-                    //Main.dust[dustIndex].velocity *= 0.2f;
-                }
-                Projectile.Kill(); //如果敌人不再存在，销毁弹幕
+            Player target = Target;
+            if (target == null || !target.active || target.dead) {
+                Burst();
+                Projectile.Kill();
+                return;
             }
 
-            if (isAttacking && attackTimer >= 240) {
-                attackTimer--;
-            }
+            // 首帧捕获基础伤害 (随生成同步), 之后据阶段开关致命性
+            if (Timer == 0f)
+                BaseDamage = Projectile.damage;
+            Timer++;
 
-            if (isAttacking && attackTimer == 240) {
-                int projectileCount = Main.rand.Next(6, 12);
-                for (int i = 0; i < projectileCount; i++) {
-                    int projectileType = ModContent.ProjectileType<BlackBear_Proj4>();
-                    Vector2 spawnPosition = Projectile.Center + new Vector2(Main.rand.NextFloat(-Projectile.width / 2, Projectile.width / 2), -Projectile.height / 2);
-                    Projectile.NewProjectile(Projectile.GetSource_FromAI(), spawnPosition, Vector2.Zero, projectileType, Projectile.originalDamage, 0, Main.myPlayer);
+            // 淡入
+            if (Projectile.alpha > 0)
+                Projectile.alpha = Math.Max(0, Projectile.alpha - 12);
+
+            float radius;
+            bool collapsing = Timer >= OrbitTicks;
+            float orbitSpin = (float)Main.GlobalTimeWrappedHourly * 1.2f;
+
+            // 仅在成形后 (>30 帧) 或收拢期才致命; 淡入期安全
+            Projectile.damage = (collapsing || Timer >= 30f) ? (int)BaseDamage : 0;
+
+            if (!collapsing) {
+                radius = OrbitRadius;
+            }
+            else {
+                // 收拢期: 半径向内 lerp, 致命扫拢
+                float t = MathHelper.Clamp((Timer - OrbitTicks) / (float)CollapseTicks, 0f, 1f);
+                radius = MathHelper.Lerp(OrbitRadius, CollapseRadius, t);
+                if (Timer >= OrbitTicks + CollapseTicks) {
+                    Burst();
+                    Projectile.Kill();
+                    return;
                 }
             }
 
-            if (attackDuration >= 240) {
-                isAttacking = false;
-                attackDuration = 0;
-                attackTimer = 300;
+            float ang = BaseAngle + orbitSpin;
+            Vector2 desired = target.Center + ang.ToRotationVector2() * radius;
+            Projectile.Center = desired;
+            Projectile.rotation += 0.15f;
+
+            // 收拢预警 dust (红芒脉冲)
+            if (!Main.dedServ && collapsing && Timer % 4 == 0) {
+                Dust d = Dust.NewDustPerfect(Projectile.Center, DustID.GoldFlame, Vector2.Zero, 100, Color.OrangeRed, 1.1f);
+                d.noGravity = true;
+                d.velocity = (target.Center - Projectile.Center).SafeNormalize(Vector2.Zero) * 2f;
             }
         }
 
-        public override void OnHitPlayer(Player target, Player.HurtInfo info) {
-            //attackTimer = 0;
-            //isAttacking = false;
+        private void Burst() {
+            if (Main.dedServ)
+                return;
+            for (int i = 0; i < 8; i++) {
+                Vector2 pos = Projectile.Center + Main.rand.NextVector2Circular(10f, 10f);
+                Dust d = Dust.NewDustPerfect(pos, DustID.Gold, Main.rand.NextVector2Circular(2f, 2f), 100);
+                d.noGravity = true;
+            }
         }
 
         public override bool PreDraw(ref Color lightColor) {
             Texture2D texture = TextureAssets.Projectile[Type].Value;
-            ProjectileID.Sets.TrailingMode[Type] = 2; //设置尾迹模式为2，即尾迹为圆形
-            ProjectileID.Sets.TrailCacheLength[Type] = 8; //设置尾迹缓存长度为8，即最多保留8个尾迹
+            int frames = Math.Max(1, Main.projFrames[Type]);
+            int fh = texture.Height / frames;
+            Rectangle rectangle = new Rectangle(0, fh * Projectile.frame, texture.Width, fh);
+            Vector2 origin = new Vector2(texture.Width / 2f, fh / 2f);
 
-            Rectangle rectangle = new Rectangle(
-               0,
-               texture.Height / Main.projFrames[Type] * Projectile.frame,
-               texture.Width,
-               texture.Height / Main.projFrames[Type]
-           );
-            if (Projectile.velocity.Length() > 0.1f)
-                for (int i = 0; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
-                    float factor = 1 - (float)i / ProjectileID.Sets.TrailCacheLength[Type];
-                    Vector2 oldcenter = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
-                    Main.EntitySpriteDraw(texture, oldcenter, rectangle, Color.White * factor * 0.8f * Projectile.Opacity,
-                        Projectile.oldRot[i],
-                        new Vector2(texture.Width / 2, texture.Height / 2 / Main.projFrames[Type]),
-                        Projectile.scale * 0.8f,
-                        SpriteEffects.None, 0);
-                }
+            bool collapsing = Timer >= OrbitTicks;
+            // 收拢期叠红警示色, 环绕期金色
+            Color tint = collapsing
+                ? Color.Lerp(TelegraphColors.Gold, TelegraphColors.Lethal, 0.6f)
+                : TelegraphColors.Gold;
+            tint *= Projectile.Opacity;
 
-            Main.EntitySpriteDraw(
-                texture,
-                Projectile.Center - Main.screenPosition,
-                rectangle,
-                Color.White * Projectile.Opacity, //使用纯白颜色
-                Projectile.rotation,
-                new Vector2(texture.Width / 2, texture.Height / Main.projFrames[Type] / 2),
-                Projectile.scale * 0.8f,
-                SpriteEffects.None,
-                0);
+            // 拖尾
+            ProjectileID.Sets.TrailingMode[Type] = 2;
+            ProjectileID.Sets.TrailCacheLength[Type] = 6;
+            for (int i = 0; i < Projectile.oldPos.Length; i++) {
+                float factor = 1f - (float)i / Projectile.oldPos.Length;
+                Vector2 old = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
+                Main.EntitySpriteDraw(texture, old, rectangle, tint * factor * 0.5f, Projectile.oldRot[i], origin, Projectile.scale * 0.8f, SpriteEffects.None, 0);
+            }
+
+            Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, rectangle, tint,
+                Projectile.rotation, origin, Projectile.scale, SpriteEffects.None, 0);
             return false;
         }
     }

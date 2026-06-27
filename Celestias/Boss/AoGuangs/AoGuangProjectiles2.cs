@@ -131,6 +131,15 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                     ACMAsset.LightShot.Size() / 2f, 2.5f * laserWidth, SpriteEffects.None, 0f);
             }
 
+            // V2: 共享 BeamGrad 原语叠一道流动光芯, 强化龙息水柱辨识度
+            if (laserWidth > 0.05f) {
+                Vector2 start = Projectile.Center;
+                Vector2 end = Projectile.Center + LaserAngle.ToRotationVector2() * LaserLength;
+                ACMShaders.DrawBeam(start, end, 34f * laserWidth,
+                    AoGuangHelper.WaterGlow, AoGuangHelper.OceanTeal, laserWidth,
+                    flowSpeed: 1.6f, flowScale: 2.2f);
+            }
+
             return false;
         }
     }
@@ -269,6 +278,15 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                     ACMAsset.LightShot.Size() / 2f, 3.5f * laserWidth, SpriteEffects.None, 0f);
             }
 
+            // V2: 共享 BeamGrad 原语叠一道流动光芯, 提升潮汐激光的辨识度与质感
+            if (laserWidth > 0.05f) {
+                Vector2 start = Projectile.Center;
+                Vector2 end = Projectile.Center + LaserAngle.ToRotationVector2() * LaserLength;
+                ACMShaders.DrawBeam(start, end, 50f * laserWidth,
+                    AoGuangHelper.PureWhite, AoGuangHelper.DragonBlue, laserWidth,
+                    flowSpeed: 2.0f, flowScale: 2.4f, coreSharp: 2.4f);
+            }
+
             return false;
         }
     }
@@ -362,7 +380,36 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             // 绘制大型漩涡
             AoGuangHelper.DrawGiantWhirlpool(sb, Projectile.Center, vortexRadius, vortexAngle, vortexAlpha);
 
+            DrawWhirlRing();
+
             return false;
+        }
+
+        /// <summary>
+        /// 巨型漩涡致命核心半径环描边 (ArenaRunic 法阵)。环内 = 致命碰撞区(distance &lt; vortexRadius),
+        /// 红=致命描边明示伤害边界, 与吸力方向(粒子)共同构成可读 tell。客户端纯视觉。
+        /// </summary>
+        private void DrawWhirlRing() {
+            if (Main.dedServ || !MythologyConfig.FullscreenShadersEnabled || vortexAlpha <= 0.05f)
+                return;
+            Effect fx = ACMShaders.ArenaRunic;
+            if (fx == null)
+                return;
+
+            ACMShaders.WorldDecalParams(Projectile.Center, vortexRadius,
+                out Vector2 uvCenter, out float radiusFrac, out float aspect);
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uCenter"]?.SetValue(uvCenter);
+            fx.Parameters["uRadius"]?.SetValue(radiusFrac);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(vortexAlpha * 0.9f, 0f, 1f));
+            fx.Parameters["uAspect"]?.SetValue(aspect);
+            fx.Parameters["uColorPrimary"]?.SetValue(new Vector4(TelegraphColors.Lethal.ToVector3(), 1f));
+            fx.Parameters["uColorSecondary"]?.SetValue(new Vector4(AoGuangHelper.OceanTeal.ToVector3(), 1f));
+            fx.Parameters["uRuneFreq"]?.SetValue(10f);
+            fx.Parameters["uMode"]?.SetValue(0f);
+            fx.Parameters["uShape"]?.SetValue(0f);
+
+            ACMShaders.DrawScreenSpaceDecal(Main.spriteBatch, fx, BlendState.AlphaBlend);
         }
 
         public override void OnKill(int timeLeft) {

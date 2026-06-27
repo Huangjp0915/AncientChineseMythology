@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -65,9 +66,17 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, dustType, vel.X, vel.Y, 100, default, 2f);
                 Main.dust[dust].noGravity = true;
             }
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.EastSeaWater, 1.3f, Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            // 现代化双层 ribbon 拖尾 (外深青 + 内冰蓝, 叠在原斩波之上)
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 26f,
+                outerColor: new Color(30, 90, 170, 140), innerColor: new Color(170, 240, 255, 180),
+                tex: ACMAsset.GlaciateWave, uvScroll: -Main.GlobalTimeWrappedHourly * 1.4f);
+
             Texture2D tex = ACMAsset.GlaciateWave ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = new Vector2(0, tex.Height / 2f);
 
@@ -218,11 +227,19 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, DustID.Water, vel.X, vel.Y, 100, default, 2f);
                 Main.dust[dust].noGravity = true;
             }
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.EastSeaWater, 1.1f, Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
             SpriteBatch sb = Main.spriteBatch;
             Vector2 screenPos = Projectile.Center - Main.screenPosition;
+
+            // 龙卷核心东海冰蓝径向辉光 (走全屏名额仲裁, 满则退化柔光)
+            if (tornadoAlpha > 0.5f)
+                WeaponVFX.DrawRadialBloom(Projectile.Center, 0.12f, tornadoAlpha * 0.5f,
+                    new Color(90, 200, 245), 0f);
 
             Main.instance.LoadProjectile(ProjectileID.SandnadoHostile);
             Texture2D tornadoTex = TextureAssets.Projectile[ProjectileID.SandnadoHostile].Value;

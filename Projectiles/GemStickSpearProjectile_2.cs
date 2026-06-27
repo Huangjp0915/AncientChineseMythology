@@ -5,6 +5,7 @@ using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
+using AncientChineseMythology.Helpers;
 using Color = Microsoft.Xna.Framework.Color;
 using Rectangle = Microsoft.Xna.Framework.Rectangle;
 
@@ -17,6 +18,11 @@ namespace AncientChineseMythology.Projectiles
         private bool isEnd = false;//是否结束
         private bool isNext = false;
         private Color swingColor;
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.TrailCacheLength[Type] = 14;
+            ProjectileID.Sets.TrailingMode[Type] = 0;
+        }
 
         public override void SetDefaults() {
             Projectile.width = 142;
@@ -149,6 +155,11 @@ namespace AncientChineseMythology.Projectiles
             Main.dust[dust_2].scale = 1.2f;
             Main.dust[dust_2].alpha = 100;
         }
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            //宝石多彩命中演出
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Gem, scale: 1f, owner: Projectile.owner);
+        }
         public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers) {
             //确保击退方向远离玩家
             modifiers.HitDirectionOverride = target.position.X > Owner.MountedCenter.X ? 1 : -1;
@@ -168,6 +179,20 @@ namespace AncientChineseMythology.Projectiles
             player.velocity *= 0.8f;
         }
         public override bool PreDraw(ref Microsoft.Xna.Framework.Color lightColor) {
+            //右键/二段宝石多彩拖尾
+            float hue = (Main.GlobalTimeWrappedHourly * 0.3f) % 1f;
+            Color gemOuter = Main.hslToRgb(hue, 1f, 0.35f); gemOuter.A = 150;
+            Color gemInner = Main.hslToRgb((hue + 0.12f) % 1f, 1f, 0.72f); gemInner.A = 205;
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 9f,
+                outerColor: gemOuter, innerColor: gemInner,
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.7f);
+
+            //二段宝石流光: 一次性短暂染屏定调 (强度 0.1, 占全屏唯一名额)
+            if (Projectile.owner == Main.myPlayer)
+                WeaponVFX.ApplyPaletteTint(Main.spriteBatch,
+                    shadowTint: new Color(80, 40, 140), highlightTint: new Color(150, 230, 255),
+                    intensity: 0.1f, saturation: 1.1f);
+
             Texture2D texture = TextureAssets.Projectile[Type].Value;
             Rectangle rectangle = new Rectangle(
                 0,

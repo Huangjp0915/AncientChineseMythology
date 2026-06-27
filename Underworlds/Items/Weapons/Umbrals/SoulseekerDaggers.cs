@@ -1,4 +1,6 @@
-﻿using AncientChineseMythology.Underworlds.Tiles;
+﻿using System.Collections.Generic;
+using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
@@ -41,10 +43,11 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
                 //对非Boss低血量敌人造成致命伤害
                 target.SimpleStrikeNPC(target.life + 10, hit.HitDirection, true, 0f, null, false, 0, true);
                 //产生索魂特效
-                for (int i = 0; i < 10; i++) {
+                for (int i = 0; i < 6; i++) {
                     Dust.NewDust(target.position, target.width, target.height,
                         DustID.Wraith, Main.rand.NextFloat(-3f, 3f), Main.rand.NextFloat(-3f, 3f), 100, default, 1.5f);
                 }
+                SoulseekerSoulChain.SpawnExecute(player.GetSource_OnHit(target), target.Center, player.whoAmI);
             }
         }
 
@@ -156,8 +159,8 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
                 //对非Boss低血量敌人造成致命伤害
                 target.SimpleStrikeNPC(target.life + 10, hit.HitDirection, true, 0f, null, false, 0, true);
 
-                //产生索魂爆发特效
-                for (int i = 0; i < 15; i++) {
+                //产生索魂爆发特效 (保留少量 Dust)
+                for (int i = 0; i < 6; i++) {
                     Vector2 vel = Main.rand.NextVector2Circular(5f, 5f);
                     Dust soul = Dust.NewDustPerfect(
                         target.Center,
@@ -170,11 +173,13 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
                     soul.noGravity = true;
                 }
 
+                //处决: 灵魂溶解 + 敌群索魂链
+                SoulseekerSoulChain.SpawnExecute(Projectile.GetSource_OnHit(target), target.Center, Projectile.owner);
                 SoundEngine.PlaySound(SoundID.NPCDeath6 with { Volume = 0.6f, Pitch = 0.3f }, target.Center);
             }
 
-            //击中爆发粒子
-            for (int i = 0; i < 8; i++) {
+            //击中爆发粒子 (减量)
+            for (int i = 0; i < 4; i++) {
                 Dust burst = Dust.NewDustDirect(
                     target.Center - Vector2.One * 10,
                     20, 20,
@@ -187,6 +192,8 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
                 );
                 burst.noGravity = true;
             }
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.AbyssPurple, scale: 0.7f, owner: Projectile.owner);
 
             //击中音效
             SoundEngine.PlaySound(SoundID.Item10 with { Volume = 0.5f, Pitch = 0.4f }, target.Center);
@@ -210,31 +217,10 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
             Texture2D texture = TextureAssets.Projectile[Type].Value;
             Vector2 origin = texture.Size() / 2f;
 
-            //绘制幽魂拖尾
-            for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                if (Projectile.oldPos[i] == Vector2.Zero) continue;
-
-                float progress = 1f - (float)i / Projectile.oldPos.Length;
-                Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-
-                //幽蓝色到暗紫色渐变
-                Color trailColor = Color.Lerp(new Color(80, 50, 120), new Color(100, 180, 220), progress) * progress * 0.5f;
-                trailColor.A = 0;
-
-                float scale = Projectile.scale * progress * 0.9f;
-
-                Main.EntitySpriteDraw(
-                    texture,
-                    drawPos,
-                    null,
-                    trailColor,
-                    Projectile.oldRot[i],
-                    origin,
-                    scale,
-                    SpriteEffects.None,
-                    0
-                );
-            }
+            //幽蓝匕光双层 ribbon 拖尾 (外宽暗紫 + 内窄幽蓝, 流动 UV)
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 14f,
+                outerColor: new Color(80, 50, 120, 140), innerColor: new Color(120, 200, 240, 200),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.4f);
 
             //绘制主体
             Color mainColor = Color.Lerp(lightColor, new Color(180, 200, 230), 0.3f);
@@ -250,20 +236,8 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
                 0
             );
 
-            //绘制幽魂光晕
-            Color glowColor = new Color(100, 150, 200) * 0.35f;
-            glowColor.A = 0;
-            Main.EntitySpriteDraw(
-                texture,
-                Projectile.Center - Main.screenPosition,
-                null,
-                glowColor,
-                Projectile.rotation,
-                origin,
-                Projectile.scale * 1.2f,
-                SpriteEffects.None,
-                0
-            );
+            //匕尖幽蓝柔光 (廉价, 不占名额)
+            WeaponVFX.DrawGlowBurst(Projectile.Center, 0.7f, new Color(100, 160, 210));
 
             return false;
         }
@@ -284,6 +258,83 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
                 );
                 death.noGravity = true;
             }
+        }
+    }
+
+    /// <summary>
+    /// 索魂链处决演出 - 纯视觉：命中点灵魂用 DissolveBurn 溶解, 同时向附近敌群拉出 BeamGrad 幽蓝索魂链。
+    /// </summary>
+    public class SoulseekerSoulChain : ModProjectile
+    {
+        public override string Texture => "Terraria/Images/Projectile_1";
+
+        private const int LifeTime = 28;
+        private const float ChainRange = 360f;
+
+        /// <summary>处决时生成 (仅 owner 客户端)。</summary>
+        public static void SpawnExecute(IEntitySource source, Vector2 worldPos, int owner) {
+            if (Main.dedServ || Main.myPlayer != owner)
+                return;
+            Projectile.NewProjectile(source, worldPos, Vector2.Zero,
+                ModContent.ProjectileType<SoulseekerSoulChain>(), 0, 0f, owner);
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = 2;
+            Projectile.height = 2;
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = LifeTime;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.alpha = 255;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+
+        public override void AI() {
+            Lighting.AddLight(Projectile.Center, 0.3f, 0.45f, 0.6f);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+
+            float life = 1f - Projectile.timeLeft / (float)LifeTime; // 0→1
+            float fade = 1f - life;
+
+            //索魂链: 向附近敌群拉出幽蓝光束
+            var targets = new List<Vector2>();
+            foreach (NPC npc in Main.ActiveNPCs) {
+                if (!npc.CanBeChasedBy() || npc.friendly)
+                    continue;
+                if (Vector2.DistanceSquared(npc.Center, Projectile.Center) < ChainRange * ChainRange) {
+                    targets.Add(npc.Center);
+                    if (targets.Count >= 4)
+                        break;
+                }
+            }
+            foreach (Vector2 t in targets) {
+                ACMShaders.DrawBeam(Projectile.Center, t, halfWidth: 4.5f,
+                    core: new Color(120, 210, 245, 200), edge: new Color(50, 50, 140, 0), intensity: fade,
+                    flowSpeed: 2.4f, flowScale: 2.6f, coreSharp: 2.6f);
+            }
+
+            //命中点灵魂溶解 (DissolveBurn 喂 SoftGlow)
+            Texture2D glow = ACMAsset.SoftGlow;
+            if (glow != null) {
+                WeaponVFX.ApplyDissolveBurn(glow, Projectile.Center, null,
+                    new Color(150, 220, 245), 0f, glow.Size() * 0.5f, 1.4f + life * 0.8f,
+                    threshold: life, intensity: fade, edgeColor: new Color(120, 240, 255, 220),
+                    edgeWidth: 0.1f, noiseScale: 2.4f);
+            }
+
+            //初爆径向泛光
+            if (life < 0.45f)
+                WeaponVFX.DrawRadialBloom(Projectile.Center, 0.06f, fade * 0.7f, new Color(140, 220, 245), 6f);
+
+            return false;
         }
     }
 }

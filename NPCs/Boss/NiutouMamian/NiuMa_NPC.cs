@@ -7,6 +7,7 @@ using Terraria.GameContent;
 using Terraria.GameContent.ItemDropRules;
 using Terraria.ID;
 using Terraria.ModLoader;
+using AncientChineseMythology.Underworlds;
 
 namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
 {
@@ -114,6 +115,87 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
 
             base.ModifyHitByProjectile(proj, ref modifiers);
         }
+
+        // ================= 勾魂 Soul Hook (马面半血新机制) =================
+        // 马面标记玩家 3s; 期间若玩家未攻击牛头打断 -> 到期被拉向马面 200px。
+        // 标记 = 冥律 (UnderworldField.AddNetherDecree); 到期硬拽 = 轻魂蚀。
+        public int SoulHookTimer;        // >0 = 标记倒计时 (180 起)
+        public int SoulHookCaster = -1;  // 施放马面 whoAmI
+        private int SoulHookPull;        // >0 = 正在被拽
+        private Vector2 SoulHookPullTarget;
+
+        public void ApplySoulHook(int casterWho) {
+            if (SoulHookTimer > 0 || SoulHookPull > 0)
+                return;
+            SoulHookTimer = 180;
+            SoulHookCaster = casterWho;
+            Player.AddBuff(ModContent.BuffType<SoulHookBuff>(), 180);
+            UnderworldField.AddNetherDecree(Player, 1); // 冥律: 灵魂牵引判定
+            if (Player.whoAmI == Main.myPlayer)
+                CombatText.NewText(Player.Hitbox, TelegraphColors.NetherViolet, "勾魂");
+        }
+
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            // 反制: 攻击牛头即可打断勾魂 (锁命角色分工)。
+            if (SoulHookTimer > 0 && target.type == ModContent.NPCType<NiuTou>()) {
+                SoulHookTimer = 0;
+                SoulHookCaster = -1;
+                Player.ClearBuff(ModContent.BuffType<SoulHookBuff>());
+                if (Player.whoAmI == Main.myPlayer)
+                    CombatText.NewText(Player.Hitbox, TelegraphColors.Safe, "勾魂已破");
+            }
+            base.OnHitNPC(target, hit, damageDone);
+        }
+
+        public override void PostUpdate() {
+            UpdateSoulHook();
+        }
+
+        private void UpdateSoulHook() {
+            if (SoulHookPull > 0) {
+                SoulHookPull--;
+                Player.velocity *= 0.55f;
+                Player.Center = Vector2.Lerp(Player.Center, SoulHookPullTarget, 0.22f);
+                if (!Main.dedServ && Main.rand.NextBool()) {
+                    var d = Dust.NewDustPerfect(Player.Center + Main.rand.NextVector2Circular(22, 22), DustID.Shadowflame);
+                    d.noGravity = true;
+                    d.velocity = (SoulHookPullTarget - Player.Center).SafeNormalize(Vector2.Zero) * 4f;
+                }
+                return;
+            }
+            if (SoulHookTimer <= 0)
+                return;
+
+            SoulHookTimer--;
+            // 预告: 玩家周身收束的幽紫符环 (越近到期越亮)。
+            if (!Main.dedServ && SoulHookTimer % 3 == 0) {
+                float frac = SoulHookTimer / 180f;
+                float r = 38f + 54f * frac;
+                float a = Main.rand.NextFloat(MathHelper.TwoPi);
+                Vector2 pos = Player.Center + a.ToRotationVector2() * r;
+                var d = Dust.NewDustPerfect(pos, DustID.PurpleTorch);
+                d.noGravity = true;
+                d.velocity = (Player.Center - pos).SafeNormalize(Vector2.Zero) * 2.6f;
+            }
+
+            if (SoulHookTimer == 0) {
+                // 未被打断 -> 拽向马面 (最多 200px)。
+                Player.ClearBuff(ModContent.BuffType<SoulHookBuff>());
+                NPC ma = (SoulHookCaster >= 0 && SoulHookCaster < Main.maxNPCs) ? Main.npc[SoulHookCaster] : null;
+                if (ma != null && ma.active) {
+                    Vector2 toMa = ma.Center - Player.Center;
+                    float dist = toMa.Length();
+                    Vector2 dir = toMa.SafeNormalize(Vector2.UnitX);
+                    SoulHookPullTarget = Player.Center + dir * Math.Min(dist, 200f);
+                    SoulHookPull = 14;
+                    UnderworldField.AddSoulErosion(Player, 2); // 魂蚀
+                    ACMScreenShakeSystem.Add(5f);
+                    if (Player.whoAmI == Main.myPlayer)
+                        CombatText.NewText(Player.Hitbox, TelegraphColors.Execution, "勾魂!");
+                }
+                SoulHookCaster = -1;
+            }
+        }
     }
     public class NiuTou : ModNPC
     {
@@ -147,6 +229,17 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
         public NiuMaPlayer ScreenPla => player?.GetModPlayer<NiuMaPlayer>();
         public int NPC_MaMian_Count = 0;
         private NPC NPC_MaMian => Main.npc[NPC_MaMian_Count];
+
+        // —— 协同阶段「勾魂锁命连携」: 牛头压线 (车道冲锋), 供马面读取以填充慢球 ——
+        public int SynergyPhase;      // 0=铺垫 1=预告 2=冲锋 3=收招
+        public Vector2 LaneStart, LaneEnd;
+        private int synergyLocal;     // 本轮车道内计时
+        private float synergyLaneY;   // 本轮车道高度 (玩家进入时锁定)
+
+        // —— 冲锋预告 (每招可读) ——
+        private bool chargeTelegraph;
+        private Vector2 chargeAim = Vector2.UnitX;
+
         public override void SetStaticDefaults() {
             NPCID.Sets.TrailingMode[Type] = 3;
             NPCID.Sets.TrailCacheLength[Type] = 10;
@@ -174,7 +267,28 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
             //外发光
             var glowCol = Color.DarkRed; glowCol.A = 0;
             sb.Draw(tex, NPC.Center - scrPos, rec, glowCol * .4f * Draw_Alpha, NPC.rotation, rec.Size() * .5f, NPC.scale * 1.08f, spe, 0);
+
+            if (!Main.dedServ)
+                DrawTelegraphs();
             return false;
+        }
+
+        /// <summary>冲锋/连携车道的硬化 API 预告 (幽紫蓄势 → 命中前转纯红致命)。</summary>
+        private void DrawTelegraphs() {
+            // 普通冲锋瞄准线 (Ai_0 蓄势期)。
+            if (chargeTelegraph) {
+                Vector2 end = NPC.Center + chargeAim * 1600f;
+                ACMShaders.DrawBeam(NPC.Center, end, 14f, TelegraphColors.NetherViolet, new Color(80, 20, 30), 0.55f, 1.4f, 2f, 2.2f);
+            }
+            // 连携车道: 预告(幽紫) → 末段/冲锋(致命红) + 冲锋命中泛光。
+            if (SynergyPhase == 1 || SynergyPhase == 2) {
+                bool lethal = SynergyPhase == 2 || synergyLocal >= 92;
+                Color core = lethal ? TelegraphColors.Lethal : TelegraphColors.NetherViolet;
+                float w = lethal ? 38f : 18f;
+                ACMShaders.DrawBeam(LaneStart, LaneEnd, w, core, new Color(90, 20, 30), lethal ? 1f : 0.6f);
+                if (SynergyPhase == 2)
+                    ACMShaders.DrawRadialBloomAt(NPC.Center, 0.16f, 0.7f, TelegraphColors.Lethal, 8f, 2.6f);
+            }
         }
         public void ReSet() {
             for (int i = 0; i <= 2; i++) {
@@ -186,6 +300,7 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
         }
         public override bool PreAI() {
             Draw_Tail = false;
+            chargeTelegraph = false;
             return base.PreAI();
         }
         private void Ai_0(float timeLeft, int dam) {
@@ -208,6 +323,11 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
                     ScreenPla?.SetZoom(1.8f);
                 }
                 Draw_Alpha = MathHelper.Lerp(Draw_Alpha, 1, .1f);
+                // 冲锋瞄准预告 (每招可读): 蓄势期画瞄准线, 末段转红。
+                if (NPCai(0) >= 116) {
+                    chargeTelegraph = true;
+                    chargeAim = (player.Center - NPC.Center).NormalizeVector(Vector2.UnitX);
+                }
             }
             else if (NPCai(0) < 175) {
                 Draw_Tail = true;
@@ -322,8 +442,17 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
             }
             else {
                 ReSet();
-                //若两者均进入半血则进入组合阶段
-                if (NPC.life < NPC.lifeMax * .5f && NPC_MaMian.active && NPC_MaMian.life < NPC_MaMian.lifeMax * .5f) NPC.ai[3] = 3; else NPC.ai[3] = 0;
+                //若两者均进入半血则进入组合阶段 (牛头为指挥, 同步拉马面进协同)
+                if (NPC.life < NPC.lifeMax * .5f && NPC_MaMian.active && NPC_MaMian.life < NPC_MaMian.lifeMax * .5f) {
+                    NPC.ai[3] = 3;
+                    SynergyPhase = 0;
+                    synergyLocal = 0;
+                    if (NPC_MaMian.ModNPC is MaMian mm) {
+                        mm.ReSet();
+                        NPC_MaMian.ai[3] = 3;
+                    }
+                }
+                else NPC.ai[3] = 0;
             }
             if (NPCai(0) <= 155 && NPCai(0) >= 50) {
                 if (NPCai(0) % 35 == 0) {
@@ -357,52 +486,85 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
                 ScreenPla.SetScreenShake(8, 10);
             }
         }
+        private const int SynergyCycle = 200;   // 单条车道的完整周期
+        private const int SynergyCycles = 2;     // 协同阶段重复几次车道
         private void Ai_3() {
-            //组合阶段: 多段高速冲撞+锁链再牵引
+            //协同阶段「勾魂锁命连携」: 牛头压一条可读车道 (铺垫→预告→冲锋→收招),
+            //马面在收招/铺垫的空档填充缓慢灵魂球 —— 学配合, 而非拼 DPS。
             NPC.ai[0]++;
-            if (NPC.ai[0] < 50) {
-                NPC.velocity *= .9f;
-                if (NPC.ai[0] == 1) { SoundEngine.PlaySound(RoarSound, NPC.Center); ScreenPla?.SetZoom(2.2f); }
-                if (NPC.ai[0] % 5 == 0) {
-                    var d = Dust.NewDustPerfect(NPC.Center + new Vector2(120).RotatedByRandom(8), ModContent.DustType<Dust_1>());
-                    d.color = Color.DarkRed; d.scale *= 2.2f; d.velocity = (player.Center - d.position).NormalizeVector() * 5;
-                }
+            int total = (int)NPC.ai[0];
+            int cycleIndex = total / SynergyCycle;
+            synergyLocal = total % SynergyCycle;
+
+            if (cycleIndex >= SynergyCycles) {
+                ReSet();
+                NPC.ai[3] = 0;        // 循环回常规 (马面读到牛头离开协同后自行退出)
+                SynergyPhase = 0;
+                NPC.damage = 10;
+                ScreenPla?.SetZoom(1.4f);
+                return;
             }
-            else if (NPC.ai[0] < 160) {
+
+            bool chargeFromLeft = cycleIndex % 2 == 0;
+
+            if (synergyLocal < 50) {
+                // —— 铺垫: 锁定车道高度, 牛头移动到起点侧 ——
+                SynergyPhase = 0;
+                NPC.damage = 10;
+                if (synergyLocal == 0) {
+                    synergyLaneY = player.Center.Y;
+                    SoundEngine.PlaySound(RoarSound, NPC.Center);
+                    ScreenPla?.SetZoom(2.2f);
+                }
+                float laneHalf = 1500f;
+                LaneStart = new Vector2(player.Center.X - laneHalf, synergyLaneY);
+                LaneEnd = new Vector2(player.Center.X + laneHalf, synergyLaneY);
+                Vector2 startPos = chargeFromLeft ? LaneStart : LaneEnd;
+                startPos.X += chargeFromLeft ? 200f : -200f; // 留一点起跑距离
+                NPC.velocity = Vector2.Lerp(NPC.velocity, (startPos - NPC.Center) * 0.08f, 0.1f);
+                NPC.direction = chargeFromLeft ? 1 : -1;
+            }
+            else if (synergyLocal < 110) {
+                // —— 预告: 牛头蓄势, 车道亮起 (幽紫→末段红, 见 DrawTelegraphs) ——
+                SynergyPhase = 1;
+                NPC.damage = 10;
+                NPC.velocity *= 0.85f;
+                if (synergyLocal == 92)
+                    SoundEngine.PlaySound(ChargeWindupSound, NPC.Center);
+            }
+            else if (synergyLocal < 140) {
+                // —— 冲锋: 沿车道横扫 (致命接触) ——
+                SynergyPhase = 2;
+                NPC.damage = 160;
                 Draw_Tail = true;
-                if (NPC.ai[0] % 12 == 0) {
+                if (synergyLocal == 110) {
+                    NPC.velocity = new Vector2(chargeFromLeft ? 38f : -38f, 0);
                     SoundEngine.PlaySound(ComboDashSound, NPC.Center);
-                    ScreenPla?.SetScreenShake(4, 8);
-                    NPC.direction = player.Center.X > NPC.Center.X ? 1 : -1;
-                    NPC.velocity = (player.Center + new Vector2(NiuMaHelper.Rand_Float(-120, 120), NiuMaHelper.Rand_Float(-60, 60)) - NPC.Center).NormalizeVector() * 32;
-                    for (int i = 0; i < 6; i++) {
-                        var dust = Dust.NewDustPerfect(NPC.Center, ModContent.DustType<Dust_1>());
-                        dust.color = Color.DarkRed; dust.scale *= 2f; dust.velocity = new Vector2(NiuMaHelper.Rand_Float(3, 9)).RotatedByRandom(8);
-                    }
+                    ScreenPla?.SetScreenShake(6, 10);
+                    ACMScreenShakeSystem.Add(8f);
                 }
-                NPC.velocity *= 1.02f;
-            }
-            else if (NPC.ai[0] < 220) {
-                //短暂停顿再次释放锁链
-                NPC.velocity *= .92f;
-                if (NPC.ai[0] == 170) {
-                    var v = (player.Center - NPC.Center).NormalizeVector() * 40;
-                    for (int i = -2; i <= 2; i++) {
-                        var p = Projectile.NewProjectileDirect(NPC.GetSource_FromThis(), NPC.Center, v.RotatedBy(i * .3f), ModContent.ProjectileType<ChainProj>(), 1, 0);
-                        p.ai[2] = NPC.whoAmI;
-                    }
-                    SoundEngine.PlaySound(ChainLaunchSound, NPC.Center);
-                }
+                if (NPC.velocity.Length() < 42)
+                    NPC.velocity *= 1.04f;
+                NPC.Center = new Vector2(NPC.Center.X, MathHelper.Lerp(NPC.Center.Y, synergyLaneY, 0.3f));
             }
             else {
-                ReSet();
-                NPC.ai[3] = 0;//循环回常规
-                ScreenPla?.SetZoom(1.4f);
+                // —— 收招: 减速, 给马面填球的空档 ——
+                SynergyPhase = 3;
+                NPC.damage = 10;
+                NPC.velocity *= 0.9f;
             }
             NPC.rotation = NPC.rotation.AngleLerp(Math.Clamp(NPC.velocity.X * .08f, -.6f, .6f), .1f);
         }
         public override void AI() {
             Lighting.AddLight(NPC.Center, Color.DarkRed.ToVector3());
+
+            // 地府氛围染屏 (ElementalScreenTint, 不占全屏后处理名额): 半血/协同更浓。
+            float tint = 0.22f;
+            if (NPC.life < NPC.lifeMax * .5f) tint += 0.14f;
+            if (NPC.ai[3] == 3) tint += 0.1f;
+            NiuMaScreenSystem.Publish(NPC.Center, tint);
+
+            NPC.damage = 10; // 基线接触伤害; 连携冲锋帧由 Ai_3 临时提升后自动回落。
 
             if (player == null || NPC.target < 0 || NPC.target == 255 || Main.player[NPC.target].dead || !Main.player[NPC.target].active) {
                 NPC.TargetClosest();
@@ -456,11 +618,12 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
                         }
                     }
                     else {
+                        // 半血: 不再 500 伤 / 7 链的纯数值升级; 改为新规则 (可读冲锋预告 + 凝视 + 协同连携)。
                         if (NPC.ai[3] == 0) {
-                            Ai_0(10, 500);
+                            Ai_0(8, 260);
                         }
                         else if (NPC.ai[3] == 1) {
-                            Ai_1(2, 7);
+                            Ai_1(2, 3);
                         }
                         else if (NPC.ai[3] == 2) {
                             Ai_2();
@@ -481,17 +644,23 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
             if (!HasRespawn && NPC_MaMian.life > NPC_MaMian.lifeMax * .3f) {
                 HasRespawn = true;
                 Draw_Alpha = 0;
-                NPC.dontTakeDamage = false;
+                NPC.dontTakeDamage = true;   // 重生体淡入期无敌 (淡入完成由 ai[3]==-2 解除)
                 NPC.ai[3] = -2;
                 NPC.velocity *= 0;
 
-                NPC_MaMian.dontTakeDamage = false;
+                // 引魂同伴 (马面) 默认无敌; 仅当玩家站入尸位光圈才可被打断 (反制窗口)。
+                NPC_MaMian.dontTakeDamage = true;
                 NPC_MaMian.velocity *= 0;
                 NPC_MaMian.ai[3] = -1;
                 ReSet();
                 (NPC_MaMian.ModNPC as MaMian).ReSet();
                 NPC.life = (int)(NPC.lifeMax * .5f);
                 SoundEngine.PlaySound(RoarSound, NPC.Center);//复活提示
+
+                // 在阵亡者尸位生成反制光圈 (站圈内 -> 引魂者可被打断)。
+                if (Main.netMode != NetmodeID.MultiplayerClient)
+                    Projectile.NewProjectile(NPC.GetSource_FromThis(), NPC.Center, Vector2.Zero,
+                        ModContent.ProjectileType<NiuMaRevivalCircle>(), 0, 0f, Main.myPlayer, NPC_MaMian.whoAmI);
                 return false;
             }
             return base.CheckDead();
@@ -527,6 +696,10 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
         private bool Draw_Tail = false;
 
         public override bool PreDraw(SpriteBatch sb, Vector2 scrPos, Color col) {
+            //减速领域地纹 (硬化 API ArenaRunic): 持续/站位危险 = 低饱和脉动圈, 非红。
+            if (!Main.dedServ)
+                DrawDomainDecal();
+
             //强化视觉表现: 紫色尾焰+发光
             var tex = TextureAssets.Npc[Type].Value;
             var rec = NPC.frame;
@@ -542,7 +715,47 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
             sb.Draw(tex, NPC.Center - scrPos, rec, col * Draw_Alpha, NPC.rotation, rec.Size() * .5f, NPC.scale, spe, 0);
             var glowCol = Color.Purple; glowCol.A = 0;
             sb.Draw(tex, NPC.Center - scrPos, rec, glowCol * .45f * Draw_Alpha, NPC.rotation, rec.Size() * .5f, NPC.scale * 1.08f, spe, 0);
+
+            //勾魂牵引索 (硬化 API DrawBeam): 标记中 = 幽紫 → 近到期渐红。
+            if (!Main.dedServ)
+                DrawSoulHookTether();
             return false;
+        }
+
+        private void DrawDomainDecal() {
+            float inten = (float)NPC.localAI[1];
+            if (inten <= 0.12f)
+                return;
+            Effect fx = ACMShaders.ArenaRunic;
+            if (fx == null)
+                return;
+            float worldR = DomainRadius * inten;
+            ACMShaders.WorldDecalParams(NPC.Center, worldR, out Vector2 uv, out float radiusFrac, out float aspect);
+            Color primary = TelegraphColors.NetherViolet;
+            Color secondary = TelegraphColors.GhostGreen;
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uCenter"]?.SetValue(uv);
+            fx.Parameters["uRadius"]?.SetValue(radiusFrac);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(inten * 0.55f, 0f, 1f));
+            fx.Parameters["uAspect"]?.SetValue(aspect);
+            fx.Parameters["uColorPrimary"]?.SetValue(primary.ToVector4());
+            fx.Parameters["uColorSecondary"]?.SetValue(secondary.ToVector4());
+            fx.Parameters["uRuneFreq"]?.SetValue(12f);
+            fx.Parameters["uMode"]?.SetValue(0f);
+            fx.Parameters["uShape"]?.SetValue(0f);
+            ACMShaders.DrawScreenSpaceDecal(Main.spriteBatch, fx, BlendState.Additive);
+        }
+
+        private void DrawSoulHookTether() {
+            var p = Main.player[NPC.target];
+            if (p == null || !p.active || p.dead)
+                return;
+            var np = p.GetModPlayer<NiuMaPlayer>();
+            if (np.SoulHookTimer <= 0)
+                return;
+            float frac = 1f - np.SoulHookTimer / 180f; // 越近到期越亮
+            Color core = Color.Lerp(TelegraphColors.NetherViolet, TelegraphColors.Execution, frac * 0.55f);
+            ACMShaders.DrawBeam(NPC.Center, p.Center, 6f, core, new Color(60, 30, 110), 0.45f + 0.5f * frac, 1.6f);
         }
         public override void SetStaticDefaults() {
             NPCID.Sets.TrailingMode[Type] = 3;
@@ -556,21 +769,28 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
         public Player player => Main.player[NPC.target];
         public int NPC_NiuTou_Count = 0;
         private NPC NPC_NiuTou => Main.npc[NPC_NiuTou_Count];
+        private float DomainRadius = 600f;   // 当前减速领域半径 (供地纹绘制)
         private bool HasRespawn = false;
         public override bool CheckDead() {
             if (!HasRespawn && NPC_NiuTou.life > NPC_NiuTou.lifeMax * .3f) {
+                HasRespawn = true;
                 Draw_Alpha = 0;
-                NPC.dontTakeDamage = false;
+                NPC.dontTakeDamage = true;   // 重生体淡入期无敌
                 NPC.ai[3] = -2;
                 NPC.velocity *= 0;
 
-                NPC_NiuTou.dontTakeDamage = false;
+                // 引魂同伴 (牛头) 默认无敌; 仅当玩家站入尸位光圈才可被打断 (反制窗口)。
+                NPC_NiuTou.dontTakeDamage = true;
                 NPC_NiuTou.velocity *= 0;
                 NPC_NiuTou.ai[3] = -1;
                 ReSet();
                 (NPC_NiuTou.ModNPC as NiuTou).ReSet();
                 NPC.life = (int)(NPC.lifeMax * .5f);
                 SoundEngine.PlaySound(SoulPullSound, NPC.Center);//复活音效
+
+                if (Main.netMode != NetmodeID.MultiplayerClient)
+                    Projectile.NewProjectile(NPC.GetSource_FromThis(), NPC.Center, Vector2.Zero,
+                        ModContent.ProjectileType<NiuMaRevivalCircle>(), 0, 0f, Main.myPlayer, NPC_NiuTou.whoAmI);
                 return false;
             }
             return base.CheckDead();
@@ -612,6 +832,7 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
         }
         private void Ai_Const_0(double TimeDis, int timeLength, double R) {
             //持续领域减速/半血加强
+            DomainRadius = (float)R;
             if (++NPC.localAI[0] > TimeDis) {
                 NPC.localAI[1] = MathHelper.Lerp(NPC.localAI[1], 1, .05f);
 
@@ -630,6 +851,9 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
                                     p.AddBuff(ModContent.BuffType<DeclineSpeedBuff_2>(), 6);
                                     if (NPC.localAI[1] > .6f && NPC.ai[0] % 30 == 0) SoundEngine.PlaySound(SoulPullSound, NPC.Center);//半血灵魂牵引脉冲
                                 }
+                                // 魂蚀: 久站灵魂领域被缓慢侵蚀 (地府身份层)。
+                                if (NPC.localAI[1] > .5f && NPC.ai[0] % 45 == 0)
+                                    UnderworldField.AddSoulErosion(p, 1);
                             }
                         }
                 }
@@ -664,31 +888,44 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
             }
         }
         private void Ai3_Synergy() {
-            //双方半血协同阶段: 快速位移+齐射强化
+            //协同阶段「勾魂锁命连携」马面侧: 读牛头车道相位, 在其收招/铺垫空档填充缓慢灵魂球,
+            //牛头压线 (预告/冲锋) 时静默 —— 与牛头交替, 逼玩家学配合 (非拼 DPS)。
             NPC.ai[0]++;
             Draw_Tail = true;
-            if (NPC.ai[0] < 80) {
-                if (NPC.ai[0] == 1) SoundEngine.PlaySound(SoulPullSound, NPC.Center);
-                NPC.velocity = Vector2.Lerp(NPC.velocity, (player.Center + new Vector2(0, -220) - NPC.Center).NormalizeVector() * 18, .08f);
-            }
-            else if (NPC.ai[0] < 200) {
-                if (NPC.ai[0] % 24 == 0) {
-                    SoundEngine.PlaySound(VolleySound, NPC.Center);
-                    for (int i = -2; i <= 2; i++) {
-                        var vel = (player.Center - NPC.Center).NormalizeVector().RotatedBy(i * .25f) * 6f;
-                        var p = Projectile.NewProjectileDirect(NPC.GetSource_FromThis(), NPC.Center, vel, ModContent.ProjectileType<DarkGreenProj>(), 400, 2);
-                        p.ai[2] = NPC.whoAmI;
-                    }
-                }
-                NPC.velocity = Vector2.Lerp(NPC.velocity, (player.Center + new Vector2(0, -260) - NPC.Center).NormalizeVector() * 6, .05f);
-            }
-            else {
+
+            NPC niu = NPC_NiuTou;
+            // 牛头不在场 / 已离开协同 -> 马面同步退出。
+            if (niu == null || !niu.active || niu.ai[3] != 3) {
                 ReSet();
                 NPC.ai[3] = 0;
+                return;
+            }
+            if (NPC.ai[0] == 1)
+                SoundEngine.PlaySound(SoulPullSound, NPC.Center);
+
+            // 悬于上方, 避开牛头横扫车道。
+            NPC.velocity = Vector2.Lerp(NPC.velocity, (player.Center + new Vector2(0, -360) - NPC.Center).NormalizeVector() * 8, .05f);
+
+            int phase = niu.ModNPC is NiuTou nt ? nt.SynergyPhase : 1;
+            // 仅在牛头铺垫(0)/收招(3)空档释放慢球; 牛头压线(1/2)时不抢读屏。
+            if ((phase == 0 || phase == 3) && NPC.ai[0] % 26 == 0) {
+                SoundEngine.PlaySound(VolleySound, NPC.Center);
+                for (int i = -2; i <= 2; i++) {
+                    var dir = (player.Center - NPC.Center).NormalizeVector().RotatedBy(i * 0.22f);
+                    var p = Projectile.NewProjectileDirect(NPC.GetSource_FromThis(), NPC.Center, dir * 3.4f, ModContent.ProjectileType<SoulOrbProj>(), 240, 2);
+                    p.ai[2] = NPC.whoAmI;
+                }
             }
         }
         public override void AI() {
             Lighting.AddLight(NPC.Center, Color.Purple.ToVector3());
+
+            // 地府氛围染屏 (与牛头共用, 取 max): 半血/协同更浓。
+            float tint = 0.22f;
+            if (NPC.life < NPC.lifeMax * .5f) tint += 0.14f;
+            if (NPC.ai[3] == 3) tint += 0.1f;
+            NiuMaScreenSystem.Publish(NPC.Center, tint);
+
             if (player == null || NPC.target < 0 || NPC.target == 255 || Main.player[NPC.target].dead || !Main.player[NPC.target].active) {
                 NPC.TargetClosest();
             }
@@ -744,7 +981,8 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
                         Ai_Const_0(-1, 114514, 550);
 
                         if (NPC.ai[3] == 0) {
-                            Ai0(2, 300, 4, 2);
+                            //半血: 不再翻倍齐射; 维持单波 + 新机制「勾魂」。
+                            Ai0(1, 300, 4, 2);
                         }
                         else if (NPC.ai[3] == 2) {
                             Ai2();
@@ -752,10 +990,15 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
                         else if (NPC.ai[3] == 3) {
                             Ai3_Synergy();
                         }
-                        //若牛头也半血则进入协同阶段
-                        if (NPC_NiuTou.active && NPC_NiuTou.life < NPC_NiuTou.lifeMax * .5f && NPC.ai[3] == 0 && NPC.ai[0] % 240 == 0) {
-                            NPC.ai[3] = 3;
-                            ReSet();
+
+                        //勾魂 (控制者新机制): 非协同阶段周期性标记玩家; 协同进入由牛头指挥, 此处不再自行触发。
+                        if (NPC.ai[3] != 3) {
+                            NPC.localAI[2] -= 1f;
+                            if (NPC.localAI[2] <= 0f) {
+                                NPC.localAI[2] = 360f;
+                                player?.GetModPlayer<NiuMaPlayer>()?.ApplySoulHook(NPC.whoAmI);
+                                SoundEngine.PlaySound(SoulPullSound, NPC.Center);
+                            }
                         }
                     }
                     if (StartMove) {

@@ -1,4 +1,6 @@
-﻿using AncientChineseMythology.Underworlds.Tiles;
+﻿using System;
+using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
@@ -153,6 +155,17 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
             float progress = Timer / ThrustTime;
             ThrustDistance = MathHelper.SmoothStep(-10f, MaxThrustDistance, progress);
 
+            //突刺接近顶点时在枪尖留下噬魂裂隙 (纯视觉, 仅生成一次, 本地玩家)
+            if (progress >= 0.85f && Projectile.localAI[1] == 0f) {
+                Projectile.localAI[1] = 1f;
+                if (Projectile.owner == Main.myPlayer) {
+                    Vector2 tip = Projectile.Center + Projectile.rotation.ToRotationVector2() * 44f;
+                    Projectile.NewProjectile(Projectile.GetSource_FromAI(), tip, Vector2.Zero,
+                        ModContent.ProjectileType<SoulDevourerRift>(), 0, 0f, Projectile.owner,
+                        Projectile.rotation);
+                }
+            }
+
             if (Timer >= ThrustTime) {
                 CurrentStage = AttackStage.Retract;
             }
@@ -250,8 +263,8 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
             //给敌人附加暗影焰
             target.AddBuff(BuffID.ShadowFlame, 120); //2秒暗影焰
 
-            //击中爆发粒子
-            for (int i = 0; i < 6; i++) {
+            //击中冷蓝魂火辉光演出 + 轻度小扭曲冲击 (代替成片 Dust)
+            for (int i = 0; i < 3; i++) {
                 Dust burst = Dust.NewDustDirect(
                     target.Center,
                     10, 10,
@@ -264,6 +277,8 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
                 );
                 burst.noGravity = true;
             }
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.NetherGrudge, scale: 0.9f, owner: Projectile.owner);
         }
 
         public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
@@ -308,6 +323,15 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
                 effects = SpriteEffects.FlipHorizontally;
             }
 
+            //冷蓝魂火枪身光束 (沿枪杆方向, 突刺时更强)
+            Vector2 shaftDir = Projectile.rotation.ToRotationVector2();
+            Vector2 tipPos = Projectile.Center + shaftDir * 46f;
+            Vector2 tailPos = Projectile.Center - shaftDir * 22f;
+            float beamI = CurrentStage == AttackStage.Thrust ? 1f : 0.55f;
+            ACMShaders.DrawBeam(tailPos, tipPos, halfWidth: 9f,
+                core: new Color(150, 230, 255, 200), edge: new Color(20, 70, 130, 0), intensity: beamI,
+                flowSpeed: 2.6f, flowScale: 2.2f, coreSharp: 2.4f);
+
             //绘制主体
             Main.EntitySpriteDraw(
                 texture,
@@ -321,23 +345,65 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
                 0
             );
 
-            //突刺时绘制幽灵光晕
+            //突刺时枪尖径向泛光 (代替叠贴图光晕)
             if (CurrentStage == AttackStage.Thrust) {
-                Color glowColor = new Color(100, 150, 200) * 0.4f;
-                glowColor.A = 0;
-                Main.EntitySpriteDraw(
-                    texture,
-                    Projectile.Center - Main.screenPosition,
-                    null,
-                    glowColor,
-                    Projectile.rotation + rotationOffset,
-                    origin,
-                    Projectile.scale * 1.1f,
-                    effects,
-                    0
-                );
+                WeaponVFX.DrawRadialBloom(tipPos, 0.05f, 0.6f, new Color(150, 230, 255), 6f);
             }
 
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 噬魂裂隙 - 突刺顶点处短暂留存的冷蓝灵魂裂缝 (纯视觉)：BeamGrad 竖向开合裂口 + 冲击环 + 柔光。
+    /// </summary>
+    public class SoulDevourerRift : ModProjectile
+    {
+        public override string Texture => "Terraria/Images/Projectile_1";
+
+        private const int LifeTime = 26;
+        private float RiftRotation => Projectile.ai[0];
+
+        public override void SetDefaults() {
+            Projectile.width = 2;
+            Projectile.height = 2;
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = LifeTime;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.alpha = 255;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+
+        public override void AI() {
+            Lighting.AddLight(Projectile.Center, 0.25f, 0.4f, 0.55f);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+
+            float life = 1f - Projectile.timeLeft / (float)LifeTime; // 0→1
+            //开口: 先张开后闭合
+            float open = MathF.Sin(life * MathHelper.Pi);
+            float len = 40f * open;
+            float intensity = open;
+
+            //裂隙垂直于枪刺方向
+            Vector2 perp = (RiftRotation + MathHelper.PiOver2).ToRotationVector2();
+            Vector2 a = Projectile.Center - perp * len;
+            Vector2 b = Projectile.Center + perp * len;
+
+            ACMShaders.DrawBeam(a, b, halfWidth: 6f * open + 1.5f,
+                core: new Color(180, 240, 255, 200), edge: new Color(25, 30, 90, 0), intensity: intensity,
+                flowSpeed: 1.8f, flowScale: 3f, coreSharp: 3f);
+
+            WeaponVFX.DrawShockwaveRing(Projectile.Center, 6f + life * 30f, 6f, intensity * 0.8f,
+                new Color(170, 235, 255), new Color(30, 80, 140));
+            WeaponVFX.DrawGlowBurst(Projectile.Center, 0.9f * open, new Color(90, 170, 220) * intensity);
             return false;
         }
     }

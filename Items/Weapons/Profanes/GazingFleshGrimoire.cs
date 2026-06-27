@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -82,8 +83,8 @@ public class GrimoireBloodBolt : ModProjectile
         => "AncientChineseMythology/Textures/Masking/LightShot";
 
     public override void SetStaticDefaults() {
-        ProjectileID.Sets.TrailingMode[Type] = 2;
-        ProjectileID.Sets.TrailCacheLength[Type] = 8;
+        ProjectileID.Sets.TrailingMode[Type] = 0;
+        ProjectileID.Sets.TrailCacheLength[Type] = 12;
     }
 
     public override void SetDefaults() {
@@ -122,6 +123,11 @@ public class GrimoireBloodBolt : ModProjectile
     }
 
     public override bool PreDraw(ref Color lightColor) {
+        // 统一双层暗红血肉拖尾
+        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 6f,
+            outerColor: new Color(66, 6, 32), innerColor: new Color(222, 64, 128),
+            uvScroll: -Main.GlobalTimeWrappedHourly * 2f);
+
         SpriteBatch sb = Main.spriteBatch;
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
@@ -129,17 +135,6 @@ public class GrimoireBloodBolt : ModProjectile
             Main.GameViewMatrix.TransformationMatrix);
 
         Texture2D lsh = ACMAsset.LightShot;
-
-        for (int i = 1; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
-            if (Projectile.oldPos[i] == Vector2.Zero) continue;
-            float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.45f;
-            sb.Draw(lsh,
-                Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition,
-                null, new Color(180, 20, 15) * a, Projectile.oldRot[i],
-                lsh.Size() * 0.5f,
-                new Vector2(0.30f, 0.06f), SpriteEffects.None, 0);
-        }
-
         sb.Draw(lsh, Projectile.Center - Main.screenPosition, null,
             new Color(220, 40, 30), Projectile.rotation,
             lsh.Size() * 0.5f,
@@ -207,6 +202,10 @@ public class GrimoireGazingEye : ModProjectile
 
     public override void OnKill(int timeLeft) {
         SoundEngine.PlaySound(SoundID.NPCDeath1 with { Volume = 0.8f, Pitch = -0.3f }, Projectile.Center);
+
+        // 凝视巨眼爆裂血肉演出
+        ACMWeaponBurst.Spawn(Projectile.GetSource_Death(), Projectile.Center,
+            ACMWeaponBurst.Profane, scale: 0.8f, owner: Projectile.owner);
 
         if (Main.myPlayer == Projectile.owner) {
             for (int i = 0; i < 8; i++) {

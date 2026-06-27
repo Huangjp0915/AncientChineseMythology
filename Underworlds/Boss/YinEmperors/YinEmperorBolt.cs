@@ -82,6 +82,10 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             return closest;
         }
 
+        public override void OnHitPlayer(Player target, Player.HurtInfo info) {
+            target.GetModPlayer<YinJudgmentPlayer>().AddDecreeStack();
+        }
+
         public override void OnKill(int timeLeft) {
             if (Main.netMode == NetmodeID.Server) return;
 

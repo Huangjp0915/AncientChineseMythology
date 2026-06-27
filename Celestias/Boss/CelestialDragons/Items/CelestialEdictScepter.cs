@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using Terraria;
@@ -44,7 +45,6 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
         }
 
         public override void HoldItem(Player player) {
-            SetDefaults();
             if (player.channel && player.CheckMana(Item, -1, false, false)) {
                 chargeTime++;
 
@@ -245,9 +245,17 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
             }
 
             SoundEngine.PlaySound(SoundID.Item12 with { Pitch = 0.3f, Volume = 0.6f }, target.Center);
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.GoldDragon, isEmpowered ? 1.2f : 0.9f, Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            // 敕令符咒金龙双层 ribbon
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: isEmpowered ? 12f : 8f,
+                outerColor: new Color(200, 130, 30, 120), innerColor: new Color(255, 240, 170, 180),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.4f);
+
             Texture2D texture = ACMAsset.BlankStar ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = texture.Size() / 2f;
 
@@ -368,6 +376,8 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
         }
 
         private void DealCircleDamage() {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+
             float damageRadius = 120f * circleScale;
 
             foreach (var npc in Main.npc) {
@@ -424,6 +434,11 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
             Texture2D starTex = ACMAsset.BlankStar ?? TextureAssets.Projectile[Type].Value;
             Vector2 starOrigin = starTex.Size() / 2f;
             float effectiveRadius = 100f * circleScale;
+
+            // 龙威法阵核心金芒径向辉光 (天庭审判定调)
+            if (circleScale > 0.5f)
+                WeaponVFX.DrawRadialBloom(Projectile.Center, 0.18f * circleScale, 0.45f * circleScale,
+                    new Color(255, 205, 90), 12f);
 
             // 多层法阵环
             for (int ring = 0; ring < 3; ring++) {
@@ -591,6 +606,9 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
 
                     // 雷击爆发
                     SoundEngine.PlaySound(SoundID.Item122 with { Pitch = 0.1f, Volume = 0.8f }, targetPos);
+                    ACMWeaponBurst.Spawn(Projectile.GetSource_FromThis(), targetPos,
+                        ACMWeaponBurst.GoldDragon, 1.3f, Projectile.owner);
+                    WeaponVFX.AddScreenShake(targetPos, 3f);
 
                     for (int i = 0; i < 20; i++) {
                         Vector2 vel = Main.rand.NextVector2CircularEdge(8, 8);

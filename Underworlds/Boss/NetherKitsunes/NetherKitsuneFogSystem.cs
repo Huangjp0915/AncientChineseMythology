@@ -33,8 +33,34 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         private static Vector2 battlefieldCenter = Vector2.Zero;
         private static float battlefieldRadius = 1000f;
 
+        // ===== V2 演出发布通道 (由 NetherKitsune AI 每帧写入, 本系统在 PostDrawTiles 绘制) =====
+        // 魂火泛光 RadialBloom (大刺/相变/裁决) —— 加性 overlay, 不读 screenTarget。
+        private static float soulBloom;
+        private static Vector2 bloomCenter;
+        private static Color bloomColor = new Color(130, 210, 255);
+        // 尾巴/虚空九刺地纹法阵 ArenaRunic (可读落点/真身锚) —— 屏幕空间 SDF。
+        private static float runic;
+        private static Vector2 runicCenter;
+        private static float runicRadius = 360f;
+        private static bool runicLethal;
+
         public static bool IsActive => isActive;
         public static float Intensity => intensity;
+
+        /// <summary>由 Boss AI 发布魂火径向泛光 (世界中心 / 0~1 强度 / 颜色)。</summary>
+        public static void PublishBloom(Vector2 center, float strength, Color color) {
+            soulBloom = MathHelper.Clamp(strength, 0f, 1f);
+            bloomCenter = center;
+            bloomColor = color;
+        }
+
+        /// <summary>由 Boss AI 发布法阵预警 (世界中心 / 世界半径 / 0~1 强度 / 是否致命转红)。</summary>
+        public static void PublishRunic(Vector2 center, float worldRadius, float strength, bool lethal) {
+            runic = MathHelper.Clamp(strength, 0f, 1f);
+            runicCenter = center;
+            runicRadius = worldRadius;
+            runicLethal = lethal;
+        }
 
         /// <summary>
         /// 激活迷雾效果
@@ -67,6 +93,8 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         public static void Deactivate() {
             isActive = false;
             bossNPCIndex = -1;
+            soulBloom = 0f;
+            runic = 0f;
         }
 
         /// <summary>
@@ -158,27 +186,75 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         }
 
         public override void PostDrawTiles() {
-            if (Main.gameMenu || intensity <= 0.01f || Underworld.Fog == null)
+            if (Main.gameMenu)
                 return;
 
             if (bossNPCIndex < 0 || bossNPCIndex >= Main.maxNPCs || !Main.npc[bossNPCIndex].active)
                 return;
 
-            SpriteBatch spriteBatch = Main.spriteBatch;
+            // 迷雾精灵层 (需 Underworld.Fog 与可见强度)
+            if (Underworld.Fog != null && intensity > 0.01f) {
+                SpriteBatch spriteBatch = Main.spriteBatch;
+                spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp,
+                    DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
 
-            spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp,
-                DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+                DrawSoulFogs(spriteBatch);
+                DrawWisps(spriteBatch);
+                DrawRipples(spriteBatch);
 
-            // 绘制幽魂迷雾
-            DrawSoulFogs(spriteBatch);
+                spriteBatch.End();
+            }
 
-            // 绘制狐火
-            DrawWisps(spriteBatch);
+            // V2 演出层 (各自管理批次): 法阵预警 → 魂火泛光
+            DrawArenaRunic();
+            DrawSoulBloom();
+        }
 
-            // 绘制涟漪
-            DrawRipples(spriteBatch);
+        // ===== V2: ArenaRunic 法阵预警 (尾巴落点 / 真身锚 / 虚空九刺收口) =====
+        private static void DrawArenaRunic() {
+            if (runic <= 0.01f)
+                return;
+            Effect fx = ACMShaders.ArenaRunic;
+            if (fx == null)
+                return;
 
-            spriteBatch.End();
+            ACMShaders.WorldDecalParams(runicCenter, runicRadius, out Vector2 uv, out float radiusFrac, out float aspect);
+            Color primary = runicLethal ? TelegraphColors.Lethal : TelegraphColors.NetherViolet;
+            Color secondary = runicLethal ? TelegraphColors.Execution : TelegraphColors.GhostGreen;
+
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uCenter"]?.SetValue(uv);
+            fx.Parameters["uRadius"]?.SetValue(radiusFrac);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(runic, 0f, 1f));
+            fx.Parameters["uAspect"]?.SetValue(aspect);
+            fx.Parameters["uColorPrimary"]?.SetValue(primary.ToVector4());
+            fx.Parameters["uColorSecondary"]?.SetValue(secondary.ToVector4());
+            fx.Parameters["uRuneFreq"]?.SetValue(9f);
+            fx.Parameters["uMode"]?.SetValue(0f);   // 法阵
+            fx.Parameters["uShape"]?.SetValue(0f);  // 圆
+
+            ACMShaders.DrawScreenSpaceDecalStandalone(fx, BlendState.AlphaBlend);
+        }
+
+        // ===== V2: RadialBloom 魂火泛光 (大刺/相变/真身裁决) — 加性 overlay, 不占全屏 screenTarget 名额 =====
+        private static void DrawSoulBloom() {
+            if (soulBloom <= 0.01f)
+                return;
+            Effect fx = ACMShaders.RadialBloom;
+            if (fx == null)
+                return;
+
+            Vector2 uv = (bloomCenter - Main.screenPosition) / new Vector2(Main.screenWidth, Main.screenHeight);
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uCenter"]?.SetValue(uv);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(soulBloom, 0f, 1f));
+            fx.Parameters["uRadius"]?.SetValue(0.24f);
+            fx.Parameters["uAspect"]?.SetValue((float)Main.screenWidth / Main.screenHeight);
+            fx.Parameters["uColor"]?.SetValue(bloomColor.ToVector4());
+            fx.Parameters["uRayCount"]?.SetValue(9f);
+            fx.Parameters["uFalloff"]?.SetValue(2.6f);
+
+            ACMShaders.DrawFullscreenOverlay(fx, BlendState.Additive);
         }
 
         private static void DrawSoulFogs(SpriteBatch sb) {

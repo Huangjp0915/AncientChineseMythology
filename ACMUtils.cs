@@ -176,5 +176,89 @@ namespace AncientChineseMythology
             }
             return verts;
         }
+
+        #region 屏幕震动预算 Screen-Shake Budget
+
+        //统一屏幕震动入口: 同帧多源取 max(不累加), 经 MythologyConfig.ScreenShakeScale 缩放
+        //衰减/应用见 ACMScreenShakeSystem (每帧 *=0.9) 与 ACMScreenShakePlayer (随机抖动 Main.screenPosition)
+        public static void AddScreenShake(float amount) => ACMScreenShakeSystem.Add(amount);
+
+        #endregion
+
+        #region 程序化可平铺噪声 Tileable Noise (公共抽取)
+
+        //生成可无缝平铺的三通道 FBM 噪声 Texture2D (R/G/B 各一套独立噪声)
+        //供着色器槽位采样; 由 ACMShaders 缓存为 static, 切勿每帧调用
+        public static Texture2D GenerateTileableNoise(GraphicsDevice device, int size = 256, int octaves = 5) {
+            Color[] pixels = new Color[size * size];
+            byte[][] channels = new byte[3][];
+            for (int c = 0; c < 3; c++) {
+                channels[c] = new byte[size * size];
+                float[,] noise = GenerateTileableFBM(size, octaves, seed: 77 + c * 131);
+                for (int y = 0; y < size; y++)
+                    for (int x = 0; x < size; x++)
+                        channels[c][y * size + x] = (byte)(noise[x, y] * 255);
+            }
+            for (int i = 0; i < pixels.Length; i++)
+                pixels[i] = new Color(channels[0][i], channels[1][i], channels[2][i], (byte)255);
+
+            Texture2D tex = new(device, size, size, false, SurfaceFormat.Color);
+            tex.SetData(pixels);
+            return tex;
+        }
+
+        //可无缝平铺的 FBM (晶格在边界回绕)，返回 [0,1] 归一化二维场
+        public static float[,] GenerateTileableFBM(int size, int octaves, int seed) {
+            float[,] result = new float[size, size];
+            Random rng = new(seed);
+            float amplitude = 1f;
+            float frequency = 1f;
+            float maxValue = 0f;
+
+            for (int oct = 0; oct < octaves; oct++) {
+                int grid = Math.Max(2, (int)(4 * frequency));
+                float[] lattice = new float[(grid + 1) * (grid + 1)];
+                for (int i = 0; i < lattice.Length; i++)
+                    lattice[i] = (float)rng.NextDouble();
+
+                for (int i = 0; i <= grid; i++) {
+                    lattice[i * (grid + 1) + grid] = lattice[i * (grid + 1)];
+                    lattice[grid * (grid + 1) + i] = lattice[i];
+                }
+                lattice[grid * (grid + 1) + grid] = lattice[0];
+
+                for (int y = 0; y < size; y++) {
+                    for (int x = 0; x < size; x++) {
+                        float fx = (float)x / size * grid;
+                        float fy = (float)y / size * grid;
+                        int ix = Math.Min((int)fx, grid - 1);
+                        int iy = Math.Min((int)fy, grid - 1);
+                        float tx = fx - ix;
+                        float ty = fy - iy;
+                        tx = tx * tx * (3 - 2 * tx);
+                        ty = ty * ty * (3 - 2 * ty);
+                        float v00 = lattice[iy * (grid + 1) + ix];
+                        float v10 = lattice[iy * (grid + 1) + ix + 1];
+                        float v01 = lattice[(iy + 1) * (grid + 1) + ix];
+                        float v11 = lattice[(iy + 1) * (grid + 1) + ix + 1];
+                        float vx0 = v00 + (v10 - v00) * tx;
+                        float vx1 = v01 + (v11 - v01) * tx;
+                        result[x, y] += (vx0 + (vx1 - vx0) * ty) * amplitude;
+                    }
+                }
+                maxValue += amplitude;
+                amplitude *= 0.5f;
+                frequency *= 2f;
+            }
+
+            if (maxValue > 0) {
+                for (int y = 0; y < size; y++)
+                    for (int x = 0; x < size; x++)
+                        result[x, y] /= maxValue;
+            }
+            return result;
+        }
+
+        #endregion
     }
 }

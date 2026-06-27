@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.GameContent;
@@ -10,6 +11,14 @@ namespace AncientChineseMythology.Projectiles
     public class BlackBearBowProj1 : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear_Head_Boss"; //使用物品的纹理作为投射物的纹理
+
+        public override void SetStaticDefaults() {
+            Main.projFrames[Type] = 1;
+            // WeaponVFX.DrawProjectileTrail 需要逐帧记录 oldPos 的双层拖尾
+            ProjectileID.Sets.TrailCacheLength[Type] = 14;
+            ProjectileID.Sets.TrailingMode[Type] = 0;
+        }
+
         public override void SetDefaults() {
             Projectile.width = 20; //弹幕宽度
             Projectile.height = 20; //弹幕高度
@@ -34,6 +43,12 @@ namespace AncientChineseMythology.Projectiles
             Projectile.rotation += Projectile.velocity.X * 0.05f; //旋转速度为弹幕速度的 0.05倍
         }
 
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            // 暖青铜命中演出
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Bronze, scale: 1f, owner: Projectile.owner);
+        }
+
         [System.Obsolete]
         public override void OnKill(int timeLeft) {
             for (int i = 0; i < 3; i++) {
@@ -48,43 +63,23 @@ namespace AncientChineseMythology.Projectiles
         }
         public override bool PreDraw(ref Color lightColor)//predraw返回false即可禁用原版绘制
         {
-            Main.projFrames[Type] = 1;//设置帧数为1，因为我们只需要一个帧的弹幕
-            ProjectileID.Sets.TrailingMode[Type] = 2;//设置尾迹模式为2，即尾迹为圆形
-            ProjectileID.Sets.TrailCacheLength[Type] = 6;//设置尾迹缓存长度为5，即最多保留5个尾迹
-            //同时，需要进行的绘制在这里面写就好
+            // 暖青铜双层拖尾 (外宽暗 + 内窄亮), 取代旧的剑影残像
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 7f,
+                outerColor: new Color(120, 80, 30, 150), innerColor: new Color(255, 210, 140, 200),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.6f);
+
+            // 出膛枪口闪 (前 6 帧柔光)
+            int age = 90 - Projectile.timeLeft;
+            if (age < 6)
+                WeaponVFX.DrawGlowBurst(Projectile.Center, 0.85f * (1f - age / 6f) + 0.3f, new Color(255, 210, 140));
 
             Texture2D texture = TextureAssets.Projectile[Type].Value;//声明本弹幕的材质
-            Texture2D texture2 = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/Projectiles/BlackBearSwordProj1").Value;//声明尾迹材质
             Rectangle rectangle = new Rectangle(//因为手动绘制需要自己填写帧图框,所以要先算出来
                 0,//这个框的左上角的水平坐标(填0就好)
                 texture.Height / Main.projFrames[Type] * Projectile.frame,//框的左上角的纵向坐标
                 texture.Width, //框的宽度(材质宽度即可)
                 texture.Height / Main.projFrames[Type]//框的高度（用材质高度除以帧数得到单帧高度）
                 );
-            Rectangle rectangle2 = new Rectangle(//因为手动绘制需要自己填写帧图框,所以要先算出来
-                0,//这个框的左上角的水平坐标(填0就好)
-                texture2.Height / Main.projFrames[Type] * Projectile.frame,//框的左上角的纵向坐标
-                texture2.Width, //框的宽度(材质宽度即可)
-                texture2.Height / Main.projFrames[Type]//框的高度（用材质高度除以帧数得到单帧高度）
-                );
-            //循环绘制尾迹
-            for (int i = 0; i < ProjectileID.Sets.TrailCacheLength[Type]; i++)//循环上限小于轨迹长度
-            {
-                float factor = 1 - (float)i / ProjectileID.Sets.TrailCacheLength[Type];//计算当前位置的透明度因子
-                                                                                       //定义一个从新到旧由1逐渐减少到0的变量，比如i = 0时，factor = 1
-                Vector2 oldcenter = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;//获取旧位置的中心点
-                //由于轨迹只能记录弹幕碰撞箱左上角位置，我们要手动加上弹幕宽高一半来获取中心
-                //使用弹幕的速度方向来计算旋转角度
-                float rotation = Projectile.velocity.ToRotation();
-
-                Main.EntitySpriteDraw(texture2, oldcenter, rectangle2, Color.White * factor * 0.72f,//颜色逐渐变淡
-                    rotation,//使用速度方向的旋转角度
-                    new Vector2(texture2.Width / 2, texture2.Height / 2 / Main.projFrames[Type]),
-                    new Vector2(0.6f),
-                    SpriteEffects.None, 0);//最后两个参数是贴图缩放和旋转，这里不用管
-            }
-
-            //由于tr绘制是先执行的先绘制，所以要想残影不覆盖到本体上面，就要先写残影绘制
 
             Main.EntitySpriteDraw(  //entityspritedraw是弹幕，NPC等常用的绘制方法
                 texture,//第一个参数是材质

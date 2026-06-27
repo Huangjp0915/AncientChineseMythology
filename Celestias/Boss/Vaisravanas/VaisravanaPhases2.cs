@@ -1,4 +1,5 @@
-﻿using Terraria;
+﻿using System;
+using Terraria;
 using Terraria.Audio;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -6,81 +7,51 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 {
     /// <summary>
-    /// 毗沙门天王 - 二阶段和三阶段AI（分离文件）
+    /// 毗沙门天王 - 二阶段（天王降临）+ 三阶段（库藏封印）
     /// </summary>
     internal partial class Vaisravana
     {
-        #region 二阶段AI
+        #region 二阶段轮替状态
 
-        private void RunPhase2Descend(Player target) {
-            // 天王降临 - 下压并释放环形仙气波
-            Vector2 descendPos = target.Center + new Vector2(0, -220);
-            NPC.Center = Vector2.Lerp(NPC.Center, descendPos, 0.025f);
+        private int p2Index;        // 二阶段攻击轮替索引
+        private float mirrorAxis;   // 镜射轴角度
 
-            // 释放仙气波
-            if (PhaseTimer % 50 == 0) {
-                if (Main.netMode != NetmodeID.MultiplayerClient) {
-                    Projectile.NewProjectile(
-                        NPC.GetSource_FromAI(),
-                        NPC.Center,
-                        Vector2.Zero,
-                        ModContent.ProjectileType<ImmortalWave>(),
-                        NPC.damage / 3,
-                        0f,
-                        Main.myPlayer
-                    );
-                }
+        // 方向常量：0=北 1=东 2=南 3=西
+        private static readonly float[] CardinalAngle = {
+            -MathHelper.PiOver2, // 北 (上)
+            0f,                  // 东 (右)
+            MathHelper.PiOver2,  // 南 (下)
+            MathHelper.Pi        // 西 (左)
+        };
 
-                SoundEngine.PlaySound(SoundID.Item29 with { Pitch = 0.1f }, NPC.Center);
+        private static int Opposite(int dir) => (dir + 2) % 4;
+
+        #endregion
+
+        #region 二阶段AI · 天王降临
+
+        private void RunPhase2Hub(Player target) {
+            // 降临枢纽 — 居于玩家上方稍近处
+            Vector2 hoverPos = target.Center + new Vector2(MathF.Sin(globalTime * 0.8f) * 80f, -300);
+            NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.03f, 0.08f);
+            towerOrbitSpeed = 0.018f;
+
+            // 低压力压制：带充能宝塔点射
+            if (AttackTimer % 50 == 0) {
+                FireTowerTap(target);
             }
 
-            // 环形光弹
-            if (PhaseTimer % 35 == 0) {
-                if (Main.netMode != NetmodeID.MultiplayerClient) {
-                    int waveCount = 14;
-                    for (int i = 0; i < waveCount; i++) {
-                        float angle = MathHelper.TwoPi * i / waveCount;
-                        Vector2 velocity = angle.ToRotationVector2() * 7f;
-
-                        Projectile.NewProjectile(
-                            NPC.GetSource_FromAI(),
-                            NPC.Center,
-                            velocity,
-                            ModContent.ProjectileType<TreasureTowerOrb>(),
-                            NPC.damage / 3,
-                            2f,
-                            Main.myPlayer
-                        );
-                    }
-                }
-            }
-
-            // 仙气粒子
-            if (!VaultUtils.isServer && PhaseTimer % 3 == 0) {
-                Vector2 dustPos = target.Center + Main.rand.NextVector2Circular(350, 60) + new Vector2(0, -80);
-                int dust = Dust.NewDust(dustPos, 0, 0, DustID.WhiteTorch, 0, 2.5f, 100, default, 1.3f);
-                Main.dust[dust].noGravity = true;
-            }
-
-            if (PhaseTimer > 200) {
-                int nextAction = Main.rand.Next(5);
-                switch (nextAction) {
-                    case 0:
-                        TransitionTo(BossPhase.Phase2_YakshaSummon);
-                        break;
-                    case 1:
-                        TransitionTo(BossPhase.Phase2_QuadrantRay);
-                        break;
-                    case 2:
-                        TransitionTo(BossPhase.Phase2_ImmortalWave);
-                        break;
-                    case 3:
-                        TransitionTo(BossPhase.Phase2_DivineDash);
-                        break;
-                    case 4:
-                        TransitionTo(BossPhase.Phase2_HaloStorm);
-                        break;
-                }
+            if (PhaseTimer > 130) {
+                // 固定可读轮替：四象射线 → 仙气地波 → 守护姿态
+                BossPhase[] rotation = {
+                    BossPhase.Phase2_QuadrantRay,
+                    BossPhase.Phase2_ImmortalWave,
+                    BossPhase.Phase2_GuardianStance,
+                    BossPhase.Phase2_QuadrantRay,
+                    BossPhase.Phase2_ImmortalWave
+                };
+                TransitionTo(rotation[p2Index % rotation.Length]);
+                p2Index++;
             }
         }
 
@@ -88,640 +59,421 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             switch ((int)SubState) {
                 case 0: // 召唤阶段
                     NPC.velocity *= 0.9f;
+                    Vector2 descendPos = target.Center + new Vector2(0, -300);
+                    NPC.Center = Vector2.Lerp(NPC.Center, descendPos, 0.04f);
 
                     if (PhaseTimer == 1) {
                         SoundEngine.PlaySound(SoundID.Item119 with { Pitch = 0.3f }, NPC.Center);
 
                         if (Main.netMode != NetmodeID.MultiplayerClient) {
-                            int minionCount = Main.expertMode ? 4 : 3;
-                            yakshaMinionIds = new int[minionCount];
-
-                            for (int i = 0; i < minionCount; i++) {
-                                float angle = MathHelper.TwoPi * i / minionCount;
-                                Vector2 spawnPos = NPC.Center + angle.ToRotationVector2() * 120f;
-
-                                int npcId = NPC.NewNPC(
-                                    NPC.GetSource_FromAI(),
-                                    (int)spawnPos.X,
-                                    (int)spawnPos.Y,
+                            yakshaMinionIds = new int[TowerCount];
+                            for (int i = 0; i < TowerCount; i++) {
+                                // 四方锚点：方向 i 的夜叉守在该方向
+                                Vector2 spawnPos = NPC.Center + CardinalAngle[i].ToRotationVector2() * 240f;
+                                int npcId = NPC.NewNPC(NPC.GetSource_FromAI(),
+                                    (int)spawnPos.X, (int)spawnPos.Y,
                                     ModContent.NPCType<YakshaMinion>(),
-                                    ai0: NPC.whoAmI,
-                                    ai1: i
-                                );
+                                    ai0: NPC.whoAmI, ai1: i);
                                 yakshaMinionIds[i] = npcId;
                             }
-
-                            hasSpawnedMinions = true;
+                            NPC.netUpdate = true;
                         }
                     }
 
-                    // 召唤粒子效果
                     if (!VaultUtils.isServer && PhaseTimer <= 30) {
                         for (int i = 0; i < 10; i++) {
                             Vector2 dustPos = NPC.Center + Main.rand.NextVector2CircularEdge(100, 100);
-                            int dust = Dust.NewDust(dustPos, 0, 0, DustID.WhiteTorch, 0, 0, 100, default, 2.2f);
+                            int dust = Dust.NewDust(dustPos, 0, 0, DustID.GoldFlame, 0, 0, 100, default, 2.2f);
                             Main.dust[dust].noGravity = true;
                             Main.dust[dust].velocity = Main.rand.NextVector2Circular(4, 4);
                         }
                     }
 
-                    if (PhaseTimer >= 60) {
-                        SubState = 1;
-                        PhaseTimer = 0;
-                    }
-                    break;
-
-                case 1: // 等待仆从行动
-                    Vector2 hoverPos = target.Center + new Vector2(0, -340);
-                    NPC.Center = Vector2.Lerp(NPC.Center, hoverPos, 0.012f);
-
-                    if (PhaseTimer > 160) {
-                        TransitionTo(BossPhase.Phase2_Descend);
+                    if (PhaseTimer >= 70) {
+                        TransitionTo(BossPhase.Phase2_Hub);
                     }
                     break;
             }
         }
 
+        /// <summary>
+        /// 四象射线 — 夜叉锚定安全道。
+        /// 每个基本方向射出固定方位激光；某方向夜叉死亡后，其【对侧】方向开出安全道。
+        /// （击杀北方夜叉 → 解锁南方安全区，杀序很重要）
+        /// </summary>
         private void RunPhase2QuadrantRay(Player target) {
             switch ((int)SubState) {
-                case 0: // 准备
+                case 0: // 预告
                     NPC.velocity *= 0.9f;
-
                     Vector2 quadHoverPos = target.Center + new Vector2(0, -300);
-                    NPC.Center = Vector2.Lerp(NPC.Center, quadHoverPos, 0.03f);
+                    NPC.Center = Vector2.Lerp(NPC.Center, quadHoverPos, 0.04f);
 
-                    if (PhaseTimer == 1) {
-                        laserAngle = Main.rand.NextFloat(MathHelper.TwoPi);
+                    if (PhaseTimer == 1)
                         SoundEngine.PlaySound(SoundID.Item15 with { Pitch = 0.5f }, NPC.Center);
-                    }
 
-                    // 预警线
                     if (!VaultUtils.isServer) {
-                        for (int i = 0; i < 4; i++) {
-                            float angle = laserAngle + MathHelper.PiOver2 * i;
-                            Vector2 dir = angle.ToRotationVector2();
-                            for (int j = 0; j < 10; j++) {
-                                Vector2 dustPos = NPC.Center + dir * (j * 100);
-                                int dust = Dust.NewDust(dustPos, 0, 0, DustID.WhiteTorch, 0, 0, 150, default, 1f);
-                                Main.dust[dust].noGravity = true;
-                            }
+                        for (int c = 0; c < 4; c++) {
+                            bool safe = !YakshaAlive(Opposite(c));
+                            if (safe) continue; // 安全道不画危险标线
+                            TelegraphLine(NPC.Center, CardinalAngle[c].ToRotationVector2(), 12, DustID.GoldFlame);
                         }
                     }
 
-                    if (PhaseTimer >= 45) {
+                    if (PhaseTimer >= 50) {
                         SubState = 1;
                         PhaseTimer = 0;
                     }
                     break;
 
-                case 1: // 发射四方激光
+                case 1: // 发射四象激光（跳过安全道方向）
                     if (PhaseTimer == 1) {
                         if (Main.netMode != NetmodeID.MultiplayerClient) {
-                            for (int i = 0; i < 4; i++) {
-                                float angle = laserAngle + MathHelper.PiOver2 * i;
-                                Projectile.NewProjectile(
-                                    NPC.GetSource_FromAI(),
-                                    NPC.Center,
-                                    Vector2.Zero,
-                                    ModContent.ProjectileType<QuadrantRay>(),
-                                    NPC.damage / 2,
-                                    0f,
-                                    Main.myPlayer,
-                                    ai0: NPC.whoAmI,
-                                    ai1: angle
-                                );
+                            for (int c = 0; c < 4; c++) {
+                                bool safe = !YakshaAlive(Opposite(c));
+                                if (safe) continue;
+                                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
+                                    ModContent.ProjectileType<QuadrantRay>(), NPC.damage / 2, 0f, Main.myPlayer,
+                                    ai0: NPC.whoAmI, ai1: CardinalAngle[c]);
                             }
                         }
-
                         SoundEngine.PlaySound(SoundID.Item122 with { Volume = 1.3f }, NPC.Center);
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(12, 35);
+                        if (!VaultUtils.isServer)
+                            ACMScreenShakeSystem.Add(12f);
                     }
-
-                    laserAngle += 0.012f;
 
                     if (PhaseTimer > 100) {
-                        TransitionTo(BossPhase.Phase2_Descend);
+                        TransitionTo(BossPhase.Phase2_Hub);
                     }
                     break;
             }
         }
 
+        /// <summary>
+        /// 仙气地波 — 随地形起伏的冲击环，吸附地表/平台高度，迫使纵向跳跃走位。
+        /// （区别于观察者的平面环）
+        /// </summary>
         private void RunPhase2ImmortalWave(Player target) {
-            NPC.velocity *= 0.92f;
-
-            Vector2 hoverPos = target.Center + new Vector2(0, -280);
-            NPC.Center = Vector2.Lerp(NPC.Center, hoverPos, 0.02f);
-
-            // 多次释放仙气波
-            if (PhaseTimer % 30 == 0 && PhaseTimer <= 120) {
-                if (Main.netMode != NetmodeID.MultiplayerClient) {
-                    Projectile.NewProjectile(
-                        NPC.GetSource_FromAI(),
-                        NPC.Center,
-                        Vector2.Zero,
-                        ModContent.ProjectileType<ImmortalWave>(),
-                        NPC.damage / 3,
-                        0f,
-                        Main.myPlayer
-                    );
-                }
-
-                SoundEngine.PlaySound(SoundID.Item29 with { Pitch = -0.1f }, NPC.Center);
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(8, 20);
-            }
-
-            if (PhaseTimer > 150) {
-                TransitionTo(BossPhase.Phase2_Descend);
-            }
-        }
-
-        private void RunPhase2DivineDash(Player target) {
             switch ((int)SubState) {
-                case 0: // 准备冲刺
-                    dashCount = 0;
-                    maxDashCount = Main.expertMode ? 4 : 3;
-                    SubState = 1;
-                    PhaseTimer = 0;
-                    break;
+                case 0: // 蓄力预告
+                    NPC.velocity *= 0.92f;
+                    Vector2 hoverPos = target.Center + new Vector2(0, -300);
+                    NPC.Center = Vector2.Lerp(NPC.Center, hoverPos, 0.03f);
 
-                case 1: // 蓄力
-                    NPC.velocity *= 0.9f;
+                    if (PhaseTimer == 1)
+                        SoundEngine.PlaySound(SoundID.Item15 with { Pitch = -0.2f, Volume = 1.1f }, NPC.Center);
 
-                    // 蓄力粒子
-                    if (!VaultUtils.isServer) {
-                        Vector2 dustVel = Main.rand.NextVector2CircularEdge(6, 6);
-                        int dust = Dust.NewDust(NPC.Center, 0, 0, DustID.WhiteTorch, dustVel.X, dustVel.Y, 100, default, 1.6f);
-                        Main.dust[dust].noGravity = true;
-                    }
-
-                    if (PhaseTimer >= 22) {
-                        dashTarget = target.Center;
-                        dashVelocity = (dashTarget - NPC.Center).SafeNormalize(Vector2.Zero) * 32f;
-                        SubState = 2;
+                    if (PhaseTimer >= 40) {
+                        SubState = 1;
                         PhaseTimer = 0;
-
-                        SoundEngine.PlaySound(SoundID.Item122 with { Pitch = 0.4f }, NPC.Center);
                     }
                     break;
 
-                case 2: // 冲刺
-                    NPC.velocity = dashVelocity;
-
-                    // 冲刺拖尾粒子
-                    if (!VaultUtils.isServer) {
-                        for (int i = 0; i < 4; i++) {
-                            Vector2 dustPos = NPC.Center - NPC.velocity.SafeNormalize(Vector2.Zero) * 35f * i;
-                            int dust = Dust.NewDust(dustPos, 0, 0, DustID.WhiteTorch, 0, 0, 100, default, 2.2f);
-                            Main.dust[dust].noGravity = true;
-                            Main.dust[dust].velocity = -NPC.velocity * 0.1f;
+                case 1: // 释放地波
+                    if (PhaseTimer % 45 == 1 && PhaseTimer <= 140) {
+                        if (Main.netMode != NetmodeID.MultiplayerClient) {
+                            // 左右各一道随地形起伏的冲击波
+                            Vector2 spawn = new Vector2(target.Center.X, target.Center.Y - 40);
+                            float speed = Main.expertMode ? 9f : 7.5f;
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(), spawn, new Vector2(-speed, 0),
+                                ModContent.ProjectileType<ImmortalGroundShock>(), NPC.damage / 3, 0f, Main.myPlayer);
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(), spawn, new Vector2(speed, 0),
+                                ModContent.ProjectileType<ImmortalGroundShock>(), NPC.damage / 3, 0f, Main.myPlayer);
                         }
+                        SoundEngine.PlaySound(SoundID.Item29 with { Pitch = -0.1f }, NPC.Center);
+                        if (!VaultUtils.isServer)
+                            ACMScreenShakeSystem.Add(8f);
                     }
 
-                    if (PhaseTimer >= 22) {
-                        dashCount++;
-                        if (dashCount >= maxDashCount) {
-                            TransitionTo(BossPhase.Phase2_Descend);
-                        }
-                        else {
-                            SubState = 1;
-                            PhaseTimer = 0;
-                        }
+                    if (PhaseTimer > 175) {
+                        TransitionTo(BossPhase.Phase2_Hub);
                     }
                     break;
             }
         }
 
-        private void RunPhase2HaloStorm(Player target) {
-            Vector2 hoverPos = target.Center + new Vector2(0, -300);
-            NPC.Center = Vector2.Lerp(NPC.Center, hoverPos, 0.018f);
+        /// <summary>
+        /// 守护姿态 — 守护者身份窗口（借鉴玄武 绝对防御）。
+        /// Boss 钉死并开启无敌/反震；玩家应停火、靠走位躲避缓速金环，
+        /// 而非继续输出（输出会被劫财反震）。窗口结束有破防硬直。
+        /// </summary>
+        private void RunPhase2GuardianStance(Player target) {
+            switch ((int)SubState) {
+                case 0: // 入场钉死 + 预告
+                    NPC.velocity = ACMUtils.SpringDamp2D(NPC.Center, NPC.Center, ref dashVelocity, 0.5f, 12f, 1f / 60f) - NPC.Center;
 
-            // 释放旋转光环
-            if (PhaseTimer % 22 == 0) {
-                if (Main.netMode != NetmodeID.MultiplayerClient) {
-                    float baseAngle = PhaseTimer * 0.12f;
-                    int ringCount = 8;
-                    for (int i = 0; i < ringCount; i++) {
-                        float angle = baseAngle + MathHelper.TwoPi * i / ringCount;
-                        Vector2 velocity = angle.ToRotationVector2() * 8f;
+                    if (PhaseTimer == 1)
+                        SoundEngine.PlaySound(SoundID.Item37 with { Pitch = -0.3f, Volume = 1.2f }, NPC.Center);
 
-                        Projectile.NewProjectile(
-                            NPC.GetSource_FromAI(),
-                            NPC.Center,
-                            velocity,
-                            ModContent.ProjectileType<ImmortalHaloRing>(),
-                            NPC.damage / 3,
-                            2f,
-                            Main.myPlayer,
-                            ai0: angle
-                        );
+                    if (PhaseTimer >= 30) {
+                        SubState = 1;
+                        PhaseTimer = 0;
+                        guardActive = true;
+                        NPC.dontTakeDamage = true;
+                        SoundEngine.PlaySound(SoundID.Item29 with { Pitch = -0.4f, Volume = 1.3f }, NPC.Center);
                     }
-                }
+                    break;
 
-                SoundEngine.PlaySound(SoundID.Item8 with { Pitch = 0.4f }, NPC.Center);
-            }
+                case 1: // 守护窗口：缓速金环逼走位，反震惩罚输出
+                    NPC.velocity = ACMUtils.SpringDamp2D(NPC.Center, NPC.Center, ref dashVelocity, 0.5f, 12f, 1f / 60f) - NPC.Center;
+                    guardActive = true;
+                    NPC.dontTakeDamage = true;
 
-            if (PhaseTimer > 180) {
-                TransitionTo(BossPhase.Phase2_Descend);
+                    if (PhaseTimer % 26 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                        // 缓速金环（留缝），玩家需走位
+                        float safeAngle = Main.rand.NextFloat(MathHelper.TwoPi);
+                        int count = 22;
+                        float safeHalf = MathHelper.ToRadians(40);
+                        for (int i = 0; i < count; i++) {
+                            float angle = MathHelper.TwoPi * i / count;
+                            if (MathF.Abs(MathHelper.WrapAngle(angle - safeAngle)) < safeHalf) continue;
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, angle.ToRotationVector2() * 5.5f,
+                                ModContent.ProjectileType<TreasureTowerOrb>(), NPC.damage / 4, 1f, Main.myPlayer);
+                        }
+                        SoundEngine.PlaySound(SoundID.Item8 with { Pitch = 0.2f }, NPC.Center);
+                    }
+
+                    if (PhaseTimer > 150) {
+                        guardActive = false;
+                        NPC.dontTakeDamage = false;
+                        guardVisual = 1.6f; // 破防闪
+                        SoundEngine.PlaySound(SoundID.NPCHit42 with { Pitch = 0.3f }, NPC.Center);
+                        TransitionTo(BossPhase.Phase2_Hub);
+                    }
+                    break;
             }
         }
 
         #endregion
 
-        #region 三阶段AI
+        #region 三阶段AI · 库藏封印（脚本化 A/B/C 轮替）
 
-        private void RunPhase3FourKingsWrath(Player target) {
-            // 四天王威 - 持续追击并释放密集弹幕
-            Vector2 toTarget = target.Center - NPC.Center;
-            Vector2 desiredVelocity = toTarget.SafeNormalize(Vector2.Zero) * 11f;
-            NPC.velocity = Vector2.Lerp(NPC.velocity, desiredVelocity, 0.07f);
-
-            // 高速宝塔旋转
-            towerOrbitSpeed = 0.035f;
-
-            // 密集神圣光弹
-            if (PhaseTimer % 10 == 0) {
-                if (Main.netMode != NetmodeID.MultiplayerClient) {
-                    Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero);
-                    float spread = MathHelper.ToRadians(12);
-
-                    for (int i = -1; i <= 1; i++) {
-                        Vector2 velocity = toPlayer.RotatedBy(spread * i) * 15f;
-                        Projectile.NewProjectile(
-                            NPC.GetSource_FromAI(),
-                            NPC.Center,
-                            velocity,
-                            ModContent.ProjectileType<TreasureTowerOrb>(),
-                            NPC.damage / 3,
-                            2f,
-                            Main.myPlayer
-                        );
-                    }
-                }
-            }
-
-            // 宝塔同步射击
-            if (PhaseTimer % 25 == 0) {
-                FireAllTowerBeams(target);
-            }
-
-            if (PhaseTimer > 280) {
-                int nextAction = Main.rand.Next(4);
-                switch (nextAction) {
-                    case 0:
-                        TransitionTo(BossPhase.Phase3_TowerJudgment);
-                        break;
-                    case 1:
-                        TransitionTo(BossPhase.Phase3_UltimateTower);
-                        break;
-                    case 2:
-                        TransitionTo(BossPhase.Phase3_YakshaSync);
-                        break;
-                    case 3:
-                        TransitionTo(BossPhase.Phase3_FinalRadiance);
-                        break;
-                }
-            }
-        }
-
-        private void FireAllTowerBeams(Player target) {
-            if (Main.netMode == NetmodeID.MultiplayerClient) return;
-
-            for (int i = 0; i < TowerCount; i++) {
-                Vector2 towerPos = GetTowerPosition(i);
-                Vector2 toTarget = (target.Center - towerPos).SafeNormalize(Vector2.Zero);
-
-                Projectile.NewProjectile(
-                    NPC.GetSource_FromAI(),
-                    towerPos,
-                    toTarget * 11f,
-                    ModContent.ProjectileType<TowerBeam>(),
-                    NPC.damage / 4,
-                    1f,
-                    Main.myPlayer
-                );
-            }
-
-            SoundEngine.PlaySound(SoundID.Item12 with { Pitch = 0.5f, Volume = 1.2f }, NPC.Center);
-        }
-
-        private void RunPhase3TowerJudgment(Player target) {
+        private void RunPhase3SealRings(Player target) {
+            // A 幕 · 金环收束：向内收缩的金环，标记安全道
             switch ((int)SubState) {
-                case 0: // 准备
-                    NPC.velocity *= 0.92f;
+                case 0: // 预告安全道
+                    NPC.velocity = ACMUtils.SpringDamp2D(NPC.Center, target.Center + new Vector2(0, -260), ref dashVelocity, 2.2f, 6f, 1f / 60f) - NPC.Center;
 
                     if (PhaseTimer == 1) {
-                        int pillarCount = Main.expertMode ? 12 : 8;
-                        pillarPositions = new Vector2[pillarCount];
-                        for (int i = 0; i < pillarCount; i++) {
-                            Vector2 offset = Main.rand.NextVector2Circular(450, 120);
-                            pillarPositions[i] = target.Center + offset;
-                        }
-
-                        SoundEngine.PlaySound(SoundID.Item15 with { Pitch = 0.6f }, NPC.Center);
+                        // 安全道角度：避开仍存活夜叉的方向（存活方向被「强化」=危险）
+                        laserAngle = ChooseSealSafeAngle();
+                        SoundEngine.PlaySound(SoundID.Item15 with { Pitch = 0.3f, Volume = 1.1f }, NPC.Center);
                     }
 
-                    // 预警
                     if (!VaultUtils.isServer) {
-                        foreach (var pos in pillarPositions) {
-                            if (pos == Vector2.Zero) continue;
-                            int dust = Dust.NewDust(pos + new Vector2(-25, -600), 50, 600, DustID.WhiteTorch, 0, 0, 100, default, 1f);
-                            Main.dust[dust].noGravity = true;
+                        Vector2 c = NPC.Center;
+                        for (int s = -1; s <= 1; s++) {
+                            float a = laserAngle + s * MathHelper.ToRadians(30);
+                            TelegraphLine(c, a.ToRotationVector2(), 12, DustID.GoldCoin);
                         }
                     }
 
-                    if (PhaseTimer >= 45) {
+                    if (PhaseTimer >= 55) {
                         SubState = 1;
                         PhaseTimer = 0;
                     }
                     break;
 
-                case 1: // 释放光柱
-                    if (PhaseTimer == 1) {
+                case 1: // 释放收缩金环（数波）
+                    if (PhaseTimer % 40 == 1 && PhaseTimer <= 160) {
                         if (Main.netMode != NetmodeID.MultiplayerClient) {
-                            // 使用星辰弹幕模拟光柱效果
-                            foreach (var pos in pillarPositions) {
-                                if (pos == Vector2.Zero) continue;
-                                Projectile.NewProjectile(
-                                    NPC.GetSource_FromAI(),
-                                    new Vector2(pos.X, pos.Y - 600),
-                                    new Vector2(0, 25f),
-                                    ModContent.ProjectileType<VaisravanaStar>(),
-                                    NPC.damage / 2,
-                                    5f,
-                                    Main.myPlayer
-                                );
-                            }
+                            float startRadius = 780f;
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
+                                ModContent.ProjectileType<TreasurySealRing>(), NPC.damage / 3, 0f, Main.myPlayer,
+                                ai0: laserAngle, ai1: startRadius);
                         }
-
-                        SoundEngine.PlaySound(SoundID.Item122 with { Volume = 1.3f }, NPC.Center);
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(16, 35);
+                        SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.2f, Volume = 1.1f }, NPC.Center);
+                        if (!VaultUtils.isServer)
+                            VaisravanaTreasureScreenSystem.PulseBloom(0.32f);
                     }
 
-                    if (PhaseTimer > 50) {
-                        TransitionTo(BossPhase.Phase3_FourKingsWrath);
+                    if (PhaseTimer > 200) {
+                        AdvanceSealCycle();
                     }
                     break;
             }
         }
 
+        /// <summary>选择金环安全道角度：避开存活夜叉的方向。</summary>
+        private float ChooseSealSafeAngle() {
+            // 收集没有存活夜叉的方向作为候选安全道
+            System.Collections.Generic.List<int> open = new();
+            for (int c = 0; c < 4; c++)
+                if (!YakshaAlive(c)) open.Add(c);
+
+            if (open.Count == 0)
+                return Main.rand.NextFloat(MathHelper.TwoPi); // 夜叉全活：随机缝（更难）
+
+            int pick = open[Main.rand.Next(open.Count)];
+            return CardinalAngle[pick];
+        }
+
+        /// <summary>
+        /// B 幕 · 夜叉镜射：沿镜轴对称发射的镜弹，只有站在反射轴线上才能安全穿过。
+        /// </summary>
+        private void RunPhase3YakshaMirror(Player target) {
+            switch ((int)SubState) {
+                case 0: // 选定镜轴 + 预告
+                    NPC.velocity = ACMUtils.SpringDamp2D(NPC.Center, target.Center + new Vector2(0, -280), ref dashVelocity, 2.2f, 6f, 1f / 60f) - NPC.Center;
+
+                    if (PhaseTimer == 1) {
+                        mirrorAxis = (target.Center - NPC.Center).ToRotation();
+                        SoundEngine.PlaySound(SoundID.Item15 with { Pitch = 0.7f }, NPC.Center);
+                    }
+
+                    if (!VaultUtils.isServer) {
+                        // 画出镜轴（安全线）
+                        Vector2 dir = mirrorAxis.ToRotationVector2();
+                        for (int i = -10; i <= 10; i++) {
+                            int dust = Dust.NewDust(NPC.Center + dir * (i * 70f), 0, 0, DustID.WhiteTorch, 0, 0, 150, default, 1f);
+                            Main.dust[dust].noGravity = true;
+                        }
+                    }
+
+                    if (PhaseTimer >= 50) {
+                        SubState = 1;
+                        PhaseTimer = 0;
+                    }
+                    break;
+
+                case 1: // 镜射波
+                    if (PhaseTimer % 18 == 1 && PhaseTimer <= 150) {
+                        if (Main.netMode != NetmodeID.MultiplayerClient) {
+                            FireMirrorVolley(target);
+                        }
+                        SoundEngine.PlaySound(SoundID.Item12 with { Pitch = 0.5f }, NPC.Center);
+                    }
+
+                    if (PhaseTimer > 175) {
+                        AdvanceSealCycle();
+                    }
+                    break;
+            }
+        }
+
+        /// <summary>发射一组沿镜轴对称的镜弹：安全点在反射轴线上。</summary>
+        private void FireMirrorVolley(Player target) {
+            // 以镜轴为对称轴，向玩家所在侧与其镜像侧各发一发会聚镜弹
+            Vector2 axisDir = mirrorAxis.ToRotationVector2();
+            Vector2 perp = axisDir.RotatedBy(MathHelper.PiOver2);
+
+            float side = Vector2.Dot(target.Center - NPC.Center, perp);
+            float offset = MathHelper.Clamp(MathF.Abs(side), 120f, 360f);
+
+            for (int s = -1; s <= 1; s += 2) {
+                Vector2 origin = NPC.Center + perp * offset * s + axisDir * Main.rand.NextFloat(-60f, 60f);
+                Vector2 toAxisPoint = (NPC.Center + axisDir * Vector2.Dot(origin - NPC.Center, axisDir)) - origin;
+                Vector2 vel = toAxisPoint.SafeNormalize(perp * -s) * 13f;
+                Projectile.NewProjectile(NPC.GetSource_FromAI(), origin, vel,
+                    ModContent.ProjectileType<YakshaMirrorBolt>(), NPC.damage / 3, 2f, Main.myPlayer);
+            }
+        }
+
+        /// <summary>
+        /// C 幕 · 终极宝塔：单束终极激光，约 70 tick 蓄力 + 地纹预告，绝不与 10tick 喷射重叠。
+        /// </summary>
         private void RunPhase3UltimateTower(Player target) {
             switch ((int)SubState) {
-                case 0: // 蓄力
-                    NPC.velocity *= 0.85f;
+                case 0: // 70 tick 蓄力 + 地纹预告
+                    NPC.velocity = ACMUtils.SpringDamp2D(NPC.Center, target.Center + new Vector2(0, -320), ref dashVelocity, 1.6f, 7f, 1f / 60f) - NPC.Center;
 
                     if (PhaseTimer == 1) {
                         laserAngle = (target.Center - NPC.Center).ToRotation();
-                        SoundEngine.PlaySound(SoundID.Item15 with { Pitch = -0.3f, Volume = 1.5f }, NPC.Center);
+                        SoundEngine.PlaySound(SoundID.Item15 with { Pitch = -0.4f, Volume = 1.6f }, NPC.Center);
+
+                        // 地纹预告：在激光朝向的地面投影处铺设符文
+                        if (Main.netMode != NetmodeID.MultiplayerClient) {
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
+                                ModContent.ProjectileType<TreasurySealRune>(), 0, 0f, Main.myPlayer,
+                                ai0: NPC.whoAmI, ai1: laserAngle);
+                        }
                     }
 
-                    // 巨大能量聚集效果
+                    // 蓄力期持续微调朝向（可读），并震屏渐强
+                    laserAngle = MathHelper.Lerp(laserAngle, (target.Center - NPC.Center).ToRotation(), 0.03f);
+
                     if (!VaultUtils.isServer) {
-                        for (int i = 0; i < 14; i++) {
+                        for (int i = 0; i < 12; i++) {
                             Vector2 dustPos = NPC.Center + Main.rand.NextVector2CircularEdge(220, 220);
-                            int dust = Dust.NewDust(dustPos, 0, 0, DustID.WhiteTorch, 0, 0, 50, default, 2.8f);
+                            int dust = Dust.NewDust(dustPos, 0, 0, DustID.GoldFlame, 0, 0, 50, default, 2.6f);
                             Main.dust[dust].noGravity = true;
-                            Main.dust[dust].velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 14f;
+                            Main.dust[dust].velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 13f;
                         }
-
-                        for (int i = 0; i < 6; i++) {
-                            Vector2 dustPos = NPC.Center + Main.rand.NextVector2Circular(35, 35);
-                            int dust = Dust.NewDust(dustPos, 0, 0, DustID.WhiteTorch, 0, 0, 100, default, 3.2f);
-                            Main.dust[dust].noGravity = true;
-                        }
-                    }
-
-                    if (PhaseTimer % 8 == 0) {
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(PhaseTimer / 8f, 8);
+                        if (PhaseTimer % 8 == 0)
+                            ACMScreenShakeSystem.Add(MathHelper.Clamp(PhaseTimer / 10f, 0f, 12f));
+                        // 坛城地纹与本体金爆由 ScreenSystem(逐圈) 与 PreDraw(DrawRadialBloomAt) 演出, 此处仅震屏渐强
                     }
 
                     if (PhaseTimer >= 70) {
                         SubState = 1;
                         PhaseTimer = 0;
-
                         if (Main.netMode != NetmodeID.MultiplayerClient) {
-                            Projectile.NewProjectile(
-                                NPC.GetSource_FromAI(),
-                                NPC.Center,
-                                Vector2.Zero,
-                                ModContent.ProjectileType<TreasureTowerRay>(),
-                                (int)(NPC.damage * 1.5f),
-                                0f,
-                                Main.myPlayer,
-                                ai0: NPC.whoAmI,
-                                ai1: laserAngle
-                            );
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
+                                ModContent.ProjectileType<TreasureTowerRay>(), (int)(NPC.damage * 1.4f), 0f, Main.myPlayer,
+                                ai0: NPC.whoAmI, ai1: laserAngle);
                         }
-
-                        SoundEngine.PlaySound(SoundID.Zombie104 with { Pitch = -0.2f, Volume = 2f }, NPC.Center);
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(25, 100);
+                        SoundEngine.PlaySound(SoundID.Zombie104 with { Pitch = -0.3f, Volume = 2f }, NPC.Center);
+                        if (!VaultUtils.isServer) {
+                            // 终极宝塔·财神镇压：金爆泛光 + 强震屏
+                            ACMScreenShakeSystem.Add(12f);
+                            VaisravanaTreasureScreenSystem.PulseBloom(1f);
+                        }
                     }
                     break;
 
-                case 1: // 激光持续
+                case 1: // 激光持续（缓慢扫向玩家，可读）
                     NPC.velocity *= 0.9f;
+                    laserAngle = MathHelper.Lerp(laserAngle, (target.Center - NPC.Center).ToRotation(), 0.016f);
 
-                    // 追踪玩家
-                    float targetAngle = (target.Center - NPC.Center).ToRotation();
-                    laserAngle = MathHelper.Lerp(laserAngle, targetAngle, 0.018f);
-
-                    if (PhaseTimer > 130) {
-                        TransitionTo(BossPhase.Phase3_FourKingsWrath);
+                    if (PhaseTimer > 110) {
+                        AdvanceSealCycle();
                     }
                     break;
             }
         }
 
-        private void RunPhase3YakshaSync(Player target) {
-            switch ((int)SubState) {
-                case 0: // 确保有仆从
-                    if (!hasSpawnedMinions || !AnyMinionsAlive()) {
-                        if (Main.netMode != NetmodeID.MultiplayerClient) {
-                            int minionCount = Main.expertMode ? 4 : 3;
-                            yakshaMinionIds = new int[minionCount];
+        /// <summary>
+        /// 幕间守护节拍：短暂守护反击窗口 + 宝塔回充，作为可读性阀门，避免连续高压。
+        /// </summary>
+        private void RunPhase3SealBeat(Player target) {
+            NPC.velocity = ACMUtils.SpringDamp2D(NPC.Center, target.Center + new Vector2(0, -300), ref dashVelocity, 1.2f, 8f, 1f / 60f) - NPC.Center;
 
-                            for (int i = 0; i < minionCount; i++) {
-                                float angle = MathHelper.TwoPi * i / minionCount;
-                                Vector2 spawnPos = NPC.Center + angle.ToRotationVector2() * 160f;
-
-                                int npcId = NPC.NewNPC(
-                                    NPC.GetSource_FromAI(),
-                                    (int)spawnPos.X,
-                                    (int)spawnPos.Y,
-                                    ModContent.NPCType<YakshaMinion>(),
-                                    ai0: NPC.whoAmI,
-                                    ai1: i
-                                );
-                                yakshaMinionIds[i] = npcId;
-                            }
-                            hasSpawnedMinions = true;
-                        }
-                    }
-
-                    SubState = 1;
-                    PhaseTimer = 0;
-                    break;
-
-                case 1: // 准备同步攻击
-                    NPC.velocity *= 0.9f;
-
-                    if (PhaseTimer == 1) {
-                        SoundEngine.PlaySound(SoundID.Item15 with { Pitch = 0.4f, Volume = 1.2f }, NPC.Center);
-
-                        if (Main.netMode != NetmodeID.MultiplayerClient) {
-                            foreach (int minionId in yakshaMinionIds) {
-                                if (minionId >= 0 && minionId < Main.maxNPCs && Main.npc[minionId].active) {
-                                    Main.npc[minionId].ai[2] = 1;
-                                }
-                            }
-                        }
-                    }
-
-                    // 预警效果
-                    if (!VaultUtils.isServer) {
-                        foreach (int minionId in yakshaMinionIds) {
-                            if (minionId >= 0 && minionId < Main.maxNPCs && Main.npc[minionId].active) {
-                                Vector2 minionPos = Main.npc[minionId].Center;
-                                Vector2 toTarget = (target.Center - minionPos).SafeNormalize(Vector2.Zero);
-                                for (int i = 0; i < 6; i++) {
-                                    Vector2 dustPos = minionPos + toTarget * (i * 100);
-                                    int dust = Dust.NewDust(dustPos, 0, 0, DustID.WhiteTorch, 0, 0, 150, default, 0.9f);
-                                    Main.dust[dust].noGravity = true;
-                                }
-                            }
-                        }
-                    }
-
-                    if (PhaseTimer >= 55) {
-                        SubState = 2;
-                        PhaseTimer = 0;
-                    }
-                    break;
-
-                case 2: // 同步发射
-                    if (PhaseTimer == 1) {
-                        if (Main.netMode != NetmodeID.MultiplayerClient) {
-                            foreach (int minionId in yakshaMinionIds) {
-                                if (minionId >= 0 && minionId < Main.maxNPCs && Main.npc[minionId].active) {
-                                    NPC minion = Main.npc[minionId];
-                                    Vector2 toTarget = (target.Center - minion.Center).SafeNormalize(Vector2.Zero);
-
-                                    Projectile.NewProjectile(
-                                        NPC.GetSource_FromAI(),
-                                        minion.Center,
-                                        toTarget * 16f,
-                                        ModContent.ProjectileType<TowerBeam>(),
-                                        NPC.damage / 2,
-                                        2f,
-                                        Main.myPlayer
-                                    );
-                                }
-                            }
-
-                            // Boss也发射
-                            Vector2 bossToTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero);
-                            Projectile.NewProjectile(
-                                NPC.GetSource_FromAI(),
-                                NPC.Center,
-                                bossToTarget * 16f,
-                                ModContent.ProjectileType<TowerBeam>(),
-                                NPC.damage / 2,
-                                2f,
-                                Main.myPlayer
-                            );
-                        }
-
-                        SoundEngine.PlaySound(SoundID.Item122 with { Volume = 1.5f }, NPC.Center);
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(14, 28);
-                    }
-
-                    if (PhaseTimer > 55) {
-                        TransitionTo(BossPhase.Phase3_FourKingsWrath);
-                    }
-                    break;
+            if (PhaseTimer == 1) {
+                guardActive = true;
+                NPC.dontTakeDamage = true;
+                SoundEngine.PlaySound(SoundID.Item37 with { Pitch = -0.2f }, NPC.Center);
+                for (int i = 0; i < TowerCount; i++)
+                    if (towerCharges[i] < MaxTowerCharge) towerCharges[i]++;
             }
-        }
 
-        private void RunPhase3FinalRadiance(Player target) {
-            switch ((int)SubState) {
-                case 0: // 蓄力
-                    NPC.velocity *= 0.9f;
-
-                    // 能量聚集
-                    if (!VaultUtils.isServer) {
-                        for (int i = 0; i < 12; i++) {
-                            Vector2 dustPos = NPC.Center + Main.rand.NextVector2CircularEdge(320, 320);
-                            int dust = Dust.NewDust(dustPos, 0, 0, DustID.WhiteTorch, 0, 0, 50, default, 2.8f);
-                            Main.dust[dust].noGravity = true;
-                            Main.dust[dust].velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 16f;
-                        }
-                    }
-
-                    if (PhaseTimer == 28) {
-                        SoundEngine.PlaySound(SoundID.Item119 with { Pitch = -0.2f }, NPC.Center);
-                    }
-
-                    if (PhaseTimer >= 55) {
-                        SubState = 1;
-                        PhaseTimer = 0;
-                    }
-                    break;
-
-                case 1: // 释放
-                    if (PhaseTimer == 1) {
-                        if (Main.netMode != NetmodeID.MultiplayerClient) {
-                            // 巨大的环形弹幕爆发
-                            int waves = 4;
-                            for (int w = 0; w < waves; w++) {
-                                int count = 18;
-                                float baseAngle = w * MathHelper.ToRadians(12);
-                                for (int i = 0; i < count; i++) {
-                                    float angle = baseAngle + MathHelper.TwoPi * i / count;
-                                    Vector2 velocity = angle.ToRotationVector2() * (9f + w * 2.5f);
-
-                                    Projectile.NewProjectile(
-                                        NPC.GetSource_FromAI(),
-                                        NPC.Center,
-                                        velocity,
-                                        ModContent.ProjectileType<TreasureTowerOrb>(),
-                                        NPC.damage / 3,
-                                        2f,
-                                        Main.myPlayer
-                                    );
-                                }
-                            }
-
-                            // 同时释放仙气波
-                            Projectile.NewProjectile(
-                                NPC.GetSource_FromAI(),
-                                NPC.Center,
-                                Vector2.Zero,
-                                ModContent.ProjectileType<ImmortalWave>(),
-                                NPC.damage / 3,
-                                0f,
-                                Main.myPlayer
-                            );
-                        }
-
-                        SoundEngine.PlaySound(SoundID.Item122 with { Volume = 1.6f }, NPC.Center);
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(22, 40);
-                    }
-
-                    if (PhaseTimer > 70) {
-                        TransitionTo(BossPhase.Phase3_FourKingsWrath);
-                    }
-                    break;
-            }
-        }
-
-        private bool AnyMinionsAlive() {
-            if (yakshaMinionIds == null) return false;
-            foreach (int id in yakshaMinionIds) {
-                if (id >= 0 && id < Main.maxNPCs && Main.npc[id].active &&
-                    Main.npc[id].type == ModContent.NPCType<YakshaMinion>()) {
-                    return true;
+            // 守护期间放一圈缓速金环逼走位
+            if (PhaseTimer == 30 && Main.netMode != NetmodeID.MultiplayerClient) {
+                float safeAngle = Main.rand.NextFloat(MathHelper.TwoPi);
+                int count = 20;
+                for (int i = 0; i < count; i++) {
+                    float angle = MathHelper.TwoPi * i / count;
+                    if (MathF.Abs(MathHelper.WrapAngle(angle - safeAngle)) < MathHelper.ToRadians(40)) continue;
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, angle.ToRotationVector2() * 5f,
+                        ModContent.ProjectileType<TreasureTowerOrb>(), NPC.damage / 4, 1f, Main.myPlayer);
                 }
             }
-            return false;
+
+            if (PhaseTimer > 75) {
+                guardActive = false;
+                NPC.dontTakeDamage = false;
+                guardVisual = 1.4f;
+                BossPhase next = sealCycle switch {
+                    0 => BossPhase.Phase3_SealRings,
+                    1 => BossPhase.Phase3_YakshaMirror,
+                    _ => BossPhase.Phase3_UltimateTower
+                };
+                TransitionTo(next);
+            }
+        }
+
+        /// <summary>推进库藏封印轮替并进入幕间节拍。</summary>
+        private void AdvanceSealCycle() {
+            sealCycle = (sealCycle + 1) % 3;
+            TransitionTo(BossPhase.Phase3_SealBeat);
         }
 
         #endregion

@@ -440,7 +440,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
 
         private void ImpactEffects() {
             //冲击粒子 + 震动
-            Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(7, 20);
+            ACMUtils.AddScreenShake(5f); //刀刃命中冲击 (§6.2)
             SoundEngine.PlaySound(SoundID.Item89 with { Volume = 1.1f, Pitch = -0.3f }, NPC.Center);
             for (int i = 0; i < 40; i++) {
                 Vector2 vel = Main.rand.NextVector2Circular(8, 8);
@@ -578,7 +578,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             // 斩击冲击效果
             if (frenzyDashProgress > 0.6f && frenzySlashFlash == 0) {
                 frenzySlashFlash = 1f;
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(5, 12);
+                ACMUtils.AddScreenShake(4f); //冲刺斩击命中帧 (§6.2)
                 SoundEngine.PlaySound(SoundID.Item89 with { Volume = 1f, Pitch = -0.2f }, NPC.Center);
 
                 // 斩击光效与粒子爆发
@@ -882,7 +882,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 if (!actionTriggered) {
                     actionTriggered = true;
                     impactFlash = 1.5f;
-                    Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(8, 15);
+                    ACMUtils.AddScreenShake(6f); //蓄力突刺爆发 (§6.2)
                     SoundEngine.PlaySound(SoundID.Item89 with { Volume = 1.2f, Pitch = -0.1f }, NPC.Center);
                 }
             }
@@ -969,7 +969,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                             ModContent.ProjectileType<SaberHell>(), 220, 2);
                     }
                 }
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(6, 18);
+                ACMUtils.AddScreenShake(5f); //环形施法释放 (§6.2)
             }
         }
 

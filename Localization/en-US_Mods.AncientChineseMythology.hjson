@@ -396,6 +396,7 @@ Items: {
 			'''
 			A fast golden void blade forged from Vigor's judgment
 			Each swing launches three piercing void slash waves for rapid crowd clearing
+			Every third swing erupts into five fan waves and tears open a devouring void rift at the cursor
 			'''
 	}
 
@@ -414,6 +415,7 @@ Items: {
 			'''
 			A mage scepter forged from Vaisravana's celestial circlet authority
 			Each cast releases five radiant rings that spiral inward, then dash toward foes
+			As each ring expires it crowns the area in a radiant halo, dealing area damage
 			'''
 	}
 
@@ -421,8 +423,9 @@ Items: {
 		DisplayName: Geoarchon Rupturer
 		Tooltip:
 			'''
-			Inscribes a geoarchon rupture sigil at the cursor
-			After a brief warning, seven earth-energy pillars erupt from the ground
+			Inscribes a geoarchon rupture sigil at the cursor; after a brief warning, seven earth-energy pillars erupt from the ground
+			Pillars fling up geocrystal shards as they shatter; right-click pours mana into a twelve-pillar grand rupture array
+			1500 magic damage
 			'''
 	}
 
@@ -431,7 +434,8 @@ Items: {
 		Tooltip:
 			'''
 			Baihu golden cataclysm hammer — 1580 melee damage
-			Throws a returning hammer that splits the earth with golden shockwaves on impact
+			Throws a returning hammer that splits the earth with golden shockwaves on impact; the quakes shred armor
+			Catching the hammer slams the ground for a twin-directional quake surge
 			'''
 	}
 
@@ -442,7 +446,11 @@ Items: {
 
 	GeocrystalShatterblade: {
 		DisplayName: Geocrystal Shatterblade
-		Tooltip: Melee swings erupt molten geocrystal bursts on hit · 1450 melee damage
+		Tooltip:
+			'''
+			Melee swings erupt molten geocrystal bursts on hit; chained hits build crystal resonance for ever-larger bursts
+			Max resonance triggers a crystal overload; right-click cleaves a fan of seven molten crystal lances · 1450 melee damage
+			'''
 	}
 
 	QuadraseaCataclysmicEdge: {
@@ -465,6 +473,7 @@ Items: {
 			'''
 			Argus's hundred-eyed stellar cannon
 			Gathers violet starlight into a single luminance shell; impact triggers a stellar burst
+			The burst ejects four homing starlets that curve back to hunt survivors
 			'''
 	}
 
@@ -474,6 +483,7 @@ Items: {
 			'''
 			Argus iris handgun that converts bullets into luminous golden shells
 			Hold to charge an iris ring, then release a golden shell burst on full charge
+			A full-charge release summons an All-Seeing Eye that auto-targets foes and fires iris shells
 			'''
 	}
 
@@ -488,15 +498,20 @@ Items: {
 
 	StarfireAnnihilator: {
 		DisplayName: Starfire Annihilator
-		Tooltip: Piercing coral starfire shells bloom into a starfire sea blast after piercing · 1520 ranged damage
+		Tooltip:
+			'''
+			Piercing coral starfire shells bloom into a starfire sea blast after piercing
+			Right-click forms a coral supernova that drifts forward, pulling in foes before detonating into a sky of starfire · 1520 ranged damage
+			'''
 	}
 
 	VaultshadeVoidshot: {
 		DisplayName: Vaultshade Voidshot
 		Tooltip:
 			'''
-			Fires a growing void bolt that swells in flight
+			Fires a growing void bolt that swells in flight, hitting harder the larger it gets
 			Impact triggers a void collapse that pulls nearby enemies inward
+			As the collapse unravels it scatters homing fortune coins to plunder the trapped foes
 			'''
 	}
 
@@ -506,6 +521,7 @@ Items: {
 			'''
 			Baihu argent pulse gun — 1450 ranged damage
 			Rapid silver pulse rounds; every eighth shot unleashes a triple pulse burst that blooms into silver shockwaves on impact
+			Sustained fire charges the coil; every twenty-fourth shot fires an all-piercing argent pulse railgun round
 			'''
 	}
 
@@ -524,6 +540,7 @@ Items: {
 			'''
 			Rapid alternating dual-blade slashes; sheath torrent blades spiral out
 			Right-click deploys an orbiting azure blade swarm
+			Hits build tidal stacks; at max charge the next slash unleashes a colossal devouring tidal vortex
 			1480 melee damage
 			'''
 	}
@@ -540,7 +557,11 @@ Items: {
 
 	SolarisEternalVerdict: {
 		DisplayName: Solaris Eternal Verdict
-		Tooltip: Summons a hovering solar eye that periodically fires piercing sunbeams · 1600 summon damage
+		Tooltip:
+			'''
+			Summons a hovering solar eye that periodically fires piercing sunbeams
+			Sustained targeting charges eclipse power, unleashing a five-beam fan of solar judgment when full · 1600 summon damage
+			'''
 	}
 
 	XuanTieBar: {
@@ -686,17 +707,30 @@ Items: {
 
 	Netherlayer: {
 		DisplayName: Netherlayer
-		Tooltip: ""
+		Tooltip:
+			'''
+			Swings loose nether crescents; every third strike erupts a wider soul-rending slash
+			Direct hits and slashes build Nether Grudge; maxed stacks detonate a soul annihilation
+			'''
 	}
 
 	NetherStaff: {
 		DisplayName: Nether Staff
-		Tooltip: ""
+		Tooltip:
+			'''
+			Releases a wraith that weaves through foes and spits soul-seeking sparks
+			Hits build Nether Grudge; maxed stacks trigger a soul annihilation
+			'''
 	}
 
 	Netherthrower: {
 		DisplayName: Netherthrower
-		Tooltip: ""
+		Tooltip:
+			'''
+			Sprays self-hunting nether dragonbreath
+			Rapid burns quickly max out Nether Grudge, triggering a soul annihilation
+			Uses Gel for ammo
+			'''
 	}
 
 	NetherSutom: {
@@ -1585,12 +1619,17 @@ Items: {
 			'''
 			Argus soul-piercing bow strung with iris pupil threads
 			Converts arrows into homing iris arrows that stack Weakness Marks; full stacks detonate for a soul pierce burst
+			Detonations scatter iris shards that home onto other enemies' weak points
 			'''
 	}
 
 	BlackTortoiseShield: {
 		DisplayName: Black Tortoise Shield
-		Tooltip: Left-click shield bash · Right-click block reduces damage 25% and reflects 115% of incoming damage
+		Tooltip:
+			'''
+			Left-click shield bash · Right-click block reduces damage 25% and reflects 115% of incoming damage
+			A successful block-reflect erupts a Black Tortoise ward that knocks back and frostburns surrounding foes · 1550 melee damage
+			'''
 	}
 
 	FourSymbolsTablet: {
@@ -1600,12 +1639,20 @@ Items: {
 
 	PhoenixFlameStaff: {
 		DisplayName: Phoenix Flame Staff
-		Tooltip: Launches phoenix flame orbs that rebirth into homing embers on hit or expiry · 1480 magic damage
+		Tooltip:
+			'''
+			Launches phoenix flame orbs that rebirth into homing embers on hit or expiry
+			Every fifth cast dives a nirvana phoenix that pierces, burns, and bursts into a flurry of fire feathers · 1480 magic damage
+			'''
 	}
 
 	ThunderclapLongbow: {
 		DisplayName: Thunderclap Longbow
-		Tooltip: Piercing thunder arrows · Hold to drum-charge and release an infinite-pierce sky-bolt · 1550 ranged damage
+		Tooltip:
+			'''
+			Piercing thunder arrows · Hold to drum-charge and release an infinite-pierce sky-bolt
+			Hits call down a sky lightning column; fully-charged bolts also chain a strike to a nearby foe · 1550 ranged damage
+			'''
 	}
 
 	WhiteTigerClaws: {
@@ -1615,32 +1662,38 @@ Items: {
 			Baihu tiger claws · 1500 melee damage
 			Four-hit claw combo with escalating bleed
 			Finisher releases three silver claw rip waves
+			Right-click Tiger Pounce: lunge toward the cursor, deep-rending foes with three claws along the way
 			'''
 	}
 
 	WindserpentDao: {
 		DisplayName: Windserpent Dao
-		Tooltip: Slashes release wind-serpent blades; every fourth strike summons a homing tornado · 1520 melee damage
+		Tooltip:
+			'''
+			Slashes release homing wind-serpent blades; every fourth strike summons a homing tornado
+			Right-click dashes as a wind serpent, tearing five slipstream slashes along the path · 1520 melee damage
+			'''
 	}
 
 	TreasurePagodaCharm: {
 		DisplayName: Treasure Pagoda Charm
-		Tooltip: 15% damage reduction, +10 defense, 100% thorns · On hit, summons a treasure pagoda phantom that retaliates
+		Tooltip: 15% damage reduction, +10 defense, 100% thorns · On hit, summons treasure pagoda phantoms that retaliate · Higher Fortune makes them stronger and more numerous (up to three)
 	}
 
 	TreasurePagodaStaff: {
 		DisplayName: Treasure Pagoda Staff
 		Tooltip:
 			'''
-			Summons stacking treasure pagodas at the cursor
-			Pick up coins to empower pagoda damage
+			Summons stacking treasure pagodas at the cursor, up to six tiers
+			Pick up coins to empower pagodas; pagodas also gather Fortune by suppressing foes
+			Tier 4+ pagodas fire homing fortune coins that hunt enemies
 			1320 magic damage
 			'''
 	}
 
 	SinSeveringBlade: {
 		DisplayName: Sin Severing Blade
-		Tooltip: Swings apply Sin Mark; marked foes always take crits · 1180 melee damage
+		Tooltip: Swings apply Sin Mark; marked foes always take crits and low-health foes take far heavier blows; when a marked foe dies its guilt spreads Sin Mark to nearby enemies · 1180 melee damage
 	}
 
 	SinMarkDebuff: {
@@ -1650,7 +1703,7 @@ Items: {
 
 	VerdictSealHammer: {
 		DisplayName: Verdict Seal Hammer
-		Tooltip: Slams release a field-wide verdict shockwave and apply seal slow · 1250 melee damage
+		Tooltip: Slams release a field-wide verdict shockwave and apply seal slow; hits summon a verdict seal that charges then crashes down for heavy damage and a second shockwave · 1250 melee damage
 	}
 
 	VerdictSealSlowDebuff: {
@@ -1854,6 +1907,8 @@ NPCs: {
 	angry_gargoyle.DisplayName: angry_gargoyle
 	BlackBear.DisplayName: Black Bear
 	Dazheng.DisplayName: Dazheng
+	DazhengSeasonAnchor.DisplayName: Season Anchor
+	DazhengDecoyTree.DisplayName: Golden Phantom Tree
 	TaiShangLaoJunNPC.DisplayName: Tai Shang Lao Jun N P C
 	BloodCrow.DisplayName: Blood Crow
 	Demon.DisplayName: Demon
@@ -1894,6 +1949,7 @@ NPCs: {
 	NetherDragonBody.DisplayName: Nether Dragon Body
 	NetherDragonHead.DisplayName: Nether Dragon Head
 	NetherDragonTail.DisplayName: Nether Dragon Tail
+	NetherScaleOrb.DisplayName: Grudge Scale Orb
 	Corpses.DisplayName: Corpses
 	CorpsesHand.DisplayName: Corpses Hand
 	KyuubiKitsune.DisplayName: Kyuubi Kitsune
@@ -1907,9 +1963,12 @@ NPCs: {
 	SpectreMinion.DisplayName: Spectre Minion
 	CelestialOverseer.DisplayName: Celestial Overseer
 	CelestialEyeMinion.DisplayName: Celestial Eye Minion
+	OverseerScryingEye.DisplayName: Scrying Eye
+	HeavenlyJuror.DisplayName: Heavenly Juror
 	AncestralDragonSoulBody.DisplayName: Ancestral Dragon Soul Body
 	AncestralDragonSoulHead.DisplayName: Ancestral Dragon Soul Head
 	AncestralDragonSoulTail.DisplayName: Ancestral Dragon Soul Tail
+	AncestralDaoFragment.DisplayName: Dao Fragment
 	CelestialDragonsBody.DisplayName: Celestial Dragons Body
 	CelestialDragonsHead.DisplayName: Celestial Dragons Head
 	CelestialDragonsTail.DisplayName: Celestial Dragons Tail
@@ -1925,6 +1984,7 @@ NPCs: {
 	Baihu.DisplayName: Baihu
 	Suzaku.DisplayName: Suzaku
 	Xuanwu.DisplayName: Xuanwu
+	Xuanwu.JadeAegis: Jade Aegis
 	SoulHarvester.DisplayName: Soul Harvester
 	ThebonesinTheTomb.DisplayName: Thebonesin The Tomb
 	TheDeceasedPerson.DisplayName: The Deceased Person
@@ -1932,6 +1992,18 @@ NPCs: {
 	AzureDragonHead.DisplayName: Azure Dragon Head
 	AzureDragonTail.DisplayName: Azure Dragon Tail
 	YinEmperor.DisplayName: Yin Emperor
+	GhostGateLock.DisplayName: Ghost Gate Lock
+	YinEmperor.Dialog.Intro: The Yin Emperor descends. Kneel, mortal — your soul is summoned to judgment.
+	YinEmperor.Dialog.ActI: Rite of Fengdu. Let the nether decree be inscribed upon you.
+	YinEmperor.Dialog.ActII: You are bound within the Soul-Quelling Prison. Shatter the Ghost Gate Lock, or be sealed forever.
+	YinEmperor.Dialog.ActIII: Imperial Verdict! There is no appeal before the throne of the dead.
+	YinEmperor.Dialog.SoulSeal: The seal contracts. Break the lock to escape!
+	YinEmperor.Dialog.SealBroken: Impudent... you tore the gate from its hinges.
+	YinEmperor.Dialog.YinYang: Edict of Fengdu — stand within the favored half, or your soul shall burn.
+	YinEmperor.Dialog.FinalDecree: The Final Decree is written. Witness it.
+	YinEmperor.Dialog.Phantom: So you reach the end. Behold the Seal of the Yin Sovereign.
+	YinEmperor.Dialog.ExecutePrompt: The Fengdu regalia answers — strike now to execute the decree!
+	YinEmperor.Dialog.Executed: Impossible... the verdict... turned upon me...
 	Aokin.DisplayName: Aokin
 	Aoyuan.DisplayName: Aoyuan
 	AoyuanBody.DisplayName: Aoyuan Body
@@ -1950,6 +2022,8 @@ Projectiles: {
 	BlackBear_Proj2.DisplayName: Black Bear_ Proj2
 	BlackBear_Proj3.DisplayName: Black Bear_ Proj3
 	BlackBear_Proj4.DisplayName: Black Bear_ Proj4
+	BlackBearHoneyDrip.DisplayName: Honey Drip
+	BlackBearGroundShock.DisplayName: Ground Shock
 	GoldenStickSpearProjectile.DisplayName: Golden Stick Spear Projectile
 	IronStickSpearProjectile.DisplayName: Iron Stick Spear Projectile
 	WoodenStickSpearProjectile.DisplayName: Wooden Stick Spear Projectile
@@ -1977,6 +2051,8 @@ Projectiles: {
 	TribulationLightningBlack.DisplayName: Tribulation Lightning Black
 	TribulationLightningPurple.DisplayName: Tribulation Lightning Purple
 	TribulationLightningRed.DisplayName: Tribulation Lightning Red
+	TribulationLightningStrike.DisplayName: Tribulation Bolt
+	TribulationSweep.DisplayName: Tribulation Lightning Curtain
 	ChengYingHitbox.DisplayName: Cheng Ying Hitbox
 	YuChangSkillProjectile.DisplayName: Yu Chang Skill Projectile
 	YuChangSwordBeanProjectile.DisplayName: Yu Chang Sword Bean Projectile
@@ -2018,10 +2094,23 @@ Projectiles: {
 	DraconicEmberEggProj.DisplayName: Draconic Ember Egg
 	DraconicLavaFlare.DisplayName: Draconic Lava Flare
 	InkscaledFlowFanProj.DisplayName: Inkscaled Fish
+	DraconicEmberFlame.DisplayName: Ember Dragonfire
+	MeteorCallerFlamePool.DisplayName: Meteor Ember Pool
+	GlacialIceShard.DisplayName: Glacial Ice Shard
+	PermafrostField.DisplayName: Permafrost Field
+	BlizzardIcicle.DisplayName: Blizzard Icicle
+	StormchainNode.DisplayName: Storm Node
 	SolarisEternalVerdictProj.DisplayName: Solaris Eye
 	SolarisRay.DisplayName: Solaris Ray
 	AureateVoidrenderSwing.DisplayName: Aureate Voidrender
 	AureateVoidWave.DisplayName: Aureate Void Wave
+	AureateVoidRift.DisplayName: Void Rift
+	VerdictSealSigil.DisplayName: Verdict Seal
+	ArgusIrisShard.DisplayName: Iris Shard
+	LuminanceStarlet.DisplayName: Starlet
+	ArgusAllSeeingEye.DisplayName: All-Seeing Eye
+	TreasureCoinBolt.DisplayName: Fortune Coin
+	CelestialCrownBurst.DisplayName: Coronation Burst
 	CelestialHubShell.DisplayName: Celestial Hub Shell
 	CelestialHubExplosion.DisplayName: Celestial Hub Explosion
 	CelestialCircletOrb.DisplayName: Celestial Circlet Orb
@@ -2042,8 +2131,14 @@ Projectiles: {
 	Shockwave.DisplayName: Shockwave
 	GhostFireProj.DisplayName: Ghost Fire Proj
 	HoqingShadow.DisplayName: Hoqing Shadow
+	HoqingGhostDissolve.DisplayName: Ghost Fire Remnant
 	OblivionFireOrb.DisplayName: Oblivion Fire Orb
 	HoqingRingFire.DisplayName: Hoqing Ring Fire
+	CorpsePit.DisplayName: Corpse Pit
+	SputumPool.DisplayName: Sputum Pool
+	AzureBolt.DisplayName: Azure Bolt
+	AzureThunderRod.DisplayName: Thunder Rod
+	HoqingCorpseChain.DisplayName: Corpse Chain
 	SaberHell.DisplayName: Saber Hell
 	YingouFireBall.DisplayName: Yingou Fire Ball
 	SaberKiller.DisplayName: Saber Killer
@@ -2052,6 +2147,13 @@ Projectiles: {
 	HanbaBookProj.DisplayName: Hanba Book Proj
 	HoqingFireSummonProj.DisplayName: Hoqing Fire Summon Proj
 	JiangcenHammerProj.DisplayName: Jiangcen Hammer Proj
+	JiangcenTelegraphMark.DisplayName: Telegraph Mark
+	JiangcenShockBolt.DisplayName: Shock Bolt
+	JiangcenCorpseHand.DisplayName: Corpse Hand
+	JiangcenThrownHammer.DisplayName: Thrown Thunder Hammer
+	JiangcenHammerGhost.DisplayName: Hammer Ghost
+	JiangcenLightningStrike.DisplayName: Lightning Strike
+	JiangcenChainArc.DisplayName: Chain Lightning
 	SaberHellFriendly.DisplayName: Saber Hell Friendly
 	CoffinNailProjectile.DisplayName: Coffin Nail Projectile
 	ChainProj.DisplayName: Chain Proj
@@ -2063,6 +2165,7 @@ Projectiles: {
 	NetherFlameProjectile.DisplayName: Nether Flame Projectile
 	NetherLaserBeam.DisplayName: Nether Laser Beam
 	NetherPortal.DisplayName: Nether Portal
+	NetherFlameTrail.DisplayName: Nether Flame Trail
 	CorpsesBoneShower.DisplayName: Corpses Bone Shower
 	CorpsesClapWave.DisplayName: Corpses Clap Wave
 	CorpsesShadowOrb.DisplayName: Corpses Shadow Orb
@@ -2079,9 +2182,12 @@ Projectiles: {
 	NetherSutomMinon.DisplayName: Nether Sutom Minon
 	KyuubiBookTail.DisplayName: Kyuubi Book Tail
 	KyuubiBookTailController.DisplayName: Kyuubi Book Tail Controller
+	KyuubiFoxFire.DisplayName: Fox-Fire
+	KyuubiMandalaEdge.DisplayName: Fox-Fire Mandala
 	NetherBookTail.DisplayName: Nether Book Tail
 	NetherBookTailController.DisplayName: Nether Book Tail Controller
 	NetherSoulBolt.DisplayName: Nether Soul Bolt
+	NetherFoxfireSoul.DisplayName: Nether Foxfire Soul
 	DakkiBookController.DisplayName: Dakki Book Controller
 	DakkiBookTail.DisplayName: Dakki Book Tail
 	DakkiCharmRing.DisplayName: Dakki Charm Ring
@@ -2108,6 +2214,9 @@ Projectiles: {
 	AwakeningNetherRift.DisplayName: Awakening Nether Rift
 	AwakeningNetherSoulOrb.DisplayName: Awakening Nether Soul Orb
 	AwakeningNetherVoidBolt.DisplayName: Awakening Nether Void Bolt
+	AwakeningNetherMiasma.DisplayName: Void Miasma
+	AwakeningNetherSegmentLaser.DisplayName: Nether Segment Laser
+	AwakeningNetherSoulSatellite.DisplayName: Soul Satellite
 	AbyssalRiftSlash.DisplayName: Abyssal Rift Slash
 	AbyssalSpineSlash.DisplayName: Abyssal Spine Slash
 	PhantomBreathArrow.DisplayName: Phantom Breath Arrow
@@ -2118,6 +2227,9 @@ Projectiles: {
 	SpectreSoulOrb.DisplayName: Spectre Soul Orb
 	SpectreWailingWave.DisplayName: Spectre Wailing Wave
 	SpectreWraithBolt.DisplayName: Spectre Wraith Bolt
+	SpectreLanternAnchor.DisplayName: Wraith Lantern Anchor
+	SpectrePhantomRush.DisplayName: Vengeful Phantom Rush
+	SpectreReckoningWave.DisplayName: Grudge Reckoning Wave
 	SoulDevourerSpearProjectile.DisplayName: Soul Devourer Spear Projectile
 	YamasGavelProjectile.DisplayName: Yamas Gavel Projectile
 	SoulseekerDaggersProj.DisplayName: Soulseeker Daggers Proj
@@ -2131,6 +2243,8 @@ Projectiles: {
 	MinionSyncLaser.DisplayName: Minion Sync Laser
 	OmegaCelestialLaser.DisplayName: Omega Celestial Laser
 	SweepingLaserBolt.DisplayName: Sweeping Laser Bolt
+	JudgmentBeam.DisplayName: Judgment Beam
+	OverseerGroundTelegraph.DisplayName: Omen
 	AllSeeingBeam.DisplayName: All Seeing Beam
 	AllSeeingEyeProjectile.DisplayName: All Seeing Eye Projectile
 	CelestialChakramProjectile.DisplayName: Celestial Chakram Projectile
@@ -2147,6 +2261,8 @@ Projectiles: {
 	PhoenixMinionFlame.DisplayName: Phoenix Minion Flame
 	PhoenixSpark.DisplayName: Phoenix Spark
 	AncestralDragonBeam.DisplayName: Ancestral Dragon Beam
+	YinYangOverdrivePulse.DisplayName: Yin-Yang Overdrive
+	PrimordialRecallBeam.DisplayName: Primordial Recall Beam
 	AncestralMistBolt.DisplayName: Ancestral Mist Bolt
 	AncestralSoulFragment.DisplayName: Ancestral Soul Fragment
 	HomingSoulOrb.DisplayName: Homing Soul Orb
@@ -2166,10 +2282,18 @@ Projectiles: {
 	ArchosaurSoulCircle.DisplayName: Archosaur Soul Circle
 	ArchosaurSoulOrb.DisplayName: Archosaur Soul Orb
 	ArchosaurSoulWave.DisplayName: Archosaur Soul Wave
+	ArchosaurStormOrb.DisplayName: Remnant Thunder Orb
+	ArchosaurTailBolt.DisplayName: Tail Lightning
+	ArchosaurNestOrb.DisplayName: Thunder Nest Orb
+	ArchosaurNestLink.DisplayName: Thunder Nest Link
+	ArchosaurReverseBolt.DisplayName: Reverse Lightning
 	BossDragonAuthorityCircle.DisplayName: Boss Dragon Authority Circle
 	DragonCircleWarning.DisplayName: Dragon Circle Warning
 	ForkedCelestialLightning.DisplayName: Forked Celestial Lightning
 	ForkedLightningWarning.DisplayName: Forked Lightning Warning
+	MandateZone.DisplayName: Mandate Zone
+	EdictBeacon.DisplayName: Edict Beacon
+	CelestialScale.DisplayName: Celestial Scale
 	CelestialEdictSeal.DisplayName: Celestial Edict Seal
 	CelestialLightningBolt.DisplayName: Celestial Lightning Bolt
 	DragonAuraSlash.DisplayName: Dragon Aura Slash
@@ -2188,6 +2312,10 @@ Projectiles: {
 	TreasureTowerOrb.DisplayName: Treasure Tower Orb
 	TreasureTowerRay.DisplayName: Treasure Tower Ray
 	VaisravanaStar.DisplayName: Vaisravana Star
+	ImmortalGroundShock.DisplayName: Immortal Ground Shock
+	TreasurySealRing.DisplayName: Treasury Seal Ring
+	YakshaMirrorBolt.DisplayName: Yaksha Mirror Bolt
+	TreasurySealRune.DisplayName: Treasury Seal Rune
 	DragonBreathBeam.DisplayName: Dragon Breath Beam
 	DragonMinion.DisplayName: Dragon Minion
 	DragonWaterBolt.DisplayName: Dragon Water Bolt
@@ -2271,10 +2399,17 @@ Projectiles: {
 	AokinFlameVortex.DisplayName: Aokin Flame Vortex
 	AokinMeteor.DisplayName: Aokin Meteor
 	AokinBarrierTornado.DisplayName: Aokin Barrier Tornado
+	AokinEmberPillar.DisplayName: Tribulation Ember Pillar
+	AokinLavaFissure.DisplayName: Molten Tide Fissure
+	AokinInfernoRing.DisplayName: Inferno Cocoon Vent
 	AoyuanFrostVortex.DisplayName: Aoyuan Frost Vortex
 	AoyuanIceball.DisplayName: Aoyuan Iceball
 	AoyuanIcicle.DisplayName: Aoyuan Icicle
 	AoyuanFrostBeam.DisplayName: Aoyuan Frost Beam
+	AoyuanPermafrostTrail.DisplayName: Permafrost Trail
+	AoyuanPillarTelegraph.DisplayName: Glacial Pillar Marker
+	AoyuanBlizzardWall.DisplayName: Blizzard Veil
+	AoyuanAbsoluteZeroBurst.DisplayName: Absolute Zero
 	AoshunLightningNode.DisplayName: Aoshun Lightning Node
 	AoshunDragonScale.DisplayName: Aoshun Dragon Scale
 	AoshunTornado.DisplayName: Aoshun Tornado
@@ -2372,10 +2507,18 @@ Projectiles: {
 	AetherealWingblades.DisplayName: Aethereal Wingblade
 	BaihuMetalShard.DisplayName: Baihu Metal Shard
 	BaihuSonicRoar.DisplayName: Baihu Sonic Roar
+	BaihuRendBeam.DisplayName: Argent Rend
+	BaihuEchoDecoy.DisplayName: Metallic Echo
 	QinglongThunderBolt.DisplayName: Qinglong Thunder Bolt
 	QinglongWindBlade.DisplayName: Qinglong Wind Blade
+	QinglongThunderColumn.DisplayName: Qinglong Thunder Column
+	QinglongWindDomain.DisplayName: Qinglong Wind Domain
 	SuzakuFireball.DisplayName: Suzaku Fireball
 	SuzakuFlamePillar.DisplayName: Suzaku Flame Pillar
+	SuzakuEmber.DisplayName: Suzaku Ember
+	SuzakuFeather.DisplayName: Suzaku Solar Feather
+	SuzakuSunPillar.DisplayName: Suzaku Sun Pillar
+	SuzakuSolarBeam.DisplayName: Suzaku Solar Judgment Beam
 	XuanwuIceShard.DisplayName: Xuanwu Ice Shard
 	XuanwuVenomFang.DisplayName: Xuanwu Venom Fang
 	SoulBannerHeldProj.DisplayName: Soul Banner Held Proj
@@ -2383,9 +2526,12 @@ Projectiles: {
 	DazhengVine.DisplayName: Dazheng Vine
 	DazhengLeaf.DisplayName: Dazheng Leaf
 	DazhengGoldenPhantom.DisplayName: Golden Phantom
+	DazhengHealThread.DisplayName: Life Drain Thread
+	DazhengRootField.DisplayName: Encroaching Roots
 	Acanthosphere.DisplayName: Acanthosphere
 	DryadsLeaf.DisplayName: Dryads Leaf
 	DryadsVine.DisplayName: Dryads Vine
+	DryadsSporeZone.DisplayName: Spore Bloom
 	DazhengArenaBarrier.DisplayName: Dazheng Arena Barrier
 	XuanwuIcePillar.DisplayName: Xuanwu Ice Pillar
 	AncestralSoulSigil.DisplayName: Ancestral Soul Sigil
@@ -2481,6 +2627,31 @@ Tiles: {
 }
 
 Buffs: {
+	AoyuanChill: {
+		DisplayName: Permafrost Chill
+		Description: Frozen ground slows your movement; three stacks freeze you solid
+	}
+
+	AoyuanDeepFreeze: {
+		DisplayName: Deep Freeze
+		Description: Encased in ice, unable to move
+	}
+
+	AoyuanSlippery: {
+		DisplayName: Glaciated Footing
+		Description: The breached arena floor is treacherously slippery
+	}
+
+	HoqingDecline: {
+		DisplayName: Withering Decline
+		Description: Plague saps your vitality — movement slowed and life steadily drains. Each stack deepens the rot.
+	}
+
+	BaihuClawMark: {
+		DisplayName: Claw-Mark
+		Description: The white tiger has marked you for the hunt — once its claw-charge peaks, its next pounce becomes an empowered rend.
+	}
+
 	XuePoDanBuff: {
 		DisplayName: Xue Po Dan Buff
 		Description: Mods.AncientChineseMythology.Buffs.XuePoDanBuff.Description
@@ -2489,6 +2660,11 @@ Buffs: {
 	XuePoDanDebuff: {
 		DisplayName: Xue Po Dan Debuff
 		Description: Mods.AncientChineseMythology.Buffs.XuePoDanDebuff.Description
+	}
+
+	SoulErosion: {
+		DisplayName: Soul Erosion
+		Description: Your soul is being eroded by the void. Standing in Void Miasma stacks it; higher stacks burn life faster.
 	}
 
 	NingShenDanBuff: {
@@ -2616,6 +2792,11 @@ Buffs: {
 		Description: Mods.AncientChineseMythology.Buffs.EyeProj_Buff_1.Description
 	}
 
+	SoulHookBuff: {
+		DisplayName: Soul Hook
+		Description: Marked by Ma Mian. Strike Niu Tou to break the mark, or you will be hauled toward Ma Mian when it expires.
+	}
+
 	CorpsesesHandMinionBuff: {
 		DisplayName: Corpseses Hand Minion Buff
 		Description: Mods.AncientChineseMythology.Buffs.CorpsesesHandMinionBuff.Description
@@ -2661,6 +2842,11 @@ Buffs: {
 		Description: Mods.AncientChineseMythology.Buffs.InkscaledFlowFanDebuff.Description
 	}
 
+	PrimordialInkMark: {
+		DisplayName: Primordial Ink Mark
+		Description: Eroded by the primordial ink and takes extra vortex damage
+	}
+
 	SinMarkDebuff: {
 		DisplayName: Sin Mark Debuff
 		Description: Mods.AncientChineseMythology.Buffs.SinMarkDebuff.Description
@@ -2670,6 +2856,11 @@ Buffs: {
 		DisplayName: Verdict Seal Slow Debuff
 		Description: Mods.AncientChineseMythology.Buffs.VerdictSealSlowDebuff.Description
 	}
+
+	NetherDecreeMark: {
+		DisplayName: Nether Decree
+		Description: Marked by the Yin Emperor's decree. At full marks, your soul is bound in place.
+	}
 }
 
 WorldGen: {
@@ -2677,7 +2868,15 @@ WorldGen: {
 	IronArmorFlowerPass: Mods.AncientChineseMythology.WorldGen.IronArmorFlowerPass
 	BlazingFlowerPass: Mods.AncientChineseMythology.WorldGen.BlazingFlowerPass
 	BloodLingzhiPass: Mods.AncientChineseMythology.WorldGen.BloodLingzhiPass
+	BloodSeaBasinPass: Carving the underground blood sea basin...
 }
 
 "Keybinds.Toggle Cultivation Panel.DisplayName": Toggle  Cultivation  Panel
 Shop.MoonLord: Mods.AncientChineseMythology.Shop.MoonLord
+
+Corpses: {
+	RitualStart: Soul-Summoning Array
+	RitualBreak: Gate of Life — Array Broken!
+	RitualComplete: Soul Sacrifice Complete
+	CityGate: The City of the Wrongfully Dead Seals Shut
+}

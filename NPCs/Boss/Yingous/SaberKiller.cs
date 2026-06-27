@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent;
@@ -47,6 +48,13 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 Projectile.alpha = (int)MathHelper.Clamp(Projectile.alpha, 0, 255);
             }
         }
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            // 仅赢勾刀(武器·friendly)命中 NPC 时触发; Boss 自用为 hostile 不会进此分支。
+            WeaponVFX.AddScreenShake(target.Center, 2f);
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Fatal, scale: 1.4f, owner: Projectile.owner);
+        }
+
         public override bool PreDraw(ref Color lightColor) {
             Texture2D value = TextureAssets.Projectile[Type].Value;
             Color drawColor = Color.White * (Projectile.alpha / 255f);

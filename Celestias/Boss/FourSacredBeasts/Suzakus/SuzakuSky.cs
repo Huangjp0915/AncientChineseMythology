@@ -118,8 +118,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
             if (shouldBeActive) {
                 if (!active) Activate(Vector2.Zero);
                 bossHealthPercent = (float)boss.life / boss.lifeMax;
-                isPhase2 = bossHealthPercent < Suzaku.Phase2Threshold;
-                isPhase3 = bossHealthPercent < Suzaku.Phase3Threshold;
+                isPhase2 = bossHealthPercent < Suzaku.HpPhase2;
+                isPhase3 = bossHealthPercent < Suzaku.HpPhase3;
 
                 float target = isPhase3 ? MaxIntensity * 1.3f : isPhase2 ? MaxIntensity * 1.15f : MaxIntensity;
                 intensity = MathHelper.Lerp(intensity, target, FadeInSpeed);

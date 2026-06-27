@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -87,7 +88,7 @@ public class AberrantEyeballProj : ModProjectile
     private ref float Timer => ref Projectile.ai[0];
 
     public override void SetStaticDefaults() {
-        ProjectileID.Sets.TrailingMode[Type] = 2;
+        ProjectileID.Sets.TrailingMode[Type] = 0;
         ProjectileID.Sets.TrailCacheLength[Type] = 12;
     }
 
@@ -136,6 +137,10 @@ public class AberrantEyeballProj : ModProjectile
     public override void OnKill(int timeLeft) {
         SoundEngine.PlaySound(SoundID.NPCDeath1 with { Volume = 0.9f, Pitch = -0.2f }, Projectile.Center);
 
+        // 畸变眼球爆裂血肉演出
+        ACMWeaponBurst.Spawn(Projectile.GetSource_Death(), Projectile.Center,
+            ACMWeaponBurst.Profane, scale: 0.9f, owner: Projectile.owner);
+
         if (Main.myPlayer == Projectile.owner) {
             // 环形血液弹幕(8发)
             for (int i = 0; i < 8; i++) {
@@ -160,38 +165,19 @@ public class AberrantEyeballProj : ModProjectile
     }
 
     public override bool PreDraw(ref Color lightColor) {
+        // 统一双层暗红血肉拖尾
+        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 9f,
+            outerColor: new Color(74, 5, 26), innerColor: new Color(236, 72, 112),
+            uvScroll: -Main.GlobalTimeWrappedHourly * 1.5f);
+
+        // 畸变眼球脉冲辉光
+        float pulse = 0.35f + 0.10f * MathF.Sin(Timer * 0.25f);
+        WeaponVFX.DrawGlowBurst(Projectile.Center, 0.55f + pulse * 0.3f, new Color(180, 30, 25));
+
         SpriteBatch sb = Main.spriteBatch;
         Texture2D tex = Terraria.GameContent.TextureAssets.Projectile[ProjectileID.EyeLaser].Value;
-        Texture2D sg = ACMAsset.SoftGlow;
 
-        // SoftGlow拖尾 (Additive)
-        sb.End();
-        sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
-            DepthStencilState.None, RasterizerState.CullNone, null,
-            Main.GameViewMatrix.TransformationMatrix);
-
-        for (int i = 1; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
-            if (Projectile.oldPos[i] == Vector2.Zero) continue;
-            float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.35f;
-            sb.Draw(sg,
-                Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition,
-                null, new Color(200, 30, 20) * a, 0f,
-                sg.Size() * 0.5f,
-                0.22f - i * 0.01f, SpriteEffects.None, 0);
-        }
-
-        float pulse = 0.35f + 0.10f * MathF.Sin(Timer * 0.25f);
-        sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-            new Color(220, 40, 30) * 0.50f, 0f,
-            sg.Size() * 0.5f,
-            pulse, SpriteEffects.None, 0);
-
-        sb.End();
-        sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
-            DepthStencilState.None, RasterizerState.CullNone, null,
-            Main.GameViewMatrix.TransformationMatrix);
-
-        // 原版纹理本体
+        // 原版纹理本体 (当前活动批为项目默认批)
         sb.Draw(tex, Projectile.Center - Main.screenPosition, null,
             Color.White, Projectile.rotation,
             tex.Size() * 0.5f,

@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
 using AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs;
 using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
@@ -190,84 +191,81 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
             float fadeOut = MathHelper.Clamp((Duration - Timer) / 30f, 0f, 1f);
             float opacity = fadeIn * fadeOut;
 
-            // Draw the Rashomon Gate using Smoke spritesheet as rotating vortex
-            Texture2D smoke = ACMAsset.Smoke;
-            if (smoke != null) {
-                int frameSize = smoke.Width / 4;
-                int frame = ((int)(Timer * 0.3f)) % 16;
-                int frameX = frame % 4;
-                int frameY = frame / 4;
-                Rectangle sourceRect = new Rectangle(frameX * frameSize, frameY * frameSize, frameSize, frameSize);
-                Vector2 origin = new Vector2(frameSize / 2f, frameSize / 2f);
-
-                // Outer vortex layer (green-tinted)
-                Color outerColor = new Color(60, 180, 80) * opacity * 0.4f;
-                outerColor.A = 0;
-                Main.EntitySpriteDraw(smoke, Projectile.Center - Main.screenPosition, sourceRect, outerColor,
-                    Projectile.rotation, origin, 0.8f, SpriteEffects.None, 0);
-
-                // Inner vortex layer (crimson)
-                int frame2 = ((int)(Timer * 0.3f) + 8) % 16;
-                int f2X = frame2 % 4;
-                int f2Y = frame2 / 4;
-                Rectangle src2 = new Rectangle(f2X * frameSize, f2Y * frameSize, frameSize, frameSize);
-                Color innerColor = new Color(200, 30, 60) * opacity * 0.5f;
-                innerColor.A = 0;
-                Main.EntitySpriteDraw(smoke, Projectile.Center - Main.screenPosition, src2, innerColor,
-                    -Projectile.rotation * 1.3f, origin, 0.5f, SpriteEffects.None, 0);
+            // 罗生门: ArenaRunic 门框符纹 (牢笼罩模式, 赤红×鬼绿的虚空之门框)
+            Effect runic = ACMShaders.ArenaRunic;
+            if (runic != null) {
+                ACMShaders.WorldDecalParams(Projectile.Center, 150f, out Vector2 uv, out float rFrac, out float aspect);
+                runic.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+                runic.Parameters["uCenter"]?.SetValue(uv);
+                runic.Parameters["uRadius"]?.SetValue(rFrac);
+                runic.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(opacity * 0.9f, 0f, 1f));
+                runic.Parameters["uAspect"]?.SetValue(aspect);
+                runic.Parameters["uColorPrimary"]?.SetValue(new Color(210, 40, 70).ToVector4());
+                runic.Parameters["uColorSecondary"]?.SetValue(TelegraphColors.GhostGreen.ToVector4());
+                runic.Parameters["uRuneFreq"]?.SetValue(14f);
+                runic.Parameters["uMode"]?.SetValue(1f);  // 牢笼罩: 门框 + 穹网 = 虚空门框
+                runic.Parameters["uShape"]?.SetValue(0f);
+                ACMShaders.DrawScreenSpaceDecal(Main.spriteBatch, runic);
             }
 
-            // SoftGlow core - pulsing aura
+            // 门心暗渊 + 双色晕 (吞噬感的暗核)
             Texture2D softGlow = ACMAsset.SoftGlow;
             if (softGlow != null) {
                 Vector2 glowOrigin = softGlow.Size() / 2f;
                 float pulse = 1.5f + MathF.Sin(Timer * 0.15f) * 0.4f;
 
-                // Dark crimson core
-                Color coreColor = new Color(180, 20, 50) * opacity * 0.7f;
+                Color dark = new Color(16, 4, 14) * (opacity * 0.85f);
+                dark.A = 0;
+                Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, dark, 0f, glowOrigin, pulse, SpriteEffects.None, 0);
+
+                Color coreColor = new Color(180, 20, 50) * opacity * 0.55f;
                 coreColor.A = 0;
-                Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, coreColor,
-                    0f, glowOrigin, pulse, SpriteEffects.None, 0);
+                Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, coreColor, 0f, glowOrigin, pulse * 1.4f, SpriteEffects.None, 0);
 
-                // Green outer halo
-                Color haloColor = new Color(40, 120, 60) * opacity * 0.35f;
+                Color haloColor = new Color(40, 120, 60) * opacity * 0.3f;
                 haloColor.A = 0;
-                Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, haloColor,
-                    0f, glowOrigin, pulse * 2f, SpriteEffects.None, 0);
-            }
-
-            // ElectricArcSheet for tendril-like energy radiating outward
-            Texture2D arcSheet = ACMAsset.ElectricArcSheet;
-            if (arcSheet != null) {
-                int arcRows = 4;
-                int arcFrameHeight = arcSheet.Height / arcRows;
-                int currentRow = ((int)(Timer * 0.2f)) % arcRows;
-                Rectangle arcRect = new Rectangle(0, currentRow * arcFrameHeight, arcSheet.Width, arcFrameHeight);
-                Vector2 arcOrigin = new Vector2(0, arcFrameHeight / 2f);
-
-                for (int i = 0; i < 6; i++) {
-                    float angle = MathHelper.TwoPi / 6f * i + Timer * 0.02f;
-                    Color arcColor = Color.Lerp(new Color(200, 30, 60), new Color(60, 180, 80), MathF.Sin(Timer * 0.05f + i) * 0.5f + 0.5f) * opacity * 0.35f;
-                    arcColor.A = 0;
-                    float arcScale = 0.15f + MathF.Sin(Timer * 0.1f + i * 0.7f) * 0.03f;
-                    Main.EntitySpriteDraw(arcSheet, Projectile.Center - Main.screenPosition, arcRect, arcColor,
-                        angle, arcOrigin, new Vector2(arcScale, arcScale * 0.8f), SpriteEffects.None, 0);
-                }
+                Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, haloColor, 0f, glowOrigin, pulse * 2.2f, SpriteEffects.None, 0);
             }
 
             return false;
         }
 
+        // ★ 签名时刻: GenericWarp 虚空吞噬扭曲 (居中于门, 本武器唯一全屏后处理, 走名额仲裁)
+        public override void PostDraw(Color lightColor) {
+            if (Main.dedServ || Main.gameMenu)
+                return;
+            float fadeIn = MathHelper.Clamp(Timer / 20f, 0f, 1f);
+            float fadeOut = MathHelper.Clamp((Duration - Timer) / 30f, 0f, 1f);
+            float opacity = fadeIn * fadeOut;
+            float warp = opacity * 0.7f;
+            if (warp < 0.05f || !ACMShaders.RequestFullscreenSlot())
+                return;
+            Effect fx = ACMShaders.GenericWarp;
+            if (fx == null)
+                return;
+            ACMShaders.SetCommonParams(fx, Projectile.Center, warp);
+            fx.Parameters["uRadius"]?.SetValue(0.5f);
+            fx.Parameters["uWarpScale"]?.SetValue(1.5f);
+            fx.Parameters["uChroma"]?.SetValue(0.5f);
+            fx.Parameters["uRadialPull"]?.SetValue(0.8f); // 虚空吸入
+            fx.Parameters["uMode"]?.SetValue(4f);          // void 黑洞档
+            fx.Parameters["uTint"]?.SetValue(new Vector4(0.32f, 0.06f, 0.12f, 0.55f));
+            ACMShaders.ApplyScreenPostProcess(Main.spriteBatch, fx, bindNoise: true);
+        }
+
         public override void OnKill(int timeLeft) {
             SoundEngine.PlaySound(SoundID.Item14 with { Volume = 1.2f, Pitch = 0.3f }, Projectile.Center);
+            // 罗生门坍缩: 鬼绿审判泛光 + 冲击环
+            ACMWeaponBurst.Spawn(Projectile.GetSource_FromThis(), Projectile.Center, ACMWeaponBurst.GhostGreen, 2.2f, Projectile.owner);
+            WeaponVFX.AddScreenShake(Projectile.Center, 5f);
             // Gate collapse implosion
-            for (int i = 0; i < 40; i++) {
-                float angle = MathHelper.TwoPi / 40f * i;
+            for (int i = 0; i < 20; i++) {
+                float angle = MathHelper.TwoPi / 20f * i;
                 Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * Main.rand.NextFloat(8f, 16f);
                 Dust ring = Dust.NewDustPerfect(Projectile.Center, DustID.Shadowflame, vel, 60, default, Main.rand.NextFloat(2f, 3.5f));
                 ring.noGravity = true;
             }
-            for (int i = 0; i < 20; i++) {
+            for (int i = 0; i < 12; i++) {
                 Dust fire = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(30, 30),
                     DustID.CursedTorch, Main.rand.NextVector2Circular(6f, 6f), 60, default, Main.rand.NextFloat(2f, 3f));
                 fire.noGravity = true;
@@ -349,7 +347,8 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
             target.AddBuff(BuffID.CursedInferno, 300);
             target.AddBuff(BuffID.ShadowFlame, 300);
 
-            for (int i = 0; i < 12; i++) {
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center, ACMWeaponBurst.GhostGreen, 0.9f, Projectile.owner);
+            for (int i = 0; i < 6; i++) {
                 Vector2 vel = Main.rand.NextVector2Circular(8f, 8f);
                 Dust burst = Dust.NewDustPerfect(target.Center, DustID.Shadowflame, vel, 60, default, Main.rand.NextFloat(1.5f, 2.5f));
                 burst.noGravity = true;
@@ -357,43 +356,20 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            Texture2D arcSheet = ACMAsset.ElectricArcSheet;
-            if (arcSheet != null) {
-                int arcRows = 4;
-                int arcFrameHeight = arcSheet.Height / arcRows;
-                int currentRow = ((int)(Timer * 0.3f)) % arcRows;
-                Rectangle arcRect = new Rectangle(0, currentRow * arcFrameHeight, arcSheet.Width, arcFrameHeight);
-                Vector2 arcOrigin = new Vector2(0, arcFrameHeight / 2f);
+            // 噩梦触手: 双层 ribbon 拖尾 (外赤红 + 内鬼绿) —— 蠕动的咒触
+            WeaponVFX.DrawProjectileTrail(Projectile, 16f,
+                new Color(200, 30, 60) * 0.9f, new Color(120, 230, 140),
+                ACMAsset.SoftGlow, uvScroll: 0.08f, subdivisions: 3);
 
-                // Draw trail with arc sheet
-                for (int i = 0; i < Projectile.oldPos.Length; i += 2) {
-                    if (Projectile.oldPos[i] == Vector2.Zero) continue;
-                    float progress = 1f - (float)i / Projectile.oldPos.Length;
-                    Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                    Color trailColor = Color.Lerp(new Color(200, 30, 60), new Color(40, 180, 80), 1f - progress) * progress * 0.5f;
-                    trailColor.A = 0;
-                    float scale = 0.06f * progress;
-                    Main.EntitySpriteDraw(arcSheet, drawPos, arcRect, trailColor,
-                        Projectile.oldRot[i], arcOrigin, new Vector2(scale, scale * 0.6f), SpriteEffects.None, 0);
-                }
-            }
+            // BeamGrad 触手锋节 (沿冲刺方向的赤绿锐节)
+            Vector2 dir = Projectile.velocity.SafeNormalize(Vector2.UnitX);
+            ACMShaders.DrawBeam(Projectile.Center - dir * 56f, Projectile.Center + dir * 16f, 12f,
+                new Color(255, 70, 110), new Color(60, 170, 90), 0.85f,
+                flowSpeed: 2.4f, flowScale: 2.6f, coreSharp: 2.4f);
 
-            // SoftGlow for the tendril head
-            Texture2D softGlow = ACMAsset.SoftGlow;
-            if (softGlow != null) {
-                Vector2 origin = softGlow.Size() / 2f;
-                Color headColor = new Color(220, 40, 80) * 0.7f;
-                headColor.A = 0;
-                float pulse = 0.6f + MathF.Sin(Timer * 0.3f) * 0.15f;
-                Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, headColor,
-                    0f, origin, pulse, SpriteEffects.None, 0);
-
-                Color outerColor = new Color(80, 200, 100) * 0.3f;
-                outerColor.A = 0;
-                Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, outerColor,
-                    0f, origin, pulse * 1.5f, SpriteEffects.None, 0);
-            }
-
+            // 触手首端柔光
+            float pulse = 0.6f + MathF.Sin(Timer * 0.3f) * 0.15f;
+            WeaponVFX.DrawGlowBurst(Projectile.Center, pulse, new Color(220, 40, 80) * 0.7f);
             return false;
         }
 

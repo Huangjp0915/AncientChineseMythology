@@ -166,8 +166,8 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
             Vector2 origin = fogTex.Size() * 0.5f;
 
-            Color portalColor = new Color(80, 140, 220);
-            Color coreColor = new Color(150, 200, 255);
+            Color portalColor = new Color(120, 90, 200);   // 幽蓝紫 (地府主题)
+            Color coreColor = new Color(110, 230, 150);     // 鬼绿核心
 
             // 绘制外层光环
             for (int i = 0; i < 3; i++) {

@@ -143,7 +143,7 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
             Texture2D tex = TextureAssets.Npc[Type].Value;
             Vector2 origin = tex.Size() / 2f;
 
-            float soulPulse = 1f + MathF.Sin(soulPulsePhase) * 0.08f;
+            float soulPulse = (1f + MathF.Sin(soulPulsePhase) * 0.08f) * MergeScaleMul();
 
             SpriteEffects effects = NPC.spriteDirection == -1 ? SpriteEffects.FlipVertically : SpriteEffects.None;
 

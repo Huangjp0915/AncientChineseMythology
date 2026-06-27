@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Underworlds.Boss.NetherKitsunes.Items;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Boss.NetherKitsunes.Items;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.IO;
@@ -106,6 +107,15 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         private float fogIntensity = 0f;
         private float ghostFlicker = 1f;
         private float soulAuraRadius = 0f;
+
+        // V2 演出标量 (纯本地视觉, 衰减式; 经 NetherKitsuneFogSystem 发布绘制)
+        private float soulBloom = 0f;       // RadialBloom 魂火泛光 (大刺/相变/裁决)
+        private Color soulBloomColor = new Color(130, 210, 255);
+        private float runicTelegraph = 0f; // ArenaRunic 法阵预警
+        private Vector2 runicCenter;
+        private float runicRadius = 360f;
+        private bool runicLethal = false;
+        private int possessionBeat = 0;     // P3《虚实九影》节拍计数
 
         // 幻影系统
         private int phantomCount;
@@ -330,8 +340,28 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 
             UpdateAllTails();
 
+            // V2 演出标量衰减 + 发布到迷雾系统绘制
+            if (soulBloom > 0f) soulBloom = MathF.Max(0f, soulBloom - 0.03f);
+            if (runicTelegraph > 0f) runicTelegraph = MathF.Max(0f, runicTelegraph - 0.02f);
+            NetherKitsuneFogSystem.PublishBloom(NPC.Center, soulBloom, soulBloomColor);
+            NetherKitsuneFogSystem.PublishRunic(runicCenter, runicRadius, runicTelegraph, runicLethal);
+
             // 幽蓝色光照
             Lighting.AddLight(NPC.Center, new Vector3(0.3f, 0.5f, 0.8f) * (0.6f + fogIntensity * 0.4f));
+        }
+
+        /// <summary>触发一次魂火泛光 (世界点 + 强度 + 色)。</summary>
+        private void TriggerBloom(float strength, Color color) {
+            soulBloom = MathF.Max(soulBloom, strength);
+            soulBloomColor = color;
+        }
+
+        /// <summary>触发一次法阵预警 (世界点 + 世界半径 + 强度 + 是否致命转红)。</summary>
+        private void TriggerRunic(Vector2 center, float worldRadius, float strength, bool lethal) {
+            runicCenter = center;
+            runicRadius = worldRadius;
+            runicTelegraph = MathF.Max(runicTelegraph, strength);
+            runicLethal = lethal;
         }
 
         private void InitializeTails() {
@@ -445,7 +475,8 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 
             if (PhaseTimer == 100) {
                 SoundEngine.PlaySound(SoundID.Zombie105 with { Pitch = -0.5f, Volume = 1.5f }, NPC.Center);
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(10, 50);
+                ACMScreenShakeSystem.Add(14f); // 入场定格 (§C.2 ≤16)
+                TriggerBloom(0.9f, new Color(150, 200, 255));
             }
 
             if (PhaseTimer > 180) {
@@ -571,6 +602,8 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                             Tails[i].StartVoidPierceAttack(direction, 0.7f, 0.1f, 0.45f);
                         }
                         SoundEngine.PlaySound(SoundID.Item122 with { Pitch = 0.3f }, NPC.Center);
+                        // 虚空九刺收口法阵预警 (主题色, 非致命前摇)
+                        TriggerRunic(NPC.Center, 420f, 0.85f, false);
                     }
 
                     if (PhaseTimer > 42) {
@@ -582,8 +615,10 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                 case 2: // 穿刺阶段
                     if (PhaseTimer == 1) {
                         SoundEngine.PlaySound(SoundID.Item125 with { Pitch = -0.3f, Volume = 1.3f }, NPC.Center);
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(8, 12);
+                        ACMScreenShakeSystem.Add(5f); // 普通爆发 (§C.2 4-6)
                         NetherKitsuneFogSystem.CreateRipple(NPC.Center, 1.5f);
+                        TriggerBloom(0.85f, new Color(130, 210, 255));
+                        TriggerRunic(NPC.Center, 420f, 1f, true); // 刺出瞬间转红致命
                     }
 
                     if (PhaseTimer > 6) {
@@ -636,8 +671,9 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 
             if (PhaseTimer == 80) {
                 SoundEngine.PlaySound(SoundID.Zombie105 with { Pitch = 0.2f, Volume = 1.5f }, NPC.Center);
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(18, 50);
+                ACMScreenShakeSystem.Add(11f); // 相变 (§C.2 8-12)
                 NetherKitsuneFogSystem.CreateRipple(NPC.Center, 2f);
+                TriggerBloom(1f, new Color(150, 200, 255));
             }
 
             if (PhaseTimer > 110) {
@@ -664,7 +700,8 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 
             if (PhaseTimer == 60) {
                 SoundEngine.PlaySound(SoundID.ForceRoar with { Pitch = -0.5f, Volume = 1.8f }, NPC.Center);
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(25, 80);
+                ACMScreenShakeSystem.Add(14f); // 三阶段定格 (§C.2 ≤16 一次性)
+                TriggerBloom(1f, new Color(170, 150, 255));
             }
 
             if (PhaseTimer > 100) {
@@ -833,21 +870,14 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                             Tails[i].StartGhostStabAttack(target.Center, 0.25f);
                         }
 
-                        // 从幻影位置发射弹幕
+                        // 从幻影位置发射狐火魂弹 (灵界幻影攻击)
                         if (Main.netMode != NetmodeID.MultiplayerClient) {
                             for (int i = 0; i < phantomCount; i++) {
                                 Vector2 projVel = (target.Center - phantomPositions[i]).SafeNormalize(Vector2.Zero) * 10f;
-                                Projectile.NewProjectile(
-                                    NPC.GetSource_FromAI(),
-                                    phantomPositions[i],
-                                    projVel,
-                                    ProjectileID.CultistBossLightningOrb,
-                                    NPC.damage / 3,
-                                    2f,
-                                    Main.myPlayer
-                                );
+                                SpawnFoxfireSoul(phantomPositions[i], projVel, NPC.damage / 3, 0);
                             }
                         }
+                        TriggerBloom(0.7f, new Color(130, 210, 255));
                     }
 
                     if (PhaseTimer > 50) {
@@ -891,6 +921,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                             Tails[i].StartVoidPierceAttack(direction, 0.45f, 0.08f, 0.3f);
                         }
                         SoundEngine.PlaySound(SoundID.Item122 with { Pitch = 0.5f }, NPC.Center);
+                        TriggerRunic(NPC.Center, 440f, 0.85f, false);
                     }
 
                     if (PhaseTimer > 27) {
@@ -902,25 +933,19 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                 case 2:
                     if (PhaseTimer == 1) {
                         SoundEngine.PlaySound(SoundID.Item125 with { Pitch = 0f, Volume = 1.4f }, NPC.Center);
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(10, 10);
+                        ACMScreenShakeSystem.Add(5f); // 普通爆发 (§C.2 4-6)
                         NetherKitsuneFogSystem.CreateRipple(NPC.Center, 1.8f);
+                        TriggerRunic(NPC.Center, 440f, 1f, true);
 
-                        // 发射额外弹幕
+                        // 发射额外狐火魂弹 (虚空九刺尾随放射)
                         if (Main.netMode != NetmodeID.MultiplayerClient) {
                             for (int i = 0; i < TailCount; i++) {
                                 float angle = voidStrikeBaseAngle + MathHelper.TwoPi * i / TailCount;
                                 Vector2 projVel = angle.ToRotationVector2() * 9f;
-                                Projectile.NewProjectile(
-                                    NPC.GetSource_FromAI(),
-                                    NPC.Center,
-                                    projVel,
-                                    ProjectileID.CultistBossLightningOrb,
-                                    NPC.damage / 3,
-                                    2f,
-                                    Main.myPlayer
-                                );
+                                SpawnFoxfireSoul(NPC.Center, projVel, NPC.damage / 3, 0);
                             }
                         }
+                        TriggerBloom(0.8f, new Color(130, 210, 255));
                     }
 
                     if (PhaseTimer > 5) {
@@ -950,48 +975,125 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 
         #region 三阶段AI
 
+        /// <summary>
+        /// 三阶段附身狂暴 = 《虚实九影 Phantom Veil》可读编排 (取代旧版 AttackTimer%15 随机抽尾)。
+        /// 固定 3 节拍循环: A 顺序幽刺扫 → B 真身/幻影同步九刺 (仅真身实弹+冥律, 幻影幽紫虚弹无害) → C 全尾魂魄横扫。
+        /// 真身位置由法阵锚 + 柔白实弹反馈标记, 幻影为幽紫半透虚弹, 玩家靠"反馈缺失"读真。
+        /// </summary>
         private void RunPhase3Possession(Player target) {
-            // 附身狂暴 - 极速追击
-            Vector2 toTarget = target.Center - NPC.Center;
-            Vector2 desiredVelocity = toTarget.SafeNormalize(Vector2.Zero) * 14f;
-
-            NPC.velocity = Vector2.Lerp(NPC.velocity, desiredVelocity, 0.15f);
-
-            // 疯狂的幽灵闪烁
             ghostFlicker = 0.5f + 0.5f * MathF.Abs(MathF.Sin(globalTime * 8f));
 
-            // 疯狂攻击
-            if (AttackTimer % 15 == 0) {
-                int randomTail = Main.rand.Next(TailCount);
-                if (!Tails[randomTail].IsAttacking) {
-                    int attackType = Main.rand.Next(4);
-                    switch (attackType) {
-                        case 0:
-                            Tails[randomTail].StartGhostStabAttack(target.Center, 0.2f);
-                            break;
-                        case 1:
-                            Tails[randomTail].StartPhaseWhipAttack(target.Center, 0.3f);
-                            break;
-                        case 2:
-                            Tails[randomTail].StartPhantomSlamAttack(target.Center, 0.4f);
-                            break;
-                        case 3:
-                            Tails[randomTail].StartSoulSweepAttack(target.Center, MathHelper.PiOver4, 0.35f);
-                            break;
+            switch ((int)SubState) {
+                case 0:
+                    possessionBeat = 0;
+                    phantomCount = 0;
+                    SubState = 1;
+                    PhaseTimer = 0;
+                    break;
+
+                case 1: // Beat A —— 顺序幽刺扫 (telegraphed, 左→右逐尾)
+                    ChasePossession(target, 12f, 0.13f);
+                    if (PhaseTimer % 6 == 0) {
+                        int idx = (int)(PhaseTimer / 6) - 1;
+                        if (idx >= 0 && idx < TailCount && !Tails[idx].IsAttacking)
+                            Tails[idx].StartGhostStabAttack(target.Center, 0.25f);
                     }
-                }
+                    if (PhaseTimer > 60) {
+                        SubState = 2;
+                        PhaseTimer = 0;
+                    }
+                    break;
+
+                case 2: // Beat B —— 虚实九影: 真身柔白实弹九刺 + 幻影幽紫虚弹
+                    NPC.velocity *= 0.9f;
+                    NPC.Center = Vector2.Lerp(NPC.Center, target.Center + new Vector2(0, -260), 0.03f);
+
+                    if (PhaseTimer == 1) {
+                        phantomCount = Main.expertMode ? 4 : 3;
+                        for (int i = 0; i < phantomCount; i++) {
+                            float a = MathHelper.TwoPi * i / phantomCount + globalTime;
+                            phantomRotations[i] = a;
+                            phantomPositions[i] = target.Center + a.ToRotationVector2() * 360f;
+                            phantomAlpha[i] = 0f;
+                        }
+                        SoundEngine.PlaySound(SoundID.NPCDeath52 with { Pitch = 0.3f }, NPC.Center);
+                        ACMScreenShakeSystem.Add(6f);
+                        // 真身锚: 法阵预警标记真身, 给可读锚 (非致命主题色)
+                        TriggerRunic(NPC.Center, 300f, 0.9f, false);
+                    }
+
+                    // 幻影淡入 + 绕场
+                    for (int i = 0; i < phantomCount; i++) {
+                        phantomAlpha[i] = MathHelper.Clamp(PhaseTimer / 30f, 0f, 0.75f);
+                        phantomRotations[i] += 0.015f;
+                        phantomPositions[i] = target.Center + phantomRotations[i].ToRotationVector2() * 360f;
+                    }
+
+                    // 中段同步九刺
+                    if (PhaseTimer == 46) {
+                        float baseAng = (target.Center - NPC.Center).ToRotation();
+                        if (Main.netMode != NetmodeID.MultiplayerClient) {
+                            // 真身: 九方向柔白实弹 (实体伤害 + 冥律)
+                            for (int i = 0; i < TailCount; i++) {
+                                float ang = baseAng + MathHelper.TwoPi * i / TailCount;
+                                SpawnFoxfireSoul(NPC.Center, ang.ToRotationVector2() * 9.5f, NPC.damage / 3, 2);
+                            }
+                            // 幻影: 各朝玩家放射幽紫虚弹扇 (damage=0, 仅误导)
+                            for (int p = 0; p < phantomCount; p++) {
+                                float pbase = (target.Center - phantomPositions[p]).ToRotation();
+                                for (int k = -2; k <= 2; k++)
+                                    SpawnFoxfireSoul(phantomPositions[p], (pbase + k * 0.18f).ToRotationVector2() * 9f, 0, 1);
+                            }
+                        }
+                        SoundEngine.PlaySound(SoundID.Item122 with { Pitch = 0.6f }, NPC.Center);
+                        TriggerBloom(0.85f, new Color(235, 245, 255));
+                        ACMScreenShakeSystem.Add(6f);
+                    }
+
+                    // 幻影溶散淡出
+                    if (PhaseTimer > 70) {
+                        for (int i = 0; i < phantomCount; i++)
+                            phantomAlpha[i] = MathHelper.Clamp(phantomAlpha[i] - 0.06f, 0f, 0.75f);
+                    }
+
+                    if (PhaseTimer > 95) {
+                        phantomCount = 0;
+                        SubState = 3;
+                        PhaseTimer = 0;
+                    }
+                    break;
+
+                case 3: // Beat C —— 全尾魂魄横扫收束
+                    ChasePossession(target, 9f, 0.1f);
+                    if (PhaseTimer == 1) {
+                        for (int i = 0; i < TailCount; i++)
+                            Tails[i].StartSoulSweepAttack(target.Center, MathHelper.PiOver2 * 0.7f, 0.4f);
+                        SoundEngine.PlaySound(SoundID.NPCDeath52 with { Pitch = 0.1f }, NPC.Center);
+                    }
+                    if (PhaseTimer > 50) {
+                        possessionBeat++;
+                        int maxBeats = Main.expertMode ? 3 : 2;
+                        if (possessionBeat >= maxBeats)
+                            TransitionTo(BossPhase.Phase3_FinalJudgment);
+                        else {
+                            SubState = 1;
+                            PhaseTimer = 0;
+                        }
+                    }
+                    break;
             }
 
-            // 幽冥粒子
+            // 幽冥粒子 (保留氛围)
             if (Main.netMode != NetmodeID.Server && Main.rand.NextBool(2)) {
                 int dust = Dust.NewDust(NPC.Center + Main.rand.NextVector2Circular(60, 60), 0, 0, DustID.BlueTorch, 0, 0, 100, default, 2f);
                 Main.dust[dust].noGravity = true;
                 Main.dust[dust].velocity = Main.rand.NextVector2Circular(6, 6);
             }
+        }
 
-            if (PhaseTimer > 300) {
-                TransitionTo(BossPhase.Phase3_FinalJudgment);
-            }
+        private void ChasePossession(Player target, float speed, float lerp) {
+            Vector2 desired = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * speed;
+            NPC.velocity = Vector2.Lerp(NPC.velocity, desired, lerp);
         }
 
         private void RunPhase3FinalJudgment(Player target) {
@@ -1039,12 +1141,15 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                             Tails[i].StartVoidPierceAttack(direction, 0.35f, 0.06f, 0.25f);
                         }
                         SoundEngine.PlaySound(SoundID.Item122 with { Pitch = 0.7f }, NPC.Center);
+                        TriggerRunic(NPC.Center, 460f, 0.9f, false);
                     }
 
                     if (PhaseTimer == 21) {
                         SoundEngine.PlaySound(SoundID.Item125 with { Pitch = 0.2f, Volume = 1.5f }, NPC.Center);
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(12, 8);
+                        ACMScreenShakeSystem.Add(6f); // 普通爆发 (§C.2 4-6)
                         NetherKitsuneFogSystem.CreateRipple(NPC.Center, 2f);
+                        TriggerBloom(0.9f, new Color(235, 245, 255));
+                        TriggerRunic(NPC.Center, 460f, 1f, true);
                     }
 
                     if (PhaseTimer > 40) {
@@ -1075,19 +1180,30 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             Vector2 direction = tail.GetTipDirection();
 
             int damage = NPC.damage / 2;
-            float speed = 10f;
-
-            Projectile.NewProjectile(
-                NPC.GetSource_FromAI(),
-                tipPos,
-                direction * speed,
-                ProjectileID.CultistBossLightningOrb,
-                damage,
-                2f,
-                Main.myPlayer
-            );
+            SpawnFoxfireSoul(tipPos, direction * 10f, damage, 0);
 
             SoundEngine.PlaySound(SoundID.Item125 with { Pitch = 0.5f, Volume = 0.8f }, tipPos);
+        }
+
+        /// <summary>
+        /// 生成自定义幽冥狐火魂弹 (取代原版 CultistBossLightningOrb 占位)。
+        /// variant: 0=实狐火 1=虚幻影(damage 强制 0) 2=真身裁决。仅服务端/单机生成。
+        /// </summary>
+        private void SpawnFoxfireSoul(Vector2 pos, Vector2 vel, int damage, int variant) {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
+            if (variant == 1)
+                damage = 0; // 虚影无害, 只作真假误导
+            Projectile.NewProjectile(
+                NPC.GetSource_FromAI(),
+                pos,
+                vel,
+                ModContent.ProjectileType<NetherFoxfireSoul>(),
+                damage,
+                2f,
+                Main.myPlayer,
+                variant
+            );
         }
 
         #endregion
@@ -1101,6 +1217,32 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             DrawMainBody(spriteBatch, screenPos, drawColor);
 
             return false;
+        }
+
+        // ===== 全屏 screenTarget 限视冥雾扭曲 (GenericWarp · fog) — 占唯一全屏名额 (§C.4#2) =====
+        public override void PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+            if (Main.dedServ)
+                return;
+            // 浓雾随阶段升高 → 屏幕空间扭曲, 呼应"雾中真身难辨"(克制强度)
+            float warpI = fogIntensity * 0.5f;
+            if (warpI <= 0.02f)
+                return;
+            if (!ACMShaders.RequestFullscreenSlot())
+                return;
+
+            Effect fx = ACMShaders.GenericWarp;
+            if (fx == null)
+                return;
+
+            ACMShaders.SetCommonParams(fx, NPC.Center, warpI);
+            fx.Parameters["uRadius"]?.SetValue(1.0f);
+            fx.Parameters["uWarpScale"]?.SetValue(1.0f);
+            fx.Parameters["uChroma"]?.SetValue(0.2f);
+            fx.Parameters["uRadialPull"]?.SetValue(0f);
+            fx.Parameters["uMode"]?.SetValue(2f); // fog
+            fx.Parameters["uTint"]?.SetValue(new Vector4(TelegraphColors.NetherViolet.ToVector3(), 0.35f));
+
+            ACMShaders.ApplyScreenPostProcess(spriteBatch, fx);
         }
 
         private void DrawTrail(SpriteBatch spriteBatch, Vector2 screenPos) {
@@ -1132,31 +1274,28 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         }
 
         private void DrawPhantoms(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
-            if (Phase != BossPhase.Phase2_SpiritRealm)
+            // 灵界召唤(P2) 与 虚实九影(P3) 均展示幻影
+            if (Phase != BossPhase.Phase2_SpiritRealm && Phase != BossPhase.Phase3_Possession)
                 return;
 
             Texture2D texture = TextureAssets.Npc[Type].Value;
+            Vector2 origin = texture.Size() * 0.5f;
 
             for (int i = 0; i < phantomCount; i++) {
-                if (phantomAlpha[i] <= 0)
+                if (phantomAlpha[i] <= 0.01f)
                     continue;
 
-                Vector2 drawPos = phantomPositions[i] - screenPos;
-                // 幽蓝色幻影
-                Color phantomColor = new Color(100, 180, 255) * phantomAlpha[i];
+                // 幽紫虚影 + soul-dissolve: 由噪声 clip + 灼烧边重凝/溶散 (真假切换的仪式感)
+                float vis = MathHelper.Clamp(phantomAlpha[i] / 0.75f, 0f, 1f);
+                Color phantomColor = new Color(150, 130, 230) * phantomAlpha[i];
                 phantomColor.A = (byte)(phantomAlpha[i] * 150);
 
-                spriteBatch.Draw(
-                    texture,
-                    drawPos,
-                    null,
-                    phantomColor,
-                    NPC.rotation,
-                    texture.Size() / 2f,
-                    NPC.scale * 0.9f,
-                    SpriteEffects.None,
-                    0f
-                );
+                WeaponVFX.ApplyDissolveBurn(
+                    texture, phantomPositions[i], null, phantomColor,
+                    NPC.rotation, origin, NPC.scale * 0.9f,
+                    threshold: 1f - vis,
+                    intensity: MathHelper.Clamp(vis, 0.05f, 1f),
+                    edgeColor: new Color(180, 140, 255, 200), edgeWidth: 0.1f, noiseScale: 2.4f);
             }
         }
 

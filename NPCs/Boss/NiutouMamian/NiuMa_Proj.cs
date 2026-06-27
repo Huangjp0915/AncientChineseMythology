@@ -5,6 +5,7 @@ using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
+using AncientChineseMythology.Underworlds;
 
 namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
 {
@@ -149,13 +150,22 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
             Projectile.ignoreWater = true;
             Projectile.penetrate = -1;
             Projectile.Opacity = 0;
-            Main.instance.LoadProjectile(756);
             base.SetDefaults();
         }
         public override bool PreDraw(ref Color lightColor) {
-            var t = TextureAssets.Projectile[756].Value;
-            var f = new Rectangle(0, (t.Height / 6) * Projectile.frame, t.Width, t.Height / 6);
-            Main.spriteBatch.Draw(t, Projectile.Center - Main.screenPosition, f, Color.Red, Projectile.rotation, f.Size() * new Vector2(0, 0.5f), new Vector2(Projectile.scale, Projectile.Opacity), SpriteEffects.None, 0f);
+            // 牛头冲锋血雾轨迹 (致命, 红可用): 自定义拉伸光束替换原版占位弹 756。
+            if (Main.dedServ)
+                return false;
+            var t = ACMAsset.LightShot; // 64x64, 朝向右侧 (-->)
+            if (t == null)
+                return false;
+            var sb = Main.spriteBatch;
+            var origin = new Vector2(0, t.Height * 0.5f);
+            float len = 200f * Projectile.scale / t.Width; // 沿速度方向拉伸到 ~200px*scale
+            var glow = new Color(180, 30, 30); glow.A = 0;          // 暗血红外晕
+            var core = new Color(255, 120, 110); core.A = 0;        // 亮红芯
+            sb.Draw(t, Projectile.Center - Main.screenPosition, null, glow * Projectile.Opacity, Projectile.rotation, origin, new Vector2(len, Projectile.scale) * Projectile.Opacity, SpriteEffects.None, 0f);
+            sb.Draw(t, Projectile.Center - Main.screenPosition, null, core * Projectile.Opacity * 0.8f, Projectile.rotation, origin, new Vector2(len, Projectile.scale * 0.45f) * Projectile.Opacity, SpriteEffects.None, 0f);
             return false;
         }
         public override bool ShouldUpdatePosition() {
@@ -257,6 +267,8 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
             player = target;
             var p = Main.LocalPlayer.GetModPlayer<NiuMaPlayer>();
             p.SetScreenShake(8, 10);
+            ACMScreenShakeSystem.Add(6f);
+            UnderworldField.AddSoulErosion(target, 1); // 魂蚀: 锁链拖拽侵蚀
             Owner.ai[3] = 0;
             Owner.ai[0] = 111;
             base.OnHitPlayer(target, info);
@@ -264,6 +276,12 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
         private Player player = null;
         public override bool PreDraw(ref Color lightColor) {
             if (Owner != null && Owner.active) {
+                // 锁链发光梯度 (硬化 API): 飞出时致命红, 拖拽绑定时幽紫 (非致命)。
+                bool lethal = player == null && Projectile.ai[1] == 0;
+                Color beamCore = lethal ? TelegraphColors.Lethal : TelegraphColors.NetherViolet;
+                Color beamEdge = lethal ? new Color(110, 20, 28) : new Color(60, 30, 110);
+                ACMShaders.DrawBeam(Owner.Center, Projectile.Center, lethal ? 9f : 6f, beamCore, beamEdge, lethal ? 1f : 0.7f);
+
                 var t = TextureAssets.Chains[0].Value;
                 var sb = Main.spriteBatch;
                 sb.End();
@@ -334,12 +352,17 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
             base.OnHitPlayer(target, info);
         }
         public override bool PreDraw(ref Color lightColor) {
-            {
-                var t = TextureAssets.MagicPixel.Value;
-                var sb = Main.spriteBatch;
-                var rec = new Rectangle(0, 0, 36, 36);
-                sb.Draw(t, Projectile.Center - Main.screenPosition, rec, lightColor, 0, rec.Size() * .5f, 1, default, 0);
-            }
+            if (Main.dedServ)
+                return false;
+            // 牛头凝视眼束: 幽紫鬼眼发光 (追踪/凝视, 非红致命; 自定义替换占位 MagicPixel)。
+            var sb = Main.spriteBatch;
+            var glow = ACMAsset.SoftGlow;
+            var shot = ACMAsset.LightShot;
+            float pulse = 0.85f + 0.15f * (float)Math.Sin(Main.GlobalTimeWrappedHourly * 9f);
+            var halo = TelegraphColors.NetherViolet; halo.A = 0;
+            var pupil = new Color(220, 120, 255); pupil.A = 0;
+            sb.Draw(glow, Projectile.Center - Main.screenPosition, null, halo * 0.85f, 0, glow.Size() * .5f, 0.85f * pulse, default, 0);
+            sb.Draw(shot, Projectile.Center - Main.screenPosition, null, pupil * 0.9f, Projectile.velocity.ToRotation(), shot.Size() * .5f, 0.5f * pulse, default, 0);
             return false;
         }
 
@@ -406,6 +429,8 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
         public override void OnHitPlayer(Player target, Player.HurtInfo info) {
             Projectile.Kill();
 
+            UnderworldField.AddSoulErosion(target, 1); // 魂蚀: 马面灵魂弹
+
             if (Owner.life > Owner.lifeMax * .5f) {
                 target.AddBuff(39, 3 * 60);
             }
@@ -418,11 +443,17 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
             base.OnHitPlayer(target, info);
         }
         public override bool PreDraw(ref Color lightColor) {
-            {
-                var t = TextureAssets.Extra[ExtrasID.SharpTears].Value;
-                var sb = Main.spriteBatch;
-                sb.Draw(t, Projectile.Center - Main.screenPosition, null, Color.GreenYellow, Projectile.velocity.ToRotation() + MathHelper.PiOver2, t.Size() * .5f, .4f, default, 0);
-            }
+            if (Main.dedServ)
+                return false;
+            // 马面灵魂弹: 鬼绿芯 + 幽紫晕 (自定义替换占位 SharpTears)。
+            var sb = Main.spriteBatch;
+            var glow = ACMAsset.SoftGlow;
+            var o = glow.Size() * .5f;
+            float ro = Projectile.velocity.ToRotation() + MathHelper.PiOver2;
+            var edge = TelegraphColors.NetherViolet; edge.A = 0;
+            var core = TelegraphColors.GhostGreen; core.A = 0;
+            sb.Draw(glow, Projectile.Center - Main.screenPosition, null, edge * 0.75f, ro, o, 0.85f, default, 0);
+            sb.Draw(glow, Projectile.Center - Main.screenPosition, null, core * 0.95f, ro, o, 0.5f, default, 0);
             return false;
         }
 
@@ -524,17 +555,208 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
             base.OnHitPlayer(target, info);
         }
         public override bool PreDraw(ref Color lightColor) {
-
-            var t = TextureAssets.Projectile[540].Value;
+            if (Main.dedServ)
+                return false;
+            // 马面爆裂灵魂核 (致命大招): 鬼绿核 + 幽紫晕 (自定义替换占位弹 540)。
             var sb = Main.spriteBatch;
-            sb.Draw(t, Projectile.Center - Main.screenPosition, null, Color.GreenYellow, Projectile.velocity.ToRotation() + MathHelper.PiOver2, t.Size() * .5f, .7f, default, 0);
+            var glow = ACMAsset.SoftGlow;
+            var o = glow.Size() * .5f;
+            float pulse = 0.9f + 0.1f * (float)Math.Sin(Main.GlobalTimeWrappedHourly * 8f);
+            var edge = new Color(90, 45, 150); edge.A = 0;
+            var core = TelegraphColors.GhostGreen; core.A = 0;
+            sb.Draw(glow, Projectile.Center - Main.screenPosition, null, edge * 0.8f, 0, o, 1.7f * pulse, default, 0);
+            sb.Draw(glow, Projectile.Center - Main.screenPosition, null, core * 0.95f, 0, o, 0.95f * pulse, default, 0);
             if (Projectile.timeLeft <= 180 && Projectile.timeLeft > 0 && value > 1) {
-                var col = Color.GreenYellow;
-                col.A = 0;
-                sb.Draw(t, Projectile.Center - Main.screenPosition, null, col, Projectile.velocity.ToRotation() + MathHelper.PiOver2, t.Size() * .5f, 1.9f, default, 0);
-
+                var warn = TelegraphColors.GhostGreen; warn.A = 0;
+                sb.Draw(glow, Projectile.Center - Main.screenPosition, null, warn * 0.45f, 0, o, 2.6f, default, 0);
             }
             return false;
+        }
+    }
+
+    /// <summary>
+    /// 协同阶段「勾魂锁命连携」马面侧弹: 缓慢漂移的灵魂球。
+    /// 与牛头的可读冲锋车道交替释放 —— 牛头压线时马面静默, 牛头收招/铺垫时马面填充慢球,
+    /// 玩家须读牛头的车道 + 穿马面的慢球缝隙 (学配合, 非拼 DPS)。慢 = 可读预警 (§6.1 持续/站位)。
+    /// </summary>
+    public class SoulOrbProj : ModProjectile
+    {
+        public override string Texture => NiuMaHelper.NothingTex_Path;
+
+        public override void SetDefaults() {
+            Projectile.width = Projectile.height = 28;
+            Projectile.friendly = false;
+            Projectile.hostile = true;
+            Projectile.penetrate = 1;
+            Projectile.timeLeft = 360;
+            Projectile.aiStyle = -1;
+            Projectile.ignoreWater = true;
+            Projectile.tileCollide = false;
+        }
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.TrailingMode[Type] = 2;
+            ProjectileID.Sets.TrailCacheLength[Type] = 8;
+        }
+
+        public override void AI() {
+            // 极缓加速 + 微弱转向, 始终可读 (不追身)。
+            if (Projectile.velocity.Length() < 5.5f)
+                Projectile.velocity *= 1.012f;
+            Projectile.rotation += 0.04f;
+
+            if (!Main.dedServ && Main.rand.NextBool(2)) {
+                var d = Dust.NewDustPerfect(Projectile.Center, ModContent.DustType<Dust_2>());
+                d.color = TelegraphColors.GhostGreen;
+                d.alpha /= 5;
+                d.scale *= 2.4f;
+                d.velocity = Projectile.velocity * 0.2f;
+            }
+            Lighting.AddLight(Projectile.Center, 0.15f, 0.32f, 0.2f);
+        }
+
+        public override void OnHitPlayer(Player target, Player.HurtInfo info) {
+            UnderworldField.AddSoulErosion(target, 2); // 魂蚀
+            Projectile.Kill();
+        }
+
+        public override void OnKill(int timeLeft) {
+            if (Main.dedServ)
+                return;
+            for (int i = 0; i < 8; i++) {
+                var d = Dust.NewDustPerfect(Projectile.Center, ModContent.DustType<Dust_1>());
+                d.color = TelegraphColors.GhostGreen;
+                d.color.A = 255;
+                d.velocity = new Vector2(NiuMaHelper.Rand_Float(1.5f, 4f)).RotatedByRandom(8);
+            }
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+            var sb = Main.spriteBatch;
+            var glow = ACMAsset.SoftGlow;
+            var o = glow.Size() * .5f;
+            float pulse = 0.85f + 0.15f * (float)Math.Sin(Main.GlobalTimeWrappedHourly * 6f + Projectile.whoAmI);
+            var edge = TelegraphColors.NetherViolet; edge.A = 0;
+            var core = TelegraphColors.GhostGreen; core.A = 0;
+            sb.Draw(glow, Projectile.Center - Main.screenPosition, null, edge * 0.7f, 0, o, 1.3f * pulse, default, 0);
+            sb.Draw(glow, Projectile.Center - Main.screenPosition, null, core * 0.95f, 0, o, 0.7f * pulse, default, 0);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 同伴复生反制圈 —— 复活演出期间在「阵亡者尸位」生成的鬼绿光阵。
+    /// 玩家站入圈内 → 正在引魂的同伴 (channeler) 暂时<b>可被伤害</b> (取消 dontTakeDamage);
+    /// 离开 → 同伴重新无敌。给"必然翻盘的复生"一个清晰的处罚窗口 (站对位置才能打断)。
+    /// 颜色=翠玉/鬼绿 (正反馈安全区, 非红); 逻辑服务器权威, 绘制本地。
+    /// ai[0] = 引魂同伴 whoAmI。
+    /// </summary>
+    public class NiuMaRevivalCircle : ModProjectile
+    {
+        public override string Texture => NiuMaHelper.NothingTex_Path;
+
+        public const float WorldRadius = 190f;
+
+        private NPC Channeler {
+            get {
+                int who = (int)Projectile.ai[0];
+                return (who >= 0 && who < Main.maxNPCs) ? Main.npc[who] : null;
+            }
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = Projectile.height = 16;
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = 250;
+            Projectile.aiStyle = -1;
+            Projectile.ignoreWater = true;
+            Projectile.tileCollide = false;
+            Projectile.netImportant = true;
+        }
+
+        public override void AI() {
+            NPC ch = Channeler;
+            if (ch == null || !ch.active) {
+                Projectile.Kill();
+                return;
+            }
+
+            // 判定: 是否有玩家站在尸位光圈内 (逻辑服务器权威)。
+            bool playerInside = false;
+            foreach (var p in Main.player) {
+                if (p != null && p.active && !p.dead && p.Distance(Projectile.Center) < WorldRadius) {
+                    playerInside = true;
+                    break;
+                }
+            }
+            if (Main.netMode != NetmodeID.MultiplayerClient)
+                ch.dontTakeDamage = !playerInside; // 站圈内则同伴可被打断
+
+            if (!Main.dedServ) {
+                float a = Main.rand.NextFloat(MathHelper.TwoPi);
+                Vector2 pos = Projectile.Center + a.ToRotationVector2() * WorldRadius * Main.rand.NextFloat(0.7f, 1f);
+                var d = Dust.NewDustPerfect(pos, playerInside ? DustID.GreenFairy : DustID.GreenTorch);
+                d.noGravity = true;
+                d.velocity = (Projectile.Center - pos).SafeNormalize(Vector2.Zero) * 1.6f;
+                d.scale = playerInside ? 1.5f : 1.1f;
+                Lighting.AddLight(Projectile.Center, 0.1f, 0.4f, 0.22f);
+            }
+        }
+
+        public override void OnKill(int timeLeft) {
+            NPC ch = Channeler;
+            if (ch != null && ch.active && Main.netMode != NetmodeID.MultiplayerClient)
+                ch.dontTakeDamage = false;
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+            Effect fx = ACMShaders.ArenaRunic;
+            if (fx == null)
+                return false;
+
+            bool playerInside = false;
+            foreach (var p in Main.player) {
+                if (p != null && p.active && !p.dead && p.Distance(Projectile.Center) < WorldRadius) {
+                    playerInside = true;
+                    break;
+                }
+            }
+            float life = MathHelper.Clamp(Projectile.timeLeft / 30f, 0f, 1f);
+            float intensity = (playerInside ? 0.95f : 0.6f) * life;
+
+            ACMShaders.WorldDecalParams(Projectile.Center, WorldRadius, out Vector2 uv, out float radiusFrac, out float aspect);
+            Color primary = TelegraphColors.Safe;
+            Color secondary = TelegraphColors.GhostGreen;
+
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uCenter"]?.SetValue(uv);
+            fx.Parameters["uRadius"]?.SetValue(radiusFrac);
+            fx.Parameters["uIntensity"]?.SetValue(intensity);
+            fx.Parameters["uAspect"]?.SetValue(aspect);
+            fx.Parameters["uColorPrimary"]?.SetValue(primary.ToVector4());
+            fx.Parameters["uColorSecondary"]?.SetValue(secondary.ToVector4());
+            fx.Parameters["uRuneFreq"]?.SetValue(10f);
+            fx.Parameters["uMode"]?.SetValue(0f);
+            fx.Parameters["uShape"]?.SetValue(0f);
+
+            ACMShaders.DrawScreenSpaceDecal(Main.spriteBatch, fx, BlendState.Additive);
+            return false;
+        }
+    }
+
+    /// <summary>勾魂标记 (马面半血新机制): 纯可视/计时载体, 实际逻辑在 <see cref="NiuMaPlayer"/>。</summary>
+    public class SoulHookBuff : ModBuff
+    {
+        public override string Texture => NiuMaHelper.NothingTex_Path;
+        public override void SetStaticDefaults() {
+            Main.debuff[Type] = true;
+            Main.buffNoSave[Type] = true;
         }
     }
 }

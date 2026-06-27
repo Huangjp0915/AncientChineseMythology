@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.GameContent;
@@ -12,6 +13,9 @@ namespace AncientChineseMythology.Projectiles
         public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Summoning Staffs/BlackBearStaff"; //使用物品的纹理作为投射物的纹理
 
         private Player player => Main.player[Projectile.owner];
+
+        // 召唤显形计时 (纯视觉): 0→20 帧内由噪声溶解逐渐凝实
+        private int _materializeTimer;
 
         public override void SetDefaults() {
             ProjectileID.Sets.MinionSacrificable[Projectile.type] = true;
@@ -56,6 +60,9 @@ namespace AncientChineseMythology.Projectiles
         }
 
         public override void AI() {
+
+            if (_materializeTimer < 20)
+                _materializeTimer++;
 
             if (player.HasBuff<Buffs.BuffsBlackBearStaff>()) //如果玩家有召唤物BUFF
                 Projectile.timeLeft = 2; //维持住弹幕的时间
@@ -118,6 +125,16 @@ namespace AncientChineseMythology.Projectiles
                 texture.Width, //框的宽度(材质宽度即可)
                 texture.Height / Main.projFrames[Type]//框的高度（用材质高度除以帧数得到单帧高度）
                 );
+
+            // 召唤显形: 前 20 帧用噪声溶解 (threshold 1→0) 把熊体凝实, 暖青铜灼烧边
+            float materialize = MathHelper.Clamp(_materializeTimer / 20f, 0f, 1f);
+            if (materialize < 1f) {
+                WeaponVFX.ApplyDissolveBurn(texture, Projectile.Center, rectangle, Color.White,
+                    Projectile.rotation, new Vector2(texture.Width / 2f, texture.Height / 2f / Main.projFrames[Type]),
+                    1f, threshold: 1f - materialize, intensity: 1f,
+                    edgeColor: new Color(255, 200, 120), edgeWidth: 0.1f);
+                return false;
+            }
 
             //要制作拖尾，首先要建立一个for循环语句，从0一直走到轨迹末端
             //这里我们介绍一个能产生高亮叠加绘制的办法（A=0）

@@ -1,4 +1,5 @@
 ﻿using AncientChineseMythology.Celestias.PillarofTheHeavenes.Tiles;
+using AncientChineseMythology.Helpers;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
@@ -151,6 +152,9 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, dustType, vel.X, vel.Y, 80, default, 2f);
                 Main.dust[dust].noGravity = true;
             }
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.HeavenlyPillar, 1f, Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
@@ -160,6 +164,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
             float drawRot = Projectile.rotation + (Owner.direction > 0 ? 0 : MathHelper.PiOver2);
             // 发光
             Color glowColor = Color.Gold * 0.4f;
+            glowColor.A = 0;
             Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, glowColor, drawRot, origin, Projectile.scale * 1.2f, effects, 0f);
 
             // 主体
@@ -225,9 +230,17 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, dustType, vel.X, vel.Y, 80, default, 1.8f);
                 Main.dust[dust].noGravity = true;
             }
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.HeavenlyPillar, 1f, Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            // 天柱冲击波环 (扩张衰减)
+            float ringLife = 1f - Projectile.timeLeft / 40f;
+            WeaponVFX.DrawShockwaveRing(Projectile.Center, 12f + ringLife * 70f, 8f, 1f - ringLife,
+                new Color(255, 250, 210), new Color(150, 220, 235));
+
             Texture2D tex = TextureAssets.Projectile[Type].Value;
             Rectangle rectangle = tex.GetRectangle(2, 9);
             Vector2 origin = rectangle.Size() / 2f;

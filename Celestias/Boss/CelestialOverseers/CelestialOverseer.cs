@@ -16,25 +16,34 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
 {
     /// <summary>
-    /// 天庭观察者 - 月后大后期Boss
-    /// 天庭风格，神圣仙气的视觉效果
-    /// 一阶段：天眼注视，发射神圣光弹和光柱审判
-    /// 二阶段：天威降临，召唤星辰，神圣冲刺
-    /// 三阶段：天罚模式，终极神威
+    /// 天庭观察者 Celestial Overseer — 天庭入侵终局 Boss（信息/预判身份）。
+    ///
+    /// 与毗沙门彻底分家，自包含、不依赖任何共享攻击代码路径。签名机制：
+    ///  - 监视槽 Surveillance Meter：处于本体核心或 ≥4 只天眼的直视线内时上升，破除视线/击破临时眼泡时下降；满槽触发"审判标记"高伤预告射线。
+    ///  - 窥视相位 Scrying：本体静止 + 无敌约 5 秒，6 只天眼脱离投射"假预告"（纯尘），随后两次真实攻击；击破眼泡减少真实攻击数。
+    ///  - 入侵终局事件：50% / 25% 召唤"天庭陪审团"（每名玩家 1 个），20 秒内未清除则获得永久"裁决叠层"（+1 攻击强度/节拍）。
+    ///  - 三阶段"全知循环"Omniscient Cycle：固定 4 节拍循环（地标光柱阵 → 带安全扇区的旋转凝视扫描 → 有仆从则同步激光否则惩戒输出窗 → 休整），取代旧的喷弹 hub。
+    ///  - 签名十字激光：蓄力在地面显示完整十字预告，开火时天眼缓慢旋转激光面（靠横穿旋转方向闪避）。
     /// </summary>
     [AutoloadBossHead]
     internal class CelestialOverseer : ModNPC
     {
         #region 常量定义
 
-        /// <summary>二阶段血量百分比阈值</summary>
+        /// <summary>二阶段血量百分比阈值（规则改变：召唤持久天眼 + 加入位移/连射攻击族）</summary>
         public const float Phase2Threshold = 0.65f;
 
-        /// <summary>三阶段血量百分比阈值</summary>
+        /// <summary>三阶段血量百分比阈值（规则改变：进入全知循环，废除随机 hub）</summary>
         public const float Phase3Threshold = 0.30f;
 
         /// <summary>天眼环绕数量</summary>
         public const int CelestialEyeCount = 6;
+
+        /// <summary>陪审团事件持续时间（帧）</summary>
+        public const int JuryDuration = 1200;
+
+        /// <summary>裁决叠层上限</summary>
+        public const int MaxVerdictStacks = 3;
 
         #endregion
 
@@ -42,25 +51,19 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
 
         public enum BossPhase
         {
-            Intro,                  // 出场演出
-            Phase1_Observe,         // 一阶段：神圣观测，悬浮注视
-            Phase1_LightPillar,     // 一阶段：光柱审判
-            Phase1_HolyBarrage,     // 一阶段：神圣弹幕齐射
-            Phase1_DeathRay,        // 一阶段：天眼死光
-            Phase1_SweepingBeam,    // 一阶段：扫射光束
-            PhaseTransition_2,      // 一阶段到二阶段转换
-            Phase2_Descend,         // 二阶段：天威降临
-            Phase2_StarSummon,      // 二阶段：召唤星辰
-            Phase2_DivineDash,      // 二阶段：神圣冲刺
-            Phase2_HaloStorm,       // 二阶段：光环风暴
-            Phase2_EyeMinions,      // 二阶段：召唤天眼仆从
-            Phase2_CrossLaser,      // 二阶段：交叉激光
-            PhaseTransition_3,      // 二阶段到三阶段转换
-            Phase3_Punishment,      // 三阶段：天罚模式
-            Phase3_UltimateWrath,   // 三阶段：终极神威
-            Phase3_FinalJudgment,   // 三阶段：最终审判
-            Phase3_OmegaLaser,      // 三阶段：终极激光
-            Phase3_MinionSync       // 三阶段：仆从同步激光
+            Intro,
+            Observe,                // 短促重定位/休整节拍（无喷弹），选下一攻击
+            Attack_CrossLaser,      // 签名：地面十字预告 + 旋转激光面
+            Attack_PillarGrid,      // 地标光柱阵
+            Attack_GazeSweep,       // 带安全扇区的旋转凝视扫描
+            Attack_StarVolley,      // 预判星陨（提前量）
+            Attack_EyeBarrage,      // 二阶段：天眼序列连射（带注视线预告）
+            Attack_DivineDash,      // 二阶段：预告冲刺
+            Scrying,                // 窥视相位（静止无敌 + 假预告 + 真实攻击）
+            MarkedForJudgment,      // 监视满槽中断：单发高伤预告射线
+            JuryTrial,              // 入侵终局事件：天庭陪审团
+            PhaseTransition,        // 阶段过渡（无敌过渡帧）
+            P3_OmniscientCycle      // 三阶段：全知循环
         }
 
         #endregion
@@ -76,10 +79,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
         public ref float AttackTimer => ref NPC.ai[2];
         public ref float SubState => ref NPC.ai[3];
 
-        /// <summary>是否处于二阶段</summary>
         public bool IsPhase2 => NPC.life < NPC.lifeMax * Phase2Threshold;
-
-        /// <summary>是否处于三阶段</summary>
         public bool IsPhase3 => NPC.life < NPC.lifeMax * Phase3Threshold;
 
         // 私有状态
@@ -90,39 +90,70 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
         private bool didPhase2Transition;
         private bool didPhase3Transition;
 
-        // 天眼状态
+        // 监视槽机制
+        private float surveillanceMeter;     // 0..100
+        private bool judgmentQueued;         // 满槽后排队，于安全边界触发
+        private int judgmentCooldown;        // 触发后冷却（帧）
+        private bool[] eyeHasLOS;            // 每只天眼的视线状态（绘制用）
+        private bool coreHasLOS;
+
+        // 天眼轨道
         private float[] eyeAngles;
         private float[] eyeDistances;
         private float eyeOrbitSpeed;
+        private bool scryActive;            // 窥视中：本体天眼隐藏，改由眼泡 NPC 表现
 
-        // 攻击控制
+        // 窥视
+        private int scryRealRemaining;
+        private int eyesPopped;
+
+        // 陪审团事件
+        private bool didJury50;
+        private bool didJury25;
+        private int verdictStacks;
+        private int[] jurorIds = new int[8];
+        private int jurorCount;
+        private int juryTimer;
+
+        // 攻击序列
+        private int attackIndex;
+        private int attacksSinceScry;
+
+        // 十字激光
+        private float crossAngle;
+
+        // 光柱/凝视
+        private Vector2[] markerPositions = new Vector2[16];
+        private int markerCount;
+        private float gazeAngle;
+        private float gazeDir;
+        private float safeWedgeAngle;
+        private const float SafeWedgeHalf = 0.55f; // 安全扇区半角（弧度）
+
+        // 冲刺
         private Vector2 dashTarget;
         private Vector2 dashVelocity;
         private int dashCount;
         private int maxDashCount;
 
-        // 光柱控制
-        private Vector2[] pillarPositions;
-        private float pillarChargeProgress;
+        // 全知循环
+        private int cycleBeat;
+        private bool beatFired;
+        private bool beatFired2;
 
-        // 星辰控制
-        private int starCount;
-        private Vector2[] starPositions;
-
-        // 激光控制
-        private float laserAngle;
-        private float laserSweepDirection;
-        private int laserChargeTime;
-
-        // 仆从控制
-        private int[] eyeMinionIds;
-        private bool hasSpawnedMinions;
-
-        // 视觉效果
+        // 视觉
         private float haloRotation;
-        private float haloScale;
-        private float glowIntensity;
+        private float haloScale = 1f;
+        private float glowIntensity = 1f;
         private float divineAuraAlpha;
+
+        // V2 演出叠加层（纯本地视觉, 由同步的 surveillanceMeter/Phase 推导, 无需额外 net 同步）
+        private float surveillanceWarp;   // GenericWarp(rift) 全屏折射扭曲强度 0~1
+        private float vignettePublish;    // 监视压迫暗角(平滑) 0~1
+        private float runicPublish;       // 全视眼穹/审判庭法阵(平滑) 0~1
+        private float bloomPulse;         // 处决/十字开火加性泛光脉冲 0~1
+        /// <summary>监视折射主题蓝(冷钢监视色)。</summary>
+        private static readonly Color SurveillanceBlue = new(90, 150, 215);
 
         #endregion
 
@@ -143,7 +174,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
             NPC.height = 120;
             NPC.damage = 150;
             NPC.defense = 80;
-            NPC.lifeMax = 1200000; // 月后级别血量
+            NPC.lifeMax = 1200000;
             NPC.HitSound = SoundID.NPCHit5;
             NPC.DeathSound = SoundID.NPCDeath14;
             NPC.value = Item.buyPrice(platinum: 2);
@@ -153,7 +184,6 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
             NPC.npcSlots = 20f;
             NPC.aiStyle = -1;
 
-            // 调整难度
             if (Main.expertMode) {
                 NPC.lifeMax = (int)(NPC.lifeMax * 1.35f);
                 NPC.damage = (int)(NPC.damage * 1.25f);
@@ -163,34 +193,16 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
                 NPC.damage = (int)(NPC.damage * 1.35f);
             }
 
-            Music = MusicID.LunarBoss; // 可替换为自定义音乐
+            Music = MusicID.LunarBoss;
         }
 
         public override void OnSpawn(IEntitySource source) {
             seed = Main.rand.Next(10000);
             random = new Random(seed);
 
-            // 初始化天眼
-            eyeAngles = new float[CelestialEyeCount];
-            eyeDistances = new float[CelestialEyeCount];
-            for (int i = 0; i < CelestialEyeCount; i++) {
-                eyeAngles[i] = MathHelper.TwoPi * i / CelestialEyeCount;
-                eyeDistances[i] = 150f + Main.rand.NextFloat(-20f, 20f);
-            }
+            InitializeEyes();
             eyeOrbitSpeed = 0.02f;
 
-            // 初始化光柱
-            pillarPositions = new Vector2[8];
-
-            // 初始化星辰
-            starPositions = new Vector2[12];
-
-            // 初始化仆从
-            eyeMinionIds = new int[4];
-            hasSpawnedMinions = false;
-
-            // 初始化视觉效果
-            haloRotation = 0f;
             haloScale = 1f;
             glowIntensity = 1f;
             divineAuraAlpha = 0f;
@@ -205,22 +217,46 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
 
         public override void SendExtraAI(BinaryWriter writer) {
             writer.Write(seed);
-            writer.Write((int)Phase);
             writer.Write(globalTime);
+            writer.Write(surveillanceMeter);
+            writer.Write(judgmentQueued);
+            writer.Write(judgmentCooldown);
+            writer.Write(verdictStacks);
             writer.Write(didPhase2Transition);
             writer.Write(didPhase3Transition);
-            writer.WriteVector2(dashTarget);
+            writer.Write(didJury50);
+            writer.Write(didJury25);
+            writer.Write(attackIndex);
+            writer.Write(attacksSinceScry);
+            writer.Write(cycleBeat);
+            writer.Write(crossAngle);
+            writer.Write(gazeAngle);
+            writer.Write(safeWedgeAngle);
+            writer.WriteVector2(dashVelocity);
             writer.Write(dashCount);
+            writer.Write(scryActive);
         }
 
         public override void ReceiveExtraAI(BinaryReader reader) {
             seed = reader.ReadInt32();
-            Phase = (BossPhase)reader.ReadInt32();
             globalTime = reader.ReadSingle();
+            surveillanceMeter = reader.ReadSingle();
+            judgmentQueued = reader.ReadBoolean();
+            judgmentCooldown = reader.ReadInt32();
+            verdictStacks = reader.ReadInt32();
             didPhase2Transition = reader.ReadBoolean();
             didPhase3Transition = reader.ReadBoolean();
-            dashTarget = reader.ReadVector2();
+            didJury50 = reader.ReadBoolean();
+            didJury25 = reader.ReadBoolean();
+            attackIndex = reader.ReadInt32();
+            attacksSinceScry = reader.ReadInt32();
+            cycleBeat = reader.ReadInt32();
+            crossAngle = reader.ReadSingle();
+            gazeAngle = reader.ReadSingle();
+            safeWedgeAngle = reader.ReadSingle();
+            dashVelocity = reader.ReadVector2();
             dashCount = reader.ReadInt32();
+            scryActive = reader.ReadBoolean();
 
             random ??= new Random(seed);
         }
@@ -262,6 +298,14 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
             }
         }
 
+        /// <summary>窥视眼泡被击破时调用（降低监视槽 + 减少本轮真实攻击数）。</summary>
+        public void OnScryingEyePopped() {
+            surveillanceMeter = Math.Max(0f, surveillanceMeter - 30f);
+            eyesPopped++;
+            if (scryRealRemaining > 1) scryRealRemaining--;
+            NPC.netUpdate = true;
+        }
+
         #endregion
 
         #region AI主循环
@@ -270,12 +314,8 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
             random ??= new Random(seed);
             globalTime += 1f / 60f;
 
-            // 初始化天眼（如果需要）
-            if (eyeAngles == null) {
-                InitializeEyes();
-            }
+            if (eyeAngles == null) InitializeEyes();
 
-            // 检测目标
             NPC.TargetClosest();
             Player target = Main.player[NPC.target];
 
@@ -283,99 +323,90 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
                 NPC.TargetClosest();
                 target = Main.player[NPC.target];
                 if (!target.active || target.dead) {
-                    // 没有有效目标，升天离开
                     NPC.velocity.Y -= 0.8f;
                     NPC.EncourageDespawn(30);
                     return;
                 }
             }
 
-            // 检查阶段转换
-            CheckPhaseTransition();
+            // 默认可受击；无敌状态由各相位自行开启
+            NPC.dontTakeDamage = false;
 
-            // 更新视觉效果
             UpdateVisualEffects();
-
-            // 更新天眼轨道
             UpdateCelestialEyes();
+            UpdateSurveillance(target);
+            CheckPhaseTransition();
 
             PhaseTimer++;
             AttackTimer++;
 
-            // 根据当前阶段执行AI
             switch (Phase) {
-                case BossPhase.Intro:
-                    RunIntro(target);
-                    break;
-                case BossPhase.Phase1_Observe:
-                    RunPhase1Observe(target);
-                    break;
-                case BossPhase.Phase1_LightPillar:
-                    RunPhase1LightPillar(target);
-                    break;
-                case BossPhase.Phase1_HolyBarrage:
-                    RunPhase1HolyBarrage(target);
-                    break;
-                case BossPhase.Phase1_DeathRay:
-                    RunPhase1DeathRay(target);
-                    break;
-                case BossPhase.Phase1_SweepingBeam:
-                    RunPhase1SweepingBeam(target);
-                    break;
-                case BossPhase.PhaseTransition_2:
-                    RunPhaseTransition2(target);
-                    break;
-                case BossPhase.Phase2_Descend:
-                    RunPhase2Descend(target);
-                    break;
-                case BossPhase.Phase2_StarSummon:
-                    RunPhase2StarSummon(target);
-                    break;
-                case BossPhase.Phase2_DivineDash:
-                    RunPhase2DivineDash(target);
-                    break;
-                case BossPhase.Phase2_HaloStorm:
-                    RunPhase2HaloStorm(target);
-                    break;
-                case BossPhase.Phase2_EyeMinions:
-                    RunPhase2EyeMinions(target);
-                    break;
-                case BossPhase.Phase2_CrossLaser:
-                    RunPhase2CrossLaser(target);
-                    break;
-                case BossPhase.PhaseTransition_3:
-                    RunPhaseTransition3(target);
-                    break;
-                case BossPhase.Phase3_Punishment:
-                    RunPhase3Punishment(target);
-                    break;
-                case BossPhase.Phase3_UltimateWrath:
-                    RunPhase3UltimateWrath(target);
-                    break;
-                case BossPhase.Phase3_FinalJudgment:
-                    RunPhase3FinalJudgment(target);
-                    break;
-                case BossPhase.Phase3_OmegaLaser:
-                    RunPhase3OmegaLaser(target);
-                    break;
-                case BossPhase.Phase3_MinionSync:
-                    RunPhase3MinionSync(target);
-                    break;
+                case BossPhase.Intro: RunIntro(target); break;
+                case BossPhase.Observe: RunObserve(target); break;
+                case BossPhase.Attack_CrossLaser: RunCrossLaser(target); break;
+                case BossPhase.Attack_PillarGrid: RunPillarGrid(target); break;
+                case BossPhase.Attack_GazeSweep: RunGazeSweep(target); break;
+                case BossPhase.Attack_StarVolley: RunStarVolley(target); break;
+                case BossPhase.Attack_EyeBarrage: RunEyeBarrage(target); break;
+                case BossPhase.Attack_DivineDash: RunDivineDash(target); break;
+                case BossPhase.Scrying: RunScrying(target); break;
+                case BossPhase.MarkedForJudgment: RunMarkedForJudgment(target); break;
+                case BossPhase.JuryTrial: RunJuryTrial(target); break;
+                case BossPhase.PhaseTransition: RunPhaseTransition(target); break;
+                case BossPhase.P3_OmniscientCycle: RunOmniscientCycle(target); break;
             }
 
-            // 神圣光照
             Lighting.AddLight(NPC.Center, new Vector3(1f, 0.95f, 0.7f) * glowIntensity);
-
-            // 天眼光照
             for (int i = 0; i < CelestialEyeCount; i++) {
-                Vector2 eyePos = GetEyePosition(i);
-                Lighting.AddLight(eyePos, new Vector3(0.8f, 0.9f, 1f) * 0.5f);
+                Lighting.AddLight(GetEyePosition(i), new Vector3(0.8f, 0.9f, 1f) * 0.5f);
             }
+
+            UpdatePresentation();
+        }
+
+        /// <summary>
+        /// V2 演出叠加：由监视槽/相位推导屏幕折射、监视暗角、全视法阵、泛光脉冲, 并发布给
+        /// <see cref="OverseerSurveillanceScreenSystem"/>。纯本地视觉, 全部从已同步状态派生, 不新增 net 同步。
+        /// </summary>
+        private void UpdatePresentation() {
+            float meterFrac = surveillanceMeter / 100f;
+
+            // —— 监视压迫暗角: 随槽收紧; 窥视/终局相位额外加压 ——
+            float targetVig = meterFrac * 0.7f;
+            bool finale = Phase == BossPhase.JuryTrial || Phase == BossPhase.MarkedForJudgment;
+            if (Phase == BossPhase.Scrying) targetVig = System.Math.Max(targetVig, 0.55f);
+            if (finale) targetVig = System.Math.Max(targetVig, 0.85f);
+            if (IsPhase3) targetVig = System.Math.Max(targetVig, 0.4f);
+            vignettePublish = MathHelper.Lerp(vignettePublish, targetVig, 0.06f);
+
+            // —— GenericWarp(rift) 全屏折射: "被扫描"感, 窥视/审判达峰 (走单一全屏名额, 见 PostDraw) ——
+            float targetWarp = meterFrac * 0.35f;
+            if (Phase == BossPhase.Scrying) targetWarp = System.Math.Max(targetWarp, 0.7f);
+            if (Phase == BossPhase.MarkedForJudgment) targetWarp = System.Math.Max(targetWarp, 0.9f);
+            surveillanceWarp = MathHelper.Lerp(surveillanceWarp, targetWarp, 0.08f);
+
+            // —— 全视眼穹/审判庭法阵 ——
+            float runic = 0f;
+            float runicRadius = 360f;
+            bool dome = false;
+            if (Phase == BossPhase.Scrying) { runic = 0.6f; runicRadius = 380f; }
+            else if (Phase == BossPhase.JuryTrial) { runic = 0.9f; runicRadius = 460f; dome = true; }
+            else if (Phase == BossPhase.P3_OmniscientCycle) { runic = 0.35f; runicRadius = 420f; }
+            runicPublish = MathHelper.Lerp(runicPublish, runic, 0.08f);
+
+            // —— 泛光脉冲衰减 ——
+            bloomPulse *= 0.9f;
+
+            float warm = MathHelper.Clamp(meterFrac, 0f, 1f);
+            if (finale) warm = 1f;
+
+            OverseerSurveillanceScreenSystem.Publish(NPC.Center, globalTime, vignettePublish, warm, runicPublish, runicRadius, dome);
         }
 
         private void InitializeEyes() {
             eyeAngles = new float[CelestialEyeCount];
             eyeDistances = new float[CelestialEyeCount];
+            eyeHasLOS = new bool[CelestialEyeCount];
             for (int i = 0; i < CelestialEyeCount; i++) {
                 eyeAngles[i] = MathHelper.TwoPi * i / CelestialEyeCount;
                 eyeDistances[i] = 150f;
@@ -385,13 +416,11 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
         private void UpdateCelestialEyes() {
             for (int i = 0; i < CelestialEyeCount; i++) {
                 eyeAngles[i] += eyeOrbitSpeed;
-
-                // 轻微的距离波动
                 float baseDistance = 150f;
                 if (IsPhase2) baseDistance = 180f;
                 if (IsPhase3) baseDistance = 200f;
-
-                eyeDistances[i] = baseDistance + MathF.Sin(globalTime * 2f + i * 0.5f) * 15f;
+                if (scryActive) baseDistance = 320f; // 窥视时眼睛外扩（脱离）
+                eyeDistances[i] = MathHelper.Lerp(eyeDistances[i], baseDistance + MathF.Sin(globalTime * 2f + i * 0.5f) * 15f, 0.1f);
             }
         }
 
@@ -403,10 +432,7 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
         }
 
         private void UpdateVisualEffects() {
-            // 光环旋转
             haloRotation += 0.01f;
-
-            // 根据阶段调整光环
             if (IsPhase3) {
                 haloScale = 1.5f + MathF.Sin(globalTime * 4f) * 0.2f;
                 glowIntensity = 1.5f;
@@ -424,17 +450,62 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
             }
         }
 
-        private void CheckPhaseTransition() {
-            if (!didPhase2Transition && IsPhase2 && !IsPhase3 &&
-                Phase != BossPhase.PhaseTransition_2 && Phase != BossPhase.Intro) {
-                TransitionTo(BossPhase.PhaseTransition_2);
-                didPhase2Transition = true;
+        /// <summary>监视槽：处于核心或 ≥4 只天眼的直视线内时上升；满槽排队审判。</summary>
+        private void UpdateSurveillance(Player target) {
+            if (judgmentCooldown > 0) judgmentCooldown--;
+
+            coreHasLOS = Collision.CanHitLine(NPC.Center, 1, 1, target.Center, 1, 1);
+            int eyesWithLOS = 0;
+            for (int i = 0; i < CelestialEyeCount; i++) {
+                Vector2 eyePos = GetEyePosition(i);
+                bool los = Collision.CanHitLine(eyePos, 1, 1, target.Center, 1, 1);
+                eyeHasLOS[i] = los;
+                if (los) eyesWithLOS++;
             }
 
-            if (!didPhase3Transition && IsPhase3 &&
-                Phase != BossPhase.PhaseTransition_3 && Phase != BossPhase.PhaseTransition_2 && Phase != BossPhase.Intro) {
-                TransitionTo(BossPhase.PhaseTransition_3);
+            bool watched = coreHasLOS || eyesWithLOS >= 4;
+
+            // 窥视/陪审/过渡/审判时不积累监视
+            bool accumulate = Phase != BossPhase.Scrying && Phase != BossPhase.JuryTrial
+                && Phase != BossPhase.PhaseTransition && Phase != BossPhase.MarkedForJudgment
+                && Phase != BossPhase.Intro;
+
+            if (accumulate && judgmentCooldown <= 0) {
+                float rise = 0.55f;
+                if (IsPhase2) rise += 0.15f;
+                if (IsPhase3) rise += 0.20f;
+                rise += verdictStacks * 0.10f;
+
+                if (watched) surveillanceMeter += rise;
+                else surveillanceMeter -= 1.25f; // 破除视线快速回落，奖励走位
+            }
+
+            surveillanceMeter = MathHelper.Clamp(surveillanceMeter, 0f, 100f);
+
+            if (surveillanceMeter >= 100f && !judgmentQueued && judgmentCooldown <= 0) {
+                judgmentQueued = true;
+                if (Main.netMode != NetmodeID.MultiplayerClient) NPC.netUpdate = true;
+            }
+        }
+
+        private bool IsInterruptible() {
+            return Phase == BossPhase.Observe
+                || Phase == BossPhase.Attack_CrossLaser
+                || Phase == BossPhase.Attack_PillarGrid
+                || Phase == BossPhase.Attack_GazeSweep
+                || Phase == BossPhase.Attack_StarVolley
+                || Phase == BossPhase.Attack_EyeBarrage
+                || Phase == BossPhase.Attack_DivineDash;
+        }
+
+        private void CheckPhaseTransition() {
+            if (!didPhase2Transition && IsPhase2 && !IsPhase3 && IsInterruptible()) {
+                didPhase2Transition = true;
+                TransitionTo(BossPhase.PhaseTransition);
+            }
+            else if (!didPhase3Transition && IsPhase3 && IsInterruptible()) {
                 didPhase3Transition = true;
+                TransitionTo(BossPhase.PhaseTransition);
             }
         }
 
@@ -443,7 +514,20 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
             PhaseTimer = 0;
             AttackTimer = 0;
             SubState = 0;
-            NPC.netUpdate = true;
+            beatFired = false;
+            beatFired2 = false;
+            if (Main.netMode != NetmodeID.MultiplayerClient) NPC.netUpdate = true;
+        }
+
+        /// <summary>返回主循环：三阶段进入全知循环，否则进入观测节拍。</summary>
+        private void ReturnToHub() {
+            if (IsPhase3) {
+                cycleBeat = 0;
+                TransitionTo(BossPhase.P3_OmniscientCycle);
+            }
+            else {
+                TransitionTo(BossPhase.Observe);
+            }
         }
 
         #endregion
@@ -453,24 +537,18 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
         private void RunIntro(Player target) {
             introProgress = MathHelper.Clamp(PhaseTimer / 180f, 0f, 1f);
 
-            // 从天而降，带有神圣光芒
             Vector2 introOffset = new Vector2(0, -600) * (1f - ACMUtils.SineInOut(introProgress));
             Vector2 desiredPos = target.Center + new Vector2(0, -350) + introOffset;
-
             NPC.Center = Vector2.Lerp(NPC.Center, desiredPos, 0.03f);
             NPC.velocity *= 0.9f;
 
-            // 神圣粒子效果
             if (Main.netMode != NetmodeID.Server && PhaseTimer % 2 == 0) {
-                // 金色神圣光粒
                 for (int i = 0; i < 4; i++) {
                     Vector2 dustPos = NPC.Center + Main.rand.NextVector2CircularEdge(150, 150) * (1f - introProgress);
                     int dust = Dust.NewDust(dustPos, 0, 0, DustID.GoldCoin, 0, 0, 100, default, 1.8f);
                     Main.dust[dust].noGravity = true;
                     Main.dust[dust].velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 4f;
                 }
-
-                // 星光粒子
                 for (int i = 0; i < 2; i++) {
                     Vector2 dustPos = NPC.Center + Main.rand.NextVector2Circular(100, 100);
                     int dust = Dust.NewDust(dustPos, 0, 0, DustID.YellowStarDust, 0, -2f, 150, default, 1.2f);
@@ -478,751 +556,337 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
                 }
             }
 
-            // 神圣音效
-            if (PhaseTimer == 60) {
+            if (PhaseTimer == 60)
                 SoundEngine.PlaySound(SoundID.Item29 with { Pitch = -0.3f, Volume = 1.5f }, NPC.Center);
-            }
-
             if (PhaseTimer == 120) {
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.2f }, NPC.Center);
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(15, 50);
+                ACMScreenShakeSystem.Add(14f);
             }
 
-            if (PhaseTimer > 180) {
-                TransitionTo(BossPhase.Phase1_Observe);
-            }
+            if (PhaseTimer > 180) TransitionTo(BossPhase.Observe);
         }
 
         #endregion
 
-        #region 一阶段AI
-
-        private void RunPhase1Observe(Player target) {
-            // 神圣悬浮，保持在玩家上方
-            Vector2 hoverPos = target.Center + new Vector2(0, -400);
-
-            // 添加优雅的悬浮晃动
-            hoverPos.X += MathF.Sin(globalTime * 1.2f) * 60f;
-            hoverPos.Y += MathF.Sin(globalTime * 1.8f) * 25f;
-
-            Vector2 toHover = hoverPos - NPC.Center;
-            NPC.velocity = Vector2.Lerp(NPC.velocity, toHover * 0.025f, 0.1f);
-
-            // 天眼缓慢观测旋转
-            eyeOrbitSpeed = 0.015f;
-
-            // 定期发射神圣光弹
-            float shotCooldown = Main.expertMode ? 35f : 45f;
-            if (AttackTimer % shotCooldown == 0) {
-                FireHolyOrbs(target);
-            }
-
-            // 定期从天眼发射追踪弹
-            if (AttackTimer % 80 == 0) {
-                FireEyeBeams(target);
-            }
-
-            // 随机切换到其他攻击
-            if (PhaseTimer > 300) {
-                int nextAction = Main.rand.Next(5);
-                switch (nextAction) {
-                    case 0:
-                        TransitionTo(BossPhase.Phase1_LightPillar);
-                        break;
-                    case 1:
-                        TransitionTo(BossPhase.Phase1_HolyBarrage);
-                        break;
-                    case 2:
-                        TransitionTo(BossPhase.Phase1_DeathRay);
-                        break;
-                    case 3:
-                        TransitionTo(BossPhase.Phase1_SweepingBeam);
-                        break;
-                    default:
-                        PhaseTimer = 0; // 继续观测
-                        break;
-                }
-            }
-        }
-
-        private void FireHolyOrbs(Player target) {
-            if (Main.netMode == NetmodeID.MultiplayerClient) return;
-
-            int orbCount = Main.expertMode ? 5 : 3;
-            float spread = MathHelper.ToRadians(30);
-            Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
-            float baseAngle = toTarget.ToRotation();
-
-            for (int i = 0; i < orbCount; i++) {
-                float angle = baseAngle + spread * (i - (orbCount - 1) / 2f) / (orbCount - 1);
-                Vector2 velocity = angle.ToRotationVector2() * 10f;
-
-                Projectile.NewProjectile(
-                    NPC.GetSource_FromAI(),
-                    NPC.Center,
-                    velocity,
-                    ModContent.ProjectileType<HolyOrb>(),
-                    NPC.damage / 2,
-                    2f,
-                    Main.myPlayer
-                );
-            }
-
-            SoundEngine.PlaySound(SoundID.Item29, NPC.Center);
-        }
-
-        private void FireEyeBeams(Player target) {
-            if (Main.netMode == NetmodeID.MultiplayerClient) return;
-
-            // 从随机天眼发射追踪光束
-            int eyeIndex = Main.rand.Next(CelestialEyeCount);
-            Vector2 eyePos = GetEyePosition(eyeIndex);
-            Vector2 toTarget = (target.Center - eyePos).SafeNormalize(Vector2.UnitY);
-
-            Projectile.NewProjectile(
-                NPC.GetSource_FromAI(),
-                eyePos,
-                toTarget * 8f,
-                ModContent.ProjectileType<CelestialEyeBeam>(),
-                NPC.damage / 3,
-                1f,
-                Main.myPlayer
-            );
-
-            SoundEngine.PlaySound(SoundID.Item12 with { Pitch = 0.3f }, eyePos);
-        }
-
-        private void RunPhase1LightPillar(Player target) {
-            switch ((int)SubState) {
-                case 0: // 准备阶段 - 悬停并蓄力
-                    NPC.velocity *= 0.92f;
-
-                    if (PhaseTimer == 1) {
-                        // 初始化光柱位置
-                        int pillarCount = Main.expertMode ? 6 : 4;
-                        pillarPositions = new Vector2[pillarCount];
-                        for (int i = 0; i < pillarCount; i++) {
-                            float offsetX = (i - (pillarCount - 1) / 2f) * 200f;
-                            pillarPositions[i] = new Vector2(target.Center.X + offsetX, target.Center.Y + 50);
-                        }
-
-                        SoundEngine.PlaySound(SoundID.Item15 with { Pitch = 0.5f }, NPC.Center);
-                    }
-
-                    pillarChargeProgress = PhaseTimer / 60f;
-
-                    // 预警粒子
-                    if (Main.netMode != NetmodeID.Server) {
-                        foreach (var pos in pillarPositions) {
-                            if (pos == Vector2.Zero) continue;
-                            int dust = Dust.NewDust(pos + new Vector2(-20, -500), 40, 500, DustID.GoldCoin, 0, 0, 100, default, 0.8f);
-                            Main.dust[dust].noGravity = true;
-                            Main.dust[dust].velocity = new Vector2(0, 2f);
-                        }
-                    }
-
-                    if (PhaseTimer >= 60) {
-                        SubState = 1;
-                        PhaseTimer = 0;
-                    }
-                    break;
-
-                case 1: // 释放光柱
-                    if (PhaseTimer == 1) {
-                        // 生成光柱弹幕
-                        if (Main.netMode != NetmodeID.MultiplayerClient) {
-                            foreach (var pos in pillarPositions) {
-                                if (pos == Vector2.Zero) continue;
-                                Projectile.NewProjectile(
-                                    NPC.GetSource_FromAI(),
-                                    new Vector2(pos.X, pos.Y - 800),
-                                    new Vector2(0, 25f),
-                                    ModContent.ProjectileType<DivineLightPillar>(),
-                                    NPC.damage,
-                                    5f,
-                                    Main.myPlayer
-                                );
-                            }
-                        }
-
-                        SoundEngine.PlaySound(SoundID.Item122 with { Volume = 1.2f }, NPC.Center);
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(12, 30);
-                    }
-
-                    if (PhaseTimer > 60) {
-                        TransitionTo(BossPhase.Phase1_Observe);
-                    }
-                    break;
-            }
-        }
-
-        private void RunPhase1HolyBarrage(Player target) {
-            // 快速向各方向发射神圣光弹
-            NPC.velocity *= 0.95f;
-
-            // 追踪玩家位置
-            Vector2 hoverPos = target.Center + new Vector2(0, -300);
-            NPC.Center = Vector2.Lerp(NPC.Center, hoverPos, 0.02f);
-
-            // 环形射击
-            if (PhaseTimer % 15 == 0) {
-                if (Main.netMode != NetmodeID.MultiplayerClient) {
-                    int count = 8;
-                    float baseAngle = PhaseTimer * 0.1f;
-                    for (int i = 0; i < count; i++) {
-                        float angle = baseAngle + MathHelper.TwoPi * i / count;
-                        Vector2 velocity = angle.ToRotationVector2() * 8f;
-
-                        Projectile.NewProjectile(
-                            NPC.GetSource_FromAI(),
-                            NPC.Center,
-                            velocity,
-                            ModContent.ProjectileType<HolyOrb>(),
-                            NPC.damage / 3,
-                            1f,
-                            Main.myPlayer
-                        );
-                    }
-                }
-
-                SoundEngine.PlaySound(SoundID.Item29 with { Pitch = 0.2f }, NPC.Center);
-            }
-
-            if (PhaseTimer > 180) {
-                TransitionTo(BossPhase.Phase1_Observe);
-            }
-        }
-
-        private void RunPhase1DeathRay(Player target) {
-            // 天眼死光 - 从本体发射追踪玩家的大激光
-            switch ((int)SubState) {
-                case 0: // 蓄力阶段
-                    NPC.velocity *= 0.9f;
-
-                    // 保持在玩家上方
-                    Vector2 hoverPos = target.Center + new Vector2(0, -350);
-                    NPC.Center = Vector2.Lerp(NPC.Center, hoverPos, 0.02f);
-
-                    // 计算激光初始角度
-                    if (PhaseTimer == 1) {
-                        laserAngle = (target.Center - NPC.Center).ToRotation();
-                        SoundEngine.PlaySound(SoundID.Item15 with { Pitch = 0.8f, Volume = 1.2f }, NPC.Center);
-                    }
-
-                    // 蓄力粒子效果
-                    if (Main.netMode != NetmodeID.Server) {
-                        for (int i = 0; i < 5; i++) {
-                            Vector2 dustPos = NPC.Center + Main.rand.NextVector2CircularEdge(100, 100);
-                            int dust = Dust.NewDust(dustPos, 0, 0, DustID.GoldCoin, 0, 0, 100, default, 2f);
-                            Main.dust[dust].noGravity = true;
-                            Main.dust[dust].velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 8f;
-                        }
-                    }
-
-                    laserChargeTime = Main.expertMode ? 50 : 60;
-                    if (PhaseTimer >= laserChargeTime) {
-                        SubState = 1;
-                        PhaseTimer = 0;
-
-                        // 发射激光
-                        if (Main.netMode != NetmodeID.MultiplayerClient) {
-                            Projectile.NewProjectile(
-                                NPC.GetSource_FromAI(),
-                                NPC.Center,
-                                Vector2.Zero,
-                                ModContent.ProjectileType<DivineDeathRay>(),
-                                NPC.damage,
-                                0f,
-                                Main.myPlayer,
-                                ai0: NPC.whoAmI,
-                                ai1: laserAngle
-                            );
-                        }
-
-                        SoundEngine.PlaySound(SoundID.Zombie104 with { Pitch = 0.5f, Volume = 1.5f }, NPC.Center);
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(15, 60);
-                    }
-                    break;
-
-                case 1: // 激光发射中
-                    NPC.velocity *= 0.95f;
-
-                    // 激光持续时间
-                    if (PhaseTimer > 90) {
-                        TransitionTo(BossPhase.Phase1_Observe);
-                    }
-                    break;
-            }
-        }
-
-        private void RunPhase1SweepingBeam(Player target) {
-            // 扫射光束 - 多道光束从左到右或从右到左扫射
-            switch ((int)SubState) {
-                case 0: // 准备阶段
-                    NPC.velocity *= 0.9f;
-
-                    Vector2 sweepHoverPos = target.Center + new Vector2(0, -400);
-                    NPC.Center = Vector2.Lerp(NPC.Center, sweepHoverPos, 0.03f);
-
-                    if (PhaseTimer == 1) {
-                        laserSweepDirection = Main.rand.NextBool() ? 1f : -1f;
-                        SoundEngine.PlaySound(SoundID.Item15 with { Pitch = 0.3f }, NPC.Center);
-                    }
-
-                    // 预警线
-                    if (Main.netMode != NetmodeID.Server) {
-                        float sweepAngle = MathHelper.PiOver4 * laserSweepDirection;
-                        Vector2 lineDir = sweepAngle.ToRotationVector2();
-                        for (int i = 0; i < 10; i++) {
-                            Vector2 dustPos = NPC.Center + lineDir * (i * 80);
-                            int dust = Dust.NewDust(dustPos, 0, 0, DustID.GoldCoin, 0, 0, 150, default, 1f);
-                            Main.dust[dust].noGravity = true;
-                        }
-                    }
-
-                    if (PhaseTimer >= 40) {
-                        SubState = 1;
-                        PhaseTimer = 0;
-                    }
-                    break;
-
-                case 1: // 扫射阶段
-                    // 发射多道快速光束
-                    if (PhaseTimer % 8 == 0 && PhaseTimer <= 80) {
-                        if (Main.netMode != NetmodeID.MultiplayerClient) {
-                            float progress = PhaseTimer / 80f;
-                            float startAngle = laserSweepDirection > 0 ? -MathHelper.PiOver4 : MathHelper.PiOver4;
-                            float endAngle = laserSweepDirection > 0 ? MathHelper.PiOver4 : -MathHelper.PiOver4;
-                            float currentAngle = MathHelper.Lerp(startAngle, endAngle, progress) + MathHelper.PiOver2;
-
-                            Vector2 velocity = currentAngle.ToRotationVector2() * 18f;
-                            Projectile.NewProjectile(
-                                NPC.GetSource_FromAI(),
-                                NPC.Center,
-                                velocity,
-                                ModContent.ProjectileType<SweepingLaserBolt>(),
-                                NPC.damage / 2,
-                                2f,
-                                Main.myPlayer
-                            );
-                        }
-
-                        SoundEngine.PlaySound(SoundID.Item12 with { Pitch = 0.5f }, NPC.Center);
-                    }
-
-                    if (PhaseTimer > 100) {
-                        TransitionTo(BossPhase.Phase1_Observe);
-                    }
-                    break;
-            }
-        }
-
-        #endregion
-
-        #region 阶段转换
-
-        private void RunPhaseTransition2(Player target) {
-            NPC.velocity *= 0.95f;
-
-            // 天眼加速旋转
-            eyeOrbitSpeed = 0.05f + PhaseTimer * 0.001f;
-
-            // 能量聚集效果
-            if (Main.netMode != NetmodeID.Server) {
-                for (int i = 0; i < 8; i++) {
-                    Vector2 dustPos = NPC.Center + Main.rand.NextVector2CircularEdge(200, 200);
-                    int dust = Dust.NewDust(dustPos, 0, 0, DustID.GoldCoin, 0, 0, 50, default, 2f);
-                    Main.dust[dust].noGravity = true;
-                    Main.dust[dust].velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 8f;
-                }
-
-                // 星光爆发
-                if (PhaseTimer % 10 == 0) {
-                    for (int i = 0; i < 5; i++) {
-                        Vector2 dustPos = NPC.Center + Main.rand.NextVector2Circular(50, 50);
-                        int dust = Dust.NewDust(dustPos, 0, 0, DustID.YellowStarDust, 0, 0, 100, default, 2f);
-                        Main.dust[dust].noGravity = true;
-                    }
-                }
-            }
-
-            if (PhaseTimer == 60) {
-                SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.5f }, NPC.Center);
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(20, 60);
-            }
-
-            if (PhaseTimer > 100) {
-                eyeOrbitSpeed = 0.025f;
-                TransitionTo(BossPhase.Phase2_Descend);
-            }
-        }
-
-        private void RunPhaseTransition3(Player target) {
-            NPC.velocity *= 0.93f;
-
-            // 极速天眼旋转
-            eyeOrbitSpeed = 0.08f + PhaseTimer * 0.002f;
-
-            // 神圣能量风暴
-            if (Main.netMode != NetmodeID.Server) {
-                for (int i = 0; i < 12; i++) {
-                    Vector2 dustPos = NPC.Center + Main.rand.NextVector2CircularEdge(250, 250);
-                    int dustType = Main.rand.NextBool() ? DustID.GoldCoin : DustID.YellowStarDust;
-                    int dust = Dust.NewDust(dustPos, 0, 0, dustType, 0, 0, 50, default, 2.5f);
-                    Main.dust[dust].noGravity = true;
-                    Main.dust[dust].velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 12f;
-                }
-            }
-
-            if (PhaseTimer == 40) {
-                SoundEngine.PlaySound(SoundID.Item119 with { Volume = 1.5f }, NPC.Center);
-            }
-
-            if (PhaseTimer == 80) {
-                SoundEngine.PlaySound(SoundID.ForceRoar with { Pitch = -0.2f }, NPC.Center);
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(30, 80);
-            }
-
-            if (PhaseTimer > 120) {
-                eyeOrbitSpeed = 0.035f;
-                TransitionTo(BossPhase.Phase3_Punishment);
-            }
-        }
-
-        #endregion
-
-        #region 二阶段AI
-
-        private void RunPhase2Descend(Player target) {
-            // 天威降临 - 缓慢下压并释放环形光波
-            Vector2 descendPos = target.Center + new Vector2(0, -200);
-            NPC.Center = Vector2.Lerp(NPC.Center, descendPos, 0.03f);
-
-            // 释放环形光波
-            if (PhaseTimer % 40 == 0) {
-                if (Main.netMode != NetmodeID.MultiplayerClient) {
-                    int waveCount = 12;
-                    for (int i = 0; i < waveCount; i++) {
-                        float angle = MathHelper.TwoPi * i / waveCount;
-                        Vector2 velocity = angle.ToRotationVector2() * 6f;
-
-                        Projectile.NewProjectile(
-                            NPC.GetSource_FromAI(),
-                            NPC.Center,
-                            velocity,
-                            ModContent.ProjectileType<HolyOrb>(),
-                            NPC.damage / 3,
-                            2f,
-                            Main.myPlayer
-                        );
-                    }
-                }
-
-                SoundEngine.PlaySound(SoundID.Item29, NPC.Center);
-            }
-
-            // 压迫感粒子
-            if (Main.netMode != NetmodeID.Server && PhaseTimer % 3 == 0) {
-                Vector2 dustPos = target.Center + Main.rand.NextVector2Circular(300, 50) + new Vector2(0, -100);
-                int dust = Dust.NewDust(dustPos, 0, 0, DustID.GoldCoin, 0, 3f, 100, default, 1.5f);
+        #region 观测/选招
+
+        private void RunObserve(Player target) {
+            // 短促重定位，无喷弹；天眼悬于玩家上方"注视"
+            Vector2 hoverPos = target.Center + new Vector2(MathF.Sin(globalTime * 1.2f) * 60f, -400 + MathF.Sin(globalTime * 1.8f) * 25f);
+            NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.05f, 0.1f);
+            eyeOrbitSpeed = MathHelper.Lerp(eyeOrbitSpeed, 0.018f, 0.1f);
+
+            // 注视线尘（Argus 式预告氛围）
+            if (Main.netMode != NetmodeID.Server && PhaseTimer % 4 == 0) {
+                int i = (int)(PhaseTimer / 4) % CelestialEyeCount;
+                Vector2 eyePos = GetEyePosition(i);
+                Vector2 dir = (target.Center - eyePos).SafeNormalize(Vector2.Zero);
+                Vector2 dp = eyePos + dir * Main.rand.NextFloat(0, 400);
+                int dust = Dust.NewDust(dp, 0, 0, DustID.GoldCoin, 0, 0, 180, default, 0.7f);
                 Main.dust[dust].noGravity = true;
             }
 
-            if (PhaseTimer > 200) {
-                int nextAction = Main.rand.Next(5);
-                switch (nextAction) {
-                    case 0:
-                        TransitionTo(BossPhase.Phase2_StarSummon);
-                        break;
-                    case 1:
-                        TransitionTo(BossPhase.Phase2_DivineDash);
-                        break;
-                    case 2:
-                        TransitionTo(BossPhase.Phase2_HaloStorm);
-                        break;
-                    case 3:
-                        TransitionTo(BossPhase.Phase2_EyeMinions);
-                        break;
-                    case 4:
-                        TransitionTo(BossPhase.Phase2_CrossLaser);
-                        break;
-                }
+            if (PhaseTimer >= 40) {
+                SelectNextAction();
             }
         }
 
-        private void RunPhase2StarSummon(Player target) {
+        /// <summary>在安全边界选下一步：优先审判/陪审，否则确定性轮换攻击 + 周期窥视。</summary>
+        private void SelectNextAction() {
+            if (judgmentQueued) { TransitionTo(BossPhase.MarkedForJudgment); return; }
+            if (TryStartJury()) return;
+
+            attacksSinceScry++;
+            int scryInterval = IsPhase2 ? 2 : 3;
+            if (attacksSinceScry >= scryInterval) {
+                attacksSinceScry = 0;
+                TransitionTo(BossPhase.Scrying);
+                return;
+            }
+
+            BossPhase[] list = IsPhase2
+                ? new[] { BossPhase.Attack_CrossLaser, BossPhase.Attack_EyeBarrage, BossPhase.Attack_PillarGrid, BossPhase.Attack_GazeSweep, BossPhase.Attack_StarVolley, BossPhase.Attack_DivineDash }
+                : new[] { BossPhase.Attack_CrossLaser, BossPhase.Attack_PillarGrid, BossPhase.Attack_GazeSweep, BossPhase.Attack_StarVolley };
+
+            BossPhase next = list[attackIndex % list.Length];
+            attackIndex++;
+            TransitionTo(next);
+        }
+
+        /// <summary>50%/25% 触发陪审团事件。</summary>
+        private bool TryStartJury() {
+            if (!didJury50 && NPC.life < NPC.lifeMax * 0.5f) { didJury50 = true; TransitionTo(BossPhase.JuryTrial); return true; }
+            if (!didJury25 && NPC.life < NPC.lifeMax * 0.25f) { didJury25 = true; TransitionTo(BossPhase.JuryTrial); return true; }
+            return false;
+        }
+
+        #endregion
+
+        #region 签名：十字激光
+
+        private void RunCrossLaser(Player target) {
             switch ((int)SubState) {
-                case 0: // 准备召唤
+                case 0: // 蓄力 + 地面十字预告
                     NPC.velocity *= 0.9f;
+                    Vector2 hover = target.Center + new Vector2(0, -300);
+                    NPC.Center = Vector2.Lerp(NPC.Center, hover, 0.04f);
 
                     if (PhaseTimer == 1) {
-                        starCount = Main.expertMode ? 8 : 5;
-                        for (int i = 0; i < starCount; i++) {
-                            float angle = MathHelper.TwoPi * i / starCount + Main.rand.NextFloat(-0.2f, 0.2f);
-                            float distance = 400f + Main.rand.NextFloat(-50f, 50f);
-                            starPositions[i] = target.Center + angle.ToRotationVector2() * distance;
-                        }
-
-                        SoundEngine.PlaySound(SoundID.Item25 with { Pitch = 0.3f }, NPC.Center);
+                        crossAngle = Main.rand.NextFloat(MathHelper.PiOver4);
+                        SoundEngine.PlaySound(SoundID.Item15 with { Pitch = 0.6f }, NPC.Center);
+                        SpawnCrossTelegraph(crossAngle, 1500f, 60);
                     }
 
-                    // 星辰预警
                     if (Main.netMode != NetmodeID.Server) {
-                        for (int i = 0; i < starCount; i++) {
-                            float alpha = PhaseTimer / 60f;
-                            Vector2 pos = starPositions[i];
-                            int dust = Dust.NewDust(pos, 0, 0, DustID.YellowStarDust, 0, 0, 100, default, 2f * alpha);
+                        for (int i = 0; i < 4; i++) {
+                            float a = crossAngle + MathHelper.PiOver2 * i;
+                            Vector2 d = a.ToRotationVector2();
+                            Vector2 dp = NPC.Center + d * Main.rand.NextFloat(0, 700);
+                            int dust = Dust.NewDust(dp, 0, 0, DustID.GoldCoin, 0, 0, 120, default, 1.2f);
                             Main.dust[dust].noGravity = true;
                         }
                     }
 
                     if (PhaseTimer >= 60) {
-                        SubState = 1;
-                        PhaseTimer = 0;
+                        SubState = 1; PhaseTimer = 0;
+                        if (Main.netMode != NetmodeID.MultiplayerClient) {
+                            for (int i = 0; i < 4; i++) {
+                                float a = crossAngle + MathHelper.PiOver2 * i;
+                                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
+                                    ModContent.ProjectileType<CrossLaserBeam>(), NPC.damage / 2, 0f, Main.myPlayer,
+                                    ai0: NPC.whoAmI, ai1: a);
+                            }
+                        }
+                        SoundEngine.PlaySound(SoundID.Item122 with { Volume = 1.3f }, NPC.Center);
+                        ACMScreenShakeSystem.Add(10f);
+                        bloomPulse = 1f;
                     }
                     break;
 
-                case 1: // 星辰坠落
-                    if (PhaseTimer == 1) {
-                        if (Main.netMode != NetmodeID.MultiplayerClient) {
-                            for (int i = 0; i < starCount; i++) {
-                                Vector2 toTarget = (target.Center - starPositions[i]).SafeNormalize(Vector2.Zero);
-                                Projectile.NewProjectile(
-                                    NPC.GetSource_FromAI(),
-                                    starPositions[i],
-                                    toTarget * 12f,
-                                    ModContent.ProjectileType<CelestialStar>(),
-                                    NPC.damage / 2,
-                                    3f,
-                                    Main.myPlayer
-                                );
-                            }
-                        }
-
-                        SoundEngine.PlaySound(SoundID.Item92, NPC.Center);
-                    }
-
-                    if (PhaseTimer > 80) {
-                        TransitionTo(BossPhase.Phase2_Descend);
-                    }
+                case 1: // 开火（激光自旋，靠横穿旋转方向闪避）
+                    NPC.velocity *= 0.96f;
+                    if (PhaseTimer > 130) ReturnToHub();
                     break;
             }
         }
 
-        private void RunPhase2DivineDash(Player target) {
+        #endregion
+
+        #region 地标光柱阵
+
+        private void RunPillarGrid(Player target) {
             switch ((int)SubState) {
-                case 0: // 准备冲刺
-                    dashCount = 0;
-                    maxDashCount = Main.expertMode ? 4 : 3;
-                    SubState = 1;
-                    PhaseTimer = 0;
+                case 0: // 地标预告
+                    NPC.velocity *= 0.92f;
+                    if (PhaseTimer == 1) {
+                        markerCount = (Main.expertMode ? 6 : 4) + verdictStacks;
+                        if (markerCount > markerPositions.Length) markerCount = markerPositions.Length;
+                        for (int i = 0; i < markerCount; i++) {
+                            float offsetX = (i - (markerCount - 1) / 2f) * 200f;
+                            markerPositions[i] = new Vector2(target.Center.X + offsetX, target.Center.Y + 50);
+                            SpawnPillarTelegraph(markerPositions[i], 64);
+                        }
+                        SoundEngine.PlaySound(SoundID.Item15 with { Pitch = 0.5f }, NPC.Center);
+                    }
+                    if (Main.netMode != NetmodeID.Server) {
+                        for (int i = 0; i < markerCount; i++) {
+                            int dust = Dust.NewDust(markerPositions[i] + new Vector2(-20, -500), 40, 500, DustID.GoldCoin, 0, 2f, 100, default, 0.8f);
+                            Main.dust[dust].noGravity = true;
+                        }
+                    }
+                    if (PhaseTimer >= 64) { SubState = 1; PhaseTimer = 0; }
                     break;
 
-                case 1: // 蓄力
-                    NPC.velocity *= 0.9f;
+                case 1: // 落柱
+                    if (PhaseTimer == 1) {
+                        if (Main.netMode != NetmodeID.MultiplayerClient) {
+                            for (int i = 0; i < markerCount; i++) {
+                                Projectile.NewProjectile(NPC.GetSource_FromAI(),
+                                    new Vector2(markerPositions[i].X, markerPositions[i].Y - 800), new Vector2(0, 25f),
+                                    ModContent.ProjectileType<DivineLightPillar>(), NPC.damage, 5f, Main.myPlayer);
+                            }
+                        }
+                        SoundEngine.PlaySound(SoundID.Item122 with { Volume = 1.2f }, NPC.Center);
+                        ACMScreenShakeSystem.Add(8f);
+                    }
+                    if (PhaseTimer > 60) ReturnToHub();
+                    break;
+            }
+        }
 
-                    // 蓄力粒子
+        #endregion
+
+        #region 带安全扇区的旋转凝视扫描
+
+        private void RunGazeSweep(Player target) {
+            switch ((int)SubState) {
+                case 0: // 预告：确定安全扇区方向
+                    NPC.velocity *= 0.9f;
+                    Vector2 hover = target.Center + new Vector2(0, -360);
+                    NPC.Center = Vector2.Lerp(NPC.Center, hover, 0.03f);
+                    if (PhaseTimer == 1) {
+                        gazeAngle = Main.rand.NextFloat(MathHelper.TwoPi);
+                        gazeDir = Main.rand.NextBool() ? 1f : -1f;
+                        // 安全扇区朝向玩家当前侧，给一个可站位的缝
+                        safeWedgeAngle = (target.Center - NPC.Center).ToRotation();
+                        SpawnSafeWedgeTelegraph(safeWedgeAngle, 1400f, 50);
+                        SoundEngine.PlaySound(SoundID.Item15 with { Pitch = 0.2f }, NPC.Center);
+                    }
+                    if (PhaseTimer >= 50) { SubState = 1; PhaseTimer = 0; }
+                    break;
+
+                case 1: // 扫描：四周喷弹，仅保留安全扇区缺口
+                    NPC.velocity *= 0.95f;
+                    gazeAngle += gazeDir * 0.05f;
+
+                    int interval = IsPhase3 ? 5 : 7;
+                    if (PhaseTimer % interval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                        int segments = 16;
+                        for (int k = 0; k < segments; k++) {
+                            float a = gazeAngle + MathHelper.TwoPi * k / segments;
+                            float diff = MathHelper.WrapAngle(a - safeWedgeAngle);
+                            if (Math.Abs(diff) < SafeWedgeHalf) continue; // 安全扇区缺口
+                            Vector2 vel = a.ToRotationVector2() * 7.5f;
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                                ModContent.ProjectileType<HolyOrb>(), NPC.damage / 3, 1f, Main.myPlayer);
+                        }
+                        SoundEngine.PlaySound(SoundID.Item29 with { Pitch = 0.2f }, NPC.Center);
+                    }
+
+                    // 持续标示安全扇区缝
                     if (Main.netMode != NetmodeID.Server) {
-                        Vector2 dustVel = Main.rand.NextVector2CircularEdge(5, 5);
-                        int dust = Dust.NewDust(NPC.Center, 0, 0, DustID.GoldCoin, dustVel.X, dustVel.Y, 100, default, 1.5f);
+                        Vector2 d = safeWedgeAngle.ToRotationVector2();
+                        Vector2 dp = NPC.Center + d * Main.rand.NextFloat(0, 800);
+                        int dust = Dust.NewDust(dp, 0, 0, DustID.BlueTorch, 0, 0, 150, new Color(180, 220, 255), 0.9f);
                         Main.dust[dust].noGravity = true;
                     }
 
-                    if (PhaseTimer >= 25) {
-                        // 设置冲刺方向
-                        dashTarget = target.Center;
-                        dashVelocity = (dashTarget - NPC.Center).SafeNormalize(Vector2.Zero) * 30f;
-                        SubState = 2;
-                        PhaseTimer = 0;
+                    if (PhaseTimer > 170) ReturnToHub();
+                    break;
+            }
+        }
 
+        #endregion
+
+        #region 预判星陨
+
+        private void RunStarVolley(Player target) {
+            switch ((int)SubState) {
+                case 0: // 预告（提前量）
+                    NPC.velocity *= 0.9f;
+                    if (PhaseTimer == 1) {
+                        int count = (Main.expertMode ? 7 : 5) + verdictStacks;
+                        if (count > markerPositions.Length) count = markerPositions.Length;
+                        markerCount = count;
+                        for (int i = 0; i < count; i++) {
+                            float angle = MathHelper.TwoPi * i / count + Main.rand.NextFloat(-0.2f, 0.2f);
+                            float dist = 450f + Main.rand.NextFloat(-50f, 50f);
+                            markerPositions[i] = target.Center + angle.ToRotationVector2() * dist;
+                        }
+                        SoundEngine.PlaySound(SoundID.Item25 with { Pitch = 0.3f }, NPC.Center);
+                    }
+                    if (Main.netMode != NetmodeID.Server) {
+                        for (int i = 0; i < markerCount; i++) {
+                            int dust = Dust.NewDust(markerPositions[i], 0, 0, DustID.YellowStarDust, 0, 0, 100, default, 2f * (PhaseTimer / 55f));
+                            Main.dust[dust].noGravity = true;
+                        }
+                    }
+                    if (PhaseTimer >= 55) { SubState = 1; PhaseTimer = 0; }
+                    break;
+
+                case 1: // 发射（按预判提前量瞄准）
+                    if (PhaseTimer == 1) {
+                        if (Main.netMode != NetmodeID.MultiplayerClient) {
+                            for (int i = 0; i < markerCount; i++) {
+                                Vector2 dir = ACMUtils.LeadTarget(markerPositions[i], target.Center, target.velocity, 13f);
+                                Vector2 vel = dir * 13f;
+                                Projectile.NewProjectile(NPC.GetSource_FromAI(), markerPositions[i], vel,
+                                    ModContent.ProjectileType<CelestialStar>(), NPC.damage / 2, 3f, Main.myPlayer);
+                            }
+                        }
+                        SoundEngine.PlaySound(SoundID.Item92, NPC.Center);
+                    }
+                    if (PhaseTimer > 70) ReturnToHub();
+                    break;
+            }
+        }
+
+        #endregion
+
+        #region 二阶段：天眼连射 + 冲刺
+
+        private void RunEyeBarrage(Player target) {
+            NPC.velocity *= 0.94f;
+            Vector2 hover = target.Center + new Vector2(0, -340);
+            NPC.Center = Vector2.Lerp(NPC.Center, hover, 0.02f);
+            eyeOrbitSpeed = MathHelper.Lerp(eyeOrbitSpeed, 0.03f, 0.05f);
+
+            // 每只眼依次开火，开火前有注视线预告
+            int perEye = 14;
+            int total = CelestialEyeCount * perEye;
+            int idx = (int)PhaseTimer / perEye;
+            int localT = (int)PhaseTimer % perEye;
+
+            if (idx < CelestialEyeCount) {
+                Vector2 eyePos = GetEyePosition(idx);
+                if (Main.netMode != NetmodeID.Server && localT < perEye - 4) {
+                    Vector2 dir = (target.Center - eyePos).SafeNormalize(Vector2.Zero);
+                    Vector2 dp = eyePos + dir * Main.rand.NextFloat(0, 350);
+                    int dust = Dust.NewDust(dp, 0, 0, DustID.BlueTorch, 0, 0, 150, new Color(200, 220, 255), 1f);
+                    Main.dust[dust].noGravity = true;
+                }
+                if (localT == perEye - 1 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    Vector2 toT = (target.Center - eyePos).SafeNormalize(Vector2.UnitY);
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), eyePos, toT * 9f,
+                        ModContent.ProjectileType<CelestialEyeBeam>(), NPC.damage / 3, 1f, Main.myPlayer);
+                    SoundEngine.PlaySound(SoundID.Item12 with { Pitch = 0.3f }, eyePos);
+                }
+            }
+
+            if (PhaseTimer > total + 30) ReturnToHub();
+        }
+
+        private void RunDivineDash(Player target) {
+            switch ((int)SubState) {
+                case 0:
+                    dashCount = 0;
+                    maxDashCount = Main.expertMode ? 4 : 3;
+                    SubState = 1; PhaseTimer = 0;
+                    break;
+
+                case 1: // 蓄力 + 冲刺预告线
+                    NPC.velocity *= 0.9f;
+                    if (PhaseTimer == 1) {
+                        dashTarget = target.Center;
+                        SpawnDashTelegraph(dashTarget, 25);
+                    }
+                    if (Main.netMode != NetmodeID.Server) {
+                        Vector2 dir = (dashTarget - NPC.Center).SafeNormalize(Vector2.Zero);
+                        Vector2 dp = NPC.Center + dir * Main.rand.NextFloat(0, 500);
+                        int dust = Dust.NewDust(dp, 0, 0, DustID.GoldCoin, 0, 0, 120, default, 1f);
+                        Main.dust[dust].noGravity = true;
+                    }
+                    if (PhaseTimer >= 25) {
+                        dashVelocity = (dashTarget - NPC.Center).SafeNormalize(Vector2.Zero) * 30f;
+                        SubState = 2; PhaseTimer = 0;
                         SoundEngine.PlaySound(SoundID.Item122 with { Pitch = 0.5f }, NPC.Center);
                     }
                     break;
 
                 case 2: // 冲刺
                     NPC.velocity = dashVelocity;
-
-                    // 冲刺拖尾粒子
                     if (Main.netMode != NetmodeID.Server) {
                         for (int i = 0; i < 3; i++) {
-                            Vector2 dustPos = NPC.Center - NPC.velocity.SafeNormalize(Vector2.Zero) * 30f * i;
-                            int dust = Dust.NewDust(dustPos, 0, 0, DustID.GoldCoin, 0, 0, 100, default, 2f);
+                            Vector2 dp = NPC.Center - NPC.velocity.SafeNormalize(Vector2.Zero) * 30f * i;
+                            int dust = Dust.NewDust(dp, 0, 0, DustID.GoldCoin, 0, 0, 100, default, 2f);
                             Main.dust[dust].noGravity = true;
                             Main.dust[dust].velocity = -NPC.velocity * 0.1f;
                         }
                     }
-
-                    if (PhaseTimer >= 25) {
+                    if (PhaseTimer >= 22) {
                         dashCount++;
-                        if (dashCount >= maxDashCount) {
-                            TransitionTo(BossPhase.Phase2_Descend);
-                        }
-                        else {
-                            SubState = 1;
-                            PhaseTimer = 0;
-                        }
-                    }
-                    break;
-            }
-        }
-
-        private void RunPhase2HaloStorm(Player target) {
-            // 光环风暴 - 释放旋转的光环
-            Vector2 hoverPos = target.Center + new Vector2(0, -300);
-            NPC.Center = Vector2.Lerp(NPC.Center, hoverPos, 0.02f);
-
-            // 释放旋转光环
-            if (PhaseTimer % 25 == 0) {
-                if (Main.netMode != NetmodeID.MultiplayerClient) {
-                    float baseAngle = PhaseTimer * 0.15f;
-                    int ringCount = 6;
-                    for (int i = 0; i < ringCount; i++) {
-                        float angle = baseAngle + MathHelper.TwoPi * i / ringCount;
-                        Vector2 velocity = angle.ToRotationVector2() * 7f;
-
-                        Projectile.NewProjectile(
-                            NPC.GetSource_FromAI(),
-                            NPC.Center,
-                            velocity,
-                            ModContent.ProjectileType<HolyHaloRing>(),
-                            NPC.damage / 3,
-                            2f,
-                            Main.myPlayer,
-                            ai0: angle
-                        );
-                    }
-                }
-
-                SoundEngine.PlaySound(SoundID.Item8 with { Pitch = 0.5f }, NPC.Center);
-            }
-
-            if (PhaseTimer > 200) {
-                TransitionTo(BossPhase.Phase2_Descend);
-            }
-        }
-
-        private void RunPhase2EyeMinions(Player target) {
-            // 召唤天眼仆从
-            switch ((int)SubState) {
-                case 0: // 召唤阶段
-                    NPC.velocity *= 0.9f;
-
-                    if (PhaseTimer == 1) {
-                        SoundEngine.PlaySound(SoundID.Item119 with { Pitch = 0.2f }, NPC.Center);
-
-                        // 召唤天眼仆从
-                        if (Main.netMode != NetmodeID.MultiplayerClient) {
-                            int minionCount = Main.expertMode ? 4 : 3;
-                            eyeMinionIds = new int[minionCount];
-
-                            for (int i = 0; i < minionCount; i++) {
-                                float angle = MathHelper.TwoPi * i / minionCount;
-                                Vector2 spawnPos = NPC.Center + angle.ToRotationVector2() * 100f;
-
-                                int npcId = NPC.NewNPC(
-                                    NPC.GetSource_FromAI(),
-                                    (int)spawnPos.X,
-                                    (int)spawnPos.Y,
-                                    ModContent.NPCType<CelestialEyeMinion>(),
-                                    ai0: NPC.whoAmI,
-                                    ai1: i
-                                );
-                                eyeMinionIds[i] = npcId;
-                            }
-
-                            hasSpawnedMinions = true;
-                        }
-                    }
-
-                    // 召唤粒子效果
-                    if (Main.netMode != NetmodeID.Server && PhaseTimer <= 30) {
-                        for (int i = 0; i < 8; i++) {
-                            Vector2 dustPos = NPC.Center + Main.rand.NextVector2CircularEdge(80, 80);
-                            int dust = Dust.NewDust(dustPos, 0, 0, DustID.YellowStarDust, 0, 0, 100, default, 2f);
-                            Main.dust[dust].noGravity = true;
-                            Main.dust[dust].velocity = Main.rand.NextVector2Circular(3, 3);
-                        }
-                    }
-
-                    if (PhaseTimer >= 60) {
-                        SubState = 1;
-                        PhaseTimer = 0;
-                    }
-                    break;
-
-                case 1: // 等待仆从行动
-                    // 缓慢移动
-                    Vector2 hoverPos = target.Center + new Vector2(0, -350);
-                    NPC.Center = Vector2.Lerp(NPC.Center, hoverPos, 0.015f);
-
-                    if (PhaseTimer > 180) {
-                        TransitionTo(BossPhase.Phase2_Descend);
-                    }
-                    break;
-            }
-        }
-
-        private void RunPhase2CrossLaser(Player target) {
-            // 交叉激光 - 从四个方向发射交叉激光
-            switch ((int)SubState) {
-                case 0: // 准备阶段
-                    NPC.velocity *= 0.9f;
-
-                    Vector2 crossHoverPos = target.Center + new Vector2(0, -300);
-                    NPC.Center = Vector2.Lerp(NPC.Center, crossHoverPos, 0.03f);
-
-                    if (PhaseTimer == 1) {
-                        laserAngle = Main.rand.NextFloat(MathHelper.TwoPi);
-                        SoundEngine.PlaySound(SoundID.Item15 with { Pitch = 0.6f }, NPC.Center);
-                    }
-
-                    // 预警线
-                    if (Main.netMode != NetmodeID.Server) {
-                        for (int i = 0; i < 4; i++) {
-                            float angle = laserAngle + MathHelper.PiOver2 * i;
-                            Vector2 dir = angle.ToRotationVector2();
-                            for (int j = 0; j < 8; j++) {
-                                Vector2 dustPos = NPC.Center + dir * (j * 100);
-                                int dust = Dust.NewDust(dustPos, 0, 0, DustID.GoldCoin, 0, 0, 150, default, 1.2f);
-                                Main.dust[dust].noGravity = true;
-                            }
-                        }
-                    }
-
-                    if (PhaseTimer >= 50) {
-                        SubState = 1;
-                        PhaseTimer = 0;
-                    }
-                    break;
-
-                case 1: // 发射交叉激光
-                    if (PhaseTimer == 1) {
-                        if (Main.netMode != NetmodeID.MultiplayerClient) {
-                            for (int i = 0; i < 4; i++) {
-                                float angle = laserAngle + MathHelper.PiOver2 * i;
-                                Projectile.NewProjectile(
-                                    NPC.GetSource_FromAI(),
-                                    NPC.Center,
-                                    Vector2.Zero,
-                                    ModContent.ProjectileType<CrossLaserBeam>(),
-                                    NPC.damage / 2,
-                                    0f,
-                                    Main.myPlayer,
-                                    ai0: NPC.whoAmI,
-                                    ai1: angle
-                                );
-                            }
-                        }
-
-                        SoundEngine.PlaySound(SoundID.Item122 with { Volume = 1.3f }, NPC.Center);
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(12, 40);
-                    }
-
-                    // 激光旋转
-                    laserAngle += 0.015f;
-
-                    if (PhaseTimer > 120) {
-                        TransitionTo(BossPhase.Phase2_Descend);
+                        if (dashCount >= maxDashCount) ReturnToHub();
+                        else { SubState = 1; PhaseTimer = 0; }
                     }
                     break;
             }
@@ -1230,398 +894,522 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
 
         #endregion
 
-        #region 三阶段AI
+        #region 窥视相位（签名）
 
-        private void RunPhase3Punishment(Player target) {
-            // 天罚模式 - 持续追击并释放密集弹幕
-            Vector2 toTarget = target.Center - NPC.Center;
-            Vector2 desiredVelocity = toTarget.SafeNormalize(Vector2.Zero) * 10f;
-            NPC.velocity = Vector2.Lerp(NPC.velocity, desiredVelocity, 0.08f);
+        private void RunScrying(Player target) {
+            NPC.dontTakeDamage = true; // 静止无敌
+            NPC.velocity *= 0.85f;
+            eyeOrbitSpeed = MathHelper.Lerp(eyeOrbitSpeed, 0.06f, 0.05f);
 
-            // 高速天眼旋转
-            eyeOrbitSpeed = 0.04f;
-
-            // 密集神圣光弹
-            if (PhaseTimer % 12 == 0) {
-                if (Main.netMode != NetmodeID.MultiplayerClient) {
-                    Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero);
-                    float spread = MathHelper.ToRadians(15);
-
-                    for (int i = -1; i <= 1; i++) {
-                        Vector2 velocity = toPlayer.RotatedBy(spread * i) * 14f;
-                        Projectile.NewProjectile(
-                            NPC.GetSource_FromAI(),
-                            NPC.Center,
-                            velocity,
-                            ModContent.ProjectileType<HolyOrb>(),
-                            NPC.damage / 3,
-                            2f,
-                            Main.myPlayer
-                        );
+            switch ((int)SubState) {
+                case 0: // 脱离：眼睛外扩并生成可击破眼泡
+                    scryActive = true;
+                    if (PhaseTimer == 1) {
+                        SoundEngine.PlaySound(SoundID.Item119 with { Pitch = 0.3f }, NPC.Center);
+                        eyesPopped = 0;
+                        scryRealRemaining = 2;
+                        if (Main.netMode != NetmodeID.MultiplayerClient) {
+                            for (int i = 0; i < CelestialEyeCount; i++) {
+                                Vector2 sp = GetEyePosition(i);
+                                NPC.NewNPC(NPC.GetSource_FromAI(), (int)sp.X, (int)sp.Y,
+                                    ModContent.NPCType<OverseerScryingEye>(), ai0: NPC.whoAmI, ai1: i);
+                            }
+                        }
                     }
-                }
-            }
+                    if (PhaseTimer >= 30) { SubState = 1; PhaseTimer = 0; }
+                    break;
 
-            // 天眼同步射击
-            if (PhaseTimer % 30 == 0) {
-                FireAllEyeBeams(target);
-            }
+                case 1: // 假预告（纯尘，无伤）—— 学会后可读
+                    if (Main.netMode != NetmodeID.Server) {
+                        // 随机闪现各种攻击的"假"地面标线
+                        if (PhaseTimer % 8 == 0) {
+                            int fake = (int)(PhaseTimer / 8) % 3;
+                            switch (fake) {
+                                case 0: // 假十字
+                                    for (int i = 0; i < 4; i++) {
+                                        float a = globalTime + MathHelper.PiOver2 * i;
+                                        for (int j = 0; j < 6; j++) {
+                                            Vector2 dp = target.Center + a.ToRotationVector2() * (j * 90);
+                                            int d = Dust.NewDust(dp, 0, 0, DustID.GoldCoin, 0, 0, 200, default, 0.7f);
+                                            Main.dust[d].noGravity = true;
+                                        }
+                                    }
+                                    break;
+                                case 1: // 假光柱
+                                    for (int i = -2; i <= 2; i++) {
+                                        Vector2 dp = target.Center + new Vector2(i * 160, Main.rand.NextFloat(-250, 0));
+                                        int d = Dust.NewDust(dp, 0, 0, DustID.GoldCoin, 0, 2f, 200, default, 0.7f);
+                                        Main.dust[d].noGravity = true;
+                                    }
+                                    break;
+                                case 2: // 假星陨标记
+                                    for (int i = 0; i < 5; i++) {
+                                        Vector2 dp = target.Center + Main.rand.NextVector2Circular(300, 200);
+                                        int d = Dust.NewDust(dp, 0, 0, DustID.YellowStarDust, 0, 0, 200, default, 0.8f);
+                                        Main.dust[d].noGravity = true;
+                                    }
+                                    break;
+                            }
+                        }
+                    }
+                    if (PhaseTimer >= 120) { SubState = 2; PhaseTimer = 0; }
+                    break;
 
-            if (PhaseTimer > 300) {
-                int nextAction = Main.rand.Next(4);
-                switch (nextAction) {
-                    case 0:
-                        TransitionTo(BossPhase.Phase3_UltimateWrath);
-                        break;
-                    case 1:
-                        TransitionTo(BossPhase.Phase3_FinalJudgment);
-                        break;
-                    case 2:
-                        TransitionTo(BossPhase.Phase3_OmegaLaser);
-                        break;
-                    case 3:
-                        TransitionTo(BossPhase.Phase3_MinionSync);
-                        break;
-                }
+                case 2: // 真实攻击：按 scryRealRemaining 依次释放（被击破眼泡会减少）
+                    if (PhaseTimer == 1 || (PhaseTimer % 70 == 1 && scryRealRemaining > 0)) {
+                        if (scryRealRemaining > 0) {
+                            DoScryRealAttack(target, scryRealRemaining);
+                            scryRealRemaining--;
+                        }
+                    }
+                    if (scryRealRemaining <= 0 && PhaseTimer % 70 >= 50) { SubState = 3; PhaseTimer = 0; }
+                    else if (PhaseTimer > 220) { SubState = 3; PhaseTimer = 0; }
+                    break;
+
+                case 3: // 收回眼睛
+                    scryActive = false;
+                    if (PhaseTimer == 1 && Main.netMode != NetmodeID.MultiplayerClient) {
+                        KillAllScryingEyes();
+                    }
+                    if (PhaseTimer >= 25) ReturnToHub();
+                    break;
             }
         }
 
-        private void FireAllEyeBeams(Player target) {
+        private void DoScryRealAttack(Player target, int variant) {
             if (Main.netMode == NetmodeID.MultiplayerClient) return;
-
-            for (int i = 0; i < CelestialEyeCount; i++) {
-                Vector2 eyePos = GetEyePosition(i);
-                Vector2 toTarget = (target.Center - eyePos).SafeNormalize(Vector2.Zero);
-
-                Projectile.NewProjectile(
-                    NPC.GetSource_FromAI(),
-                    eyePos,
-                    toTarget * 10f,
-                    ModContent.ProjectileType<CelestialEyeBeam>(),
-                    NPC.damage / 4,
-                    1f,
-                    Main.myPlayer
-                );
-            }
-
-            SoundEngine.PlaySound(SoundID.Item12 with { Pitch = 0.5f, Volume = 1.2f }, NPC.Center);
-        }
-
-        private void RunPhase3UltimateWrath(Player target) {
-            // 终极神威 - 巨大能量爆发
-            switch ((int)SubState) {
-                case 0: // 蓄力
-                    NPC.velocity *= 0.9f;
-
-                    // 能量聚集
-                    if (Main.netMode != NetmodeID.Server) {
-                        for (int i = 0; i < 10; i++) {
-                            Vector2 dustPos = NPC.Center + Main.rand.NextVector2CircularEdge(300, 300);
-                            int dust = Dust.NewDust(dustPos, 0, 0, DustID.GoldCoin, 0, 0, 50, default, 2.5f);
-                            Main.dust[dust].noGravity = true;
-                            Main.dust[dust].velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 15f;
-                        }
-                    }
-
-                    if (PhaseTimer == 30) {
-                        SoundEngine.PlaySound(SoundID.Item119 with { Pitch = -0.3f }, NPC.Center);
-                    }
-
-                    if (PhaseTimer >= 60) {
-                        SubState = 1;
-                        PhaseTimer = 0;
-                    }
-                    break;
-
-                case 1: // 释放
-                    if (PhaseTimer == 1) {
-                        if (Main.netMode != NetmodeID.MultiplayerClient) {
-                            // 巨大的环形弹幕爆发
-                            int waves = 3;
-                            for (int w = 0; w < waves; w++) {
-                                int count = 16;
-                                float baseAngle = w * MathHelper.ToRadians(15);
-                                for (int i = 0; i < count; i++) {
-                                    float angle = baseAngle + MathHelper.TwoPi * i / count;
-                                    Vector2 velocity = angle.ToRotationVector2() * (8f + w * 2f);
-
-                                    Projectile.NewProjectile(
-                                        NPC.GetSource_FromAI(),
-                                        NPC.Center,
-                                        velocity,
-                                        ModContent.ProjectileType<HolyOrb>(),
-                                        NPC.damage / 3,
-                                        2f,
-                                        Main.myPlayer
-                                    );
-                                }
-                            }
-                        }
-
-                        SoundEngine.PlaySound(SoundID.Item122 with { Volume = 1.5f }, NPC.Center);
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(20, 40);
-                    }
-
-                    if (PhaseTimer > 80) {
-                        TransitionTo(BossPhase.Phase3_Punishment);
-                    }
-                    break;
-            }
-        }
-
-        private void RunPhase3FinalJudgment(Player target) {
-            // 最终审判 - 大量光柱从天而降
-            switch ((int)SubState) {
-                case 0: // 准备
-                    NPC.velocity *= 0.92f;
-
-                    if (PhaseTimer == 1) {
-                        int pillarCount = Main.expertMode ? 10 : 7;
-                        pillarPositions = new Vector2[pillarCount];
-                        for (int i = 0; i < pillarCount; i++) {
-                            Vector2 offset = Main.rand.NextVector2Circular(400, 100);
-                            pillarPositions[i] = target.Center + offset;
-                        }
-
-                        SoundEngine.PlaySound(SoundID.Item15 with { Pitch = 0.7f }, NPC.Center);
-                    }
-
-                    // 预警
-                    if (Main.netMode != NetmodeID.Server) {
-                        foreach (var pos in pillarPositions) {
-                            if (pos == Vector2.Zero) continue;
-                            int dust = Dust.NewDust(pos + new Vector2(-30, -600), 60, 600, DustID.GoldCoin, 0, 0, 100, default, 1f);
-                            Main.dust[dust].noGravity = true;
-                        }
-                    }
-
-                    if (PhaseTimer >= 50) {
-                        SubState = 1;
-                        PhaseTimer = 0;
-                    }
-                    break;
-
-                case 1: // 释放光柱
-                    if (PhaseTimer == 1) {
-                        if (Main.netMode != NetmodeID.MultiplayerClient) {
-                            foreach (var pos in pillarPositions) {
-                                if (pos == Vector2.Zero) continue;
-                                Projectile.NewProjectile(
-                                    NPC.GetSource_FromAI(),
-                                    new Vector2(pos.X, pos.Y - 900),
-                                    new Vector2(0, 30f),
-                                    ModContent.ProjectileType<DivineLightPillar>(),
-                                    NPC.damage,
-                                    5f,
-                                    Main.myPlayer
-                                );
-                            }
-                        }
-
-                        SoundEngine.PlaySound(SoundID.Item122 with { Volume = 1.3f }, NPC.Center);
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(18, 40);
-                    }
-
-                    if (PhaseTimer > 60) {
-                        TransitionTo(BossPhase.Phase3_Punishment);
-                    }
-                    break;
-            }
-        }
-
-        private void RunPhase3OmegaLaser(Player target) {
-            // 终极激光 - 超大范围追踪激光
-            switch ((int)SubState) {
-                case 0: // 蓄力阶段
-                    NPC.velocity *= 0.85f;
-
-                    if (PhaseTimer == 1) {
-                        laserAngle = (target.Center - NPC.Center).ToRotation();
-                        SoundEngine.PlaySound(SoundID.Item15 with { Pitch = -0.5f, Volume = 1.5f }, NPC.Center);
-                    }
-
-                    // 巨大的能量聚集效果
-                    if (Main.netMode != NetmodeID.Server) {
-                        for (int i = 0; i < 12; i++) {
-                            Vector2 dustPos = NPC.Center + Main.rand.NextVector2CircularEdge(200, 200);
-                            int dust = Dust.NewDust(dustPos, 0, 0, DustID.GoldCoin, 0, 0, 50, default, 2.5f);
-                            Main.dust[dust].noGravity = true;
-                            Main.dust[dust].velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 12f;
-                        }
-
-                        // 核心聚能
-                        for (int i = 0; i < 5; i++) {
-                            Vector2 dustPos = NPC.Center + Main.rand.NextVector2Circular(30, 30);
-                            int dust = Dust.NewDust(dustPos, 0, 0, DustID.YellowStarDust, 0, 0, 100, default, 3f);
-                            Main.dust[dust].noGravity = true;
-                        }
-                    }
-
-                    // 震动逐渐增强
-                    if (PhaseTimer % 10 == 0) {
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(PhaseTimer / 10f, 10);
-                    }
-
-                    if (PhaseTimer >= 80) {
-                        SubState = 1;
-                        PhaseTimer = 0;
-
-                        // 发射终极激光
-                        if (Main.netMode != NetmodeID.MultiplayerClient) {
-                            Projectile.NewProjectile(
-                                NPC.GetSource_FromAI(),
-                                NPC.Center,
-                                Vector2.Zero,
-                                ModContent.ProjectileType<OmegaCelestialLaser>(),
-                                (int)(NPC.damage * 1.5f),
-                                0f,
-                                Main.myPlayer,
-                                ai0: NPC.whoAmI,
-                                ai1: laserAngle
-                            );
-                        }
-
-                        SoundEngine.PlaySound(SoundID.Zombie104 with { Pitch = -0.3f, Volume = 2f }, NPC.Center);
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(25, 120);
-                    }
-                    break;
-
-                case 1: // 激光持续
-                    NPC.velocity *= 0.9f;
-
-                    // 追踪玩家
-                    float targetAngle = (target.Center - NPC.Center).ToRotation();
-                    laserAngle = MathHelper.Lerp(laserAngle, targetAngle, 0.02f);
-
-                    if (PhaseTimer > 150) {
-                        TransitionTo(BossPhase.Phase3_Punishment);
-                    }
-                    break;
-            }
-        }
-
-        private void RunPhase3MinionSync(Player target) {
-            // 仆从同步激光 - 所有天眼仆从同时发射激光
-            switch ((int)SubState) {
-                case 0: // 确保有仆从
-                    if (!hasSpawnedMinions || !AnyMinionsAlive()) {
-                        // 召唤新仆从
-                        if (Main.netMode != NetmodeID.MultiplayerClient) {
-                            int minionCount = Main.expertMode ? 4 : 3;
-                            eyeMinionIds = new int[minionCount];
-
-                            for (int i = 0; i < minionCount; i++) {
-                                float angle = MathHelper.TwoPi * i / minionCount;
-                                Vector2 spawnPos = NPC.Center + angle.ToRotationVector2() * 150f;
-
-                                int npcId = NPC.NewNPC(
-                                    NPC.GetSource_FromAI(),
-                                    (int)spawnPos.X,
-                                    (int)spawnPos.Y,
-                                    ModContent.NPCType<CelestialEyeMinion>(),
-                                    ai0: NPC.whoAmI,
-                                    ai1: i
-                                );
-                                eyeMinionIds[i] = npcId;
-                            }
-                            hasSpawnedMinions = true;
-                        }
-                    }
-
-                    SubState = 1;
-                    PhaseTimer = 0;
-                    break;
-
-                case 1: // 准备同步激光
-                    NPC.velocity *= 0.9f;
-
-                    if (PhaseTimer == 1) {
-                        SoundEngine.PlaySound(SoundID.Item15 with { Pitch = 0.5f, Volume = 1.2f }, NPC.Center);
-
-                        // 通知所有仆从准备激光
-                        if (Main.netMode != NetmodeID.MultiplayerClient) {
-                            foreach (int minionId in eyeMinionIds) {
-                                if (minionId >= 0 && minionId < Main.maxNPCs && Main.npc[minionId].active) {
-                                    Main.npc[minionId].ai[2] = 1; // 触发激光模式
-                                }
-                            }
-                        }
-                    }
-
-                    // 预警效果
-                    if (Main.netMode != NetmodeID.Server) {
-                        foreach (int minionId in eyeMinionIds) {
-                            if (minionId >= 0 && minionId < Main.maxNPCs && Main.npc[minionId].active) {
-                                Vector2 minionPos = Main.npc[minionId].Center;
-                                Vector2 toTarget = (target.Center - minionPos).SafeNormalize(Vector2.Zero);
-                                for (int i = 0; i < 5; i++) {
-                                    Vector2 dustPos = minionPos + toTarget * (i * 100);
-                                    int dust = Dust.NewDust(dustPos, 0, 0, DustID.GoldCoin, 0, 0, 150, default, 1f);
-                                    Main.dust[dust].noGravity = true;
-                                }
-                            }
-                        }
-                    }
-
-                    if (PhaseTimer >= 60) {
-                        SubState = 2;
-                        PhaseTimer = 0;
-                    }
-                    break;
-
-                case 2: // 同步发射
-                    if (PhaseTimer == 1) {
-                        if (Main.netMode != NetmodeID.MultiplayerClient) {
-                            foreach (int minionId in eyeMinionIds) {
-                                if (minionId >= 0 && minionId < Main.maxNPCs && Main.npc[minionId].active) {
-                                    NPC minion = Main.npc[minionId];
-                                    Vector2 toTarget = (target.Center - minion.Center).SafeNormalize(Vector2.Zero);
-
-                                    Projectile.NewProjectile(
-                                        NPC.GetSource_FromAI(),
-                                        minion.Center,
-                                        toTarget * 15f,
-                                        ModContent.ProjectileType<MinionSyncLaser>(),
-                                        NPC.damage / 2,
-                                        2f,
-                                        Main.myPlayer
-                                    );
-                                }
-                            }
-
-                            // Boss也发射
-                            Vector2 bossToTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero);
-                            Projectile.NewProjectile(
-                                NPC.GetSource_FromAI(),
-                                NPC.Center,
-                                bossToTarget * 15f,
-                                ModContent.ProjectileType<MinionSyncLaser>(),
-                                NPC.damage / 2,
-                                2f,
-                                Main.myPlayer
-                            );
-                        }
-
-                        SoundEngine.PlaySound(SoundID.Item122 with { Volume = 1.5f }, NPC.Center);
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(15, 30);
-                    }
-
-                    if (PhaseTimer > 60) {
-                        TransitionTo(BossPhase.Phase3_Punishment);
-                    }
-                    break;
-            }
-        }
-
-        private bool AnyMinionsAlive() {
-            if (eyeMinionIds == null) return false;
-            foreach (int id in eyeMinionIds) {
-                if (id >= 0 && id < Main.maxNPCs && Main.npc[id].active &&
-                    Main.npc[id].type == ModContent.NPCType<CelestialEyeMinion>()) {
-                    return true;
+            SoundEngine.PlaySound(SoundID.Item122 with { Volume = 1.1f }, NPC.Center);
+            if (variant % 2 == 0) {
+                // 光柱阵
+                int count = Main.expertMode ? 6 : 4;
+                for (int i = 0; i < count; i++) {
+                    float offsetX = (i - (count - 1) / 2f) * 200f;
+                    Vector2 pos = new Vector2(target.Center.X + offsetX, target.Center.Y - 800);
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, new Vector2(0, 25f),
+                        ModContent.ProjectileType<DivineLightPillar>(), NPC.damage, 5f, Main.myPlayer);
                 }
+            }
+            else {
+                // 旋转十字
+                float baseA = Main.rand.NextFloat(MathHelper.PiOver4);
+                for (int i = 0; i < 4; i++) {
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
+                        ModContent.ProjectileType<CrossLaserBeam>(), NPC.damage / 2, 0f, Main.myPlayer,
+                        ai0: NPC.whoAmI, ai1: baseA + MathHelper.PiOver2 * i);
+                }
+            }
+        }
+
+        private void KillAllScryingEyes() {
+            int type = ModContent.NPCType<OverseerScryingEye>();
+            for (int i = 0; i < Main.maxNPCs; i++) {
+                NPC n = Main.npc[i];
+                if (n.active && n.type == type && (int)n.ai[0] == NPC.whoAmI) {
+                    n.life = 0; n.HitEffect(); n.active = false;
+                    if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncNPC, number: i);
+                }
+            }
+        }
+
+        #endregion
+
+        #region 监视满槽：审判标记
+
+        private void RunMarkedForJudgment(Player target) {
+            NPC.velocity *= 0.9f;
+            switch ((int)SubState) {
+                case 0: // 锁定 + 预告
+                    if (PhaseTimer == 1) {
+                        crossAngle = (target.Center - NPC.Center).ToRotation(); // 锁定方向（不追踪）
+                        SpawnJudgmentTelegraph(crossAngle, 2400f, 55); // 致命锁定线（唯一红，固定方向）
+                        SoundEngine.PlaySound(SoundID.Item15 with { Pitch = -0.4f, Volume = 1.4f }, NPC.Center);
+                    }
+                    if (Main.netMode != NetmodeID.Server) {
+                        for (int i = 0; i < 6; i++) {
+                            Vector2 dp = NPC.Center + crossAngle.ToRotationVector2() * Main.rand.NextFloat(0, 1200);
+                            int d = Dust.NewDust(dp, 0, 0, DustID.GoldCoin, 0, 0, 60, default, 1.6f);
+                            Main.dust[d].noGravity = true;
+                        }
+                        if (PhaseTimer % 8 == 0) ACMScreenShakeSystem.Add(MathHelper.Clamp(PhaseTimer / 12f, 0f, 12f)); // 渐强震屏
+                    }
+                    if (PhaseTimer >= 55) {
+                        SubState = 1; PhaseTimer = 0;
+                        if (Main.netMode != NetmodeID.MultiplayerClient) {
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
+                                ModContent.ProjectileType<JudgmentBeam>(), (int)(NPC.damage * 1.8f), 0f, Main.myPlayer,
+                                ai0: NPC.whoAmI, ai1: crossAngle);
+                        }
+                        SoundEngine.PlaySound(SoundID.Zombie104 with { Pitch = -0.3f, Volume = 2f }, NPC.Center);
+                        ACMScreenShakeSystem.Add(12f); // 处决级一次性
+                        bloomPulse = 1f;               // 全视看穿你的处决泛光
+                    }
+                    break;
+
+                case 1: // 射线持续后复位
+                    if (PhaseTimer > 80) {
+                        judgmentQueued = false;
+                        surveillanceMeter = 0f;
+                        judgmentCooldown = 180;
+                        ReturnToHub();
+                    }
+                    break;
+            }
+        }
+
+        #endregion
+
+        #region 陪审团事件
+
+        private void RunJuryTrial(Player target) {
+            switch ((int)SubState) {
+                case 0: // 召唤
+                    NPC.dontTakeDamage = true;
+                    NPC.velocity *= 0.9f;
+                    if (PhaseTimer == 1) {
+                        SoundEngine.PlaySound(SoundID.Item119 with { Pitch = -0.2f, Volume = 1.4f }, NPC.Center);
+                        ACMScreenShakeSystem.Add(12f);
+
+                        int players = CountActivePlayers();
+                        int extra = (didJury25 ? 1 : 0);
+                        jurorCount = Math.Min(jurorIds.Length, players + extra);
+                        juryTimer = JuryDuration;
+
+                        if (Main.netMode != NetmodeID.MultiplayerClient) {
+                            for (int i = 0; i < jurorCount; i++) {
+                                float angle = MathHelper.TwoPi * i / Math.Max(1, jurorCount);
+                                Vector2 sp = NPC.Center + angle.ToRotationVector2() * 260f;
+                                jurorIds[i] = NPC.NewNPC(NPC.GetSource_FromAI(), (int)sp.X, (int)sp.Y,
+                                    ModContent.NPCType<HeavenlyJuror>(), ai0: NPC.whoAmI);
+                            }
+                        }
+                    }
+                    if (PhaseTimer >= 50) { SubState = 1; PhaseTimer = 0; }
+                    break;
+
+                case 1: // 审判中：本体半被动且无敌，玩家须清陪审团
+                    NPC.dontTakeDamage = true;
+                    Vector2 hover = target.Center + new Vector2(MathF.Sin(globalTime) * 120f, -380);
+                    NPC.Center = Vector2.Lerp(NPC.Center, hover, 0.015f);
+                    juryTimer--;
+
+                    // 偶发预告光柱（保持压力，但稀疏）
+                    if (PhaseTimer % 90 == 1 && Main.netMode != NetmodeID.MultiplayerClient) {
+                        Vector2 pos = new Vector2(target.Center.X + Main.rand.NextFloat(-200, 200), target.Center.Y - 800);
+                        SpawnPillarTelegraph(new Vector2(pos.X, target.Center.Y + 50), 50);
+                    }
+                    if (PhaseTimer % 90 == 55 && Main.netMode != NetmodeID.MultiplayerClient) {
+                        Vector2 pos = new Vector2(target.Center.X + Main.rand.NextFloat(-200, 200), target.Center.Y - 800);
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, new Vector2(0, 22f),
+                            ModContent.ProjectileType<DivineLightPillar>(), NPC.damage, 5f, Main.myPlayer);
+                    }
+
+                    bool allDead = !AnyJurorsAlive();
+                    if (allDead) {
+                        // 成功：进入惩戒输出窗
+                        SubState = 2; PhaseTimer = 0;
+                        SoundEngine.PlaySound(SoundID.Item4, NPC.Center);
+                    }
+                    else if (juryTimer <= 0) {
+                        // 失败：获得永久裁决叠层
+                        if (verdictStacks < MaxVerdictStacks) verdictStacks++;
+                        KillAllJurors();
+                        SoundEngine.PlaySound(SoundID.ForceRoar with { Pitch = -0.3f }, NPC.Center);
+                        ACMScreenShakeSystem.Add(12f);
+                        if (Main.netMode != NetmodeID.MultiplayerClient) NPC.netUpdate = true;
+                        SubState = 3; PhaseTimer = 0;
+                    }
+                    break;
+
+                case 2: // 惩戒输出窗（清光奖励）：本体可受击且减速
+                    NPC.velocity *= 0.92f;
+                    if (Main.netMode != NetmodeID.Server && PhaseTimer % 3 == 0) {
+                        Vector2 dp = NPC.Center + Main.rand.NextVector2CircularEdge(140, 140);
+                        int d = Dust.NewDust(dp, 0, 0, DustID.GoldCoin, 0, 0, 120, default, 1.5f);
+                        Main.dust[d].noGravity = true;
+                        Main.dust[d].velocity = (NPC.Center - dp).SafeNormalize(Vector2.Zero) * 3f;
+                    }
+                    if (PhaseTimer > 150) ReturnToHub();
+                    break;
+
+                case 3: // 失败收场（短）
+                    NPC.velocity *= 0.92f;
+                    if (PhaseTimer > 40) ReturnToHub();
+                    break;
+            }
+        }
+
+        private int CountActivePlayers() {
+            int c = 0;
+            for (int i = 0; i < Main.maxPlayers; i++)
+                if (Main.player[i].active && !Main.player[i].dead) c++;
+            return Math.Max(1, c);
+        }
+
+        private bool AnyJurorsAlive() {
+            int type = ModContent.NPCType<HeavenlyJuror>();
+            for (int i = 0; i < jurorCount; i++) {
+                int id = jurorIds[i];
+                if (id >= 0 && id < Main.maxNPCs && Main.npc[id].active && Main.npc[id].type == type)
+                    return true;
             }
             return false;
+        }
+
+        private void KillAllJurors() {
+            int type = ModContent.NPCType<HeavenlyJuror>();
+            for (int i = 0; i < Main.maxNPCs; i++) {
+                NPC n = Main.npc[i];
+                if (n.active && n.type == type && (int)n.ai[0] == NPC.whoAmI) {
+                    n.life = 0; n.HitEffect(); n.active = false;
+                    if (Main.netMode == NetmodeID.Server) NetMessage.SendData(MessageID.SyncNPC, number: i);
+                }
+            }
+        }
+
+        #endregion
+
+        #region 阶段过渡
+
+        private void RunPhaseTransition(Player target) {
+            NPC.dontTakeDamage = true; // 过渡无敌帧
+            NPC.velocity *= 0.93f;
+            eyeOrbitSpeed = 0.06f + PhaseTimer * 0.0015f;
+
+            if (Main.netMode != NetmodeID.Server) {
+                int n = IsPhase3 ? 12 : 8;
+                for (int i = 0; i < n; i++) {
+                    Vector2 dp = NPC.Center + Main.rand.NextVector2CircularEdge(230, 230);
+                    int dustType = Main.rand.NextBool() ? DustID.GoldCoin : DustID.YellowStarDust;
+                    int d = Dust.NewDust(dp, 0, 0, dustType, 0, 0, 50, default, 2.2f);
+                    Main.dust[d].noGravity = true;
+                    Main.dust[d].velocity = (NPC.Center - dp).SafeNormalize(Vector2.Zero) * 10f;
+                }
+            }
+
+            if (PhaseTimer == 40)
+                SoundEngine.PlaySound(SoundID.Item119 with { Volume = 1.4f }, NPC.Center);
+            if (PhaseTimer == 70) {
+                SoundEngine.PlaySound(SoundID.ForceRoar with { Pitch = IsPhase3 ? -0.3f : 0.1f }, NPC.Center);
+                ACMScreenShakeSystem.Add(IsPhase3 ? 12f : 11f);
+            }
+
+            int dur = IsPhase3 ? 120 : 100;
+            if (PhaseTimer > dur) {
+                eyeOrbitSpeed = 0.03f;
+                ReturnToHub();
+            }
+        }
+
+        #endregion
+
+        #region 三阶段：全知循环
+
+        private void RunOmniscientCycle(Player target) {
+            eyeOrbitSpeed = MathHelper.Lerp(eyeOrbitSpeed, 0.035f, 0.05f);
+
+            switch (cycleBeat) {
+                case 0: BeatPillarGrid(target); break;
+                case 1: BeatGazeSweep(target); break;
+                case 2: BeatSyncOrPunish(target); break;
+                case 3: BeatRest(target); break;
+            }
+        }
+
+        private void NextBeat() {
+            cycleBeat = (cycleBeat + 1) % 4;
+            PhaseTimer = 0;
+            beatFired = false;
+            beatFired2 = false;
+            if (Main.netMode != NetmodeID.MultiplayerClient) NPC.netUpdate = true;
+        }
+
+        // 节拍0：地标光柱阵
+        private void BeatPillarGrid(Player target) {
+            NPC.velocity *= 0.92f;
+            if (PhaseTimer == 1) {
+                markerCount = (Main.expertMode ? 7 : 5) + verdictStacks;
+                if (markerCount > markerPositions.Length) markerCount = markerPositions.Length;
+                for (int i = 0; i < markerCount; i++) {
+                    float offsetX = (i - (markerCount - 1) / 2f) * 180f;
+                    markerPositions[i] = new Vector2(target.Center.X + offsetX, target.Center.Y + 50);
+                    SpawnPillarTelegraph(markerPositions[i], 60);
+                }
+                SoundEngine.PlaySound(SoundID.Item15 with { Pitch = 0.5f }, NPC.Center);
+            }
+            if (Main.netMode != NetmodeID.Server) {
+                for (int i = 0; i < markerCount; i++) {
+                    int d = Dust.NewDust(markerPositions[i] + new Vector2(-20, -500), 40, 500, DustID.GoldCoin, 0, 2f, 100, default, 0.8f);
+                    Main.dust[d].noGravity = true;
+                }
+            }
+            if (!beatFired && PhaseTimer >= 60) {
+                beatFired = true;
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    for (int i = 0; i < markerCount; i++) {
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(),
+                            new Vector2(markerPositions[i].X, markerPositions[i].Y - 800), new Vector2(0, 26f),
+                            ModContent.ProjectileType<DivineLightPillar>(), NPC.damage, 5f, Main.myPlayer);
+                    }
+                }
+                SoundEngine.PlaySound(SoundID.Item122 with { Volume = 1.2f }, NPC.Center);
+                ACMScreenShakeSystem.Add(8f);
+            }
+            if (PhaseTimer > 130) NextBeat();
+        }
+
+        // 节拍1：带安全扇区的旋转凝视扫描
+        private void BeatGazeSweep(Player target) {
+            NPC.velocity *= 0.95f;
+            if (PhaseTimer == 1) {
+                gazeAngle = Main.rand.NextFloat(MathHelper.TwoPi);
+                gazeDir = Main.rand.NextBool() ? 1f : -1f;
+                safeWedgeAngle = (target.Center - NPC.Center).ToRotation();
+                SpawnSafeWedgeTelegraph(safeWedgeAngle, 1400f, 50);
+                SoundEngine.PlaySound(SoundID.Item15 with { Pitch = 0.2f }, NPC.Center);
+            }
+            if (PhaseTimer > 50) {
+                gazeAngle += gazeDir * 0.055f;
+                if (PhaseTimer % 5 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    int segments = 18;
+                    for (int k = 0; k < segments; k++) {
+                        float a = gazeAngle + MathHelper.TwoPi * k / segments;
+                        if (Math.Abs(MathHelper.WrapAngle(a - safeWedgeAngle)) < SafeWedgeHalf) continue;
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, a.ToRotationVector2() * 8f,
+                            ModContent.ProjectileType<HolyOrb>(), NPC.damage / 3, 1f, Main.myPlayer);
+                    }
+                }
+                if (Main.netMode != NetmodeID.Server) {
+                    Vector2 dp = NPC.Center + safeWedgeAngle.ToRotationVector2() * Main.rand.NextFloat(0, 800);
+                    int d = Dust.NewDust(dp, 0, 0, DustID.BlueTorch, 0, 0, 150, new Color(180, 220, 255), 0.9f);
+                    Main.dust[d].noGravity = true;
+                }
+            }
+            if (PhaseTimer > 50 + 170) NextBeat();
+        }
+
+        // 节拍2：有仆从则同步激光，否则惩戒输出窗
+        private void BeatSyncOrPunish(Player target) {
+            bool minionsAlive = AnyScryingEyesAlive() || AnyJurorsAlive();
+            // 全知循环不依赖固定仆从，这里用天眼连射模拟"同步"；否则给一个减速输出窗
+            if (minionsAlive) {
+                // 同步激光：天眼齐射
+                NPC.velocity *= 0.9f;
+                if (PhaseTimer == 1) SoundEngine.PlaySound(SoundID.Item15 with { Pitch = 0.5f }, NPC.Center);
+                if (!beatFired && PhaseTimer >= 50) {
+                    beatFired = true;
+                    if (Main.netMode != NetmodeID.MultiplayerClient) {
+                        for (int i = 0; i < CelestialEyeCount; i++) {
+                            Vector2 eyePos = GetEyePosition(i);
+                            Vector2 toT = (target.Center - eyePos).SafeNormalize(Vector2.Zero);
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(), eyePos, toT * 13f,
+                                ModContent.ProjectileType<MinionSyncLaser>(), NPC.damage / 2, 2f, Main.myPlayer);
+                        }
+                    }
+                    SoundEngine.PlaySound(SoundID.Item122 with { Volume = 1.4f }, NPC.Center);
+                    ACMScreenShakeSystem.Add(10f);
+                }
+                if (PhaseTimer > 110) NextBeat();
+            }
+            else {
+                // 惩戒输出窗：本体减速逼近，稀疏单发，留给玩家集火
+                Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero);
+                NPC.velocity = Vector2.Lerp(NPC.velocity, toTarget * 4f, 0.04f);
+                if (PhaseTimer % 40 == 1 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, toTarget * 9f,
+                        ModContent.ProjectileType<CelestialEyeBeam>(), NPC.damage / 3, 1f, Main.myPlayer);
+                }
+                if (Main.netMode != NetmodeID.Server && PhaseTimer % 4 == 0) {
+                    Vector2 dp = NPC.Center + Main.rand.NextVector2CircularEdge(120, 120);
+                    int d = Dust.NewDust(dp, 0, 0, DustID.GoldCoin, 0, 0, 120, default, 1.3f);
+                    Main.dust[d].noGravity = true;
+                }
+                if (PhaseTimer > 120) NextBeat();
+            }
+        }
+
+        // 节拍3：休整（无喷弹），在此检查审判/陪审中断
+        private void BeatRest(Player target) {
+            NPC.velocity *= 0.9f;
+            Vector2 hover = target.Center + new Vector2(MathF.Sin(globalTime) * 60f, -360);
+            NPC.Center = Vector2.Lerp(NPC.Center, hover, 0.03f);
+
+            if (PhaseTimer >= 60) {
+                if (judgmentQueued) { TransitionTo(BossPhase.MarkedForJudgment); return; }
+                if (TryStartJury()) return;
+                NextBeat();
+            }
+        }
+
+        private bool AnyScryingEyesAlive() {
+            int type = ModContent.NPCType<OverseerScryingEye>();
+            for (int i = 0; i < Main.maxNPCs; i++) {
+                NPC n = Main.npc[i];
+                if (n.active && n.type == type && (int)n.ai[0] == NPC.whoAmI) return true;
+            }
+            return false;
+        }
+
+        #endregion
+
+        #region 预告生成辅助
+
+        private void SpawnCrossTelegraph(float baseAngle, float length, int life) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+            for (int i = 0; i < 4; i++) {
+                int p = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
+                    ModContent.ProjectileType<OverseerGroundTelegraph>(), 0, 0f, Main.myPlayer,
+                    ai0: length, ai1: baseAngle + MathHelper.PiOver2 * i, ai2: NPC.whoAmI);
+                if (p >= 0 && p < Main.maxProjectiles) {
+                    Main.projectile[p].timeLeft = life;
+                    Main.projectile[p].localAI[0] = 0f; // style: 线
+                }
+            }
+        }
+
+        private void SpawnSafeWedgeTelegraph(float safeAngle, float length, int life) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+            int p = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
+                ModContent.ProjectileType<OverseerGroundTelegraph>(), 0, 0f, Main.myPlayer,
+                ai0: length, ai1: safeAngle, ai2: NPC.whoAmI);
+            if (p >= 0 && p < Main.maxProjectiles) {
+                Main.projectile[p].timeLeft = life;
+                Main.projectile[p].localAI[0] = 2f; // style: 安全扇区
+            }
+        }
+
+        private void SpawnPillarTelegraph(Vector2 groundPos, int life) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+            int p = Projectile.NewProjectile(NPC.GetSource_FromAI(), groundPos, Vector2.Zero,
+                ModContent.ProjectileType<OverseerGroundTelegraph>(), 0, 0f, Main.myPlayer,
+                ai0: 800f, ai1: -MathHelper.PiOver2, ai2: -1f);
+            if (p >= 0 && p < Main.maxProjectiles) {
+                Main.projectile[p].timeLeft = life;
+                Main.projectile[p].localAI[0] = 1f; // style: 光柱列
+            }
+        }
+
+        /// <summary>致命审判锁定线（唯一红, style=3）：单发固定方向, 取代旧的四线十字预告以匹配单发审判射线。</summary>
+        private void SpawnJudgmentTelegraph(float angle, float length, int life) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+            int p = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
+                ModContent.ProjectileType<OverseerGroundTelegraph>(), 0, 0f, Main.myPlayer,
+                ai0: length, ai1: angle, ai2: NPC.whoAmI);
+            if (p >= 0 && p < Main.maxProjectiles) {
+                Main.projectile[p].timeLeft = life;
+                Main.projectile[p].localAI[0] = 3f; // style: 致命审判线
+            }
+        }
+
+        private void SpawnDashTelegraph(Vector2 toPos, int life) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+            float a = (toPos - NPC.Center).ToRotation();
+            int p = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
+                ModContent.ProjectileType<OverseerGroundTelegraph>(), 0, 0f, Main.myPlayer,
+                ai0: 700f, ai1: a, ai2: NPC.whoAmI);
+            if (p >= 0 && p < Main.maxProjectiles) {
+                Main.projectile[p].timeLeft = life;
+                Main.projectile[p].localAI[0] = 0f;
+            }
         }
 
         #endregion
@@ -1629,237 +1417,148 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
         #region 绘制
 
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
-            // 绘制神圣光环（底层）
             DrawDivineAura(spriteBatch, screenPos);
-
-            // 绘制拖尾
             DrawTrail(spriteBatch, screenPos);
-
-            // 绘制天眼
-            DrawCelestialEyes(spriteBatch, screenPos, drawColor);
-
-            // 绘制光晕（在本体之前）
+            if (!scryActive) DrawCelestialEyes(spriteBatch, screenPos, drawColor);
             DrawHalo(spriteBatch, screenPos);
-
-            // 绘制本体
             DrawMainBody(spriteBatch, screenPos, drawColor);
-
-            // 绘制外层光效
             DrawOuterGlow(spriteBatch, screenPos);
+            DrawSurveillanceMeter(spriteBatch, screenPos);
+
+            // 处决/十字开火加性泛光（金白权柄）。DrawRadialBloomAt 内部申请全屏名额 —— PreDraw 先于
+            // PostDraw 执行, 故开火帧泛光优先取得名额, GenericWarp 折射当帧让位 (§全屏名额仲裁)。
+            if (bloomPulse > 0.02f)
+                ACMShaders.DrawRadialBloomAt(NPC.Center, 0.32f, MathHelper.Clamp(bloomPulse, 0f, 1f), TelegraphColors.Holy, 12f, 2.4f);
 
             return false;
         }
 
+        /// <summary>
+        /// V2 监视/窥视的全屏折射扭曲（GenericWarp · rift 主题 uMode=3）。喂 <see cref="Main.screenTarget"/> 的昂贵
+        /// 后处理, 受单一全屏名额约束: 窥视/审判时拉满, 平时随监视槽渐显; 强度过低或名额被泛光占用时直接早退。
+        /// 监视暗角 / 全视法阵由 <see cref="OverseerSurveillanceScreenSystem"/> 单独承担。
+        /// </summary>
+        public override void PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+            if (Main.dedServ || surveillanceWarp <= 0.02f)
+                return;
+            if (!ACMShaders.RequestFullscreenSlot())
+                return;
+
+            Effect fx = ACMShaders.GenericWarp;
+            if (fx == null)
+                return;
+
+            Vector2 centerUV = (NPC.Center - Main.screenPosition) / new Vector2(Main.screenWidth, Main.screenHeight);
+            float aspect = (float)Main.screenWidth / Main.screenHeight;
+
+            fx.Parameters["uTime"]?.SetValue(globalTime);
+            fx.Parameters["uCenter"]?.SetValue(centerUV);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(surveillanceWarp, 0f, 1f));
+            fx.Parameters["uRadius"]?.SetValue(0.95f);
+            fx.Parameters["uAspect"]?.SetValue(aspect);
+            fx.Parameters["uWarpScale"]?.SetValue(1.15f);
+            fx.Parameters["uChroma"]?.SetValue(0.5f);
+            fx.Parameters["uRadialPull"]?.SetValue(0.25f);   // 轻微向内吸 = 被扫描/窥视收束
+            fx.Parameters["uMode"]?.SetValue(3f);            // 3 = rift/distort
+            fx.Parameters["uTint"]?.SetValue(new Vector4(SurveillanceBlue.ToVector3(), 0.3f));
+
+            ACMShaders.ApplyScreenPostProcess(spriteBatch, fx);
+        }
+
+        private void DrawSurveillanceMeter(SpriteBatch spriteBatch, Vector2 screenPos) {
+            if (ACMAsset.BlankStar == null || surveillanceMeter <= 1f) return;
+            Texture2D tex = ACMAsset.BlankStar;
+            Vector2 center = NPC.Center - screenPos + new Vector2(0, -130);
+            int dots = 12;
+            int lit = (int)(surveillanceMeter / 100f * dots);
+            float t = surveillanceMeter / 100f;
+            Color full = Color.Lerp(new Color(255, 240, 160), new Color(255, 70, 60), t);
+            for (int i = 0; i < dots; i++) {
+                float a = MathHelper.Pi + MathHelper.Pi * i / (dots - 1f);
+                Vector2 pos = center + new Vector2(MathF.Cos(a), MathF.Sin(a)) * 70f;
+                Color c = (i < lit ? full : new Color(60, 60, 70)) * 0.9f;
+                c.A = 0;
+                spriteBatch.Draw(tex, pos, null, c, 0f, tex.Size() / 2f, 0.12f, SpriteEffects.None, 0f);
+            }
+        }
+
         private void DrawDivineAura(SpriteBatch spriteBatch, Vector2 screenPos) {
             if (ACMAsset.LightShot == null) return;
-
-            // 使用 LightShot 创建大范围神圣光环
             Texture2D auraTexture = ACMAsset.LightShot;
             Vector2 drawPos = NPC.Center - screenPos;
-
             Color auraColor = new Color(255, 240, 180) * divineAuraAlpha;
             auraColor.A = 0;
-
             float auraScale = 8f * haloScale;
-
-            spriteBatch.Draw(
-                auraTexture,
-                drawPos,
-                null,
-                auraColor,
-                MathHelper.PiOver2,
-                auraTexture.Size() / 2f,
-                auraScale,
-                SpriteEffects.None,
-                0f
-            );
+            spriteBatch.Draw(auraTexture, drawPos, null, auraColor, MathHelper.PiOver2, auraTexture.Size() / 2f, auraScale, SpriteEffects.None, 0f);
         }
 
         private void DrawTrail(SpriteBatch spriteBatch, Vector2 screenPos) {
             Texture2D texture = TextureAssets.Npc[Type].Value;
-
             for (int i = 0; i < NPC.oldPos.Length; i++) {
                 if (NPC.oldPos[i] == Vector2.Zero) continue;
-
                 float progress = 1f - (float)i / NPC.oldPos.Length;
                 Color trailColor = new Color(255, 230, 150) * progress * 0.25f * NPC.Opacity;
                 trailColor.A = 0;
                 Vector2 drawPos = NPC.oldPos[i] + NPC.Size / 2f - screenPos;
                 float scale = NPC.scale * progress * 0.9f;
-
-                spriteBatch.Draw(
-                    texture,
-                    drawPos,
-                    null,
-                    trailColor,
-                    NPC.rotation,
-                    texture.Size() / 2f,
-                    scale,
-                    SpriteEffects.None,
-                    0f
-                );
+                spriteBatch.Draw(texture, drawPos, null, trailColor, NPC.rotation, texture.Size() / 2f, scale, SpriteEffects.None, 0f);
             }
         }
 
         private void DrawCelestialEyes(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
             if (eyeAngles == null) return;
-
-            // 优先使用专用天眼纹理，否则使用BlankStar
             Texture2D eyeTexture = CelestialEyeMinion.CelestialOverseerEye ?? ACMAsset.BlankStar;
             if (eyeTexture == null) return;
-
             for (int i = 0; i < CelestialEyeCount; i++) {
                 Vector2 eyePos = GetEyePosition(i) - screenPos;
-
-                // 外层光晕
-                Color outerGlow = new Color(200, 220, 255) * 0.6f;
+                // 视线高亮：有视线时偏暖（危险），无视线时偏冷
+                Color outerGlow = (eyeHasLOS != null && eyeHasLOS[i]) ? new Color(255, 180, 120) * 0.7f : new Color(160, 200, 255) * 0.5f;
                 outerGlow.A = 0;
-                spriteBatch.Draw(
-                    eyeTexture,
-                    eyePos,
-                    null,
-                    outerGlow,
-                    globalTime + i * 0.5f,
-                    eyeTexture.Size() / 2f,
-                    0.6f,
-                    SpriteEffects.None,
-                    0f
-                );
-
-                // 核心
+                spriteBatch.Draw(eyeTexture, eyePos, null, outerGlow, globalTime + i * 0.5f, eyeTexture.Size() / 2f, 0.6f, SpriteEffects.None, 0f);
                 Color coreColor = new Color(255, 255, 220);
                 coreColor.A = 0;
-                spriteBatch.Draw(
-                    eyeTexture,
-                    eyePos,
-                    null,
-                    coreColor,
-                    -globalTime * 0.5f + i * 0.3f,
-                    eyeTexture.Size() / 2f,
-                    0.4f,
-                    SpriteEffects.None,
-                    0f
-                );
-
-                // 瞳孔效果（如果使用专用纹理）
+                spriteBatch.Draw(eyeTexture, eyePos, null, coreColor, -globalTime * 0.5f + i * 0.3f, eyeTexture.Size() / 2f, 0.4f, SpriteEffects.None, 0f);
                 if (CelestialEyeMinion.CelestialOverseerEye != null) {
-                    Color pupilColor = Color.White;
-                    spriteBatch.Draw(
-                        eyeTexture,
-                        eyePos,
-                        null,
-                        pupilColor,
-                        0f,
-                        eyeTexture.Size() / 2f,
-                        0.35f,
-                        SpriteEffects.None,
-                        0f
-                    );
+                    spriteBatch.Draw(eyeTexture, eyePos, null, Color.White, 0f, eyeTexture.Size() / 2f, 0.35f, SpriteEffects.None, 0f);
                 }
             }
         }
 
         private void DrawHalo(SpriteBatch spriteBatch, Vector2 screenPos) {
             if (ACMAsset.BlankStar == null) return;
-
             Texture2D haloTexture = ACMAsset.BlankStar;
             Vector2 drawPos = NPC.Center - screenPos;
-
-            // 多层光环
             for (int i = 0; i < 3; i++) {
                 float layerRotation = haloRotation + i * MathHelper.TwoPi / 3f;
                 float layerScale = (1.5f + i * 0.3f) * haloScale;
                 Color layerColor = new Color(255, 245, 200) * (0.4f - i * 0.1f);
                 layerColor.A = 0;
-
-                spriteBatch.Draw(
-                    haloTexture,
-                    drawPos,
-                    null,
-                    layerColor,
-                    layerRotation,
-                    haloTexture.Size() / 2f,
-                    layerScale,
-                    SpriteEffects.None,
-                    0f
-                );
+                spriteBatch.Draw(haloTexture, drawPos, null, layerColor, layerRotation, haloTexture.Size() / 2f, layerScale, SpriteEffects.None, 0f);
             }
         }
 
         private void DrawMainBody(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
             Texture2D texture = TextureAssets.Npc[Type].Value;
             Vector2 drawPos = NPC.Center - screenPos;
-
-            // 内层发光
             Color glowColor = new Color(255, 240, 180) * 0.4f * NPC.Opacity;
             glowColor.A = 0;
-
             for (int i = 0; i < 4; i++) {
                 float angle = globalTime * 2f + i * MathHelper.PiOver2;
                 Vector2 offset = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 4f;
-                spriteBatch.Draw(
-                    texture,
-                    drawPos + offset,
-                    null,
-                    glowColor,
-                    NPC.rotation,
-                    texture.Size() / 2f,
-                    NPC.scale * 1.05f,
-                    SpriteEffects.None,
-                    0f
-                );
+                spriteBatch.Draw(texture, drawPos + offset, null, glowColor, NPC.rotation, texture.Size() / 2f, NPC.scale * 1.05f, SpriteEffects.None, 0f);
             }
-
-            // 本体
             Color bodyColor = drawColor * NPC.Opacity;
-            spriteBatch.Draw(
-                texture,
-                drawPos,
-                null,
-                bodyColor,
-                NPC.rotation,
-                texture.Size() / 2f,
-                NPC.scale,
-                SpriteEffects.None,
-                0f
-            );
+            spriteBatch.Draw(texture, drawPos, null, bodyColor, NPC.rotation, texture.Size() / 2f, NPC.scale, SpriteEffects.None, 0f);
         }
 
         private void DrawOuterGlow(SpriteBatch spriteBatch, Vector2 screenPos) {
             if (ACMAsset.Sparkle == null) return;
-
-            // 使用 Sparkle 创建星芒效果
             Texture2D sparkleTexture = ACMAsset.Sparkle;
             Vector2 drawPos = NPC.Center - screenPos;
-
             Color sparkleColor = new Color(255, 250, 220) * 0.3f * glowIntensity;
             sparkleColor.A = 0;
-
-            // 旋转的星芒
-            spriteBatch.Draw(
-                sparkleTexture,
-                drawPos,
-                null,
-                sparkleColor,
-                globalTime * 0.5f,
-                sparkleTexture.Size() / 2f,
-                2f * haloScale,
-                SpriteEffects.None,
-                0f
-            );
-
-            // 反向旋转的星芒
-            spriteBatch.Draw(
-                sparkleTexture,
-                drawPos,
-                null,
-                sparkleColor * 0.5f,
-                -globalTime * 0.3f,
-                sparkleTexture.Size() / 2f,
-                2.5f * haloScale,
-                SpriteEffects.None,
-                0f
-            );
+            spriteBatch.Draw(sparkleTexture, drawPos, null, sparkleColor, globalTime * 0.5f, sparkleTexture.Size() / 2f, 2f * haloScale, SpriteEffects.None, 0f);
+            spriteBatch.Draw(sparkleTexture, drawPos, null, sparkleColor * 0.5f, -globalTime * 0.3f, sparkleTexture.Size() / 2f, 2.5f * haloScale, SpriteEffects.None, 0f);
         }
 
         #endregion

@@ -111,6 +111,9 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
             NPC.dontTakeDamage = true;
             drawAlpha = 0f;
 
+            // 地府身份层: 怨念账上限 (玩家造业累积 -> 协同《阴阳勾魂》分屏强度)
+            UnderworldField.SetGrudgeMax(NPC, 100);
+
             base.OnSpawn(source);
         }
 
@@ -601,8 +604,14 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 }
             }
 
-            // 绘制主体
-            sb.Draw(tex, NPC.Center - scrPos, rec, col * drawAlpha, NPC.rotation, rec.Size() * 0.5f, NPC.scale, spe, 0);
+            // 绘制主体 —— 出场/复活期间走 DissolveBurn (魂->实体重凝, V2 soul-dissolve 首发验证)
+            float dissolve = 1f - drawAlpha;
+            bool dissolving = NPC.ai[3] < 0 && dissolve > 0.02f;
+            Color body = col; body.A = 255;
+            if (!(dissolving && BAWFX.DrawDissolveSprite(sb, tex, NPC.Center - scrPos, rec, body,
+                    NPC.rotation, rec.Size() * 0.5f, NPC.scale, spe, dissolve, BAWFX.BlackDissolveEdge))) {
+                sb.Draw(tex, NPC.Center - scrPos, rec, col * drawAlpha, NPC.rotation, rec.Size() * 0.5f, NPC.scale, spe, 0);
+            }
 
             // 外发光
             var glowCol = new Color(30, 30, 50);
@@ -611,6 +620,20 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 rec.Size() * 0.5f, NPC.scale * 1.08f, spe, 0);
 
             return false;
+        }
+
+        public override void PostDraw(SpriteBatch sb, Vector2 scrPos, Color col) {
+            // 协同《阴阳勾魂》阴阳分屏 (yin-yang-split 首发验证); 内部走唯一全屏名额, 双使任一调用即可
+            BAWFX.DrawYinYangSplit(sb);
+        }
+
+        public override void OnHitByItem(Player player, Item item, NPC.HitInfo hit, int damageDone) {
+            // 地府身份层·怨念账: 玩家造业累积 (轻量, 不改伤害/调参)
+            UnderworldField.AddGrudge(NPC, Math.Max(1, damageDone / 150));
+        }
+
+        public override void OnHitByProjectile(Projectile projectile, NPC.HitInfo hit, int damageDone) {
+            UnderworldField.AddGrudge(NPC, Math.Max(1, damageDone / 150));
         }
 
         public override void OnKill() {

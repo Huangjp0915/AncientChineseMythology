@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.NPCs.Boss.Yingous;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.NPCs.Boss.Yingous;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.DataStructures;
@@ -77,18 +78,28 @@ namespace AncientChineseMythology.Items.Weapons.Bosses
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            Texture2D back = VaultAsset.placeholder2.Value;
-            Vector2 drawPos = Projectile.Center - Main.screenPosition;
+            if (Main.dedServ)
+                return false;
 
-            int width = 4400;
-            int height = (int)(Projectile.localAI[0] * 3);
-            float alpha = Projectile.localAI[1] / 60f;
+            // 表现层重做: 用共享 BeamGrad 原语画一条"苍→赤"渐变长刀气, 取代 placeholder 矩形。
+            Vector2 dir = Projectile.velocity.SafeNormalize(Vector2.UnitX);
+            float grow = MathHelper.Clamp(Projectile.localAI[0] / 40f, 0f, 1f);   // 蓄刀生长
+            float alpha = MathHelper.Clamp(Projectile.localAI[1] / 30f, 0f, 1f);  // 收刀淡出
+            float intensity = grow * (0.4f + 0.6f * alpha);
+            if (intensity <= 0.01f)
+                return false;
 
-            Rectangle rect = new Rectangle(-width / 2, -height / 2, width, height);
-            Vector2 origin = new Vector2(rect.Width / 2, rect.Height / 2);
-            Color drawColor = VaultUtils.MultiStepColorLerp(Projectile.localAI[0] / 40f, Color.Azure, Color.Red);
-            Main.spriteBatch.Draw(back, drawPos, rect, drawColor with { A = 155 } * alpha
-                , Projectile.velocity.ToRotation(), origin, 1f, SpriteEffects.None, 0f);
+            const float halfLen = 2200f;
+            float halfWidth = MathHelper.Clamp(Projectile.localAI[0] * 1.6f, 6f, 110f);
+            Color core = Color.Lerp(new Color(150, 220, 255), new Color(255, 60, 50), grow);   // 苍 → 赤
+            Color edge = Color.Lerp(new Color(40, 90, 180), new Color(150, 12, 16), grow);
+
+            Vector2 start = Projectile.Center - dir * halfLen;
+            Vector2 end = Projectile.Center + dir * halfLen;
+            ACMShaders.DrawBeam(start, end, halfWidth, core with { A = 200 }, edge with { A = 120 }, intensity, coreSharp: 2.6f);
+
+            // 刀身锚点的爆闪 (SlashBurst 配方的轻量替代, 不占全屏名额)
+            WeaponVFX.DrawGlowBurst(Projectile.Center, (1.4f + grow * 2.2f), core * (intensity * 0.9f));
             return false;
         }
     }

@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -133,6 +134,10 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
             }
 
             SoundEngine.PlaySound(SoundID.Item14 with { Pitch = 0.5f, Volume = 0.5f }, target.Center);
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.ClockworkGold, 1.4f, Projectile.owner);
+            WeaponVFX.AddScreenShake(target.Center, 3f);
         }
 
         public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {

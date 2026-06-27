@@ -5,6 +5,7 @@ using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
+using AncientChineseMythology.Helpers;
 using Color = Microsoft.Xna.Framework.Color;
 using Rectangle = Microsoft.Xna.Framework.Rectangle;
 
@@ -14,6 +15,11 @@ namespace AncientChineseMythology.Projectiles
     {
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/GoldenStickSpearProjectile";
         private bool isReturning = false;//是否正在返回
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.TrailCacheLength[Type] = 14;
+            ProjectileID.Sets.TrailingMode[Type] = 0;
+        }
 
         public override void SetDefaults() {
             Projectile.width = 142;
@@ -117,12 +123,23 @@ namespace AncientChineseMythology.Projectiles
             Main.dust[dust_2].alpha = 100;
         }
 
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            //金辉命中演出
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Gold, scale: 1f, owner: Projectile.owner);
+        }
+
         [Obsolete]
         public override void OnKill(int timeLeft) {
             Player player = Main.player[Projectile.owner];
             player.velocity *= 0.8f;
         }
         public override bool PreDraw(ref Microsoft.Xna.Framework.Color lightColor) {
+            //冲刺/瞬移金辉拖尾 (统一长矛线主题色)
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 9f,
+                outerColor: new Color(160, 110, 30, 150), innerColor: new Color(255, 230, 150, 205),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.6f);
+
             Texture2D texture = TextureAssets.Projectile[Type].Value;
             Rectangle rectangle = new Rectangle(
                 0,

@@ -1,11 +1,14 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
+using System.Collections.Generic;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 using AncientChineseMythology.Celestias.Boss.Dryades.Items;
+using AncientChineseMythology.Helpers;
 
 namespace AncientChineseMythology.Items.Weapons.DivineWoods;
 
@@ -192,6 +195,8 @@ public class DivineWoodGreatbladeSwing : ModProjectile
                 Main.rand.NextVector2Circular(6f, 6f), 60, default, 2f);
             d.noGravity = true;
         }
+        ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+            ACMWeaponBurst.DivineWood, scale: 1.2f, owner: Projectile.owner);
     }
 
     public override bool PreDraw(ref Color lightColor) {
@@ -199,26 +204,26 @@ public class DivineWoodGreatbladeSwing : ModProjectile
         int dir = Projectile.spriteDirection * AttackDir;
         float rotOff = dir > 0 ? MathHelper.PiOver4 : MathHelper.PiOver4 + MathHelper.Pi;
 
+        // 挥砍弧光 — 统一为"外宽暗 + 内窄亮"双层 ribbon (沿刀尖扫过的弧线)
+        if (CurrentStage == Stage.Execute) {
+            float tipLen = Projectile.Size.Length() * Projectile.scale * 0.55f;
+            var arc = new List<Vector2>();
+            for (int i = 0; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
+                if (Projectile.oldPos[i] == Vector2.Zero) continue;
+                arc.Add(Projectile.Center + Projectile.oldRot[i].ToRotationVector2() * tipLen);
+            }
+            if (arc.Count >= 2)
+                WeaponVFX.DrawRibbonTrail(arc.ToArray(), baseWidth: 26f,
+                    outerColor: new Color(20, 110, 55, 150), innerColor: new Color(170, 255, 150, 200),
+                    tex: ACMAsset.GlaciateWave, uvScroll: -Main.GlobalTimeWrappedHourly * 1.5f);
+        }
+
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
             DepthStencilState.None, RasterizerState.CullNone, null,
             Main.GameViewMatrix.TransformationMatrix);
 
         if (CurrentStage == Stage.Execute) {
-            Texture2D wave = ACMAsset.GlaciateWave;
-            for (int i = 1; i < 12 && i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
-                float a = (1f - i / 12f) * 0.68f;
-                float rot = Projectile.oldRot[i] + rotOff;
-                sb.Draw(wave, Projectile.Center - Main.screenPosition, null,
-                    new Color(40, 200, 60) * a, rot,
-                    wave.Size() * 0.5f,
-                    Projectile.scale * 0.52f, SpriteEffects.None, 0);
-                sb.Draw(wave, Projectile.Center - Main.screenPosition, null,
-                    new Color(180, 255, 200) * (a * 0.40f), rot + 0.12f,
-                    wave.Size() * 0.5f,
-                    Projectile.scale * 0.36f, SpriteEffects.None, 0);
-            }
-
             float pulse = 0.8f + 0.2f * MathF.Sin((float)Main.timeForVisualEffects * 0.22f);
             Texture2D sg = ACMAsset.SoftGlow;
             sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
@@ -303,53 +308,31 @@ public class DivineWoodVineWave : ModProjectile
                 Main.rand.NextVector2Circular(7f, 7f), 40, default, 2.5f);
             d.noGravity = true;
         }
+        ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+            ACMWeaponBurst.DivineWood, scale: 1f, owner: Projectile.owner);
     }
 
     public override bool PreDraw(ref Color lightColor) {
-        SpriteBatch sb = Main.spriteBatch;
-        Texture2D tex = ACMAsset.GlaciateWave;
-        Texture2D sg = ACMAsset.SoftGlow;
-        Texture2D lsh = ACMAsset.LightShot;
-
         float life = 1f - Projectile.timeLeft / 50f;
-        float scaleX = MathHelper.Lerp(1.6f, 0.5f, ACMUtils.QuadIn(life));
-        float scaleY = MathHelper.Lerp(0.55f, 0.18f, ACMUtils.QuadIn(life));
-        float alpha = ACMUtils.QuadOut(1f - life) * 0.92f;
+        float alpha = ACMUtils.QuadOut(1f - life) * 0.95f;
 
-        sb.End();
-        sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
-            DepthStencilState.None, RasterizerState.CullNone, null,
-            Main.GameViewMatrix.TransformationMatrix);
+        // 双层 ribbon 拖尾
+        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 14f,
+            outerColor: new Color(20, 110, 55, (byte)(150 * alpha)),
+            innerColor: new Color(170, 255, 150, (byte)(200 * alpha)),
+            tex: ACMAsset.GlaciateWave, uvScroll: -Main.GlobalTimeWrappedHourly * 2f);
 
-        for (int i = 1; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
-            if (Projectile.oldPos[i] == Vector2.Zero) continue;
-            float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.55f * alpha;
-            sb.Draw(lsh,
-                Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition,
-                null, new Color(50, 200, 70) * a, Projectile.oldRot[i],
-                lsh.Size() * 0.5f,
-                new Vector2(0.45f + i * 0.012f, 0.15f), SpriteEffects.None, 0);
-        }
+        // 渐变绿刀波 — 横跨飞行方向的弦月光束
+        Vector2 fwd = Projectile.velocity.SafeNormalize(Vector2.UnitX);
+        Vector2 perp = new(-fwd.Y, fwd.X);
+        float halfLen = MathHelper.Lerp(72f, 26f, ACMUtils.QuadIn(life)) * Projectile.scale;
+        float halfW = MathHelper.Lerp(20f, 7f, ACMUtils.QuadIn(life));
+        ACMShaders.DrawBeam(Projectile.Center - perp * halfLen, Projectile.Center + perp * halfLen,
+            halfW, new Color(180, 255, 170), new Color(25, 130, 60), alpha);
 
-        sb.Draw(tex, Projectile.Center - Main.screenPosition, null,
-            new Color(40, 210, 60) * alpha, Projectile.rotation,
-            tex.Size() * 0.5f,
-            new Vector2(scaleX, scaleY), SpriteEffects.None, 0);
-        sb.Draw(tex, Projectile.Center - Main.screenPosition, null,
-            new Color(180, 255, 200) * (alpha * 0.45f), Projectile.rotation + 0.05f,
-            tex.Size() * 0.5f,
-            new Vector2(scaleX * 0.75f, scaleY * 0.70f), SpriteEffects.None, 0);
-
-        Vector2 front = Projectile.Center + Projectile.velocity.SafeNormalize(Vector2.Zero) * 45f;
-        sb.Draw(sg, front - Main.screenPosition, null,
-            new Color(160, 255, 180) * alpha * 0.75f, 0f,
-            sg.Size() * 0.5f,
-            scaleY * 1.8f, SpriteEffects.None, 0);
-
-        sb.End();
-        sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
-            DepthStencilState.None, RasterizerState.CullNone, null,
-            Main.GameViewMatrix.TransformationMatrix);
+        // 前缘柔光
+        Vector2 front = Projectile.Center + fwd * 40f;
+        WeaponVFX.DrawGlowBurst(front, 0.9f * Projectile.scale, new Color(150, 255, 170) * alpha);
         return false;
     }
 }

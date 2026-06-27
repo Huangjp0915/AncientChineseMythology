@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
 using AncientChineseMythology.Underworlds.Items.Weapons.Revenants;
 using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
@@ -175,7 +176,14 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
                     Dust shatter = Dust.NewDustPerfect(target.Center, DustID.WhiteTorch, vel, 40, default, Main.rand.NextFloat(1.5f, 2.5f));
                     shatter.noGravity = true;
                 }
+                // 升级演出: 无间三镜折射罩 (ReflectWard), 仅本机生成
+                KarmaMirrorWard.Spawn(Projectile.GetSource_OnHit(target), target.Center, Projectile.owner);
+                WeaponVFX.AddScreenShake(target.Center, 3f);
             }
+
+            // 命中冲击演出 (银紫径向辉光 + 冲击环)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.AbyssPurple, scale: hit.Crit ? 1.3f : 1f, owner: Projectile.owner);
 
             target.AddBuff(BuffID.Ichor, 300);
             target.AddBuff(BuffID.BrokenArmor, 300);
@@ -206,15 +214,10 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
             Texture2D texture = TextureAssets.Projectile[Type].Value;
             Vector2 origin = texture.Size() / 2f;
 
-            for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                if (Projectile.oldPos[i] == Vector2.Zero) continue;
-                float progress = 1f - (float)i / Projectile.oldPos.Length;
-                Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                Color trailColor = Color.Lerp(new Color(160, 80, 230), new Color(240, 230, 255), progress) * progress * 0.6f;
-                trailColor.A = 0;
-                float scale = Projectile.scale * progress;
-                Main.EntitySpriteDraw(texture, drawPos, null, trailColor, Projectile.oldRot[i], origin, scale, SpriteEffects.None, 0);
-            }
+            // 银紫双层带状拖尾 (外宽暗紫 + 内窄银白), 取代逐帧叠刃残影
+            WeaponVFX.DrawProjectileTrail(Projectile, 22f,
+                new Color(140, 80, 220), new Color(240, 235, 255),
+                uvScroll: Timer * 0.04f);
 
             Color mainColor = Color.Lerp(lightColor, new Color(240, 230, 255), 0.4f);
             Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null, mainColor, Projectile.rotation, origin, Projectile.scale, SpriteEffects.None, 0);
@@ -252,6 +255,74 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
                 );
                 death.noGravity = true;
             }
+        }
+    }
+
+    /// <summary>
+    /// 无间镜像折射演出弹幕 (纯视觉, damage=0): 暴击镜像反伤瞬间在命中点短暂展开 ReflectWard 折射护罩
+    /// (银紫"镜面"), 配冲击环。全屏后处理走单一名额仲裁; 绘制只在 PreDraw。
+    /// </summary>
+    public class KarmaMirrorWard : ModProjectile
+    {
+        public override string Texture => "Terraria/Images/Projectile_1";
+        private const int Life = 26;
+
+        public static void Spawn(IEntitySource source, Vector2 worldPos, int owner) {
+            if (Main.dedServ || Main.myPlayer != owner)
+                return;
+            Projectile.NewProjectile(source, worldPos, Vector2.Zero,
+                ModContent.ProjectileType<KarmaMirrorWard>(), 0, 0f, owner);
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = 2;
+            Projectile.height = 2;
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = Life;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.alpha = 255;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+        public override void AI() => Projectile.velocity = Vector2.Zero;
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+
+            float life = 1f - Projectile.timeLeft / (float)Life;
+            float fade = MathHelper.Clamp(life < 0.2f ? life / 0.2f : 1f - (life - 0.2f) / 0.8f, 0f, 1f);
+
+            // —— ReflectWard 镜面折射罩 (银紫, 短促), 占单一全屏名额 ——
+            Effect ward = ACMShaders.ReflectWard;
+            if (ward != null && fade > 0.05f && ACMShaders.RequestFullscreenSlot()) {
+                Vector2 uv = (Projectile.Center - Main.screenPosition) / new Vector2(Main.screenWidth, Main.screenHeight);
+                float aspect = (float)Main.screenWidth / Main.screenHeight;
+                Color wardCol = new Color(210, 200, 255);
+                Vector4 colVec = wardCol.ToVector4();
+                colVec.W = 0.55f + 0.35f * fade;
+
+                ward.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+                ward.Parameters["uCenter"]?.SetValue(uv);
+                ward.Parameters["uRadius"]?.SetValue(150f / Main.screenHeight);
+                ward.Parameters["uIntensity"]?.SetValue(fade * 0.7f);
+                ward.Parameters["uAspect"]?.SetValue(aspect);
+                ward.Parameters["uColor"]?.SetValue(colVec);
+                ward.Parameters["uHexScale"]?.SetValue(9f);
+                ward.Parameters["uRefract"]?.SetValue(0.6f);
+                ward.Parameters["uFlash"]?.SetValue(fade);
+
+                ACMShaders.ApplyScreenPostProcess(Main.spriteBatch, ward, bindNoise: true);
+            }
+
+            WeaponVFX.DrawShockwaveRing(Projectile.Center, 14f + life * 80f, 8f, fade * 0.8f,
+                new Color(235, 230, 255), new Color(130, 80, 210));
+            WeaponVFX.DrawGlowBurst(Projectile.Center, (1.2f + life) * 1.4f, new Color(210, 200, 255) * (fade * 0.7f));
+
+            return false;
         }
     }
 }

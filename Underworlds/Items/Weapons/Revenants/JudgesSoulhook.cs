@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Underworlds.Tiles;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -233,6 +234,10 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
             }
 
             SoundEngine.PlaySound(SoundID.NPCDeath6 with { Volume = 0.4f, Pitch = 0.4f }, target.Center);
+
+            //勾魂命中演出: 鬼绿径向辉光 + 冲击环 (代偿 GenericWarp 局部扭曲, 更新阶段安全)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.GhostGreen, scale: 1f, owner: Projectile.owner);
         }
 
         public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
@@ -276,6 +281,15 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 texture, Projectile.Center - Main.screenPosition, null, lightColor,
                 Projectile.rotation + rotationOffset, origin, Projectile.scale, effects, 0
             );
+
+            //枪身 BeamGrad 鬼绿冥流光束 (突刺时增亮)
+            Vector2 dir = Projectile.rotation.ToRotationVector2();
+            Vector2 tip = Projectile.Center + dir * 38f;
+            Vector2 butt = Projectile.Center - dir * 22f;
+            float beamIntensity = CurrentStage == AttackStage.Thrust ? 0.85f : 0.4f;
+            ACMShaders.DrawBeam(butt, tip, halfWidth: CurrentStage == AttackStage.Thrust ? 9f : 6f,
+                core: new Color(150, 255, 170), edge: new Color(30, 110, 70),
+                intensity: beamIntensity, flowSpeed: 2.4f, flowScale: 2.2f, coreSharp: 2.4f);
 
             //突刺时绘制勾魂光效
             if (CurrentStage == AttackStage.Thrust) {

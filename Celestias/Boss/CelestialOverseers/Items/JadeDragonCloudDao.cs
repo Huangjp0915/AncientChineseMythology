@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -88,6 +89,10 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
                 }
 
                 SoundEngine.PlaySound(SoundID.Item29 with { Pitch = 0.3f, Volume = 0.5f }, target.Center);
+
+                // 玉龙之息暴击演出 (机关金 + 天青)
+                ACMWeaponBurst.Spawn(player.GetSource_OnHit(target), target.Center, ACMWeaponBurst.ClockworkGold, 1.1f, player.whoAmI);
+                WeaponVFX.AddScreenShake(target.Center, 2f);
             }
         }
 
@@ -151,6 +156,9 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, DustID.GreenTorch, vel.X, vel.Y, 100, default, 1.5f);
                 Main.dust[dust].noGravity = true;
             }
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center, ACMWeaponBurst.ClockworkGold, 0.8f, Projectile.owner);
+            WeaponVFX.AddScreenShake(target.Center, 1.5f);
         }
 
         public override bool PreDraw(ref Color lightColor) {
@@ -159,18 +167,9 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
             Vector2 origin = new Vector2(0, texture.Height / 2f);
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
 
-            // 计算拖尾
-            for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                if (Projectile.oldPos[i] == Vector2.Zero) continue;
-                float progress = 1f - (float)i / Projectile.oldPos.Length;
-                Color trailColor = new Color(100, 255, 150) * progress * 0.4f;
-                trailColor.A = 0;
-
-                Vector2 trailPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                float scale = Projectile.scale * progress * 0.8f;
-                Main.spriteBatch.Draw(texture, trailPos, null, trailColor, Projectile.oldRot[i] - MathHelper.PiOver4,
-                    origin, new Vector2(0.6f, 0.15f * scale), SpriteEffects.None, 0f);
-            }
+            // 翠绿玉龙双层拖尾 (外暗翠 + 内亮金芯)
+            WeaponVFX.DrawProjectileTrail(Projectile, 20f * Projectile.scale,
+                new Color(60, 180, 120) * 0.9f, new Color(255, 240, 180), ACMAsset.GlaciateWave, uvScroll: 0.02f);
 
             // 主体
             Color mainColor = new Color(150, 255, 180);
@@ -276,41 +275,21 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
 
             // 附加减速
             target.AddBuff(BuffID.Slow, 180);
+
+            // 龙形大斩重击演出
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center, ACMWeaponBurst.ClockworkGold, 2f, Projectile.owner);
+            WeaponVFX.AddScreenShake(target.Center, 4f);
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            Texture2D texture = ACMAsset.GlaciateWave ?? TextureAssets.Projectile[Type].Value;
-            Vector2 origin = new Vector2(0, texture.Height / 2f);
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
 
-            // 龙形拖尾
-            for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                if (Projectile.oldPos[i] == Vector2.Zero) continue;
-                float progress = 1f - (float)i / Projectile.oldPos.Length;
-
-                // 龙身波动
-                float bodyWave = MathF.Sin(wavePhase + i * 0.5f) * 0.3f;
-                float bodyScale = progress * (0.8f + bodyWave * 0.2f);
-
-                Color trailColor = Color.Lerp(new Color(100, 255, 150), new Color(200, 255, 100), 1f - progress);
-                trailColor *= progress * 0.5f;
-                trailColor.A = 0;
-
-                Vector2 trailPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                Main.spriteBatch.Draw(texture, trailPos, null, trailColor, Projectile.oldRot[i],
-                    origin, new Vector2(1.2f * bodyScale, 0.35f * bodyScale * Projectile.scale), SpriteEffects.None, 0f);
-            }
-
-            // 龙头（主体）
-            float headPulse = 1f + MathF.Sin(wavePhase * 3f) * 0.1f;
-            Color headColor = new Color(150, 255, 180);
-            headColor.A = 0;
-
-            // 龙眼高光
-            Color eyeColor = new Color(255, 255, 200);
-            eyeColor.A = 0;
+            // 龙身双层带状拖尾 (外暗翠 + 内金芯, 流动 UV 模拟龙鳞)
+            WeaponVFX.DrawProjectileTrail(Projectile, 44f * Projectile.scale,
+                new Color(70, 200, 130) * 0.95f, new Color(255, 235, 160), ACMAsset.GlaciateWave, uvScroll: 0.04f, subdivisions: 4);
 
             // 龙须光效
+            float headPulse = 1f + MathF.Sin(wavePhase * 3f) * 0.1f;
             if (ACMAsset.Sparkle != null) {
                 Color sparkleColor = new Color(200, 255, 220) * 0.4f;
                 sparkleColor.A = 0;

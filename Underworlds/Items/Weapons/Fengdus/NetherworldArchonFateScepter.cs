@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
 using AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs;
 using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
@@ -159,7 +160,8 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
             }
 
             // Impact burst
-            for (int i = 0; i < 15; i++) {
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center, ACMWeaponBurst.GhostGreen, 1f, Projectile.owner);
+            for (int i = 0; i < 6; i++) {
                 Vector2 vel = Main.rand.NextVector2Circular(8f, 8f);
                 Dust burst = Dust.NewDustPerfect(target.Center, DustID.GreenTorch, vel, 60, default, Main.rand.NextFloat(2f, 3f));
                 burst.noGravity = true;
@@ -167,42 +169,15 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            Texture2D softGlow = ACMAsset.SoftGlow;
-            if (softGlow != null) {
-                Vector2 origin = softGlow.Size() / 2f;
+            // 命运灵球: 双层 ribbon 拖尾 (外鬼绿 + 内金芒)
+            WeaponVFX.DrawProjectileTrail(Projectile, 14f,
+                new Color(60, 180, 90) * 0.9f, new Color(220, 200, 90),
+                ACMAsset.SoftGlow, uvScroll: 0.05f, subdivisions: 2);
 
-                // Trail
-                for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                    if (Projectile.oldPos[i] == Vector2.Zero) continue;
-                    float progress = 1f - (float)i / Projectile.oldPos.Length;
-                    Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                    Color trailColor = Color.Lerp(new Color(80, 200, 80), new Color(200, 180, 50), 1f - progress) * progress * 0.5f;
-                    trailColor.A = 0;
-                    Main.EntitySpriteDraw(softGlow, drawPos, null, trailColor, 0f, origin, 0.5f * progress, SpriteEffects.None, 0);
-                }
-
-                // Core glow
-                float pulse = 0.7f + MathF.Sin(Timer * 0.3f) * 0.15f;
-                Color coreColor = new Color(100, 220, 80) * 0.8f;
-                coreColor.A = 0;
-                Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, coreColor, 0f, origin, pulse, SpriteEffects.None, 0);
-
-                // Gold halo
-                Color haloColor = new Color(220, 190, 60) * 0.4f;
-                haloColor.A = 0;
-                Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, haloColor, 0f, origin, pulse * 1.5f, SpriteEffects.None, 0);
-            }
-
-            // BlankStar rotating overlay
-            Texture2D blankStar = ACMAsset.BlankStar;
-            if (blankStar != null) {
-                Vector2 starOrigin = blankStar.Size() / 2f;
-                Color starColor = new Color(180, 220, 80) * 0.5f;
-                starColor.A = 0;
-                Main.EntitySpriteDraw(blankStar, Projectile.Center - Main.screenPosition, null, starColor,
-                    Projectile.rotation, starOrigin, 0.12f, SpriteEffects.None, 0);
-            }
-
+            // 球心泛光晕 (廉价 bloom 柔光) + 金边
+            float pulse = 0.7f + MathF.Sin(Timer * 0.3f) * 0.15f;
+            WeaponVFX.DrawGlowBurst(Projectile.Center, pulse, new Color(100, 220, 80) * 0.8f);
+            WeaponVFX.DrawGlowBurst(Projectile.Center, pulse * 1.6f, new Color(220, 190, 60) * 0.35f);
             return false;
         }
 
@@ -240,6 +215,9 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
             Projectile.tileCollide = false;
             Projectile.alpha = 255;
         }
+
+        // 同屏 ArenaRunic 司命烙印地纹每帧仅一枚承担 (按敌人数增殖时不叠 N 张全屏 SDF)
+        private static ulong _lastRunicFrame;
 
         public override bool? CanDamage() => false;
         public override bool? CanCutTiles() => false;
@@ -295,6 +273,10 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
             target.SimpleStrikeNPC(bonusDamage, 0, false, 0f, null, false, 0, true);
             SoundEngine.PlaySound(SoundID.Item14 with { Volume = 1.5f, Pitch = -0.3f }, target.Center);
 
+            // 命运回响引爆: RadialBloom + 冲击环 (ACMWeaponBurst 鬼绿审判)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_FromThis(), target.Center, ACMWeaponBurst.GhostGreen, 2.6f, Projectile.owner);
+            WeaponVFX.AddScreenShake(target.Center, 6f);
+
             // AOE detonation to nearby enemies
             for (int i = 0; i < Main.maxNPCs; i++) {
                 NPC nearby = Main.npc[i];
@@ -305,21 +287,19 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
                 }
             }
 
-            // Detonation visual: Sparkle explosion + judgment ring
-            Texture2D sparkle = ACMAsset.Sparkle;
-            // particles
-            for (int i = 0; i < 50; i++) {
-                float angle = MathHelper.TwoPi / 50f * i;
+            // Detonation particles (judgment ring)
+            for (int i = 0; i < 20; i++) {
+                float angle = MathHelper.TwoPi / 20f * i;
                 Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * Main.rand.NextFloat(8f, 18f);
                 Dust ring = Dust.NewDustPerfect(target.Center, DustID.GreenTorch, vel, 40, default, Main.rand.NextFloat(2.5f, 4f));
                 ring.noGravity = true;
             }
-            for (int i = 0; i < 30; i++) {
+            for (int i = 0; i < 14; i++) {
                 Vector2 vel = Main.rand.NextVector2Circular(10f, 10f);
                 Dust burst = Dust.NewDustPerfect(target.Center, DustID.GoldFlame, vel, 60, default, Main.rand.NextFloat(2f, 3.5f));
                 burst.noGravity = true;
             }
-            for (int i = 0; i < 20; i++) {
+            for (int i = 0; i < 12; i++) {
                 Dust pillar = Dust.NewDustPerfect(target.Center,
                     DustID.GreenTorch, new Vector2(Main.rand.NextFloat(-3f, 3f), -Main.rand.NextFloat(8f, 20f)),
                     40, default, Main.rand.NextFloat(2f, 3.5f));
@@ -331,15 +311,38 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
             float progress = Timer / DetonationTime;
             float opacity = MathHelper.Clamp(Timer / 15f, 0f, 1f);
 
-            // Fate mark symbol - BlankStar
-            Texture2D blankStar = ACMAsset.BlankStar;
-            if (blankStar != null) {
-                Vector2 origin = blankStar.Size() / 2f;
-                float pulse = 0.15f + MathF.Sin(Timer * 0.2f) * 0.03f + progress * 0.08f;
-                Color markColor = Color.Lerp(new Color(80, 200, 80), new Color(220, 200, 50), progress) * opacity * 0.7f;
-                markColor.A = 0;
-                Main.EntitySpriteDraw(blankStar, Projectile.Center - Main.screenPosition, null, markColor,
-                    Projectile.rotation, origin, pulse, SpriteEffects.None, 0);
+            // 命运烙印: ArenaRunic 司命符环地纹 (随引爆临近收紧/加浓), 取代 BlankStar
+            // 多敌被标记时该弹按数量增殖, 全屏 SDF 每帧仅一枚承担; 其余退化为廉价符环
+            Effect runic = ACMShaders.ArenaRunic;
+            if (runic != null && _lastRunicFrame != Main.GameUpdateCount) {
+                _lastRunicFrame = Main.GameUpdateCount;
+                float runeRadius = MathHelper.Lerp(70f, 44f, progress); // 临近引爆向心收口
+                ACMShaders.WorldDecalParams(Projectile.Center, runeRadius, out Vector2 uv, out float rFrac, out float aspect);
+                runic.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+                runic.Parameters["uCenter"]?.SetValue(uv);
+                runic.Parameters["uRadius"]?.SetValue(rFrac);
+                runic.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp((0.45f + progress * 0.55f) * opacity, 0f, 1f));
+                runic.Parameters["uAspect"]?.SetValue(aspect);
+                runic.Parameters["uColorPrimary"]?.SetValue(new Color(90, 210, 110).ToVector4());
+                runic.Parameters["uColorSecondary"]?.SetValue(new Color(230, 200, 70).ToVector4());
+                runic.Parameters["uRuneFreq"]?.SetValue(11f);
+                runic.Parameters["uMode"]?.SetValue(0f);  // 法阵符环
+                runic.Parameters["uShape"]?.SetValue(0f);
+                ACMShaders.DrawScreenSpaceDecal(Main.spriteBatch, runic);
+            }
+            else {
+                // 退化廉价符环 (BlankStar 旋转符印, 不占全屏 decal)
+                Texture2D star = ACMAsset.BlankStar;
+                if (star != null) {
+                    Vector2 starOrigin = star.Size() / 2f;
+                    float ringScale = MathHelper.Lerp(0.5f, 0.32f, progress);
+                    Color ringTint = new Color(90, 210, 110) * opacity * (0.45f + progress * 0.4f);
+                    ringTint.A = 0;
+                    Main.EntitySpriteDraw(star, Projectile.Center - Main.screenPosition, null, ringTint,
+                        Timer * 0.06f, starOrigin, ringScale, SpriteEffects.None, 0);
+                    Main.EntitySpriteDraw(star, Projectile.Center - Main.screenPosition, null, ringTint * 0.6f,
+                        -Timer * 0.04f, starOrigin, ringScale * 1.4f, SpriteEffects.None, 0);
+                }
             }
 
             // SoftGlow aura

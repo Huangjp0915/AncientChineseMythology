@@ -1,4 +1,5 @@
 ﻿using AncientChineseMythology.Celestias.PillarofTheHeavenes.Tiles;
+using AncientChineseMythology.Helpers;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
@@ -117,6 +118,9 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
             // 引发连锁闪电
             SoundEngine.PlaySound(SoundID.Item122 with { Pitch = 0.5f, Volume = 0.6f }, Projectile.Center);
 
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.HeavenlyPillar, 1f, Projectile.owner);
+
             // 金色爆发
             for (int i = 0; i < 20; i++) {
                 Vector2 vel = Main.rand.NextVector2CircularEdge(6, 6);
@@ -141,6 +145,11 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            // 雷霆弹金白祥瑞双层 ribbon
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 8f,
+                outerColor: new Color(150, 220, 235, 120), innerColor: new Color(255, 250, 210, 180),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.6f);
+
             Texture2D tex = TextureAssets.Projectile[Type].Value;
             Vector2 origin = tex.Size() / 2f;
 
@@ -151,12 +160,14 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
 
                 Color trailColor = Color.Lerp(Color.Cyan, Color.Gold, progress);
                 trailColor *= progress * 0.6f;
+                trailColor.A = 0;
 
                 Vector2 pos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
                 Main.spriteBatch.Draw(tex, pos, null, trailColor, Projectile.oldRot[i], origin, Projectile.scale * (0.5f + progress * 0.5f), SpriteEffects.None, 0f);
             }
 
             Color glowColor = Color.Gold * 0.5f;
+            glowColor.A = 0;
             Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, glowColor, Projectile.rotation, origin, Projectile.scale * 1.3f, SpriteEffects.None, 0f);
 
             Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, Color.White, Projectile.rotation, origin, Projectile.scale, SpriteEffects.None, 0f);
@@ -225,9 +236,18 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, dustType, vel.X, vel.Y, 80, default, 1.5f);
                 Main.dust[dust].noGravity = true;
             }
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.HeavenlyPillar, 0.5f, Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            // 连锁闪电: 向追踪目标拉一道青白电弧 (BeamGrad)
+            int tgt = (int)TargetIndex;
+            if (tgt >= 0 && tgt < Main.npc.Length && Main.npc[tgt].active)
+                ACMShaders.DrawBeam(Projectile.Center, Main.npc[tgt].Center, 5f,
+                    new Color(220, 245, 255), new Color(120, 200, 255), 0.8f, flowSpeed: 2.4f);
+
             Texture2D tex = TextureAssets.Projectile[Type].Value;
             Vector2 origin = tex.Size() / 2f;
 

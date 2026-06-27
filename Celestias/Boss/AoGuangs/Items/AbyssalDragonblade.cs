@@ -1,4 +1,5 @@
-﻿using Terraria;
+﻿using AncientChineseMythology.Helpers;
+using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.ID;
@@ -116,6 +117,12 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, dustType, vel.X, vel.Y, 100, default, 1.5f);
                 Main.dust[dust].noGravity = true;
             }
+
+            // 东海冰蓝命中演出 (径向辉光 + 冲击环) — 满潮时放大
+            float burstScale = tidalPower >= MaxTidalPower ? 1.6f : 1.1f;
+            ACMWeaponBurst.Spawn(player.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.EastSeaWater, burstScale, player.whoAmI);
+            WeaponVFX.AddScreenShake(target.Center, 2.5f);
         }
 
         public override void ModifyTooltips(System.Collections.Generic.List<TooltipLine> tooltips) {

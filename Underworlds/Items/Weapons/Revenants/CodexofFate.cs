@@ -1,6 +1,9 @@
-﻿using AncientChineseMythology.Underworlds.Tiles;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Tiles;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
+using System.Collections.Generic;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -73,13 +76,18 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
 
     /// <summary>
     /// 命运符文弹幕 - 飞行的冥府符文，命中敌人时产生电弧链式打击
-    /// 使用ACMAsset.ElectricArcSheet叠加电弧效果，ACMAsset.LightningBranch绘制命中闪电
+    /// 表现重做: 双层带状拖尾 + 程序化 <see cref="ACMShaders.ArenaRunic"/> 符文环 (替代静态 BlankStar 旋转,
+    /// 每帧仅一枚符文承担全屏法阵绘制以控开销, 其余退化为廉价星光); 暴击链式电弧走专属
+    /// <see cref="FateJudgmentField"/> 用 <see cref="ACMShaders.DrawBeam"/> 折线束连击。
     /// </summary>
     public class FateRuneProjectile : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Underworlds/Items/Weapons/Revenants/CodexofFate";
 
         private ref float RotationTimer => ref Projectile.ai[0];
+
+        // 每帧只允许一枚符文绘制全屏 ArenaRunic 法阵环 (开销护栏: 不占用全屏后处理名额, 仅本类内部节流)
+        private static ulong _lastRuneRingFrame;
 
         public override void SetStaticDefaults() {
             ProjectileID.Sets.TrailCacheLength[Projectile.type] = 10;
@@ -203,57 +211,73 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                         break;
                     }
                 }
+
+                //暴击: 命运链电演出 (ArenaRunic 判词环 + DrawBeam 折线电链, 纯视觉一次性弹幕)
+                FateJudgmentField.Spawn(Projectile.GetSource_OnHit(target), target.Center, Projectile.owner);
+                WeaponVFX.AddScreenShake(target.Center, 2.5f);
             }
+
+            //命中冲击演出 (径向辉光 + 冲击环), 走 ACMWeaponBurst 暗冥紫主题
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.AbyssPurple, scale: hit.Crit ? 1.25f : 0.85f, owner: Projectile.owner);
 
             SoundEngine.PlaySound(SoundID.Item94 with { Volume = 0.5f, Pitch = 0.2f }, target.Center);
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            //使用ElectricArcSheet绘制符文电弧外圈
-            Texture2D arcSheet = ACMAsset.ElectricArcSheet;
-            if (arcSheet != null) {
-                //取电弧纹理的一个区段（4组中随机一组）
-                int arcIndex = (int)(RotationTimer * 0.1f) % 4;
-                int arcHeight = arcSheet.Height / 4;
-                Rectangle sourceRect = new Rectangle(0, arcIndex * arcHeight, arcSheet.Width, arcHeight);
-                Vector2 arcOrigin = new Vector2(sourceRect.Width / 2f, sourceRect.Height / 2f);
+            //双层带状拖尾 (外宽暗冥紫 + 内窄亮紫芯)
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 11f,
+                outerColor: new Color(90, 40, 150, 150), innerColor: new Color(190, 120, 255, 200),
+                uvScroll: RotationTimer * 0.02f);
 
-                Color arcColor = new Color(160, 100, 220) * 0.35f;
-                arcColor.A = 0;
-                float arcScale = 0.12f + MathF.Sin(RotationTimer * 0.2f) * 0.02f;
-                Main.EntitySpriteDraw(arcSheet, Projectile.Center - Main.screenPosition, sourceRect, arcColor, Projectile.rotation + MathHelper.PiOver2, arcOrigin, arcScale, SpriteEffects.None, 0);
+            //程序化符文环 (ArenaRunic 法阵): 每帧仅一枚承担全屏绘制, 其余退化为廉价星光
+            bool drawRuneRing = false;
+            if (_lastRuneRingFrame != Main.GameUpdateCount) {
+                _lastRuneRingFrame = Main.GameUpdateCount;
+                drawRuneRing = true;
             }
 
-            //使用SoftGlow绘制符文核心光球
+            if (drawRuneRing) {
+                Effect fx = ACMShaders.ArenaRunic;
+                if (fx != null) {
+                    SpriteBatch sb = Main.spriteBatch;
+                    ACMShaders.WorldDecalParams(Projectile.Center, 34f, out Vector2 uv, out float rFrac, out float aspect);
+                    fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+                    fx.Parameters["uCenter"]?.SetValue(uv);
+                    fx.Parameters["uRadius"]?.SetValue(rFrac);
+                    fx.Parameters["uIntensity"]?.SetValue(0.7f);
+                    fx.Parameters["uAspect"]?.SetValue(aspect);
+                    fx.Parameters["uColorPrimary"]?.SetValue(new Color(190, 130, 255).ToVector4());
+                    fx.Parameters["uColorSecondary"]?.SetValue(new Color(80, 35, 150).ToVector4());
+                    fx.Parameters["uRuneFreq"]?.SetValue(12f);
+                    fx.Parameters["uMode"]?.SetValue(0f);
+                    fx.Parameters["uShape"]?.SetValue(0f);
+
+                    sb.End();
+                    ACMShaders.DrawScreenSpaceDecalStandalone(fx, BlendState.Additive);
+                    ACMShaders.RestoreDefaultBatch(sb);
+                }
+            }
+            else {
+                //廉价星光环 (本帧法阵名额被其它符文占用时的退化表现)
+                Texture2D blankStar = ACMAsset.BlankStar;
+                if (blankStar != null) {
+                    Vector2 starOrigin = blankStar.Size() / 2f;
+                    Color starColor = new Color(200, 150, 255) * 0.5f;
+                    starColor.A = 0;
+                    float starScale = 0.2f + MathF.Sin(RotationTimer * 0.3f) * 0.05f;
+                    Main.EntitySpriteDraw(blankStar, Projectile.Center - Main.screenPosition, null, starColor, RotationTimer * 0.15f, starOrigin, starScale, SpriteEffects.None, 0);
+                }
+            }
+
+            //符文核心光球 (SoftGlow 呼吸脉动)
             Texture2D softGlow = ACMAsset.SoftGlow;
             if (softGlow != null) {
                 Vector2 glowOrigin = softGlow.Size() / 2f;
-
-                //拖尾光球
-                for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                    if (Projectile.oldPos[i] == Vector2.Zero) continue;
-                    float progress = 1f - (float)i / Projectile.oldPos.Length;
-                    Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                    Color trailColor = Color.Lerp(new Color(80, 40, 140), new Color(180, 100, 255), progress) * progress * 0.4f;
-                    trailColor.A = 0;
-                    Main.EntitySpriteDraw(softGlow, drawPos, null, trailColor, 0f, glowOrigin, 0.4f * progress, SpriteEffects.None, 0);
-                }
-
-                //主体光球
                 Color mainGlow = new Color(180, 100, 255) * 0.6f;
                 mainGlow.A = 0;
                 float pulse = 0.55f + MathF.Sin(RotationTimer * 0.2f) * 0.08f;
                 Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, mainGlow, 0f, glowOrigin, pulse, SpriteEffects.None, 0);
-            }
-
-            //核心星光
-            Texture2D blankStar = ACMAsset.BlankStar;
-            if (blankStar != null) {
-                Vector2 starOrigin = blankStar.Size() / 2f;
-                Color starColor = new Color(200, 150, 255) * 0.5f;
-                starColor.A = 0;
-                float starScale = 0.2f + MathF.Sin(RotationTimer * 0.3f) * 0.05f;
-                Main.EntitySpriteDraw(blankStar, Projectile.Center - Main.screenPosition, null, starColor, RotationTimer * 0.15f, starOrigin, starScale, SpriteEffects.None, 0);
             }
 
             return false;
@@ -281,6 +305,112 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 );
                 arc.noGravity = true;
             }
+        }
+    }
+
+    /// <summary>
+    /// 命运链电演出弹幕 (纯视觉, damage=0): 暴击瞬间在命中点展开 <see cref="ACMShaders.ArenaRunic"/> 判词法阵环,
+    /// 并以 <see cref="ACMShaders.DrawBeam"/> 在命中点 → 邻近敌群之间拉出折线电链 (polyline)。
+    /// 绘制只在 PreDraw, 命中阶段仅 <see cref="Spawn"/> 触发 (更新阶段安全, 仅 owner 客户端)。
+    /// </summary>
+    public class FateJudgmentField : ModProjectile
+    {
+        public override string Texture => "Terraria/Images/Projectile_1";
+        private const int Life = 30;
+        private const float RingRadius = 200f;
+        private const float ChainRange = 260f;
+
+        public static void Spawn(IEntitySource source, Vector2 worldPos, int owner) {
+            if (Main.dedServ || Main.myPlayer != owner)
+                return;
+            Projectile.NewProjectile(source, worldPos, Vector2.Zero,
+                ModContent.ProjectileType<FateJudgmentField>(), 0, 0f, owner);
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = 2;
+            Projectile.height = 2;
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = Life;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.alpha = 255;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+
+        public override void AI() {
+            Projectile.velocity = Vector2.Zero;
+            Lighting.AddLight(Projectile.Center, 0.5f, 0.25f, 0.8f);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+
+            float life = 1f - Projectile.timeLeft / (float)Life;             // 0→1
+            float fade = MathHelper.Clamp(life < 0.2f ? life / 0.2f : 1f - (life - 0.2f) / 0.8f, 0f, 1f);
+
+            SpriteBatch sb = Main.spriteBatch;
+
+            //—— ArenaRunic 判词法阵环 (扩张 + 呼吸) ——
+            Effect fx = ACMShaders.ArenaRunic;
+            if (fx != null) {
+                float radius = RingRadius * (0.5f + life * 0.5f);
+                ACMShaders.WorldDecalParams(Projectile.Center, radius, out Vector2 uv, out float rFrac, out float aspect);
+                fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+                fx.Parameters["uCenter"]?.SetValue(uv);
+                fx.Parameters["uRadius"]?.SetValue(rFrac);
+                fx.Parameters["uIntensity"]?.SetValue(fade * 0.85f);
+                fx.Parameters["uAspect"]?.SetValue(aspect);
+                fx.Parameters["uColorPrimary"]?.SetValue(new Color(190, 130, 255).ToVector4());
+                fx.Parameters["uColorSecondary"]?.SetValue(new Color(80, 35, 150).ToVector4());
+                fx.Parameters["uRuneFreq"]?.SetValue(13f);
+                fx.Parameters["uMode"]?.SetValue(0f);
+                fx.Parameters["uShape"]?.SetValue(0f);
+
+                sb.End();
+                ACMShaders.DrawScreenSpaceDecalStandalone(fx, BlendState.Additive);
+                ACMShaders.RestoreDefaultBatch(sb);
+            }
+
+            //—— DrawBeam 折线电链: 命中点 → 最近邻敌依次跳跃 (polyline, 最多 5 跳) ——
+            var nodes = new List<Vector2> { Projectile.Center };
+            var used = new HashSet<int>();
+            Vector2 cursor = Projectile.Center;
+            for (int hop = 0; hop < 5; hop++) {
+                int best = -1;
+                float bestDist = ChainRange;
+                for (int i = 0; i < Main.maxNPCs; i++) {
+                    NPC npc = Main.npc[i];
+                    if (!npc.active || npc.friendly || npc.dontTakeDamage || used.Contains(i))
+                        continue;
+                    float d = Vector2.Distance(cursor, npc.Center);
+                    if (d < bestDist) {
+                        bestDist = d;
+                        best = i;
+                    }
+                }
+                if (best < 0)
+                    break;
+                used.Add(best);
+                cursor = Main.npc[best].Center;
+                nodes.Add(cursor);
+            }
+
+            for (int i = 0; i < nodes.Count - 1; i++) {
+                ACMShaders.DrawBeam(nodes[i], nodes[i + 1], 6f * fade,
+                    new Color(210, 170, 255), new Color(110, 55, 215), fade * 0.9f,
+                    flowSpeed: 3.4f, flowScale: 3.2f, coreSharp: 2.6f);
+            }
+
+            //—— 中心核辉光 (峰值期申请全屏名额, 退化为柔光) ——
+            if (fade > 0.4f)
+                WeaponVFX.DrawRadialBloom(Projectile.Center, 0.07f, fade * 0.65f, new Color(170, 120, 250), 8f);
+
+            return false;
         }
     }
 }

@@ -6,6 +6,7 @@ using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 using AncientChineseMythology.Celestias.Boss.Dazhengs.Items;
+using AncientChineseMythology.Helpers;
 using AncientChineseMythology.Items.Weapons.DivineWoods;
 
 namespace AncientChineseMythology.Items.Weapons.ArrogantDivineSylvans;
@@ -215,6 +216,10 @@ public class ArrogantSylvanGreatbladeSwing : ModProjectile
                 SoundEngine.PlaySound(SoundID.Item14 with { Pitch = -0.5f, Volume = 1.5f }, Owner.position);
                 if (Owner.whoAmI == Main.myPlayer)
                     Owner.GetModPlayer<ScreenShakePlayer>().ShakeScreen(12, 18);
+                // 下劈地裂 set-piece 命中演出 + 金翠重击震屏
+                ACMWeaponBurst.Spawn(Owner.GetSource_ItemUse(Owner.HeldItem), Owner.Center + wd * 60,
+                    ACMWeaponBurst.ArrogantSylvan, scale: 2f, owner: Owner.whoAmI);
+                WeaponVFX.AddScreenShake(Owner.Center + wd * 60, 10f);
                 break;
         }
     }
@@ -243,12 +248,30 @@ public class ArrogantSylvanGreatbladeSwing : ModProjectile
                 Main.rand.NextVector2Circular(10f, 10f), 40, default, 3f);
             d.noGravity = true;
         }
+        ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+            ACMWeaponBurst.ArrogantSylvan, scale: 1f, owner: Projectile.owner);
     }
 
     public override bool PreDraw(ref Color lightColor) {
         SpriteBatch sb = Main.spriteBatch;
         int dir = Projectile.spriteDirection * SwingDir;
         float rotOff = dir > 0 ? MathHelper.PiOver4 : MathHelper.PiOver4 + MathHelper.Pi;
+
+        // 金翠双色刀尖弧光 ribbon (沿挥砍历史角扫出, §B.1 外宽暗金 + 内窄亮翠)
+        if (CurrentStage == Stage.Execute) {
+            int cache = ProjectileID.Sets.TrailCacheLength[Type];
+            float tipLen = Projectile.Size.Length() * Projectile.scale * 0.85f;
+            var arcPts = new System.Collections.Generic.List<Microsoft.Xna.Framework.Vector2>(cache);
+            for (int i = 0; i < cache; i++) {
+                float r = Projectile.oldRot[i];
+                if (r == 0f && i > 0) continue;
+                arcPts.Add(Projectile.Center + r.ToRotationVector2() * tipLen);
+            }
+            if (arcPts.Count >= 2)
+                WeaponVFX.DrawRibbonTrail(arcPts.ToArray(), baseWidth: 26f,
+                    outerColor: new Color(200, 150, 40, 150), innerColor: new Color(190, 255, 150, 200),
+                    uvScroll: -(float)Main.timeForVisualEffects * 0.02f);
+        }
 
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
@@ -367,6 +390,8 @@ public class ArrogantSylvanVineWave : ModProjectile
                 Main.rand.NextVector2Circular(10f, 10f), 30, default, 3f);
             d.noGravity = true;
         }
+        ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+            ACMWeaponBurst.ArrogantSylvan, scale: 1f, owner: Projectile.owner);
     }
 
     public override bool PreDraw(ref Color lightColor) {
@@ -379,6 +404,11 @@ public class ArrogantSylvanVineWave : ModProjectile
         float scaleX = MathHelper.Lerp(2.4f, 0.8f, ACMUtils.QuadIn(life));
         float scaleY = MathHelper.Lerp(0.75f, 0.25f, ACMUtils.QuadIn(life));
         float alpha = ACMUtils.QuadOut(1f - life) * 0.95f;
+
+        // 金翠双层弧波拖尾 (§B.1)
+        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 22f,
+            outerColor: new Color(200, 150, 40, 150), innerColor: new Color(190, 255, 150, 200),
+            uvScroll: -(float)Main.timeForVisualEffects * 0.03f);
 
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
@@ -484,10 +514,44 @@ public class ArrogantSylvanEarthquake : ModProjectile
         return VaultUtils.CircleIntersectsRectangle(Projectile.Center, radius, targetHitbox);
     }
 
+    /// <summary>下劈地裂签名 set-piece: ArenaRunic 屏幕空间根纹法阵 (金翠双色, 自起爆点扩张)。</summary>
+    private void DrawRootRuneDecal(float prog) {
+        if (Main.dedServ)
+            return;
+        Effect fx = ACMShaders.ArenaRunic;
+        if (fx == null)
+            return;
+
+        // 钟形包络: 起爆快现 → 收尾淡出
+        float env = MathHelper.Clamp((float)MathF.Sin(prog * MathF.PI), 0f, 1f);
+        float intensity = env * 0.9f;
+        if (intensity <= 0.01f)
+            return;
+
+        float worldRadius = MathHelper.Lerp(70f, 330f, ACMUtils.QuadOut(prog));
+        ACMShaders.WorldDecalParams(Projectile.Center, worldRadius, out Vector2 uv, out float radiusFrac, out float aspect);
+
+        fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+        fx.Parameters["uCenter"]?.SetValue(uv);
+        fx.Parameters["uRadius"]?.SetValue(radiusFrac);
+        fx.Parameters["uIntensity"]?.SetValue(intensity);
+        fx.Parameters["uAspect"]?.SetValue(aspect);
+        fx.Parameters["uColorPrimary"]?.SetValue(new Color(230, 185, 70).ToVector4());   // 金
+        fx.Parameters["uColorSecondary"]?.SetValue(new Color(60, 185, 95).ToVector4());  // 翠
+        fx.Parameters["uRuneFreq"]?.SetValue(12f);
+        fx.Parameters["uMode"]?.SetValue(0f);
+        fx.Parameters["uShape"]?.SetValue(0f);
+
+        ACMShaders.DrawScreenSpaceDecal(Main.spriteBatch, fx, BlendState.Additive);
+    }
+
     public override bool PreDraw(ref Color lightColor) {
         float prog = 1f - Projectile.timeLeft / 70f;
         float alpha = ACMUtils.QuadOut(1f - prog) * 0.92f;
         float scale = MathHelper.SmoothStep(0f, 20f, ACMUtils.QuadOut(prog));
+
+        // === 地裂根纹法阵 set-piece (ArenaRunic 屏幕空间地纹, 金翠双色) ===
+        DrawRootRuneDecal(prog);
 
         SpriteBatch sb = Main.spriteBatch;
         sb.End();

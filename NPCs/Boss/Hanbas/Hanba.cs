@@ -30,6 +30,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
         private const int aiSlot = 4;
         private Vector2 OrigRestrictionPos;
         internal bool HasTalisman;
+        private int shownMilestone; //仅本地视觉里程碑计数(不联网)
         public override void Load() {
             EyesOffset.Add(new Vector2(0, -44));
             EyesOffset.Add(new Vector2(0, 50));
@@ -144,6 +145,19 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
 
             NPC.dontTakeDamage = HasTalisman;
 
+            //一次性 HP 里程碑演出节拍(纯本地视觉, 不改 FSM/不联网; 各客户端按同步血量各自触发一次)
+            if (!HasTalisman && !Main.dedServ && NPC.lifeMax > 0) {
+                float lifeFrac = NPC.life / (float)NPC.lifeMax;
+                if (shownMilestone == 0 && lifeFrac <= 0.66f) {
+                    shownMilestone = 1;
+                    PhaseBeat();
+                }
+                else if (shownMilestone == 1 && lifeFrac <= 0.33f) {
+                    shownMilestone = 2;
+                    PhaseBeat();
+                }
+            }
+
             bool setNPCRot = true;
 
             switch (state) {
@@ -183,6 +197,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
 
                     if (attackTimer == ReelBackTime / 2) {
                         SoundEngine.PlaySound(SoundID.Item74, NPC.Center);
+                        ACMUtils.AddScreenShake(3f);
                         if (!VaultUtils.isClient) {
                             for (int i = 0; i < 8; i++) {
                                 Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, NPC.Center.To(target.Center).RotatedByRandom(0.6f).UnitVector() * 10
@@ -212,6 +227,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
                             soundInstance.Position = NPC.Center;
                             return true;
                         });
+                        ACMUtils.AddScreenShake(5f);
                     }
                     attackTimer++;
 
@@ -414,6 +430,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
 
                     if (attackTimer == 10) {
                         SoundEngine.PlaySound(SoundID.ForceRoar, NPC.Center);
+                        ACMUtils.AddScreenShake(9f); //鬼域牢笼降临 set-piece 节拍
                         if (!VaultUtils.isClient) {
                             Projectile.NewProjectile(NPC.FromObjectGetParent(), NPC.Center, Vector2.Zero
                             , ModContent.ProjectileType<Shockwave>(), 0, 0, -1, 0, 0.6f);
@@ -471,6 +488,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
 
                     if (attackTimer >= 90 && attackTimer < 120 && attackTimer % 6 == 0) {
                         SoundEngine.PlaySound(SoundID.Item74, NPC.Center);
+                        ACMUtils.AddScreenShake(4f); //渐强蓄力轰鸣
                         if (!VaultUtils.isServer) {
                             Vector2 eyePos = NPC.Center;
                             for (int i = 0; i < 115; i++) {
@@ -481,6 +499,7 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
 
                     if (attackTimer == 130) {
                         SoundEngine.PlaySound(SoundID.Item74 with { Pitch = -0.2f }, NPC.Center);
+                        ACMUtils.AddScreenShake(11f); //黄金太阳柱终极大招释放
                         if (!VaultUtils.isClient) {
                             int proj = Projectile.NewProjectile(NPC.FromObjectGetParent(), NPC.Center, Vector2.Zero
                             , ModContent.ProjectileType<HanbaBigLaser>(), GetBossDamage(), 0, -1, NPC.whoAmI);
@@ -591,6 +610,43 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
             SoundEngine.PlaySound(SoundID.Roar, NPC.Center);
         }
 
+        //一次性 HP 里程碑视觉节拍 (纯本地: 震屏 + 焦火爆裂 + 咆哮; 不改 FSM/不联网)
+        private void PhaseBeat() {
+            SoundEngine.PlaySound(SoundID.ForceRoar with { Pitch = -0.3f }, NPC.Center);
+            ACMUtils.AddScreenShake(8f);
+            for (int i = 0; i < 40; i++) {
+                Vector2 v = Main.rand.NextVector2Circular(8f, 8f);
+                Dust d = Dust.NewDustPerfect(NPC.Center, DustID.Torch, v, 120, Color.OrangeRed, Main.rand.NextFloat(1.5f, 3f));
+                d.noGravity = true;
+            }
+        }
+
+        //鬼域牢笼边界贴花 (ArenaRunic 法阵环), 让 800 半径限制场地范围更可读。自管批次并恢复默认批。
+        private static void DrawCageDecal(SpriteBatch sb, Vector2 worldCenter, float worldRadius, float intensity) {
+            if (Main.dedServ || intensity <= 0.01f)
+                return;
+
+            Effect fx = ACMShaders.ArenaRunic;
+            if (fx == null)
+                return;
+
+            // V2: 缩放感知世界→屏幕UV 走共享 WorldDecalParams (含 zoom 项)。
+            ACMShaders.WorldDecalParams(worldCenter, worldRadius, out Vector2 centerUV, out float radiusUV, out float aspect);
+
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uCenter"]?.SetValue(centerUV);
+            fx.Parameters["uRadius"]?.SetValue(radiusUV);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(intensity, 0f, 1f));
+            fx.Parameters["uAspect"]?.SetValue(aspect);
+            fx.Parameters["uColorPrimary"]?.SetValue(TelegraphColors.Flame.ToVector4());
+            fx.Parameters["uColorSecondary"]?.SetValue(new Color(150, 20, 20).ToVector4());
+            fx.Parameters["uRuneFreq"]?.SetValue(11f);
+            fx.Parameters["uMode"]?.SetValue(0f);
+            fx.Parameters["uShape"]?.SetValue(1f); // 方形竞技场: 800 半笼用矩形边界 (§item7) 而非圆环
+
+            ACMShaders.DrawScreenSpaceDecal(sb, fx, BlendState.NonPremultiplied);
+        }
+
         public override void HitEffect(NPC.HitInfo hit) {
             if (NPC.life > 0) {
                 return;
@@ -613,6 +669,14 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
         }
 
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+            //鬼域牢笼期(状态6)绘制竞技场边界贴花, 让限制场地范围可读 (绘制在 Boss 之前=底层)
+            if ((int)NPC.ai[0] == 6) {
+                float at = NPC.ai[1];
+                float fadeIn = MathHelper.Clamp(at / 90f, 0f, 1f);
+                float fadeOut = MathHelper.Clamp((600f - at) / 80f, 0f, 1f);
+                DrawCageDecal(spriteBatch, OrigRestrictionPos, 800f, fadeIn * fadeOut * 0.85f);
+            }
+
             Texture2D mainValue = TextureAssets.Npc[Type].Value;
             Rectangle rectangle = VaultUtils.GetRectangle(mainValue, frame, maxFrame);
             float sengs = 0.2f;
@@ -743,11 +807,26 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
     internal class HanbaBigLaser : HanbaLaser
     {
         public override string Texture => "InnoVault/Assets/placeholder";
+
+        // 巨大黄金太阳柱: 用 localAI[2] 作为生长源, 更宽, 烈焰金核心 + 赤焰边缘。
+        protected override float BeamGrow => MathHelper.Clamp(Projectile.localAI[2] / 30f, 0f, 1f);
+        protected override float BeamHalfWidth => Weith * 24f;
+        protected override Color BeamCore => new Color(255, 225, 110);
+        protected override Color BeamEdge => new Color(210, 60, 20);
+
         public override void SetDefaults() {
             Projectile.width = Projectile.height = 32;
             Projectile.friendly = false;
             Projectile.timeLeft = 1120;
             Projectile.tileCollide = false;
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            base.PreDraw(ref lightColor);
+            float grow = BeamGrow;
+            if (grow > 0.05f)
+                ACMShaders.DrawRadialBloomAt(Projectile.Center, 0.17f, grow * 0.9f, new Color(255, 210, 120));
+            return false;
         }
 
         public static new void AllVanish() {
@@ -803,6 +882,9 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
                 }
             }
 
+            // 大招持续低频轰鸣 (随生长缩放; Add 内部取 max + 客户端守卫)。
+            ACMUtils.AddScreenShake(BeamGrow * 3f);
+
             Time++;
         }
     }
@@ -820,6 +902,16 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
             get => Projectile.localAI[1];
             set => Projectile.localAI[1] = value;
         }
+
+        // —— BeamGrad 原语接线 (V2: 旱魃激光抽象为共享 beam 原语供雷柱/链电复用) ——
+        // 0~1 生长进度: 同时驱动 alpha 淡入淡出与宽度成长, 也充当蓄力 telegraph 计时。
+        protected virtual float BeamGrow => MathHelper.Clamp(Projectile.localAI[0] / 30f, 0f, 1f);
+        // 屏幕像素半宽(随 Weith 成长)。
+        protected virtual float BeamHalfWidth => Weith * 20f;
+        // 身份色: 焦橙核心 + 血红边缘 (统一 §6.1, 红只用于致命源)。
+        protected virtual Color BeamCore => new Color(255, 150, 40);
+        protected virtual Color BeamEdge => new Color(150, 12, 22);
+
         public override string Texture => "InnoVault/Assets/placeholder";
         public override void SetStaticDefaults() => ProjectileID.Sets.DrawScreenCheckFluff[Type] = 4000;
         public override void SetDefaults() {
@@ -931,74 +1023,24 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            Texture2D startTex = UltimaRayStart.Value;
-            Texture2D midTex = UltimaRayMid.Value;
-            Texture2D endTex = UltimaRayEnd.Value;
+            if (Main.dedServ)
+                return false;
+
+            float grow = BeamGrow;
+            if (grow <= 0.001f)
+                return false;
 
             Vector2 dir = Projectile.rotation.ToRotationVector2();
-            float rotation = Projectile.rotation - MathHelper.PiOver2;
+            float length = Leng + Projectile.width;
 
-            //火焰颜色渐变：焦紫 → 血红 → 烈焰黄
-            Color baseColor = VaultUtils.MultiStepColorLerp(
-                0.8f + 0.2f * (float)Math.Sin(Main.GlobalTimeWrappedHourly * 6f + Projectile.whoAmI),
-                new Color(140, 0, 20),
-                new Color(255, 60, 20),
-                new Color(255, 210, 50)
-            );
+            // 蓄力 telegraph: 生长前半段把光束染向纯红致命预警(§6.1), 完全展开后回到身份色。
+            float warn = 1f - MathHelper.Clamp(grow / 0.5f, 0f, 1f);
+            Color core = Color.Lerp(BeamCore, TelegraphColors.Lethal, warn * 0.65f);
+            Color edge = Color.Lerp(BeamEdge, TelegraphColors.Lethal, warn);
 
-            //激光头部
-            Main.EntitySpriteDraw(
-                startTex,
-                Projectile.Center - Main.screenPosition,
-                null,
-                baseColor * 0.95f,
-                rotation,
-                new Vector2(startTex.Width * 0.5f, 0),
-                new Vector2(Weith, Weith),
-                SpriteEffects.None,
-                0
-            );
-
-            //激光主体（使用 UV 滚动模拟流动感）
-            Main.EntitySpriteDraw(
-                midTex,
-                Projectile.Center - Main.screenPosition + dir * startTex.Height,
-                new Rectangle(0, Time * -6 % midTex.Height, midTex.Width, (int)(Leng + 1)),
-                baseColor,
-                rotation,
-                new Vector2(midTex.Width * 0.5f, 0),
-                new Vector2(Weith, 1),
-                SpriteEffects.None,
-                0
-            );
-
-            //激光末端（灼烧收束感）
-            Main.EntitySpriteDraw(
-                endTex,
-                Projectile.Center + dir * Leng - Main.screenPosition + dir * startTex.Height,
-                null,
-                baseColor * 1.1f,
-                rotation,
-                new Vector2(endTex.Width * 0.5f, 0),
-                new Vector2(Weith, Weith),
-                SpriteEffects.None,
-                0
-            );
-
-            //边缘扰动效果（附加一层更亮、更细的中间层）
-            Color flareColor = new Color(255, 100, 0, 80);
-            Main.EntitySpriteDraw(
-                midTex,
-                Projectile.Center - Main.screenPosition + dir * startTex.Height,
-                new Rectangle(0, (Time * -7 + 20) % midTex.Height, midTex.Width, (int)(Leng + 1)),
-                flareColor,
-                rotation,
-                new Vector2(midTex.Width * 0.5f, 0),
-                new Vector2(Weith, 1) * 0.6f,
-                SpriteEffects.None,
-                0
-            );
-
+            // V2: 提升后的共享 beam 原语 (旱魃为其首发验证者; 视觉与旧本地 DrawBeamGrad 一致)。
+            Vector2 endPos = Projectile.Center + dir.SafeNormalize(Vector2.UnitX) * length;
+            ACMShaders.DrawBeam(Projectile.Center, endPos, BeamHalfWidth, core, edge, grow);
             return false;
         }
     }
@@ -1011,7 +1053,11 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
             Projectile.tileCollide = false;
         }
 
-        public override void AI() => Projectile.ai[0]++;
+        public override void AI() {
+            if (Projectile.ai[0] == 0)
+                ACMUtils.AddScreenShake(3f);
+            Projectile.ai[0]++;
+        }
 
         public override bool PreDraw(ref Color lightColor) {
             Texture2D value = TextureAssets.Projectile[Type].Value;
@@ -1072,7 +1118,10 @@ namespace AncientChineseMythology.NPCs.Boss.Hanbas
             Rectangle rect = new Rectangle(-width / 2, -height / 2, width, height);
             Vector2 origin = new Vector2(rect.Width / 2, rect.Height / 2);
 
-            Main.spriteBatch.Draw(back, drawPos, rect, Color.Goldenrod with { A = 155 } * alpha
+            // 蝗虫墙是即将横扫的致命路径 → 预警带偏向纯红(§6.1), 略掺焦金保留身份。
+            Color bandColor = Color.Lerp(TelegraphColors.Lethal, new Color(255, 170, 40), 0.35f);
+            bandColor.A = 160;
+            Main.spriteBatch.Draw(back, drawPos, rect, bandColor * alpha
                 , Projectile.velocity.ToRotation(), origin, 1f, SpriteEffects.None, 0f);
             return false;
         }

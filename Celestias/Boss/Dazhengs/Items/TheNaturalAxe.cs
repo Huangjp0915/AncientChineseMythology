@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -39,6 +40,36 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs.Items
         public override bool AltFunctionUse(Player player)
         {
             return true;
+        }
+
+        // 翠金"自然之力"挥砍尘 (仅左键斧砍时, 不改伤害/机制) — 外翠内金双色随机, 表现"伐木·植林"自然循环。
+        public override void MeleeEffects(Player player, Rectangle hitbox)
+        {
+            if (player.altFunctionUse == 2)
+                return;
+            if (Main.rand.NextBool(2))
+            {
+                int type = Main.rand.NextBool(3) ? DustID.GoldFlame : DustID.GrassBlades;
+                Dust d = Dust.NewDustDirect(new Vector2(hitbox.X, hitbox.Y), hitbox.Width, hitbox.Height, type);
+                d.noGravity = true;
+                d.velocity *= 0.4f;
+                d.scale = Main.rand.NextFloat(0.9f, 1.5f);
+            }
+            Lighting.AddLight(hitbox.Center.ToVector2(), 0.35f, 0.5f, 0.2f);
+        }
+
+        // 命中翠金自然爆发 (径向辉光 + 冲击环, 走 ACMWeaponBurst — 更新阶段安全) + 轻屏震。
+        public override void OnHitNPC(Player player, NPC target, NPC.HitInfo hit, int damageDone)
+        {
+            for (int i = 0; i < 6; i++)
+            {
+                Dust d = Dust.NewDustPerfect(target.Center, DustID.GrassBlades,
+                    Main.rand.NextVector2Circular(3.2f, 3.2f), 60, default, Main.rand.NextFloat(1f, 1.5f));
+                d.noGravity = true;
+            }
+            ACMWeaponBurst.Spawn(player.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Nature, scale: 1.15f, owner: player.whoAmI);
+            WeaponVFX.AddScreenShake(target.Center, 2.5f);
         }
 
         public override bool CanUseItem(Player player)
@@ -131,6 +162,9 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs.Items
                     dust.noGravity = true;
                     dust.velocity *= 0.5f;
                 }
+                // 催生灵木的翠金自然爆发反馈 (纯视觉)
+                ACMWeaponBurst.Spawn(player.GetSource_ItemUse(Item), Main.MouseWorld,
+                    ACMWeaponBurst.Nature, scale: 1f + planted * 0.15f, owner: player.whoAmI);
             }
         }
     }

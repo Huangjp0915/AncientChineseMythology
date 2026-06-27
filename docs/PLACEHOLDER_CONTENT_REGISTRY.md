@@ -289,4 +289,23 @@ STUB 武器文件顶部应含：
 
 ---
 
+## 十二、环境与着色器资产
+
+### 12.1 血海重做（地下血海盆地）
+
+血海由“困难模式改造地表海洋”重做为**世界创建时在地下洞穴层生成的血海盆地（地下血湖）**，氛围改由高级全屏着色器提供。
+
+| 资产 / 文件 | 类型 | 说明 | 状态 |
+|------|------|------|------|
+| `Effects/BloodSeaAtmosphere.fx`（+ 编译产物 `.fxc`） | 屏幕着色器 | 全屏程序化血雾 / 焦散 / 向下体积光 / 漂浮血粒 / 暗角，无纹理依赖 | COMPLETE |
+| `Systems/BloodSeaAtmosphereSystem.cs` | 渲染系统 | 入盆地按强度淡入淡出，`PostDrawTiles` 全屏叠加（预乘 Alpha） | COMPLETE |
+| `Systems/BloodSeaSystem.cs` | 世界生成 | `ModifyWorldGenTasks` 雕出盆地（血砂外壳 + 血海墙 + 下半部血水），持久化盆地中心坐标 | COMPLETE |
+| `Biomes/BloodSeaBiome.cs` | 生物群系 | 地下判定（地表以下 + 附近血砂 ≥ 50），图鉴暗血红背景 | COMPLETE |
+
+**移除：** `Backgrounds/BloodSeaSurfaceBGStyle.cs` 及其 `Textures/Backgrounds/BloodSea_Far / _Middle / _Close` 地表视差背景（地下盆地不再使用）。
+
+**关联改动：** `Tiles/Placable/BloodSeaSand.cs` 取消 `tileSand`（改为稳定固体，避免盆地顶部血砂塌落）；`NPCs/Monsters/ChangGhost.cs` 生成放开地表限制，改在地下盆地刷新。
+
+---
+
 *本表随 Phase 2 实装进度更新；武器机制实装后请将对应行状态改为 COMPLETE 并移出 STUB 统计。*

@@ -1,4 +1,6 @@
 ﻿using System;
+using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
@@ -112,8 +114,15 @@ public class NatureGrimoireLeaf : ModProjectile
         }
     }
 
+    public override bool PreDraw(ref Color lightColor) {
+        // 叶片飘飞时残留翠绿柔光 (毒/自然能量感), 保留原版叶片帧绘制
+        WeaponVFX.DrawGlowBurst(Projectile.Center, 0.32f, new Color(80, 200, 90) * 0.7f);
+        return true;
+    }
+
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
-        if (Main.rand.NextBool(3)) {
+        bool poisoned = Main.rand.NextBool(3);
+        if (poisoned) {
             target.AddBuff(BuffID.Poisoned, 90);
         }
         // 命中时散落叶片
@@ -123,6 +132,16 @@ public class NatureGrimoireLeaf : ModProjectile
                 Main.rand.NextVector2Circular(3f, 3f), 60, default, 1.2f);
             d.noGravity = true;
         }
+        // 中毒触发时额外飘几缕翠尘强调
+        if (poisoned) {
+            for (int i = 0; i < 4; i++) {
+                Dust d = Dust.NewDustPerfect(target.Center, DustID.GreenTorch,
+                    Main.rand.NextVector2Circular(2f, 2f), 80, default, 0.9f);
+                d.noGravity = true;
+            }
+        }
+        ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+            ACMWeaponBurst.Nature, scale: 0.7f, owner: Projectile.owner);
     }
 
     public override void OnKill(int timeLeft) {

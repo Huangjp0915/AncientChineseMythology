@@ -9,7 +9,6 @@ using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.GameContent.ItemDropRules;
-using Terraria.Graphics.CameraModifiers;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -99,6 +98,17 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
         private Vector2 flashTarget;    // 瞬移目标位
         private float gazeAngle;        // 凝视扫射角度
         private int gazeLockTimer;      // 凝视蓄力计时
+
+        // === V2 视觉提升 (纯本地视觉, 各客户端自行运算 AI, 不入网络同步) ===
+        private float gazeBeamFlash;    // 狙击/凝视命中瞬间的沿线闪白衰减
+        private float bloomBurst;       // 离散加性径向泛光脉冲 0~1
+        private float bloomBurstRadius; // 当前泛光半径(屏高比例)
+        private Color bloomBurstColor = new(190, 110, 255);
+        private float domainPower;      // 「全视之域」签名进度 0~1 (驱动巨眼锁定/折射/虹环)
+        private float ambientVoid;      // 虚空「被注视」屏幕染色强度
+
+        /// <summary>供 <see cref="ArgusSky"/> 读取的天目巨眼锁定信号 (0~1)。本地视觉, 各端自算。</summary>
+        public static float DomainSignal;
 
         #endregion
 
@@ -213,10 +223,9 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
 
         public override void OnKill() {
             DownedBossSystem.downedArgus = true;
-            if (Main.netMode != NetmodeID.Server) {
-                PunchCameraModifier mod = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 25f, 12f, 60, 2000f, FullName);
-                Main.instance.CameraModifiers.Add(mod);
-            }
+            DomainSignal = 0f;
+            if (Main.netMode != NetmodeID.Server)
+                ACMScreenShakeSystem.Add(16f);
         }
 
         #endregion
@@ -358,6 +367,30 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
 
             // 独眼发光
             Lighting.AddLight(NPC.Center, new Vector3(0.5f, 0.3f, 0.9f) * glowIntensity);
+
+            // —— V2 视觉通道演进 (各端自算; 衰减/插值纯本地) ——
+            gazeBeamFlash *= 0.86f;
+            bloomBurst *= 0.90f;
+
+            // 「全视之域」签名进度: 仅 Phase3_AllSeeingDomain 拉满, 其余回落
+            float domainTarget = Phase == BossPhase.Phase3_AllSeeingDomain ? 1f : 0f;
+            domainPower = MathHelper.Lerp(domainPower, domainTarget, domainTarget > 0f ? 0.06f : 0.10f);
+            DomainSignal = domainPower;
+
+            // 虚空「被注视」染色: P2 起轻染, P3 加重, 域内拉满
+            float voidTarget = (IsPhase3 ? 0.5f : IsPhase2 ? 0.22f : 0f) + domainPower * 0.5f;
+            ambientVoid = MathHelper.Lerp(ambientVoid, MathHelper.Clamp(voidTarget, 0f, 1f), 0.05f);
+
+            // 发布给屏幕氛围系统 (域虹环以玩家为心)
+            Vector2 domainCenter = target.active ? target.Center : NPC.Center;
+            ArgusScreenSystem.Publish(ambientVoid, domainPower, domainCenter, (float)Main.GlobalTimeWrappedHourly);
+        }
+
+        /// <summary>触发一次离散加性径向泛光脉冲 (下一帧 PreDraw 经 DrawRadialBloomAt 绘制)。</summary>
+        private void TriggerBloom(float radius, Color color) {
+            bloomBurst = 1f;
+            bloomBurstRadius = radius;
+            bloomBurstColor = color;
         }
 
         private void CheckPhaseTransition() {
@@ -476,6 +509,8 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
             if (PhaseTimer == 95) {
                 SoundEngine.PlaySound(SoundID.Item122 with { Volume = 1.3f }, NPC.Center);
                 if (Main.netMode != NetmodeID.Server) {
+                    ACMScreenShakeSystem.Add(6f);
+                    TriggerBloom(0.16f, new Color(190, 110, 255));
                     for (int i = 0; i < 25; i++) {
                         Dust d = Dust.NewDustDirect(NPC.Center, 0, 0, DustID.PurpleTorch, 0, 0, 60, default, 3.5f);
                         d.noGravity = true;
@@ -487,8 +522,8 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
             if (PhaseTimer >= 130) {
                 NPC.Opacity = 1f;
                 if (Main.netMode != NetmodeID.Server) {
-                    PunchCameraModifier mod = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 18f, 10f, 35, 2000f, FullName);
-                    Main.instance.CameraModifiers.Add(mod);
+                    ACMScreenShakeSystem.Add(14f);
+                    TriggerBloom(0.24f, new Color(190, 110, 255));
                 }
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.3f, Volume = 1.3f }, NPC.Center);
 
@@ -623,10 +658,8 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
                     }
                     SoundEngine.PlaySound(SoundID.Item5 with { Pitch = 0.3f + s * 0.3f, Volume = 0.9f }, NPC.Center);
 
-                    if (Main.netMode != NetmodeID.Server) {
-                        PunchCameraModifier mod = new(NPC.Center, (predicted - NPC.Center).SafeNormalize(Vector2.UnitY), 5f + s * 3f, 5f, 10, 1000f, FullName);
-                        Main.instance.CameraModifiers.Add(mod);
-                    }
+                    if (Main.netMode != NetmodeID.Server)
+                        ACMScreenShakeSystem.Add(MathHelper.Clamp(3f + s * 2f, 0f, 6f));
                 }
             }
 
@@ -692,8 +725,8 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
             if (PhaseTimer == 60) {
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.3f, Volume = 1.3f }, NPC.Center);
                 if (Main.netMode != NetmodeID.Server) {
-                    PunchCameraModifier mod = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 22f, 12f, 45, 2000f, FullName);
-                    Main.instance.CameraModifiers.Add(mod);
+                    ACMScreenShakeSystem.Add(10f);
+                    TriggerBloom(0.26f, new Color(180, 100, 255));
                 }
 
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
@@ -751,8 +784,8 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
             if (PhaseTimer == 70) {
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.6f, Volume = 1.6f }, NPC.Center);
                 if (Main.netMode != NetmodeID.Server) {
-                    PunchCameraModifier mod = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 30f, 15f, 70, 3000f, FullName);
-                    Main.instance.CameraModifiers.Add(mod);
+                    ACMScreenShakeSystem.Add(12f);
+                    TriggerBloom(0.32f, new Color(190, 110, 255));
                 }
 
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
@@ -1015,8 +1048,9 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
                     }
 
                     if (Main.netMode != NetmodeID.Server) {
-                        PunchCameraModifier mod = new(NPC.Center, (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY), 15f, 8f, 25, 2000f, FullName);
-                        Main.instance.CameraModifiers.Add(mod);
+                        ACMScreenShakeSystem.Add(8f);
+                        gazeBeamFlash = 1f;            // 沿凝视线的处决闪白
+                        TriggerBloom(0.16f, TelegraphColors.Lethal);
                     }
                     NPC.netUpdate = true;
                 }
@@ -1108,9 +1142,17 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
             Vector2 hoverPos = target.Center + new Vector2(0, -400);
             NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.04f, 0.08f);
 
+            // 球阵成形瞬间 — 天幕巨眼同步睁开锁定 + 处决泛光 (签名节拍)
+            if (AttackTimer == 15) {
+                SoundEngine.PlaySound(SoundID.Item122 with { Volume = 1.1f }, target.Center);
+                if (Main.netMode != NetmodeID.Server) {
+                    ACMScreenShakeSystem.Add(9f);
+                    TriggerBloom(0.28f, new Color(200, 110, 255));
+                }
+            }
+
             // 构造眼形球阵(椭圆+中心线)——天目的标志性图案
             if (AttackTimer == 15 && Main.netMode != NetmodeID.MultiplayerClient) {
-                SoundEngine.PlaySound(SoundID.Item122 with { Volume = 1.1f }, target.Center);
 
                 // 外层椭圆
                 int outerCount = 24;
@@ -1234,8 +1276,8 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
                     SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.5f, Volume = 1.6f }, NPC.Center);
 
                     if (Main.netMode != NetmodeID.Server) {
-                        PunchCameraModifier mod = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 30f, 15f, 70, 3000f, FullName);
-                        Main.instance.CameraModifiers.Add(mod);
+                        ACMScreenShakeSystem.Add(12f);
+                        TriggerBloom(0.34f, new Color(200, 110, 255));
                     }
                     NPC.netUpdate = true;
                 }
@@ -1252,6 +1294,10 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
                         float speed = isContracting ? (10f + wave * 2f) : (8f + wave * 2f);
 
                         SoundEngine.PlaySound(SoundID.Item122 with { Pitch = wave * 0.1f, Volume = 0.9f }, NPC.Center);
+                        if (Main.netMode != NetmodeID.Server) {
+                            ACMScreenShakeSystem.Add(6f);
+                            TriggerBloom(isContracting ? 0.20f : 0.12f, isContracting ? TelegraphColors.Lethal : new Color(180, 110, 255));
+                        }
 
                         for (int i = 0; i < arrowCount; i++) {
                             float angle = MathHelper.TwoPi / arrowCount * i + wave * MathHelper.ToRadians(7f);
@@ -1295,6 +1341,9 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
         #region 绘制
 
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+            // V2: 凝视/穿刺/扫射 BeamGrad 预告线 + 离散径向泛光 (绘于本体之下)
+            DrawV2Beams();
+
             Texture2D texture = TextureAssets.Npc[Type].Value;
             Rectangle frame = NPC.frame;
             Vector2 origin = frame.Size() / 2f;
@@ -1321,6 +1370,92 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
             spriteBatch.Draw(texture, NPC.Center - screenPos, frame, eyeGlow, NPC.rotation, origin, NPC.scale * 1.03f, effects, 0f);
 
             return false;
+        }
+
+        /// <summary>
+        /// V2 凝视类预告线 (硬化 API <see cref="ACMShaders.DrawBeam"/>): 把旧紫尘瞄准线升级为 BeamGrad 直带。
+        /// 致命射击线渐变到纯红 (§预警色彩语言: 红=致命); 域内穿刺线随签名进度变红。须在 PreDraw 活动批内调用。
+        /// </summary>
+        private void DrawV2Beams() {
+            if (Main.dedServ)
+                return;
+            Player target = Main.player[NPC.target];
+
+            // 狙击对决: 凝视锁定 60-tick 蓄力 — 渐亮 紫→红, 蓄满前可读
+            if (Phase == BossPhase.Phase2_SniperDuel && SubState == 1f && target.active) {
+                float charge = MathHelper.Clamp(gazeLockTimer / 60f, 0f, 1f);
+                Color core = Color.Lerp(new Color(180, 100, 255), TelegraphColors.Lethal, charge);
+                ACMShaders.DrawBeam(NPC.Center, target.Center, MathHelper.Lerp(2.5f, 7f, charge),
+                    core, new Color(90, 60, 200), 0.4f + charge * 0.6f,
+                    flowSpeed: 2.0f, coreSharp: 2.6f, coreGlow: charge);
+            }
+
+            // 凝视扫射: 沿旋转角的致命射线 (箭沿此方向连发)
+            if (Phase == BossPhase.Phase3_GazeSweep && PhaseTimer > 1f) {
+                Vector2 dir = new(MathF.Cos(gazeAngle), MathF.Sin(gazeAngle));
+                ACMShaders.DrawBeam(NPC.Center, NPC.Center + dir * 1400f, 5f,
+                    TelegraphColors.Lethal, new Color(120, 80, 220), 0.8f,
+                    flowSpeed: 2.4f, coreSharp: 2.4f);
+            }
+
+            // 全视之域: 瞳孔中心穿刺预告线 (随签名进度变红)
+            if (Phase == BossPhase.Phase3_AllSeeingDomain && domainPower > 0.2f && target.active) {
+                float pulse = 0.6f + MathF.Sin(globalTime * 6f) * 0.2f;
+                ACMShaders.DrawBeam(NPC.Center, target.Center, 4f + domainPower * 4f,
+                    Color.Lerp(new Color(200, 120, 255), TelegraphColors.Lethal, domainPower),
+                    new Color(80, 120, 255), domainPower * pulse,
+                    flowSpeed: 1.8f, coreSharp: 2.6f);
+            }
+
+            // 光刃布雷: 预测路径引导束 (布雷期, 紫蓝主题=布置中, 非致命红)
+            if (Phase == BossPhase.Phase2_WingbladeMines && target.active && AttackTimer < 80f) {
+                Vector2 moveDir = target.velocity.SafeNormalize(Vector2.UnitX);
+                ACMShaders.DrawBeam(target.Center - moveDir * 120f, target.Center + moveDir * 360f, 3f,
+                    new Color(180, 90, 255), new Color(80, 120, 220), 0.5f, flowSpeed: 1.2f);
+            }
+
+            // 处决闪白: 狙击/全视命中瞬间沿凝视线的白闪
+            if (gazeBeamFlash > 0.02f && target.active) {
+                ACMShaders.DrawBeam(NPC.Center, target.Center, 9f * gazeBeamFlash,
+                    Color.White, new Color(200, 180, 255), gazeBeamFlash,
+                    flowSpeed: 3f, coreSharp: 3f, coreGlow: gazeBeamFlash);
+            }
+
+            // 离散径向泛光 (DrawRadialBloomAt 占全屏名额; 域内让位给 GenericWarp 折射, 故仅域外绘制)
+            if (bloomBurst > 0.02f && domainPower < 0.15f)
+                ACMShaders.DrawRadialBloomAt(NPC.Center, bloomBurstRadius, bloomBurst, bloomBurstColor,
+                    rayCount: 12f, falloff: 2.6f);
+        }
+
+        /// <summary>
+        /// 「全视之域」签名: 以独眼为中心的弱全屏折射 (GenericWarp · rift, "被注视"的物理化)。
+        /// 喂 Main.screenTarget 的昂贵后处理, 受单一全屏名额约束: 仅 domainPower>0 时申请名额绘制, 平时早退。
+        /// 其余氛围/虹环/泛光由 <see cref="ArgusScreenSystem"/> 与 <see cref="DrawV2Beams"/> 承担。
+        /// </summary>
+        public override void PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+            if (Main.dedServ || domainPower <= 0.05f)
+                return;
+            if (!ACMShaders.RequestFullscreenSlot())
+                return;
+
+            Effect fx = ACMShaders.GenericWarp;
+            if (fx == null)
+                return;
+
+            float aspect = (float)Main.screenWidth / Main.screenHeight;
+            Vector2 uv = (NPC.Center - Main.screenPosition) / new Vector2(Main.screenWidth, Main.screenHeight);
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uCenter"]?.SetValue(uv);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(domainPower * 0.55f, 0f, 1f));
+            fx.Parameters["uRadius"]?.SetValue(1.0f);
+            fx.Parameters["uAspect"]?.SetValue(aspect);
+            fx.Parameters["uWarpScale"]?.SetValue(1.1f);
+            fx.Parameters["uChroma"]?.SetValue(0.35f);
+            fx.Parameters["uRadialPull"]?.SetValue(0.18f);     // 轻微向心吸入 = 被瞳孔"吸住"
+            fx.Parameters["uMode"]?.SetValue(3f);              // 3 = rift 主题
+            fx.Parameters["uTint"]?.SetValue(new Vector4(new Color(120, 70, 220).ToVector3(), 0.4f));
+
+            ACMShaders.ApplyScreenPostProcess(spriteBatch, fx);
         }
 
         #endregion

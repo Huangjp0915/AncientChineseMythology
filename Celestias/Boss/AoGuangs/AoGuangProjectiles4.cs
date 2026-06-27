@@ -141,7 +141,36 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                     ACMAsset.LightShot.Size() / 2f, 1.5f * vortexAlpha, SpriteEffects.None, 0f);
             }
 
+            DrawAbyssRing();
+
             return false;
+        }
+
+        /// <summary>
+        /// 深渊漩涡致命半径环描边 (ArenaRunic 法阵模式)。环内为致命死区(碰撞 = vortexRadius*0.8),
+        /// 环用红=致命描边明示"被吸向中心的死亡边界"。客户端纯视觉, 配合 Boss 全屏折射的向心吸入。
+        /// </summary>
+        private void DrawAbyssRing() {
+            if (Main.dedServ || !MythologyConfig.FullscreenShadersEnabled || vortexAlpha <= 0.05f)
+                return;
+            Effect fx = ACMShaders.ArenaRunic;
+            if (fx == null)
+                return;
+
+            ACMShaders.WorldDecalParams(Projectile.Center, vortexRadius * 0.8f,
+                out Vector2 uvCenter, out float radiusFrac, out float aspect);
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uCenter"]?.SetValue(uvCenter);
+            fx.Parameters["uRadius"]?.SetValue(radiusFrac);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(vortexAlpha, 0f, 1f));
+            fx.Parameters["uAspect"]?.SetValue(aspect);
+            fx.Parameters["uColorPrimary"]?.SetValue(new Vector4(TelegraphColors.Lethal.ToVector3(), 1f));
+            fx.Parameters["uColorSecondary"]?.SetValue(new Vector4(AoGuangHelper.DeepSeaBlue.ToVector3(), 1f));
+            fx.Parameters["uRuneFreq"]?.SetValue(12f);
+            fx.Parameters["uMode"]?.SetValue(0f);
+            fx.Parameters["uShape"]?.SetValue(0f);
+
+            ACMShaders.DrawScreenSpaceDecal(Main.spriteBatch, fx, BlendState.AlphaBlend);
         }
 
         public override void OnKill(int timeLeft) {
@@ -161,7 +190,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             }
 
             SoundEngine.PlaySound(SoundID.Item122 with { Pitch = 0.2f, Volume = 1.2f }, Projectile.Center);
-            Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(15, 40);
+            ACMUtils.AddScreenShake(10f);
         }
     }
 
@@ -235,7 +264,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                 }
 
                 SoundEngine.PlaySound(SoundID.Item21 with { Pitch = 0.3f, Volume = 0.7f }, Projectile.Center);
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(4, 10);
+                ACMUtils.AddScreenShake(3f);
             }
 
             return true;

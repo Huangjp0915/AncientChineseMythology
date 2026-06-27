@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
 using AncientChineseMythology.Underworlds.Items.Weapons.Revenants;
 using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
@@ -68,6 +69,9 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
             }
             // 后坐力
             player.velocity -= muzzleDir * 3f;
+            // 升级演出: 炮口 RadialBloom 大闪 (纯视觉, 仅本机)
+            SoulCannonMuzzleFlash.Spawn(source, muzzlePos, player.whoAmI);
+            WeaponVFX.AddScreenShake(player, 3f);
             return false;
         }
 
@@ -167,21 +171,23 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
                     Dust soul = Dust.NewDustPerfect(target.Center, DustID.Wraith, soulVel, 80, default, 2f);
                     soul.noGravity = true;
                 }
+                // 升级演出: 噬魂紫染屏 (PaletteLUT, 仅击杀, 仅本机)
+                SoulEatPaletteFinisher.Spawn(Projectile.GetSource_OnHit(target), target.Center, Projectile.owner);
             }
+
+            // 命中冲击演出 (噬魂紫径向辉光 + 冲击环)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.AbyssPurple, scale: 1f, owner: Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            // 噬魂紫双层带状弹迹
+            WeaponVFX.DrawProjectileTrail(Projectile, 9f,
+                new Color(110, 30, 180), new Color(225, 130, 255));
+
             Texture2D lightShot = ACMAsset.LightShot;
             if (lightShot != null) {
                 Vector2 origin = lightShot.Size() / 2f;
-                for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                    if (Projectile.oldPos[i] == Vector2.Zero) continue;
-                    float progress = 1f - (float)i / Projectile.oldPos.Length;
-                    Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                    Color trailColor = Color.Lerp(new Color(80, 20, 140), new Color(220, 100, 255), progress) * progress * 0.6f;
-                    trailColor.A = 0;
-                    Main.EntitySpriteDraw(lightShot, drawPos, null, trailColor, Projectile.oldRot[i], origin, 0.6f * progress, SpriteEffects.None, 0);
-                }
                 Color mainColor = new Color(240, 120, 255) * 0.9f;
                 mainColor.A = 0;
                 Main.EntitySpriteDraw(lightShot, Projectile.Center - Main.screenPosition, null, mainColor, Projectile.rotation, origin, 0.7f, SpriteEffects.None, 0);
@@ -209,6 +215,93 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
                 );
                 smoke.noGravity = true;
             }
+        }
+    }
+
+    /// <summary>
+    /// 噬魂炮口闪光弹幕 (纯视觉, damage=0): 每次开炮在炮口展开 RadialBloom 大闪 + 冲击环。绘制只在 PreDraw。
+    /// </summary>
+    public class SoulCannonMuzzleFlash : ModProjectile
+    {
+        public override string Texture => "Terraria/Images/Projectile_1";
+        private const int Life = 16;
+
+        public static void Spawn(IEntitySource source, Vector2 worldPos, int owner) {
+            if (Main.dedServ || Main.myPlayer != owner)
+                return;
+            Projectile.NewProjectile(source, worldPos, Vector2.Zero,
+                ModContent.ProjectileType<SoulCannonMuzzleFlash>(), 0, 0f, owner);
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = 2;
+            Projectile.height = 2;
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = Life;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.alpha = 255;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+        public override void AI() => Projectile.velocity = Vector2.Zero;
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+            float life = 1f - Projectile.timeLeft / (float)Life;
+            float fade = MathHelper.Clamp(1f - life, 0f, 1f);
+
+            WeaponVFX.DrawShockwaveRing(Projectile.Center, 10f + life * 70f, 9f, fade * 0.8f,
+                new Color(235, 150, 255), new Color(120, 40, 190));
+            WeaponVFX.DrawRadialBloom(Projectile.Center, 0.12f, fade * 0.9f, new Color(210, 110, 255), 0f);
+            WeaponVFX.DrawGlowBurst(Projectile.Center, (1.5f + life * 1.5f) * 1.6f, new Color(220, 130, 255) * (fade * 0.7f));
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 噬魂染屏演出弹幕 (纯视觉, damage=0): 击杀瞬间对全屏做短促 PaletteLUT 噬魂紫定调 (强度 ≤0.15, 占单一名额)。
+    /// </summary>
+    public class SoulEatPaletteFinisher : ModProjectile
+    {
+        public override string Texture => "Terraria/Images/Projectile_1";
+        private const int Life = 24;
+
+        public static void Spawn(IEntitySource source, Vector2 worldPos, int owner) {
+            if (Main.dedServ || Main.myPlayer != owner)
+                return;
+            Projectile.NewProjectile(source, worldPos, Vector2.Zero,
+                ModContent.ProjectileType<SoulEatPaletteFinisher>(), 0, 0f, owner);
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = 2;
+            Projectile.height = 2;
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = Life;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.alpha = 255;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+        public override void AI() => Projectile.velocity = Vector2.Zero;
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+            float life = 1f - Projectile.timeLeft / (float)Life;
+            float fade = MathHelper.Clamp(life < 0.25f ? life / 0.25f : 1f - (life - 0.25f) / 0.75f, 0f, 1f);
+
+            // 噬魂紫: 阴影偏深紫, 高光偏亮紫 (ApplyPaletteTint 内部 clamp ≤0.15 + 占名额)
+            WeaponVFX.ApplyPaletteTint(Main.spriteBatch,
+                new Color(60, 20, 110), new Color(210, 140, 255), fade * 0.15f, saturation: 1.1f);
+            return false;
         }
     }
 }

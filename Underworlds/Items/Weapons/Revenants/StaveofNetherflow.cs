@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Underworlds.Tiles;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -174,61 +175,47 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
             }
 
             SoundEngine.PlaySound(SoundID.Item14 with { Volume = 0.5f, Pitch = 0.4f }, target.Center);
+
+            //命中: 幽冥漩涡演出 (径向辉光 + 冲击环, 代偿 GenericWarp 局部漩涡扭曲, 更新阶段安全)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.NetherGrudge, scale: 1.15f, owner: Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            //使用SoftGlow绘制幽冥能量球
-            Texture2D softGlow = ACMAsset.SoftGlow;
-            if (softGlow != null) {
-                Vector2 glowOrigin = softGlow.Size() / 2f;
+            //幽冥拖尾 (双层 ribbon: 外宽暗蓝 + 内窄亮青)
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 13f,
+                outerColor: new Color(30, 90, 130, 150), innerColor: new Color(110, 235, 250, 200),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.4f);
 
-                //拖尾光球
-                for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                    if (Projectile.oldPos[i] == Vector2.Zero) continue;
-                    float progress = 1f - (float)i / Projectile.oldPos.Length;
-                    Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                    Color trailColor = Color.Lerp(new Color(30, 80, 100), new Color(80, 200, 220), progress) * progress * 0.4f;
-                    trailColor.A = 0;
-                    Main.EntitySpriteDraw(softGlow, drawPos, null, trailColor, 0f, glowOrigin, 0.5f * progress, SpriteEffects.None, 0);
-                }
-
-                //主体光球（双层呼吸光效）
-                float pulse1 = 0.7f + MathF.Sin(Timer * 0.15f) * 0.1f;
-                Color innerGlow = new Color(80, 220, 240) * 0.6f;
-                innerGlow.A = 0;
-                Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, innerGlow, 0f, glowOrigin, pulse1, SpriteEffects.None, 0);
-
-                float pulse2 = 0.9f + MathF.Sin(Timer * 0.1f + 1f) * 0.15f;
-                Color outerGlow = new Color(40, 120, 160) * 0.3f;
-                outerGlow.A = 0;
-                Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, outerGlow, 0f, glowOrigin, pulse2, SpriteEffects.None, 0);
-            }
-
-            //使用Smoke纹理叠加幽冥烟雾感（取一帧）
+            //幽冥旋涡烟雾 (取一帧 Smoke 旋转叠加)
             Texture2D smoke = ACMAsset.Smoke;
             if (smoke != null) {
                 int frame = (int)(Timer * 0.3f) % 16;
-                int frameX = frame % 4;
-                int frameY = frame / 4;
                 int frameW = smoke.Width / 4;
                 int frameH = smoke.Height / 4;
-                Rectangle sourceRect = new Rectangle(frameX * frameW, frameY * frameH, frameW, frameH);
+                Rectangle sourceRect = new Rectangle((frame % 4) * frameW, (frame / 4) * frameH, frameW, frameH);
                 Vector2 smokeOrigin = new Vector2(frameW / 2f, frameH / 2f);
-
-                Color smokeColor = new Color(60, 150, 180) * 0.2f;
+                Color smokeColor = new Color(50, 140, 175) * 0.22f;
                 smokeColor.A = 0;
-                Main.EntitySpriteDraw(smoke, Projectile.Center - Main.screenPosition, sourceRect, smokeColor, Timer * 0.05f, smokeOrigin, 0.15f, SpriteEffects.None, 0);
+                Main.EntitySpriteDraw(smoke, Projectile.Center - Main.screenPosition, sourceRect, smokeColor, Timer * 0.06f, smokeOrigin, 0.22f, SpriteEffects.None, 0);
             }
+
+            //双层能量球: 外宽暗 + 内窄亮 (呼吸脉动)
+            float pulse = 0.5f + MathF.Sin(Timer * 0.15f) * 0.12f;
+            WeaponVFX.DrawGlowBurst(Projectile.Center, (1.7f + pulse * 0.6f), new Color(35, 110, 150) * 0.5f);
+            WeaponVFX.DrawGlowBurst(Projectile.Center, (0.9f + pulse * 0.4f), new Color(120, 235, 250) * 0.85f);
+
+            //核心径向辉光 (RadialBloom 双层弹芯, 占全屏名额, 名额满退化为柔光)
+            WeaponVFX.DrawRadialBloom(Projectile.Center, radiusFrac: 0.045f, intensity: 0.4f,
+                color: new Color(110, 230, 250), rayCount: 0f);
 
             return false;
         }
 
         public override void OnKill(int timeLeft) {
-            //使用SlashBurst叠加消亡爆发效果
-            Texture2D slashBurst = ACMAsset.SlashBurst;
-            if (slashBurst != null) {
-                //SlashBurst的视觉效果通过粒子模拟
-            }
+            //消亡爆发: 黄泉幽冥径向辉光 + 冲击环 (ACMWeaponBurst 暗冥幽蓝紫)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_Death(), Projectile.Center,
+                ACMWeaponBurst.AbyssPurple, 1.2f, Projectile.owner);
 
             SoundEngine.PlaySound(SoundID.NPCDeath6 with { Volume = 0.4f, Pitch = 0.3f }, Projectile.Center);
 

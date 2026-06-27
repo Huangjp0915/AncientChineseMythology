@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.GameContent;
@@ -18,6 +19,38 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins
             DrawHead(spriteBatch, screenPos, drawColor);
 
             return false;
+        }
+
+        /// <summary>
+        /// V2 签名时刻的全屏热浪扭曲（GenericWarp · heat 主题, uMode=0）。喂 Main.screenTarget 的昂贵后处理,
+        /// 受单一全屏后处理名额约束: 仅炼狱茧泄压 / 相变 / 焚海劫时拉满, 平时 0 直接早退。
+        /// 氛围/泛光/地纹由 <see cref="AokinHeatScreenSystem"/> 单独承担。
+        /// </summary>
+        public override void PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+            if (Main.dedServ || heatWarp <= 0.01f)
+                return;
+            if (!ACMShaders.RequestFullscreenSlot())
+                return;
+
+            Effect fx = ACMShaders.GenericWarp;
+            if (fx == null)
+                return;
+
+            Vector2 centerUV = (NPC.Center - Main.screenPosition) / new Vector2(Main.screenWidth, Main.screenHeight);
+            float aspect = (float)Main.screenWidth / Main.screenHeight;
+
+            fx.Parameters["uTime"]?.SetValue(globalTime);
+            fx.Parameters["uCenter"]?.SetValue(centerUV);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(heatWarp, 0f, 1f));
+            fx.Parameters["uRadius"]?.SetValue(0.9f);
+            fx.Parameters["uAspect"]?.SetValue(aspect);
+            fx.Parameters["uWarpScale"]?.SetValue(1.3f);
+            fx.Parameters["uChroma"]?.SetValue(0.4f);
+            fx.Parameters["uRadialPull"]?.SetValue(-0.2f); // 轻微向外推 = 热浪上腾
+            fx.Parameters["uMode"]?.SetValue(0f);          // 0 = heat 主题
+            fx.Parameters["uTint"]?.SetValue(new Vector4(TelegraphColors.Flame.ToVector3(), 0.55f));
+
+            ACMShaders.ApplyScreenPostProcess(spriteBatch, fx);
         }
 
         private void DrawSegments(SpriteBatch spriteBatch, Vector2 screenPos) {

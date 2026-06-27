@@ -60,6 +60,14 @@ namespace AncientChineseMythology.Items.Weapons.Bows
             int projectileType = ModContent.ProjectileType<Projectiles.BlackBearBowProj1>();
             Projectile.NewProjectile(source, spawnPosition, velocity, projectileType, damage, knockback, player.whoAmI);
 
+            //枪口暖青铜火星 (纯视觉)
+            for (int i = 0; i < 5; i++) {
+                Dust d = Dust.NewDustPerfect(spawnPosition, DustID.GoldFlame,
+                    velocity.SafeNormalize(Vector2.Zero) * Main.rand.NextFloat(1f, 3f) + Main.rand.NextVector2Circular(0.6f, 0.6f),
+                    100, default, 1.1f);
+                d.noGravity = true;
+            }
+
             return true; //阻止默认发射
         }
     }

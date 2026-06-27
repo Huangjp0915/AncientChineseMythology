@@ -1,4 +1,6 @@
-﻿using Terraria;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework;
+using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.ID;
@@ -71,6 +73,11 @@ public class DeadwoodAcornProj : ModProjectile
     public override string Texture
         => $"Terraria/Images/Item_{ItemID.Acorn}";
 
+    public override void SetStaticDefaults() {
+        ProjectileID.Sets.TrailCacheLength[Type] = 14;
+        ProjectileID.Sets.TrailingMode[Type] = 0;
+    }
+
     public override void SetDefaults() {
         Projectile.width = 10;
         Projectile.height = 10;
@@ -110,5 +117,19 @@ public class DeadwoodAcornProj : ModProjectile
                 Main.rand.NextVector2Circular(3f, 3f), 60, default, 1f);
             d.noGravity = false;
         }
+        // 橡子碎裂命中演出 (翠绿主题, 偏小)
+        ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+            ACMWeaponBurst.Nature, scale: 0.7f, owner: Projectile.owner);
+    }
+
+    public override bool PreDraw(ref Color lightColor) {
+        // 橡子暖芯双层拖尾
+        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 6f,
+            outerColor: new Color(90, 70, 30, 150), innerColor: new Color(210, 180, 110, 200),
+            uvScroll: -Main.GlobalTimeWrappedHourly * 1.5f);
+        // 枪口柔光闪 (仅出膛瞬间)
+        if (Projectile.timeLeft > 116)
+            WeaponVFX.DrawGlowBurst(Projectile.Center, 0.6f, new Color(230, 200, 130));
+        return true;
     }
 }

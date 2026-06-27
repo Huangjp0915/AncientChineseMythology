@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
 using AncientChineseMythology.Underworlds.Items.Weapons.Revenants;
 using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
@@ -193,12 +194,25 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
                     }
                 }
                 SoundEngine.PlaySound(SoundID.Item122 with { Volume = 0.7f, Pitch = 0.3f }, target.Center);
+                // 升级演出: 万魔法阵 + 多目标电网 (ArenaRunic + BeamGrad), 仅本机生成
+                MyriadDemonRuneField.Spawn(Projectile.GetSource_OnHit(target), target.Center, Projectile.owner);
+                WeaponVFX.AddScreenShake(target.Center, 4f);
             }
+
+            // 命中冲击演出 (径向辉光 + 冲击环), 走 ACMWeaponBurst 暗冥紫主题
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.AbyssPurple, scale: hit.Crit ? 1.5f : 1f, owner: Projectile.owner);
+            WeaponVFX.AddScreenShake(target.Center, 2f);
 
             SoundEngine.PlaySound(SoundID.Item94 with { Volume = 0.6f, Pitch = 0.3f }, target.Center);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            // 双层带状拖尾 (外宽暗冥紫 + 内窄亮紫芯), 取代旧逐帧叠贴图拖尾
+            WeaponVFX.DrawProjectileTrail(Projectile, 18f,
+                new Color(90, 40, 170), new Color(200, 150, 255),
+                uvScroll: RotationTimer * 0.02f);
+
             Texture2D arcSheet = ACMAsset.ElectricArcSheet;
             if (arcSheet != null) {
                 int arcIndex = (int)(RotationTimer * 0.12f) % 4;
@@ -214,14 +228,6 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
             Texture2D softGlow = ACMAsset.SoftGlow;
             if (softGlow != null) {
                 Vector2 glowOrigin = softGlow.Size() / 2f;
-                for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                    if (Projectile.oldPos[i] == Vector2.Zero) continue;
-                    float progress = 1f - (float)i / Projectile.oldPos.Length;
-                    Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                    Color trailColor = Color.Lerp(new Color(100, 40, 180), new Color(220, 120, 255), progress) * progress * 0.5f;
-                    trailColor.A = 0;
-                    Main.EntitySpriteDraw(softGlow, drawPos, null, trailColor, 0f, glowOrigin, 0.6f * progress, SpriteEffects.None, 0);
-                }
                 Color mainGlow = new Color(220, 120, 255) * 0.8f;
                 mainGlow.A = 0;
                 float pulse = 0.7f + MathF.Sin(RotationTimer * 0.25f) * 0.12f;
@@ -257,6 +263,97 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
                 );
                 arc.noGravity = true;
             }
+        }
+    }
+
+    /// <summary>
+    /// 万魔法阵演出弹幕 (纯视觉, damage=0): 暴击连锁瞬间在敌群中心展开 ArenaRunic 万魔法阵地纹,
+    /// 并用 BeamGrad 向周围 NPC 拉出多目标电网。绘制只在 PreDraw, 命中阶段仅 <see cref="Spawn"/> 触发。
+    /// </summary>
+    public class MyriadDemonRuneField : ModProjectile
+    {
+        public override string Texture => "Terraria/Images/Projectile_1";
+        private const int Life = 44;
+        private const float FieldRadius = 360f;
+        private const float WebRange = 420f;
+
+        public static void Spawn(IEntitySource source, Vector2 worldPos, int owner) {
+            if (Main.dedServ || Main.myPlayer != owner)
+                return;
+            Projectile.NewProjectile(source, worldPos, Vector2.Zero,
+                ModContent.ProjectileType<MyriadDemonRuneField>(), 0, 0f, owner);
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = 2;
+            Projectile.height = 2;
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = Life;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.alpha = 255;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+
+        public override void AI() {
+            Projectile.velocity = Vector2.Zero;
+            Lighting.AddLight(Projectile.Center, 0.6f, 0.3f, 1f);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+
+            float life = 1f - Projectile.timeLeft / (float)Life;            // 0→1
+            float fade = MathHelper.Clamp(life < 0.2f ? life / 0.2f : 1f - (life - 0.2f) / 0.8f, 0f, 1f);
+            Color primary = new Color(170, 110, 255);
+            Color secondary = new Color(70, 30, 130);
+
+            SpriteBatch sb = Main.spriteBatch;
+
+            // —— ArenaRunic 万魔法阵地纹 (扩张 + 呼吸) ——
+            Effect fx = ACMShaders.ArenaRunic;
+            if (fx != null) {
+                float radius = FieldRadius * (0.45f + life * 0.55f);
+                ACMShaders.WorldDecalParams(Projectile.Center, radius, out Vector2 uv, out float rFrac, out float aspect);
+                fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+                fx.Parameters["uCenter"]?.SetValue(uv);
+                fx.Parameters["uRadius"]?.SetValue(rFrac);
+                fx.Parameters["uIntensity"]?.SetValue(fade * 0.85f);
+                fx.Parameters["uAspect"]?.SetValue(aspect);
+                fx.Parameters["uColorPrimary"]?.SetValue(primary.ToVector4());
+                fx.Parameters["uColorSecondary"]?.SetValue(secondary.ToVector4());
+                fx.Parameters["uRuneFreq"]?.SetValue(14f);
+                fx.Parameters["uMode"]?.SetValue(0f);
+                fx.Parameters["uShape"]?.SetValue(0f);
+
+                sb.End();
+                ACMShaders.DrawScreenSpaceDecalStandalone(fx, BlendState.Additive);
+                ACMShaders.RestoreDefaultBatch(sb);
+            }
+
+            // —— BeamGrad 多目标电网: 中心 → 周围敌人 (最多 6 条) ——
+            int web = 0;
+            for (int i = 0; i < Main.maxNPCs && web < 6; i++) {
+                NPC npc = Main.npc[i];
+                if (!npc.active || npc.friendly || npc.dontTakeDamage)
+                    continue;
+                if (Vector2.Distance(Projectile.Center, npc.Center) > WebRange)
+                    continue;
+                ACMShaders.DrawBeam(Projectile.Center, npc.Center, 7f * fade,
+                    new Color(220, 180, 255), new Color(120, 60, 220), fade * 0.9f,
+                    flowSpeed: 3.2f, flowScale: 3f, coreSharp: 2.6f);
+                web++;
+            }
+
+            // —— 中心核辉光 (峰值期申请全屏名额, 退化为柔光) ——
+            if (fade > 0.4f)
+                WeaponVFX.DrawRadialBloom(Projectile.Center, 0.08f, fade * 0.7f, new Color(160, 110, 245), 10f);
+
+            return false;
         }
     }
 }

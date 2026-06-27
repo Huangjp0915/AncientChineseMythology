@@ -1,4 +1,6 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -237,34 +239,26 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences.Items
         }
 
         private void DrawChain(SpriteBatch sb) {
-            // 使用带波动的锁链绘制
+            // 物理锁链体节 (保留拼接质感)
             float waveAmp = 6f + MathF.Sin(pulsePhase) * 3f;
             Color chainColor = new Color(70, 70, 90);
             Color glowColor = new Color(100, 80, 140);
-
             BAWHelper.DrawGlowingChain(sb, Owner.Center, Projectile.Center, chainColor, glowColor,
                 0.7f, 1.2f, waveAmp, pulsePhase);
+
+            // 能量链: BeamGrad 紫焰流光叠在锁链上 (additive)
+            ACMShaders.DrawBeam(Owner.Center, Projectile.Center, 6f,
+                new Color(210, 180, 255), new Color(110, 60, 185), 0.85f,
+                flowSpeed: 2.6f, flowScale: 2.4f);
         }
 
         private void DrawSickleTrail(SpriteBatch sb) {
-            var tex = BAWHelper.SickleTexture;
-            if (tex == null) return;
-
-            Vector2 origin = tex.Size() / 2f;
-
-            for (int i = Projectile.oldPos.Length - 1; i >= 0; i--) {
-                if (Projectile.oldPos[i] == Vector2.Zero) continue;
-
-                float progress = 1f - (float)i / Projectile.oldPos.Length;
-                float trailAlpha = progress * 0.4f;
-                float trailScale = Projectile.scale * (0.5f + progress * 0.5f);
-
-                Color trailColor = Color.Lerp(new Color(60, 40, 80), new Color(100, 80, 120), progress) * trailAlpha;
-                trailColor.A = 0;
-
-                Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
-                sb.Draw(tex, drawPos, null, trailColor, Projectile.oldRot[i], origin, trailScale, SpriteEffects.None, 0);
-            }
+            // 双层 ribbon 链刃摆动残影 (外宽暗 + 内窄亮)
+            Color outer = new Color(70, 40, 115); outer.A = 150;
+            Color inner = new Color(185, 145, 255); inner.A = 200;
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 16f,
+                outerColor: outer, innerColor: inner, tex: ACMAsset.SoftGlow,
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.4f);
         }
 
         private void DrawSickle(SpriteBatch sb) {
@@ -273,13 +267,11 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences.Items
 
             Vector2 origin = tex.Size() / 2f;
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
-
-            // 发光层
-            Color glowColor = new Color(120, 100, 160);
-            glowColor.A = 0;
             float glowPulse = 1f + MathF.Sin(pulsePhase * 2f) * 0.15f;
-            sb.Draw(tex, drawPos, null, glowColor * 0.4f, Projectile.rotation, origin, Projectile.scale * 1.3f * glowPulse, SpriteEffects.None, 0);
-            sb.Draw(tex, drawPos, null, glowColor * 0.2f, Projectile.rotation, origin, Projectile.scale * 1.6f * glowPulse, SpriteEffects.None, 0);
+
+            // 镰刃能量辉光 + 径向泛光 (additive, 取代 A=0 的无效叠层)
+            WeaponVFX.DrawGlowBurst(Projectile.Center, Projectile.scale * 0.95f * glowPulse, new Color(160, 110, 235));
+            WeaponVFX.DrawRadialBloom(Projectile.Center, 0.05f, 0.45f, new Color(175, 125, 250), 8f);
 
             // 主体
             sb.Draw(tex, drawPos, null, Color.White, Projectile.rotation, origin, Projectile.scale, SpriteEffects.None, 0);
@@ -305,6 +297,11 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences.Items
                     d.velocity = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 6f;
                 }
             }
+
+            // 命中演出 (更新阶段禁止直接绘制 — IRON RULE 1)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.AbyssPurple, scale: currentState == SickleState.Orbiting ? 1.1f : 0.85f,
+                owner: Projectile.owner);
         }
 
         public override void OnKill(int timeLeft) {

@@ -1,5 +1,7 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
+using System.Collections.Generic;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -145,9 +147,26 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
             }
 
             SoundEngine.PlaySound(SoundID.Item21 with { Pitch = 0.4f, Volume = 0.6f }, target.Center);
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.EastSeaWater, 1f, Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            // 现代化: 用蛇形 ribbon 画水龙真身 (双层外深青/内冰蓝) 替代纯 dust 堆叠
+            var ribbon = new List<Vector2>(Projectile.oldPos.Length);
+            for (int i = 0; i < Projectile.oldPos.Length; i++) {
+                if (Projectile.oldPos[i] == Vector2.Zero) continue;
+                float bodyWave = MathF.Sin(dragonPhase * 2f - i * 0.4f) * 6f;
+                float rot = Projectile.oldRot.Length > i ? Projectile.oldRot[i] : Projectile.rotation;
+                Vector2 perp = rot.ToRotationVector2().RotatedBy(MathHelper.PiOver2);
+                ribbon.Add(Projectile.oldPos[i] + Projectile.Size / 2f + perp * bodyWave);
+            }
+            if (ribbon.Count >= 2)
+                WeaponVFX.DrawRibbonTrail(ribbon.ToArray(), baseWidth: 18f * dragonLength,
+                    outerColor: new Color(30, 90, 170, 140), innerColor: new Color(180, 240, 255, 185),
+                    tex: ACMAsset.GlaciateWave, uvScroll: -Main.GlobalTimeWrappedHourly * 1.4f);
+
             Texture2D tex = ACMAsset.GlaciateWave ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = new Vector2(0, tex.Height / 2f);
 
@@ -277,18 +296,25 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, DustID.Water, vel.X, vel.Y, 100, default, 2f);
                 Main.dust[dust].noGravity = true;
             }
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.EastSeaWater, 1.2f, Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
             SpriteBatch sb = Main.spriteBatch;
             Vector2 screenPos = Projectile.Center - Main.screenPosition;
 
+            if (tornadoAlpha > 0.5f)
+                WeaponVFX.DrawRadialBloom(Projectile.Center, 0.14f, tornadoAlpha * 0.5f,
+                    new Color(90, 200, 245), 0f);
+
             Main.instance.LoadProjectile(ProjectileID.SandnadoHostile);
             Texture2D tornadoTex = TextureAssets.Projectile[ProjectileID.SandnadoHostile].Value;
             Vector2 origin = tornadoTex.Size() / 2f;
 
             // 绘制水龙卷
-            int segments = 118;
+            int segments = 14;
             for (int seg = 0; seg < segments; seg++) {
                 float heightPercent = (float)seg / segments;
                 float yOffset = (heightPercent - 0.5f) * tornadoHeight;

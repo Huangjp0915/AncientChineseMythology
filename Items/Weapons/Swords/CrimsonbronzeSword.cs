@@ -1,4 +1,6 @@
-﻿using AncientChineseMythology.Projectiles;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Projectiles;
+using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
@@ -7,6 +9,10 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Items.Weapons.Swords
 {
+    /// <summary>
+    /// 赤铜剑 — 可见质变 (纯表现): 左键挥砍火色尘 + 暖光, 右键 <see cref="CrimsonbronzeSwordProj1"/>
+    /// 赤橙剑芯光束/拖尾; 命中触发 <see cref="ACMWeaponBurst"/> 赤铜橙红爆发。机制/伤害不变。
+    /// </summary>
     public class CrimsonbronzeSword : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Swords/CrimsonbronzeSword"; //使用物品的纹理作为投射物的纹理
@@ -31,10 +37,23 @@ namespace AncientChineseMythology.Items.Weapons.Swords
             Item.shootSpeed = 1f; //射击速度
         }
 
+        // 左键挥砍火色尘 + 暖光 (纯表现, 右键持械时 noMelee 不触发)
+        public override void MeleeEffects(Player player, Rectangle hitbox) {
+            if (Main.rand.NextBool(2)) {
+                Dust d = Dust.NewDustDirect(new Vector2(hitbox.X, hitbox.Y), hitbox.Width, hitbox.Height, DustID.Torch);
+                d.noGravity = true;
+                d.velocity *= 0.45f;
+                d.scale = Main.rand.NextFloat(0.9f, 1.4f);
+            }
+            Lighting.AddLight(hitbox.Center.ToVector2(), 0.5f, 0.2f, 0.05f);
+        }
+
         public override void OnHitNPC(Player player, NPC target, NPC.HitInfo hit, int damageDone) {
             if (!target.HasBuff(BuffID.OnFire)) {
                 target.AddBuff(BuffID.OnFire, 180);
             }
+            ACMWeaponBurst.Spawn(player.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Crimson, scale: 0.9f, owner: player.whoAmI);
         }
         //启用右键备用功能
         public override bool AltFunctionUse(Player player) {

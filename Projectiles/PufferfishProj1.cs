@@ -3,6 +3,7 @@ using Terraria;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
+using AncientChineseMythology.Helpers;
 
 namespace AncientChineseMythology.Projectiles
 {
@@ -11,6 +12,7 @@ namespace AncientChineseMythology.Projectiles
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/PufferfishProj1";
         private Player player => Main.player[Projectile.owner]; //玩家实例
         private float LaserLength = 0; //激光的长度
+        private bool bloomed; //成形峰值一次性闪标志
 
         public override void SetStaticDefaults() {
             Main.projFrames[Projectile.type] = 1;
@@ -79,6 +81,14 @@ namespace AncientChineseMythology.Projectiles
             if (Projectile.timeLeft % 30 == 0)
                 Dust.NewDustDirect(Projectile.Center + Projectile.velocity.SafeNormalize(Vector2.Zero) * LaserLength//尾巴的位置
                     + Main.rand.NextVector2Circular(80, 80), 0, 0, DustID.Confetti_Green, 1, 1, 0).scale = 1.5f;//激光尾部的尾巴
+
+            //轻量水花尘 (河豚水主题)
+            if (Projectile.timeLeft % 10 == 0) {
+                Dust water = Dust.NewDustPerfect(
+                    Projectile.Center + Projectile.velocity.SafeNormalize(Vector2.Zero) * (LaserLength * Main.rand.NextFloat())
+                        + Main.rand.NextVector2Circular(18, 18),
+                    DustID.Water, Main.rand.NextVector2Circular(1.2f, 1.2f), 120, default, 1.05f);
+            }
         }
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
             //粒子效果
@@ -87,6 +97,13 @@ namespace AncientChineseMythology.Projectiles
             if (Main.rand.NextBool(2)) {
                 Main.dust[dustIndex].scale = 0.5f;
                 Main.dust[dustIndex].fadeIn = 1f + Main.rand.Next(10) * 0.05f;
+            }
+            //河豚水纹命中演出 + 水花
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Water, scale: 1.2f, owner: Projectile.owner);
+            for (int i = 0; i < 6; i++) {
+                Dust.NewDustPerfect(target.Center, DustID.Water,
+                    Main.rand.NextVector2Circular(3f, 3f), 110, default, 1.2f);
             }
         }
         public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox)//重写碰撞判定
@@ -112,6 +129,15 @@ namespace AncientChineseMythology.Projectiles
         public override bool PreDraw(ref Color lightColor)//predraw返回false即可禁用原版绘制
         {
             int Length = (int)LaserLength;//定义激光长度
+            //河豚膨胀: 激光宽度轻微脉冲 (纯视觉, 不影响碰撞箱)
+            float widthPulse = 1f + 0.08f * (float)System.Math.Sin(Main.GlobalTimeWrappedHourly * 8f);
+            //成形峰值一次性水蓝径向闪 (河豚"爆"节奏)
+            if (!bloomed && Projectile.localAI[0] >= 25f) {
+                WeaponVFX.DrawRadialBloom(
+                    Projectile.Center + Projectile.velocity.SafeNormalize(Vector2.Zero) * LaserLength,
+                    0.07f, 0.55f, new Color(120, 200, 255), 8f);
+                bloomed = true;
+            }
             //黑色背景的图片如果不对A值赋予0，或者启动Additive模式的话，画出来是黑色，效果很差
             //接下来是简单的延长绘制
             Color color1 = Color.White;//白色绘制就是图片原色
@@ -122,7 +148,7 @@ namespace AncientChineseMythology.Projectiles
             color1,//修改后的颜色
             Projectile.velocity.ToRotation(),//让图片朝向为弹幕速度方向
             new Vector2(0, head.Height / 2),//参考原点选择图片左边中点
-            new Vector2(1, Projectile.localAI[0] / 25f),//为使得激光更加自然，调整激光宽度
+            new Vector2(1, Projectile.localAI[0] / 25f * widthPulse),//为使得激光更加自然，调整激光宽度
             SpriteEffects.None, 0);//SpriteEffects.None表示不旋转图片
             //下面是激光身体的绘制
             Texture2D tex = TextureAssets.Projectile[Type].Value;//获取材质，这是激光中部
@@ -133,7 +159,7 @@ namespace AncientChineseMythology.Projectiles
                 color1,//修改后的颜色
                 Projectile.velocity.ToRotation(),//让图片朝向为弹幕速度方向
                 new Vector2(0, tex.Height / 2),//参考原点选择图片左边中点
-                new Vector2(1, Projectile.localAI[0] / 25f),//为使得激光更加自然，调整激光宽度
+                new Vector2(1, Projectile.localAI[0] / 25f * widthPulse),//为使得激光更加自然，调整激光宽度
                 SpriteEffects.None, 0);//SpriteEffects.None表示不旋转图片
             //下面是激光尾部的绘制
             Texture2D Tail = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/Projectiles/PufferfishProj3").Value;//获取尾部材质
@@ -143,7 +169,7 @@ namespace AncientChineseMythology.Projectiles
             color1,//修改后的颜色
             Projectile.velocity.ToRotation(),//让图片朝向为弹幕速度方向
             new Vector2(0, Tail.Height / 2),//参考原点选择图片左边中点
-           new Vector2(1, Projectile.localAI[0] / 25f),//为使得激光更加自然，调整激光宽度
+           new Vector2(1, Projectile.localAI[0] / 25f * widthPulse),//为使得激光更加自然，调整激光宽度
             SpriteEffects.None, 0);//尾部不用选框，所以为null
             return false;//return false阻止自动绘制
         }

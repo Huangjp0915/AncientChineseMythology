@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -107,6 +108,8 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
             ProjectileID.Sets.MinionSacrificable[Projectile.type] = true;
             ProjectileID.Sets.CultistIsResistantTo[Projectile.type] = true;
             ProjectileID.Sets.MinionTargettingFeature[Projectile.type] = true;
+            ProjectileID.Sets.TrailCacheLength[Projectile.type] = 8;
+            ProjectileID.Sets.TrailingMode[Projectile.type] = 2;
         }
 
         public override void SetDefaults() {
@@ -342,40 +345,59 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
             Texture2D texture = ModContent.Request<Texture2D>(Texture).Value;
             Vector2 origin = texture.Size() / 2f;
 
             // 根据速度方向决定翻转
             SpriteEffects effects = Projectile.velocity.X < 0 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
 
-            // 半透明幽灵效果
-            Color drawColor = new Color(180, 80, 255, 180);
+            Color bone = new Color(210, 232, 205);
+            Color edge = TelegraphColors.GhostGreen;
 
-            // 发光层（3层叠加）
+            // 高速移动 / 拍击时: DissolveBurn 残影 (虚化幽手, 灼烧边)
+            if (Projectile.velocity.Length() > 6f) {
+                for (int s = 2; s <= 6; s += 2) {
+                    if (s >= Projectile.oldPos.Length || Projectile.oldPos[s] == Vector2.Zero)
+                        continue;
+                    float p = 1f - s / (float)Projectile.oldPos.Length;
+                    Vector2 pos = Projectile.oldPos[s] + Projectile.Size / 2f;
+                    WeaponVFX.ApplyDissolveBurn(texture, pos, null, bone,
+                        Projectile.oldRot[s], origin,
+                        scale: Projectile.scale * (0.7f + p * 0.3f), threshold: 1f - p,
+                        intensity: p * 0.5f, edgeColor: edge, edgeWidth: 0.12f,
+                        noiseScale: 2.2f, effects: effects);
+                }
+            }
+
+            // 鬼绿光晕层
+            Color glow = edge; glow.A = 0;
             for (int i = 0; i < 3; i++) {
                 Vector2 offset = new Vector2(
                     MathF.Cos(Main.GlobalTimeWrappedHourly * 3f + i * MathHelper.TwoPi / 3f),
                     MathF.Sin(Main.GlobalTimeWrappedHourly * 3f + i * MathHelper.TwoPi / 3f)) * 4f;
-
-                Color glowColor = new Color(150, 50, 200, 0) * 0.5f;
                 Main.EntitySpriteDraw(texture, Projectile.Center + offset - Main.screenPosition, null,
-                    glowColor, Projectile.rotation, origin, Projectile.scale * 1.1f, effects);
+                    glow * 0.4f, Projectile.rotation, origin, Projectile.scale * 1.1f, effects);
             }
 
             // 主体
+            Color drawColor = Color.Lerp(bone, edge, 0.2f); drawColor.A = 210;
             Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null,
                 drawColor, Projectile.rotation, origin, Projectile.scale, effects);
 
-            // 攻击时的冲击波效果
-            if (State == MinionState.Slapping && slapProgress > 0.6f && slapProgress < 0.8f) {
-                float shockwaveScale = MathHelper.Lerp(0.5f, 1.5f, (slapProgress - 0.6f) / 0.2f);
-                Color shockColor = new Color(180, 80, 255, 0) * (1f - (slapProgress - 0.6f) / 0.2f);
-
-                Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null,
-                    shockColor, Projectile.rotation, origin, Projectile.scale * shockwaveScale, effects);
+            // 拍击冲击: 径向泛光
+            if (State == MinionState.Slapping && slapProgress > 0.6f && slapProgress < 0.85f) {
+                float t = (slapProgress - 0.6f) / 0.25f;
+                WeaponVFX.DrawRadialBloom(Projectile.Center, 0.06f, 0.7f * (1f - t), TelegraphColors.GhostGreen, 6f);
             }
 
             return false;
+        }
+
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.GhostGreen, scale: 0.85f, owner: Projectile.owner);
         }
 
         public override void OnKill(int timeLeft) {

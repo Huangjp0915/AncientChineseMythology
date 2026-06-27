@@ -6,6 +6,7 @@ using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 using AncientChineseMythology.Celestias.Boss.Dazhengs.Items;
+using AncientChineseMythology.Helpers;
 using AncientChineseMythology.Items.Weapons.DivineWoods;
 
 namespace AncientChineseMythology.Items.Weapons.ArrogantDivineSylvans;
@@ -65,6 +66,8 @@ public class ArrogantDivineSylvanMusket : ModItem
             }
             SoundEngine.PlaySound(SoundID.Item14 with { Pitch = 0.3f, Volume = 1.2f }, position);
             Main.player[player.whoAmI].GetModPlayer<ScreenShakePlayer>().ShakeScreen(6, 8);
+            // 连天弩五连发触发技 → 短暂金翠染屏定调 (占全屏唯一名额, 同屏≤1 自动仲裁)
+            ArrogantSylvanScreenTint.Spawn(source, position, player.whoAmI);
         }
         else {
             Vector2 perturbedVel = velocity.RotatedByRandom(MathHelper.ToRadians(3));
@@ -146,6 +149,8 @@ public class ArrogantSylvanThornNeedle : ModProjectile
                 Main.rand.NextVector2Circular(5f, 5f), 40, default, 2f);
             d.noGravity = true;
         }
+        ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+            ACMWeaponBurst.ArrogantSylvan, scale: 1f, owner: Projectile.owner);
 
         // 连锁弹射：找最近的其他敌人，发射一枚新弹
         if (ChainCount < 2 && Projectile.owner == Main.myPlayer) {
@@ -168,8 +173,22 @@ public class ArrogantSylvanThornNeedle : ModProjectile
         }
     }
 
+    /// <summary>主弹金翠流光束核 (ACMShaders.DrawBeam, 金芯 + 翠边)。</summary>
+    private void DrawNeedleBeam(Vector2 dir) {
+        Vector2 start = Projectile.Center - dir * 64f;
+        Vector2 end = Projectile.Center + dir * 8f;
+        ACMShaders.DrawBeam(start, end, halfWidth: 6f,
+            core: new Color(255, 230, 130, 220), edge: new Color(120, 220, 120, 0),
+            intensity: 0.95f, flowSpeed: 2.2f, flowScale: 2.4f, coreSharp: 2.4f);
+    }
+
     public override bool PreDraw(ref Color lightColor) {
         SpriteBatch sb = Main.spriteBatch;
+
+        // 主弹金翠流光束核 (BeamGrad: 金芯 + 翠边, 沿飞行方向)
+        Vector2 beamDir = Projectile.velocity.SafeNormalize(Vector2.UnitX);
+        DrawNeedleBeam(beamDir);
+
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
             DepthStencilState.None, RasterizerState.CullNone, null,
@@ -243,6 +262,8 @@ public class ArrogantSylvanSeedMortar : ModProjectile
 
     public override void OnKill(int timeLeft) {
         SoundEngine.PlaySound(SoundID.Item14 with { Volume = 1f, Pitch = 0.2f }, Projectile.Center);
+        ACMWeaponBurst.Spawn(Projectile.GetSource_Death(), Projectile.Center,
+            ACMWeaponBurst.ArrogantSylvan, scale: IsChild == 0 ? 1.5f : 1f, owner: Projectile.owner);
 
         if (Main.myPlayer == Projectile.owner) {
             // 爆炸场
@@ -471,6 +492,12 @@ public class ArrogantSylvanMusketSerpent : ModProjectile
 
     public override bool PreDraw(ref Color lightColor) {
         SpriteBatch sb = Main.spriteBatch;
+
+        // 藤蛇弹金翠双层 ribbon (§B.1)
+        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 8f,
+            outerColor: new Color(200, 150, 40, 150), innerColor: new Color(190, 255, 150, 200),
+            uvScroll: -(float)Main.timeForVisualEffects * 0.05f);
+
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
             DepthStencilState.None, RasterizerState.CullNone, null,

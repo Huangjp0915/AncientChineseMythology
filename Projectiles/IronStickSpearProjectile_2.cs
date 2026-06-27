@@ -5,6 +5,7 @@ using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
+using AncientChineseMythology.Helpers;
 using Color = Microsoft.Xna.Framework.Color;
 using Rectangle = Microsoft.Xna.Framework.Rectangle;
 
@@ -114,6 +115,9 @@ namespace AncientChineseMythology.Projectiles
             player.velocity *= 0.1f;
         }
         public override bool PreDraw(ref Microsoft.Xna.Framework.Color lightColor) {
+            //冲刺核心钢蓝辉光 (统一长矛线主题色)
+            WeaponVFX.DrawGlowBurst(Projectile.Center, 0.6f, new Color(150, 185, 230));
+
             Texture2D texture = TextureAssets.Projectile[Type].Value;
             Rectangle rectangle = new Rectangle(
                 0,

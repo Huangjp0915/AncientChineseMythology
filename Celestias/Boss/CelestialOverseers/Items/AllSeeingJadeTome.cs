@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -330,9 +331,17 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, DustID.BlueTorch, vel.X, vel.Y, 100, new Color(180, 220, 255), 1.5f);
                 Main.dust[dust].noGravity = true;
             }
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.ClockworkGold, 0.85f, Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            // 天青光束双层 ribbon
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 10f,
+                outerColor: new Color(60, 140, 200, 120), innerColor: new Color(210, 240, 255, 180),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.6f);
+
             Texture2D texture = ACMAsset.GlaciateWave ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = new Vector2(0, texture.Height / 2f);
             Vector2 drawPos = Projectile.Center - Main.screenPosition;

@@ -84,6 +84,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
                     Rectangle projHitbox = Projectile.Hitbox;
                     Rectangle playerHitbox = Owner.Hitbox;
                     if (projHitbox.Intersects(playerHitbox)) {
+                        ReleaseCatchSlam();
                         Projectile.Kill();
                     }
                 }
@@ -98,6 +99,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
         }
 
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            target.AddBuff(BuffID.BrokenArmor, 600);
             ReleaseGroundShockwaves();
 
             for (int i = 0; i < 12; i++) {
@@ -108,6 +110,41 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
             }
 
             SoundEngine.PlaySound(SoundID.DD2_MonkStaffGroundImpact with { Volume = 0.75f, Pitch = 0.1f }, Projectile.Center);
+        }
+
+        private void ReleaseCatchSlam() {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
+
+            Vector2 groundPos = FindGroundPosition(Owner.Center);
+            int waveDamage = (int)(Projectile.damage * 0.85f);
+            float knockback = Projectile.knockBack * 1.2f;
+
+            for (int side = -1; side <= 1; side += 2) {
+                for (int wave = 0; wave <= 3; wave++) {
+                    Vector2 spawnPos = groundPos + new Vector2(side * wave * 40f, 0f);
+                    float scale = 1f + wave * 0.12f;
+                    Vector2 waveVel = new Vector2(side * (12f - wave * 1.2f), 0f);
+                    Projectile.NewProjectile(Projectile.GetSource_FromThis(), spawnPos, waveVel,
+                        ModContent.ProjectileType<AurelianShockwave>(), waveDamage, knockback, Projectile.owner, 0f, scale);
+                }
+            }
+
+            SoundEngine.PlaySound(SoundID.DD2_MonkStaffGroundImpact with { Volume = 1f, Pitch = -0.2f }, groundPos);
+
+            if (Main.netMode != NetmodeID.Server) {
+                for (int i = 0; i < 32; i++) {
+                    float angle = MathHelper.TwoPi * i / 32f;
+                    Vector2 vel = angle.ToRotationVector2() * Main.rand.NextFloat(5f, 12f);
+                    int dustType = Main.rand.NextBool(3) ? DustID.GoldFlame : DustID.Silver;
+                    Dust d = Dust.NewDustDirect(groundPos, 0, 0, dustType, vel.X, vel.Y, 90, default, Main.rand.NextFloat(1.6f, 2.8f));
+                    d.noGravity = true;
+                }
+            }
+
+            if (Projectile.owner == Main.myPlayer) {
+                Owner.GetModPlayer<ScreenShakePlayer>().ShakeScreen(10, 16);
+            }
         }
 
         private void ReleaseGroundShockwaves() {
@@ -236,6 +273,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
         }
 
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            target.AddBuff(BuffID.BrokenArmor, 480);
             for (int i = 0; i < 6; i++) {
                 Vector2 vel = Main.rand.NextVector2CircularEdge(4, 4);
                 Dust d = Dust.NewDustDirect(target.Center, 0, 0, DustID.GoldFlame, vel.X, vel.Y, 80, default, 1.6f);

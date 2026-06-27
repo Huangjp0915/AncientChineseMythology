@@ -1,5 +1,7 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using Terraria;
+using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -24,6 +26,9 @@ namespace AncientChineseMythology.Projectiles
             Main.projPet[Type] = true;
             ProjectileID.Sets.MinionSacrificable[Type] = true;
             Main.projFrames[Type] = FramesPerAnim;   //实际只用来存帧计数
+            // WeaponVFX.DrawProjectileTrail 俯冲幽蓝拖尾所需
+            ProjectileID.Sets.TrailCacheLength[Type] = 14;
+            ProjectileID.Sets.TrailingMode[Type] = 0;
         }
 
         public override void SetDefaults() {
@@ -45,8 +50,25 @@ namespace AncientChineseMythology.Projectiles
                 "AncientChineseMythology/Textures/Projectiles/MingCrowMinion/MingCrowMinion_Attack").Value;
         }
 
+        public override void OnSpawn(IEntitySource source) {
+            // 鼠标点生成处的冥火显形烟 (纯视觉)
+            for (int i = 0; i < 10; i++) {
+                Dust d = Dust.NewDustPerfect(Projectile.Center, DustID.Smoke,
+                    Main.rand.NextVector2Circular(2.2f, 2.2f), 120, new Color(80, 130, 210), 1.2f);
+                d.noGravity = true;
+            }
+        }
+
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            // 冥鸦俯冲命中演出 (幽蓝)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Shadow, scale: 0.8f, owner: Projectile.owner);
+        }
+
         public override void AI() {
             Player player = Main.player[Projectile.owner];
+
+            Projectile.localAI[1]++;   //出生显形计时 (纯视觉)
 
             //--------- 存活检查 ----------
             if (player.dead || !player.active) {
@@ -149,6 +171,20 @@ namespace AncientChineseMythology.Projectiles
 
         //---------- 自绘以切换贴图 ----------
         public override bool PreDraw(ref Color lightColor) {
+            // 俯冲时拉出幽蓝双层 ribbon 残影
+            if (animState == AnimState.Attack) {
+                WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 8f,
+                    outerColor: new Color(40, 70, 140, 150), innerColor: new Color(155, 215, 255, 200),
+                    uvScroll: -Main.GlobalTimeWrappedHourly * 2f);
+                WeaponVFX.DrawGlowBurst(Projectile.Center, 0.4f, new Color(100, 160, 255));
+            }
+
+            // 出生鬼火柔光 (前 14 帧渐隐)
+            if (Projectile.localAI[1] < 14f) {
+                float t = 1f - Projectile.localAI[1] / 14f;
+                WeaponVFX.DrawGlowBurst(Projectile.Center, 0.5f + t * 0.6f, new Color(120, 180, 255) * t);
+            }
+
             Texture2D tex = animState == AnimState.Attack ? attackTexture : flyTexture;
 
             int frameH = tex.Height / FramesPerAnim;

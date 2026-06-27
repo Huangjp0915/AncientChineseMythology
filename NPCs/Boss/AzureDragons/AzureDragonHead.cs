@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using Terraria;
+using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -26,7 +27,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
             // 一阶段
             Phase1_Orbit,
             Phase1_DragonBreath,
-            Phase1_ThunderOrbs,
+            Phase1_ThunderOrbs,   // 已重做为「地面雷柱」可读落雷预告
             Phase1_Charge,
             // 阶段转换
             PhaseTransition_2,
@@ -38,7 +39,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
             // 阶段转换
             PhaseTransition_3,
             // 三阶段
-            Phase3_ThunderJudgment,
+            Phase3_ThunderTribunal,   // 招牌 set-piece: 网格化雷霆审判庭 + 风域
             Phase3_CelestialFury,
             Phase3_DragonAscent,
         }
@@ -82,6 +83,49 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
         private int phase1AttackIndex;
         private int phase2AttackIndex;
         private int phase3AttackIndex;
+
+        // —— V2: 雷霆律令 (P2 规则切换) / 审判庭 (P3) / 风域 ——
+        /// <summary>律令周期(秒): 每过一段在「横扫律令」与「纵贯律令」间切换。</summary>
+        private const float EdictPeriodSeconds = 5f;
+        /// <summary>审判庭波次上限 — 限幅后强制转入移动招式(消除"加速喷弹"反模式)。</summary>
+        private const int TribunalWaveCount = 3;
+        private int tribunalWave;
+        private bool prevEdictHorizontal;
+
+        // —— V2 演出/同步状态 (供 Body 与 StormSystem 读取) ——
+        /// <summary>当前活跃苍龙头 whoAmI (StormSystem 单实例查询用)。</summary>
+        public static int ActiveHead = -1;
+        /// <summary>风暴压暗强度 0~1 (按阶段渐变)。</summary>
+        public float StormVisual { get; private set; }
+        /// <summary>律令切换天闪 0~1 (衰减)。</summary>
+        public float EdictFlash { get; private set; }
+        /// <summary>审判庭网格地纹强度 0~1。</summary>
+        public float TribunalVisual { get; private set; }
+        /// <summary>当前是否处于审判庭 set-piece。</summary>
+        public bool TribunalActive => State == AIState.Phase3_ThunderTribunal;
+        /// <summary>审判庭竞技场中心(世界)。</summary>
+        public Vector2 ArenaCenter { get; private set; }
+        /// <summary>审判庭竞技场半径(世界像素)。</summary>
+        public float ArenaRadius { get; private set; } = 900f;
+        /// <summary>当前风域方向(水平推力, -1~1, 由 globalTime 派生确定性同步)。</summary>
+        public float WindDir => MathF.Sin(globalTime * 0.9f);
+
+        /// <summary>
+        /// 雷霆律令: 当前是否为「横扫律令」(仅允许水平弹道); 否则为「纵贯律令」(仅竖直/对角)。
+        /// 由已同步的 globalTime 确定性派生, 全客户端一致, 无需额外网络字段。
+        /// </summary>
+        public bool EdictHorizontal => ((int)(globalTime / EdictPeriodSeconds)) % 2 == 0;
+
+        /// <summary>头部正在引导大招(吐息/审判庭蓄力) — Body 据此发出节段同步雷弹。</summary>
+        public bool BodyChannelActive {
+            get {
+                if (State == AIState.Phase1_DragonBreath && SubState >= 1)
+                    return true;
+                if (State == AIState.Phase3_ThunderTribunal)
+                    return true;
+                return false;
+            }
+        }
 
         #endregion
 
@@ -147,6 +191,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
         public override void AI() {
             base.AI();
             globalTime += 1f / 60f;
+            ActiveHead = NPC.whoAmI;
 
             NPC.TargetClosest();
             Player target = Target;
@@ -156,6 +201,9 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                 NPC.EncourageDespawn(30);
                 return;
             }
+
+            // V2 演出与律令更新 (纯本地视觉 + 确定性律令)
+            UpdateV2Visuals();
 
             // 检查阶段转换
             CheckPhaseTransition();
@@ -180,7 +228,7 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                     RunPhase1DragonBreath(target);
                     break;
                 case AIState.Phase1_ThunderOrbs:
-                    RunPhase1ThunderOrbs(target);
+                    RunPhase1ThunderRods(target);
                     break;
                 case AIState.Phase1_Charge:
                     RunPhase1Charge(target);
@@ -207,8 +255,8 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
                     RunPhaseTransition3(target);
                     break;
                 // 三阶段
-                case AIState.Phase3_ThunderJudgment:
-                    RunPhase3ThunderJudgment(target);
+                case AIState.Phase3_ThunderTribunal:
+                    RunPhase3ThunderTribunal(target);
                     break;
                 case AIState.Phase3_CelestialFury:
                     RunPhase3CelestialFury(target);
@@ -275,13 +323,43 @@ namespace AncientChineseMythology.NPCs.Boss.AzureDragons
         }
 
         private AIState PickPhase3Attack() {
+            // 审判庭为招牌 set-piece, 与移动招交替(避免连续静止喷弹)
             AIState[] attacks = [
-                AIState.Phase3_ThunderJudgment,
+                AIState.Phase3_ThunderTribunal,
                 AIState.Phase3_CelestialFury,
                 AIState.Phase3_DragonAscent,
             ];
             phase3AttackIndex = (phase3AttackIndex + 1) % attacks.Length;
             return attacks[phase3AttackIndex];
+        }
+
+        #endregion
+
+        #region V2 演出/律令更新
+
+        private void UpdateV2Visuals() {
+            // 风暴压暗: 按阶段渐变 (P1 无, P2 中, P3 重)
+            float stormTarget = IsPhase3 ? 0.72f : (IsPhase2 ? 0.4f : 0f);
+            StormVisual = MathHelper.Lerp(StormVisual, stormTarget, 0.02f);
+
+            // 审判庭网格地纹强度
+            TribunalVisual = MathHelper.Lerp(TribunalVisual, TribunalActive ? 1f : 0f, 0.05f);
+
+            // 律令切换天闪 (toolkit §C.1: 规则变化用「天闪」可读, 红只留伤害源)
+            EdictFlash *= 0.9f;
+            if (EdictFlash < 0.01f)
+                EdictFlash = 0f;
+
+            bool inPhase2State = State >= AIState.Phase2_StormChase && State <= AIState.Phase2_RapidCharge;
+            bool eh = EdictHorizontal;
+            if (eh != prevEdictHorizontal) {
+                prevEdictHorizontal = eh;
+                if (inPhase2State) {
+                    EdictFlash = 1f;
+                    SoundEngine.PlaySound(SoundID.Item122 with { Pitch = 0.6f, Volume = 0.7f }, NPC.Center);
+                    ACMUtils.AddScreenShake(4f);
+                }
+            }
         }
 
         #endregion

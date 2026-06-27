@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -38,6 +39,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes.Items
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
             Vector2 targetPos = Main.MouseWorld;
             Projectile.NewProjectile(source, player.Center, Vector2.Zero, type, damage, knockback, player.whoAmI, targetPos.X, targetPos.Y);
+            ACMWeaponBurst.Spawn(source, player.Center, ACMWeaponBurst.SoulFire, scale: 0.8f, owner: player.whoAmI);
             return false;
         }
 
@@ -51,7 +53,8 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes.Items
     /// </summary>
     public class NetherBookTailController : ModProjectile
     {
-        public override string Texture => "Terraria/Images/Projectile_" + ProjectileID.None;
+        // 不可见控制器, 保留空白占位纹理 (纯逻辑, 不绘制)
+        public override string Texture => "Terraria/Images/Projectile_1";
 
         private const int TailCount = 9;
         private bool tailsSpawned = false;
@@ -96,13 +99,8 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes.Items
                 Vector2 spawnOffset = tailAngle.ToRotationVector2() * 50f;
                 Vector2 spawnPos = owner.Center + spawnOffset;
 
-                // 每条尾巴延迟生成
+                // 每条尾巴延迟生成 (仅传延迟; 发射方向由各尾巴在 UpdateFire/FireSoulProjectiles 当场对 targetPos 计算)
                 float delay = i * 4f;
-
-                // 计算射弹方向（向目标方向散射）
-                float shotSpread = MathHelper.ToRadians(25f);
-                float shotAngle = (targetPos - owner.Center).ToRotation();
-                shotAngle += MathHelper.Lerp(-shotSpread, shotSpread, i / (float)(TailCount - 1));
 
                 Projectile.NewProjectile(
                     Projectile.GetSource_FromThis(),
@@ -114,7 +112,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes.Items
                     Projectile.owner,
                     targetPos.X,
                     targetPos.Y,
-                    delay + shotAngle // 传递延迟和射击角度
+                    delay // 传递生成延迟
                 );
             }
 
@@ -122,6 +120,8 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes.Items
         }
 
         public override bool? CanDamage() => false;
+
+        public override bool PreDraw(ref Color lightColor) => false; // 控制器不绘制
     }
 
     /// <summary>
@@ -144,7 +144,6 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes.Items
 
         private Vector2 targetPos;
         private float delayTime;
-        private float shotAngle;
         private bool hasFired = false;
 
         // 绘制参数
@@ -179,10 +178,8 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes.Items
             if (joints == null) {
                 InitializeTail();
                 targetPos = new Vector2(Projectile.ai[0], Projectile.ai[1]);
-                // 从ai[2]中解析延迟和射击角度
-                float combined = Projectile.ai[2];
-                delayTime = (int)combined % 100;
-                shotAngle = combined - delayTime;
+                // ai[2] 即生成延迟 (发射方向当场对 targetPos 计算, 不再打包角度)
+                delayTime = Projectile.ai[2];
             }
 
             phaseTimer++;
@@ -400,158 +397,25 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes.Items
         public override bool? CanDamage() => false; // 尾巴本身不造成伤害，由射弹造成
 
         public override bool PreDraw(ref Color lightColor) {
-            if (joints == null || ghostAlpha <= 0.01f) return false;
+            if (Main.dedServ || joints == null || ghostAlpha <= 0.01f)
+                return false;
 
-            Texture2D bodyTex = NetherKitsune.NetherMissesBody;
-            Texture2D tipTex = NetherKitsune.NetherMissesTop;
+            // 青狐火配色 (cyan fox-fire)
+            byte a = (byte)MathHelper.Clamp(ghostAlpha * 255f, 0f, 255f);
+            Color core = new Color(130, 240, 245) { A = (byte)(a * 0.85f) };     // 青芯
+            Color outer = new Color(40, 130, 170) { A = (byte)(a * 0.6f) };      // 暗青底
 
-            if (bodyTex == null)
-                bodyTex = TextureAssets.Projectile[ProjectileID.WoodenArrowFriendly].Value;
-            if (tipTex == null)
-                tipTex = TextureAssets.Projectile[ProjectileID.WoodenArrowFriendly].Value;
+            // 九尾飘带: 以 IK 关节为中心线绘制双层流动 ribbon (最契合九尾)
+            float width = MathHelper.Lerp(9f, 18f, MathHelper.Clamp(glowIntensity, 0f, 1f));
+            WeaponVFX.DrawRibbonTrail(joints, width, outer, core,
+                tex: null, uvScroll: -Main.GlobalTimeWrappedHourly * 2.2f, subdivisions: 4);
 
-            SpriteBatch spriteBatch = Main.spriteBatch;
-
-            // 绘制魂魄拖尾
-            DrawSoulTrail(spriteBatch);
-
-            // 绘制每个体节
-            for (int i = 0; i < JointCount - 1; i++) {
-                DrawSegment(spriteBatch, bodyTex, i, lightColor);
-            }
-
-            // 绘制尾尖
-            DrawTip(spriteBatch, tipTex, lightColor);
+            // 尾尖狐火辉光
+            Vector2 tip = joints[JointCount - 1];
+            WeaponVFX.DrawGlowBurst(tip, 0.55f * (0.5f + glowIntensity),
+                new Color(180, 250, 255) * (ghostAlpha * 0.7f));
 
             return false;
-        }
-
-        private void DrawSoulTrail(SpriteBatch spriteBatch) {
-            if (glowIntensity < 0.2f) return;
-
-            Texture2D bodyTex = NetherKitsune.NetherMissesBody;
-            if (bodyTex == null) return;
-
-            // 从尾尖向后绘制魂魄轨迹
-            for (int i = JointCount - 1; i > JointCount - 4 && i > 0; i--) {
-                float trailAlpha = glowIntensity * ghostAlpha * 0.3f * (i - (JointCount - 4)) / 3f;
-
-                Vector2 pos = joints[i];
-                Vector2 prevPos = joints[i - 1];
-                Vector2 dir = (pos - prevPos).SafeNormalize(Vector2.UnitX);
-                float rotation = dir.ToRotation();
-                float length = Vector2.Distance(pos, prevPos);
-
-                Color trailColor = new Color(80, 160, 230) * trailAlpha;
-                trailColor.A = 0;
-
-                Vector2 scale = new Vector2(length / bodyTex.Width * 1.5f, 0.4f);
-
-                spriteBatch.Draw(
-                    bodyTex,
-                    (pos + prevPos) * 0.5f - Main.screenPosition,
-                    null,
-                    trailColor,
-                    rotation,
-                    new Vector2(bodyTex.Width * 0.5f, bodyTex.Height * 0.5f),
-                    scale,
-                    SpriteEffects.None,
-                    0f
-                );
-            }
-        }
-
-        private void DrawSegment(SpriteBatch spriteBatch, Texture2D texture, int index, Color lightColor) {
-            if (index >= JointCount - 1) return;
-
-            Vector2 start = joints[index];
-            Vector2 end = joints[index + 1];
-            Vector2 direction = end - start;
-            float rotation = direction.ToRotation();
-            float length = direction.Length();
-
-            float widthScale = MathHelper.Lerp(0.8f, 0.3f, (float)index / (JointCount - 1));
-
-            // 幽蓝色调
-            Color baseColor = Color.Lerp(lightColor, new Color(90, 160, 220), 0.5f);
-            Color drawColor = Color.Lerp(baseColor, new Color(130, 200, 255), glowIntensity * 0.5f);
-            drawColor *= ghostAlpha;
-
-            Vector2 center = (start + end) * 0.5f;
-            Vector2 scale = new Vector2(length / texture.Width, widthScale);
-
-            spriteBatch.Draw(
-                texture,
-                center - Main.screenPosition,
-                null,
-                drawColor,
-                rotation,
-                new Vector2(texture.Width * 0.5f, texture.Height * 0.5f),
-                scale,
-                SpriteEffects.None,
-                0f
-            );
-
-            // 发光层
-            if (glowIntensity > 0.1f) {
-                Color glowColor = new Color(100, 180, 255) * glowIntensity * ghostAlpha * 0.4f;
-                glowColor.A = 0;
-                spriteBatch.Draw(
-                    texture,
-                    center - Main.screenPosition,
-                    null,
-                    glowColor,
-                    rotation,
-                    new Vector2(texture.Width * 0.5f, texture.Height * 0.5f),
-                    scale * 1.3f,
-                    SpriteEffects.None,
-                    0f
-                );
-            }
-        }
-
-        private void DrawTip(SpriteBatch spriteBatch, Texture2D texture, Color lightColor) {
-            if (JointCount < 2) return;
-
-            Vector2 lastJoint = joints[JointCount - 1];
-            Vector2 prevJoint = joints[JointCount - 2];
-            Vector2 direction = (lastJoint - prevJoint).SafeNormalize(Vector2.UnitY);
-            float rotation = direction.ToRotation();
-
-            Color baseColor = Color.Lerp(lightColor, new Color(110, 190, 255), 0.6f);
-            Color tipColor = Color.Lerp(baseColor, new Color(160, 220, 255), glowIntensity);
-            tipColor *= ghostAlpha;
-
-            float tipScale = 0.4f;
-
-            spriteBatch.Draw(
-                texture,
-                lastJoint - Main.screenPosition,
-                null,
-                tipColor,
-                rotation,
-                new Vector2(0, texture.Height * 0.5f),
-                tipScale,
-                SpriteEffects.None,
-                0f
-            );
-
-            // 尾尖发光
-            if (glowIntensity > 0.2f) {
-                Color glowColor = new Color(130, 200, 255) * glowIntensity * ghostAlpha * 0.5f;
-                glowColor.A = 0;
-                spriteBatch.Draw(
-                    texture,
-                    lastJoint - Main.screenPosition,
-                    null,
-                    glowColor,
-                    rotation,
-                    new Vector2(0, texture.Height * 0.5f),
-                    tipScale * 1.5f,
-                    SpriteEffects.None,
-                    0f
-                );
-            }
         }
 
         private static float EaseOutQuad(float t) => 1f - (1f - t) * (1f - t);
@@ -562,7 +426,8 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes.Items
     /// </summary>
     public class NetherSoulBolt : ModProjectile
     {
-        public override string Texture => "Terraria/Images/Projectile_" + ProjectileID.SpectreWrath;
+        // 占位魂弹改为纯程序化绘制 (双层拖尾 + RadialBloom 青狐火核), 保留空白占位纹理
+        public override string Texture => "Terraria/Images/Projectile_1";
 
         private float homingStrength = 0f;
 
@@ -635,6 +500,8 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, DustID.BlueTorch, vel.X, vel.Y, 100, default, 1.8f);
                 Main.dust[dust].noGravity = true;
             }
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.SoulFire, scale: 0.8f, owner: Projectile.owner);
         }
 
         public override void OnKill(int timeLeft) {
@@ -649,35 +516,20 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes.Items
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            Main.instance.LoadProjectile(ProjectileID.ShadowOrb);
-            Texture2D texture = TextureAssets.Projectile[ProjectileID.ShadowOrb].Value;
-            Vector2 origin = texture.Size() / 2f;
+            if (Main.dedServ)
+                return false;
 
-            // 绘制拖尾
-            for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                if (Projectile.oldPos[i] == Vector2.Zero) continue;
+            Color core = new Color(140, 240, 245);  // 青狐火芯
+            Color outer = new Color(40, 130, 170);   // 暗青底
 
-                float progress = 1f - i / (float)Projectile.oldPos.Length;
-                Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
+            // 青狐火双层拖尾
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 11f,
+                outerColor: outer with { A = 140 }, innerColor: core with { A = 200 },
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.8f);
 
-                // 幽蓝色拖尾
-                Color trailColor = new Color(80, 150, 220) * progress * 0.5f;
-                trailColor.A = 0;
-
-                Main.EntitySpriteDraw(texture, drawPos, null, trailColor,
-                    Projectile.oldRot[i], origin, Projectile.scale * (0.6f + progress * 0.4f), SpriteEffects.None);
-            }
-
-            // 主体 - 幽蓝色
-            Color mainColor = new Color(120, 200, 255);
-            Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null,
-                mainColor, Projectile.rotation, origin, Projectile.scale, SpriteEffects.None);
-
-            // 发光核心
-            Color coreColor = new Color(180, 230, 255) * 0.6f;
-            coreColor.A = 0;
-            Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null,
-                coreColor, Projectile.rotation, origin, Projectile.scale * 1.3f, SpriteEffects.None);
+            // 魂弹核: RadialBloom (名额仲裁; 被占退化为柔光)
+            WeaponVFX.DrawRadialBloom(Projectile.Center, 0.035f, 0.6f, core, 6f);
+            WeaponVFX.DrawGlowBurst(Projectile.Center, 0.45f, new Color(190, 250, 255) * 0.6f);
 
             return false;
         }

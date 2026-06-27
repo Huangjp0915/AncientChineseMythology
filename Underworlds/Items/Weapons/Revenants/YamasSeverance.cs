@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Underworlds.Tiles;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
@@ -81,6 +82,11 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                     );
                     ring.noGravity = true;
                 }
+
+                //断业重击演出: 冥紫径向辉光 + 冲击环 + 轻屏震
+                ACMWeaponBurst.Spawn(player.GetSource_OnHit(target), target.Center,
+                    ACMWeaponBurst.AbyssPurple, scale: 1.4f, owner: player.whoAmI);
+                WeaponVFX.AddScreenShake(target.Center, 3.5f);
             }
         }
 
@@ -109,6 +115,8 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
     public class YamasSeveranceSlash : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Underworlds/Items/Weapons/Revenants/YamasSeverance";
+
+        private int hitCount;
 
         public override void SetStaticDefaults() {
             ProjectileID.Sets.TrailCacheLength[Projectile.type] = 10;
@@ -177,36 +185,45 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 );
                 burst.noGravity = true;
             }
+
+            //第三次贯穿命中触发"宽幅断业"径向辉光大爆 (穿透 4)
+            hitCount++;
+            if (hitCount == 3) {
+                ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                    ACMWeaponBurst.AbyssPurple, scale: 1.8f, owner: Projectile.owner);
+                WeaponVFX.AddScreenShake(target.Center, 4f);
+                SoundEngine.PlaySound(SoundID.Item70 with { Volume = 0.6f, Pitch = -0.2f }, target.Center);
+            }
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            //使用GlaciateWave灰度图绘制剑气效果
             Texture2D glaciate = ACMAsset.GlaciateWave;
-            if (glaciate != null) {
-                Vector2 origin = glaciate.Size() / 2f;
-                float opacity = (255 - Projectile.alpha) / 255f;
+            if (glaciate == null)
+                return false;
 
-                //绘制拖尾
-                for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                    if (Projectile.oldPos[i] == Vector2.Zero) continue;
-                    float progress = 1f - (float)i / Projectile.oldPos.Length;
-                    Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                    Color trailColor = Color.Lerp(new Color(180, 80, 220), new Color(100, 30, 150), 1f - progress) * progress * opacity * 0.5f;
-                    trailColor.A = 0;
-                    float scale = 0.35f * progress;
-                    Main.EntitySpriteDraw(glaciate, drawPos, null, trailColor, Projectile.oldRot[i], origin, new Vector2(scale, scale * 0.5f), SpriteEffects.None, 0);
-                }
+            Vector2 origin = glaciate.Size() / 2f;
+            float opacity = (255 - Projectile.alpha) / 255f;
+            Vector2 screenCenter = Projectile.Center - Main.screenPosition;
 
-                //绘制主体剑气
-                Color mainColor = new Color(200, 120, 255) * opacity * 0.8f;
-                mainColor.A = 0;
-                Main.EntitySpriteDraw(glaciate, Projectile.Center - Main.screenPosition, null, mainColor, Projectile.rotation, origin, new Vector2(0.4f, 0.25f), SpriteEffects.None, 0);
+            //外层光晕底
+            Color glowColor = new Color(140, 60, 200) * opacity * 0.4f;
+            glowColor.A = 0;
+            Main.EntitySpriteDraw(glaciate, screenCenter, null, glowColor, Projectile.rotation, origin, new Vector2(0.5f, 0.35f), SpriteEffects.None, 0);
 
-                //外层光晕
-                Color glowColor = new Color(140, 60, 200) * opacity * 0.4f;
-                glowColor.A = 0;
-                Main.EntitySpriteDraw(glaciate, Projectile.Center - Main.screenPosition, null, glowColor, Projectile.rotation, origin, new Vector2(0.5f, 0.35f), SpriteEffects.None, 0);
-            }
+            //主体剑气: DissolveBurn 噪声消融 (随 alpha 上升而灼烧崩解)
+            float threshold = MathHelper.Clamp(1f - opacity, 0f, 1f);
+            WeaponVFX.ApplyDissolveBurn(glaciate, Projectile.Center, null,
+                new Color(200, 120, 255) * 0.9f, Projectile.rotation, origin, 0.42f,
+                threshold: threshold, intensity: opacity,
+                edgeColor: new Color(235, 130, 255, 200), edgeWidth: 0.1f, noiseScale: 2.2f,
+                direction: -Projectile.velocity.SafeNormalize(Vector2.UnitX), sweepStrength: 0.6f);
+
+            //BeamGrad 扇形断业弧光边 (横切剑气, 体现刀锋利刃)
+            Vector2 perp = (Projectile.rotation + MathHelper.PiOver2).ToRotationVector2();
+            float arcHalf = 64f;
+            ACMShaders.DrawBeam(Projectile.Center - perp * arcHalf, Projectile.Center + perp * arcHalf,
+                halfWidth: 10f, core: new Color(225, 160, 255), edge: new Color(120, 40, 190),
+                intensity: opacity, flowSpeed: 1.8f, flowScale: 1.6f, coreSharp: 2.8f);
 
             return false;
         }

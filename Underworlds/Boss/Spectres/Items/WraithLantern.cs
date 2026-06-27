@@ -1,3 +1,4 @@
+using AncientChineseMythology.Helpers;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
@@ -55,6 +56,9 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres.Items
 
             int tetherDamage = (int)(damage * 0.42f);
             Projectile.NewProjectile(source, player.Center, Vector2.Zero, tetherType, tetherDamage, 0f, player.whoAmI, left, right);
+
+            // 放灯瞬间的青黄魂火点燃演出 (一次性, 走 ACMWeaponBurst 安全反馈)
+            ACMWeaponBurst.Spawn(source, player.Center, ACMWeaponBurst.SoulFire, scale: 0.7f, owner: player.whoAmI);
 
             return false;
         }

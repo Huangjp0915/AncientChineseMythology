@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -62,11 +63,17 @@ public class VisceraSpitter : ModItem
             Projectile.NewProjectile(source, muzzlePos, perturbedVel, type, damage, knockback, player.whoAmI);
         }
 
-        // 枪口血液粒子
+        // 枪口血液粒子 + 血雾烟
         for (int i = 0; i < 3; i++) {
             Vector2 dustVel = muzzleDir.RotatedByRandom(0.4f) * Main.rand.NextFloat(3f, 6f);
             Dust d = Dust.NewDustPerfect(muzzlePos, DustID.Blood, dustVel, 0, default, 1.5f);
             d.noGravity = true;
+        }
+        for (int i = 0; i < 2; i++) {
+            Vector2 smokeVel = muzzleDir.RotatedByRandom(0.5f) * Main.rand.NextFloat(1.5f, 3.5f);
+            Dust s = Dust.NewDustPerfect(muzzlePos, DustID.Smoke, smokeVel, 120,
+                new Color(120, 10, 18), 1.3f);
+            s.noGravity = true;
         }
 
         return false;
@@ -82,8 +89,8 @@ public class VisceraBloodBullet : ModProjectile
         => "AncientChineseMythology/Textures/Masking/LightShot";
 
     public override void SetStaticDefaults() {
-        ProjectileID.Sets.TrailingMode[Type] = 2;
-        ProjectileID.Sets.TrailCacheLength[Type] = 10;
+        ProjectileID.Sets.TrailingMode[Type] = 0;
+        ProjectileID.Sets.TrailCacheLength[Type] = 12;
     }
 
     public override void SetDefaults() {
@@ -113,6 +120,11 @@ public class VisceraBloodBullet : ModProjectile
     }
 
     public override bool PreDraw(ref Color lightColor) {
+        // 统一双层暗红血肉拖尾
+        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 6f,
+            outerColor: new Color(102, 10, 12), innerColor: new Color(255, 72, 58),
+            uvScroll: -Main.GlobalTimeWrappedHourly * 2f);
+
         SpriteBatch sb = Main.spriteBatch;
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
@@ -122,22 +134,12 @@ public class VisceraBloodBullet : ModProjectile
         Texture2D lsh = ACMAsset.LightShot;
         Texture2D sg = ACMAsset.SoftGlow;
 
-        for (int i = 1; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
-            if (Projectile.oldPos[i] == Vector2.Zero) continue;
-            float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.50f;
-            sb.Draw(lsh,
-                Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition,
-                null, new Color(180, 20, 15) * a, Projectile.oldRot[i],
-                lsh.Size() * 0.5f,
-                new Vector2(0.35f + i * 0.01f, 0.08f), SpriteEffects.None, 0);
-        }
-
         sb.Draw(lsh, Projectile.Center - Main.screenPosition, null,
             new Color(200, 35, 25), Projectile.rotation,
             lsh.Size() * 0.5f,
             new Vector2(0.50f, 0.10f), SpriteEffects.None, 0);
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-            new Color(200, 40, 30) * 0.55f, 0f,
+            new Color(180, 30, 25) * 0.55f, 0f,
             sg.Size() * 0.5f,
             0.22f, SpriteEffects.None, 0);
 
@@ -203,6 +205,10 @@ public class VisceraGlobShot : ModProjectile
         _exploded = true;
 
         SoundEngine.PlaySound(SoundID.NPCDeath1 with { Volume = 1f, Pitch = -0.4f }, Projectile.Center);
+
+        // 脏器弹爆裂血肉演出 (冲击环 + 径向辉光)
+        ACMWeaponBurst.Spawn(Projectile.GetSource_Death(), Projectile.Center,
+            ACMWeaponBurst.Profane, scale: 1.5f, owner: Projectile.owner);
 
         if (Main.myPlayer == Projectile.owner) {
             // 爆炸VFX弹幕
@@ -313,6 +319,10 @@ public class VisceraBlastExplosion : ModProjectile
         float prog = 1f - Projectile.timeLeft / 45f;
         float alpha = ACMUtils.QuadOut(1f - prog) * 0.88f;
         float scale = MathHelper.SmoothStep(0f, 13f, ACMUtils.QuadOut(prog));
+
+        // 血肉冲击环 (在自管批之前调用, 由 helper 自行开合批)
+        WeaponVFX.DrawShockwaveRing(Projectile.Center, 16f + prog * 130f, 10f, alpha * 0.85f,
+            new Color(255, 72, 58), new Color(102, 10, 12));
 
         SpriteBatch sb = Main.spriteBatch;
         sb.End();

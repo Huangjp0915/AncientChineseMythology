@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -94,6 +95,10 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
 
                 SoundEngine.PlaySound(SoundID.Item22 with { Pitch = 0.5f }, target.Center);
             }
+
+            ACMWeaponBurst.Spawn(player.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.ClockworkGold, hit.Crit ? 1.5f : 1f, player.whoAmI);
+            WeaponVFX.AddScreenShake(target.Center, hit.Crit ? 3f : 2f);
         }
     }
 
@@ -151,9 +156,16 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
             }
 
             SoundEngine.PlaySound(SoundID.Item22 with { Pitch = 0.8f, Volume = 0.5f }, target.Center);
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.ClockworkGold, 0.8f, Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 14f,
+                outerColor: new Color(200, 130, 30, 120), innerColor: new Color(255, 240, 180, 175),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.3f);
+
             Texture2D texture = TextureAssets.Projectile[Type].Value;
             Vector2 origin = texture.Size() / 2f;
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
@@ -270,9 +282,16 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
             }
 
             target.AddBuff(BuffID.OnFire, 120);
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.ClockworkGold, 1.2f, Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 18f,
+                outerColor: new Color(200, 110, 25, 110), innerColor: new Color(255, 235, 160, 175),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.4f);
+
             Texture2D texture = TextureAssets.Projectile[Type].Value;
             Vector2 origin = texture.Size() / 2f;
             Vector2 drawPos = Projectile.Center - Main.screenPosition;

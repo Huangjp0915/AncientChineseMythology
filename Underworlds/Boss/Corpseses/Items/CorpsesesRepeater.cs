@@ -1,4 +1,6 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
+using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -67,7 +69,8 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
     /// </summary>
     public class CorpsesesBoneArrow : ModProjectile
     {
-        public override string Texture => "Terraria/Images/Projectile_" + ProjectileID.BoneArrow;
+        // 占位骨箭改为纯程序化绘制 (BeamGrad 短束 + DissolveBurn 骨片), 保留空白占位纹理
+        public override string Texture => "Terraria/Images/Projectile_1";
         public override void SetStaticDefaults() {
             ProjectileID.Sets.TrailCacheLength[Projectile.type] = 10;
             ProjectileID.Sets.TrailingMode[Projectile.type] = 2;
@@ -137,6 +140,10 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
         public override void OnKill(int timeLeft) {
             SoundEngine.PlaySound(SoundID.Dig, Projectile.position);
 
+            // 落地骨片崩解演出 (鬼绿径向辉光 + 冲击环, 代偿 DissolveBurn 落地崩解)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_Death(), Projectile.Center,
+                ACMWeaponBurst.GhostGreen, scale: 0.7f, owner: Projectile.owner);
+
             // 爆发粒子
             for (int i = 0; i < 8; i++) {
                 int dust = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height,
@@ -157,23 +164,27 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            Texture2D texture = ModContent.Request<Texture2D>("Terraria/Images/Projectile_" + ProjectileID.BoneArrow).Value;
-            Vector2 origin = texture.Size() / 2f;
+            if (Main.dedServ)
+                return false;
 
-            // 绘制拖尾
-            for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                float progress = 1f - i / (float)Projectile.oldPos.Length;
-                Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                Color trailColor = new Color(150, 50, 200) * progress * 0.4f;
+            Color bone = new Color(222, 234, 206);
+            Color edge = new Color(45, 110, 70);
+            Vector2 dir = Projectile.velocity.SafeNormalize(Vector2.UnitY);
 
-                Main.EntitySpriteDraw(texture, drawPos, null, trailColor,
-                    Projectile.oldRot[i], origin, Projectile.scale, SpriteEffects.None);
+            // 骨箭体: BeamGrad 短束 (骨白芯 + 暗绿边)
+            ACMShaders.DrawBeam(Projectile.Center - dir * 26f, Projectile.Center + dir * 8f, 6f,
+                bone with { A = 210 }, edge with { A = 120 }, 0.9f, 2.2f, 2.2f, 2.4f);
+
+            // 骨片核: DissolveBurn 灼烧骨屑 (末段崩解, 配落地溶解)
+            Texture2D glow = ACMAsset.SoftGlow;
+            float age = 1f - Projectile.timeLeft / 300f;
+            float diss = MathHelper.Clamp((age - 0.8f) / 0.2f, 0f, 1f);
+            if (glow != null) {
+                WeaponVFX.ApplyDissolveBurn(glow, Projectile.Center, null, bone,
+                    Projectile.rotation, glow.Size() * 0.5f,
+                    scale: 0.42f, threshold: 0.15f + diss * 0.85f, intensity: 1f,
+                    edgeColor: edge, edgeWidth: 0.14f, noiseScale: 2.6f);
             }
-
-            // 绘制主体
-            Color mainColor = Color.Lerp(lightColor, new Color(150, 50, 200), 0.5f);
-            Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null,
-                mainColor, Projectile.rotation, origin, Projectile.scale, SpriteEffects.None);
 
             return false;
         }
@@ -184,7 +195,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
     /// </summary>
     public class CorpsesesBoneShard : ModProjectile
     {
-        public override string Texture => "Terraria/Images/Projectile_" + ProjectileID.BoneArrow;
+        public override string Texture => "Terraria/Images/Projectile_1";
         public override void SetDefaults() {
             Projectile.width = 8;
             Projectile.height = 8;
@@ -206,6 +217,15 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
                     DustID.Shadowflame, 0, 0, 100, default, 0.8f);
                 Main.dust[dust].noGravity = true;
             }
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+            // 小骨屑: 程序化骨白柔光 (无占位纹理)
+            float fade = 1f - Projectile.alpha / 255f;
+            WeaponVFX.DrawGlowBurst(Projectile.Center, 0.3f, new Color(222, 234, 206) * (0.55f * fade));
+            return false;
         }
     }
 }

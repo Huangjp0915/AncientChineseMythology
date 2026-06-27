@@ -1,4 +1,5 @@
-﻿using InnoVault.GameContent.BaseEntity;
+﻿using AncientChineseMythology.Helpers;
+using InnoVault.GameContent.BaseEntity;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
@@ -80,6 +81,11 @@ namespace AncientChineseMythology.Items.Weapons.Bosses
 
             // 雷鸣音效
             SoundEngine.PlaySound(SoundID.DD2_LightningBugZap, target.Center);
+
+            // 落锤金辉砸击演出: 双环冲击波 + 径向辉光 (ACMWeaponBurst 内置) + 强屏震
+            WeaponVFX.AddScreenShake(target.Center, 10f);
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Gold, scale: 1.8f, owner: Projectile.owner);
 
             base.OnHitNPC(target, hit, damageDone);
         }
@@ -180,6 +186,13 @@ namespace AncientChineseMythology.Items.Weapons.Bosses
             }
             Main.spriteBatch.Draw(mainValue, Projectile.Center - Main.screenPosition, rectangle, lightColor
                 , Projectile.rotation + MathHelper.PiOver2, rectangle.Size() / 2, Projectile.scale, SpriteEffects.None, 0);
+
+            // 锤头蓄力金辉 (挥砸前 40 帧 ai[0]==0 期间渐亮)
+            if (Projectile.ai[0] == 0f) {
+                float charge = MathHelper.Clamp(Projectile.ai[1] / 40f, 0f, 1f);
+                WeaponVFX.DrawGlowBurst(Projectile.Center, (0.6f + charge * 1.6f) * Projectile.scale,
+                    new Color(255, 225, 130) * (0.35f + 0.55f * charge));
+            }
             return false;
         }
     }

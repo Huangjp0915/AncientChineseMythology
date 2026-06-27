@@ -1,4 +1,5 @@
 ﻿using AncientChineseMythology.Celestias.PillarofTheHeavenes.Tiles;
+using AncientChineseMythology.Helpers;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
@@ -70,6 +71,10 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, dustType, vel.X, vel.Y, 80, default, 2f);
                 Main.dust[dust].noGravity = true;
             }
+
+            ACMWeaponBurst.Spawn(player.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.HeavenlyPillar, 1.1f, player.whoAmI);
+            WeaponVFX.AddScreenShake(target.Center, 2f);
         }
 
         public override void ModifyTooltips(System.Collections.Generic.List<TooltipLine> tooltips) {
@@ -132,11 +137,19 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, dustType, vel.X, vel.Y, 80, default, 2f);
                 Main.dust[dust].noGravity = true;
             }
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.HeavenlyPillar, 1f, Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            // 苍穹剑气金白祥瑞双层 ribbon (GlaciateWave)
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 30f * Projectile.scale,
+                outerColor: new Color(150, 220, 235, 120), innerColor: new Color(255, 250, 210, 180),
+                tex: ACMAsset.GlaciateWave, uvScroll: -Main.GlobalTimeWrappedHourly * 1.3f);
+
             Texture2D tex = TextureAssets.Projectile[Type].Value;
-            Rectangle rectangle = tex.GetRectangle(1, 30);
+            Rectangle rectangle = tex.GetRectangle();
             Vector2 origin = rectangle.Size() / 2f;
 
             // 金色拖尾
@@ -146,6 +159,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
 
                 Color trailColor = Color.Lerp(new Color(100, 220, 200), Color.Gold, progress);
                 trailColor *= progress * 0.7f;
+                trailColor.A = 0;
 
                 Vector2 pos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
                 float scale = Projectile.scale * (0.5f + progress * 0.5f);
@@ -154,6 +168,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
 
             // 外层发光
             Color outerGlow = Color.Gold * 0.4f;
+            outerGlow.A = 0;
             Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, rectangle, outerGlow, Projectile.rotation, origin, Projectile.scale * 1.3f, SpriteEffects.None, 0f);
 
             // 主体

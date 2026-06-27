@@ -1,4 +1,5 @@
 ﻿using AncientChineseMythology.Celestias.PillarofTheHeavenes.Tiles;
+using AncientChineseMythology.Helpers;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
@@ -143,9 +144,17 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, DustID.IceTorch, vel.X, vel.Y, 100, default, 2f);
                 Main.dust[dust].noGravity = true;
             }
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.HeavenlyPillar, 1.2f, Projectile.owner);
+            WeaponVFX.AddScreenShake(target.Center, 2f);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 11f,
+                outerColor: new Color(150, 220, 235, 120), innerColor: new Color(255, 250, 210, 175),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.4f);
+
             Texture2D tex = TextureAssets.Projectile[Type].Value;
             Rectangle rectangle = tex.GetRectangle(2, 5);
             Vector2 origin = rectangle.Size() / 2f;
@@ -157,6 +166,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
 
                 Color trailColor = Color.Lerp(new Color(100, 200, 180), Color.Gold, progress);
                 trailColor *= progress * 0.5f;
+                trailColor.A = 0;
 
                 Vector2 pos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
                 Main.spriteBatch.Draw(tex, pos, rectangle, trailColor, Projectile.oldRot[i], origin, Projectile.scale * progress, SpriteEffects.None, 0f);
@@ -164,10 +174,12 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
 
             // 外层光晕
             Color outerGlow = Color.Gold * 0.4f;
+            outerGlow.A = 0;
             Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, rectangle, outerGlow, Projectile.rotation, origin, Projectile.scale * 1.4f, SpriteEffects.None, 0f);
 
             // 中层青色
             Color midGlow = new Color(100, 200, 180) * 0.5f;
+            midGlow.A = 0;
             Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, rectangle, midGlow, -Projectile.rotation, origin, Projectile.scale * 1.1f, SpriteEffects.None, 0f);
 
             // 核心

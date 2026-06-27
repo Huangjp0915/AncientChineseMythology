@@ -1,5 +1,7 @@
-﻿using AncientChineseMythology.Items.Materials;
+﻿using AncientChineseMythology.Buffs;
+using AncientChineseMythology.Items.Materials;
 using AncientChineseMythology.Items.Weapons.Bosses;
+using AncientChineseMythology.Players;
 using AncientChineseMythology.Systems;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
@@ -15,6 +17,14 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.NPCs.Boss.Hoqings
 {
+    /// <summary>
+    /// 后卿 Hoqing —— 旱魃换皮的结构性重写。
+    /// 主题：瘟疫 / 尸火 / 万鬼夜行（旱灾之疫的亡灵神祇）。
+    /// 三幕脚本化 HP 门控，每一幕改变战斗规则而非加速喷弹：
+    ///   幕一 幽火列阵：角色化幽火仆从（枪兵/爆兵/疫医） + 预告尸坑 + 列阵冲撞。
+    ///   幕二 疫疠扩散（≤70%）：移动战，三套预告弹幕轮转（脓雨潭 / 尸链复生 / 疫风间隙）。
+    ///   幕三 万鬼夜行（≤30%）：四祭坛锚点瞬掠 + 蓄力（祭坛辉光预告扇形/360） + 近身衰朽叠层。
+    /// </summary>
     [AutoloadBossHead]
     [VaultLoaden("AncientChineseMythology/NPCs/Boss/Hoqings/")]
     internal class Hoqing : ModNPC
@@ -22,14 +32,49 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
         private int frame;
         private int frame2;
         private const int maxFrame = 4;
-        private readonly int[] otherAI = new int[aiSlot];
-        private const int aiSlot = 4;
         internal static Asset<Texture2D> HoqingGlow;
         internal static Asset<Texture2D> HoqingEmmd;
+
+        //====== 幕 / 阶段系统 ======
+        public enum BossPhase
+        {
+            Despawn = -1,
+            Intro = 0,
+            GhostArray = 1,     //幽火列阵
+            Transition = 2,     //过渡（i 帧节拍）
+            PlagueSpread = 3,   //疫疠扩散
+            NightMarch = 4,     //万鬼夜行
+        }
+
+        public BossPhase Phase {
+            get => (BossPhase)(int)NPC.ai[0];
+            set => NPC.ai[0] = (int)value;
+        }
+        public ref float PhaseTimer => ref NPC.ai[1];
+        public ref float GeneralTimer => ref NPC.ai[2];
+        public ref float SubState => ref NPC.ai[3];
+
+        //同步字段
+        private BossPhase pendingNextPhase;
+        private bool enteredP2;
+        private bool enteredP3;
+        private int patternIndex;   //P2 当前弹幕图案
+        private int altarIndex;     //P3 当前祭坛
+        private int comboCount;     //通用幕内循环计数
+        private Vector2 arenaCenter; //P3 锚点中心
+        private Vector2 laneDir;     //P1 列阵冲撞方向
+
+        //非同步演出 (各端各算, 纯本地视觉)
+        private float channelGlow;
+        private float plagueAccum;   //幕三疫源累积 0~1 (地纹/经络主控)
+        private float fogWarp;       //幕三限视尸雾 0~1 (GenericWarp·fog 全屏后处理)
+
         public override void SetStaticDefaults() {
             Main.npcFrameCount[Type] = maxFrame;
             NPCID.Sets.TrailingMode[Type] = 1;
             NPCID.Sets.TrailCacheLength[Type] = 8;
+            NPCID.Sets.BossBestiaryPriority.Add(Type);
+            NPCID.Sets.MPAllowedEnemies[Type] = true;
         }
 
         public override void SetDefaults() {
@@ -48,7 +93,8 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
             NPC.noTileCollide = true;
             NPC.HitSound = SoundID.NPCHit2;
             NPC.DeathSound = SoundID.NPCDeath14;
-            Music = MusicLoader.GetMusicSlot("AncientChineseMythology/Sounds/Music/Hanba");
+            //专属 BGM：停止复用旱魃曲，改用更契合"万鬼夜行"主题的地府主题。
+            Music = MusicLoader.GetMusicSlot("AncientChineseMythology/Sounds/Music/Underworld");
         }
 
         public override void ModifyNPCLoot(NPCLoot npcLoot) {
@@ -61,15 +107,25 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
         }
 
         public override void SendExtraAI(BinaryWriter writer) {
-            for (int i = 0; i < aiSlot; i++) {
-                writer.Write(otherAI[i]);
-            }
+            writer.Write((int)pendingNextPhase);
+            writer.Write(enteredP2);
+            writer.Write(enteredP3);
+            writer.Write(patternIndex);
+            writer.Write(altarIndex);
+            writer.Write(comboCount);
+            writer.WriteVector2(arenaCenter);
+            writer.WriteVector2(laneDir);
         }
 
         public override void ReceiveExtraAI(BinaryReader reader) {
-            for (int i = 0; i < aiSlot; i++) {
-                otherAI[i] = reader.ReadInt32();
-            }
+            pendingNextPhase = (BossPhase)reader.ReadInt32();
+            enteredP2 = reader.ReadBoolean();
+            enteredP3 = reader.ReadBoolean();
+            patternIndex = reader.ReadInt32();
+            altarIndex = reader.ReadInt32();
+            comboCount = reader.ReadInt32();
+            arenaCenter = reader.ReadVector2();
+            laneDir = reader.ReadVector2();
         }
 
         public override bool CheckActive() {
@@ -85,219 +141,497 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
             NPC.lifeMax = (int)(NPC.lifeMax * 0.8f * balance * bossAdjustment);
         }
 
+        private int GetBossDamage(float scaling = 1f) => (int)(NPC.damage * scaling);
+
+        private void TransitionTo(BossPhase next) {
+            Phase = BossPhase.Transition;
+            pendingNextPhase = next;
+            PhaseTimer = 0;
+            SubState = 0;
+            comboCount = 0;
+            NPC.netUpdate = true;
+        }
+
         public override void AI() {
             NPC.TargetClosest();
             Player target = Main.player[NPC.target];
             if (!target.Alives()) {
                 NPC.TargetClosest();
                 target = Main.player[NPC.target];
-                if (!target.Alives()) {
-                    NPC.ai[0] = -1;
-                    NPC.ai[1] = 0f;
-                    NPC.ai[2] = 0f;
+                if (!target.Alives() && Phase != BossPhase.Despawn) {
+                    Phase = BossPhase.Despawn;
+                    PhaseTimer = 0;
+                    NPC.netUpdate = true;
                 }
             }
 
-            Lighting.AddLight(NPC.Center, Color.BlueViolet.ToVector3() * NPC.scale);
+            //疫疠之光：偏冷的尸绿
+            Lighting.AddLight(NPC.Center, new Color(80, 200, 110).ToVector3() * NPC.scale);
 
+            if (GeneralTimer == 0 && !VaultUtils.isServer && !SkyManager.Instance[HoqingSky.name].IsActive()) {
+                SkyManager.Instance.Activate(HoqingSky.name);
+            }
+
+            NPC.damage = NPC.defDamage;
             int targetFrame = 0;
-            ref float generalTimer = ref NPC.ai[2];
-            ref float attackTimer = ref NPC.ai[1];
-            ref float state = ref NPC.ai[0];
             bool setNPCRot = true;
 
-            if (generalTimer == 0) {
-                if (!VaultUtils.isServer && !SkyManager.Instance[HoqingSky.name].IsActive()) {
-                    SkyManager.Instance.Activate(HoqingSky.name);
-                }
-            }
-
-            switch (state) {
-                //失去目标，脱战
-                case -1f:
+            switch (Phase) {
+                case BossPhase.Despawn:
                     NPC.velocity = new Vector2(0, 60);
-
-                    attackTimer++;
-
-                    if (attackTimer > 180) {
+                    PhaseTimer++;
+                    if (PhaseTimer > 180) {
                         NPC.active = false;
                         NPC.netUpdate = true;
                     }
-
                     break;
-                //召唤小弟，然后追逐
-                case 0f:
-                    Vector2 toPlayer = target.Center - NPC.Center;
-                    float distance = toPlayer.Length();
-                    toPlayer.Normalize();
-
-                    if (attackTimer == 0 && !VaultUtils.isClient) {
-                        for (int i = 0; i < 6; i++) {
-                            NPC.NewNPCDirect(NPC.FromObjectGetParent(), NPC.Center
-                                , ModContent.NPCType<GhostFire>(), ai0: NPC.whoAmI, ai1: i, target: NPC.target);
-                        }
-                        HoqingRingFire.AllVanish(NPC.whoAmI);
-                        for (int i = 0; i < 28; i++) {
-                            Projectile.NewProjectile(NPC.FromObjectGetParent(), NPC.Center, Vector2.Zero
-                                        , ModContent.ProjectileType<HoqingRingFire>(), NPC.damage, 2
-                                        , ai0: NPC.whoAmI, ai2: MathHelper.TwoPi / 28 * i);
-                        }
-                    }
-
-                    attackTimer++;
-
-                    //每隔一定时间进行一次猛冲突进
-                    if (attackTimer % 180 == 0) {
-                        //加强冲刺：直接设置速度指向玩家
-                        float dashSpeed = 38f;
-                        NPC.velocity = toPlayer * dashSpeed;
-
-                        //可选：震动屏幕、产生粒子、播放音效等
-                        if (Main.netMode != NetmodeID.Server) {
-                            SoundEngine.PlaySound(SoundID.Roar, NPC.Center);
-                            for (int i = 0; i < 15; i++) {
-                                Dust.NewDustDirect(NPC.position, NPC.width, NPC.height, DustID.GreenTorch, Scale: 1.5f).noGravity = true;
-                            }
-                        }
-
-                        if (otherAI[1] > 0) {
-                            otherAI[2] = 15;
-                        }
-
-                        NPC.netUpdate = true;
-                    }
-                    else {
-                        if (attackTimer % 5 == 0) {
-                            if (otherAI[2] > 0) {
-                                otherAI[2]--;
-                                if (!VaultUtils.isClient) {
-                                    Projectile.NewProjectile(NPC.FromObjectGetParent(), NPC.Center
-                                        , new Vector2(Main.rand.Next(-13, 13), Main.rand.Next(-13, 13))
-                                        , ModContent.ProjectileType<HoqingShadow>(), NPC.damage, 2, ai2: NPC.whoAmI);
-
-                                    if (otherAI[2] == 0 && otherAI[1] > 0) {
-                                        TeleportNearTarget(target);
-                                    }
-                                }
-                            }
-                        }
-
-                        //平时持续小幅追踪，模拟压迫感逼近
-                        float baseSpeed = 10f;
-                        float inertia = 20f;
-                        Vector2 desiredVelocity = toPlayer * baseSpeed;
-                        NPC.velocity = (NPC.velocity * (inertia - 1) + desiredVelocity) / inertia;
-                    }
-
-                    //朝向玩家
-                    NPC.spriteDirection = NPC.direction = NPC.Center.X < target.Center.X ? 1 : -1;
-
-                    if (!NPC.AnyNPCs(ModContent.NPCType<GhostFire>())) {
-                        attackTimer = 0;
-                        state = 1f;
-                        HoqingRingFire.AllVanish(NPC.whoAmI);
-                    }
+                case BossPhase.Intro:
+                    RunIntro(target, ref targetFrame);
                     break;
-                //瞎勾巴甩弹幕
-                case 1f:
-                    if (attackTimer == 0) {
-                        targetFrame = 3;
-                        SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.3f }, NPC.Center);
-                    }
-
-                    if (attackTimer <= 60) {
-                        targetFrame = 3;
-                        NPC.velocity *= 0.85f;
-
-                        //中心聚能特效（每隔几帧释放粒子）
-                        if (!VaultUtils.isServer && attackTimer % 5 == 0) {
-                            for (int i = 0; i < 8; i++) {
-                                Vector2 offset = (MathHelper.TwoPi * i / 8f).ToRotationVector2() * Main.rand.NextFloat(40f, 80f);
-                                Dust dust = Dust.NewDustDirect(NPC.Center + offset, 0, 0, DustID.Torch, 0, 0, 100, Color.Orange, 1.5f);
-                                dust.velocity = -offset.SafeNormalize(Vector2.Zero) * 1.5f;
-                                dust.noGravity = true;
-                            }
-                        }
-                    }
-
-                    else if (attackTimer > 60 && attackTimer <= 180) {
-                        targetFrame = 4;
-
-                        if (!VaultUtils.isClient && attackTimer % 20 == 0) {
-                            int total = 3;
-                            for (int i = 0; i < total; i++) {
-                                float angle = MathHelper.TwoPi * i / total + Main.rand.NextFloat(-0.1f, 0.1f);
-                                Vector2 velocity = angle.ToRotationVector2() * 9f;
-                                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, velocity,
-                                    ModContent.ProjectileType<OblivionFireOrb>(), NPC.damage / 2, 2f);
-                            }
-                        }
-
-                        //悬停朝玩家上方缓缓移动
-                        NPC.velocity = Vector2.Lerp(NPC.velocity, NPC.SafeDirectionTo(target.Center + new Vector2(0, -300)) * 23f, 0.1f);
-                    }
-
-                    else if (attackTimer > 180 && attackTimer <= 240) {
-                        if (!VaultUtils.isClient && attackTimer % 20 == 0) {
-                            //向玩家方向发射跟踪弹
-                            Vector2 toTarget = NPC.SafeDirectionTo(target.Center);
-                            Vector2 perturbed = toTarget.RotatedByRandom(MathHelper.ToRadians(6));
-                            Vector2 vel = perturbed * 13f;
-
-                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                                ModContent.ProjectileType<OblivionFireOrb>(), NPC.damage / 2, 2f);
-                        }
-
-                        //缓缓下降压近
-                        NPC.velocity = Vector2.Lerp(NPC.velocity, new Vector2(0, 6), 0.1f);
-                    }
-
-                    if (attackTimer == 250) {
-                        if (!VaultUtils.isClient) {
-                            //大火焰环围绕Boss爆开
-                            int fireCount = 12;
-                            for (int i = 0; i < fireCount; i++) {
-                                float angle = MathHelper.TwoPi * i / fireCount;
-                                Vector2 vel = angle.ToRotationVector2() * 7f;
-
-                                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                                    ModContent.ProjectileType<OblivionFireOrb>(), NPC.damage, 3f);
-                            }
-                        }
-                        SoundEngine.PlaySound(SoundID.Item74 with { Pitch = -0.5f }, NPC.Center);
-                        //粒子冲击波（客户端）
-                        if (!VaultUtils.isServer) {
-                            for (int i = 0; i < 30; i++) {
-                                Vector2 dir = Main.rand.NextVector2Unit();
-                                int dust = Dust.NewDust(NPC.Center, 0, 0, DustID.FireworkFountain_Red, dir.X * 3, dir.Y * 3, 100, Color.Orange, 2f);
-                                Main.dust[dust].noGravity = true;
-                            }
-                        }
-                    }
-
-                    attackTimer++;
-
-                    //结束阶段
-                    if (attackTimer > 270) {
-                        attackTimer = 0;
-
-                        if (++otherAI[0] > 4) {
-                            otherAI[0] = 0;
-                            otherAI[1]++;
-                            state = 0;
-                        }
-
-                        NPC.netUpdate = true;
-                    }
+                case BossPhase.GhostArray:
+                    RunGhostArray(target, ref targetFrame);
+                    break;
+                case BossPhase.Transition:
+                    RunTransition(target, ref targetFrame, ref setNPCRot);
+                    break;
+                case BossPhase.PlagueSpread:
+                    RunPlagueSpread(target, ref targetFrame);
+                    break;
+                case BossPhase.NightMarch:
+                    RunNightMarch(target, ref targetFrame, ref setNPCRot);
                     break;
             }
 
-            generalTimer++;
+            //HP 门控：过阈值改变规则（带 i 帧过渡节拍），而非加速
+            if (!VaultUtils.isClient) {
+                if (!enteredP2 && NPC.life <= NPC.lifeMax * 0.7f
+                    && (Phase == BossPhase.GhostArray)) {
+                    enteredP2 = true;
+                    TransitionTo(BossPhase.PlagueSpread);
+                }
+                else if (!enteredP3 && NPC.life <= NPC.lifeMax * 0.3f
+                    && (Phase == BossPhase.PlagueSpread)) {
+                    enteredP3 = true;
+                    TransitionTo(BossPhase.NightMarch);
+                }
+            }
+
+            UpdatePresentation();
+
+            GeneralTimer++;
+            PhaseTimer++;
             if (setNPCRot) {
                 NPC.rotation = MathHelper.Lerp(NPC.rotation, NPC.velocity.X * 0.02f, 0.1f);
             }
-
             FindFrame(targetFrame);
+        }
+
+        //========================= V2 演出标量 (幕三万鬼夜行高潮) =========================
+        //各端各算的本地视觉标量; 幕三推进时累积疫源地纹/经络/尸雾, 并发布给 HoqingScreenSystem。
+        private void UpdatePresentation() {
+            bool nightMarch = Phase == BossPhase.NightMarch;
+            if (nightMarch) {
+                plagueAccum = MathHelper.Clamp(plagueAccum + 1f / 540f, 0f, 1f); //~9s 满
+                fogWarp = MathHelper.Lerp(fogWarp, 0.55f, 0.03f);
+            }
+            else {
+                plagueAccum = MathHelper.Lerp(plagueAccum, 0f, 0.05f);
+                fogWarp = MathHelper.Lerp(fogWarp, 0f, 0.05f);
+            }
+
+            if (!VaultUtils.isServer && nightMarch) {
+                bool isFan = altarIndex % 2 == 0;
+                HoqingScreenSystem.Publish(arenaCenter, 520f, plagueAccum,
+                    altarIndex, channelGlow, isFan, (float)Main.GlobalTimeWrappedHourly);
+            }
+        }
+
+        //========================= 幕零：入场 =========================
+        private void RunIntro(Player target, ref int targetFrame) {
+            targetFrame = 3;
+            NPC.dontTakeDamage = true; //入场 i 帧
+            Vector2 desired = target.Center + new Vector2(0, -360);
+            NPC.Center = Vector2.Lerp(NPC.Center, desired, 0.08f);
+            NPC.velocity *= 0.9f;
+
+            if (!VaultUtils.isServer && PhaseTimer % 3 == 0) {
+                for (int i = 0; i < 5; i++) {
+                    Vector2 off = Main.rand.NextVector2CircularEdge(90, 90);
+                    Dust d = Dust.NewDustPerfect(NPC.Center + off, DustID.GreenTorch
+                        , -off.SafeNormalize(Vector2.Zero) * 3f, 120, new Color(120, 255, 140), 1.8f);
+                    d.noGravity = true;
+                }
+            }
+
+            if (PhaseTimer == 70) {
+                SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.5f }, NPC.Center);
+                ACMScreenShakeSystem.Add(9f);
+            }
+
+            if (PhaseTimer > 120) {
+                NPC.dontTakeDamage = false;
+                Phase = BossPhase.GhostArray;
+                PhaseTimer = 0;
+                SubState = 0;
+                comboCount = 0;
+                NPC.netUpdate = true;
+            }
+        }
+
+        //========================= 幕一：幽火列阵 =========================
+        //角色化幽火仆从 + 预告尸坑 + 列阵冲撞（沿预告线冲）。攻击轮转，70% 血进入幕二。
+        private void RunGhostArray(Player target, ref int targetFrame) {
+            //保证仆从存在（枪兵/爆兵/疫医）。被清空时补阵。
+            if (!VaultUtils.isClient && PhaseTimer == 1 && !NPC.AnyNPCs(ModContent.NPCType<GhostFire>())) {
+                int count = 6;
+                for (int i = 0; i < count; i++) {
+                    NPC.NewNPCDirect(NPC.FromObjectGetParent(), NPC.Center
+                        , ModContent.NPCType<GhostFire>(), ai0: NPC.whoAmI, ai1: i, target: NPC.target);
+                }
+                SoundEngine.PlaySound(SoundID.Item103 with { Pitch = -0.4f }, NPC.Center);
+            }
+
+            //SubState：0 布坑+游走  →  1 列阵冲撞（telegraph→charge）→ 回到 0
+            switch ((int)SubState) {
+                case 0: {
+                    targetFrame = 1;
+                    //缓慢逼近游走，保持压迫
+                    Vector2 hover = target.Center + new Vector2((target.Center.X < NPC.Center.X ? 1 : -1) * 320, -180);
+                    NPC.velocity = Vector2.Lerp(NPC.velocity, NPC.SafeDirectionTo(hover) * 9f, 0.05f);
+                    NPC.spriteDirection = NPC.direction = NPC.Center.X < target.Center.X ? 1 : -1;
+
+                    //预告尸坑：在玩家落点附近播种（先预告再喷发，见 CorpsePit）
+                    if (!VaultUtils.isClient && PhaseTimer % 80 == 40) {
+                        Vector2 pit = target.Center + new Vector2(Main.rand.Next(-360, 360), Main.rand.Next(-200, 200));
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), pit, Vector2.Zero
+                            , ModContent.ProjectileType<CorpsePit>(), GetBossDamage(0.8f), 0f, Main.myPlayer);
+                        SoundEngine.PlaySound(SoundID.Item104 with { Pitch = -0.3f }, pit);
+                    }
+
+                    if (PhaseTimer > 200) {
+                        SubState = 1;
+                        PhaseTimer = 0;
+                        if (!VaultUtils.isClient) {
+                            laneDir = NPC.SafeDirectionTo(target.Center);
+                            NPC.netUpdate = true;
+                        }
+                    }
+                    break;
+                }
+                case 1: {
+                    //列阵冲撞：先沿冲撞线铺设尘线预告，再沿线高速冲（取代随机冲刺）
+                    if (PhaseTimer < 45) {
+                        targetFrame = 3;
+                        NPC.velocity *= 0.86f;
+                        //尘线预告
+                        if (!VaultUtils.isServer) {
+                            for (int i = 0; i < 26; i++) {
+                                Vector2 p = NPC.Center + laneDir * (i * 70f);
+                                Dust d = Dust.NewDustPerfect(p, DustID.GreenTorch, Vector2.Zero, 150, new Color(150, 255, 160), 1.6f);
+                                d.noGravity = true;
+                                d.velocity = laneDir.RotatedBy(MathHelper.PiOver2) * Main.rand.NextFloat(-1f, 1f);
+                            }
+                        }
+                        if (PhaseTimer == 1) {
+                            SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.1f }, NPC.Center);
+                        }
+                    }
+                    else if (PhaseTimer == 45) {
+                        NPC.velocity = laneDir * 40f;
+                        NPC.oldPos = new Vector2[NPC.oldPos.Length];
+                        SoundEngine.PlaySound(SoundID.Item73 with { Pitch = -0.2f }, NPC.Center);
+                        ACMScreenShakeSystem.Add(7f);
+                    }
+                    else {
+                        targetFrame = 4;
+                        NPC.velocity *= 0.97f;
+                        //冲撞残影
+                        if (!VaultUtils.isClient && PhaseTimer % 4 == 0) {
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero
+                                , ModContent.ProjectileType<HoqingShadow>(), GetBossDamage(0.5f), 1f, Main.myPlayer, 0, 0, NPC.whoAmI);
+                        }
+                        if (PhaseTimer > 95 || NPC.collideX || NPC.collideY) {
+                            SubState = 0;
+                            PhaseTimer = 0;
+                            comboCount++;
+                            NPC.netUpdate = true;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
+        //========================= 过渡：i 帧节拍 =========================
+        private void RunTransition(Player target, ref int targetFrame, ref bool setNPCRot) {
+            targetFrame = 3;
+            setNPCRot = false;
+            NPC.dontTakeDamage = true;
+            NPC.velocity *= 0.85f;
+            NPC.rotation = MathHelper.Lerp(NPC.rotation, 0f, 0.2f);
+
+            if (PhaseTimer == 1) {
+                ClearHostileBullets();
+                SoundEngine.PlaySound(SoundID.ForceRoar with { Pitch = -0.4f }, NPC.Center);
+                ACMScreenShakeSystem.Add(12f);
+            }
+            //疠气爆涌的演出
+            if (!VaultUtils.isServer && PhaseTimer % 2 == 0) {
+                for (int i = 0; i < 8; i++) {
+                    Vector2 v = Main.rand.NextVector2Circular(7, 7);
+                    Dust d = Dust.NewDustPerfect(NPC.Center, DustID.GreenTorch, v, 120, new Color(120, 255, 150), 2.2f);
+                    d.noGravity = true;
+                }
+            }
+
+            if (PhaseTimer > 80) {
+                NPC.dontTakeDamage = false;
+                Phase = pendingNextPhase;
+                PhaseTimer = 0;
+                SubState = 0;
+                comboCount = 0;
+                if (pendingNextPhase == BossPhase.NightMarch && !VaultUtils.isClient) {
+                    arenaCenter = target.Center;
+                    altarIndex = 0;
+                }
+                NPC.netUpdate = true;
+            }
+        }
+
+        //========================= 幕二：疫疠扩散 =========================
+        //移动战，三套预告弹幕轮转：脓雨潭 / 尸链复生 / 疫风间隙。30% 血进入幕三。
+        private void RunPlagueSpread(Player target, ref int targetFrame) {
+            targetFrame = 1;
+            //悬浮于玩家上方，持续侧移
+            Vector2 hover = target.Center + new Vector2(MathF.Sin(GeneralTimer * 0.03f) * 360f, -300f);
+            NPC.velocity = Vector2.Lerp(NPC.velocity, NPC.SafeDirectionTo(hover) * 14f, 0.06f);
+            NPC.spriteDirection = NPC.direction = NPC.Center.X < target.Center.X ? 1 : -1;
+
+            //每套图案占 150 tick：前 50 预告，50 释放，50 收尾
+            const int patternLen = 150;
+            int localT = (int)PhaseTimer % patternLen;
+
+            if (PhaseTimer % patternLen == 0 && !VaultUtils.isClient) {
+                patternIndex = (patternIndex + 1) % 3;
+                NPC.netUpdate = true;
+            }
+
+            switch (patternIndex) {
+                case 0:
+                    Pattern_SputumRain(target, localT, ref targetFrame);
+                    break;
+                case 1:
+                    Pattern_CorpseChain(target, localT, ref targetFrame);
+                    break;
+                case 2:
+                    Pattern_PlagueWind(target, localT, ref targetFrame);
+                    break;
+            }
+        }
+
+        //脓雨潭：高空预告落点 → 落下脓潭（持续绿池），强迫走位
+        private void Pattern_SputumRain(Player target, int localT, ref int targetFrame) {
+            if (localT < 50) {
+                targetFrame = 3;
+                //预告落点尘环
+                if (!VaultUtils.isServer && localT % 5 == 0) {
+                    for (int k = 0; k < 3; k++) {
+                        Vector2 mark = target.Center + new Vector2((k - 1) * 260, 0);
+                        for (int i = 0; i < 10; i++) {
+                            Vector2 e = (MathHelper.TwoPi * i / 10).ToRotationVector2() * 70f;
+                            Dust d = Dust.NewDustPerfect(mark + e, DustID.GreenTorch, Vector2.Zero, 150, new Color(120, 255, 130), 1.4f);
+                            d.noGravity = true;
+                        }
+                    }
+                }
+            }
+            else if (localT == 50) {
+                SoundEngine.PlaySound(SoundID.Item104, NPC.Center);
+                if (!VaultUtils.isClient) {
+                    for (int k = 0; k < 5; k++) {
+                        Vector2 mark = target.Center + new Vector2((k - 2) * 230, Main.rand.Next(-40, 40));
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), mark, Vector2.Zero
+                            , ModContent.ProjectileType<SputumPool>(), GetBossDamage(0.7f), 0f, Main.myPlayer);
+                    }
+                }
+            }
+        }
+
+        //尸链复生：朝玩家位置投出尸链，命中则在该处复生一名幽火仆从
+        private void Pattern_CorpseChain(Player target, int localT, ref int targetFrame) {
+            if (localT < 50) {
+                targetFrame = 3;
+                NPC.velocity *= 0.95f;
+                if (!VaultUtils.isServer && localT % 4 == 0) {
+                    Vector2 dir = NPC.SafeDirectionTo(target.Center);
+                    Dust d = Dust.NewDustPerfect(NPC.Center + dir * 60, DustID.GreenTorch, dir * 2f, 120, new Color(180, 255, 180), 1.6f);
+                    d.noGravity = true;
+                }
+            }
+            else if (localT == 50) {
+                SoundEngine.PlaySound(SoundID.Item102 with { Pitch = -0.3f }, NPC.Center);
+                if (!VaultUtils.isClient) {
+                    //仅在仆从不过载时尝试复生
+                    bool canRevive = NPC.CountNPCS(ModContent.NPCType<GhostFire>()) < 4;
+                    Vector2 vel = NPC.SafeDirectionTo(target.Center) * 17f;
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel
+                        , ModContent.ProjectileType<HoqingCorpseChain>(), GetBossDamage(0.9f), 2f
+                        , Main.myPlayer, ai0: NPC.whoAmI, ai1: canRevive ? 1f : 0f);
+                }
+            }
+        }
+
+        //疫风间隙：横向疫风墙带一个缺口，站进缺口躲避
+        private void Pattern_PlagueWind(Player target, int localT, ref int targetFrame) {
+            if (localT < 50) {
+                targetFrame = 3;
+                NPC.velocity *= 0.9f;
+                //预告墙位与缺口
+                if (!VaultUtils.isServer && localT % 4 == 0) {
+                    float gapX = target.Center.X + ((localT / 4) % 2 == 0 ? 1 : -1) * 0f;
+                    for (int i = -7; i <= 7; i++) {
+                        Vector2 p = new Vector2(target.Center.X + i * 130, NPC.Center.Y + 80);
+                        Dust d = Dust.NewDustPerfect(p, DustID.GreenTorch, Vector2.UnitY * 2f, 150, new Color(140, 255, 150), 1.3f);
+                        d.noGravity = true;
+                    }
+                }
+            }
+            else if (localT == 50) {
+                SoundEngine.PlaySound(SoundID.Item34 with { Pitch = -0.2f }, NPC.Center);
+                if (!VaultUtils.isClient) {
+                    int gap = Main.rand.Next(-5, 6); //缺口列
+                    float baseY = NPC.Center.Y + 60;
+                    for (int i = -7; i <= 7; i++) {
+                        if (Math.Abs(i - gap) <= 1) {
+                            continue; //留出可站立缝隙
+                        }
+                        Vector2 p = new Vector2(target.Center.X + i * 130, baseY - 700);
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), p, new Vector2(0, 9f)
+                            , ModContent.ProjectileType<OblivionFireOrb>(), GetBossDamage(0.7f), 2f, Main.myPlayer);
+                    }
+                }
+            }
+        }
+
+        //========================= 幕三：万鬼夜行 =========================
+        //四祭坛锚点瞬掠（快速位移而非瞬移）→ 2s 蓄力（祭坛辉光颜色预告扇形/360）→ 释放。
+        //蓄力时近身玩家叠加"衰朽"debuff。NOT 加速喷弹。
+        private void RunNightMarch(Player target, ref int targetFrame, ref bool setNPCRot) {
+            //altarIndex 偶数 → 扇形（红橙辉光），奇数 → 360 脉冲（绿辉光）
+            bool isFan = altarIndex % 2 == 0;
+            Vector2 altarPos = GetAltarPos(altarIndex);
+
+            switch ((int)SubState) {
+                case 0: { //锚点瞬掠（快速位移）
+                    setNPCRot = false;
+                    targetFrame = 4;
+                    NPC.Center = Vector2.Lerp(NPC.Center, altarPos, 0.25f);
+                    NPC.velocity *= 0.8f;
+                    if (!VaultUtils.isServer && PhaseTimer % 3 == 0) {
+                        for (int i = 0; i < 4; i++) {
+                            Dust d = Dust.NewDustPerfect(NPC.Center, DustID.GreenTorch, Main.rand.NextVector2Circular(4, 4), 120, new Color(120, 255, 140), 1.6f);
+                            d.noGravity = true;
+                        }
+                    }
+                    if (PhaseTimer > 24 || NPC.WithinRange(altarPos, 40f)) {
+                        NPC.Center = altarPos;
+                        SubState = 1;
+                        PhaseTimer = 0;
+                        channelGlow = 0f;
+                        SoundEngine.PlaySound(SoundID.Item8, NPC.Center);
+                        NPC.netUpdate = true;
+                    }
+                    break;
+                }
+                case 1: { //2 秒蓄力（120 tick），祭坛辉光预告
+                    targetFrame = 3;
+                    setNPCRot = false;
+                    NPC.velocity = Vector2.Zero;
+                    NPC.rotation = MathHelper.Lerp(NPC.rotation, 0f, 0.2f);
+                    channelGlow = MathHelper.Clamp(channelGlow + 1f / 120f, 0f, 1f);
+
+                    Color glowColor = isFan ? new Color(255, 90, 40) : new Color(90, 255, 120);
+                    if (!VaultUtils.isServer && PhaseTimer % 3 == 0) {
+                        Vector2 e = Main.rand.NextVector2CircularEdge(220, 220) * channelGlow;
+                        Dust d = Dust.NewDustPerfect(NPC.Center + e, isFan ? DustID.Torch : DustID.GreenTorch
+                            , -e.SafeNormalize(Vector2.Zero) * 5f, 100, glowColor, 1.8f);
+                        d.noGravity = true;
+                    }
+
+                    //近身蓄力：叠加衰朽
+                    if (!VaultUtils.isClient && PhaseTimer % 20 == 0) {
+                        foreach (Player p in Main.ActivePlayers) {
+                            if (p.Alives() && p.WithinRange(NPC.Center, 360f)) {
+                                p.AddBuff(ModContent.BuffType<HoqingDecline>(), 240);
+                                p.GetModPlayer<HoqingDeclinePlayer>().AddDecline();
+                            }
+                        }
+                    }
+
+                    if (PhaseTimer == 60) {
+                        SoundEngine.PlaySound(SoundID.Item74 with { Pitch = -0.3f }, NPC.Center);
+                    }
+                    if (PhaseTimer > 120) {
+                        SubState = 2;
+                        PhaseTimer = 0;
+                        NPC.netUpdate = true;
+                    }
+                    break;
+                }
+                case 2: { //释放
+                    targetFrame = 4;
+                    if (PhaseTimer == 1) {
+                        SoundEngine.PlaySound(SoundID.Item73 with { Pitch = 0.2f }, NPC.Center);
+                        ACMScreenShakeSystem.Add(8f);
+                        if (!VaultUtils.isClient) {
+                            if (isFan) {
+                                int n = 11;
+                                float baseAng = NPC.SafeDirectionTo(target.Center).ToRotation();
+                                float spread = MathHelper.ToRadians(70);
+                                for (int i = 0; i < n; i++) {
+                                    float a = baseAng + MathHelper.Lerp(-spread / 2, spread / 2, i / (float)(n - 1));
+                                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, a.ToRotationVector2() * 12f
+                                        , ModContent.ProjectileType<GhostFireProj>(), GetBossDamage(0.8f), 2f, Main.myPlayer);
+                                }
+                            }
+                            else {
+                                int n = 26;
+                                for (int i = 0; i < n; i++) {
+                                    float a = MathHelper.TwoPi * i / n;
+                                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, a.ToRotationVector2() * 10f
+                                        , ModContent.ProjectileType<GhostFireProj>(), GetBossDamage(0.8f), 2f, Main.myPlayer);
+                                }
+                            }
+                        }
+                    }
+                    if (PhaseTimer > 50) {
+                        SubState = 0;
+                        PhaseTimer = 0;
+                        if (!VaultUtils.isClient) {
+                            altarIndex = (altarIndex + 1) % 4;
+                            NPC.netUpdate = true;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
+        private Vector2 GetAltarPos(int index) {
+            float r = 520f;
+            return arenaCenter + (MathHelper.PiOver2 * index + MathHelper.PiOver4).ToRotationVector2() * r;
+        }
+
+        private static void ClearHostileBullets() {
+            int t1 = ModContent.ProjectileType<OblivionFireOrb>();
+            int t2 = ModContent.ProjectileType<GhostFireProj>();
+            int t3 = ModContent.ProjectileType<HoqingCorpseChain>();
+            foreach (var proj in Main.ActiveProjectiles) {
+                if (proj.hostile && (proj.type == t1 || proj.type == t2 || proj.type == t3)) {
+                    proj.Kill();
+                    proj.netUpdate = true;
+                }
+            }
         }
 
         public override void HitEffect(NPC.HitInfo hit) {
@@ -317,20 +651,6 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
                 Gore.NewGore(entitySource, NPC.position, new Vector2(Main.rand.Next(-6, 7), Main.rand.Next(-6, 7)), Hoqing_Left);
                 Gore.NewGore(entitySource, NPC.position, new Vector2(Main.rand.Next(-6, 7), Main.rand.Next(-6, 7)), Hoqing_Top);
             }
-        }
-
-        private void TeleportNearTarget(Player target) {
-            Vector2 offset = Main.rand.NextVector2Unit() * Main.rand.Next(300, 500);
-            NPC.position = target.Center + offset - NPC.Size / 2f;
-
-            //粒子效果
-            for (int i = 0; i < 30; i++) {
-                Vector2 dustVel = Main.rand.NextVector2Circular(3f, 3f);
-                Dust.NewDustPerfect(NPC.Center, DustID.GreenTorch, dustVel, 100, Color.Magenta, 1.5f).noGravity = true;
-            }
-
-            //音效
-            SoundEngine.PlaySound(SoundID.Item8, NPC.Center);//魔法瞬移声
         }
 
         private new void FindFrame(int targetFrame) {
@@ -371,384 +691,32 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
                 , NPC.rotation, rectangle2.Size() / 2, NPC.scale, SpriteEffects.None, 0);
             return false;
         }
-    }
 
-    internal class HoqingRingFire : ModProjectile
-    {
-        public override string Texture => "AncientChineseMythology/NPCs/Boss/Hoqings/GhostFire";
-        public override void SetStaticDefaults() {
-            ProjectileID.Sets.TrailingMode[Type] = 3;
-            ProjectileID.Sets.TrailCacheLength[Type] = 12;
-        }
-        public override void SetDefaults() {
-            Projectile.width = Projectile.height = 32;
-            Projectile.friendly = false;
-            Projectile.hostile = true;
-            Projectile.penetrate = -1;
-            Projectile.tileCollide = false;
-            Projectile.ignoreWater = true;
-            Projectile.timeLeft = 300;
-        }
-
-        public static void AllVanish(int npc) {
-            foreach (var proj in Main.ActiveProjectiles) {
-                if (proj.type != ModContent.ProjectileType<HoqingRingFire>() || proj.ai[0] != npc) {
-                    continue;
-                }
-                proj.localAI[1] = 1f;
-                proj.netUpdate = true;
-            }
-        }
-
-        public override void AI() {
-            NPC boss = Main.npc[(int)Projectile.ai[0]];
-            if (boss.Alives()) {
-                Projectile.timeLeft = 2;
-                Projectile.ai[1] += 0.2f;
-                Vector2 targetPos = boss.Center + (Projectile.ai[1] + Projectile.ai[2]).ToRotationVector2() * Projectile.localAI[0];
-                Projectile.velocity = Projectile.Center.To(targetPos);
-                Projectile.rotation = 0;
-                if (Projectile.localAI[0] < 900 && Projectile.localAI[1] == 0) {
-                    Projectile.localAI[0] += 10;
-                }
-            }
-            else {
-                Projectile.localAI[1] = 1f;
-            }
-
-            if (Projectile.localAI[1] == 1) {
-                if (Projectile.localAI[0] > 0) {
-                    Projectile.localAI[0] -= 10;
-                }
-                else {
-                    Projectile.Kill();
-                }
-            }
-
-            if (VaultUtils.isServer) {
+        // ===== 全屏 screenTarget 限视尸雾 (GenericWarp · fog) — 占本帧唯一全屏名额 (§C.4#2) =====
+        public override void PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+            if (Main.dedServ || fogWarp <= 0.02f)
                 return;
-            }
-
-            VaultUtils.ClockFrame(ref Projectile.frame, 5, 3);
-
-            //粒子拖尾（多种颜色/变化大小）
-            for (int i = 0; i < 2; i++) {
-                Vector2 offset = Projectile.velocity * -0.2f * i;
-                int dust = Dust.NewDust(Projectile.position + offset, Projectile.width, Projectile.height, DustID.GreenTorch,
-                    0f, 0f, 150, Color.Lerp(Color.Lime, Color.Cyan, Main.rand.NextFloat()), Main.rand.NextFloat(1.2f, 2.4f));
-                Main.dust[dust].velocity *= 0.1f;
-                Main.dust[dust].noGravity = true;
-            }
-        }
-
-        public override bool PreDraw(ref Color lightColor) {
-            Texture2D tex = TextureAssets.Projectile[Type].Value;
-            Rectangle rect = VaultUtils.GetRectangle(tex, Projectile.frame, 4);
-            Vector2 origin = rect.Size() / 2f;
-
-            Color baseColor = Color.Lerp(Color.LimeGreen, Color.Cyan, 0.5f);
-            float scale = Projectile.scale;
-
-            //绘制残影（幽光拖尾）
-            float alpha = 0.4f;
-            for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                Vector2 pos = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
-                float fade = alpha * (1f - i / (float)Projectile.oldPos.Length);
-                Main.spriteBatch.Draw(tex, pos, rect, baseColor * fade, Projectile.rotation, origin, scale, SpriteEffects.None, 0f);
-            }
-
-            //主体 + 发光外层
-            Vector2 drawPos = Projectile.Center - Main.screenPosition;
-            Main.spriteBatch.Draw(tex, drawPos, rect, baseColor, Projectile.rotation, origin, scale, SpriteEffects.None, 0f);
-
-            //外层发光（更大的，半透明）
-            Main.spriteBatch.Draw(tex, drawPos, rect, baseColor * 0.3f, Projectile.rotation, origin, scale * 1.4f, SpriteEffects.None, 0f);
-
-            return false;
-        }
-    }
-
-    internal class HoqingShadow : ModProjectile
-    {
-        public override string Texture => "AncientChineseMythology/NPCs/Boss/Hoqings/Hoqing";
-        public override void SetDefaults() {
-            Projectile.width = Projectile.height = 32;
-            Projectile.friendly = false;
-            Projectile.hostile = true;
-            Projectile.penetrate = -1;
-            Projectile.tileCollide = false;
-            Projectile.ignoreWater = true;
-            Projectile.timeLeft = 120;
-        }
-
-        public override void AI() {
-            if (Projectile.ai[0] == 0) {
-                Projectile.ai[1] = 1f;
-                Projectile.frame = Main.rand.Next(4);
-            }
-
-            Projectile.velocity *= 0.98f;
-
-            Projectile.position += Main.npc[(int)Projectile.ai[2]].velocity;
-
-            Projectile.ai[0]++;
-
-            Projectile.ai[1] *= 0.9f;
-            if (Projectile.ai[1] < 0.05f) {
-                Projectile.Kill();
-            }
-        }
-
-        public override bool PreDraw(ref Color lightColor) {
-            Texture2D mainValue = TextureAssets.Projectile[Type].Value;
-            Rectangle rectangle = VaultUtils.GetRectangle(mainValue, Projectile.frame, 4);
-            Main.spriteBatch.Draw(mainValue, Projectile.Center - Main.screenPosition, rectangle, Color.White * Projectile.ai[1]
-                , Projectile.rotation, rectangle.Size() / 2, Projectile.scale, SpriteEffects.None, 0);
-            return false;
-        }
-    }
-
-    internal class OblivionFireOrb : ModProjectile
-    {
-        public override void SetStaticDefaults() {
-            ProjectileID.Sets.TrailingMode[Type] = 2;
-            ProjectileID.Sets.TrailCacheLength[Type] = 12;
-        }
-
-        public override void SetDefaults() {
-            Projectile.width = Projectile.height = 32;
-            Projectile.friendly = false;
-            Projectile.hostile = true;
-            Projectile.penetrate = -1;
-            Projectile.tileCollide = false;
-            Projectile.ignoreWater = true;
-            Projectile.timeLeft = 300;
-        }
-
-        public override void AI() {
-            //自旋转
-            Projectile.rotation += 0.1f;
-
-            //微漂浮扰动轨迹
-            Projectile.velocity += new Vector2(
-                (float)Math.Sin(Projectile.ai[0] + Projectile.whoAmI) * 0.05f,
-                (float)Math.Cos(Projectile.ai[0] + Projectile.whoAmI) * 0.05f);
-
-            //增加颜色周期变化
-            Projectile.ai[0] += 0.05f;
-
-            if (!VaultUtils.isServer) {
-                for (int i = 0; i < 1; i++) {
-                    Vector2 dustOffset = Projectile.velocity * -0.5f;
-                    int dust = Dust.NewDust(Projectile.Center + dustOffset, 0, 0, DustID.Shadowflame, 0, 0, 150, default, Main.rand.NextFloat(1.2f, 2.2f));
-                    Main.dust[dust].velocity *= 0.3f;
-                    Main.dust[dust].noGravity = true;
-                    Main.dust[dust].fadeIn = 1f;
-                }
-            }
-        }
-
-        public override bool PreDraw(ref Color lightColor) {
-            Texture2D tex = TextureAssets.Projectile[Type].Value;
-            Vector2 origin = tex.Size() / 2f;
-
-            Color coreColor = Color.Lerp(Color.MediumPurple, Color.DeepPink, (float)Math.Sin(Projectile.ai[0]) * 0.5f + 0.5f);
-
-            float trailOpacity = 0.35f;
-            for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                float fade = trailOpacity * (1f - i / (float)Projectile.oldPos.Length);
-                Vector2 pos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                Color color = Color.Lerp(coreColor, Color.Black, i / (float)Projectile.oldPos.Length) * fade;
-                Main.spriteBatch.Draw(tex, pos, null, color, Projectile.rotation, origin, Projectile.scale, SpriteEffects.None, 0);
-            }
-
-            float glowScale = 1.4f + 0.1f * (float)Math.Sin(Projectile.ai[0] * 2);
-            Color glowColor = coreColor * 0.25f;
-            Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, glowColor, Projectile.rotation, origin, Projectile.scale * glowScale, SpriteEffects.None, 0f);
-            Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, coreColor, Projectile.rotation, origin, Projectile.scale, SpriteEffects.None, 0f);
-
-            return false;
-        }
-    }
-
-    internal class GhostFireProj : ModProjectile
-    {
-        public override string Texture => "AncientChineseMythology/NPCs/Boss/Hoqings/GhostFire";
-        public override void SetStaticDefaults() {
-            ProjectileID.Sets.TrailingMode[Type] = 3;
-            ProjectileID.Sets.TrailCacheLength[Type] = 12;
-        }
-        public override void SetDefaults() {
-            Projectile.width = Projectile.height = 32;
-            Projectile.friendly = false;
-            Projectile.hostile = true;
-            Projectile.penetrate = -1;
-            Projectile.tileCollide = false;
-            Projectile.ignoreWater = true;
-            Projectile.timeLeft = 300;
-        }
-
-        public override void AI() {
-            Projectile.rotation = Projectile.velocity.ToRotation() + MathHelper.PiOver2;
-
-            if (VaultUtils.isServer) {
+            if (!ACMShaders.RequestFullscreenSlot())
                 return;
-            }
 
-            VaultUtils.ClockFrame(ref Projectile.frame, 5, 3);
-
-            //粒子拖尾（多种颜色/变化大小）
-            for (int i = 0; i < 2; i++) {
-                Vector2 offset = Projectile.velocity * -0.2f * i;
-                int dust = Dust.NewDust(Projectile.position + offset, Projectile.width, Projectile.height, DustID.GreenTorch,
-                    0f, 0f, 150, Color.Lerp(Color.Lime, Color.Cyan, Main.rand.NextFloat()), Main.rand.NextFloat(1.2f, 2.4f));
-                Main.dust[dust].velocity *= 0.1f;
-                Main.dust[dust].noGravity = true;
-            }
-
-            //抖动灵动感
-            Projectile.position += Main.rand.NextVector2Circular(0.5f, 0.5f);
-        }
-
-        public override bool PreDraw(ref Color lightColor) {
-            Texture2D tex = TextureAssets.Projectile[Type].Value;
-            Rectangle rect = VaultUtils.GetRectangle(tex, Projectile.frame, 4);
-            Vector2 origin = rect.Size() / 2f;
-
-            Color baseColor = Color.Lerp(Color.LimeGreen, Color.Cyan, 0.5f);
-            float scale = Projectile.scale;
-
-            //绘制残影（幽光拖尾）
-            float alpha = 0.4f;
-            for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                Vector2 pos = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
-                float fade = alpha * (1f - i / (float)Projectile.oldPos.Length);
-                Main.spriteBatch.Draw(tex, pos, rect, baseColor * fade, Projectile.rotation, origin, scale, SpriteEffects.None, 0f);
-            }
-
-            //主体 + 发光外层
-            Vector2 drawPos = Projectile.Center - Main.screenPosition;
-            Main.spriteBatch.Draw(tex, drawPos, rect, baseColor, Projectile.rotation, origin, scale, SpriteEffects.None, 0f);
-
-            //外层发光（更大的，半透明）
-            Main.spriteBatch.Draw(tex, drawPos, rect, baseColor * 0.3f, Projectile.rotation, origin, scale * 1.4f, SpriteEffects.None, 0f);
-
-            return false;
-        }
-    }
-
-    internal class GhostFire : ModNPC
-    {
-        private int frame;
-        private const int maxFrame = 4;
-        public override void SetStaticDefaults() {
-            Main.npcFrameCount[Type] = 4;
-            NPCID.Sets.TrailingMode[Type] = 1;
-            NPCID.Sets.TrailCacheLength[Type] = 8;
-        }
-        public override void SetDefaults() {
-            NPC.width = 40;
-            NPC.height = 140;
-            NPC.defense = 25;
-            NPC.damage = 60;
-            NPC.value = Item.buyPrice(0, 5, 0, 0);
-            NPC.lifeMax = 120000;
-            NPC.aiStyle = -1;
-            AIType = -1;
-            NPC.knockBackResist = 0f;
-            NPC.noGravity = true;
-            NPC.noTileCollide = true;
-            NPC.HitSound = SoundID.NPCHit9;
-            NPC.DeathSound = SoundID.NPCDeath14;
-            NPC.hide = true;
-        }
-
-        public override void ApplyDifficultyAndPlayerScaling(int numPlayers, float balance, float bossAdjustment) {
-            NPC.lifeMax = 120000;
-            if (Main.expertMode) {
-                NPC.lifeMax += 5000;
-            }
-            if (Main.masterMode) {
-                NPC.lifeMax += 5000;
-            }
-        }
-
-        public override void AI() {
-            //获取Boss实体
-            NPC boss = Main.npc[(int)NPC.ai[0]];
-            if (!boss.active || boss.ModNPC is not Hoqing hoqing) {
-                NPC.active = false;
+            Effect fx = ACMShaders.GenericWarp;
+            if (fx == null)
                 return;
-            }
 
-            //轨道参数
-            float orbitRadius = 100f + 20f * (float)Math.Sin(Main.GlobalTimeWrappedHourly * 0.5f + NPC.ai[1]); //动态半径变化
-            float orbitSpeed = 1.2f;     //转速
-            float verticalRange = 30f;   //上下活动范围
-            float wobbleStrength = 10f;  //左右/上下扰动
-            float twistFrequency = 0.3f;
+            Vector2 centerUV = (NPC.Center - Main.screenPosition) / new Vector2(Main.screenWidth, Main.screenHeight);
+            float aspect = (float)Main.screenWidth / Main.screenHeight;
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uCenter"]?.SetValue(centerUV);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(fogWarp, 0f, 1f));
+            fx.Parameters["uAspect"]?.SetValue(aspect);
+            fx.Parameters["uRadius"]?.SetValue(1.0f);
+            fx.Parameters["uWarpScale"]?.SetValue(0.75f);
+            fx.Parameters["uChroma"]?.SetValue(0.2f);
+            fx.Parameters["uRadialPull"]?.SetValue(0f);
+            fx.Parameters["uMode"]?.SetValue(2f); // fog
+            fx.Parameters["uTint"]?.SetValue(new Vector4(TelegraphColors.GhostGreen.ToVector3(), 0.45f));
 
-            float time = Main.GlobalTimeWrappedHourly;
-            float angleOffset = NPC.ai[1]; //唯一轨迹偏移
-            float baseAngle = time * orbitSpeed + angleOffset;
-
-            //基础旋转轨迹（绕Boss）
-            Vector2 orbitPos = baseAngle.ToRotationVector2() * orbitRadius;
-
-            //加入飘忽扰动（上下/左右浮动、微随机）
-            float floatX = (float)Math.Sin(time * 2f + angleOffset * 2f) * wobbleStrength;
-            float floatY = (float)Math.Cos(time * 1.5f + angleOffset * 3f) * verticalRange;
-
-            Vector2 floatOffset = new Vector2(floatX, floatY);
-
-            //模拟Z轴偏移（远近感）
-            float scaleZ = 1.0f + 0.1f * (float)Math.Sin(time * twistFrequency + angleOffset);
-            NPC.scale = scaleZ;
-
-            //最终目标位置 = Boss中心 + 旋转偏移 + 漂浮扰动
-            Vector2 targetPos = boss.Center + orbitPos + floatOffset;
-
-            //平滑漂移过去，营造灵异感
-            float inertia = 20f;
-            NPC.Center = Vector2.Lerp(NPC.Center, targetPos, 1f / inertia);
-
-            //禁止旋转，强制朝向
-            NPC.rotation = 0f;
-
-            NPC.position += boss.velocity;
-
-            if (++NPC.ai[2] > 60 + NPC.ai[1] * 10) {
-                NPC.ai[2] = 0;
-                SoundEngine.PlaySound(SoundID.Item103 with { Pitch = -0.2f }, NPC.Center);
-                if (!VaultUtils.isClient) {
-                    Player player = Main.player[NPC.target];
-                    Vector2 ver = NPC.Center.To(player.Center).UnitVector() * 13;
-                    Projectile.NewProjectile(NPC.FromObjectGetParent(), NPC.Center, ver
-                        , ModContent.ProjectileType<GhostFireProj>(), NPC.damage / 2, 2);
-                }
-            }
-
-            //帧动画更新
-            VaultUtils.ClockFrame(ref frame, 5, maxFrame - 1);
-        }
-
-        public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
-            Texture2D mainValue = TextureAssets.Npc[Type].Value;
-            Rectangle rectangle = VaultUtils.GetRectangle(mainValue, frame, maxFrame);
-            float sengs = 0.2f;
-            for (int i = 0; i < NPC.oldPos.Length; i++) {
-                Vector2 drawOldPos = NPC.oldPos[i] + NPC.Size / 2 - Main.screenPosition;
-                spriteBatch.Draw(mainValue, drawOldPos, rectangle, drawColor * sengs
-                    , 0, rectangle.Size() / 2, NPC.scale, SpriteEffects.None, 0);
-                sengs *= 0.8f;
-            }
-            spriteBatch.Draw(mainValue, NPC.Center - Main.screenPosition, rectangle, Color.White
-                , NPC.rotation, rectangle.Size() / 2, NPC.scale, SpriteEffects.None, 0);
-            return false;
-        }
-
-        public override void DrawBehind(int index) {
-            Main.instance.DrawCacheNPCProjectiles.Add(index);
+            ACMShaders.ApplyScreenPostProcess(spriteBatch, fx);
         }
     }
 }

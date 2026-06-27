@@ -1,3 +1,4 @@
+using AncientChineseMythology.Helpers;
 using AncientChineseMythology.Underworlds.Boss.Spectres;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -10,6 +11,58 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Underworlds.Boss.Spectres.Items
 {
+    /// <summary>
+    /// 鬼火灯笼专用全屏后处理小工具 (走 <see cref="ACMShaders.RequestFullscreenSlot"/> 名额仲裁,
+    /// 同屏 ≤ 1; 仅在签名时刻短暂触发, 严守工具箱 §C.4#2)。
+    /// </summary>
+    internal static class WraithLanternFX
+    {
+        /// <summary>咬定锚点的局部虚空折射扭曲 (GenericWarp · refraction)。</summary>
+        public static void BiteWarp(Vector2 worldCenter, float intensity) {
+            if (Main.dedServ || intensity <= 0.01f)
+                return;
+            if (!ACMShaders.RequestFullscreenSlot())
+                return;
+            Effect fx = ACMShaders.GenericWarp;
+            if (fx == null)
+                return;
+            Vector2 uv = (worldCenter - Main.screenPosition) / new Vector2(Main.screenWidth, Main.screenHeight);
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uCenter"]?.SetValue(uv);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(intensity, 0f, 1f));
+            fx.Parameters["uRadius"]?.SetValue(0.13f);
+            fx.Parameters["uAspect"]?.SetValue((float)Main.screenWidth / Main.screenHeight);
+            fx.Parameters["uWarpScale"]?.SetValue(1.1f);
+            fx.Parameters["uChroma"]?.SetValue(0.7f);
+            fx.Parameters["uRadialPull"]?.SetValue(0.5f);
+            fx.Parameters["uMode"]?.SetValue(5f); // refraction
+            fx.Parameters["uTint"]?.SetValue(new Vector4(SpectreHelper.SpectreCyan.ToVector3(), 0.35f));
+            ACMShaders.ApplyScreenPostProcess(Main.spriteBatch, fx, bindNoise: true);
+        }
+
+        /// <summary>燃尽收束的青黄魂火定调 (ElementalScreenTint, 处决级短暂染屏, 强度 ≤ 0.15)。</summary>
+        public static void SoulFireTint(float intensity) {
+            if (Main.dedServ || Main.gameMenu || intensity <= 0.01f)
+                return;
+            if (!ACMShaders.RequestFullscreenSlot())
+                return;
+            Effect fx = ACMShaders.ElementalScreenTint;
+            if (fx == null)
+                return;
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(intensity, 0f, 0.15f));
+            fx.Parameters["uAspect"]?.SetValue((float)Main.screenWidth / Main.screenHeight);
+            fx.Parameters["uTint"]?.SetValue(new Vector4(SpectreHelper.SpectreCyan.ToVector3(), 0.45f));
+            fx.Parameters["uTint2"]?.SetValue(new Vector4(SpectreHelper.SpectreGold.ToVector3(), 0f));
+            fx.Parameters["uVignette"]?.SetValue(0.55f);
+            fx.Parameters["uFogScale"]?.SetValue(2.6f);
+            SpriteBatch sb = Main.spriteBatch;
+            sb.End();
+            ACMShaders.DrawFullscreenOverlay(fx, BlendState.AlphaBlend);
+            ACMShaders.RestoreDefaultBatch(sb);
+        }
+    }
+
     /// <summary>
     /// 鬼火灯笼体 — 双灯之一，环绕目标或鼠标锚点。
     /// </summary>
@@ -27,6 +80,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres.Items
 
         private ref float OrbitPhase => ref Projectile.localAI[0];
         private ref float PulsePhase => ref Projectile.localAI[1];
+        private ref float BiteFlash => ref Projectile.localAI[2]; // 咬定锚点演出衰减标量
 
         private Player Owner => Main.player[Projectile.owner];
 
@@ -57,6 +111,8 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres.Items
 
             PulsePhase += 0.1f;
             OrbitPhase += 0.07f + SlotIndex * 0.01f;
+            if (BiteFlash > 0f)
+                BiteFlash *= 0.9f;
 
             Vector2 anchor = GetAnchorPosition();
             float phaseOffset = SlotIndex == 0f ? 0f : MathHelper.Pi;
@@ -136,18 +192,46 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres.Items
             LatchNpcIndex = target.whoAmI;
             if (TryGetPartner(out Projectile partner)) {
                 partner.ai[2] = target.whoAmI;
+                partner.localAI[2] = 1f;
             }
+            BiteFlash = 1f; // 触发咬定锚点的局部空间折射 (PreDraw 内消费, 更新阶段不绘制)
 
             target.AddBuff(BuffID.Frostburn, 180);
             target.AddBuff(BuffID.ShadowFlame, 180);
             SpectreHelper.CreateSpectreBurst(Projectile.Center, 36f, (int)SlotIndex, 8);
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), Projectile.Center,
+                ACMWeaponBurst.SoulFire, scale: 0.85f, owner: Projectile.owner);
             SoundEngine.PlaySound(SoundID.Item125 with { Pitch = 0.15f, Volume = 0.7f }, Projectile.Center);
         }
 
         public override bool PreDraw(ref Color lightColor) {
             Color core = SlotIndex == 0f ? SpectreHelper.SpectreCyan : SpectreHelper.SpectreYellow;
             Color glow = SlotIndex == 0f ? SpectreHelper.SpectreDeepCyan : SpectreHelper.SpectreGold;
-            SpectreHelper.DrawSpectreCore(Main.spriteBatch, Projectile.Center, core, glow, 0.55f, PulsePhase);
+
+            float pulse = 0.85f + MathF.Sin(PulsePhase) * 0.15f;
+
+            // 咬定锚点: 局部虚空折射扭曲 (GenericWarp, 短促, 走全屏名额)
+            if (BiteFlash > 0.06f)
+                WraithLanternFX.BiteWarp(Projectile.Center, BiteFlash * 0.5f);
+
+            // 灯核: 径向泛光 (名额被占自动退化为柔光, 双灯总有反馈)
+            WeaponVFX.DrawRadialBloom(Projectile.Center, 0.045f * pulse, 0.7f + BiteFlash * 0.3f, core, 6f);
+
+            // 燃尽溶解: 临终把魂体喂 DissolveBurn 灼烧消散
+            float life = Projectile.timeLeft / (float)Lifetime;
+            if (life < 0.18f) {
+                Texture2D soul = SpectreHelper.SoulTexture;
+                if (soul != null) {
+                    float diss = 1f - life / 0.18f;
+                    WeaponVFX.ApplyDissolveBurn(soul, Projectile.Center, null, core,
+                        Projectile.rotation, soul.Size() * 0.5f,
+                        scale: 0.5f * pulse, threshold: diss, intensity: 1f - diss * 0.5f,
+                        edgeColor: glow, edgeWidth: 0.1f, noiseScale: 2.4f);
+                }
+            }
+
+            // 灯体怨灵芯 (procedural)
+            SpectreHelper.DrawSpectreCore(Main.spriteBatch, Projectile.Center, core, glow, 0.55f * pulse, PulsePhase);
             return false;
         }
 
@@ -249,22 +333,43 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres.Items
         public override bool PreDraw(ref Color lightColor) {
             if (!TryGetLanterns(out Projectile a, out Projectile b)) return false;
 
-            Color chainColor = Color.Lerp(SpectreHelper.SpectreCyan, SpectreHelper.SpectreYellow,
-                0.5f + MathF.Sin(PulsePhase) * 0.2f);
-            SpectreHelper.DrawSoulChain(Main.spriteBatch, a.Center, b.Center, chainColor, 7f, PulsePhase * 60f);
+            Color core = Color.Lerp(SpectreHelper.SpectreCyan, SpectreHelper.SpectreYellow,
+                0.5f + MathF.Sin(PulsePhase) * 0.25f);
+            Color edge = Color.Lerp(SpectreHelper.SpectreDeepCyan, SpectreHelper.SpectreGold,
+                0.5f + MathF.Cos(PulsePhase) * 0.25f);
 
-            var tex = TextureAssets.Projectile[Type].Value;
-            Vector2 origin = tex.Size() * 0.5f;
-            float pulse = 1f + MathF.Sin(PulsePhase) * 0.12f;
-            Color nodeColor = chainColor;
-            nodeColor.A = 180;
+            // 张力锁链: 链越绷紧 (越长) 芯越细越亮, 越松弛越粗 —— "张力" 可视化
+            float len = Vector2.Distance(a.Center, b.Center);
+            float tension = MathHelper.Clamp(len / 320f, 0f, 1f);
+            float halfWidth = MathHelper.Lerp(11f, 5.5f, tension);
+            float flowPulse = 1f + MathF.Sin(PulsePhase * 1.6f) * 0.15f;
 
-            Main.spriteBatch.Draw(tex, a.Center - Main.screenPosition, null, nodeColor * 0.35f,
-                PulsePhase, origin, 0.35f * pulse, SpriteEffects.None, 0);
-            Main.spriteBatch.Draw(tex, b.Center - Main.screenPosition, null, nodeColor * 0.35f,
-                -PulsePhase, origin, 0.35f * pulse, SpriteEffects.None, 0);
+            // 怨灵锁链 → BeamGrad 流动光束 (双层: 暗宽底 + 亮窄芯)
+            ACMShaders.DrawBeam(a.Center, b.Center, halfWidth * flowPulse, edge with { A = 140 },
+                SpectreHelper.SpectreDarkGreen with { A = 90 }, 0.85f, 1.2f, 2.4f, 2.0f);
+            ACMShaders.DrawBeam(a.Center, b.Center, halfWidth * 0.45f * flowPulse, core with { A = 220 },
+                edge with { A = 140 }, 0.95f, 2.4f, 2.2f, 2.6f);
+
+            // 两端灯结: 柔光节点 (随张力收紧而过曝)
+            float nodeScale = (0.9f + tension * 0.5f) * flowPulse;
+            WeaponVFX.DrawGlowBurst(a.Center, nodeScale, core * 0.7f);
+            WeaponVFX.DrawGlowBurst(b.Center, nodeScale, core * 0.7f);
+
+            // 燃尽收束: 临终青黄魂火短暂染屏 (处决级定调, 强度 ≤ 0.15)
+            if (Projectile.timeLeft <= 14) {
+                float fade = Projectile.timeLeft / 14f;
+                WraithLanternFX.SoulFireTint(0.13f * fade);
+            }
 
             return false;
+        }
+
+        public override void OnKill(int timeLeft) {
+            if (Main.netMode == NetmodeID.Server)
+                return;
+            // 链断收束爆发 (DissolveBurn 由灯体临终自绘, 此处补一记魂火演出)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_Death(), Projectile.Center,
+                ACMWeaponBurst.SoulFire, scale: 1.1f, owner: Projectile.owner);
         }
     }
 }

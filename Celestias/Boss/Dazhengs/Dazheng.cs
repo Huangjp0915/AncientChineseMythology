@@ -16,10 +16,16 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 {
     /// <summary>
-    /// 大椿 - 自然化身，上古树神
-    /// 月球领主后超级Boss，固定不动
-    /// 一阶段：藤蔓弹幕地狱与迷宫 + 树叶雨 + 黄金幻象
-    /// 贴图尺寸：512×280
+    /// 大椿 — 上古树神 (固定不动)，月球领主后超级 Boss。
+    ///
+    /// V2「四季轮转 Cycle of Seasons」重做：
+    ///  ● 保留出色的「破土升起」入场 (290-tick 4 段时间轴) + 收缩竞技场屏障。
+    ///  ● <b>G5 门控</b>：入场后大椿无敌, 四角生成季节锚点; 须先毁 3 个才进入可受伤的季节循环 (4.5M 血"挣得起")。
+    ///  ● <b>四季签名</b>：春(藤蔓迷宫+活体根须安全岛) / 夏(落叶雨) / 秋(黄金幻影诱饵 DPS 谜题) / 冬(减速+冰藤+生命汲取治疗线)。
+    ///    每季 = 一招 + 一条战场规则; 击毁锚点可主动切换主导季节并开破绽窗口。<b>杀掉 Phase2_FuryPatrol</b>。
+    ///  ● 表现走硬化 ACMShaders：PaletteLUT 四季调色 / ElementalScreenTint 季节氛围 / ArenaRunic 根须地纹 / DrawBeam 治疗线。
+    ///
+    /// 贴图尺寸：1024×558。逻辑服务器权威, 绘制 client-only。
     /// </summary>
     [AutoloadBossHead]
     public class Dazheng : ModNPC
@@ -30,12 +36,11 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
         public const int TextureHeight = 558;
         public const float Phase2Threshold = 0.55f;
 
-        // 藤蔓迷宫参数
-        private const int VineMazeInterval = 90;
-        private const int VineWallInterval = 50;
-        private const int VineSpiralInterval = 6;
-        private const int LeafRainInterval = 12;
-        private const int GoldenPhantomInterval = 200;
+        // 锚点角位偏移 (战场四角)
+        private const float AnchorOffsetX = 980f;
+        private const float AnchorOffsetY = 660f;
+        private const int GateAnchorCount = 4;
+        private const int GatePassRemain = 1; // 4 - 3 = 还剩 1 即视为已毁 3 个 → 通过
 
         #endregion
 
@@ -44,19 +49,9 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
         public enum BossPhase
         {
             Intro,
-            Phase1_Idle,
-            Phase1_VineMaze,         // 藤蔓迷宫 - 编织出弹幕墙壁
-            Phase1_VineWhip,         // 藤蔓鞭笞 - 快速伸展的藤蔓链
-            Phase1_LeafStorm,        // 树叶风暴 - 密集落叶雨
-            Phase1_GoldenPhantom,    // 黄金幻象 - 金色分身攻击
-            Phase1_VineSpiral,       // 藤蔓螺旋 - 旋转藤蔓弹幕地狱
-            Phase1_NatureWrath,      // 自然之怒 - 综合攻击
-            PhaseTransition_2,
-            Phase2_VineHell,         // 藤蔓地狱 - 更密集的弹幕
-            Phase2_AncientRoots,     // 远古根须 - 地面涌出的攻击
-            Phase2_GoldenForest,     // 黄金森林 - 多重幻象
-            Phase2_LifeDrain,        // 生命汲取 - 收缩型弹幕
-            Phase2_FuryPatrol        // 狂怒巡逻 - 持续施压
+            Gate,            // G5 门控：毁 3 锚点
+            SeasonCombat,    // 四季轮转主循环
+            PhaseTransition_2
         }
 
         #endregion
@@ -74,13 +69,48 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 
         public bool IsPhase2 => NPC.life < NPC.lifeMax * Phase2Threshold;
 
+        /// <summary>当前主导季节 (0~3, 见 <see cref="DazhengSeasons"/>)。供屏障/天幕换色读取。</summary>
+        public int CurrentSeason => season;
+        /// <summary>门控是否已通过。</summary>
+        public bool GatePassed => gatePassed;
+
+        // —— 季节锚点 → 大椿 的跨实体通信 (服务器权威; 大椿在 AI 中消费) ——
+        internal static int RecentBrokenSeason = -1;
+        internal static ulong RecentBrokenFrame;
+        internal static bool DecoyKilled;
+        internal static ulong DecoyEventFrame;
+        /// <summary>冬季治疗线是否处于汲取阶段 (供 DazhengHealThread 切换视觉)。</summary>
+        public static bool HealThreadActive;
+
         private float globalTime;
         private bool didPhase2Transition;
         private Vector2 spawnPosition;
-        private float vineRotation; // 旋转藤蔓角度
-        private int attackCycle; // 攻击循环计数
-        private float introRiseOffset; // 入场上升偏移量（>0 = 在地下）
-        private bool isRising; // 是否正在上升出场中
+        private float vineRotation;
+        private float introRiseOffset;
+        private bool isRising;
+
+        // 季节状态
+        private int season;          // 0 春 1 夏 2 秋 3 冬 (同步)
+        private bool gatePassed;     // 门控是否通过 (同步)
+        private int defenseDownTimer;// 破绽窗口 (同步)
+        private int baseDef = 100;
+
+        // 视觉/本地
+        private float seasonFlash;   // 季节切换闪光 (本地)
+        private float lutIntensity;  // PaletteLUT 强度 (本地)
+        private Vector4 lutShadow, lutHi;
+        private float lutSat = 1f;
+
+        // 服务器侧追踪 (不同步)
+        private int decoyWhoAmI = -1;
+        private int healThreadWhoAmI = -1;
+        private int rootFieldWhoAmI = -1;
+        private ulong lastConsumedBreakFrame;
+        private bool anchorsSpawned;
+        private int anchorRegrowTimer;
+        private bool decoyWindowOpen;
+        private bool decoyResolved;
+        private bool healBroken;
 
         #endregion
 
@@ -97,7 +127,6 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 
         public override void SetDefaults() {
             NPC.boss = true;
-            // 碰撞箱使用合理尺寸，绘制时用纹理原始尺寸
             NPC.width = 200;
             NPC.height = 200;
             NPC.damage = 250;
@@ -135,7 +164,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
         public override void ModifyNPCLoot(NPCLoot npcLoot) {
             // 自然之斧 - 100%掉落
             npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<TheNaturalAxe>()));
-            // 傲世神木 - 掉落15~25个
+            // 傲世神木 - 掉落45~60个
             npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<ArrogantDivineSylvan>(), minimumDropped: 45, maximumDropped: 60));
         }
 
@@ -143,25 +172,23 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             Phase = BossPhase.Intro;
             PhaseTimer = 0;
             globalTime = 0;
-            // 自动贴地：从召唤位置向下扫描找到地面（此为最终目标位置）
             spawnPosition = FindGroundPosition(NPC.Center);
-            // 初始位置在地下：整个纹理藏在地面以下
             introRiseOffset = TextureHeight + 100f;
             isRising = true;
             NPC.Center = spawnPosition + new Vector2(0, introRiseOffset);
+            // 重置跨实体静态, 防上一场残留
+            RecentBrokenSeason = -1;
+            RecentBrokenFrame = 0;
+            DecoyKilled = false;
+            HealThreadActive = false;
             if (Main.netMode != NetmodeID.MultiplayerClient)
                 NPC.netUpdate = true;
         }
 
-        /// <summary>
-        /// 从给定位置向下扫描物块，找到地面并将Boss底部对齐地面
-        /// Boss的Center会被设置为：地面Y - 纹理高度/2，使树根贴地
-        /// </summary>
         private Vector2 FindGroundPosition(Vector2 startPos) {
             int tileX = (int)(startPos.X / 16f);
             int startTileY = (int)(startPos.Y / 16f);
 
-            // 向下扫描，最多扫描150格（2400像素）
             int groundTileY = startTileY;
             for (int y = startTileY; y < startTileY + 150 && y < Main.maxTilesY - 1; y++) {
                 Tile tile = Framing.GetTileSafely(tileX, y);
@@ -171,9 +198,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 }
             }
 
-            // 地面顶部的世界坐标
             float groundWorldY = groundTileY * 16f;
-            // Boss中心 = 地面Y - 纹理高度的一半（使纹理底部贴地）
             float centerY = groundWorldY - TextureHeight / 2f;
             return new Vector2(startPos.X, centerY);
         }
@@ -185,9 +210,12 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             writer.Write(spawnPosition.X);
             writer.Write(spawnPosition.Y);
             writer.Write(vineRotation);
-            writer.Write(attackCycle);
             writer.Write(introRiseOffset);
             writer.Write(isRising);
+            writer.Write(season);
+            writer.Write(gatePassed);
+            writer.Write(defenseDownTimer);
+            writer.Write(baseDef);
         }
 
         public override void ReceiveExtraAI(BinaryReader reader) {
@@ -196,14 +224,16 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             didPhase2Transition = reader.ReadBoolean();
             spawnPosition = new Vector2(reader.ReadSingle(), reader.ReadSingle());
             vineRotation = reader.ReadSingle();
-            attackCycle = reader.ReadInt32();
             introRiseOffset = reader.ReadSingle();
             isRising = reader.ReadBoolean();
+            season = reader.ReadInt32();
+            gatePassed = reader.ReadBoolean();
+            defenseDownTimer = reader.ReadInt32();
+            baseDef = reader.ReadInt32();
         }
 
         public override bool? DrawHealthBar(byte hbPosition, ref float scale, ref Vector2 position) {
             scale = 2f;
-            // 入场上升阶段隐藏血条
             if (isRising) return false;
             return null;
         }
@@ -217,7 +247,6 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
         }
 
         public override void HitEffect(NPC.HitInfo hit) {
-            // 受击时落叶飞溅
             for (int i = 0; i < 8; i++) {
                 Dust d = Dust.NewDustDirect(NPC.position, NPC.width, NPC.height,
                     DustID.WoodFurniture, hit.HitDirection * 2f, -2f, 150, default, 1.5f);
@@ -247,6 +276,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 
         public override void OnKill() {
             DownedBossSystem.downedDazheng = true;
+            HealThreadActive = false;
             if (Main.netMode != NetmodeID.Server) {
                 PunchCameraModifier modifier = new(NPC.Center,
                     (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(),
@@ -262,20 +292,15 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
         public override void AI() {
             globalTime += 1f / 60f;
 
-            // 固定在原地不动（入场上升期间带偏移）
             NPC.velocity = Vector2.Zero;
             if (spawnPosition != Vector2.Zero) {
-                if (isRising)
-                    NPC.Center = spawnPosition + new Vector2(0, introRiseOffset);
-                else
-                    NPC.Center = spawnPosition;
+                NPC.Center = isRising ? spawnPosition + new Vector2(0, introRiseOffset) : spawnPosition;
             }
 
-            // 入场上升期间绘制在物块之后
             NPC.behindTiles = isRising;
             if (isRising) {
-                for(int i = 0; i < 110; i++)
-                Lighting.AddLight(NPC.Center + VaultUtils.RandVr(0, 500), Color.Green.ToVector3() * 10);
+                for (int i = 0; i < 110; i++)
+                    Lighting.AddLight(NPC.Center + VaultUtils.RandVr(0, 500), Color.Green.ToVector3() * 10);
             }
 
             NPC.TargetClosest();
@@ -296,26 +321,18 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 
             switch (Phase) {
                 case BossPhase.Intro: RunIntro(target); break;
-                case BossPhase.Phase1_Idle: RunPhase1Idle(target); break;
-                case BossPhase.Phase1_VineMaze: RunPhase1VineMaze(target); break;
-                case BossPhase.Phase1_VineWhip: RunPhase1VineWhip(target); break;
-                case BossPhase.Phase1_LeafStorm: RunPhase1LeafStorm(target); break;
-                case BossPhase.Phase1_GoldenPhantom: RunPhase1GoldenPhantom(target); break;
-                case BossPhase.Phase1_VineSpiral: RunPhase1VineSpiral(target); break;
-                case BossPhase.Phase1_NatureWrath: RunPhase1NatureWrath(target); break;
+                case BossPhase.Gate: RunGate(target); break;
+                case BossPhase.SeasonCombat: RunSeasonCombat(target); break;
                 case BossPhase.PhaseTransition_2: RunPhaseTransition2(target); break;
-                case BossPhase.Phase2_VineHell: RunPhase2VineHell(target); break;
-                case BossPhase.Phase2_AncientRoots: RunPhase2AncientRoots(target); break;
-                case BossPhase.Phase2_GoldenForest: RunPhase2GoldenForest(target); break;
-                case BossPhase.Phase2_LifeDrain: RunPhase2LifeDrain(target); break;
-                case BossPhase.Phase2_FuryPatrol: RunPhase2FuryPatrol(target); break;
             }
+
+            UpdateDefenseWindow();
+            UpdateSeasonVisuals();
 
             // 树神的自然光辉
             float glow = 0.6f + MathF.Sin(globalTime * 2f) * 0.2f;
             Lighting.AddLight(NPC.Center, new Vector3(0.3f, 0.6f, 0.15f) * glow);
 
-            // 持续落叶粒子效果
             if (Main.netMode != NetmodeID.Server && Main.rand.NextBool(3)) {
                 Vector2 leafPos = NPC.Center + new Vector2(
                     Main.rand.NextFloat(-TextureWidth / 2, TextureWidth / 2),
@@ -328,8 +345,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
         }
 
         private void CheckPhaseTransition() {
-            if (!didPhase2Transition && IsPhase2 &&
-                Phase != BossPhase.PhaseTransition_2 && Phase != BossPhase.Intro) {
+            if (!didPhase2Transition && IsPhase2 && gatePassed &&
+                Phase == BossPhase.SeasonCombat) {
                 TransitionTo(BossPhase.PhaseTransition_2);
                 didPhase2Transition = true;
             }
@@ -341,86 +358,133 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             AttackTimer = 0;
             SubState = 0;
             vineRotation = 0;
-            attackCycle = 0;
             NPC.netUpdate = true;
         }
 
-        private BossPhase GetRandomPhase1Attack() {
-            attackCycle++;
-            // 每几轮强制插入黄金幻象
-            if (attackCycle % 4 == 0)
-                return BossPhase.Phase1_GoldenPhantom;
-
-            return (BossPhase)(Main.rand.Next(5) switch {
-                0 => (int)BossPhase.Phase1_VineMaze,
-                1 => (int)BossPhase.Phase1_VineWhip,
-                2 => (int)BossPhase.Phase1_LeafStorm,
-                3 => (int)BossPhase.Phase1_VineSpiral,
-                _ => (int)BossPhase.Phase1_NatureWrath
-            });
+        private void UpdateDefenseWindow() {
+            if (defenseDownTimer > 0)
+                defenseDownTimer--;
+            NPC.defense = Math.Max(0, baseDef - (defenseDownTimer > 0 ? 50 : 0));
         }
 
-        private BossPhase GetRandomPhase2Attack() {
-            return (BossPhase)(Main.rand.Next(4) switch {
-                0 => (int)BossPhase.Phase2_VineHell,
-                1 => (int)BossPhase.Phase2_AncientRoots,
-                2 => (int)BossPhase.Phase2_GoldenForest,
-                _ => (int)BossPhase.Phase2_LifeDrain
-            });
+        private void OpenVulnerabilityWindow(int ticks) {
+            defenseDownTimer = Math.Max(defenseDownTimer, ticks);
+            seasonFlash = MathF.Max(seasonFlash, 0.6f);
+            if (Main.netMode != NetmodeID.Server) {
+                SoundEngine.PlaySound(SoundID.Item4 with { Pitch = 0.3f }, NPC.Center);
+            }
+            NPC.netUpdate = true;
         }
 
         #endregion
 
-        #region 入场演出
+        #region 季节核心
 
-        // 入场演出时间轴常量
-        private const int IntroRumbleEnd = 60;       // 0-60: 地面震动预兆
-        private const int IntroRiseEnd = 210;        // 60-210: 从地下上升
-        private const int IntroEruptEnd = 260;       // 210-260: 破土而出爆发
-        private const int IntroFinish = 290;         // 260-290: 收尾，进入战斗
+        private float ArenaRadius => IsPhase2 ? DazhengArenaBarrier.Phase2Radius : DazhengArenaBarrier.Phase1Radius;
+
+        private static int SeasonDuration(int s, bool phase2) {
+            int baseDur = s switch {
+                DazhengSeasons.Spring => 540,
+                DazhengSeasons.Summer => 420,
+                DazhengSeasons.Winter => 540,
+                _ => 480,
+            };
+            return phase2 ? (int)(baseDur * 0.82f) : baseDur;
+        }
+
+        private void AdvanceSeason(int forced) {
+            season = forced;
+            AttackTimer = 0;
+            SubState = 0;
+            vineRotation = 0;
+            seasonFlash = 1f;
+            decoyResolved = false;
+            decoyWindowOpen = false;
+            healBroken = false;
+            HealThreadActive = false;
+            NPC.dontTakeDamage = false; // 各季默认可受伤 (秋季诱饵窗口会自行重置)
+
+            // 切季前清掉上一季的持续载体 (诱饵 / 治疗线)
+            KillTrackedNPC(ref decoyWhoAmI);
+            KillTrackedProjectile(ref healThreadWhoAmI);
+
+            // 活体根须场仅在 春(P2) / 冬 开启
+            UpdateRootField();
+
+            if (Main.netMode != NetmodeID.Server)
+                SoundEngine.PlaySound(SoundID.Item29 with { Pitch = -0.2f, Volume = 0.9f }, NPC.Center);
+            ACMUtils.AddScreenShake(7f);
+            NPC.netUpdate = true;
+        }
+
+        private void RunSeasonCombat(Player target) {
+            // 锚点复生 (服务器)
+            HandleAnchorRegrow();
+            // 消费锚点击毁 → 强制切季 + 破绽窗口 (服务器权威)
+            ConsumeAnchorBreak();
+
+            switch (season) {
+                case DazhengSeasons.Spring: SeasonSpring(target); break;
+                case DazhengSeasons.Summer: SeasonSummer(target); break;
+                case DazhengSeasons.Autumn: SeasonAutumn(target); break;
+                case DazhengSeasons.Winter: SeasonWinter(target); break;
+            }
+        }
+
+        private void ConsumeAnchorBreak() {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
+            if (!gatePassed)
+                return;
+            if (RecentBrokenSeason < 0)
+                return;
+            if (RecentBrokenFrame <= lastConsumedBreakFrame)
+                return;
+            if (Main.GameUpdateCount - RecentBrokenFrame > 6)
+                return; // 太旧, 不消费
+
+            lastConsumedBreakFrame = RecentBrokenFrame;
+            int forced = RecentBrokenSeason;
+            OpenVulnerabilityWindow(180); // 击毁锚点奖励 3s 破绽
+            if (forced != season)
+                AdvanceSeason(forced);
+        }
+
+        #endregion
+
+        #region 入场演出 (保留)
+
+        private const int IntroRumbleEnd = 60;
+        private const int IntroRiseEnd = 210;
+        private const int IntroEruptEnd = 260;
+        private const int IntroFinish = 290;
 
         private void RunIntro(Player target) {
             NPC.dontTakeDamage = true;
-
-            // 地面位置（纹理底部对齐的世界坐标）
             float groundWorldY = spawnPosition.Y + TextureHeight / 2f;
 
-            // ========== 阶段1：地面震动预兆（0-60）==========
             if (PhaseTimer <= IntroRumbleEnd) {
-                // 震动音效
                 if (PhaseTimer == 1) {
-                    SoundEngine.PlaySound(SoundID.Item14 with { Pitch = -0.8f, Volume = 0.6f }, 
+                    SoundEngine.PlaySound(SoundID.Item14 with { Pitch = -0.8f, Volume = 0.6f },
                         new Vector2(spawnPosition.X, groundWorldY));
                 }
-
-                // 持续微弱屏幕震动，强度递增
                 if (PhaseTimer % 4 == 0 && Main.netMode != NetmodeID.Server) {
                     float shakeStr = MathHelper.Lerp(1f, 6f, PhaseTimer / (float)IntroRumbleEnd);
-                    PunchCameraModifier modifier = new(
-                        new Vector2(spawnPosition.X, groundWorldY),
-                        Vector2.UnitY.RotatedByRandom(0.3f),
-                        shakeStr, 3f, 4, 2000f, FullName);
-                    Main.instance.CameraModifiers.Add(modifier);
+                    ACMUtils.AddScreenShake(shakeStr);
                 }
-
-                // 地面裂缝粒子：从地面位置喷出碎石和绿光
                 if (Main.netMode != NetmodeID.Server) {
                     int crackIntensity = (int)MathHelper.Lerp(1, 6, PhaseTimer / (float)IntroRumbleEnd);
                     for (int i = 0; i < crackIntensity; i++) {
-                        // 碎石从地面飞出
-                        Vector2 crackPos = new(
-                            spawnPosition.X + Main.rand.NextFloat(-300, 300),
+                        Vector2 crackPos = new(spawnPosition.X + Main.rand.NextFloat(-300, 300),
                             groundWorldY + Main.rand.NextFloat(-8, 8));
                         Dust d = Dust.NewDustDirect(crackPos, 0, 0, DustID.WoodFurniture,
                             Main.rand.NextFloat(-2f, 2f), Main.rand.NextFloat(-5f, -1f),
                             150, default, Main.rand.NextFloat(1f, 2f));
                         d.noGravity = false;
                     }
-                    // 绿色能量从地面裂缝渗出
                     if (PhaseTimer > 20) {
                         for (int i = 0; i < crackIntensity / 2 + 1; i++) {
-                            Vector2 glowPos = new(
-                                spawnPosition.X + Main.rand.NextFloat(-200, 200),
+                            Vector2 glowPos = new(spawnPosition.X + Main.rand.NextFloat(-200, 200),
                                 groundWorldY + Main.rand.NextFloat(-4, 4));
                             Dust d = Dust.NewDustDirect(glowPos, 0, 0, DustID.GreenTorch,
                                 0, Main.rand.NextFloat(-3f, -1f), 80, default, 1.8f);
@@ -428,16 +492,12 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                         }
                     }
                 }
-
-                // 提供地面位置的光照提示
                 Lighting.AddLight(new Vector2(spawnPosition.X, groundWorldY),
                     new Vector3(0.2f, 0.5f, 0.1f) * (PhaseTimer / (float)IntroRumbleEnd));
             }
 
-            // ========== 阶段2：从地下上升（60-210）==========
             if (PhaseTimer > IntroRumbleEnd && PhaseTimer <= IntroRiseEnd) {
                 float riseProgress = (PhaseTimer - IntroRumbleEnd) / (float)(IntroRiseEnd - IntroRumbleEnd);
-                // 缓入缓出：慢→快→慢的上升节奏
                 float easedProgress = riseProgress < 0.5f
                     ? 4f * riseProgress * riseProgress * riseProgress
                     : 1f - MathF.Pow(-2f * riseProgress + 2f, 3f) / 2f;
@@ -445,39 +505,29 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 float totalRise = TextureHeight + 100f;
                 introRiseOffset = totalRise * (1f - easedProgress);
 
-                // 上升音效
                 if (PhaseTimer == IntroRumbleEnd + 1) {
                     SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.8f, Volume = 0.8f },
                         new Vector2(spawnPosition.X, groundWorldY));
                 }
-                // 上升中段的加速音效
                 if (PhaseTimer == IntroRumbleEnd + 75) {
                     SoundEngine.PlaySound(SoundID.Item14 with { Pitch = -0.4f, Volume = 0.9f },
                         new Vector2(spawnPosition.X, groundWorldY));
                 }
 
-                // 上升过程中的地面特效
                 if (Main.netMode != NetmodeID.Server) {
-                    // 计算当前上升速度用于特效强度
                     float riseSpeed = MathHelper.Clamp(
                         (riseProgress > 0.1f && riseProgress < 0.9f) ? 1.5f : 0.5f, 0f, 2f);
-
-                    // 地面翻涌泥土
                     for (int i = 0; i < (int)(4 * riseSpeed); i++) {
-                        Vector2 dirtPos = new(
-                            spawnPosition.X + Main.rand.NextFloat(-350, 350),
+                        Vector2 dirtPos = new(spawnPosition.X + Main.rand.NextFloat(-350, 350),
                             groundWorldY + Main.rand.NextFloat(-20, 10));
                         Dust d = Dust.NewDustDirect(dirtPos, 0, 0, DustID.WoodFurniture,
                             Main.rand.NextFloat(-3f, 3f), Main.rand.NextFloat(-6f, -2f),
                             120, default, Main.rand.NextFloat(1.5f, 2.5f));
                         d.noGravity = false;
                     }
-
-                    // 藤蔓先于树身从地面钻出
                     if (riseProgress > 0.15f) {
                         for (int i = 0; i < 3; i++) {
-                            Vector2 vinePos = new(
-                                spawnPosition.X + Main.rand.NextFloat(-400, 400),
+                            Vector2 vinePos = new(spawnPosition.X + Main.rand.NextFloat(-400, 400),
                                 groundWorldY - Main.rand.NextFloat(0, 30));
                             Dust d = Dust.NewDustDirect(vinePos, 0, 0, DustID.JungleGrass,
                                 Main.rand.NextFloat(-1f, 1f), Main.rand.NextFloat(-4f, -1f),
@@ -485,293 +535,269 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                             d.noGravity = true;
                         }
                     }
-
-                    // NPC周围的自然能量光环
                     if (riseProgress > 0.3f) {
                         int energyCount = (int)(6 * riseProgress);
                         for (int i = 0; i < energyCount; i++) {
                             float angle = Main.rand.NextFloat(MathHelper.TwoPi);
                             float dist = Main.rand.NextFloat(100, 400) * (1f - riseProgress * 0.5f);
                             Vector2 ePos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * dist;
-                            Dust d = Dust.NewDustDirect(ePos, 0, 0, DustID.GreenTorch,
-                                0, 0, 80, default, 2f);
+                            Dust d = Dust.NewDustDirect(ePos, 0, 0, DustID.GreenTorch, 0, 0, 80, default, 2f);
                             d.noGravity = true;
                             d.velocity = (NPC.Center - ePos).SafeNormalize(Vector2.Zero) * 4f;
                         }
                     }
-
-                    // 持续屏幕震动
-                    if (PhaseTimer % 6 == 0) {
-                        float shakeStr = 3f + riseSpeed * 4f;
-                        PunchCameraModifier modifier = new(
-                            NPC.Center, Vector2.UnitY.RotatedByRandom(0.4f),
-                            shakeStr, 4f, 5, 2500f, FullName);
-                        Main.instance.CameraModifiers.Add(modifier);
-                    }
+                    if (PhaseTimer % 6 == 0)
+                        ACMUtils.AddScreenShake(3f + riseSpeed * 4f);
                 }
 
-                // 光照随上升增强
                 float lightStr = MathHelper.Lerp(0.3f, 0.8f, riseProgress);
                 Lighting.AddLight(NPC.Center, new Vector3(0.3f, 0.6f, 0.15f) * lightStr);
             }
 
-            // ========== 阶段3：破土而出爆发（210-260）==========
             if (PhaseTimer == IntroRiseEnd) {
-                // 完全到达目标位置
                 introRiseOffset = 0f;
                 isRising = false;
-
-                // 爆发音效
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.5f, Volume = 1.4f }, NPC.Center);
                 SoundEngine.PlaySound(SoundID.Item14 with { Pitch = -0.6f, Volume = 1.2f }, NPC.Center);
-
-                // 强力屏幕震动
                 if (Main.netMode != NetmodeID.Server) {
-                    PunchCameraModifier modifier = new(NPC.Center,
-                        (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(),
-                        25f, 12f, 60, 3000f, FullName);
-                    Main.instance.CameraModifiers.Add(modifier);
-                }
-
-                // 爆发泥土碎石四散
-                if (Main.netMode != NetmodeID.Server) {
+                    ACMUtils.AddScreenShake(16f);
                     for (int i = 0; i < 40; i++) {
                         float angle = Main.rand.NextFloat(MathHelper.TwoPi);
                         float speed = Main.rand.NextFloat(4f, 12f);
                         Vector2 debrisPos = new(spawnPosition.X + Main.rand.NextFloat(-200, 200),
                             groundWorldY + Main.rand.NextFloat(-30, 10));
                         Dust d = Dust.NewDustDirect(debrisPos, 0, 0, DustID.WoodFurniture,
-                            MathF.Cos(angle) * speed, MathF.Sin(angle) * speed - 3f,
-                            100, default, Main.rand.NextFloat(2f, 3.5f));
+                            MathF.Cos(angle) * speed, MathF.Sin(angle) * speed - 3f, 100, default, Main.rand.NextFloat(2f, 3.5f));
                         d.noGravity = false;
                     }
-                    // 绿色自然能量环形爆发
                     for (int i = 0; i < 30; i++) {
                         float angle = MathHelper.TwoPi / 30 * i;
                         float speed = Main.rand.NextFloat(6f, 14f);
                         Dust d = Dust.NewDustDirect(NPC.Center, 0, 0, DustID.GreenTorch,
-                            MathF.Cos(angle) * speed, MathF.Sin(angle) * speed,
-                            60, default, 2.5f);
+                            MathF.Cos(angle) * speed, MathF.Sin(angle) * speed, 60, default, 2.5f);
                         d.noGravity = true;
                     }
-                    // 金色粒子环
                     for (int i = 0; i < 20; i++) {
                         float angle = MathHelper.TwoPi / 20 * i;
                         Dust d = Dust.NewDustDirect(NPC.Center, 0, 0, DustID.GoldFlame,
-                            MathF.Cos(angle) * 8f, MathF.Sin(angle) * 8f,
-                            80, default, 3f);
+                            MathF.Cos(angle) * 8f, MathF.Sin(angle) * 8f, 80, default, 3f);
                         d.noGravity = true;
                     }
                 }
-
                 NPC.netUpdate = true;
             }
 
-            // 爆发后的余波特效
             if (PhaseTimer > IntroRiseEnd && PhaseTimer <= IntroEruptEnd) {
                 float eruptFade = 1f - (PhaseTimer - IntroRiseEnd) / (float)(IntroEruptEnd - IntroRiseEnd);
-
                 if (Main.netMode != NetmodeID.Server) {
-                    // 持续扩散的能量波
                     int waveCount = (int)(8 * eruptFade);
                     for (int i = 0; i < waveCount; i++) {
                         float angle = Main.rand.NextFloat(MathHelper.TwoPi);
                         float dist = Main.rand.NextFloat(100, 500);
                         Vector2 ePos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * dist;
-                        Dust d = Dust.NewDustDirect(ePos, 0, 0, DustID.GreenTorch,
-                            0, -1f, 80, default, 2f * eruptFade);
+                        Dust d = Dust.NewDustDirect(ePos, 0, 0, DustID.GreenTorch, 0, -1f, 80, default, 2f * eruptFade);
                         d.noGravity = true;
                     }
-
-                    // 飘落叶片
                     if (PhaseTimer % 3 == 0) {
                         for (int i = 0; i < 4; i++) {
                             Vector2 leafPos = NPC.Center + new Vector2(
                                 Main.rand.NextFloat(-TextureWidth / 2, TextureWidth / 2),
                                 Main.rand.NextFloat(-TextureHeight / 2, 0));
                             Dust d = Dust.NewDustDirect(leafPos, 0, 0, DustID.GrassBlades,
-                                Main.rand.NextFloat(-2f, 2f), Main.rand.NextFloat(1f, 4f),
-                                100, default, 2f);
+                                Main.rand.NextFloat(-2f, 2f), Main.rand.NextFloat(1f, 4f), 100, default, 2f);
                             d.noGravity = false;
                         }
                     }
                 }
-
-                // 光照脉冲
                 Lighting.AddLight(NPC.Center, new Vector3(0.5f, 0.8f, 0.3f) * eruptFade);
             }
 
-            // ========== 阶段4：收尾进入战斗（260-290）==========
             if (PhaseTimer >= IntroEruptEnd && PhaseTimer < IntroFinish) {
-                // 最终稳定阶段的柔和光辉
                 if (Main.netMode != NetmodeID.Server && PhaseTimer % 4 == 0) {
                     for (int i = 0; i < 3; i++) {
                         Vector2 dustPos = NPC.Center + Main.rand.NextVector2Circular(200, 200);
-                        Dust d = Dust.NewDustDirect(dustPos, 0, 0, DustID.GreenTorch,
-                            0, -1f, 100, default, 1.5f);
+                        Dust d = Dust.NewDustDirect(dustPos, 0, 0, DustID.GreenTorch, 0, -1f, 100, default, 1.5f);
                         d.noGravity = true;
                     }
                 }
             }
 
             if (PhaseTimer >= IntroFinish) {
-                NPC.dontTakeDamage = false;
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.3f, Volume = 1.1f }, NPC.Center);
-
-                // 生成限制圈
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
                     Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
                         ModContent.ProjectileType<DazhengArenaBarrier>(),
                         0, 0f, Main.myPlayer, NPC.whoAmI, DazhengArenaBarrier.Phase1Radius);
                 }
-
-                TransitionTo(BossPhase.Phase1_Idle);
+                season = DazhengSeasons.Spring;
+                TransitionTo(BossPhase.Gate);
             }
         }
 
         #endregion
 
-        #region 一阶段：自然之力
+        #region G5 门控
 
-        private void RunPhase1Idle(Player target) {
-            // 待机状态，轻微施压（给予玩家喘息窗口）
-            if (PhaseTimer % 40 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 8f;
-                vel = vel.RotatedByRandom(MathHelper.ToRadians(25f));
-                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                    ModContent.ProjectileType<DazhengVine>(), NPC.damage / 5, 0f, Main.myPlayer);
-            }
+        private void RunGate(Player target) {
+            NPC.dontTakeDamage = true;
 
-            if (PhaseTimer > 120) TransitionTo(GetRandomPhase1Attack());
-        }
-
-        /// <summary>
-        /// 藤蔓迷宫 - 编织出弹幕墙壁迫使玩家在缝隙中穿梭
-        /// </summary>
-        private void RunPhase1VineMaze(Player target) {
-            // 构建藤蔓墙壁：横向和纵向交替生成
-            if (AttackTimer % 30 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int wallType = (int)(AttackTimer / 30) % 4;
-
-                switch (wallType) {
-                    case 0: // 左侧横向藤蔓墙（留缺口）
-                        SpawnVineWall(target.Center, -1, true);
-                        break;
-                    case 1: // 右侧横向藤蔓墙
-                        SpawnVineWall(target.Center, 1, true);
-                        break;
-                    case 2: // 上方纵向藤蔓帘
-                        SpawnVineWall(target.Center, -1, false);
-                        break;
-                    case 3: // 下方纵向藤蔓
-                        SpawnVineWall(target.Center, 1, false);
-                        break;
+            // 生成四角季节锚点 (一次)
+            if (!anchorsSpawned) {
+                anchorsSpawned = true;
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    for (int s = 0; s < GateAnchorCount; s++)
+                        SpawnAnchor(s);
                 }
-                SoundEngine.PlaySound(SoundID.Grass with { Volume = 0.6f }, target.Center);
             }
 
-            // 墙壁间歇期才释放少量追踪藤蔓（避免填满缝隙）
-            if (AttackTimer % 30 >= 15 && AttackTimer % 10 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 9f;
+            // 门控提示: 季节锚点尘埃指引 + 轻压力藤蔓 (telegraphed)
+            if (AttackTimer % 50 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 7f;
                 vel = vel.RotatedByRandom(MathHelper.ToRadians(20f));
                 Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                    ModContent.ProjectileType<DazhengVine>(), NPC.damage / 5, 0f, Main.myPlayer);
+                    ModContent.ProjectileType<DazhengVine>(), NPC.damage / 6, 0f, Main.myPlayer);
             }
 
-            if (AttackTimer > 200) TransitionTo(BossPhase.Phase1_Idle);
-        }
+            // 暴露根脉的金绿核心脉冲 (可读: 现在打不动, 去毁锚点)
+            if (Main.netMode != NetmodeID.Server && AttackTimer % 8 == 0) {
+                float a = Main.rand.NextFloat(MathHelper.TwoPi);
+                Dust d = Dust.NewDustPerfect(NPC.Center + new Vector2(MathF.Cos(a), MathF.Sin(a)) * 120f,
+                    DustID.GreenFairy, Vector2.Zero, 120, default, 1.3f);
+                d.noGravity = true;
+            }
 
-        private void SpawnVineWall(Vector2 center, int direction, bool horizontal) {
-            int vineCount = Main.expertMode ? 12 : 10;
-            int gapIndex = Main.rand.Next(2, vineCount - 3); // 留出缝隙
-            int gapSize = Main.expertMode ? 3 : 4;
-
-            for (int i = 0; i < vineCount; i++) {
-                // 跳过缝隙位置
-                if (i >= gapIndex && i < gapIndex + gapSize) continue;
-
-                Vector2 spawnPos;
-                Vector2 vel;
-                float spacing = 80f;
-
-                if (horizontal) {
-                    spawnPos = center + new Vector2(direction * 700, -vineCount / 2 * spacing + i * spacing);
-                    vel = new Vector2(-direction * 8f, 0);
-                } else {
-                    spawnPos = center + new Vector2(-vineCount / 2 * spacing + i * spacing, direction * 700);
-                    vel = new Vector2(0, -direction * 8f);
-                }
-
-                int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
-                    ModContent.ProjectileType<DazhengVine>(), NPC.damage / 4, 0f, Main.myPlayer);
-                if (proj >= 0 && proj < Main.maxProjectiles)
-                    Main.projectile[proj].timeLeft = 300;
+            // 通过条件: 剩余锚点 ≤ 1 (即已毁 3)
+            if (Main.netMode != NetmodeID.MultiplayerClient && CountAnchors() <= GatePassRemain) {
+                gatePassed = true;
+                NPC.dontTakeDamage = false;
+                lastConsumedBreakFrame = RecentBrokenFrame; // 避免门控末次击毁触发立即切季
+                seasonFlash = 1f;
+                ACMUtils.AddScreenShake(12f);
+                if (Main.netMode != NetmodeID.Server)
+                    SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.6f, Volume = 1.2f }, NPC.Center);
+                AdvanceSeason(DazhengSeasons.Spring);
+                TransitionTo(BossPhase.SeasonCombat);
             }
         }
 
-        /// <summary>
-        /// 藤蔓鞭笞 - 从Boss身体快速伸展的藤蔓鞭
-        /// </summary>
-        private void RunPhase1VineWhip(Player target) {
-            // 多方向藤蔓鞭笞（降低频率，保持单次威胁感）
-            int whipInterval = Main.expertMode ? 14 : 18;
-            if (AttackTimer % whipInterval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int whipCount = Main.expertMode ? 4 : 3;
-                Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
-                float spreadAngle = MathHelper.ToRadians(12f);
-
-                for (int i = -whipCount / 2; i <= whipCount / 2; i++) {
-                    Vector2 vel = toPlayer.RotatedBy(i * spreadAngle) * 18f;
-                    int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                        ModContent.ProjectileType<DazhengVine>(), NPC.damage / 4, 2f, Main.myPlayer);
-                    if (proj >= 0 && proj < Main.maxProjectiles) {
-                        Main.projectile[proj].timeLeft = 120;
-                        Main.projectile[proj].ai[1] = 1f; // 标记为鞭笞模式（更快速）
-                    }
-                }
-                SoundEngine.PlaySound(SoundID.Item153 with { Pitch = -0.3f }, NPC.Center);
-            }
-
-            // 落叶仅在鞭笞间歇期释放，不同时施压
-            if (AttackTimer % whipInterval >= whipInterval / 2 && AttackTimer % 12 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int i = 0; i < 3; i++) {
-                    Vector2 leafPos = target.Center + new Vector2(Main.rand.NextFloat(-400, 400), -600);
-                    Vector2 vel = new Vector2(Main.rand.NextFloat(-2f, 2f), Main.rand.NextFloat(6f, 10f));
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), leafPos, vel,
-                        ModContent.ProjectileType<DazhengLeaf>(), NPC.damage / 5, 0f, Main.myPlayer);
-                }
-            }
-
-            if (AttackTimer > 140) TransitionTo(BossPhase.Phase1_Idle);
+        private Vector2 GetAnchorPos(int s) {
+            return s switch {
+                DazhengSeasons.Spring => NPC.Center + new Vector2(-AnchorOffsetX, -AnchorOffsetY),
+                DazhengSeasons.Summer => NPC.Center + new Vector2(AnchorOffsetX, -AnchorOffsetY),
+                DazhengSeasons.Autumn => NPC.Center + new Vector2(AnchorOffsetX, AnchorOffsetY),
+                _ => NPC.Center + new Vector2(-AnchorOffsetX, AnchorOffsetY),
+            };
         }
 
-        /// <summary>
-        /// 树叶风暴 - 从天空降下密集的树叶雨
-        /// </summary>
-        private void RunPhase1LeafStorm(Player target) {
-            // 天降落叶，波次递增（上限降低，保留可躲空间）
+        private void SpawnAnchor(int s) {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
+            Vector2 pos = GetAnchorPos(s);
+            int idx = NPC.NewNPC(NPC.GetSource_FromAI(), (int)pos.X, (int)pos.Y,
+                ModContent.NPCType<DazhengSeasonAnchor>(), 0, NPC.whoAmI, s);
+            if (idx >= 0 && idx < Main.maxNPCs && Main.netMode == NetmodeID.Server)
+                NetMessage.SendData(MessageID.SyncNPC, number: idx);
+        }
+
+        private int CountAnchors() {
+            int c = 0;
+            int type = ModContent.NPCType<DazhengSeasonAnchor>();
+            foreach (NPC n in Main.ActiveNPCs)
+                if (n.type == type && (int)n.ai[0] == NPC.whoAmI) c++;
+            return c;
+        }
+
+        private bool AnchorExists(int s) {
+            int type = ModContent.NPCType<DazhengSeasonAnchor>();
+            foreach (NPC n in Main.ActiveNPCs)
+                if (n.type == type && (int)n.ai[0] == NPC.whoAmI && (int)n.ai[1] == s) return true;
+            return false;
+        }
+
+        private void HandleAnchorRegrow() {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
+            anchorRegrowTimer++;
+            if (anchorRegrowTimer < 780) // ~13s
+                return;
+            anchorRegrowTimer = 0;
+            // 补回缺失的季节锚点 (保持四季控制可用)
+            for (int s = 0; s < GateAnchorCount; s++) {
+                if (!AnchorExists(s)) {
+                    SpawnAnchor(s);
+                    break;
+                }
+            }
+        }
+
+        #endregion
+
+        #region 春 — 藤蔓迷宫 + 活体根须
+
+        private void SeasonSpring(Player target) {
+            int dur = SeasonDuration(DazhengSeasons.Spring, IsPhase2);
+
+            if (AttackTimer == 1) {
+                if (Main.netMode != NetmodeID.Server)
+                    SoundEngine.PlaySound(SoundID.Grass with { Volume = 0.8f, Pitch = -0.2f }, NPC.Center);
+            }
+
+            // 持久藤蔓迷宫墙: 每 ~75 tick 一道, timeLeft ~8s, 留明显缺口
+            if (AttackTimer % 75 == 10 && Main.netMode != NetmodeID.MultiplayerClient) {
+                int wallType = (int)(AttackTimer / 75) % 4;
+                bool horizontal = wallType < 2;
+                int dir = (wallType % 2 == 0) ? -1 : 1;
+                SpawnVineWall(target.Center, dir, horizontal, persistent: true);
+                if (Main.netMode != NetmodeID.Server)
+                    SoundEngine.PlaySound(SoundID.Grass with { Volume = 0.6f }, target.Center);
+            }
+
+            // 缝隙的安全提示尘 (玉青)
+            if (Main.netMode != NetmodeID.Server && AttackTimer % 6 == 0) {
+                Dust d = Dust.NewDustPerfect(target.Center + Main.rand.NextVector2Circular(30, 30),
+                    DustID.GrassBlades, Vector2.Zero, 150, TelegraphColors.Safe, 1f);
+                d.noGravity = true;
+            }
+
+            // 迷宫"通关"窗口: 存活到本季末 → 破绽 (defense −50)
+            if (AttackTimer == dur - 1 && Main.netMode != NetmodeID.MultiplayerClient) {
+                if (target.active && !target.dead &&
+                    Vector2.Distance(target.Center, NPC.Center) < ArenaRadius)
+                    OpenVulnerabilityWindow(200);
+            }
+
+            if (AttackTimer > dur)
+                AdvanceSeason(DazhengSeasons.Summer);
+        }
+
+        #endregion
+
+        #region 夏 — 落叶雨
+
+        private void SeasonSummer(Player target) {
+            int dur = SeasonDuration(DazhengSeasons.Summer, IsPhase2);
+
             int wave = (int)(AttackTimer / 45);
             int leafPerTick = 2 + wave;
-            if (leafPerTick > 6) leafPerTick = 6;
+            int cap = IsPhase2 ? 7 : 6;
+            if (leafPerTick > cap) leafPerTick = cap;
 
-            if (AttackTimer % 15 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+            if (AttackTimer % (IsPhase2 ? 13 : 15) == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
                 for (int i = 0; i < leafPerTick; i++) {
                     Vector2 spawnPos = target.Center + new Vector2(
                         Main.rand.NextFloat(-600, 600), -500 - Main.rand.NextFloat(0, 200));
-                    Vector2 vel = new Vector2(
-                        Main.rand.NextFloat(-3f, 3f),
-                        Main.rand.NextFloat(5f, 12f));
+                    Vector2 vel = new(Main.rand.NextFloat(-3f, 3f), Main.rand.NextFloat(5f, 12f));
                     Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
                         ModContent.ProjectileType<DazhengLeaf>(), NPC.damage / 5, 0f, Main.myPlayer);
                 }
             }
 
-            // 侧向藤蔓夹击（降低频率和数量，避免与叶雨同时覆盖全屏）
-            if (AttackTimer % 75 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+            // 侧向藤蔓夹击 (telegraphed, 低频)
+            if (AttackTimer % 80 == 40 && Main.netMode != NetmodeID.MultiplayerClient) {
                 float side = Main.rand.NextBool() ? -1f : 1f;
                 for (int i = 0; i < 4; i++) {
                     Vector2 spawnPos = target.Center + new Vector2(side * 600, -200 + i * 120);
-                    Vector2 vel = new Vector2(-side * 10f, 0);
+                    Vector2 vel = new(-side * 10f, 0);
                     int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
                         ModContent.ProjectileType<DazhengVine>(), NPC.damage / 4, 0f, Main.myPlayer);
                     if (proj >= 0 && proj < Main.maxProjectiles)
@@ -779,176 +805,183 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 }
             }
 
-            // 警告音效
-            if (AttackTimer % 45 == 0)
+            if (AttackTimer % 45 == 0 && Main.netMode != NetmodeID.Server)
                 SoundEngine.PlaySound(SoundID.Grass with { Volume = 0.5f, Pitch = 0.3f }, target.Center);
 
-            if (AttackTimer > 240) TransitionTo(BossPhase.Phase1_Idle);
-        }
-
-        /// <summary>
-        /// 黄金幻象 - 在Boss位置生成金色虚影进行攻击
-        /// </summary>
-        private void RunPhase1GoldenPhantom(Player target) {
-            NPC.dontTakeDamage = PhaseTimer < 30;
-
-            if (PhaseTimer == 1) {
-                SoundEngine.PlaySound(SoundID.Item29 with { Pitch = -0.3f, Volume = 1.2f }, NPC.Center);
-            }
-
-            // 蓄力阶段 - 金色粒子汇聚
-            if (PhaseTimer < 30 && Main.netMode != NetmodeID.Server) {
-                for (int i = 0; i < 8; i++) {
-                    float angle = Main.rand.NextFloat(MathHelper.TwoPi);
-                    float dist = Main.rand.NextFloat(100, 400);
-                    Vector2 dustPos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * dist;
-                    Dust d = Dust.NewDustDirect(dustPos, 0, 0, DustID.GoldFlame, 0, 0, 100, default, 2.5f);
-                    d.noGravity = true;
-                    d.velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 6f;
-                }
-            }
-
-            // 释放黄金幻象弹幕
-            if (PhaseTimer == 30 && Main.netMode != NetmodeID.MultiplayerClient) {
-                // 从Boss四周释放多个金色幻象弹
-                int phantomCount = Main.expertMode ? 8 : 6;
-                for (int i = 0; i < phantomCount; i++) {
-                    float angle = MathHelper.TwoPi / phantomCount * i;
-                    Vector2 spawnPos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 200f;
-                    Vector2 vel = (target.Center - spawnPos).SafeNormalize(Vector2.UnitY) * 6f;
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
-                        ModContent.ProjectileType<DazhengGoldenPhantom>(), NPC.damage / 3, 1f, Main.myPlayer);
-                }
-
-                if (Main.netMode != NetmodeID.Server) {
-                    PunchCameraModifier modifier = new(NPC.Center,
-                        Vector2.UnitY, 10f, 6f, 20, 1500f, FullName);
-                    Main.instance.CameraModifiers.Add(modifier);
-                }
-            }
-
-            // 后续追加金色藤蔓
-            if (PhaseTimer > 50 && PhaseTimer % 15 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                float angle = Main.rand.NextFloat(MathHelper.TwoPi);
-                Vector2 spawnPos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 150f;
-                Vector2 vel = (target.Center - spawnPos).SafeNormalize(Vector2.UnitY) * 12f;
-                int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
-                    ModContent.ProjectileType<DazhengVine>(), NPC.damage / 4, 0f, Main.myPlayer);
-                if (proj >= 0 && proj < Main.maxProjectiles)
-                    Main.projectile[proj].ai[2] = 1f; // 金色藤蔓标记
-            }
-
-            if (PhaseTimer > 120) TransitionTo(BossPhase.Phase1_Idle);
-        }
-
-        /// <summary>
-        /// 藤蔓螺旋 - 从Boss处发射旋转的藤蔓弹幕地狱
-        /// </summary>
-        private void RunPhase1VineSpiral(Player target) {
-            vineRotation += 0.05f;
-
-            // 螺旋藤蔓（降低臂数和频率，保留视觉旋转感但留出穿越间隙）
-            if (AttackTimer % 10 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int armCount = Main.expertMode ? 3 : 2;
-                for (int arm = 0; arm < armCount; arm++) {
-                    float angle = vineRotation + MathHelper.TwoPi / armCount * arm;
-                    Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 9f;
-                    int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                        ModContent.ProjectileType<DazhengVine>(), NPC.damage / 4, 0f, Main.myPlayer);
-                    if (proj >= 0 && proj < Main.maxProjectiles)
-                        Main.projectile[proj].timeLeft = 200;
-                }
-            }
-
-            // 反向旋转的内圈落叶（降低频率，不与藤蔓同帧发射）
-            if (AttackTimer % 18 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                float innerAngle = -vineRotation * 1.5f + AttackTimer * 0.08f;
-                for (int i = 0; i < 2; i++) {
-                    float a = innerAngle + i * MathHelper.Pi;
-                    Vector2 vel = new Vector2(MathF.Cos(a), MathF.Sin(a)) * 6f;
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                        ModContent.ProjectileType<DazhengLeaf>(), NPC.damage / 5, 0f, Main.myPlayer);
-                }
-            }
-
-            // 粒子效果
-            if (Main.netMode != NetmodeID.Server) {
-                for (int i = 0; i < 3; i++) {
-                    float angle = vineRotation + Main.rand.NextFloat(MathHelper.TwoPi);
-                    Vector2 dustPos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * Main.rand.NextFloat(50, 200);
-                    Dust d = Dust.NewDustDirect(dustPos, 0, 0, DustID.JungleGrass, 0, 0, 100, default, 1.8f);
-                    d.noGravity = true;
-                    d.velocity = new Vector2(-MathF.Sin(angle), MathF.Cos(angle)) * 3f;
-                }
-            }
-
-            if (AttackTimer > 180) TransitionTo(BossPhase.Phase1_Idle);
-        }
-
-        /// <summary>
-        /// 自然之怒 - 多种攻击综合，体现自然的狂暴力量
-        /// </summary>
-        private void RunPhase1NatureWrath(Player target) {
-            // 分波次攻击，每波之间留出反应窗口
-
-            // 第一波（tick 20）：环形藤蔓爆发
-            if (AttackTimer == 20 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int ringCount = Main.expertMode ? 12 : 10;
-                for (int i = 0; i < ringCount; i++) {
-                    float angle = MathHelper.TwoPi / ringCount * i;
-                    Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 7f;
-                    int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                        ModContent.ProjectileType<DazhengVine>(), NPC.damage / 4, 0f, Main.myPlayer);
-                    if (proj >= 0 && proj < Main.maxProjectiles)
-                        Main.projectile[proj].timeLeft = 250;
-                }
-                SoundEngine.PlaySound(SoundID.Item153 with { Pitch = -0.5f }, NPC.Center);
-            }
-
-            // 第二波（tick 60-130）：落叶暴雨（环形已散开后才开始）
-            if (AttackTimer > 60 && AttackTimer < 130 && AttackTimer % 12 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int i = 0; i < 3; i++) {
-                    Vector2 spawnPos = target.Center + new Vector2(Main.rand.NextFloat(-500, 500), -600);
-                    Vector2 vel = new Vector2(Main.rand.NextFloat(-2f, 2f), Main.rand.NextFloat(7f, 13f));
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
-                        ModContent.ProjectileType<DazhengLeaf>(), NPC.damage / 5, 0f, Main.myPlayer);
-                }
-            }
-
-            // 第三波（tick 140）：黄金弹幕（落叶结束后释放）
-            if (AttackTimer == 140 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int phantomCount = 5;
-                for (int i = 0; i < phantomCount; i++) {
-                    float angle = MathHelper.TwoPi / phantomCount * i + MathHelper.ToRadians(30f);
-                    Vector2 pos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 250f;
-                    Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.UnitY) * 5f;
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, vel,
-                        ModContent.ProjectileType<DazhengGoldenPhantom>(), NPC.damage / 3, 0f, Main.myPlayer);
-                }
-            }
-
-            // 低威胁旋转藤蔓（仅在后半段，且频率降低）
-            vineRotation += 0.04f;
-            if (AttackTimer > 100 && AttackTimer % 20 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int arm = 0; arm < 2; arm++) {
-                    float angle = vineRotation + arm * MathHelper.Pi;
-                    Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 8f;
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                        ModContent.ProjectileType<DazhengVine>(), NPC.damage / 5, 0f, Main.myPlayer);
-                }
-            }
-
-            if (AttackTimer > 190) TransitionTo(BossPhase.Phase1_Idle);
+            if (AttackTimer > dur)
+                AdvanceSeason(DazhengSeasons.Autumn);
         }
 
         #endregion
 
-        #region 阶段转换演出
+        #region 秋 — 黄金幻影·诱饵树 DPS 谜题
+
+        private void SeasonAutumn(Player target) {
+            // 起手: 真身无敌, 暴露金核, 镜像位生成诱饵树
+            if (AttackTimer == 1) {
+                DecoyKilled = false;
+                decoyResolved = false;
+                decoyWindowOpen = true;
+                NPC.dontTakeDamage = true;
+                if (Main.netMode != NetmodeID.Server) {
+                    SoundEngine.PlaySound(SoundID.Item29 with { Pitch = -0.3f, Volume = 1.3f }, NPC.Center);
+                    ACMUtils.AddScreenShake(8f);
+                }
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    float mirrorX = 2f * target.Center.X - NPC.Center.X;
+                    mirrorX = MathHelper.Clamp(mirrorX, NPC.Center.X - ArenaRadius * 0.6f, NPC.Center.X + ArenaRadius * 0.6f);
+                    Vector2 pos = new(mirrorX, NPC.Center.Y);
+                    decoyWhoAmI = NPC.NewNPC(NPC.GetSource_FromAI(), (int)pos.X, (int)pos.Y,
+                        ModContent.NPCType<DazhengDecoyTree>(), 0, NPC.whoAmI);
+                    if (decoyWhoAmI >= 0 && decoyWhoAmI < Main.maxNPCs && Main.netMode == NetmodeID.Server)
+                        NetMessage.SendData(MessageID.SyncNPC, number: decoyWhoAmI);
+                }
+            }
+
+            // 窗口期: 真身金核脉冲 + 轻幻象压力
+            if (decoyWindowOpen) {
+                if (Main.netMode != NetmodeID.Server && AttackTimer % 5 == 0) {
+                    float a = Main.rand.NextFloat(MathHelper.TwoPi);
+                    Dust d = Dust.NewDustPerfect(NPC.Center + new Vector2(MathF.Cos(a), MathF.Sin(a)) * 90f,
+                        DustID.GoldFlame, Vector2.Zero, 100, default, 1.6f);
+                    d.noGravity = true;
+                    d.velocity = (NPC.Center - d.position).SafeNormalize(Vector2.Zero) * 2f;
+                }
+                if (AttackTimer % 30 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 8f;
+                    vel = vel.RotatedByRandom(MathHelper.ToRadians(18f));
+                    int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                        ModContent.ProjectileType<DazhengVine>(), NPC.damage / 5, 0f, Main.myPlayer);
+                    if (proj >= 0 && proj < Main.maxProjectiles)
+                        Main.projectile[proj].ai[2] = 1f; // 金藤
+                }
+
+                // 谜题解决: 诱饵被打掉 (静态事件) → 大破绽; 或诱饵消失 (超时)
+                bool decoyGone = !(decoyWhoAmI >= 0 && decoyWhoAmI < Main.maxNPCs &&
+                                   Main.npc[decoyWhoAmI].active &&
+                                   Main.npc[decoyWhoAmI].type == ModContent.NPCType<DazhengDecoyTree>());
+                bool killedRecently = DecoyKilled && Main.GameUpdateCount - DecoyEventFrame < 30;
+
+                if (decoyGone || killedRecently) {
+                    decoyWindowOpen = false;
+                    decoyResolved = true;
+                    NPC.dontTakeDamage = false;
+                    if (killedRecently) {
+                        OpenVulnerabilityWindow(300); // 解谜成功: 5s 大破绽
+                        if (Main.netMode != NetmodeID.Server) {
+                            SoundEngine.PlaySound(SoundID.Item29 with { Pitch = 0.4f, Volume = 1.4f }, NPC.Center);
+                            ACMUtils.AddScreenShake(10f);
+                        }
+                    }
+                    SubState = AttackTimer; // 记录解决时刻
+                }
+
+                // 安全阀: 极端情况下窗口最长 DazhengDecoyTree.Lifetime + 60
+                if (AttackTimer > DazhengDecoyTree.Lifetime + 60) {
+                    decoyWindowOpen = false;
+                    decoyResolved = true;
+                    NPC.dontTakeDamage = false;
+                }
+                return;
+            }
+
+            // 解决后短余波 → 切冬
+            if (decoyResolved && AttackTimer > SubState + 120)
+                AdvanceSeason(DazhengSeasons.Winter);
+        }
+
+        #endregion
+
+        #region 冬 — 减速 + 冰藤 + 生命汲取治疗线
+
+        private void SeasonWinter(Player target) {
+            int dur = SeasonDuration(DazhengSeasons.Winter, IsPhase2);
+            const int FormEnd = 50;     // 蓄能(安全)阶段
+            int healEnd = dur - 60;     // 汲取阶段结束
+
+            // 冬季减速 (本地玩家, 场内): 冰冻凛冬规则
+            if (Main.netMode != NetmodeID.Server) {
+                Player lp = Main.LocalPlayer;
+                if (lp.active && !lp.dead && Vector2.Distance(lp.Center, NPC.Center) < ArenaRadius)
+                    lp.AddBuff(BuffID.Chilled, 6);
+            }
+
+            // 起手: 生成治疗线 (蓄能, 安全色)
+            if (AttackTimer == 1) {
+                healBroken = false;
+                HealThreadActive = false;
+                if (Main.netMode != NetmodeID.Server)
+                    SoundEngine.PlaySound(SoundID.Item8 with { Pitch = -0.4f, Volume = 0.9f }, NPC.Center);
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    healThreadWhoAmI = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
+                        ModContent.ProjectileType<DazhengHealThread>(), 0, 0f, Main.myPlayer, NPC.whoAmI, NPC.target);
+                }
+            }
+
+            // 续命治疗线投射物
+            KeepThreadAlive();
+
+            bool draining = AttackTimer >= FormEnd && AttackTimer < healEnd && !healBroken;
+            HealThreadActive = draining;
+
+            if (draining) {
+                // 汲取: 大椿回血 (服务器权威, 温和)
+                if (Main.netMode != NetmodeID.MultiplayerClient && AttackTimer % 4 == 0) {
+                    int heal = (int)(NPC.lifeMax * 0.0006f);
+                    if (NPC.life < NPC.lifeMax) {
+                        NPC.life = Math.Min(NPC.lifeMax, NPC.life + heal);
+                        NPC.HealEffect(heal);
+                        NPC.netUpdate = true;
+                    }
+                }
+                // 挣断判定 (服务器权威): 目标冲刺/跳跃 (速度尖峰) → 打断 + 破绽
+                if (Main.netMode != NetmodeID.MultiplayerClient && NPC.target >= 0 && NPC.target < Main.maxPlayers) {
+                    Player t = Main.player[NPC.target];
+                    if (t.active && !t.dead) {
+                        bool dashed = t.velocity.Length() > 11f;
+                        bool leapt = t.velocity.Y < -7.5f;
+                        if (dashed || leapt) {
+                            healBroken = true;
+                            HealThreadActive = false;
+                            KillTrackedProjectile(ref healThreadWhoAmI);
+                            OpenVulnerabilityWindow(200);
+                            if (Main.netMode != NetmodeID.Server) {
+                                SoundEngine.PlaySound(SoundID.Item27 with { Pitch = 0.4f }, NPC.Center);
+                                ACMUtils.AddScreenShake(8f);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 冰藤: 低频、慢速的冰蓝藤蔓 (telegraphed)
+            if (AttackTimer % (IsPhase2 ? 26 : 34) == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                int arms = IsPhase2 ? 3 : 2;
+                vineRotation += 0.5f;
+                for (int a = 0; a < arms; a++) {
+                    float angle = vineRotation + MathHelper.TwoPi / arms * a;
+                    Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 6f;
+                    int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                        ModContent.ProjectileType<DazhengVine>(), NPC.damage / 5, 0f, Main.myPlayer);
+                    if (proj >= 0 && proj < Main.maxProjectiles)
+                        Main.projectile[proj].timeLeft = 220;
+                }
+            }
+
+            if (AttackTimer > dur) {
+                HealThreadActive = false;
+                KillTrackedProjectile(ref healThreadWhoAmI);
+                AdvanceSeason(DazhengSeasons.Spring);
+            }
+        }
+
+        #endregion
+
+        #region 阶段转换演出 (保留骨架)
 
         private void RunPhaseTransition2(Player target) {
             NPC.dontTakeDamage = true;
 
-            // 大地震动效果
             if (Main.netMode != NetmodeID.Server) {
                 for (int i = 0; i < 12; i++) {
                     float angle = MathHelper.TwoPi / 12 * i + globalTime * 3f;
@@ -969,12 +1002,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 
             if (PhaseTimer == 60) {
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.8f, Volume = 1.5f }, NPC.Center);
-                if (Main.netMode != NetmodeID.Server) {
-                    PunchCameraModifier modifier = new(NPC.Center,
-                        (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(),
-                        25f, 12f, 60, 3000f, FullName);
-                    Main.instance.CameraModifiers.Add(modifier);
-                }
+                ACMUtils.AddScreenShake(12f);
+                seasonFlash = 1f;
 
                 // 二阶段收缩限制圈
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
@@ -986,10 +1015,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                             break;
                         }
                     }
-                }
-
-                // 转阶段爆发 - 全向藤蔓+金色弹幕（降低密度，保持气势）
-                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    // 转阶段爆发
                     for (int i = 0; i < 14; i++) {
                         float angle = MathHelper.TwoPi / 14 * i;
                         Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 10f;
@@ -1007,213 +1033,114 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 
             if (PhaseTimer >= 100) {
                 NPC.dontTakeDamage = false;
-                NPC.defense += 20;
+                baseDef = 120;
                 NPC.damage = (int)(NPC.damage * 1.25f);
-                TransitionTo(BossPhase.Phase2_FuryPatrol);
+                // 续接四季循环, 重启当前季节 (P2 更密)
+                AdvanceSeason(season);
+                TransitionTo(BossPhase.SeasonCombat);
             }
         }
 
         #endregion
 
-        #region 二阶段：远古觉醒
+        #region 持续载体管理 (诱饵 / 治疗线 / 根须场)
 
-        private void RunPhase2FuryPatrol(Player target) {
-            // 持续施压 - 藤蔓+落叶交替（降低频率，给更多喘息空间）
-            if (PhaseTimer % 14 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 12f;
-                vel = vel.RotatedByRandom(MathHelper.ToRadians(20f));
-                if (PhaseTimer % 28 == 0) {
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                        ModContent.ProjectileType<DazhengVine>(), NPC.damage / 4, 0f, Main.myPlayer);
-                } else {
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                        ModContent.ProjectileType<DazhengLeaf>(), NPC.damage / 5, 0f, Main.myPlayer);
+        private void UpdateRootField() {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
+            // 活体根须场目标强度: 春(P2) 0.9, 冬 0.65, 其余 0
+            float intensity = season switch {
+                DazhengSeasons.Spring => IsPhase2 ? 0.9f : 0f,
+                DazhengSeasons.Winter => 0.65f,
+                _ => 0f,
+            };
+
+            bool fieldAlive = rootFieldWhoAmI >= 0 && rootFieldWhoAmI < Main.maxProjectiles &&
+                              Main.projectile[rootFieldWhoAmI].active &&
+                              Main.projectile[rootFieldWhoAmI].type == ModContent.ProjectileType<DazhengRootField>();
+
+            if (intensity > 0f) {
+                if (!fieldAlive) {
+                    rootFieldWhoAmI = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
+                        ModContent.ProjectileType<DazhengRootField>(), 0, 0f, Main.myPlayer, NPC.whoAmI, intensity);
+                }
+                else {
+                    Main.projectile[rootFieldWhoAmI].ai[1] = intensity;
+                    Main.projectile[rootFieldWhoAmI].netUpdate = true;
                 }
             }
-
-            if (PhaseTimer > 90) TransitionTo(GetRandomPhase2Attack());
+            else {
+                // 本季不需要根须场: 直接清除, 避免空场残留
+                KillTrackedProjectile(ref rootFieldWhoAmI);
+            }
         }
 
-        /// <summary>
-        /// 藤蔓地狱 - 极度密集的藤蔓弹幕，多层旋转+墙壁
-        /// </summary>
-        private void RunPhase2VineHell(Player target) {
-            vineRotation += 0.07f;
-
-            // 四臂螺旋藤蔓（降低频率，保留臂间空档）
-            if (AttackTimer % 8 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int armCount = 4;
-                for (int arm = 0; arm < armCount; arm++) {
-                    float angle = vineRotation + MathHelper.TwoPi / armCount * arm;
-                    Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 10f;
-                    int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                        ModContent.ProjectileType<DazhengVine>(), NPC.damage / 4, 0f, Main.myPlayer);
-                    if (proj >= 0 && proj < Main.maxProjectiles)
-                        Main.projectile[proj].timeLeft = 180;
-                }
+        private void KeepRootFieldAlive() {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
+            if (rootFieldWhoAmI >= 0 && rootFieldWhoAmI < Main.maxProjectiles) {
+                Projectile p = Main.projectile[rootFieldWhoAmI];
+                if (p.active && p.type == ModContent.ProjectileType<DazhengRootField>())
+                    p.timeLeft = 12;
             }
-
-            // 藤蔓墙（拉大间隔，不与螺旋同帧）
-            if (AttackTimer % 50 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                SpawnVineWall(target.Center, Main.rand.NextBool() ? 1 : -1, Main.rand.NextBool());
-            }
-
-            // 追踪落叶补刀（降低数量和频率）
-            if (AttackTimer % 25 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int i = 0; i < 2; i++) {
-                    Vector2 spawnPos = target.Center + new Vector2(Main.rand.NextFloat(-500, 500), -600);
-                    Vector2 vel = new Vector2(Main.rand.NextFloat(-2f, 2f), Main.rand.NextFloat(8f, 14f));
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
-                        ModContent.ProjectileType<DazhengLeaf>(), NPC.damage / 5, 0f, Main.myPlayer);
-                }
-            }
-
-            if (AttackTimer > 220) TransitionTo(BossPhase.Phase2_FuryPatrol);
         }
 
-        /// <summary>
-        /// 远古根须 - 从玩家周围地面涌出的藤蔓攻击
-        /// </summary>
-        private void RunPhase2AncientRoots(Player target) {
-            // 从下方涌出的藤蔓柱（降低频率和数量）
-            if (AttackTimer % 28 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int rootCount = Main.expertMode ? 5 : 4;
-                for (int i = 0; i < rootCount; i++) {
-                    Vector2 spawnPos = target.Center + new Vector2(
-                        Main.rand.NextFloat(-500, 500), 400);
-                    Vector2 vel = new Vector2(Main.rand.NextFloat(-1f, 1f), -Main.rand.NextFloat(10f, 16f));
-                    int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
-                        ModContent.ProjectileType<DazhengVine>(), NPC.damage / 3, 1f, Main.myPlayer);
-                    if (proj >= 0 && proj < Main.maxProjectiles)
-                        Main.projectile[proj].timeLeft = 200;
-                }
-                SoundEngine.PlaySound(SoundID.Item153 with { Pitch = -0.6f, Volume = 0.8f }, target.Center);
+        private void KeepThreadAlive() {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
+            if (healThreadWhoAmI >= 0 && healThreadWhoAmI < Main.maxProjectiles) {
+                Projectile p = Main.projectile[healThreadWhoAmI];
+                if (p.active && p.type == ModContent.ProjectileType<DazhengHealThread>())
+                    p.timeLeft = 12;
             }
-
-            // 从上方落下对称藤蔓（拉大间隔，不与根须同时发射）
-            if (AttackTimer % 28 >= 14 && AttackTimer % 14 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int i = 0; i < 3; i++) {
-                    Vector2 spawnPos = target.Center + new Vector2(
-                        Main.rand.NextFloat(-400, 400), -500);
-                    Vector2 vel = new Vector2(Main.rand.NextFloat(-1.5f, 1.5f), Main.rand.NextFloat(8f, 14f));
-                    int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
-                        ModContent.ProjectileType<DazhengVine>(), NPC.damage / 4, 0f, Main.myPlayer);
-                    if (proj >= 0 && proj < Main.maxProjectiles)
-                        Main.projectile[proj].timeLeft = 200;
-                }
-            }
-
-            // Boss自身释放旋转藤蔓（大幅降低频率，避免三源重叠）
-            vineRotation += 0.04f;
-            if (AttackTimer % 22 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int arm = 0; arm < 2; arm++) {
-                    float angle = vineRotation + MathHelper.TwoPi / 2 * arm;
-                    Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 7f;
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                        ModContent.ProjectileType<DazhengVine>(), NPC.damage / 5, 0f, Main.myPlayer);
-                }
-            }
-
-            if (AttackTimer > 220) TransitionTo(BossPhase.Phase2_FuryPatrol);
         }
 
-        /// <summary>
-        /// 黄金森林 - 多重黄金幻象同时攻击
-        /// </summary>
-        private void RunPhase2GoldenForest(Player target) {
-            if (PhaseTimer == 1)
-                SoundEngine.PlaySound(SoundID.Item29 with { Pitch = -0.5f, Volume = 1.5f }, NPC.Center);
+        private void KillTrackedProjectile(ref int who) {
+            if (Main.netMode != NetmodeID.MultiplayerClient && who >= 0 && who < Main.maxProjectiles) {
+                Projectile p = Main.projectile[who];
+                if (p.active)
+                    p.Kill();
+            }
+            who = -1;
+        }
 
-            // 三波黄金幻象轮流释放（拉大波次间隔，降低每波数量）
-            if ((AttackTimer == 30 || AttackTimer == 80 || AttackTimer == 130) && Main.netMode != NetmodeID.MultiplayerClient) {
-                int phantomCount = Main.expertMode ? 8 : 6;
-                float offset = AttackTimer * 0.1f;
-                for (int i = 0; i < phantomCount; i++) {
-                    float angle = MathHelper.TwoPi / phantomCount * i + offset;
-                    Vector2 spawnPos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 300f;
-                    Vector2 vel = (target.Center - spawnPos).SafeNormalize(Vector2.UnitY) * 7f;
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
-                        ModContent.ProjectileType<DazhengGoldenPhantom>(), NPC.damage / 3, 1f, Main.myPlayer);
-                }
-
-                if (Main.netMode != NetmodeID.Server) {
-                    PunchCameraModifier modifier = new(NPC.Center,
-                        Vector2.UnitY, 8f, 5f, 15, 1200f, FullName);
-                    Main.instance.CameraModifiers.Add(modifier);
+        private void KillTrackedNPC(ref int who) {
+            // 切季时强制清掉上一季诱饵, 避免残留虚影
+            if (Main.netMode != NetmodeID.MultiplayerClient && who >= 0 && who < Main.maxNPCs) {
+                NPC n = Main.npc[who];
+                if (n.active && n.type == ModContent.NPCType<DazhengDecoyTree>()) {
+                    n.life = 0;
+                    n.active = false;
+                    if (Main.netMode == NetmodeID.Server)
+                        NetMessage.SendData(MessageID.SyncNPC, number: who);
                 }
             }
+            who = -1;
+        }
 
-            // 间隔中藤蔓施压（降低频率，不在幻象释放帧附近发射）
-            bool nearPhantomWave = AttackTimer is >= 25 and <= 35 or >= 75 and <= 85 or >= 125 and <= 135;
-            if (!nearPhantomWave && AttackTimer % 16 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 14f;
-                vel = vel.RotatedByRandom(MathHelper.ToRadians(25f));
-                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                    ModContent.ProjectileType<DazhengVine>(), NPC.damage / 4, 0f, Main.myPlayer);
-            }
+        #endregion
 
-            // 金色粒子效果
+        #region 季节视觉
+
+        private void UpdateSeasonVisuals() {
+            // 切季闪光衰减
+            seasonFlash = MathHelper.Lerp(seasonFlash, 0f, 0.06f);
+
+            // 续命根须场 (若在场)
+            KeepRootFieldAlive();
+
+            // LUT 参数 (PostDraw 用)
+            float lutTarget = gatePassed ? 0.5f : 0.18f;
+            lutIntensity = MathHelper.Lerp(lutIntensity, lutTarget, 0.04f);
+            lutShadow = DazhengSeasons.LutShadow(season);
+            lutHi = DazhengSeasons.LutHighlight(season);
+            lutSat = MathHelper.Lerp(lutSat, DazhengSeasons.LutSaturation(season), 0.05f);
+
+            // 发布季节氛围 (ElementalScreenTint, 廉价第二层)
             if (Main.netMode != NetmodeID.Server) {
-                for (int i = 0; i < 5; i++) {
-                    Vector2 dustPos = NPC.Center + Main.rand.NextVector2Circular(250, 250);
-                    Dust d = Dust.NewDustDirect(dustPos, 0, 0, DustID.GoldFlame, 0, -1f, 100, default, 2f);
-                    d.noGravity = true;
-                }
+                float strength = MathHelper.Clamp(0.55f + seasonFlash * 0.4f, 0f, 1f);
+                DazhengSeasonScreenSystem.Publish(DazhengSeasons.Tint(season), strength, globalTime);
             }
-
-            if (AttackTimer > 180) TransitionTo(BossPhase.Phase2_FuryPatrol);
-        }
-
-        /// <summary>
-        /// 生命汲取 - 从外圈向内收缩的藤蔓牢笼
-        /// </summary>
-        private void RunPhase2LifeDrain(Player target) {
-            // 藤蔓牢笼（减少层数和每层数量，每层留逃脱缺口）
-            if (AttackTimer == 20 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int ring = 0; ring < 3; ring++) {
-                    int vineCount = 16 + ring * 3;
-                    float ringRadius = 500f + ring * 120f;
-                    int gapStart = Main.rand.Next(vineCount); // 随机缺口位置
-                    int gapSize = 3 + ring; // 外圈缺口更大
-                    for (int i = 0; i < vineCount; i++) {
-                        // 跳过缺口位置，确保每层都有逃生路线
-                        if ((i >= gapStart && i < gapStart + gapSize) ||
-                            (gapStart + gapSize > vineCount && i < (gapStart + gapSize) % vineCount))
-                            continue;
-                        float angle = MathHelper.TwoPi / vineCount * i + ring * MathHelper.ToRadians(10f);
-                        Vector2 pos = target.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * ringRadius;
-                        Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.Zero) * (2.5f + ring * 0.8f);
-                        int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, vel,
-                            ModContent.ProjectileType<DazhengVine>(), NPC.damage / 4, 0f, Main.myPlayer);
-                        if (proj >= 0 && proj < Main.maxProjectiles)
-                            Main.projectile[proj].timeLeft = 300;
-                    }
-                }
-                SoundEngine.PlaySound(SoundID.Item153 with { Volume = 1.2f }, target.Center);
-            }
-
-            // 同步追踪黄金幻象（降低频率和数量）
-            if (AttackTimer > 60 && AttackTimer % 40 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int i = 0; i < 3; i++) {
-                    float angle = MathHelper.TwoPi / 3 * i + AttackTimer * 0.05f;
-                    Vector2 pos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 200f;
-                    Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.UnitY) * 8f;
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, vel,
-                        ModContent.ProjectileType<DazhengGoldenPhantom>(), NPC.damage / 3, 0f, Main.myPlayer);
-                }
-            }
-
-            // 落叶雨（降低密度）
-            if (AttackTimer % 20 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int i = 0; i < 3; i++) {
-                    Vector2 spawnPos = target.Center + new Vector2(Main.rand.NextFloat(-500, 500), -600);
-                    Vector2 vel = new Vector2(Main.rand.NextFloat(-3f, 3f), Main.rand.NextFloat(6f, 12f));
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
-                        ModContent.ProjectileType<DazhengLeaf>(), NPC.damage / 5, 0f, Main.myPlayer);
-                }
-            }
-
-            if (AttackTimer > 200) TransitionTo(BossPhase.Phase2_FuryPatrol);
         }
 
         #endregion
@@ -1222,18 +1149,14 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
             Texture2D texture = TextureAssets.Npc[Type].Value;
-            Rectangle frame = new Rectangle(0, 0, texture.Width, texture.Height);
-            // 绘制原点设在纹理底部中心，使树根对齐NPC底部
-            Vector2 origin = new Vector2(TextureWidth / 2f, TextureHeight / 2f);
+            Rectangle frame = new(0, 0, texture.Width, texture.Height);
+            Vector2 origin = new(TextureWidth / 2f, TextureHeight / 2f);
             Vector2 drawPos = NPC.Center - screenPos;
 
-            // 生命低于阈值时轻微发光
+            // 二阶段金色底光
             float glowPulse = 0f;
-            if (IsPhase2) {
+            if (IsPhase2)
                 glowPulse = 0.15f + MathF.Sin(globalTime * 4f) * 0.1f;
-            }
-
-            // 金色底光层（二阶段增强）
             if (glowPulse > 0) {
                 Color goldGlow = new Color(255, 200, 50, 0) * glowPulse;
                 spriteBatch.Draw(texture, drawPos, frame, goldGlow, 0f, origin,
@@ -1243,7 +1166,104 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             // 主体绘制
             spriteBatch.Draw(texture, drawPos, frame, drawColor, 0f, origin, NPC.scale, SpriteEffects.None, 0f);
 
+            // —— 廉价表现叠层 (加性, 不占全屏后处理名额) ——
+            if (!Main.dedServ) {
+                Texture2D soft = ACMAsset.SoftGlow;
+                if (soft != null) {
+                    spriteBatch.End();
+                    spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
+                        DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+                    Vector2 go = soft.Size() / 2f;
+
+                    // 切季闪光 (季节色)
+                    if (seasonFlash > 0.02f) {
+                        Color fc = DazhengSeasons.Tint(season) with { A = 0 };
+                        spriteBatch.Draw(soft, drawPos, null, fc * (0.6f * seasonFlash), 0f, go,
+                            (TextureWidth * 0.9f / soft.Width) * (0.6f + seasonFlash * 0.6f), SpriteEffects.None, 0f);
+                    }
+
+                    // 破绽窗口: 暴露的金核脉冲 (可读: 现在打它)
+                    if (defenseDownTimer > 0) {
+                        float p = 0.5f + 0.5f * MathF.Sin(globalTime * 10f);
+                        Color core = TelegraphColors.Holy with { A = 0 };
+                        spriteBatch.Draw(soft, drawPos - new Vector2(0, TextureHeight * 0.15f), null,
+                            core * (0.5f * p), 0f, go, 1.2f + p * 0.4f, SpriteEffects.None, 0f);
+                    }
+
+                    // 秋季诱饵窗口: 真身金核暴露脉冲
+                    if (Phase == BossPhase.SeasonCombat && season == DazhengSeasons.Autumn && decoyWindowOpen) {
+                        float p = 0.5f + 0.5f * MathF.Sin(globalTime * 6f);
+                        Color core = new Color(255, 210, 90, 0);
+                        spriteBatch.Draw(soft, drawPos - new Vector2(0, TextureHeight * 0.12f), null,
+                            core * (0.55f * p), 0f, go, 1.4f + p * 0.5f, SpriteEffects.None, 0f);
+                    }
+
+                    spriteBatch.End();
+                    spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
+                        DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+                }
+            }
+
             return false;
+        }
+
+        // PaletteLUT 四季全屏调色 (单一全屏后处理名额)
+        public override void PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+            if (Main.dedServ || lutIntensity <= 0.01f)
+                return;
+            if (!MythologyConfig.FullscreenShadersEnabled)
+                return;
+            if (!ACMShaders.RequestFullscreenSlot())
+                return;
+
+            Effect fx = ACMShaders.PaletteLUT;
+            if (fx == null)
+                return;
+
+            fx.Parameters["uTime"]?.SetValue(globalTime);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(lutIntensity, 0f, 1f));
+            fx.Parameters["uAspect"]?.SetValue((float)Main.screenWidth / Main.screenHeight);
+            fx.Parameters["uSaturation"]?.SetValue(lutSat);
+            fx.Parameters["uHueShift"]?.SetValue(0f);
+            fx.Parameters["uShadowTint"]?.SetValue(lutShadow);
+            fx.Parameters["uHighlightTint"]?.SetValue(lutHi);
+            fx.Parameters["uSplit"]?.SetValue(0f);
+
+            ACMShaders.ApplyScreenPostProcess(spriteBatch, fx);
+        }
+
+        #endregion
+
+        #region 共享: 藤蔓墙
+
+        private void SpawnVineWall(Vector2 center, int direction, bool horizontal, bool persistent = false) {
+            int vineCount = Main.expertMode ? 12 : 10;
+            int gapIndex = Main.rand.Next(2, vineCount - 3);
+            int gapSize = Main.expertMode ? 3 : 4;
+            float speed = persistent ? 5f : 8f;
+            int life = persistent ? 480 : 300;
+
+            for (int i = 0; i < vineCount; i++) {
+                if (i >= gapIndex && i < gapIndex + gapSize) continue;
+
+                Vector2 spawnPos;
+                Vector2 vel;
+                float spacing = 80f;
+
+                if (horizontal) {
+                    spawnPos = center + new Vector2(direction * 760, -vineCount / 2 * spacing + i * spacing);
+                    vel = new Vector2(-direction * speed, 0);
+                }
+                else {
+                    spawnPos = center + new Vector2(-vineCount / 2 * spacing + i * spacing, direction * 760);
+                    vel = new Vector2(0, -direction * speed);
+                }
+
+                int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
+                    ModContent.ProjectileType<DazhengVine>(), NPC.damage / 4, 0f, Main.myPlayer);
+                if (proj >= 0 && proj < Main.maxProjectiles)
+                    Main.projectile[proj].timeLeft = life;
+            }
         }
 
         #endregion

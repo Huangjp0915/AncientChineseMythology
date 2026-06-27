@@ -123,6 +123,12 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
         private float waterAuraAlpha;
         private float tailSwayPhase;
 
+        // V2 海之沉浸屏幕演出标量 (纯本地视觉, 不同步)
+        private float submersionWarp; // GenericWarp(refraction) 全屏折射强度 (没顶/深渊签名时刻)
+        private float tideTint;       // ElementalScreenTint 潮汐氛围底色强度 (水位叙事)
+        private float waterBloom;     // RadialBloom 潮涌泛光强度 (相变/大招事件触发)
+        private float vortexInward;   // 深渊漩涡向心吸力 0~1 (驱动 warp 的 uRadialPull)
+
         #endregion
 
         #region ModNPC重写

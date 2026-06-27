@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using AncientChineseMythology.Helpers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
@@ -69,6 +70,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
         private float growthAbsorbRadius;
         private float growthChannelMul;
         private float growthHealMul;
+        private float growthRatio; // 0~1, 驱动表现层亮度/吸魂弧/灵魂脉冲
         private float ChannelTime => BaseChannel * growthChannelMul / Owner.GetTotalAttackSpeed(Projectile.DamageType);
         private float AbsorbRadius => growthAbsorbRadius;
 
@@ -105,6 +107,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             growthAbsorbRadius = BaseAbsorbRadius * sbPlayer.AbsorbRadiusMultiplier;
             growthChannelMul = sbPlayer.ChannelTimeMultiplier;
             growthHealMul = sbPlayer.HealMultiplier;
+            growthRatio = sbPlayer.GrowthRatio;
         }
 
         public override void SendExtraAI(BinaryWriter writer)
@@ -675,6 +678,10 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             if (Projectile.owner == Main.myPlayer)
                 Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(1.5f, 4);
 
+            // 万魂幡幽紫命中演出 (径向辉光 + 冲击环)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Soul, scale: 0.9f, owner: Projectile.owner);
+
             // 灵魂从敌人身上飞向幡旗（多层次）
             for (int i = 0; i < 10; i++)
             {
@@ -771,6 +778,38 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             SpriteEffects effects = Projectile.spriteDirection < 0
                 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
             float drawRotation = Projectile.rotation + MathHelper.PiOver2;
+
+            // ── 成长驱动表现层 (先于本体绘制, 各自开合批) ──
+            // 1) 幡身幽紫柔光: 亮度随成长比例提升
+            float growGlow = (0.35f + 0.85f * growthRatio) * Projectile.scale;
+            WeaponVFX.DrawGlowBurst(Projectile.Center, growGlow,
+                new Color(150, 60, 255) * (0.4f + 0.5f * growthRatio));
+
+            // 2) 引魂阶段: 幽紫吸魂弧 (spectral ribbon 螺旋汇入幡尖)
+            if (CurrentPhase == BannerPhase.Channel)
+            {
+                int arcs = 3;
+                for (int a = 0; a < arcs; a++)
+                {
+                    Vector2[] pts = new Vector2[8];
+                    float baseA = GlobalTimer * 0.1f + a * MathHelper.TwoPi / arcs;
+                    for (int k = 0; k < 8; k++)
+                    {
+                        float t = k / 7f;
+                        float r = MathHelper.Lerp(230f, 12f, t) * (0.6f + 0.4f * growthRatio);
+                        float ang = baseA + t * 2.2f;
+                        pts[k] = Projectile.Center + ang.ToRotationVector2() * r;
+                    }
+                    WeaponVFX.DrawRibbonTrail(pts, 9f,
+                        new Color(95, 40, 165, 150), new Color(210, 165, 255, 200),
+                        uvScroll: -GlobalTimer * 0.02f);
+                }
+
+                // 3) 满成长: 一记幽紫灵魂脉冲 (走全屏名额仲裁, 名额满则退化柔光)
+                if (growthRatio > 0.95f)
+                    WeaponVFX.DrawRadialBloom(Projectile.Center, 0.12f, 0.55f,
+                        new Color(180, 120, 255), 10f);
+            }
 
             // ── 阶段光晕强度 ──
             float glowIntensity = CurrentPhase switch

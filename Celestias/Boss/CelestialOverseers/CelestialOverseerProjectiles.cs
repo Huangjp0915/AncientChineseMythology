@@ -16,13 +16,20 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
     internal class CelestialEyeMinion : ModNPC
     {
         public override string Texture => "InnoVault/Assets/placeholder";
-        [VaultLoaden("{@namespace}/")]
         public static Texture2D CelestialOverseerEye;
 
         public override void SetStaticDefaults() {
             Main.npcFrameCount[Type] = 1;
             NPCID.Sets.TrailingMode[Type] = 1;
             NPCID.Sets.TrailCacheLength[Type] = 8;
+
+            // 天眼贴图：仅当存在真实 PNG 时才加载，否则保持 null 由 ACMAsset.BlankStar 兜底
+            if (!Main.dedServ) {
+                const string eyePath = "AncientChineseMythology/Celestias/Boss/CelestialOverseers/CelestialOverseerEye";
+                if (ModContent.HasAsset(eyePath)) {
+                    CelestialOverseerEye = ModContent.Request<Texture2D>(eyePath).Value;
+                }
+            }
         }
 
         public override void SetDefaults() {
@@ -975,24 +982,18 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            if (ACMAsset.GlaciateWave == null) return false;
-
-            Texture2D laserTex = ACMAsset.GlaciateWave;
-            Vector2 drawPos = Projectile.Center - Main.screenPosition;
-            Vector2 origin = new Vector2(0, laserTex.Height / 2f);
+            if (Main.dedServ) return false;
 
             float progress = 1f - (float)Projectile.timeLeft / LaserDuration;
             float alpha = progress < 0.15f ? progress / 0.15f : (progress > 0.85f ? (1f - progress) / 0.15f : 1f);
 
-            Vector2 scale = new Vector2(LaserLength / laserTex.Width, 0.2f * alpha);
-
-            Color beamColor = new Color(255, 240, 180) * alpha;
-            beamColor.A = 0;
-            Main.spriteBatch.Draw(laserTex, drawPos, null, beamColor, LaserAngle, origin, scale, SpriteEffects.None, 0f);
-
-            Color glowColor = new Color(255, 220, 150) * alpha * 0.5f;
-            glowColor.A = 0;
-            Main.spriteBatch.Draw(laserTex, drawPos, null, glowColor, LaserAngle, origin, scale * new Vector2(1f, 1.8f), SpriteEffects.None, 0f);
+            // V2: BeamGrad 金芒权柄激光（锐利芯部使缓慢旋转的激光面读数清晰）。
+            Vector2 start = Projectile.Center;
+            Vector2 end = Projectile.Center + LaserAngle.ToRotationVector2() * LaserLength;
+            Color core = TelegraphColors.Gold;             // 金芒(天御权柄)
+            Color edge = new Color(255, 150, 60, 150);     // 暖橙外晕
+            ACMShaders.DrawBeam(start, end, 24f * alpha + 5f, core, edge, alpha,
+                flowSpeed: 1.8f, flowScale: 2.0f, coreSharp: 2.6f, coreGlow: 0.9f);
 
             return false;
         }
@@ -1126,6 +1127,374 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers
                 Main.spriteBatch.Draw(ACMAsset.LightShot, drawPos, null, coreColor, 0f, ACMAsset.LightShot.Size() / 2f, 0.4f, SpriteEffects.None, 0f);
             }
 
+            return false;
+        }
+    }
+
+    #endregion
+
+    #region 重做新增内容
+
+    /// <summary>
+    /// 审判射线 - 监视满槽触发的"审判标记"：方向锁定（不追踪），靠走出射线闪避。
+    /// </summary>
+    internal class JudgmentBeam : ModProjectile
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+
+        private const float LaserLength = 2600f;
+        private const int LaserDuration = 80;
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.DrawScreenCheckFluff[Type] = 4000;
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = 40;
+            Projectile.height = 40;
+            Projectile.friendly = false;
+            Projectile.hostile = true;
+            Projectile.penetrate = -1;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.timeLeft = LaserDuration;
+        }
+
+        private ref float OwnerIndex => ref Projectile.ai[0];
+        private ref float LaserAngle => ref Projectile.ai[1];
+
+        public override void AI() {
+            NPC owner = Main.npc[(int)OwnerIndex];
+            if (!owner.active) { Projectile.Kill(); return; }
+            Projectile.Center = owner.Center;
+            Projectile.rotation = LaserAngle; // 锁定，不追踪
+
+            if (!VaultUtils.isServer) {
+                Vector2 laserDir = LaserAngle.ToRotationVector2();
+                for (int i = 0; i < 8; i++) {
+                    float dist = Main.rand.NextFloat(LaserLength);
+                    Vector2 dustPos = Projectile.Center + laserDir * dist + Main.rand.NextVector2Circular(20, 20);
+                    int dustType = Main.rand.NextBool() ? DustID.GoldCoin : DustID.YellowStarDust;
+                    int dust = Dust.NewDust(dustPos, 0, 0, dustType, 0, 0, 80, default, 2f);
+                    Main.dust[dust].noGravity = true;
+                    Main.dust[dust].velocity = laserDir * 3f;
+                }
+            }
+            for (int i = 0; i < 14; i++) {
+                Vector2 lightPos = Projectile.Center + LaserAngle.ToRotationVector2() * (i * 200);
+                Lighting.AddLight(lightPos, new Vector3(1f, 0.9f, 0.6f) * 2f);
+            }
+        }
+
+        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
+            float point = 0f;
+            Vector2 start = Projectile.Center;
+            Vector2 end = Projectile.Center + LaserAngle.ToRotationVector2() * LaserLength;
+            return Collision.CheckAABBvLineCollision(targetHitbox.TopLeft(), targetHitbox.Size(), start, end, 55f, ref point);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ) return false;
+
+            float progress = 1f - (float)Projectile.timeLeft / LaserDuration;
+            float alpha = progress < 0.08f ? progress / 0.08f : (progress > 0.85f ? (1f - progress) / 0.15f : 1f);
+
+            // V2: BeamGrad 纯红致命射线（唯一红 = 真正致命；锁定方向不追踪）。
+            Vector2 start = Projectile.Center;
+            Vector2 end = Projectile.Center + LaserAngle.ToRotationVector2() * LaserLength;
+            Color core = TelegraphColors.Lethal;            // 致命纯红
+            Color edge = new Color(150, 24, 34, 170);       // 暗红外晕
+            ACMShaders.DrawBeam(start, end, 58f * alpha + 10f, core, edge, alpha,
+                flowSpeed: 2.2f, flowScale: 2.4f, coreSharp: 2.4f, coreGlow: 1.6f);
+
+            // 起点处决光核
+            if (ACMAsset.LightShot != null) {
+                Vector2 drawPos = Projectile.Center - Main.screenPosition;
+                Color orbColor = new Color(255, 90, 80) * alpha;
+                orbColor.A = 0;
+                Main.spriteBatch.Draw(ACMAsset.LightShot, drawPos, null, orbColor, 0f, ACMAsset.LightShot.Size() / 2f, 4f * alpha, SpriteEffects.None, 0f);
+            }
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 地面预告标线 - 纯视觉无伤。localAI[0]: 0=单向射线(十字/冲刺) 1=垂直光柱列 2=安全扇区。
+    /// ai0=长度, ai1=角度, ai2=跟随NPC索引(-1为固定)。
+    /// </summary>
+    internal class OverseerGroundTelegraph : ModProjectile
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.DrawScreenCheckFluff[Type] = 4000;
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = 8;
+            Projectile.height = 8;
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.timeLeft = 60;
+        }
+
+        private ref float Length => ref Projectile.ai[0];
+        private ref float Angle => ref Projectile.ai[1];
+        private ref float OwnerIndex => ref Projectile.ai[2];
+        private float Style => Projectile.localAI[0];
+
+        public override bool? CanDamage() => false;
+
+        // 同步样式与跟随目标（length/angle 走 ai0/ai1）
+        public override void SendExtraAI(System.IO.BinaryWriter writer) {
+            writer.Write(Projectile.localAI[0]);
+            writer.Write(OwnerIndex);
+        }
+
+        public override void ReceiveExtraAI(System.IO.BinaryReader reader) {
+            Projectile.localAI[0] = reader.ReadSingle();
+            OwnerIndex = reader.ReadSingle();
+        }
+
+        public override void AI() {
+            int owner = (int)OwnerIndex;
+            if (owner >= 0 && owner < Main.maxNPCs && Main.npc[owner].active) {
+                Projectile.Center = Main.npc[owner].Center;
+            }
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ) return false;
+
+            // V2: 改用 BeamGrad 直带原语, 边缘更清晰; 遵循色彩语言——
+            //   金芒=权柄预告(线/光柱) · 翠玉=安全缝 · 纯红=致命审判锁定线(style 3)。
+            float life = Projectile.timeLeft;
+            float pulse = 0.5f + 0.5f * MathF.Sin((float)Main.GameUpdateCount * 0.3f);
+            float baseAlpha = MathHelper.Clamp(life / 30f, 0.2f, 1f);
+            float a = baseAlpha * (0.55f + 0.45f * pulse);
+            Vector2 center = Projectile.Center;
+
+            if (Style == 1f) {
+                // 垂直光柱列预告（从地标向上）— 金芒
+                Vector2 top = center + new Vector2(0, -Length);
+                ACMShaders.DrawBeam(center, top, 26f, TelegraphColors.Gold, new Color(255, 150, 60, 150),
+                    a * 0.9f, flowSpeed: 1.2f, flowScale: 1.6f, coreSharp: 2.0f, coreGlow: 0.8f);
+            }
+            else if (Style == 2f) {
+                // 安全扇区缝（站此处安全）— 翠玉绿
+                const float half = 0.55f;
+                int rays = 5;
+                for (int i = 0; i <= rays; i++) {
+                    float ang = Angle - half + (2f * half) * i / rays;
+                    Vector2 end = center + ang.ToRotationVector2() * Length;
+                    ACMShaders.DrawBeam(center, end, 14f, TelegraphColors.Safe, new Color(120, 200, 150, 110),
+                        a * 0.5f, flowSpeed: 1.0f, flowScale: 1.6f, coreSharp: 2.0f, coreGlow: 0.5f);
+                }
+            }
+            else if (Style == 3f) {
+                // 致命审判锁定线（唯一红）
+                Vector2 end = center + Angle.ToRotationVector2() * Length;
+                ACMShaders.DrawBeam(center, end, 30f, TelegraphColors.Lethal, new Color(150, 30, 40, 160),
+                    a, flowSpeed: 2.0f, flowScale: 2.2f, coreSharp: 2.4f, coreGlow: 1.3f);
+            }
+            else {
+                // 单向射线（十字/冲刺）— 金芒权柄
+                Vector2 end = center + Angle.ToRotationVector2() * Length;
+                ACMShaders.DrawBeam(center, end, 20f, TelegraphColors.Gold, new Color(255, 160, 70, 150),
+                    a * 0.85f, flowSpeed: 1.6f, flowScale: 2.0f, coreSharp: 2.4f, coreGlow: 0.8f);
+            }
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 窥视眼泡 - 窥视相位中脱离的可击破天眼。击破降低监视槽并减少本轮真实攻击数。
+    /// ai0=主人索引, ai1=序号。
+    /// </summary>
+    internal class OverseerScryingEye : ModNPC
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+
+        public override void SetStaticDefaults() {
+            Main.npcFrameCount[Type] = 1;
+            NPCID.Sets.TrailingMode[Type] = 1;
+            NPCID.Sets.TrailCacheLength[Type] = 6;
+        }
+
+        public override void SetDefaults() {
+            NPC.width = 44;
+            NPC.height = 44;
+            NPC.damage = 60;
+            NPC.defense = 20;
+            NPC.lifeMax = 28000;
+            NPC.HitSound = SoundID.NPCHit5;
+            NPC.DeathSound = SoundID.NPCDeath14;
+            NPC.knockBackResist = 0f;
+            NPC.noTileCollide = true;
+            NPC.noGravity = true;
+            NPC.aiStyle = -1;
+            NPC.npcSlots = 0.5f;
+            if (Main.expertMode) NPC.lifeMax = 42000;
+            if (Main.masterMode) NPC.lifeMax = 56000;
+        }
+
+        private ref float OwnerIndex => ref NPC.ai[0];
+        private ref float Index => ref NPC.ai[1];
+        private float orbitAngle;
+        private float globalTime;
+
+        public override void AI() {
+            globalTime += 1f / 60f;
+            NPC owner = Main.npc[(int)OwnerIndex];
+            if (!owner.active || owner.type != ModContent.NPCType<CelestialOverseer>()) {
+                NPC.active = false;
+                return;
+            }
+            Player target = Main.player[owner.target];
+
+            orbitAngle += 0.03f + Index * 0.004f;
+            float radius = 300f + MathF.Sin(globalTime * 2f + Index) * 30f;
+            Vector2 targetPos = owner.Center + (orbitAngle + Index * MathHelper.TwoPi / CelestialOverseer.CelestialEyeCount).ToRotationVector2() * radius;
+            NPC.velocity = (targetPos - NPC.Center) * 0.12f;
+            if (target.active && !target.dead)
+                NPC.rotation = (target.Center - NPC.Center).ToRotation();
+
+            Lighting.AddLight(NPC.Center, new Vector3(0.9f, 0.8f, 1f) * 0.7f);
+        }
+
+        public override void OnKill() {
+            NPC owner = Main.npc[(int)OwnerIndex];
+            if (owner.active && owner.ModNPC is CelestialOverseer overseer) {
+                overseer.OnScryingEyePopped();
+            }
+            if (!VaultUtils.isServer) {
+                for (int i = 0; i < 18; i++) {
+                    Vector2 v = Main.rand.NextVector2CircularEdge(6, 6);
+                    int d = Dust.NewDust(NPC.Center, 0, 0, DustID.BlueTorch, v.X, v.Y, 100, new Color(200, 220, 255), 2f);
+                    Main.dust[d].noGravity = true;
+                }
+                SoundEngine.PlaySound(SoundID.Item27 with { Pitch = 0.4f }, NPC.Center);
+            }
+        }
+
+        public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+            Texture2D tex = CelestialEyeMinion.CelestialOverseerEye ?? ACMAsset.BlankStar;
+            if (tex == null) return false;
+            Vector2 drawPos = NPC.Center - screenPos;
+            Vector2 origin = tex.Size() / 2f;
+            Color glow = new Color(180, 210, 255) * 0.6f;
+            glow.A = 0;
+            spriteBatch.Draw(tex, drawPos, null, glow, NPC.rotation, origin, NPC.scale * 1.3f, SpriteEffects.None, 0f);
+            Color core = new Color(255, 255, 240);
+            core.A = 0;
+            spriteBatch.Draw(tex, drawPos, null, core, NPC.rotation, origin, NPC.scale, SpriteEffects.None, 0f);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 天庭陪审 - 入侵终局事件召唤的"陪审团"。每名玩家 1 个，须在限时内清除。
+    /// ai0=主人索引。
+    /// </summary>
+    internal class HeavenlyJuror : ModNPC
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+
+        public override void SetStaticDefaults() {
+            Main.npcFrameCount[Type] = 1;
+            NPCID.Sets.TrailingMode[Type] = 1;
+            NPCID.Sets.TrailCacheLength[Type] = 8;
+        }
+
+        public override void SetDefaults() {
+            NPC.width = 60;
+            NPC.height = 60;
+            NPC.damage = 90;
+            NPC.defense = 40;
+            NPC.lifeMax = 90000;
+            NPC.HitSound = SoundID.NPCHit5;
+            NPC.DeathSound = SoundID.NPCDeath14;
+            NPC.knockBackResist = 0f;
+            NPC.noTileCollide = true;
+            NPC.noGravity = true;
+            NPC.aiStyle = -1;
+            NPC.npcSlots = 1f;
+            if (Main.expertMode) { NPC.lifeMax = 130000; NPC.damage = 110; }
+            if (Main.masterMode) { NPC.lifeMax = 170000; NPC.damage = 125; }
+        }
+
+        private ref float OwnerIndex => ref NPC.ai[0];
+        private ref float AttackTimer => ref NPC.ai[1];
+        private float globalTime;
+
+        public override void AI() {
+            globalTime += 1f / 60f;
+            NPC owner = Main.npc[(int)OwnerIndex];
+            if (!owner.active || owner.type != ModContent.NPCType<CelestialOverseer>()) {
+                NPC.active = false;
+                return;
+            }
+
+            NPC.TargetClosest();
+            Player target = Main.player[NPC.target];
+            if (!target.active || target.dead) { NPC.velocity *= 0.95f; return; }
+
+            // 向玩家侧方悬浮逼近
+            Vector2 desired = target.Center + new Vector2(MathF.Sin(globalTime * 1.3f + NPC.whoAmI) * 220f, -160);
+            Vector2 toDesired = desired - NPC.Center;
+            NPC.velocity = Vector2.Lerp(NPC.velocity, toDesired * 0.04f, 0.08f);
+            NPC.rotation = (target.Center - NPC.Center).ToRotation();
+
+            AttackTimer++;
+            float cd = Main.expertMode ? 50f : 70f;
+            if (AttackTimer >= cd && Main.netMode != NetmodeID.MultiplayerClient) {
+                AttackTimer = 0;
+                Vector2 toT = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
+                for (int i = -1; i <= 1; i++) {
+                    Vector2 vel = toT.RotatedBy(MathHelper.ToRadians(12 * i)) * 8.5f;
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                        ModContent.ProjectileType<HolyOrb>(), NPC.damage / 2, 1f, Main.myPlayer);
+                }
+                SoundEngine.PlaySound(SoundID.Item29 with { Pitch = 0.3f }, NPC.Center);
+            }
+
+            Lighting.AddLight(NPC.Center, new Vector3(1f, 0.9f, 0.6f) * 0.7f);
+        }
+
+        public override void OnKill() {
+            if (!VaultUtils.isServer) {
+                for (int i = 0; i < 24; i++) {
+                    Vector2 v = Main.rand.NextVector2CircularEdge(7, 7);
+                    int dustType = Main.rand.NextBool() ? DustID.GoldCoin : DustID.YellowStarDust;
+                    int d = Dust.NewDust(NPC.Center, 0, 0, dustType, v.X, v.Y, 90, default, 2.2f);
+                    Main.dust[d].noGravity = true;
+                }
+                SoundEngine.PlaySound(SoundID.Item14 with { Pitch = 0.2f }, NPC.Center);
+            }
+        }
+
+        public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+            Texture2D tex = CelestialEyeMinion.CelestialOverseerEye ?? ACMAsset.BlankStar;
+            if (tex == null) return false;
+            Vector2 drawPos = NPC.Center - screenPos;
+            Vector2 origin = tex.Size() / 2f;
+            for (int i = 0; i < NPC.oldPos.Length; i++) {
+                if (NPC.oldPos[i] == Vector2.Zero) continue;
+                float p = 1f - (float)i / NPC.oldPos.Length;
+                Color tc = new Color(255, 230, 150) * p * 0.3f;
+                tc.A = 0;
+                Vector2 tp = NPC.oldPos[i] + NPC.Size / 2f - screenPos;
+                spriteBatch.Draw(tex, tp, null, tc, NPC.oldRot[i], origin, NPC.scale * p, SpriteEffects.None, 0f);
+            }
+            Color glow = new Color(255, 220, 150) * 0.6f;
+            glow.A = 0;
+            spriteBatch.Draw(tex, drawPos, null, glow, NPC.rotation, origin, NPC.scale * 1.4f, SpriteEffects.None, 0f);
+            Color core = new Color(255, 255, 240);
+            core.A = 0;
+            spriteBatch.Draw(tex, drawPos, null, core, NPC.rotation, origin, NPC.scale, SpriteEffects.None, 0f);
             return false;
         }
     }

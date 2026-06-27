@@ -214,13 +214,9 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         public override void OnHitPlayer(Player target, Player.HurtInfo info) {
-            // 虚空灼烧
-            target.AddBuff(BuffID.OnFire3, 300);
+            // 虚空灼烧 + 魂蚀
+            target.GetModPlayer<AwakeningNetherPlayer>().AddSoulErosion(IsEnraged ? 4 : 3);
             target.AddBuff(BuffID.ShadowFlame, 240);
-
-            if (IsEnraged) {
-                target.AddBuff(BuffID.CursedInferno, 180);
-            }
 
             SoundEngine.PlaySound(SoundID.Item74 with { Pitch = -0.3f, Volume = 0.8f }, Projectile.Center);
         }
@@ -241,20 +237,26 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
     }
 
     /// <summary>
-    /// 觉醒幽冥龙 - 次元裂隙
-    /// 空间撕裂攻击，产生持续伤害区域
+    /// 觉醒幽冥龙 - 次元裂隙之门 (Dimension Rift Gate)
+    /// 第二幕「次元裂隙」的核心机制：成对生成的传送门。
+    /// 有清晰的预告开启动画，只有「门口」小范围造成伤害，不再随机拉扯/喷弹。
+    /// 觉醒冥龙会冲入其中一扇门、从另一扇门冲出；玩家自行选择跟随哪扇门 (近道 vs 安全)。
     /// </summary>
     public class AwakeningNetherRift : ModProjectile
     {
-        public override string Texture => AwakeningNetherHelper.Path + "Rift";
+        public override string Texture => "Terraria/Images/Projectile_" + ProjectileID.ShadowOrb;
+
+        public const int OpenTime = 45;   // 预告开启
+        public const int CloseTime = 50;  // 关闭动画
 
         private float growthPhase = 0f;
         private float pulsePhase = 0f;
         private float riftScale = 0f;
         private bool isClosing = false;
 
-        // 裂隙大小等级
+        // ai[0] = 门的大小等级
         private int SizeLevel => (int)Projectile.ai[0];
+        private float Timer => Projectile.localAI[0];
 
         public override void SetDefaults() {
             Projectile.width = 80;
@@ -263,45 +265,50 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
             Projectile.friendly = false;
             Projectile.tileCollide = false;
             Projectile.penetrate = -1;
-            Projectile.timeLeft = 300;
+            Projectile.timeLeft = 260;
             Projectile.alpha = 0;
         }
 
         public override void AI() {
             growthPhase += 0.02f;
             pulsePhase += 0.1f;
+            Projectile.localAI[0]++;
 
-            // 裂隙开启/关闭动画
+            // 开门 / 关门动画
             float targetScale = 1f + SizeLevel * 0.3f;
-            if (Projectile.timeLeft < 60) {
+            if (Projectile.timeLeft < CloseTime) {
                 isClosing = true;
                 targetScale = 0f;
             }
+            // 开门阶段平滑放大
+            float openLerp = isClosing ? 0.1f : (Timer < OpenTime ? 0.12f : 0.05f);
+            riftScale = MathHelper.Lerp(riftScale, targetScale, openLerp);
 
-            riftScale = MathHelper.Lerp(riftScale, targetScale, isClosing ? 0.08f : 0.04f);
-
-            // 如果完全关闭则销毁
             if (isClosing && riftScale < 0.1f) {
                 Projectile.Kill();
                 return;
             }
 
-            // 裂隙旋转
             Projectile.rotation += 0.02f * riftScale;
 
-            // 吸引周围的粒子
-            if (riftScale > 0.5f) {
+            if (riftScale > 0.4f)
                 CreateRiftEffects();
-            }
 
-            // 对范围内玩家造成持续伤害
-            DamagePlayersInRange();
-
-            // 发光
             Lighting.AddLight(Projectile.Center, AwakeningNetherHelper.VoidDarkPurple.ToVector3() * 0.8f * riftScale);
         }
 
+        // 只有完全开启后、门口才会判定伤害 (可读的安全区设计)
+        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
+            if (Timer < OpenTime || isClosing)
+                return false;
+            float mouth = 60f * riftScale;
+            return Vector2.Distance(Projectile.Center, targetHitbox.Center.ToVector2()) < mouth;
+        }
+
         private void CreateRiftEffects() {
+            if (Main.netMode == NetmodeID.Server)
+                return;
+
             // 吸入漩涡
             if (Main.rand.NextBool(2)) {
                 float angle = Main.rand.NextFloat(MathHelper.TwoPi);
@@ -328,38 +335,12 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 d.scale = 1.0f;
                 d.velocity = Main.rand.NextVector2Circular(2, 2);
             }
-
-            // 周期性发射小弹幕
-            if (Projectile.timeLeft % 45 == 0 && Projectile.timeLeft > 90 && Main.netMode != NetmodeID.MultiplayerClient) {
-                float shotAngle = Main.rand.NextFloat(MathHelper.TwoPi);
-                Vector2 shotDir = new Vector2(MathF.Cos(shotAngle), MathF.Sin(shotAngle));
-
-                Projectile.NewProjectile(
-                    Projectile.GetSource_FromThis(),
-                    Projectile.Center,
-                    shotDir * 8f,
-                    ModContent.ProjectileType<AwakeningNetherSoulOrb>(),
-                    Projectile.damage / 2,
-                    0f,
-                    ai0: 1,
-                    ai1: Main.rand.Next(3)
-                );
-            }
         }
 
-        private void DamagePlayersInRange() {
-            float damageRadius = 70f * riftScale;
-
-            foreach (var player in Main.player) {
-                if (player == null || !player.active || player.dead) continue;
-
-                float dist = Vector2.Distance(player.Center, Projectile.Center);
-                if (dist < damageRadius && Projectile.timeLeft % 30 == 0) {
-                    // 拉扯效果
-                    Vector2 pull = (Projectile.Center - player.Center).SafeNormalize(Vector2.Zero) * 3f * riftScale;
-                    player.velocity += pull;
-                }
-            }
+        public override void OnHitPlayer(Player target, Player.HurtInfo info) {
+            target.GetModPlayer<AwakeningNetherPlayer>().AddSoulErosion(3);
+            SoundEngine.PlaySound(SoundID.Item117 with { Pitch = -0.2f }, Projectile.Center);
+            AwakeningNetherHelper.CreateDimensionTear(Projectile.Center, target.Center, 0.8f);
         }
 
         public override bool PreDraw(ref Color lightColor) {
@@ -404,17 +385,6 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                         angle + MathHelper.PiOver4, origin, 0.8f * segPulse, SpriteEffects.None, 0);
                 }
             }
-        }
-
-        public override void OnHitPlayer(Player target, Player.HurtInfo info) {
-            // 次元撕裂
-            target.AddBuff(BuffID.VortexDebuff, 120);
-            target.AddBuff(BuffID.Weak, 300);
-
-            SoundEngine.PlaySound(SoundID.Item117 with { Pitch = -0.2f }, Projectile.Center);
-
-            // 命中特效
-            AwakeningNetherHelper.CreateDimensionTear(Projectile.Center, target.Center, 0.8f);
         }
 
         public override void OnKill(int timeLeft) {

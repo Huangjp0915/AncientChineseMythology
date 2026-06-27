@@ -53,6 +53,10 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
         private float animTime;
         private int damageTimer;
 
+        // 季节换色 (向当前主导季节平滑过渡)
+        private Vector4 curPrimary = ColorPrimary;
+        private Vector4 curSecondary = ColorSecondary;
+
         #endregion
 
         #region ModProjectile 重写
@@ -119,6 +123,15 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 
             // 动画时间
             animTime += 1f / 30f;
+
+            // 季节换色: 屏障主/辅色向当前主导季节平滑过渡
+            if (boss.ModNPC is Dazheng dz) {
+                int s = dz.CurrentSeason;
+                Vector4 tgtP = new(DazhengSeasons.Tint(s).ToVector3() * 0.45f, 1f);
+                Vector4 tgtS = new(DazhengSeasons.Accent(s).ToVector3() * 0.85f, 1f);
+                curPrimary = Vector4.Lerp(curPrimary, tgtP, 0.02f);
+                curSecondary = Vector4.Lerp(curSecondary, tgtS, 0.02f);
+            }
 
             // 服务端：界外伤害
             if (Main.netMode != NetmodeID.MultiplayerClient)
@@ -261,8 +274,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             effect.Parameters["uRadius"]?.SetValue(radiusUV);
             effect.Parameters["uIntensity"]?.SetValue(fadeProgress);
             effect.Parameters["uAspect"]?.SetValue(aspect);
-            effect.Parameters["uColorPrimary"]?.SetValue(ColorPrimary);
-            effect.Parameters["uColorSecondary"]?.SetValue(ColorSecondary);
+            effect.Parameters["uColorPrimary"]?.SetValue(curPrimary);
+            effect.Parameters["uColorSecondary"]?.SetValue(curSecondary);
 
             // 切换SpriteBatch到着色器模式
             sb.End();

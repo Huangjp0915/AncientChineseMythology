@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.NPCs.Boss.Hoqings;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.NPCs.Boss.Hoqings;
 using InnoVault.GameContent.BaseEntity;
 using Microsoft.Xna.Framework.Graphics;
 using System;
@@ -43,10 +44,11 @@ namespace AncientChineseMythology.Items.Weapons.Bosses
             , Vector2 velocity, int type, int damage, float knockback) {
             if (player.altFunctionUse == 2) {
                 foreach (var proj in Main.ActiveProjectiles) {
-                    if (proj.type != type) {
+                    if (proj.type != type || proj.owner != player.whoAmI) {
                         continue;
                     }
-                    proj.Kill();
+                    // 召回: 标记反向溶解收束 (表现层), 由弹幕自身在数帧后崩解消失。
+                    proj.ai[0] = 1f;
                     proj.netUpdate = true;
                 }
                 return false;
@@ -63,8 +65,8 @@ namespace AncientChineseMythology.Items.Weapons.Bosses
         public override string Texture => "AncientChineseMythology/NPCs/Boss/Hoqings/GhostFire";
         private int frame;
         public override void SetStaticDefaults() {
-            ProjectileID.Sets.TrailingMode[Type] = 3;
-            ProjectileID.Sets.TrailCacheLength[Type] = 12;
+            ProjectileID.Sets.TrailingMode[Type] = 0;   // 供 WeaponVFX.DrawProjectileTrail 取历史点
+            ProjectileID.Sets.TrailCacheLength[Type] = 14;
         }
         public override void SetDefaults() {
             Projectile.width = Projectile.height = 32;
@@ -78,6 +80,21 @@ namespace AncientChineseMythology.Items.Weapons.Bosses
 
         public override void AI() {
             Projectile.timeLeft = 2;
+
+            // 召回收束 (表现层反向溶解): 标记后停止伤害, 向玩家漂移并在数帧内崩解。
+            if (Projectile.ai[0] == 1f) {
+                Projectile.friendly = false;
+                Projectile.hostile = false;
+                Projectile.velocity = Vector2.Zero;
+                Vector2 toOwner = Owner.GetPlayerStabilityCenter() - Projectile.Center;
+                Projectile.Center += toOwner * 0.18f;
+                Projectile.localAI[0]++;
+                VaultUtils.ClockFrame(ref frame, 5, 3);
+                if (Projectile.localAI[0] >= 16f) {
+                    Projectile.Kill();
+                }
+                return;
+            }
             //轨道参数
             float orbitRadius = 100f + 20f * (float)Math.Sin(Main.GlobalTimeWrappedHourly * 0.5f + Projectile.ai[1]); //动态半径变化
             float orbitSpeed = 1.2f;     //转速
@@ -134,6 +151,12 @@ namespace AncientChineseMythology.Items.Weapons.Bosses
             VaultUtils.ClockFrame(ref frame, 5, 3);
         }
 
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            // 地府幽蓝鬼火命中演出 (orbiter 自身一般为 hostile, 此分支主要在其被设为 friendly 时生效)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Shadow, scale: 0.8f, owner: Projectile.owner);
+        }
+
         public override bool PreDraw(ref Color lightColor) {
             Texture2D tex = TextureAssets.Projectile[Type].Value;
             Rectangle rect = VaultUtils.GetRectangle(tex, Projectile.frame, 4);
@@ -142,13 +165,19 @@ namespace AncientChineseMythology.Items.Weapons.Bosses
             Color baseColor = Color.Lerp(Color.LimeGreen, Color.Cyan, 0.5f);
             float scale = Projectile.scale;
 
-            //绘制残影（幽光拖尾）
-            float alpha = 0.4f;
-            for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                Vector2 pos = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
-                float fade = alpha * (1f - i / (float)Projectile.oldPos.Length);
-                Main.spriteBatch.Draw(tex, pos, rect, baseColor * fade, Projectile.rotation, origin, scale, SpriteEffects.None, 0f);
+            // 召回崩解: DissolveBurn 反向溶解整张鬼火贴图 (幽蓝灼边)
+            if (Projectile.ai[0] == 1f) {
+                float diss = MathHelper.Clamp(Projectile.localAI[0] / 16f, 0f, 1f);
+                WeaponVFX.ApplyDissolveBurn(tex, Projectile.Center, rect, baseColor,
+                    Projectile.rotation, origin, scale, threshold: diss, intensity: 1f - diss * 0.25f,
+                    edgeColor: new Color(80, 150, 255, 255), edgeWidth: 0.11f, noiseScale: 2.4f);
+                return false;
             }
+
+            // 幽蓝→赤焰双层 ribbon 拖尾 (取代手抄残影循环)
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 12f,
+                outerColor: new Color(40, 70, 140, 150), innerColor: new Color(255, 120, 90, 200),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.6f);
 
             //主体 + 发光外层
             Vector2 drawPos = Projectile.Center - Main.screenPosition;

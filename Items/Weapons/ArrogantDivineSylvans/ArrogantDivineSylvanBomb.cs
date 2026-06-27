@@ -6,6 +6,7 @@ using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 using AncientChineseMythology.Celestias.Boss.Dazhengs.Items;
+using AncientChineseMythology.Helpers;
 using AncientChineseMythology.Items.Weapons.DivineWoods;
 
 namespace AncientChineseMythology.Items.Weapons.ArrogantDivineSylvans;
@@ -119,6 +120,10 @@ public class ArrogantSylvanWorldSeed : ModProjectile
         Projectile.ai[1] = 1;
 
         SoundEngine.PlaySound(SoundID.Item14 with { Volume = 1.3f, Pitch = 0.1f }, Projectile.Center);
+        // 世界种主爆命中演出 (金翠 scale 2) + 重击震屏
+        ACMWeaponBurst.Spawn(Projectile.GetSource_Death(), Projectile.Center,
+            ACMWeaponBurst.ArrogantSylvan, scale: 2f, owner: Projectile.owner);
+        WeaponVFX.AddScreenShake(Projectile.Center, 10f);
 
         if (Main.myPlayer == Projectile.owner) {
             Projectile.NewProjectile(Projectile.GetSource_Death(), Projectile.Center, Vector2.Zero,
@@ -221,6 +226,8 @@ public class ArrogantSylvanChildSeed : ModProjectile
         Projectile.ai[1] = 1;
 
         SoundEngine.PlaySound(SoundID.Item14 with { Volume = 0.9f, Pitch = 0.4f }, Projectile.Center);
+        ACMWeaponBurst.Spawn(Projectile.GetSource_Death(), Projectile.Center,
+            ACMWeaponBurst.ArrogantSylvan, scale: 1.2f, owner: Projectile.owner);
 
         if (Main.myPlayer == Projectile.owner) {
             Projectile.NewProjectile(Projectile.GetSource_Death(), Projectile.Center, Vector2.Zero,
@@ -332,6 +339,27 @@ public class ArrogantSylvanBloomExplosion : ModProjectile
         float prog = 1f - Projectile.timeLeft / 65f;
         float alpha = ACMUtils.QuadOut(1f - prog) * 0.92f;
         float scale = MathHelper.SmoothStep(0f, 18f, ACMUtils.QuadOut(prog));
+
+        // === 世界种绽放 set-piece ===
+        // 1) 大型一次性金翠径向泛光 (起爆瞬间最强, 占全屏名额, 名额满自动退化柔光)
+        if (prog < 0.55f) {
+            float bell = (float)System.Math.Sin(System.Math.Min(prog / 0.55f, 1f) * System.Math.PI);
+            WeaponVFX.DrawRadialBloom(Projectile.Center, 0.16f + 0.12f * prog, bell * 0.9f,
+                new Color(230, 235, 120), 12f);
+        }
+        // 2) 荆棘领域生长溶解 (DissolveBurn 喂 Sparkle 放射纹, 噪声 clip + 金灼边)
+        {
+            Texture2D thorn = ACMAsset.Sparkle;
+            if (thorn != null) {
+                float grow = System.Math.Min(prog / 0.4f, 1f);     // 生长进度
+                float domainScale = scale * 0.30f;
+                WeaponVFX.ApplyDissolveBurn(thorn, Projectile.Center, null,
+                    new Color(120, 220, 110) * (alpha * 0.9f), Projectile.ai[0] * 0.04f,
+                    thorn.Size() * 0.5f, domainScale,
+                    threshold: 1f - grow, intensity: alpha,
+                    edgeColor: new Color(255, 210, 90, 220), edgeWidth: 0.1f, noiseScale: 2.4f);
+            }
+        }
 
         SpriteBatch sb = Main.spriteBatch;
         sb.End();
@@ -446,6 +474,12 @@ public class ArrogantSylvanVineSerpent : ModProjectile
 
     public override bool PreDraw(ref Color lightColor) {
         SpriteBatch sb = Main.spriteBatch;
+
+        // 藤蔓蛇金翠双层 ribbon (§B.1)
+        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 11f,
+            outerColor: new Color(200, 150, 40, 150), innerColor: new Color(190, 255, 150, 200),
+            uvScroll: -(float)Main.timeForVisualEffects * 0.05f);
+
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
             DepthStencilState.None, RasterizerState.CullNone, null,

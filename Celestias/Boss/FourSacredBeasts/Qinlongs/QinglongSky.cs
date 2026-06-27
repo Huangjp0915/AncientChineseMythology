@@ -45,6 +45,10 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
         private const float FadeInSpeed = 0.012f;
         private const float FadeOutSpeed = 0.018f;
 
+        // 阶段阈值 (与 SacredBeastBase 默认一致; 本天幕自持以免耦合骨架实例属性)
+        private const float Phase2Threshold = 0.60f;
+        private const float Phase3Threshold = 0.30f;
+
         private float bossHealthPercent = 1f;
         private bool isPhase2;
         private bool isPhase3;
@@ -116,8 +120,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
             if (shouldBeActive) {
                 if (!active) Activate(Vector2.Zero);
                 bossHealthPercent = (float)boss.life / boss.lifeMax;
-                isPhase2 = bossHealthPercent < Qinlong.Phase2Threshold;
-                isPhase3 = bossHealthPercent < Qinlong.Phase3Threshold;
+                isPhase2 = bossHealthPercent < Phase2Threshold;
+                isPhase3 = bossHealthPercent < Phase3Threshold;
 
                 float target = isPhase3 ? MaxIntensity * 1.2f : isPhase2 ? MaxIntensity * 1.1f : MaxIntensity;
                 intensity = MathHelper.Lerp(intensity, target, FadeInSpeed);
@@ -127,10 +131,13 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                 if (intensity <= 0f) { intensity = 0f; if (active) Deactivate(); }
             }
 
+            // Weather Deck「雷暴」窗口外溢到天幕: 雷更密、风暴更猛 (视觉契合 §4.3 表现)
+            bool stormWeather = Qinlong.s_weatherMode == 2;
+
             for (int i = 0; i < MistLayerCount; i++) mistOffsets[i] += MistSpeeds[i];
-            float stormMul = isPhase3 ? 1.6f : isPhase2 ? 1.3f : 1f;
+            float stormMul = (isPhase3 ? 1.6f : isPhase2 ? 1.3f : 1f) * (stormWeather ? 1.3f : 1f);
             for (int i = 0; i < CloudCount; i++) clouds[i].Update(stormMul);
-            for (int i = 0; i < LightningCount; i++) bolts[i].Update(globalTime, isPhase2 || isPhase3);
+            for (int i = 0; i < LightningCount; i++) bolts[i].Update(globalTime, isPhase2 || isPhase3 || stormWeather);
             for (int i = 0; i < SparkCount; i++) sparks[i].Update();
         }
 

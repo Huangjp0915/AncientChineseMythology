@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -186,9 +187,16 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, DustID.Water, vel.X, vel.Y, 100, default, 1.5f);
                 Main.dust[dust].noGravity = true;
             }
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.EastSeaWater, 0.8f, Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 9f,
+                outerColor: new Color(30, 90, 170, 120), innerColor: new Color(170, 240, 255, 170),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.5f);
+
             Texture2D tex = ACMAsset.LightShot ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = new Vector2(tex.Width / 2f, 0);
 
@@ -302,11 +310,19 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
             }
 
             SoundEngine.PlaySound(SoundID.Item21 with { Pitch = 0.2f, Volume = 0.7f }, target.Center);
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.EastSeaWater, 1.6f, Projectile.owner);
+            WeaponVFX.AddScreenShake(target.Center, 4f);
         }
 
         public override bool PreDraw(ref Color lightColor) {
             SpriteBatch sb = Main.spriteBatch;
             Vector2 screenPos = Projectile.Center - Main.screenPosition;
+
+            // 巨型龙卷箭核心东海径向辉光 (漩涡塌陷感, 全屏名额仲裁)
+            WeaponVFX.DrawRadialBloom(Projectile.Center, 0.13f * tornadoScale, 0.5f,
+                new Color(90, 200, 245), 0f);
 
             // 使用原版龙卷风纹理
             Main.instance.LoadProjectile(ProjectileID.SandnadoHostile);

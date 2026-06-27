@@ -1,12 +1,22 @@
-﻿using Terraria;
+﻿using AncientChineseMythology.Helpers;
+using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Projectiles
 {
+    /// <summary>
+    /// 鱼肠剑·穿心技 (右键) — 可见质变 (纯表现): 突进宝石光束 + 青紫双层拖尾,
+    /// 命中触发 <see cref="ACMWeaponBurst"/> 宝石爆发。机制/伤害不变。
+    /// </summary>
     public class YuChangSkillProjectile : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/YuChangSwordProjectile";
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.TrailCacheLength[Type] = 12;
+            ProjectileID.Sets.TrailingMode[Type] = 0;
+        }
 
         public override void SetDefaults() {
             Projectile.width = 50;                  //碰撞箱宽度
@@ -47,6 +57,22 @@ namespace AncientChineseMythology.Projectiles
             //碰撞方块时销毁投射物
             Projectile.Kill();
             return false;
+        }
+
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Gem, scale: 1.4f, owner: Projectile.owner);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            // 突进宝石光束 + 青紫双层拖尾 (纯表现), return true 保留原版刃身绘制
+            Vector2 dir = Projectile.velocity.SafeNormalize(Vector2.UnitX);
+            ACMShaders.DrawBeam(Projectile.Center - dir * 42f, Projectile.Center + dir * 42f, 14f,
+                new Color(170, 120, 255), new Color(150, 230, 255), 0.9f);
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 9f,
+                outerColor: new Color(95, 60, 185, 150), innerColor: new Color(150, 230, 255, 200),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.6f);
+            return true;
         }
     }
 }

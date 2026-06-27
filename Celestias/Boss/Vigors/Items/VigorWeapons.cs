@@ -57,6 +57,43 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors.Items
             if (!target.HasBuff(SinMarkBuff)) return;
             modifiers.SetCrit();
             modifiers.CritDamage += 0.65f;
+            // 断罪处决：罪愈深则刑愈重——目标生命越低，裁决伤害越高（最高 +75%）
+            float missing = 1f - (float)target.life / Math.Max(1, target.lifeMax);
+            modifiers.SourceDamage *= 1f + missing * 0.75f;
+        }
+
+        /// <summary>断罪连坐 — 被标记目标伏诛时，罪业向四周扩散，重新降下断罪标记并爆发金蓝符火。</summary>
+        public static void ChainJudgment(NPC dyingTarget, Player player, float radius = 380f) {
+            float radiusSq = radius * radius;
+            int spread = 0;
+            for (int i = 0; i < Main.maxNPCs && spread < 4; i++) {
+                NPC npc = Main.npc[i];
+                if (!npc.active || npc.friendly || npc.dontTakeDamage || npc.whoAmI == dyingTarget.whoAmI || !npc.CanBeChasedBy())
+                    continue;
+                if (Vector2.DistanceSquared(npc.Center, dyingTarget.Center) > radiusSq)
+                    continue;
+
+                ApplySinMark(npc, 360);
+                spread++;
+
+                if (Main.netMode != NetmodeID.Server)
+                    SpawnVerdictArc(dyingTarget.Center, npc.Center);
+            }
+            SpawnVerdictBurst(dyingTarget.Center, 1.6f);
+            if (Main.netMode != NetmodeID.Server)
+                SoundEngine.PlaySound(SoundID.Item122 with { Pitch = 0.25f, Volume = 0.6f }, dyingTarget.Center);
+        }
+
+        /// <summary>在两点间拉出一条金蓝断罪符火（纯视觉）。</summary>
+        public static void SpawnVerdictArc(Vector2 from, Vector2 to) {
+            int steps = (int)MathHelper.Clamp(Vector2.Distance(from, to) / 18f, 3f, 18f);
+            for (int i = 0; i <= steps; i++) {
+                Vector2 pos = Vector2.Lerp(from, to, i / (float)steps) + Main.rand.NextVector2Circular(6f, 6f);
+                int dustType = i % 2 == 0 ? DustID.GoldFlame : DustID.BlueTorch;
+                Dust d = Dust.NewDustPerfect(pos, dustType, Vector2.Zero, 60, default, 1.4f);
+                d.noGravity = true;
+                d.velocity *= 0.2f;
+            }
         }
 
         public static void SpawnVerdictBurst(Vector2 center, float scale = 1f) {
@@ -168,7 +205,8 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors.Items
         public override void ModifyTooltips(List<TooltipLine> tooltips) {
             tooltips.Add(new TooltipLine(Mod, "SinSeverLore", "天将神威陨落后铸成的断罪巨剑"));
             tooltips.Add(new TooltipLine(Mod, "SinSeverEffect", "挥砍对敌人施加罪孽标记"));
-            tooltips.Add(new TooltipLine(Mod, "SinSeverEffect2", "对已标记目标必定暴击，斩浪同样生效"));
+            tooltips.Add(new TooltipLine(Mod, "SinSeverEffect2", "对已标记目标必定暴击；罪愈深刑愈重，残血敌人受创剧增"));
+            tooltips.Add(new TooltipLine(Mod, "SinSeverEffect3", "标记目标伏诛时罪业连坐，向四周扩散断罪标记"));
         }
 
         public override string Texture => "Terraria/Images/Item_" + ItemID.BreakerBlade;
@@ -318,6 +356,9 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors.Items
             VigorWeaponFx.ApplySinMark(target);
             VigorWeaponFx.SpawnVerdictBurst(target.Center);
 
+            if (target.life <= 0)
+                VigorWeaponFx.ChainJudgment(target, Owner);
+
             if (hit.Crit)
                 SoundEngine.PlaySound(SoundID.Item70 with { Pitch = 0.35f, Volume = 0.75f }, target.Center);
         }
@@ -416,6 +457,9 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors.Items
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
             VigorWeaponFx.ApplySinMark(target);
             VigorWeaponFx.SpawnVerdictBurst(target.Center, 1.15f);
+
+            if (target.life <= 0)
+                VigorWeaponFx.ChainJudgment(target, Main.player[Projectile.owner]);
         }
 
         public override bool PreDraw(ref Color lightColor) {
@@ -470,6 +514,8 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors.Items
     /// </summary>
     public class AureateVoidrender : ModItem
     {
+        private int swingCount;
+
         public override void SetDefaults() {
             Item.damage = 1120;
             Item.DamageType = DamageClass.Melee;
@@ -491,9 +537,27 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors.Items
             Vector2 direction = (Main.MouseWorld - player.Center).SafeNormalize(Vector2.UnitX);
             Vector2 spawn = player.Center + direction * 24f;
 
-            Projectile.NewProjectile(source, spawn, direction * Item.shootSpeed, type, damage, knockback, player.whoAmI);
-            Projectile.NewProjectile(source, spawn, direction.RotatedBy(0.12f) * Item.shootSpeed, type, (int)(damage * 0.9f), knockback, player.whoAmI, ai0: 1);
-            Projectile.NewProjectile(source, spawn, direction.RotatedBy(-0.12f) * Item.shootSpeed, type, (int)(damage * 0.9f), knockback, player.whoAmI, ai0: 1);
+            swingCount++;
+            // 每第三斩为「断罪爆斩」：五道扇形斩浪 + 撕开虚空裂隙
+            bool surge = swingCount % 3 == 0;
+            int waveCount = surge ? 5 : 3;
+            float spread = surge ? 0.26f : 0.12f;
+
+            for (int i = 0; i < waveCount; i++) {
+                float t = waveCount == 1 ? 0f : (i / (float)(waveCount - 1) * 2f - 1f);
+                Vector2 vel = direction.RotatedBy(t * spread) * Item.shootSpeed;
+                int dmg = i == 0 ? damage : (int)(damage * 0.9f);
+                Projectile.NewProjectile(source, spawn, vel, type, dmg, knockback, player.whoAmI, ai0: i == 0 ? 0f : 1f);
+            }
+
+            if (surge) {
+                Projectile.NewProjectile(source, Main.MouseWorld, Vector2.Zero,
+                    ModContent.ProjectileType<AureateVoidRift>(),
+                    (int)(damage * 0.55f), knockback * 0.4f, player.whoAmI);
+                SoundEngine.PlaySound(SoundID.Item122 with { Pitch = 0.2f, Volume = 0.7f }, player.Center);
+                if (player.whoAmI == Main.myPlayer)
+                    player.GetModPlayer<ScreenShakePlayer>().ShakeScreen(4, 8);
+            }
 
             return false;
         }
@@ -511,6 +575,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors.Items
         public override void ModifyTooltips(List<TooltipLine> tooltips) {
             tooltips.Add(new TooltipLine(Mod, "VoidrenderLore", "神威裁决后凝成的金装虚空刃"));
             tooltips.Add(new TooltipLine(Mod, "VoidrenderEffect", "高速挥砍释放三道穿透型金紫虚空斩浪"));
+            tooltips.Add(new TooltipLine(Mod, "VoidrenderEffect2", "每第三斩爆发五道扇形斩浪，并在光标处撕开吞噬虚空裂隙"));
         }
     }
 
@@ -613,6 +678,96 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors.Items
         }
     }
 
+    /// <summary>虚空裂隙 — 断罪爆斩撕开的金紫漩涡，将敌人拖向中心并持续切割。</summary>
+    public class AureateVoidRift : ModProjectile
+    {
+        public override string Texture => "AncientChineseMythology/Textures/Masking/SoftGlow";
+
+        private static readonly Color PurpleVoid = new(120, 70, 200);
+        private const int Duration = 54;
+        private ref float Age => ref Projectile.ai[0];
+
+        public override void SetDefaults() {
+            Projectile.width = Projectile.height = 120;
+            Projectile.friendly = true;
+            Projectile.DamageType = DamageClass.Melee;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = Duration;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 9;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+
+        public override void AI() {
+            Age++;
+            float progress = Age / Duration;
+            float radius = MathHelper.SmoothStep(40f, 150f, ACMUtils.QuadOut(progress));
+
+            for (int i = 0; i < Main.maxNPCs; i++) {
+                NPC npc = Main.npc[i];
+                if (!npc.CanBeChasedBy()) continue;
+                float dist = Vector2.Distance(npc.Center, Projectile.Center);
+                if (dist >= radius || dist < 8f) continue;
+                Vector2 pull = (Projectile.Center - npc.Center).SafeNormalize(Vector2.Zero) * (1f - dist / radius) * 4.5f;
+                npc.velocity += pull;
+            }
+
+            if (Main.netMode != NetmodeID.Server && Main.rand.NextBool()) {
+                float ang = Main.rand.NextFloat(MathHelper.TwoPi);
+                Vector2 pos = Projectile.Center + ang.ToRotationVector2() * radius;
+                int dustType = Main.rand.NextBool() ? DustID.GoldFlame : DustID.Shadowflame;
+                Dust d = Dust.NewDustPerfect(pos, dustType, (Projectile.Center - pos).SafeNormalize(Vector2.Zero) * Main.rand.NextFloat(3f, 7f), 60, default, 1.6f);
+                d.noGravity = true;
+            }
+
+            Lighting.AddLight(Projectile.Center, Color.Lerp(VigorWeaponFx.RuneGold, PurpleVoid, 0.5f).ToVector3() * 0.7f);
+        }
+
+        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
+            float progress = Age / Duration;
+            float radius = MathHelper.SmoothStep(40f, 150f, ACMUtils.QuadOut(progress));
+            return Vector2.Distance(Projectile.Center, targetHitbox.ClosestPointInRect(Projectile.Center)) <= radius;
+        }
+
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            VigorWeaponFx.ApplySinMark(target, 240);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            SpriteBatch sb = Main.spriteBatch;
+            float progress = Age / Duration;
+            float radius = MathHelper.SmoothStep(40f, 150f, ACMUtils.QuadOut(progress));
+            float alpha = MathHelper.SmoothStep(1f, 0f, progress) * 0.9f;
+            Vector2 drawPos = Projectile.Center - Main.screenPosition;
+
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+
+            Texture2D sg = ACMAsset.SoftGlow;
+            Texture2D star = ACMAsset.BlankStar;
+            if (sg != null) {
+                Color outer = PurpleVoid * (alpha * 0.5f); outer.A = 0;
+                sb.Draw(sg, drawPos, null, outer, 0f, sg.Size() * 0.5f, radius / 50f, SpriteEffects.None, 0);
+                Color core = VigorWeaponFx.WhiteGold * (alpha * 0.6f); core.A = 0;
+                sb.Draw(sg, drawPos, null, core, 0f, sg.Size() * 0.5f, radius / 130f, SpriteEffects.None, 0);
+            }
+            if (star != null) {
+                Color ring = Color.Lerp(VigorWeaponFx.RuneGold, PurpleVoid, 0.5f) * (alpha * 0.65f); ring.A = 0;
+                sb.Draw(star, drawPos, null, ring, Age * 0.12f, star.Size() * 0.5f, radius / 110f, SpriteEffects.None, 0);
+                sb.Draw(star, drawPos, null, ring * 0.7f, -Age * 0.16f, star.Size() * 0.5f, radius / 150f, SpriteEffects.None, 0);
+            }
+
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+            return false;
+        }
+    }
+
     /// <summary>
     /// 裁决印锤 — 神威 apex 重锤爆发
     /// 命中释放全场裁决震波，并施加封印缓速
@@ -653,12 +808,21 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors.Items
         public override void OnHitNPC(Player player, NPC target, NPC.HitInfo hit, int damageDone) {
             VigorWeaponFx.ApplyVerdictSealSlow(target);
             VigorWeaponFx.ReleaseVerdictShockwave(player.GetSource_OnHit(target), player, target.Center, Item.damage, Item.knockBack);
+
+            // 裁决印 — 在目标头顶凝出符印，蓄势后轰然落下（同时最多 3 印）
+            int sigilType = ModContent.ProjectileType<VerdictSealSigil>();
+            if (Main.netMode != NetmodeID.MultiplayerClient && player.ownedProjectileCounts[sigilType] < 3) {
+                Projectile.NewProjectile(player.GetSource_OnHit(target),
+                    target.Center - new Vector2(0f, 360f), Vector2.Zero, sigilType,
+                    (int)(Item.damage * 1.4f), Item.knockBack, player.whoAmI, ai0: target.whoAmI);
+            }
         }
 
         public override void ModifyTooltips(List<TooltipLine> tooltips) {
             tooltips.Add(new TooltipLine(Mod, "VerdictSealLore", "神威陨落后凝成的裁决重锤"));
             tooltips.Add(new TooltipLine(Mod, "VerdictSealEffect", "命中释放全场裁决震波"));
             tooltips.Add(new TooltipLine(Mod, "VerdictSealEffect2", "震波与重击对敌人施加封印缓速"));
+            tooltips.Add(new TooltipLine(Mod, "VerdictSealEffect3", "命中召出裁决印，蓄势后轰然砸落，造成重创与二次震波"));
         }
 
         public override string Texture => "Terraria/Images/Item_" + ItemID.PaladinsHammer;
@@ -788,6 +952,115 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors.Items
             main.A = 0;
             Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, main,
                 Projectile.rotation, origin, 0.65f, SpriteEffects.None, 0);
+            return false;
+        }
+    }
+
+    /// <summary>裁决印 — 悬于目标头顶蓄势的符印，蓄满后轰然砸落，造成重创并引发二次裁决震波。</summary>
+    public class VerdictSealSigil : ModProjectile
+    {
+        public override string Texture => "AncientChineseMythology/Textures/Masking/GlaciateWave";
+
+        private const int ChargeTime = 34;
+        private ref float Timer => ref Projectile.ai[1];
+        private ref float TargetIndex => ref Projectile.ai[0];
+        private bool _slammed;
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.TrailCacheLength[Type] = 6;
+            ProjectileID.Sets.TrailingMode[Type] = 2;
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = Projectile.height = 60;
+            Projectile.friendly = true;
+            Projectile.DamageType = DamageClass.Melee;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = ChargeTime + 30;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = -1;
+        }
+
+        public override void AI() {
+            Timer++;
+            int idx = (int)TargetIndex;
+            Vector2 anchor = Projectile.Center;
+            if (idx >= 0 && idx < Main.maxNPCs && Main.npc[idx].active)
+                anchor = Main.npc[idx].Center;
+
+            if (Timer < ChargeTime) {
+                // 头顶悬停蓄势
+                Vector2 hover = anchor - new Vector2(0f, 320f);
+                Projectile.Center = Vector2.Lerp(Projectile.Center, hover, 0.2f);
+                Lighting.AddLight(Projectile.Center, VigorWeaponFx.RuneGold.ToVector3() * 0.8f);
+
+                if (Main.netMode != NetmodeID.Server && Main.rand.NextBool(2)) {
+                    Vector2 pos = Projectile.Center + Main.rand.NextVector2Circular(40f, 40f);
+                    Dust d = Dust.NewDustPerfect(pos, Main.rand.NextBool() ? DustID.GoldFlame : DustID.BlueTorch,
+                        (Projectile.Center - pos).SafeNormalize(Vector2.Zero) * 3f, 60, default, 1.5f);
+                    d.noGravity = true;
+                }
+            }
+            else {
+                // 急速落下
+                Vector2 toTarget = (anchor - Projectile.Center);
+                if (toTarget.Length() > 24f)
+                    Projectile.Center += toTarget.SafeNormalize(Vector2.UnitY) * 36f;
+                else if (!_slammed)
+                    Slam(anchor);
+            }
+        }
+
+        private void Slam(Vector2 center) {
+            _slammed = true;
+            VigorWeaponFx.SpawnVerdictBurst(center, 2f);
+            SoundEngine.PlaySound(SoundID.DD2_MonkStaffGroundImpact with { Volume = 1f, Pitch = -0.2f }, center);
+
+            if (Main.netMode != NetmodeID.MultiplayerClient) {
+                Player owner = Main.player[Projectile.owner];
+                VigorWeaponFx.ReleaseVerdictShockwave(Projectile.GetSource_FromThis(), owner, center, Projectile.damage, Projectile.knockBack);
+                int idx = (int)TargetIndex;
+                if (idx >= 0 && idx < Main.maxNPCs && Main.npc[idx].active && Projectile.owner == Main.myPlayer) {
+                    NPC t = Main.npc[idx];
+                    VigorWeaponFx.ApplyVerdictSealSlow(t);
+                    t.SimpleStrikeNPC(Projectile.damage, t.Center.X >= center.X ? 1 : -1, true, Projectile.knockBack, DamageClass.Melee);
+                }
+            }
+            Projectile.timeLeft = Math.Min(Projectile.timeLeft, 4);
+        }
+
+        public override bool? CanDamage() => false;
+
+        public override bool PreDraw(ref Color lightColor) {
+            SpriteBatch sb = Main.spriteBatch;
+            Texture2D glaciate = ACMAsset.GlaciateWave;
+            Texture2D star = ACMAsset.BlankStar;
+            float chargeFrac = MathHelper.Clamp(Timer / ChargeTime, 0f, 1f);
+            Vector2 drawPos = Projectile.Center - Main.screenPosition;
+
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+
+            if (star != null) {
+                float spin = Main.GlobalTimeWrappedHourly * 3f;
+                Color rune = Color.Lerp(VigorWeaponFx.RuneBlue, VigorWeaponFx.RuneGold, chargeFrac) * (0.5f + chargeFrac * 0.45f);
+                rune.A = 0;
+                sb.Draw(star, drawPos, null, rune, spin, star.Size() * 0.5f, 0.5f + chargeFrac * 0.35f, SpriteEffects.None, 0);
+                sb.Draw(star, drawPos, null, rune * 0.7f, -spin * 0.7f, star.Size() * 0.5f, 0.32f + chargeFrac * 0.2f, SpriteEffects.None, 0);
+            }
+            // 蓄势时垂下的预兆光柱
+            if (glaciate != null && Timer < ChargeTime) {
+                Color beam = VigorWeaponFx.WhiteGold * (chargeFrac * 0.35f); beam.A = 0;
+                sb.Draw(glaciate, drawPos, null, beam, MathHelper.PiOver2,
+                    new Vector2(0f, glaciate.Height * 0.5f), new Vector2(0.9f, 0.04f + chargeFrac * 0.05f), SpriteEffects.None, 0);
+            }
+
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
             return false;
         }
     }

@@ -52,11 +52,11 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
                     float distance = Main.LocalPlayer.Distance(boss.Center);
                     float t = MathHelper.Clamp(distance / 1600f, 0f, 1f);
 
-                    //亡灵风格多重色阶：深靛 -> 幽蓝紫 -> 淡蓝魂光
+                    //瘟疫亡灵色阶：腐绿 -> 病黄绿 -> 尸绿魂光（越近越病态）
                     skyColor = VaultUtils.MultiStepColorLerp(t,
-                        new Color(20, 20, 40),   //深靛（最压迫）
-                        new Color(40, 60, 90),   //幽蓝紫
-                        new Color(80, 130, 160)); //魂蓝（近Boss时）
+                        new Color(18, 34, 22),   //腐暗绿（最压迫）
+                        new Color(46, 78, 40),   //病黄绿
+                        new Color(96, 170, 90));  //尸绿魂光（近Boss时）
 
                     if (intensity < maxIntensity)
                         intensity += 0.01f;
@@ -81,18 +81,18 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
                 new Rectangle((int)shake.X, (int)shake.Y, Main.screenWidth, Main.screenHeight),
                 skyColor * intensity);
 
-            //渐变冷色雾气层（由 HanbaSkyColorBar 替代使用）
+            //渐变疠气雾层（病绿）
             if (HanbaSkyColorBar?.Value != null) {
-                Color mistColor = VaultUtils.MultiStepColorLerp(0.4f, Color.Cyan, Color.Blue);
+                Color mistColor = VaultUtils.MultiStepColorLerp(0.4f, new Color(120, 220, 100), new Color(40, 120, 60));
                 spriteBatch.Draw(HanbaSkyColorBar.Value,
                     new Rectangle(0, 0, Main.screenWidth, Main.screenHeight),
                     mistColor * intensity);
             }
 
-            //冥日替代图（可命名为幽月/冥眼等）
+            //冥月 / 疫眼（病绿光晕）
             if (HanbaSkySun?.Value != null) {
                 Vector2 sunPos = new Vector2(Main.screenWidth / 2f, 140);
-                Color sunColor = new Color(100, 150, 255, 0) * intensity * 1.5f;
+                Color sunColor = new Color(150, 255, 130, 0) * intensity * 1.5f;
 
                 spriteBatch.Draw(HanbaSkySun.Value,
                     sunPos, null, sunColor, 0f, HanbaSkySun.Size() / 2f, 1.8f, SpriteEffects.None, 0f);
@@ -100,8 +100,8 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
         }
 
         public override Color OnTileColor(Color inColor) {
-            //所有地表颜色变冷/失色
-            Color desaturated = Color.Lerp(inColor, Color.DarkSlateGray, 0.4f);
+            //所有地表颜色染上病态尸绿/失色
+            Color desaturated = Color.Lerp(inColor, new Color(60, 90, 55), 0.45f);
             return Color.Lerp(inColor, desaturated, intensity);
         }
     }

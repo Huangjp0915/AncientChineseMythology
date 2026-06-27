@@ -105,7 +105,50 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
                  NPC.velocity.Y > 0 && NPC.oldVelocity.Y < 0 || NPC.velocity.Y < 0 && NPC.oldVelocity.Y > 0) && !NPC.justHit)
                 NPC.netUpdate = true;
 
+            // === V2 风暴屏幕演出（纯本地视觉，每帧发布标量给屏幕系统） ===
+            if (!VaultUtils.isServer)
+                UpdateStormScreenFx();
+
             return false;
+        }
+
+        #endregion
+
+        #region V2 风暴屏幕演出 — 标量驱动
+
+        /// <summary>
+        /// 每帧平滑推进风暴屏幕标量并发布给 <see cref="AoshunStormScreenSystem"/>。
+        /// 设计契约: 风暴压暗 = StormCharge 电量(恒定可读的危险底色); 满电触发一次性"雷暴临界"演出;
+        /// 深渊伏击潜地拍把屏幕压得更暗(静默)。红色只留给真正致命的雷柱/风暴之眼边界(弹幕/法阵侧)。
+        /// 不改任何战斗逻辑，仅读状态。
+        /// </summary>
+        private void UpdateStormScreenFx() {
+            float chargeRatio = MathHelper.Clamp(StormCharge / MaxStormCharge, 0f, 1f);
+
+            // —— 风暴压暗底色 = 电量条 + 阶段底线 ——
+            float tintTarget = 0.10f + chargeRatio * 0.40f;
+            if (IsPhase2)
+                tintTarget = System.Math.Max(tintTarget, 0.42f);
+            // 深渊伏击潜地/预警拍: 屏幕更暗、更静默
+            if (CurrentState == AoshunState.Submerge ||
+                (CurrentState == AoshunState.Emerge && attackTimer < 60))
+                tintTarget = System.Math.Max(tintTarget, 0.60f);
+            // 相变定调拉满
+            if (CurrentState == AoshunState.PhaseTransition)
+                tintTarget = System.Math.Max(tintTarget, 0.72f);
+
+            stormTintFx = MathHelper.Lerp(stormTintFx, tintTarget, tintTarget > stormTintFx ? 0.06f : 0.03f);
+
+            // —— 满电"雷暴临界"边沿: 一次性全屏闪 + 短震 ——
+            bool fullyCharged = IsFullyCharged;
+            if (fullyCharged && !stormWasFullyCharged) {
+                AoshunStormScreenSystem.PulseBloom(0.85f);
+                ACMUtils.AddScreenShake(7f);
+            }
+            stormWasFullyCharged = fullyCharged;
+
+            AoshunStormScreenSystem.Publish(NPC.Center, stormTintFx, 0f, fullyCharged,
+                stormEyeActive, stormEyeCenter, stormEyeRadius, globalTime);
         }
 
         #endregion
@@ -480,6 +523,10 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
                 // 高速上冲爆出
                 NPC.velocity = new Vector2(0, -ChargeSpeed);
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.3f, Volume = 1.5f }, NPC.Center);
+                if (!VaultUtils.isServer) {
+                    AoshunStormScreenSystem.PulseBloom(0.7f);
+                    ACMUtils.AddScreenShake(6f);
+                }
             }
             else if (attackTimer < 100) {
                 // 持续上冲
@@ -491,6 +538,11 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
                 if (attackTimer == 100 && Main.netMode != NetmodeID.MultiplayerClient) {
                     AoshunAttacks.SpawnShockwave(NPC, 12);
                     SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.2f, Volume = 1.2f }, NPC.Center);
+                }
+                if (attackTimer == 100 && !VaultUtils.isServer) {
+                    // 深渊伏击爆出: 雷击泛光 + 强震（屏息后的炸开）
+                    AoshunStormScreenSystem.PulseBloom(0.95f);
+                    ACMUtils.AddScreenShake(10f);
                 }
 
                 if (attackTimer >= 120) {
@@ -533,11 +585,17 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 
             if (attackTimer == 30) {
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.8f, Volume = 2f }, NPC.Center);
+                if (!VaultUtils.isServer) {
+                    AoshunStormScreenSystem.PulseBloom(0.6f);
+                    ACMUtils.AddScreenShake(9f);
+                }
             }
 
             // 全屏闪电效果
             if (attackTimer == 60 && !VaultUtils.isServer) {
                 AoshunHelper.CreateThunderBurst(NPC.Center, 400f, 6, 30);
+                AoshunStormScreenSystem.PulseBloom(1f);
+                ACMUtils.AddScreenShake(12f);
             }
 
             if (attackTimer >= 90) {
@@ -748,6 +806,8 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 
                 if (!VaultUtils.isServer) {
                     AoshunHelper.CreateThunderBurst(NPC.Center, 300f, 5, 25);
+                    AoshunStormScreenSystem.PulseBloom(0.85f);
+                    ACMUtils.AddScreenShake(10f);
                 }
             }
             else {
@@ -773,6 +833,13 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
                     AoshunAttacks.SpawnStormEye(NPC, player.Center, duration);
                 }
                 SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.5f, Volume = 1.8f }, player.Center);
+                // 风暴之眼定调: 屏幕系统接管安全区边界环 telegraph
+                stormEyeActive = true;
+                stormEyeCenter = player.Center;
+                if (!VaultUtils.isServer) {
+                    AoshunStormScreenSystem.PulseBloom(0.7f);
+                    ACMUtils.AddScreenShake(6f);
+                }
             }
 
             // 蠕虫在风暴中继续攻击，增加压力
@@ -782,7 +849,16 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
             }
 
             int totalDuration = Main.expertMode ? 300 : 240;
-            return attackTimer >= totalDuration + 30;
+
+            // 同步安全区边界环到弹幕缩圈节奏（MaxRadius 700 → MinRadius 200，SineInOut）
+            float eyeProgress = MathHelper.Clamp((float)attackTimer / totalDuration, 0f, 1f);
+            stormEyeRadius = MathHelper.Lerp(700f, 200f, AoshunHelper.SineInOut(eyeProgress));
+
+            if (attackTimer >= totalDuration + 30) {
+                stormEyeActive = false;
+                return true;
+            }
+            return false;
         }
 
         // ===== 8. 雷霆连环冲（二阶段）=====
@@ -801,6 +877,10 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
                 // 选定冲刺方向
                 chargeDirection = (player.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
                 SoundEngine.PlaySound(SoundID.Item73 with { Pitch = 0.3f, Volume = 1.2f }, NPC.Center);
+                if (!VaultUtils.isServer) {
+                    AoshunStormScreenSystem.PulseBloom(0.5f);
+                    ACMUtils.AddScreenShake(5f);
+                }
             }
 
             int phaseTimer = attackTimer % chargePhaseTime;

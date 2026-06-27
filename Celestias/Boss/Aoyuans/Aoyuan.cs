@@ -10,11 +10,15 @@ using AncientChineseMythology.Items.Materials;
 namespace AncientChineseMythology.Celestias.Boss.Aoyuans
 {
     /// <summary>
-    /// 西海龙王敖闰 - 月后初期Boss
-    /// 冰霜/寒水属性龙王主题，蠕虫多段NPC身体结构
-    /// 头部纹理3帧（112×438），身体纹理5帧（112×320）
-    /// 一阶段：龙王巡游，冰弹和寒息
-    /// 二阶段：狂暴冲刺，冰暴龙卷和冰晶雨
+    /// 西海龙王敖闰 - 月后初期Boss（第3条龙王脊柱，西海珠门控，敖钦之后）
+    /// 冰霜/寒水属性蠕虫龙王主题
+    ///
+    /// ==========  重做设计理念（移植敖顺 FSM 架构）  ==========
+    /// ● AI架构：正规状态机（出场→巡逻→预攻击→攻击→冷却→阶段转换），替代原 0-400 计时器循环
+    /// ● 签名机制：永冻立场（Permafrost Field）——巡游时留下寒冰地痕，玩家站在地痕上叠加冰冻层（减速→3层冻结约1秒）
+    /// ● 攻击体系：6个带预告的命名攻击（冰晶棋局/暴雪帷幕/寒霜吐息/冰柱雨/冰霜环 + 二阶段·绝对零度大招）
+    /// ● 阶段转换：50% “浮空破境”——脱离贴地钻行，二阶段地痕令地面打滑，解锁空中俯冲攻击（改规则而非加弹）
+    /// ● 蠕虫身体：绝对零度蓄力时身体段暴露冰晶弱点，玩家击破弱点可打断/削弱全屏冻结
     /// </summary>
     [AutoloadBossHead]
     internal partial class Aoyuan : ModNPC
@@ -30,75 +34,118 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
         /// <summary>头部纹理帧数</summary>
         private const int HeadFrameCount = 3;
 
+        /// <summary>一阶段巡游速度</summary>
+        private const float PatrolSpeed = 12f;
+        /// <summary>二阶段巡游速度</summary>
+        private const float PatrolSpeedPhase2 = 15f;
+
+        /// <summary>巡逻切换攻击的最小间隔（帧）</summary>
+        private const int MinPatrolDuration = 150;
+        /// <summary>巡逻切换攻击的最大间隔（帧）</summary>
+        private const int MaxPatrolDuration = 300;
+
+        /// <summary>预攻击（蓄力电报）帧数</summary>
+        private const int PreAttackDuration = 45;
+        /// <summary>攻击后冷却帧数</summary>
+        private const int CooldownDuration = 55;
+
         #endregion
 
         #region 状态枚举
 
-        public enum BossPhase
+        /// <summary>AI主状态机</summary>
+        public enum AoyuanState
         {
-            Intro,
-            // 一阶段
-            Phase1_Patrol,
-            Phase1_IceBarrage,
-            Phase1_FrostBreath,
-            Phase1_TailWhip,
-            Phase1_BlizzardRain,
-            // 阶段转换
-            PhaseTransition_2,
-            // 二阶段
-            Phase2_FuryCharge,
-            Phase2_IceVortex,
-            Phase2_FrostStorm,
-            Phase2_AbyssalBreath,
-            Phase2_Divebomb,
-            Phase2_IceLance
+            Intro,           // 出场
+            Patrol,          // 蠕虫巡游追踪，铺设永冻地痕
+            PreAttack,       // 攻击前的蓄力电报
+            Attacking,       // 执行攻击
+            Cooldown,        // 攻击后冷却
+            PhaseTransition  // 50% 浮空破境
         }
+
+        /// <summary>攻击类型</summary>
+        public enum AoyuanAttackType
+        {
+            // --- 一阶段 ---
+            GlacialPillarChess, // 冰晶棋局：预告 3x3 幽灵冰柱，仅部分落下
+            BlizzardVeil,       // 暴雪帷幕：推进的雪墙，留一道移动缺口
+            FrostBreath,        // 寒霜吐息：张嘴蓄力 → 锥形冰锥吐息（专用张嘴动画）
+            IcicleRainCombo,    // 冰柱雨：多波次天降冰柱
+            FrostRingCombo,     // 冰霜环：环形冰弹 + 冰柱穿插
+            // --- 二阶段追加 ---
+            AbsoluteZero        // 绝对零度：锚定 + 3秒吸气蓄力 → 全屏放射冻结（可破弱点）
+        }
+
+        /// <summary>一阶段攻击数量</summary>
+        private const int Phase1AttackCount = 5;
+        /// <summary>二阶段攻击数量</summary>
+        private const int Phase2AttackCount = 6;
 
         #endregion
 
         #region 状态字段
 
-        // 使用localAI存储阶段状态，ai[0]用于蠕虫初始化标记
-        // ai[0]: 蠕虫是否已初始化（0=未初始化，1=已初始化）
-        // ai[1]: 通用计时器
-        // ai[2]: 未使用
-        // ai[3]: 脱战计时器
+        // NPC.ai[0]: 蠕虫是否已初始化（0=未初始化，1=已初始化）
+        // NPC.ai[1]: 通用计时器（保留）
+        // NPC.ai[2]: 当前攻击类型（AoyuanAttackType）
+        // NPC.ai[3]: 脱战计时器
 
         /// <summary>是否处于二阶段</summary>
         public bool IsPhase2 => NPC.life < NPC.lifeMax * Phase2Threshold;
 
         // 阶段状态（用internalAI网络同步）
         public float[] internalAI = new float[4];
-        // internalAI[0]: 攻击总计时器
-        // internalAI[1]: 攻击类型选择
-        // internalAI[2]: 阶段标记
-        // internalAI[3]: 子状态
+        // internalAI[0]: 当前主状态（AoyuanState）
+        // internalAI[1]: 攻击进度（保留）
+        // internalAI[2]: 是否已浮空破境（0/1）
+        // internalAI[3]: 下次巡逻时长
 
-        // 私有状态
+        private AoyuanState CurrentState {
+            get => (AoyuanState)(int)internalAI[0];
+            set => internalAI[0] = (float)value;
+        }
+
+        // 私有运行时状态
+        private bool despawn;
+        private bool didPhase2Transition;
+
+        // 张嘴动画（寒霜吐息/大招）
         private bool fireAttack;
         private int attackFrame;
         private int attackCounter;
+
+        // 通用攻击计时
         private int attackTimer;
-        private bool didPhase2Transition;
+        private int patrolTimer;
+        private int patrolDuration;
 
-        // 冲刺控制
-        private Vector2 chargeTarget;
-        private int chargeCount;
-        private int maxChargeCount;
+        // 永冻地痕节流
+        private int trailTimer;
 
-        // 俯冲冷却
-        private int divebombCooldown;
+        // 暴雪帷幕计数
+        private int veilCount;
+        // 冰柱雨/冰霜环波次
+        private int waveCount;
 
-        // 冰柱激光冷却
-        private int beamCooldown;
-
-        // 龙息连射计数
-        private int breathBurstCount;
+        // 绝对零度弱点机制（公开供身体段读取）
+        /// <summary>绝对零度蓄力中：身体段暴露冰晶弱点</summary>
+        public bool WeakPointsExposed;
+        /// <summary>蓄力期间身体段累计承受的伤害（用于判断是否打断）</summary>
+        public int WeakPointDamageTaken;
 
         // 视觉效果
         private float globalTime;
-        private float frostAuraAlpha;
         private float glowIntensity = 1f;
+
+        // V2 霜冻屏幕演出标量（纯本地视觉, 0~1, 由 UpdateFrostScreenFx 平滑驱动）
+        private float frostTint;    // ElementalScreenTint 二阶段氛围底色
+        private float frostWarp;    // GenericWarp(frost) 全屏扭曲（仅大招/破境的签名时刻）
+        private float freezeBloom;  // 绝对零度释放冻爆泛光（释放瞬间置 1, 逐帧衰减）
+        private float arenaRunic;   // 蓄力期向心收口霜冻法阵地纹
+
+        // 攻击历史（避免连续相同攻击）
+        private AoyuanAttackType lastAttack = (AoyuanAttackType)(-1);
 
         #endregion
 

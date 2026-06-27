@@ -60,17 +60,40 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            Texture2D back = VaultAsset.placeholder2.Value;
-            Vector2 drawPos = Projectile.Center - Main.screenPosition;
-            int width = 14400;
-            int height = (int)(Projectile.localAI[0] * 3);
-            if (Projectile.localAI[0] < 0) height = (int)(Math.Abs(Projectile.localAI[0]) * 4f); //前置阶段渐增
-            float alpha = Projectile.localAI[1] / 60f;
-            Rectangle rect = new Rectangle(-width / 2, -height / 2, width, height);
-            Vector2 origin = new Vector2(rect.Width / 2, rect.Height / 2);
-            Color drawColor = VaultUtils.MultiStepColorLerp(MathHelper.Clamp(Projectile.localAI[0] / 40f, 0, 1), Color.Azure, Color.Red);
-            Main.spriteBatch.Draw(back, drawPos, rect, drawColor with { A = 155 } * alpha,
-                Projectile.velocity.ToRotation(), origin, 1f, SpriteEffects.None, 0f);
+            if (Main.dedServ)
+                return false;
+
+            // V2: 刀光升格为 BeamGrad 流动梯度直带 (toolkit §A.6 DrawBeam)。
+            // 充能越满越红 = 致命预警 (§6.1 红只留给伤害源): 充满后旋即生成 SaberKiller(真实刀刃)。
+            float chargeT;   // 0~1 充能进度(→红)
+            float thickness; // 屏幕像素全宽
+            float intensity; // 0~1 整体亮度/淡入淡出
+            if (Projectile.localAI[0] < 0) {
+                // 前置旋转/收束阶段: 细预告线渐增, 蓝色 (尚未致命)
+                float pre = MathHelper.Clamp(Math.Abs(Projectile.localAI[0]) / 60f, 0f, 1f);
+                chargeT = pre * 0.35f;
+                thickness = MathHelper.Lerp(6f, 26f, pre);
+                intensity = pre * 0.7f;
+            }
+            else {
+                chargeT = MathHelper.Clamp(Projectile.localAI[0] / 40f, 0f, 1f);
+                thickness = MathHelper.Lerp(8f, 64f, chargeT);
+                intensity = MathHelper.Clamp(Projectile.localAI[1] / 30f, 0f, 1f);
+            }
+            if (intensity <= 0.01f)
+                return false;
+
+            Vector2 dir = Projectile.velocity.SafeNormalize(Vector2.UnitX);
+            const float halfLen = 2600f;
+            Vector2 start = Projectile.Center - dir * halfLen;
+            Vector2 end = Projectile.Center + dir * halfLen;
+
+            Color core = Color.Lerp(new Color(190, 224, 255), TelegraphColors.Lethal, chargeT);
+            Color edge = Color.Lerp(new Color(40, 90, 160), new Color(150, 20, 30), chargeT);
+            edge.A = 0;
+
+            ACMShaders.DrawBeam(start, end, thickness * 0.5f, core, edge, intensity,
+                flowSpeed: 2.2f, flowScale: 2.6f, coreSharp: 2.4f);
             return false;
         }
     }

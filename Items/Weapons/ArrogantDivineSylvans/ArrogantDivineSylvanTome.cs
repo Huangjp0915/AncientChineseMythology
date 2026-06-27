@@ -7,6 +7,7 @@ using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 using AncientChineseMythology.Celestias.Boss.Dazhengs.Items;
+using AncientChineseMythology.Helpers;
 using AncientChineseMythology.Items.Weapons.DivineWoods;
 
 namespace AncientChineseMythology.Items.Weapons.ArrogantDivineSylvans;
@@ -68,6 +69,8 @@ public class ArrogantDivineSylvanTome : ModItem
                 ModContent.ProjectileType<ArrogantSylvanLeafVortex>(),
                 damage * 2, knockback * 2f, player.whoAmI);
             SoundEngine.PlaySound(SoundID.Item17 with { Volume = 1f, Pitch = 0.3f }, vortexPos);
+            // 叶暴漩涡触发技 → 短暂金翠染屏定调 (占全屏唯一名额, 同屏≤1 自动仲裁)
+            ArrogantSylvanScreenTint.Spawn(source, vortexPos, player.whoAmI);
         }
 
         // 释放叶片尘雾 - 金翠交替
@@ -169,6 +172,8 @@ public class ArrogantSylvanTomeLeaf : ModProjectile
                 Main.rand.NextVector2Circular(5f, 5f), 40, default, 1.8f);
             d.noGravity = true;
         }
+        ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+            ACMWeaponBurst.ArrogantSylvan, scale: 1f, owner: Projectile.owner);
 
         // 50%概率释放次生追踪花瓣
         if (Main.rand.NextBool() && Projectile.owner == Main.myPlayer) {
@@ -401,10 +406,14 @@ public class ArrogantSylvanLeafVortex : ModProjectile
                 new Vector2(0.10f, bLen), SpriteEffects.None, 0);
         }
 
-        // 外层柔光环
+        // 外层柔光环 — 金 (统一金翠双色基调)
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-            new Color(200, 255, 100) * (0.35f * fadeAlpha), 0f,
-            sg.Size() * 0.5f, scale * 1.3f, SpriteEffects.None, 0);
+            new Color(225, 185, 75) * (0.32f * fadeAlpha), 0f,
+            sg.Size() * 0.5f, scale * 1.4f, SpriteEffects.None, 0);
+        // 中层柔光环 — 翠
+        sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
+            new Color(120, 230, 110) * (0.30f * fadeAlpha), 0f,
+            sg.Size() * 0.5f, scale * 1.0f, SpriteEffects.None, 0);
 
         // 中心核心
         float pulse = 0.5f + 0.15f * MathF.Sin(Timer * 0.20f);

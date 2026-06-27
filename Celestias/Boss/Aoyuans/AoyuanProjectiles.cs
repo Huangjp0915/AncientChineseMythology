@@ -523,4 +523,380 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
     }
 
     #endregion
+
+    #region 永冻地痕 - 签名机制（无伤害，叠加冰冻/打滑）
+
+    /// <summary>
+    /// 敖闰永冻地痕 - 敖闰巡游时留下的寒冰区域
+    /// 玩家站在地痕上叠加冰冻层（减速→3层冻结约1秒）；二阶段地痕额外令地面打滑
+    /// ai[0]: 是否二阶段地痕（0/1）
+    /// </summary>
+    public class AoyuanPermafrostTrail : ModProjectile
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+
+        private const float Radius = 70f;
+        private float trailPhase;
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.DrawScreenCheckFluff[Type] = 600;
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = (int)(Radius * 2);
+            Projectile.height = (int)(Radius * 2);
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.timeLeft = 300;
+        }
+
+        private bool IsPhase2 => Projectile.ai[0] == 1f;
+
+        public override void AI() {
+            trailPhase += 0.05f;
+            Projectile.velocity = Vector2.Zero;
+
+            // 客户端各自对本地玩家施加冰冻 / 打滑
+            if (!VaultUtils.isServer) {
+                Player lp = Main.LocalPlayer;
+                if (lp.active && !lp.dead && Vector2.Distance(lp.Center, Projectile.Center) < Radius) {
+                    var fp = lp.GetModPlayer<AoyuanFrostPlayer>();
+                    fp.AddChill();
+                    if (IsPhase2)
+                        fp.slipperyTimer = System.Math.Max(fp.slipperyTimer, 30);
+                }
+
+                if (Main.rand.NextBool(5)) {
+                    Vector2 dp = Projectile.Center + Main.rand.NextVector2Circular(Radius, Radius * 0.5f);
+                    var d = Dust.NewDustPerfect(dp, DustID.IceTorch);
+                    d.noGravity = true;
+                    d.scale = 1f + Main.rand.NextFloat(0.6f);
+                    d.velocity = new Vector2(0, -Main.rand.NextFloat(0.5f, 1.5f));
+                }
+            }
+
+            float fade = System.Math.Min(Projectile.timeLeft / 60f, 1f);
+            Lighting.AddLight(Projectile.Center, AoyuanHelper.DeepSeaBlue.ToVector3() * 0.25f * fade);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            Texture2D tex = ACMAsset.SoftGlow;
+            if (tex == null) return false;
+
+            Vector2 drawPos = Projectile.Center - Main.screenPosition;
+            Vector2 origin = tex.Size() / 2f;
+            float fadeIn = System.Math.Min((300 - Projectile.timeLeft) / 20f, 1f);
+            float fadeOut = System.Math.Min(Projectile.timeLeft / 60f, 1f);
+            float alpha = fadeIn * fadeOut;
+            float pulse = 1f + MathF.Sin(trailPhase * 2f) * 0.1f;
+
+            Color baseColor = (IsPhase2 ? AoyuanHelper.WestSeaTeal : AoyuanHelper.DeepSeaBlue) * 0.35f * alpha;
+            baseColor.A = 0;
+            float patchScale = (Radius / (tex.Width * 0.5f)) * 1.6f * pulse;
+            Main.spriteBatch.Draw(tex, drawPos, null, baseColor, 0f, origin, new Vector2(patchScale, patchScale * 0.55f), SpriteEffects.None, 0f);
+
+            Color rim = AoyuanHelper.FrostCyan * 0.25f * alpha;
+            rim.A = 0;
+            Main.spriteBatch.Draw(tex, drawPos, null, rim, 0f, origin, new Vector2(patchScale * 0.6f, patchScale * 0.33f), SpriteEffects.None, 0f);
+
+            return false;
+        }
+    }
+
+    #endregion
+
+    #region 冰晶棋局 - 预告冰柱落点
+
+    /// <summary>
+    /// 敖闰冰晶棋局预告 - 标记一个落点，仅"真柱"会落下冰柱
+    /// ai[0]: 是否真柱（1=会落冰）
+    /// </summary>
+    public class AoyuanPillarTelegraph : ModProjectile
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+
+        private const int WarnTime = 48;
+        private float telePhase;
+        private bool spawned;
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.DrawScreenCheckFluff[Type] = 900;
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = 40;
+            Projectile.height = 40;
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.timeLeft = WarnTime + 6;
+        }
+
+        private bool IsReal => Projectile.ai[0] == 1f;
+
+        public override void AI() {
+            telePhase += 0.12f;
+            Projectile.velocity = Vector2.Zero;
+
+            int elapsed = (WarnTime + 6) - Projectile.timeLeft;
+
+            if (IsReal && !spawned && elapsed >= WarnTime) {
+                spawned = true;
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    Vector2 from = Projectile.Center - new Vector2(0, 700f);
+                    int p = Projectile.NewProjectile(
+                        Projectile.GetSource_FromAI(),
+                        from,
+                        new Vector2(0, 16f),
+                        ModContent.ProjectileType<AoyuanIcicle>(),
+                        (int)Projectile.damage,
+                        Projectile.knockBack,
+                        Main.myPlayer);
+                    Main.projectile[p].tileCollide = true;
+                }
+                if (!VaultUtils.isServer)
+                    Terraria.Audio.SoundEngine.PlaySound(SoundID.Item27 with { Pitch = 0.4f, Volume = 0.6f }, Projectile.Center);
+            }
+
+            if (!VaultUtils.isServer && IsReal && Main.rand.NextBool(3)) {
+                var d = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(18, 18), DustID.FrostStaff);
+                d.noGravity = true;
+                d.scale = 1.2f;
+                d.velocity = new Vector2(0, -1f);
+            }
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            Texture2D glow = ACMAsset.SoftGlow;
+            Texture2D wave = ACMAsset.GlaciateWave;
+            Vector2 drawPos = Projectile.Center - Main.screenPosition;
+            int elapsed = (WarnTime + 6) - Projectile.timeLeft;
+            float urgency = System.Math.Clamp((float)elapsed / WarnTime, 0f, 1f);
+            float pulse = 1f + MathF.Sin(telePhase * (2f + urgency * 5f)) * 0.3f;
+
+            // 真柱：明亮冰白警示圈；虚招：暗淡（冰系预警走统一 TelegraphColors 冰蓝, 不与"红=致命"冲突）
+            Color markColor = IsReal
+                ? Color.Lerp(TelegraphColors.Frost, TelegraphColors.IceWhite, urgency) * (0.4f + urgency * 0.5f)
+                : TelegraphColors.DeepFrost * 0.18f;
+            markColor.A = 0;
+
+            if (glow != null) {
+                Vector2 origin = glow.Size() / 2f;
+                float scale = (IsReal ? 0.7f : 0.45f) * pulse;
+                Main.spriteBatch.Draw(glow, drawPos, null, markColor, 0f, origin, scale, SpriteEffects.None, 0f);
+            }
+
+            // 真柱额外画一道下落预告竖光（GlaciateWave 旋转竖立）
+            if (IsReal && wave != null) {
+                Vector2 wo = wave.Size() / 2f;
+                Color beam = TelegraphColors.Frost * (0.15f + urgency * 0.35f);
+                beam.A = 0;
+                Main.spriteBatch.Draw(wave, drawPos - new Vector2(0, 120), null, beam, MathHelper.PiOver2,
+                    wo, new Vector2(0.5f * urgency, 0.18f), SpriteEffects.None, 0f);
+            }
+
+            return false;
+        }
+    }
+
+    #endregion
+
+    #region 暴雪帷幕 - 推进雪墙带缺口
+
+    /// <summary>
+    /// 敖闰暴雪帷幕 - 横向推进的雪墙，墙上留一道上下移动的缺口
+    /// ai[0]: 推进方向(±1)  ai[1]: 缺口中心相对偏移
+    /// </summary>
+    public class AoyuanBlizzardWall : ModProjectile
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+
+        private const float HalfHeight = 850f;
+        private const float HalfWidth = 45f;
+        private float wallPhase;
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.DrawScreenCheckFluff[Type] = 1200;
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = 60;
+            Projectile.height = 60;
+            Projectile.friendly = false;
+            Projectile.hostile = true;
+            Projectile.penetrate = -1;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.timeLeft = 300;
+        }
+
+        private float GapHalf => Main.expertMode ? 100f : 130f;
+        private float GapCenterY => Projectile.Center.Y + Projectile.ai[1] + MathF.Sin(wallPhase * 0.8f) * 170f;
+
+        public override void AI() {
+            wallPhase += 0.05f;
+
+            if (!VaultUtils.isServer) {
+                float gy = GapCenterY;
+                for (int i = 0; i < 3; i++) {
+                    float yy = Projectile.Center.Y + Main.rand.NextFloat(-HalfHeight, HalfHeight);
+                    if (System.Math.Abs(yy - gy) < GapHalf) continue;
+                    Vector2 dp = new Vector2(Projectile.Center.X + Main.rand.NextFloat(-HalfWidth, HalfWidth), yy);
+                    var d = Dust.NewDustPerfect(dp, Main.rand.NextBool() ? DustID.IceTorch : DustID.Cloud);
+                    d.noGravity = true;
+                    d.scale = 1.6f + Main.rand.NextFloat(0.6f);
+                    d.velocity = new Vector2(Projectile.velocity.X * 0.3f, Main.rand.NextFloat(-1f, 1f));
+                }
+            }
+
+            Lighting.AddLight(Projectile.Center, AoyuanHelper.FrostCyan.ToVector3() * 0.3f);
+        }
+
+        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
+            Vector2 c = targetHitbox.Center.ToVector2();
+            if (System.Math.Abs(c.X - Projectile.Center.X) > HalfWidth) return false;
+            if (c.Y < Projectile.Center.Y - HalfHeight || c.Y > Projectile.Center.Y + HalfHeight) return false;
+            // 缺口内安全
+            if (System.Math.Abs(c.Y - GapCenterY) < GapHalf) return false;
+            return true;
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            Texture2D tex = ACMAsset.SoftGlow;
+            if (tex == null) return false;
+            Vector2 origin = tex.Size() / 2f;
+            float gy = GapCenterY;
+
+            int segments = 26;
+            for (int s = 0; s <= segments; s++) {
+                float yy = Projectile.Center.Y - HalfHeight + (2 * HalfHeight) * s / segments;
+                if (System.Math.Abs(yy - gy) < GapHalf) continue;
+                Vector2 dp = new Vector2(Projectile.Center.X, yy) - Main.screenPosition;
+                Color c = AoyuanHelper.FrostCyan * 0.4f;
+                c.A = 0;
+                Main.spriteBatch.Draw(tex, dp, null, c, 0f, origin, new Vector2(1.1f, 1.4f), SpriteEffects.None, 0f);
+                Color core = AoyuanHelper.IceCrystalWhite * 0.3f;
+                core.A = 0;
+                Main.spriteBatch.Draw(tex, dp, null, core, 0f, origin, new Vector2(0.5f, 0.7f), SpriteEffects.None, 0f);
+            }
+            return false;
+        }
+    }
+
+    #endregion
+
+    #region 绝对零度 - 放射冻结波
+
+    /// <summary>
+    /// 敖闰绝对零度放射波 - 从 Boss 向外扩散的冻结环
+    /// ai[0]: 是否被打断(1=削弱版，仅减速；0=完整冻结)
+    /// 各客户端在环波经过本地玩家时施加冻结/冰冻
+    /// </summary>
+    public class AoyuanAbsoluteZeroBurst : ModProjectile
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+
+        private const float MaxRadius = 1500f;
+        private const int Lifetime = 70;
+        private const float Band = 90f;
+
+        private float burstPhase;
+        private bool appliedLocal;
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.DrawScreenCheckFluff[Type] = 3000;
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = 20;
+            Projectile.height = 20;
+            Projectile.friendly = false;
+            Projectile.hostile = true;
+            Projectile.penetrate = -1;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.timeLeft = Lifetime;
+        }
+
+        private bool Broken => Projectile.ai[0] == 1f;
+        private float Radius => MaxRadius * (1f - Projectile.timeLeft / (float)Lifetime);
+
+        public override void AI() {
+            burstPhase += 0.2f;
+            Projectile.velocity = Vector2.Zero;
+
+            float radius = Radius;
+
+            // 本地玩家被环波扫到 → 冻结 / 减速
+            if (!VaultUtils.isServer && !appliedLocal) {
+                Player lp = Main.LocalPlayer;
+                if (lp.active && !lp.dead) {
+                    float dist = Vector2.Distance(lp.Center, Projectile.Center);
+                    if (System.Math.Abs(dist - radius) < Band) {
+                        appliedLocal = true;
+                        var fp = lp.GetModPlayer<AoyuanFrostPlayer>();
+                        if (Broken) {
+                            fp.AddChill();
+                        }
+                        else {
+                            fp.frozenTimer = System.Math.Max(fp.frozenTimer, 70);
+                        }
+                    }
+                }
+            }
+
+            if (!VaultUtils.isServer) {
+                int count = System.Math.Max((int)(radius / 40f), 8);
+                for (int i = 0; i < count; i++) {
+                    float ang = MathHelper.TwoPi * i / count + burstPhase * 0.2f;
+                    Vector2 pos = Projectile.Center + ang.ToRotationVector2() * radius;
+                    if (!Main.rand.NextBool(3)) continue;
+                    var d = Dust.NewDustPerfect(pos, Main.rand.NextBool() ? DustID.IceTorch : DustID.FrostStaff);
+                    d.noGravity = true;
+                    d.scale = 2f;
+                    d.velocity = ang.ToRotationVector2() * 4f;
+                }
+            }
+
+            Lighting.AddLight(Projectile.Center, AoyuanHelper.FrostCyan.ToVector3() * 1.5f);
+        }
+
+        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
+            float dist = Vector2.Distance(Projectile.Center, targetHitbox.Center.ToVector2());
+            return System.Math.Abs(dist - Radius) < Band;
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            Texture2D tex = ACMAsset.SoftGlow;
+            if (tex == null) return false;
+            Vector2 origin = tex.Size() / 2f;
+            float radius = Radius;
+            float fade = System.Math.Min(Projectile.timeLeft / 25f, 1f);
+
+            int ringCount = System.Math.Max((int)(radius / 28f), 12);
+            // 被打断(broken)=削弱版仅减速 → 冰蓝(非致命); 完整冻结=致命 → 纯红(全局契约: 红只留给真正致命伤害源)
+            Color c = (Broken ? TelegraphColors.Frost : TelegraphColors.Lethal) * 0.55f * fade;
+            c.A = 0;
+            for (int i = 0; i < ringCount; i++) {
+                float ang = MathHelper.TwoPi * i / ringCount;
+                Vector2 pos = Projectile.Center + ang.ToRotationVector2() * radius - Main.screenPosition;
+                Main.spriteBatch.Draw(tex, pos, null, c, 0f, origin, 0.7f, SpriteEffects.None, 0f);
+            }
+            Color core = AoyuanHelper.IceCrystalWhite * 0.35f * fade;
+            core.A = 0;
+            for (int i = 0; i < ringCount; i++) {
+                float ang = MathHelper.TwoPi * i / ringCount + 0.1f;
+                Vector2 pos = Projectile.Center + ang.ToRotationVector2() * radius - Main.screenPosition;
+                Main.spriteBatch.Draw(tex, pos, null, core, 0f, origin, 0.35f, SpriteEffects.None, 0f);
+            }
+            return false;
+        }
+    }
+
+    #endregion
 }

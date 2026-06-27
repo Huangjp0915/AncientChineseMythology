@@ -1,4 +1,6 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -102,12 +104,16 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences.Items
             }
 
             // 命中粒子
-            for (int i = 0; i < 8; i++) {
+            for (int i = 0; i < 6; i++) {
                 var d = Dust.NewDustPerfect(target.Center, DustID.Shadowflame);
                 d.noGravity = true;
                 d.scale = 1.4f;
                 d.velocity = Main.rand.NextVector2Circular(6, 6);
             }
+
+            // 命中演出 (更新阶段禁止直接绘制 — IRON RULE 1)
+            ACMWeaponBurst.Spawn(player.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.AbyssPurple, scale: 0.9f, owner: player.whoAmI);
         }
 
         public override void AddRecipes() {
@@ -171,61 +177,23 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences.Items
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            SpriteBatch sb = Main.spriteBatch;
-            var tex = BAWHelper.DustTexture;
-            if (tex == null) return false;
+            if (Main.dedServ) return false;
 
-            Vector2 origin = tex.Size() / 2f;
-            Vector2 perpendicular = Projectile.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
+            // 暗影斩波: 双层 GlaciateWave 弧形拖尾 + BeamGrad 裂斩核
+            Color outer = new Color(70, 40, 120); outer.A = (byte)(150 * waveAlpha);
+            Color inner = new Color(185, 145, 255); inner.A = (byte)(210 * waveAlpha);
+            float width = slashType == 0 ? 30f : 20f;
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: width,
+                outerColor: outer, innerColor: inner, tex: ACMAsset.GlaciateWave,
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.6f, subdivisions: 4);
 
-            // 绘制斩击波拖尾
-            for (int i = Projectile.oldPos.Length - 1; i >= 0; i--) {
-                if (Projectile.oldPos[i] == Vector2.Zero) continue;
+            Vector2 dir = Projectile.velocity.SafeNormalize(Vector2.UnitX);
+            float len = slashType == 0 ? 60f : 44f;
+            ACMShaders.DrawBeam(Projectile.Center - dir * len, Projectile.Center + dir * len * 0.4f,
+                slashType == 0 ? 13f : 9f, new Color(205, 175, 255), new Color(110, 60, 185),
+                waveAlpha, flowSpeed: 2.2f);
 
-                float progress = 1f - (float)i / Projectile.oldPos.Length;
-
-                // 斩击波形状（多层）
-                int layers = slashType == 0 ? 5 : 3;
-                for (int layer = -layers; layer <= layers; layer++) {
-                    float layerOffset = layer * 8f * progress;
-                    float layerAlpha = (1f - MathF.Abs(layer) / (layers + 1f)) * progress * waveAlpha * 0.5f;
-
-                    Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2 + perpendicular * layerOffset - Main.screenPosition;
-
-                    // 波动效果
-                    float wave = MathF.Sin(pulsePhase + i * 0.3f + layer * 0.2f) * 2f;
-                    drawPos += perpendicular * wave;
-
-                    Color trailColor = Color.Lerp(new Color(60, 40, 80), new Color(120, 80, 140), progress) * layerAlpha;
-                    trailColor.A = 0;
-
-                    float scaleX = 1.2f + progress * 0.5f;
-                    float scaleY = 0.6f * progress;
-
-                    sb.Draw(tex, drawPos, null, trailColor, Projectile.oldRot[i], origin, new Vector2(scaleX, scaleY), SpriteEffects.None, 0);
-                }
-            }
-
-            // 主体斩击光芒
-            float mainPulse = 1f + MathF.Sin(pulsePhase * 2f) * 0.2f;
-            for (int layer = -3; layer <= 3; layer++) {
-                float layerOffset = layer * 10f;
-                float layerAlpha = (1f - MathF.Abs(layer) / 4f) * waveAlpha * 0.7f;
-
-                Vector2 drawPos = Projectile.Center + perpendicular * layerOffset - Main.screenPosition;
-
-                Color waveColor = new Color(100, 70, 130) * layerAlpha;
-                waveColor.A = 0;
-
-                sb.Draw(tex, drawPos, null, waveColor, Projectile.rotation, origin, new Vector2(2f * mainPulse, 0.8f), SpriteEffects.None, 0);
-            }
-
-            // 前端亮点
-            Color headColor = new Color(150, 120, 180) * waveAlpha * 0.8f;
-            headColor.A = 0;
-            Vector2 headPos = Projectile.Center + Projectile.velocity.SafeNormalize(Vector2.Zero) * 15f - Main.screenPosition;
-            sb.Draw(tex, headPos, null, headColor, Projectile.rotation, origin, 1f * mainPulse, SpriteEffects.None, 0);
-
+            WeaponVFX.DrawGlowBurst(Projectile.Center, 0.7f * waveAlpha + 0.2f, new Color(190, 150, 255));
             return false;
         }
 
@@ -237,6 +205,8 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences.Items
                 d.scale = 1.1f;
                 d.velocity = Main.rand.NextVector2Circular(4, 4);
             }
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.AbyssPurple, scale: 0.7f, owner: Projectile.owner);
         }
 
         public override void OnKill(int timeLeft) {
@@ -330,56 +300,20 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences.Items
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            SpriteBatch sb = Main.spriteBatch;
-            var tex = BAWHelper.DustTexture;
-            if (tex == null) return false;
+            if (Main.dedServ) return false;
 
-            Vector2 origin = tex.Size() / 2f;
+            float corePulse = 1f + MathF.Sin(pulsePhase * 2f) * 0.22f;
 
-            // 绘制爆发环
-            int ringSegments = 24;
-            for (int ring = 0; ring < 3; ring++) {
-                float ringRadius = burstRadius * (0.4f + ring * 0.3f);
-                float ringAlpha = (1f - ring * 0.25f) * burstAlpha * 0.5f;
-                float ringRotation = pulsePhase * (ring % 2 == 0 ? 1 : -1) * 0.5f;
+            // 暗影爆发: 双沿冲击环 + 核心辉光 + 径向泛光 (替代 BAWDust 多环叠贴图)
+            WeaponVFX.DrawShockwaveRing(Projectile.Center, burstRadius, 14f, burstAlpha * 0.9f,
+                new Color(195, 155, 255), new Color(80, 40, 135));
+            WeaponVFX.DrawShockwaveRing(Projectile.Center, burstRadius * 0.6f, 9f, burstAlpha * 0.6f,
+                new Color(225, 200, 255), new Color(110, 70, 170));
 
-                for (int i = 0; i < ringSegments; i++) {
-                    float angle = ringRotation + MathHelper.TwoPi * i / ringSegments;
-                    float segPulse = MathF.Sin(pulsePhase * 2f + angle * 3) * 0.3f + 0.7f;
-                    Vector2 pos = Projectile.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * ringRadius;
-
-                    Color segColor = new Color(100, 70, 140) * ringAlpha * segPulse;
-                    segColor.A = 0;
-
-                    sb.Draw(tex, pos - Main.screenPosition, null, segColor, angle, origin, 0.7f * segPulse, SpriteEffects.None, 0);
-                }
-            }
-
-            // 中心暗影核心
-            float corePulse = 1f + MathF.Sin(pulsePhase * 2f) * 0.25f;
-            BAWHelper.DrawGhostOrb(sb, Projectile.Center,
-                new Color(80, 50, 120) * burstAlpha,
-                new Color(120, 80, 160),
-                2f * corePulse, pulsePhase);
-
-            // 放射线
-            int rayCount = 8;
-            for (int i = 0; i < rayCount; i++) {
-                float rayAngle = pulsePhase * 0.3f + MathHelper.TwoPi * i / rayCount;
-                float rayLength = burstRadius * 0.9f;
-
-                for (int j = 0; j < 5; j++) {
-                    float t = j / 5f;
-                    Vector2 rayPos = Projectile.Center + new Vector2(MathF.Cos(rayAngle), MathF.Sin(rayAngle)) * rayLength * t;
-                    float rayAlpha = (1f - t) * burstAlpha * 0.4f;
-
-                    Color rayColor = new Color(130, 100, 170) * rayAlpha;
-                    rayColor.A = 0;
-
-                    sb.Draw(tex, rayPos - Main.screenPosition, null, rayColor, rayAngle, origin, 0.5f * (1f - t * 0.5f), SpriteEffects.None, 0);
-                }
-            }
-
+            WeaponVFX.DrawGlowBurst(Projectile.Center, 1.4f * corePulse * burstAlpha + 0.2f,
+                new Color(165, 115, 245));
+            WeaponVFX.DrawRadialBloom(Projectile.Center, 0.12f, 0.6f * burstAlpha,
+                new Color(155, 110, 240), 10f);
             return false;
         }
 
@@ -393,6 +327,8 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences.Items
                 d.scale = 1.4f;
                 d.velocity = Main.rand.NextVector2Circular(6, 6);
             }
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.AbyssPurple, scale: 1.3f, owner: Projectile.owner);
         }
 
         public override void OnKill(int timeLeft) {
@@ -420,6 +356,9 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences.Items
         private float bindAlpha = 0f;
         private NPC targetNPC => Projectile.ai[0] >= 0 && (int)Projectile.ai[0] < Main.npc.Length
             ? Main.npc[(int)Projectile.ai[0]] : null;
+
+        // 同屏每帧仅一座 ArenaRunic 牢笼罩 (多链不叠多张全屏 decal)
+        private static ulong _lastCageFrame;
 
         public override void SetDefaults() {
             Projectile.width = 10;
@@ -489,6 +428,29 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences.Items
 
                 float pulse = 1f + MathF.Sin(orbitAngle * 3f) * 0.2f;
                 sb.Draw(tex, Projectile.Center - Main.screenPosition, null, nodeColor, orbitAngle, origin, 0.8f * pulse, SpriteEffects.None, 0);
+            }
+
+            // 束缚符环: ArenaRunic 牢笼罩绕住敌人 (三链中仅"首链" ai[1]≈0 承担, 每帧仅一张全屏 decal)
+            if (Projectile.ai[1] < 0.05f && _lastCageFrame != Main.GameUpdateCount) {
+                _lastCageFrame = Main.GameUpdateCount;
+                Effect fx = ACMShaders.ArenaRunic;
+                if (fx != null) {
+                    float radius = 58f + MathF.Sin(orbitAngle) * 6f;
+                    ACMShaders.WorldDecalParams(targetNPC.Center, radius, out Vector2 uv, out float rFrac, out float aspect);
+                    fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+                    fx.Parameters["uCenter"]?.SetValue(uv);
+                    fx.Parameters["uRadius"]?.SetValue(rFrac);
+                    fx.Parameters["uIntensity"]?.SetValue(bindAlpha * 0.8f);
+                    fx.Parameters["uAspect"]?.SetValue(aspect);
+                    fx.Parameters["uColorPrimary"]?.SetValue(new Color(165, 115, 245).ToVector4());
+                    fx.Parameters["uColorSecondary"]?.SetValue(new Color(70, 30, 125).ToVector4());
+                    fx.Parameters["uRuneFreq"]?.SetValue(12f);
+                    fx.Parameters["uMode"]?.SetValue(1f);  // 牢笼罩
+                    fx.Parameters["uShape"]?.SetValue(0f); // 圆
+                    sb.End();
+                    ACMShaders.DrawScreenSpaceDecalStandalone(fx, BlendState.Additive);
+                    ACMShaders.RestoreDefaultBatch(sb);
+                }
             }
 
             return false;

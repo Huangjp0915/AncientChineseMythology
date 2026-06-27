@@ -132,6 +132,10 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             }
         }
 
+        public override void OnHitPlayer(Player target, Player.HurtInfo info) {
+            target.GetModPlayer<YinJudgmentPlayer>().AddDecreeStack();
+        }
+
         public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
             if (currentWidth < 5f) return false;
 
@@ -179,6 +183,13 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             // === 末端扩散 ===
             Vector2 endPos = screenStart + LaserDirection.ToRotationVector2() * currentLength;
             DrawBeamEnd(sb, pixel, endPos, widthRatio);
+
+            // === V2：BeamGrad 流动金核（着色器缺失时自动回退到上方像素层）===
+            Vector2 worldStart = Projectile.Center;
+            Vector2 worldEnd = worldStart + LaserDirection.ToRotationVector2() * currentLength;
+            ACMShaders.DrawBeam(worldStart, worldEnd, currentWidth * 0.7f,
+                YinEmperorHelper.DragonVeinGold, YinEmperorHelper.AbyssPurple, widthRatio,
+                flowSpeed: 1.6f, flowScale: 2.2f, coreSharp: 2.4f);
 
             return false;
         }

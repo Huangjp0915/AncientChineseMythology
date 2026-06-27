@@ -14,12 +14,15 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
     public class BlackTortoiseShieldPlayer : ModPlayer
     {
         private int reflectCooldown;
+        private int guardNovaCooldown;
 
         public bool HasShieldEquipped => Player.HeldItem.type == ModContent.ItemType<BlackTortoiseShield>();
 
         public override void PreUpdate() {
             if (reflectCooldown > 0)
                 reflectCooldown--;
+            if (guardNovaCooldown > 0)
+                guardNovaCooldown--;
         }
 
         public override void ModifyHitByNPC(NPC npc, ref Player.HurtModifiers modifiers) {
@@ -64,6 +67,13 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
 
             int hitDir = npc.Center.X >= Player.Center.X ? 1 : -1;
             npc.SimpleStrikeNPC(reflectDamage, hitDir, false, Player.HeldItem.knockBack, null, false, 0, true);
+
+            if (guardNovaCooldown <= 0 && Player.whoAmI == Main.myPlayer) {
+                guardNovaCooldown = 45;
+                Projectile.NewProjectile(Player.GetSource_Misc("BlackTortoiseGuard"), Player.Center, Vector2.Zero,
+                    ModContent.ProjectileType<BlackTortoiseGuardNova>(), Math.Max(Player.HeldItem.damage, reflectDamage),
+                    Player.HeldItem.knockBack * 1.5f, Player.whoAmI);
+            }
 
             if (VaultUtils.isServer)
                 return;
@@ -246,6 +256,93 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
                 Dust d = Dust.NewDustDirect(Projectile.Center, 0, 0, DustID.IceTorch, vel.X, vel.Y, 70, default, Main.rand.NextFloat(1f, 1.4f));
                 d.noGravity = true;
             }
+        }
+    }
+
+    /// <summary>玄武结界 — 成功格挡反震时，自玩家迸发的龟甲反震环波。</summary>
+    public class BlackTortoiseGuardNova : ModProjectile
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+
+        private const float MaxRadius = 260f;
+
+        private ref float Age => ref Projectile.ai[0];
+
+        public override void SetDefaults() {
+            Projectile.width = Projectile.height = 16;
+            Projectile.friendly = true;
+            Projectile.DamageType = DamageClass.Melee;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = 34;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = -1;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+
+        public override void OnSpawn(IEntitySource source) {
+            SoundEngine.PlaySound(SoundID.Item27 with { Volume = 0.8f, Pitch = -0.25f }, Projectile.Center);
+        }
+
+        public override void AI() {
+            Age++;
+            Player owner = Main.player[Projectile.owner];
+            if (owner.active && !owner.dead)
+                Projectile.Center = owner.Center;
+
+            if (Main.netMode != NetmodeID.Server) {
+                float radius = CurrentRadius();
+                for (int i = 0; i < 4; i++) {
+                    float ang = Main.rand.NextFloat(MathHelper.TwoPi);
+                    Vector2 pos = Projectile.Center + ang.ToRotationVector2() * radius;
+                    int dustType = Main.rand.NextBool() ? DustID.IceTorch : DustID.Stone;
+                    Dust d = Dust.NewDustPerfect(pos, dustType, ang.ToRotationVector2() * 4f, 60, default, 1.5f);
+                    d.noGravity = true;
+                }
+                Lighting.AddLight(Projectile.Center, new Vector3(0.3f, 0.55f, 0.75f));
+            }
+        }
+
+        private float CurrentRadius() => MathHelper.SmoothStep(0f, MaxRadius, Math.Min(Age / 22f, 1f));
+
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            target.AddBuff(BuffID.Frostburn, 120);
+        }
+
+        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
+            return VaultUtils.CircleIntersectsRectangle(Projectile.Center, CurrentRadius(), targetHitbox);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (ACMAsset.SoftGlow == null)
+                return false;
+
+            float prog = Age / 34f;
+            float alpha = ACMUtils.QuadOut(1f - prog) * 0.8f;
+            float scale = CurrentRadius() / (ACMAsset.SoftGlow.Width * 0.5f);
+
+            SpriteBatch sb = Main.spriteBatch;
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+
+            Vector2 drawPos = Projectile.Center - Main.screenPosition;
+            Vector2 origin = ACMAsset.SoftGlow.Size() * 0.5f;
+
+            Color outer = new Color(60, 140, 210) * alpha * 0.6f;
+            outer.A = 0;
+            sb.Draw(ACMAsset.SoftGlow, drawPos, null, outer, 0f, origin, scale, SpriteEffects.None, 0f);
+
+            Color inner = new Color(180, 230, 255) * alpha * 0.7f;
+            inner.A = 0;
+            sb.Draw(ACMAsset.SoftGlow, drawPos, null, inner, 0f, origin, scale * 0.55f, SpriteEffects.None, 0f);
+
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+            return false;
         }
     }
 }

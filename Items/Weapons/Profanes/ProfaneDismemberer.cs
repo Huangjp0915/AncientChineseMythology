@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -148,8 +149,13 @@ public class ProfaneDismembererSwing : ModProjectile
                         (int)(Owner.HeldItem.damage * waveDmgMult),
                         Owner.HeldItem.knockBack * 0.6f, Owner.whoAmI, AttackType);
 
-                    if (AttackType == 2)
-                        Owner.GetModPlayer<ScreenShakePlayer>().ShakeScreen(6, 8);
+                    if (AttackType == 2) {
+                        // 下劈血肉震荡: 落点血环 (Profane burst 内含冲击环+径向辉光) + 屏幕震动
+                        Vector2 quakePos = Owner.Center + wd * 90f;
+                        ACMWeaponBurst.Spawn(Owner.GetSource_ItemUse(Owner.HeldItem), quakePos,
+                            ACMWeaponBurst.Profane, scale: 1.8f, owner: Owner.whoAmI);
+                        WeaponVFX.AddScreenShake(quakePos, 8f);
+                    }
 
                     SoundEngine.PlaySound(SoundID.NPCDeath1 with { Pitch = -0.5f, Volume = 0.7f }, Owner.position);
                 }
@@ -227,15 +233,16 @@ public class ProfaneDismembererSwing : ModProjectile
 
         if (CurrentStage == Stage.Execute) {
             Texture2D wave = ACMAsset.GlaciateWave;
+            // 近战暗血: 外宽暗 (68,3,9) + 内窄亮 (205,50,52)
             for (int i = 1; i < 14 && i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
                 float a = (1f - i / 14f) * 0.72f;
                 float rot = Projectile.oldRot[i] + rotOff;
                 sb.Draw(wave, Projectile.Center - Main.screenPosition, null,
-                    new Color(200, 30, 30) * a, rot,
+                    new Color(68, 3, 9) * a, rot,
                     wave.Size() * 0.5f,
                     Projectile.scale * 0.55f, SpriteEffects.None, 0);
                 sb.Draw(wave, Projectile.Center - Main.screenPosition, null,
-                    new Color(255, 120, 100) * (a * 0.35f), rot + 0.10f,
+                    new Color(205, 50, 52) * (a * 0.40f), rot + 0.10f,
                     wave.Size() * 0.5f,
                     Projectile.scale * 0.38f, SpriteEffects.None, 0);
             }
@@ -243,7 +250,7 @@ public class ProfaneDismembererSwing : ModProjectile
             float pulse = 0.75f + 0.2f * MathF.Sin((float)Main.timeForVisualEffects * 0.24f);
             Texture2D sg = ACMAsset.SoftGlow;
             sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-                new Color(220, 40, 30) * 0.50f * pulse, Projectile.rotation + rotOff,
+                new Color(150, 12, 20) * 0.50f * pulse, Projectile.rotation + rotOff,
                 sg.Size() * 0.5f,
                 Projectile.scale * 2.0f, SpriteEffects.None, 0);
 
@@ -251,7 +258,7 @@ public class ProfaneDismembererSwing : ModProjectile
                           * Projectile.Size.Length() * Projectile.scale * 0.6f;
             Texture2D sparkle = ACMAsset.Sparkle;
             sb.Draw(sparkle, tip - Main.screenPosition, null,
-                new Color(255, 100, 80) * 0.45f,
+                new Color(205, 50, 52) * 0.45f,
                 (float)Main.timeForVisualEffects * 0.07f,
                 sparkle.Size() * 0.5f,
                 Projectile.scale * 0.55f, SpriteEffects.None, 0);
@@ -285,7 +292,7 @@ public class ProfaneFleshWave : ModProjectile
     private int AttackType => (int)Projectile.ai[0];
 
     public override void SetStaticDefaults() {
-        ProjectileID.Sets.TrailingMode[Type] = 2;
+        ProjectileID.Sets.TrailingMode[Type] = 0;
         ProjectileID.Sets.TrailCacheLength[Type] = 16;
     }
 
@@ -332,7 +339,6 @@ public class ProfaneFleshWave : ModProjectile
         SpriteBatch sb = Main.spriteBatch;
         Texture2D tex = ACMAsset.GlaciateWave;
         Texture2D sg = ACMAsset.SoftGlow;
-        Texture2D lsh = ACMAsset.LightShot;
 
         float life = 1f - Projectile.timeLeft / 50f;
         float sizeMult = AttackType == 2 ? 1.4f : 1.0f;
@@ -340,33 +346,29 @@ public class ProfaneFleshWave : ModProjectile
         float scaleY = MathHelper.Lerp(0.55f, 0.18f, ACMUtils.QuadIn(life)) * sizeMult;
         float alpha = ACMUtils.QuadOut(1f - life) * 0.90f;
 
+        // 统一双层暗红血肉拖尾 (外宽暗 + 内窄亮)
+        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 22f * sizeMult,
+            outerColor: new Color(68, 3, 9, (int)(150 * alpha)),
+            innerColor: new Color(205, 50, 52, (int)(190 * alpha)),
+            uvScroll: -Main.GlobalTimeWrappedHourly * 1.4f);
+
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
             DepthStencilState.None, RasterizerState.CullNone, null,
             Main.GameViewMatrix.TransformationMatrix);
 
-        for (int i = 1; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
-            if (Projectile.oldPos[i] == Vector2.Zero) continue;
-            float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.55f * alpha;
-            sb.Draw(lsh,
-                Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition,
-                null, new Color(200, 30, 20) * a, Projectile.oldRot[i],
-                lsh.Size() * 0.5f,
-                new Vector2(0.45f + i * 0.012f, 0.15f), SpriteEffects.None, 0);
-        }
-
         sb.Draw(tex, Projectile.Center - Main.screenPosition, null,
-            new Color(180, 20, 15) * alpha, Projectile.rotation,
+            new Color(68, 3, 9) * alpha, Projectile.rotation,
             tex.Size() * 0.5f,
             new Vector2(scaleX, scaleY), SpriteEffects.None, 0);
         sb.Draw(tex, Projectile.Center - Main.screenPosition, null,
-            new Color(255, 110, 90) * (alpha * 0.40f), Projectile.rotation + 0.05f,
+            new Color(205, 50, 52) * (alpha * 0.45f), Projectile.rotation + 0.05f,
             tex.Size() * 0.5f,
             new Vector2(scaleX * 0.75f, scaleY * 0.70f), SpriteEffects.None, 0);
 
         Vector2 front = Projectile.Center + Projectile.velocity.SafeNormalize(Vector2.Zero) * 50f;
         sb.Draw(sg, front - Main.screenPosition, null,
-            new Color(255, 80, 60) * alpha * 0.70f, 0f,
+            new Color(200, 40, 35) * alpha * 0.70f, 0f,
             sg.Size() * 0.5f,
             scaleY * 1.8f, SpriteEffects.None, 0);
 

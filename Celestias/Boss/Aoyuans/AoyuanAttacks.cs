@@ -184,5 +184,102 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
                 IcicleRain(npc);
             }
         }
+
+        /// <summary>
+        /// 寒霜吐息（锥形）- 朝指定目标方向密集发射冰锥
+        /// </summary>
+        public static void BreathConeAt(NPC npc, Vector2 targetCenter, int count = 3) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+
+            Vector2 dir = (targetCenter - npc.Center).SafeNormalize(Vector2.UnitY);
+            for (int i = 0; i < count; i++) {
+                Vector2 vel = dir.RotatedByRandom(MathHelper.ToRadians(18)) * (11f + Main.rand.NextFloat(6f));
+                int p = Projectile.NewProjectile(
+                    npc.GetSource_FromAI(),
+                    npc.Center + dir * 50f,
+                    vel,
+                    ModContent.ProjectileType<AoyuanIcicle>(),
+                    npc.damage / 3,
+                    2f);
+                Main.projectile[p].tileCollide = false;
+                Main.projectile[p].timeLeft = 120;
+            }
+        }
+
+        /// <summary>
+        /// 冰晶棋局 - 在玩家周围铺 3x3 预告冰柱落点，仅部分真正落下
+        /// 每个格子生成一个预告弹幕（ai0=1 为真柱，会落冰；ai0=0 为虚招）
+        /// </summary>
+        public static void SpawnPillarChess(NPC npc, Player player) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+
+            const float spacingX = 150f;
+            const float spacingY = 130f;
+            Vector2 gridCenter = new Vector2(player.Center.X, player.Center.Y);
+
+            // 随机决定哪些格子为真柱（9 格中选 4~5 个）
+            bool[] real = new bool[9];
+            int realCount = Main.expertMode ? 5 : 4;
+            int placed = 0;
+            int guard = 0;
+            while (placed < realCount && guard < 100) {
+                int idx = Main.rand.Next(9);
+                if (!real[idx]) { real[idx] = true; placed++; }
+                guard++;
+            }
+
+            int damage = Main.expertMode ? npc.damage / 4 : npc.damage / 3;
+            for (int gy = -1; gy <= 1; gy++) {
+                for (int gx = -1; gx <= 1; gx++) {
+                    int idx = (gy + 1) * 3 + (gx + 1);
+                    Vector2 cell = gridCenter + new Vector2(gx * spacingX, gy * spacingY);
+                    Projectile.NewProjectile(
+                        npc.GetSource_FromAI(),
+                        cell,
+                        Vector2.Zero,
+                        ModContent.ProjectileType<AoyuanPillarTelegraph>(),
+                        damage, 0f, Main.myPlayer,
+                        ai0: real[idx] ? 1f : 0f);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 暴雪帷幕 - 从玩家一侧推进的雪墙，墙上留一道移动缺口
+        /// </summary>
+        public static void SpawnBlizzardVeil(NPC npc, Player player) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+
+            int dir = player.Center.X >= npc.Center.X ? 1 : -1;
+            // 反过来从玩家更空旷一侧推来，确保有反应空间
+            dir = Main.rand.NextBool() ? 1 : -1;
+            Vector2 spawn = new Vector2(player.Center.X - dir * 1100f, player.Center.Y);
+            int damage = Main.expertMode ? npc.damage / 4 : npc.damage / 3;
+
+            Projectile.NewProjectile(
+                npc.GetSource_FromAI(),
+                spawn,
+                new Vector2(dir * (Main.expertMode ? 7f : 5.5f), 0f),
+                ModContent.ProjectileType<AoyuanBlizzardWall>(),
+                damage, 2f, Main.myPlayer,
+                ai0: dir,
+                ai1: Main.rand.NextFloat(-200f, 200f));
+        }
+
+        /// <summary>
+        /// 绝对零度放射冻结波（broken=true 时为削弱版，仅减速不冻结）
+        /// </summary>
+        public static void SpawnAbsoluteZeroBurst(NPC npc, bool broken) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+
+            int damage = Main.expertMode ? npc.damage / 3 : npc.damage / 2;
+            Projectile.NewProjectile(
+                npc.GetSource_FromAI(),
+                npc.Center,
+                Vector2.Zero,
+                ModContent.ProjectileType<AoyuanAbsoluteZeroBurst>(),
+                damage, 0f, Main.myPlayer,
+                ai0: broken ? 1f : 0f);
+        }
     }
 }

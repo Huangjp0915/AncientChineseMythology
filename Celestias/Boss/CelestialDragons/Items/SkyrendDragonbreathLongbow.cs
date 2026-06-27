@@ -1,5 +1,7 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
+using System.Collections.Generic;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -189,6 +191,9 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
             target.AddBuff(BuffID.OnFire3, 180);
             CreateDragonbreathExplosion(target.Center);
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.GoldDragon, 0.9f, Projectile.owner);
         }
 
         public override void OnKill(int timeLeft) {
@@ -214,6 +219,10 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 9f,
+                outerColor: new Color(200, 110, 25, 120), innerColor: new Color(255, 240, 170, 180),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.5f);
+
             Texture2D texture = ACMAsset.LightShot ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = texture.Size() / 2f;
 
@@ -332,9 +341,26 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
             }
 
             SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.5f, Volume = 0.6f }, target.Center);
+
+            // 裂天龙箭·处决级金龙演出
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.GoldDragon, 2f, Projectile.owner);
+            WeaponVFX.AddScreenShake(target.Center, 6f);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            // 裂天龙箭招牌演出: 蛇形金龙身段 ribbon + 金芒径向辉光
+            var ribbon = new List<Vector2>(Projectile.oldPos.Length);
+            for (int i = 0; i < Projectile.oldPos.Length; i++) {
+                if (Projectile.oldPos[i] == Vector2.Zero) continue;
+                ribbon.Add(Projectile.oldPos[i] + Projectile.Size / 2f);
+            }
+            if (ribbon.Count >= 2)
+                WeaponVFX.DrawRibbonTrail(ribbon.ToArray(), baseWidth: 34f * Projectile.scale,
+                    outerColor: new Color(200, 110, 25, 150), innerColor: new Color(255, 240, 170, 190),
+                    tex: ACMAsset.GlaciateWave, uvScroll: -Main.GlobalTimeWrappedHourly * 1.5f);
+            WeaponVFX.DrawRadialBloom(Projectile.Center, 0.11f * dragonScale, 0.5f, new Color(255, 210, 110), 6f);
+
             Texture2D texture = ACMAsset.GlaciateWave ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = new Vector2(0, texture.Height / 2f);
 
@@ -456,6 +482,8 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
         }
 
         private void DealCloudDamage() {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+
             float damageRadius = 50f * cloudScale;
 
             foreach (var npc in Main.npc) {

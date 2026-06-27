@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -6,6 +7,7 @@ using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 using AncientChineseMythology.Celestias.Boss.Dryades.Items;
+using AncientChineseMythology.Helpers;
 
 namespace AncientChineseMythology.Items.Weapons.DivineWoods;
 
@@ -125,6 +127,10 @@ public class DivineWoodSeedGrenade : ModProjectile
             boom.noGravity = true;
         }
 
+        // 自然绽放冲击环 + 径向辉光演出 (DrawShockwaveRing 由演出弹幕承载)
+        ACMWeaponBurst.Spawn(Projectile.GetSource_Death(), Projectile.Center,
+            ACMWeaponBurst.DivineWood, scale: 1.5f, owner: Projectile.owner);
+
         if (Main.player[Projectile.owner].whoAmI == Main.myPlayer) {
             Main.player[Projectile.owner].GetModPlayer<ScreenShakePlayer>().ShakeScreen(6, 10);
         }
@@ -216,6 +222,11 @@ public class DivineWoodBloomExplosion : ModProjectile
         float prog = 1f - Projectile.timeLeft / 50f;
         float alpha = ACMUtils.QuadOut(1f - prog) * 0.90f;
         float scale = MathHelper.SmoothStep(0f, 14f, ACMUtils.QuadOut(prog));
+
+        // 绽放扩张冲击环 (绿)
+        float ringR = Timer * 12f;
+        WeaponVFX.DrawShockwaveRing(Projectile.Center, ringR, 14f, alpha * 0.85f,
+            new Color(170, 255, 150), new Color(20, 110, 55));
 
         SpriteBatch sb = Main.spriteBatch;
         sb.End();
@@ -332,6 +343,11 @@ public class DivineWoodVineShard : ModProjectile
     }
 
     public override bool PreDraw(ref Color lightColor) {
+        // 细双层 ribbon 拖尾 (藤蔓碎片)
+        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 5f,
+            outerColor: new Color(20, 110, 55, 140), innerColor: new Color(170, 255, 150, 200),
+            uvScroll: -Main.GlobalTimeWrappedHourly * 2f);
+
         SpriteBatch sb = Main.spriteBatch;
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
@@ -340,16 +356,6 @@ public class DivineWoodVineShard : ModProjectile
 
         Texture2D star = ACMAsset.BlankStar;
         Texture2D sg = ACMAsset.SoftGlow;
-
-        for (int i = 1; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
-            if (Projectile.oldPos[i] == Vector2.Zero) continue;
-            float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.45f;
-            sb.Draw(sg,
-                Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition,
-                null, new Color(50, 180, 60) * a, 0f,
-                sg.Size() * 0.5f,
-                0.25f, SpriteEffects.None, 0);
-        }
 
         float pulse = 0.55f + 0.15f * MathF.Sin((float)Main.timeForVisualEffects * 0.22f);
         sb.Draw(star, Projectile.Center - Main.screenPosition, null,

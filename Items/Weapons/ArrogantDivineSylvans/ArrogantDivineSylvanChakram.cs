@@ -6,6 +6,7 @@ using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 using AncientChineseMythology.Celestias.Boss.Dazhengs.Items;
+using AncientChineseMythology.Helpers;
 using AncientChineseMythology.Items.Weapons.DivineWoods;
 
 namespace AncientChineseMythology.Items.Weapons.ArrogantDivineSylvans;
@@ -92,6 +93,7 @@ public class ArrogantSylvanChakramProj : ModProjectile
     private float _spiralRadius;     // 当前螺旋半径
     private int _spiralTimer;
     private bool _caughtBurst;
+    private int _collapseFlash;      // 内爆坍缩径向泛光计时 (纯视觉, 客户端本地)
 
     private bool IsSpiraling => Phase >= 1f && Phase < 2f;
     private bool IsImploding => Phase >= 2f && Phase < 3f;
@@ -120,6 +122,7 @@ public class ArrogantSylvanChakramProj : ModProjectile
         if (!owner.active || owner.dead) { Projectile.Kill(); return; }
 
         Timer++;
+        if (_collapseFlash > 0) _collapseFlash--;
 
         // 旋转速度：风暴阶段极速，回收阶段猛烈
         float rotSpeed = IsSpiraling ? 0.55f : (IsImploding ? 0.75f : (IsRecalling ? 0.70f : 0.40f));
@@ -233,6 +236,7 @@ public class ArrogantSylvanChakramProj : ModProjectile
             _spiralRadius = 0f;
             Phase = 3f;
             Timer = 0;
+            _collapseFlash = 20; // 触发内爆径向泛光 set-piece
 
             SoundEngine.PlaySound(SoundID.Item71 with { Volume = 1.2f, Pitch = -0.3f }, _stormCenter);
 
@@ -288,6 +292,11 @@ public class ArrogantSylvanChakramProj : ModProjectile
                     shaker.ShakeScreen(10f, 14);
                 }
 
+                // 接住命中演出 (金翠) + 重击震屏
+                ACMWeaponBurst.Spawn(Projectile.GetSource_FromThis(), owner.Center,
+                    ACMWeaponBurst.ArrogantSylvan, scale: 1.6f, owner: Projectile.owner);
+                WeaponVFX.AddScreenShake(owner.Center, 8f);
+
                 SoundEngine.PlaySound(SoundID.Item4 with { Volume = 1.3f, Pitch = 0.5f }, owner.Center);
 
                 for (int i = 0; i < 30; i++) {
@@ -337,6 +346,8 @@ public class ArrogantSylvanChakramProj : ModProjectile
         // 每3次命中触发万木裁决
         if (HitCounter % 3 == 0) {
             SoundEngine.PlaySound(SoundID.Item17 with { Volume = 1.2f, Pitch = 0.3f }, target.Center);
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.ArrogantSylvan, scale: 1.2f, owner: Projectile.owner);
 
             if (Projectile.owner == Main.myPlayer) {
                 for (int i = 0; i < 16; i++) {
@@ -364,10 +375,36 @@ public class ArrogantSylvanChakramProj : ModProjectile
         Texture2D tex = TextureAssets.Projectile[Type].Value;
         Vector2 origin = tex.Size() / 2f;
 
+        // 金翠双层 ribbon 主拖尾 (§B.1)
+        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: IsSpiraling ? 18f : 14f,
+            outerColor: new Color(200, 150, 40, 150), innerColor: new Color(190, 255, 150, 200),
+            uvScroll: -(float)Main.timeForVisualEffects * 0.04f);
+
+        // 内爆坍缩 set-piece: 向心径向泛光 (占全屏名额, 名额满自动退化柔光)
+        if (_collapseFlash > 0) {
+            float f = _collapseFlash / 20f;                 // 1→0
+            float bell = (float)System.Math.Sin(f * System.Math.PI);
+            WeaponVFX.DrawRadialBloom(_stormCenter, 0.05f + 0.13f * f, bell * 0.85f,
+                new Color(220, 235, 120), 10f);
+        }
+
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
             DepthStencilState.None, RasterizerState.CullNone, null,
             Main.GameViewMatrix.TransformationMatrix);
+
+        // 内爆向心叶片碎光 (Sparkle 向中心收束)
+        if (_collapseFlash > 0) {
+            float f = _collapseFlash / 20f;
+            Texture2D spk = ACMAsset.Sparkle;
+            for (int s = 0; s < 8; s++) {
+                float ang = MathHelper.TwoPi * s / 8f + Timer * 0.1f;
+                Vector2 p = _stormCenter + ang.ToRotationVector2() * (140f * f);
+                sb.Draw(spk, p - Main.screenPosition, null,
+                    new Color(200, 255, 150) * (f * 0.6f), ang,
+                    spk.Size() * 0.5f, 0.45f * f, SpriteEffects.None, 0);
+            }
+        }
 
         // 拖尾 - 风暴阶段更粗更亮
         for (int i = 0; i < Projectile.oldPos.Length; i++) {

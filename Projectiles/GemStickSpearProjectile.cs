@@ -8,6 +8,7 @@ using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
+using AncientChineseMythology.Helpers;
 
 namespace AncientChineseMythology.Projectiles
 {
@@ -210,6 +211,9 @@ namespace AncientChineseMythology.Projectiles
             //重置投射物的碰撞检测，以便可以多次击中敌人
             Projectile.localNPCImmunity[target.whoAmI] = 10; //设置局部NPC命中冷却时间
             target.immune[Projectile.owner] = 0; //确保敌人不会对投射物的拥有者免疫
+            //宝石多彩命中演出
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Gem, scale: 1f, owner: Projectile.owner);
         }
         public struct CustomVertex : IVertexType
         {
@@ -229,6 +233,14 @@ namespace AncientChineseMythology.Projectiles
             }
         }
         public override bool PreDraw(ref Microsoft.Xna.Framework.Color lightColor) {
+            //长矛线统一拖尾 (§3.2): 宝石棍 = 多彩流转 (随时间偏移色相)
+            float hue = (Main.GlobalTimeWrappedHourly * 0.25f) % 1f;
+            Color gemOuter = Main.hslToRgb(hue, 1f, 0.35f); gemOuter.A = 150;
+            Color gemInner = Main.hslToRgb((hue + 0.12f) % 1f, 1f, 0.72f); gemInner.A = 205;
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 9f,
+                outerColor: gemOuter, innerColor: gemInner,
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.6f);
+
             Microsoft.Xna.Framework.Vector2 origin;
             float rotationOffset;
             SpriteEffects effects; //贴图效果

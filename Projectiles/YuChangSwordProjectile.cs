@@ -1,12 +1,22 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using Terraria;
+using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Projectiles
 {
+    /// <summary>
+    /// 鱼肠剑突刺 (左键) — 可见质变 (纯表现): 宝石青紫双层拖尾 + 刃身 SoftGlow 呼吸辉光。机制/伤害不变。
+    /// </summary>
     public class YuChangSwordProjectile : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/YuChangSwordProjectile";
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.TrailCacheLength[Type] = 12;
+            ProjectileID.Sets.TrailingMode[Type] = 0;
+        }
 
         public override void SetDefaults() {
             Projectile.width = 50;
@@ -46,6 +56,13 @@ namespace AncientChineseMythology.Projectiles
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            // 宝石青紫双层拖尾 + 刃身呼吸辉光 (纯表现)
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 7f,
+                outerColor: new Color(95, 60, 185, 140), innerColor: new Color(150, 230, 255, 200),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.4f);
+            float breathe = 0.5f + 0.5f * (float)System.Math.Sin(Main.GlobalTimeWrappedHourly * 4f);
+            WeaponVFX.DrawGlowBurst(Projectile.Center, 0.3f + 0.12f * breathe, new Color(160, 130, 255));
+
             Texture2D texture = ModContent.Request<Texture2D>(Texture).Value;
 
             Vector2 origin = new Vector2(texture.Width / 2, texture.Height / 2);//统一使用中心锚点

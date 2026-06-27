@@ -38,13 +38,30 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
             BoneToss,       // 泼洒骨头
             ClapCharging,   // 拍掌蓄力
             ClapStrike,     // 拍掌攻击
-            TeleportClap    // 传送拍掌
+            TeleportClap,   // 传送拍掌
+            Controlled,     // V2: Boss 外部驱动位置 (千骸旋冢环绕 / 引魂大阵就坛)
+            Channeling,     // V2: 就坛施法 (引魂大阵, 可见破绽)
+            Stunned         // V2: 仪式被破/重伤后硬直 (头部破绽窗口)
         }
 
         private HandState currentState = HandState.Idle;
         private int stateTimer = 0;
         private Vector2 targetPosition;
         private float attackProgress = 0f;
+
+        // ====== V2 外部驱动 / 仪式 / 硬直 ======
+        private Vector2 controlledPos;        // Boss 每帧驱动的目标位 (Controlled/Channeling)
+        private bool controlledCanHit = false; // Controlled 期间是否造成接触伤害
+        private int stunTimer = 0;             // Stunned 剩余帧
+        private float detachDissolve = 0f;     // 脱体/回体 骨→魂→骨 溶解进度 0~1
+        private int detachDissolveDir = 0;     // +1 溶出(脱体) / -1 重凝(回体)
+        private int clapBloomTimer = 0;        // 拍掌命中后径向泛光残留 (PreDraw 消费)
+        private Vector2 clapBloomPos;
+
+        public HandState State => currentState;
+        public bool InControlled => currentState == HandState.Controlled;
+        public bool InChanneling => currentState == HandState.Channeling;
+        public bool IsStunned => currentState == HandState.Stunned;
 
         // ====== 攻击和动作 ======
         private int attackCooldown = 0;
@@ -149,6 +166,63 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
             return currentState == HandState.Idle;
         }
 
+        // ====== V2 公开控制接口 (Boss 编排用) ======
+
+        /// <summary>进入"外部驱动"状态: 由 Boss 每帧 <see cref="DriveControlled"/> 设定位置 (旋冢环绕 / 就坛飞行)。</summary>
+        public void EnterControlled(Vector2 pos, bool canHit) {
+            if (currentState != HandState.Controlled) {
+                detachDissolve = 0f;
+                detachDissolveDir = 1; // 脱体溶出
+            }
+            currentState = HandState.Controlled;
+            controlledPos = pos;
+            controlledCanHit = canHit;
+            stateTimer = 0;
+            NPC.netUpdate = true;
+        }
+
+        /// <summary>更新外部驱动目标位 (每帧调用, 不重置 dissolve)。</summary>
+        public void DriveControlled(Vector2 pos, bool canHit) {
+            if (currentState == HandState.Controlled) {
+                controlledPos = pos;
+                controlledCanHit = canHit;
+            }
+        }
+
+        /// <summary>进入"就坛施法"状态 (引魂大阵双手据坛)。</summary>
+        public void EnterChanneling(Vector2 altarPos) {
+            if (currentState != HandState.Channeling) {
+                detachDissolve = 0f;
+                detachDissolveDir = 1;
+            }
+            currentState = HandState.Channeling;
+            controlledPos = altarPos;
+            controlledCanHit = false;
+            stateTimer = 0;
+            NPC.netUpdate = true;
+        }
+
+        /// <summary>仪式被破 / 重伤: 双手硬直坠落 (Boss 头部破绽窗口)。</summary>
+        public void StunHand(int duration) {
+            currentState = HandState.Stunned;
+            stunTimer = duration;
+            controlledCanHit = false;
+            detachDissolveDir = -1; // 重凝
+            stateTimer = 0;
+            NPC.netUpdate = true;
+        }
+
+        /// <summary>释放回体 (返回待机编排)。</summary>
+        public void ReleaseToIdle() {
+            if (currentState == HandState.Idle || currentState == HandState.Retracting)
+                return;
+            currentState = HandState.Retracting;
+            controlledCanHit = false;
+            detachDissolveDir = -1;
+            stateTimer = 0;
+            NPC.netUpdate = true;
+        }
+
         public override void SetStaticDefaults() {
             Main.npcFrameCount[NPC.type] = 1;
             NPCID.Sets.MustAlwaysDraw[NPC.type] = true;
@@ -186,6 +260,11 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
             writer.Write(isClapReady);
             writer.WriteVector2(boneTossDirection);
             writer.Write(boneTossCount);
+            writer.WriteVector2(controlledPos);
+            writer.Write(controlledCanHit);
+            writer.Write(stunTimer);
+            writer.Write(detachDissolve);
+            writer.Write(detachDissolveDir);
         }
 
         public override void ReceiveExtraAI(BinaryReader reader) {
@@ -198,6 +277,11 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
             isClapReady = reader.ReadBoolean();
             boneTossDirection = reader.ReadVector2();
             boneTossCount = reader.ReadInt32();
+            controlledPos = reader.ReadVector2();
+            controlledCanHit = reader.ReadBoolean();
+            stunTimer = reader.ReadInt32();
+            detachDissolve = reader.ReadSingle();
+            detachDissolveDir = reader.ReadInt32();
         }
 
         public override void AI() {
@@ -216,8 +300,20 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
             stateTimer++;
             if (attackCooldown > 0) attackCooldown--;
 
-            // 安全检查：如果状态持续时间过长，强制回到待机
-            if (stateTimer > 300 && currentState != HandState.Idle) {
+            // V2 溶解过渡推进: 骨→魂→骨 的一次 0→峰→0 脉冲 (脱体/回体瞬间的魂态化)
+            if (detachDissolveDir != 0) {
+                detachDissolve = MathHelper.Clamp(detachDissolve + detachDissolveDir * 0.16f, 0f, 1f);
+                if (detachDissolve >= 1f && detachDissolveDir > 0)
+                    detachDissolveDir = -1;      // 到峰值后回凝
+                else if (detachDissolve <= 0f && detachDissolveDir < 0)
+                    detachDissolveDir = 0;        // 回凝完成
+            }
+            if (clapBloomTimer > 0) clapBloomTimer--;
+
+            // 安全检查：如果状态持续时间过长，强制回到待机 (Boss 编排状态由 Boss 管理, 豁免)
+            if (stateTimer > 300 && currentState != HandState.Idle
+                && currentState != HandState.Controlled && currentState != HandState.Channeling
+                && currentState != HandState.Stunned) {
                 currentState = HandState.Retracting;
                 stateTimer = 0;
                 isClapReady = false;
@@ -254,6 +350,15 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
                 case HandState.ClapStrike:
                     HandleClapStrikeState(boss, target);
                     break;
+                case HandState.Controlled:
+                    HandleControlledState(boss, target);
+                    break;
+                case HandState.Channeling:
+                    HandleChannelingState(boss, target);
+                    break;
+                case HandState.Stunned:
+                    HandleStunnedState(boss, target);
+                    break;
             }
 
             // 更新IK系统
@@ -276,8 +381,10 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
                 }
             }
 
-            // 防止离Boss太远 (传送攻击时禁用此限制)
-            if (currentState != HandState.TeleportClap && currentState != HandState.ClapStrike) {
+            // 防止离Boss太远 (传送 / Boss 外部驱动状态豁免)
+            if (currentState != HandState.TeleportClap && currentState != HandState.ClapStrike
+                && currentState != HandState.Controlled && currentState != HandState.Channeling
+                && currentState != HandState.Stunned) {
                 float distanceToBoss = Vector2.Distance(NPC.Center, boss.Center);
                 if (distanceToBoss > 1200f) {
                     NPC.Center = boss.Center + (NPC.Center - boss.Center).SafeNormalize(Vector2.Zero) * 1200f;
@@ -446,6 +553,71 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
                 slashProgress = 0f;
                 boneTossCount = 0;
             }
+        }
+
+        // ====== V2 状态处理: 外部驱动 / 施法 / 硬直 ======
+        private void HandleControlledState(NPC boss, Player target) {
+            // 由 Boss 每帧 DriveControlled 设定的位置, 平滑跟随 (旋冢环绕 / 就坛飞行)
+            NPC.Center += (controlledPos - NPC.Center) * 0.35f;
+            NPC.velocity = (controlledPos - NPC.Center) * 0.15f;
+
+            // 朝向目标的手部转向
+            Vector2 toTarget = (target.Center - NPC.Center);
+            if (toTarget.LengthSquared() > 1f)
+                NPC.rotation = toTarget.ToRotation();
+
+            // 环绕魂火残痕
+            if (Main.netMode != NetmodeID.Server && Main.rand.NextBool(3)) {
+                int dust = Dust.NewDust(NPC.Center, NPC.width, NPC.height, DustID.Shadowflame, 0, 0, 120, default, 1.4f);
+                Main.dust[dust].noGravity = true;
+                Main.dust[dust].velocity = NPC.velocity * 0.3f;
+            }
+        }
+
+        private void HandleChannelingState(NPC boss, Player target) {
+            // 据坛施法: 轻微上下浮动 + 内向施法手势
+            float bob = MathF.Sin(stateTimer * 0.08f) * 10f;
+            Vector2 anchor = controlledPos + new Vector2(0, bob);
+            NPC.Center += (anchor - NPC.Center) * 0.2f;
+            NPC.velocity *= 0.8f;
+
+            // 手心朝向法阵中心 (controlledPos 由 Boss 设为坛位, 朝向玩家方向作施法感)
+            NPC.rotation = (target.Center - NPC.Center).ToRotation();
+
+            if (Main.netMode != NetmodeID.Server && stateTimer % 3 == 0) {
+                Vector2 off = Main.rand.NextVector2Circular(36, 36);
+                int dust = Dust.NewDust(NPC.Center + off, 0, 0, DustID.PurpleTorch, 0, 0, 100, default, 1.6f);
+                Main.dust[dust].noGravity = true;
+                Main.dust[dust].velocity = -off.SafeNormalize(Vector2.Zero) * 2.5f;
+            }
+        }
+
+        private void HandleStunnedState(NPC boss, Player target) {
+            // 硬直坠落 + 缓慢旋转, 表达"重伤"
+            NPC.velocity.Y += 0.25f;
+            NPC.velocity.X *= 0.96f;
+            if (NPC.velocity.Y > 7f) NPC.velocity.Y = 7f;
+            NPC.Center += NPC.velocity;
+            NPC.rotation += 0.05f * (Direction >= 0 ? 1 : -1);
+
+            if (Main.netMode != NetmodeID.Server && Main.rand.NextBool(2)) {
+                int dust = Dust.NewDust(NPC.Center, NPC.width, NPC.height, DustID.Smoke, 0, 0, 120, default, 1.6f);
+                Main.dust[dust].noGravity = true;
+            }
+
+            stunTimer--;
+            if (stunTimer <= 0) {
+                currentState = HandState.Retracting;
+                detachDissolveDir = -1;
+                stateTimer = 0;
+                NPC.netUpdate = true;
+            }
+        }
+
+        /// <summary>由 Boss 在拍掌命中点注入径向泛光残留 (PreDraw 消费, 客户端表现)。</summary>
+        public void FlagClapBloom(Vector2 worldPos) {
+            clapBloomTimer = 10;
+            clapBloomPos = worldPos;
         }
 
         // ====== 攻击发起方法 ======
@@ -679,6 +851,8 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
             else if (stateTimer == 6) {
                 NPC.Center = meetPos; // 锁定位置
                 NPC.netUpdate = true;
+                FlagClapBloom(meetPos); // V2: 拍掌冲击波径向泛光 (PreDraw 消费)
+                ACMUtils.AddScreenShake(10f); // §6.2 大招释放预算 (取 max)
 
                 // 视觉效果：撞击粒子爆发
                 for (int i = 0; i < 40; i++) {
@@ -713,9 +887,6 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
 
                     // 冲击音效 - 更响亮
                     SoundEngine.PlaySound(SoundID.Item14 with { Volume = 1.5f, Pitch = -0.1f }, meetPos);
-
-                    // 屏幕震动 - 更强烈
-                    Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>()?.ShakeScreen(25, 50);
                 }
             }
             // 6-18帧：停顿 (Freeze/Hold) - 强调打击感
@@ -788,14 +959,20 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
         }
 
         public override bool CanHitPlayer(Player target, ref int cooldownSlot) {
-            return currentState == HandState.Slashing || currentState == HandState.Reaching;
+            return currentState == HandState.Slashing || currentState == HandState.Reaching
+                || (currentState == HandState.Controlled && controlledCanHit)
+                || currentState == HandState.Grabbing;
         }
 
         public override void OnHitPlayer(Player target, Player.HurtInfo hurtInfo) {
+            // 地府身份层: 手部命中叠魂蚀 DoT (魂蚀); 抓取另叠冥律标记
+            Underworlds.UnderworldField.AddSoulErosion(target, 2);
+
             // 抓取玩家
             if (currentState == HandState.Grabbing && grabbedPlayer == null) {
                 grabbedPlayer = target;
                 grabDuration = 60;
+                Underworlds.UnderworldField.AddNetherDecree(target, 1);
                 SoundEngine.PlaySound(SoundID.NPCHit2, NPC.Center);
             }
         }
@@ -807,6 +984,13 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
             Texture2D handTexture = TextureAssets.Npc[NPC.type].Value;
             Vector2 handOrigin = Direction > 0 ? new Vector2(0, handTexture.Height / 2) : new Vector2(handTexture.Width, handTexture.Height / 2);
+
+            // V2 拍掌冲击波: 命中点加性径向泛光 (硬化 ACMShaders.DrawRadialBloomAt, 自带全屏名额仲裁)
+            if (clapBloomTimer > 0) {
+                float bloomT = clapBloomTimer / 10f;
+                ACMShaders.DrawRadialBloomAt(clapBloomPos, 0.16f * bloomT + 0.05f, bloomT,
+                    new Color(180, 80, 255), 8f, 2.4f);
+            }
 
             // 决定是否绘制手臂连接
             bool shouldDrawArm = true;
@@ -857,7 +1041,30 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
                 mainColor = Color.Lerp(drawColor, Color.Red, 0.4f);
             }
 
-            spriteBatch.Draw(handTexture, NPC.Center - Main.screenPosition, null, mainColor, rotation, handOrigin, NPC.scale, mainEffects, 0);
+            // V2 脱体/回体 骨→魂→骨: 用 DissolveBurn 单 pass 溶解过渡; 否则常规绘制
+            if (detachDissolve > 0.02f && ACMShaders.DissolveBurn is Effect dissolve && Main.netMode != NetmodeID.Server) {
+                dissolve.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+                dissolve.Parameters["uIntensity"]?.SetValue(1f);
+                dissolve.Parameters["uThreshold"]?.SetValue(detachDissolve * 0.85f);
+                dissolve.Parameters["uEdgeWidth"]?.SetValue(0.12f);
+                dissolve.Parameters["uNoiseScale"]?.SetValue(2.2f);
+                dissolve.Parameters["uEdgeColor"]?.SetValue(new Color(180, 90, 255).ToVector4());
+                dissolve.Parameters["uDirection"]?.SetValue(Vector2.Zero);
+                dissolve.Parameters["uSweepStrength"]?.SetValue(0f);
+
+                GraphicsDevice gd = Main.graphics.GraphicsDevice;
+                gd.Textures[1] = ACMShaders.NoiseTexture;
+                gd.SamplerStates[1] = SamplerState.LinearWrap;
+
+                spriteBatch.End();
+                spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointClamp,
+                    DepthStencilState.None, RasterizerState.CullNone, dissolve, Main.GameViewMatrix.TransformationMatrix);
+                spriteBatch.Draw(handTexture, NPC.Center - Main.screenPosition, null, mainColor, rotation, handOrigin, NPC.scale, mainEffects, 0);
+                ACMShaders.RestoreDefaultBatch(spriteBatch);
+            }
+            else {
+                spriteBatch.Draw(handTexture, NPC.Center - Main.screenPosition, null, mainColor, rotation, handOrigin, NPC.scale, mainEffects, 0);
+            }
 
             return false;
         }

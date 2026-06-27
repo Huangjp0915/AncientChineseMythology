@@ -1,4 +1,6 @@
-﻿using AncientChineseMythology.Underworlds.Tiles;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Tiles;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -53,7 +55,9 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
 
     /// <summary>
     /// 冥岩爆魂雷弹幕 - 抛物线飞行的冥岩雷弹，接触敌人或延时后爆炸
-    /// 使用ACMAsset.Sparkle叠加爆炸线条，ACMAsset.EmberShards绘制碎片飞散
+    /// 表现重做: 引信期 <see cref="WeaponVFX.DrawRadialBloom"/> 渐亮警示 (越近爆炸越烈); 爆炸触发
+    /// 专属 <see cref="NetherRockBlastFX"/> 用 <see cref="ACMShaders.GenericWarp"/> 全屏冲击扭曲 + 双色冲击环,
+    /// 并叠 <see cref="ACMWeaponBurst"/> 致命红/青黄魂火双演出 + <see cref="WeaponVFX.AddScreenShake"/>。
     /// </summary>
     public class NetherRockSoulbombProj : ModProjectile
     {
@@ -197,6 +201,14 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
             //爆炸光照
             Lighting.AddLight(explosionCenter, 1.5f, 0.8f, 2f);
 
+            //爆炸演出: 全屏冲击扭曲 (GenericWarp) + 双色冲击环 + 致命红/青黄魂火径向辉光 + 落地级屏震
+            NetherRockBlastFX.Spawn(Projectile.GetSource_Death(), explosionCenter, Projectile.owner);
+            ACMWeaponBurst.Spawn(Projectile.GetSource_Death(), explosionCenter,
+                ACMWeaponBurst.LethalRed, scale: 2.2f, owner: Projectile.owner);
+            ACMWeaponBurst.Spawn(Projectile.GetSource_Death(), explosionCenter,
+                ACMWeaponBurst.SoulFire, scale: 1.3f, owner: Projectile.owner);
+            WeaponVFX.AddScreenShake(explosionCenter, 6f);
+
             //附近敌人附加减益
             for (int i = 0; i < Main.maxNPCs; i++) {
                 NPC npc = Main.npc[i];
@@ -216,8 +228,16 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
             Texture2D texture = TextureAssets.Projectile[Type].Value;
             Vector2 origin = texture.Size() / 2f;
 
-            //绘制主体
+            //引信期径向辉光渐亮 (走全屏名额, 名额满退化为柔光; 越接近爆炸越烈, 带引信抖动)
             float fuseProgress = Timer / FuseTime;
+            if (fuseProgress > 0.25f) {
+                float ramp = MathHelper.Clamp((fuseProgress - 0.25f) / 0.75f, 0f, 1f);
+                float flick = 0.7f + 0.3f * MathF.Sin(Timer * (0.4f + fuseProgress * 0.6f));
+                WeaponVFX.DrawRadialBloom(Projectile.Center, 0.02f + ramp * 0.05f, ramp * 0.5f * flick,
+                    new Color(205, 80, 230), rayCount: 6f);
+            }
+
+            //绘制主体
             Color mainColor = Color.Lerp(lightColor, new Color(200, 150, 255), fuseProgress * 0.4f);
             Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null, mainColor, Projectile.rotation, origin, Projectile.scale, SpriteEffects.None, 0);
 
@@ -242,6 +262,74 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 float sparkScale = 0.2f + sparkIntensity * 0.1f;
                 Main.EntitySpriteDraw(sparkle, Projectile.Center - Main.screenPosition, null, sparkColor, Timer * 0.1f, sparkleOrigin, sparkScale, SpriteEffects.None, 0);
             }
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 冥岩爆魂雷·爆炸演出弹幕 (纯视觉, damage=0): 爆炸瞬间在引爆点跑一道
+    /// <see cref="ACMShaders.GenericWarp"/> 全屏冲击波扭曲 (rift 主题, 向外推) + 双色扩张冲击环。
+    /// 绘制只在 PreDraw, 爆炸阶段仅 <see cref="Spawn"/> 触发 (仅 owner 客户端)。
+    /// </summary>
+    public class NetherRockBlastFX : ModProjectile
+    {
+        public override string Texture => "Terraria/Images/Projectile_1";
+        private const int Life = 26;
+
+        public static void Spawn(IEntitySource source, Vector2 worldPos, int owner) {
+            if (Main.dedServ || Main.myPlayer != owner)
+                return;
+            Projectile.NewProjectile(source, worldPos, Vector2.Zero,
+                ModContent.ProjectileType<NetherRockBlastFX>(), 0, 0f, owner);
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = 2;
+            Projectile.height = 2;
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = Life;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.alpha = 255;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+
+        public override void AI() {
+            Projectile.velocity = Vector2.Zero;
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+
+            float life = 1f - Projectile.timeLeft / (float)Life;            // 0→1
+            float env = MathHelper.Clamp((float)Math.Sin(life * Math.PI), 0f, 1f);
+
+            //—— GenericWarp 全屏冲击扭曲 (rift, 向外推; 单一全屏后处理名额) ——
+            if (env > 0.05f && ACMShaders.RequestFullscreenSlot()) {
+                Effect fx = ACMShaders.GenericWarp;
+                if (fx != null) {
+                    ACMShaders.SetCommonParams(fx, Projectile.Center, env);
+                    fx.Parameters["uRadius"]?.SetValue(0.5f);
+                    fx.Parameters["uWarpScale"]?.SetValue(1.6f);
+                    fx.Parameters["uChroma"]?.SetValue(0.65f);
+                    fx.Parameters["uRadialPull"]?.SetValue(-0.7f); // 向外推 (冲击波)
+                    fx.Parameters["uMode"]?.SetValue(3f);          // rift 裂隙档
+                    fx.Parameters["uTint"]?.SetValue(new Vector4(0.55f, 0.18f, 0.32f, 0.7f));
+
+                    SpriteBatch sb = Main.spriteBatch;
+                    ACMShaders.ApplyScreenPostProcess(sb, fx);
+                }
+            }
+
+            //—— 双色扩张冲击环 (致命红外沿 + 青黄魂火内沿) ——
+            float ringRadius = 24f + life * 150f;
+            WeaponVFX.DrawShockwaveRing(Projectile.Center, ringRadius, 16f, env * 0.9f,
+                innerColor: new Color(255, 210, 120), outerColor: new Color(250, 50, 60));
 
             return false;
         }

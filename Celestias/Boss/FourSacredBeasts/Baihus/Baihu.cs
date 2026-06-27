@@ -1,6 +1,7 @@
 ﻿using AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items;
 using AncientChineseMythology.Items.Materials;
 using AncientChineseMythology.Systems;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.IO;
@@ -9,81 +10,103 @@ using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.GameContent.ItemDropRules;
-using Terraria.Graphics.CameraModifiers;
 using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
 {
     /// <summary>
-    /// 白虎 - 西方神兽，金/风属性
-    /// 巨型白虎，高速近战Boss，以凶猛的扑击和金属利刃为特色
-    /// 一阶段：铁虎猎杀，利爪与金属碎片
-    /// 二阶段：钢虎狂暴，狂暴冲刺与大地震击
-    /// 三阶段：神虎降世，金属风暴与灭世之爪
+    /// 白虎 — 西方·金·神虎降世 (V2)。
+    ///
+    /// V1 是「假近战、真喷弹」：随机 hub + 每 5/10 tick 喷金属环/音波。V2 改为 <see cref="SacredBeastBase"/>
+    /// 确定性轮替 + 预警子状态机的<b>真·猎杀者</b>：
+    ///   • 一/二阶段「猎手循环」——<b>潜行 Stalk</b>(纯追踪零弹，蓄势) 与 <b>扑击 Pounce</b>(只在扑击窗口高伤) 交替；
+    ///     爪痕蓄能满 → <b>蓄势扑击</b>(1s 银爪预兆 glowing-claw tell)。
+    ///   • 「金属回响 Metallic Echo」环：每第三片才是真的(<see cref="BaihuEchoDecoy"/> 虚影)，以可读取代密度。
+    ///   • 「铁壁 Iron Wall」：以虎啸朝向宣告的虎形安全缺口。
+    ///   • 三阶段「白虎之形」落地形态：三招——裂地灭世爪 RiftClaw / 震地踏 QuakeStomp / 爪裂射线 RendBeams。
+    /// 表现走硬化 <see cref="ACMShaders"/>：爪裂 <see cref="ACMShaders.DrawBeam"/>、震波 <see cref="ACMShaders.DrawRadialBloomAt"/>、
+    /// 地纹 <see cref="ACMShaders.ArenaRunic"/>+<see cref="ACMShaders.WorldDecalParams"/>；红=致命唯一色，震屏走 <see cref="ACMScreenShakeSystem"/>。
     /// </summary>
     [AutoloadBossHead]
-    public class Baihu : ModNPC
+    public class Baihu : SacredBeastBase
     {
-        #region 常量定义
+        #region 四圣兽身份
 
-        public const float Phase2Threshold = 0.60f;
-        public const float Phase3Threshold = 0.30f;
+        public override SacredElement Element => SacredElement.Metal;
+        public override string SkyName => BaihuSky.SkyName;
 
         #endregion
 
         #region 状态枚举
 
-        public enum BossPhase
+        public enum BaihuState
         {
             Intro,
-            Phase1_Prowl,
-            Phase1_MetalClaw,
-            Phase1_Pounce,
-            Phase1_BladeStorm,
-            Phase1_TigerRoar,
-            PhaseTransition_2,
-            Phase2_FrenzyCharge,
-            Phase2_MetalRain,
-            Phase2_EarthShatter,
-            Phase2_IronWall,
-            Phase2_FuryCombo,
-            PhaseTransition_3,
-            Phase3_MetalTempest,
-            Phase3_WhiteGoldBeam,
-            Phase3_ExtinctionClaw,
-            Phase3_TigerGodsFury,
-            Phase3_FuryProwl
+            // 一/二阶段 猎手循环
+            Stalk,          // 潜行：纯追踪零弹，蓄势
+            Pounce,         // 扑击：唯一高伤窗口
+            ClawSwipe,      // 爪击扇：施加爪痕、积蓄
+            MetallicEcho,   // 金属回响：每第三片才真
+            IronWall,       // 铁壁：虎形安全缺口(二阶段起)
+            PhaseTransition2,
+            PhaseTransition3,
+            // 三阶段 白虎之形(落地)
+            RiftClaw,       // 裂地灭世爪(签名)
+            QuakeStomp,     // 震地踏：可跳/可读震波
+            RendBeams       // 爪裂射线
+        }
+
+        private BaihuState State {
+            get => (BaihuState)RawState;
+            set => RawState = (int)value;
         }
 
         #endregion
 
-        #region 状态属性
+        #region 字段
 
-        public BossPhase Phase {
-            get => (BossPhase)(int)NPC.ai[0];
-            set => NPC.ai[0] = (int)value;
-        }
-
-        public ref float PhaseTimer => ref NPC.ai[1];
-        public ref float AttackTimer => ref NPC.ai[2];
-        public ref float SubState => ref NPC.ai[3];
-
-        public bool IsPhase2 => NPC.life < NPC.lifeMax * Phase2Threshold;
-        public bool IsPhase3 => NPC.life < NPC.lifeMax * Phase3Threshold;
-
-        private float globalTime;
         private bool didPhase2Transition;
         private bool didPhase3Transition;
 
-        private int chargeCount;
-        private int comboStep;
+        private int clawCharge;          // 爪痕蓄能(每 3 触发蓄势扑击)
+        private bool pounceEmpowered;    // 本次扑击是否蓄势(银爪预兆)
+        private Vector2 pounceDir = Vector2.UnitX;
+        private float ironGapAngle;      // 铁壁安全缺口朝向
         private float prowlAngle;
         private float glowIntensity = 1f;
+        private float quakeFlash;        // 落地震波视觉脉冲(本地)
+
+        private bool Expert => Main.expertMode;
+        private bool OnServer => Main.netMode != NetmodeID.MultiplayerClient;
 
         #endregion
 
-        #region ModNPC重写
+        #region 确定性轮替
+
+        protected override int[] GetPhaseRotation(int phaseTier) => phaseTier switch {
+            1 => new[] {
+                (int)BaihuState.Stalk, (int)BaihuState.Pounce, (int)BaihuState.ClawSwipe,
+                (int)BaihuState.Stalk, (int)BaihuState.MetallicEcho, (int)BaihuState.Pounce
+            },
+            2 => new[] {
+                (int)BaihuState.Stalk, (int)BaihuState.Pounce, (int)BaihuState.IronWall,
+                (int)BaihuState.ClawSwipe, (int)BaihuState.MetallicEcho, (int)BaihuState.Pounce
+            },
+            _ => new[] {
+                (int)BaihuState.RiftClaw, (int)BaihuState.QuakeStomp, (int)BaihuState.RendBeams
+            }
+        };
+
+        private void AdvanceRotation() {
+            int next = NextAttack(PhaseTier);
+            if (next < 0) next = (int)BaihuState.Stalk;
+            TransitionToState(next);
+        }
+
+        #endregion
+
+        #region ModNPC 重写
 
         public override void SetStaticDefaults() {
             Main.npcFrameCount[Type] = 1;
@@ -140,29 +163,31 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
         }
 
         public override void OnSpawn(IEntitySource source) {
-            Phase = BossPhase.Intro;
+            State = BaihuState.Intro;
             PhaseTimer = 0;
-            globalTime = 0;
-            if (Main.netMode != NetmodeID.MultiplayerClient)
-                NPC.netUpdate = true;
+            if (OnServer) NPC.netUpdate = true;
         }
 
         public override void SendExtraAI(BinaryWriter writer) {
-            writer.Write((int)Phase);
-            writer.Write(globalTime);
+            SendSacredBeastAI(writer);
             writer.Write(didPhase2Transition);
             writer.Write(didPhase3Transition);
-            writer.Write(chargeCount);
-            writer.Write(comboStep);
+            writer.Write(clawCharge);
+            writer.Write(pounceEmpowered);
+            writer.Write(ironGapAngle);
+            writer.Write(pounceDir.X);
+            writer.Write(pounceDir.Y);
         }
 
         public override void ReceiveExtraAI(BinaryReader reader) {
-            Phase = (BossPhase)reader.ReadInt32();
-            globalTime = reader.ReadSingle();
+            ReceiveSacredBeastAI(reader);
             didPhase2Transition = reader.ReadBoolean();
             didPhase3Transition = reader.ReadBoolean();
-            chargeCount = reader.ReadInt32();
-            comboStep = reader.ReadInt32();
+            clawCharge = reader.ReadInt32();
+            pounceEmpowered = reader.ReadBoolean();
+            ironGapAngle = reader.ReadSingle();
+            pounceDir.X = reader.ReadSingle();
+            pounceDir.Y = reader.ReadSingle();
         }
 
         public override bool? DrawHealthBar(byte hbPosition, ref float scale, ref Vector2 position) {
@@ -172,10 +197,13 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
 
         public override bool CheckActive() => false;
 
+        public override void OnHitPlayer(Player target, Player.HurtInfo hurtInfo) {
+            BaihuClawMark.Apply(target);
+        }
+
         public override void HitEffect(NPC.HitInfo hit) {
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < 6; i++)
                 Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Silver, hit.HitDirection * 2f, -1f, 150, default, 1.5f);
-            }
             if (NPC.life <= 0) {
                 for (int i = 0; i < 40; i++) {
                     Dust d = Dust.NewDustDirect(NPC.position, NPC.width, NPC.height, DustID.Silver, 0, 0, 100, default, 2.5f);
@@ -187,364 +215,285 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
 
         public override void OnKill() {
             DownedBossSystem.downedBaihu = true;
-            if (Main.netMode != NetmodeID.Server) {
-                PunchCameraModifier modifier = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 20f, 10f, 60, 2000f, FullName);
-                Main.instance.CameraModifiers.Add(modifier);
-            }
+            ACMScreenShakeSystem.Add(16f);
         }
 
         #endregion
 
-        #region AI主循环
+        #region AI 主循环
 
         public override void AI() {
-            globalTime += 1f / 60f;
+            if (!RunStandardPrologue(out Player target))
+                return;
 
-            NPC.TargetClosest();
-            Player target = Main.player[NPC.target];
-
-            if (!target.active || target.dead) {
-                NPC.TargetClosest();
-                target = Main.player[NPC.target];
-                if (!target.active || target.dead) {
-                    NPC.velocity.Y -= 0.8f;
-                    NPC.EncourageDespawn(30);
-                    return;
-                }
-            }
-
+            quakeFlash *= 0.9f;
             CheckPhaseTransition();
-            PhaseTimer++;
-            AttackTimer++;
 
-            switch (Phase) {
-                case BossPhase.Intro: RunIntro(target); break;
-                case BossPhase.Phase1_Prowl: RunPhase1Prowl(target); break;
-                case BossPhase.Phase1_MetalClaw: RunPhase1MetalClaw(target); break;
-                case BossPhase.Phase1_Pounce: RunPhase1Pounce(target); break;
-                case BossPhase.Phase1_BladeStorm: RunPhase1BladeStorm(target); break;
-                case BossPhase.Phase1_TigerRoar: RunPhase1TigerRoar(target); break;
-                case BossPhase.PhaseTransition_2: RunPhaseTransition2(target); break;
-                case BossPhase.Phase2_FrenzyCharge: RunPhase2FrenzyCharge(target); break;
-                case BossPhase.Phase2_MetalRain: RunPhase2MetalRain(target); break;
-                case BossPhase.Phase2_EarthShatter: RunPhase2EarthShatter(target); break;
-                case BossPhase.Phase2_IronWall: RunPhase2IronWall(target); break;
-                case BossPhase.Phase2_FuryCombo: RunPhase2FuryCombo(target); break;
-                case BossPhase.PhaseTransition_3: RunPhaseTransition3(target); break;
-                case BossPhase.Phase3_MetalTempest: RunPhase3MetalTempest(target); break;
-                case BossPhase.Phase3_WhiteGoldBeam: RunPhase3WhiteGoldBeam(target); break;
-                case BossPhase.Phase3_ExtinctionClaw: RunPhase3ExtinctionClaw(target); break;
-                case BossPhase.Phase3_TigerGodsFury: RunPhase3TigerGodsFury(target); break;
-                case BossPhase.Phase3_FuryProwl: RunPhase3FuryProwl(target); break;
+            switch (State) {
+                case BaihuState.Intro: RunIntro(target); break;
+                case BaihuState.Stalk: RunStalk(target); break;
+                case BaihuState.Pounce: RunPounce(target); break;
+                case BaihuState.ClawSwipe: RunClawSwipe(target); break;
+                case BaihuState.MetallicEcho: RunMetallicEcho(target); break;
+                case BaihuState.IronWall: RunIronWall(target); break;
+                case BaihuState.PhaseTransition2: RunPhaseTransition2(target); break;
+                case BaihuState.PhaseTransition3: RunPhaseTransition3(target); break;
+                case BaihuState.RiftClaw: RunRiftClaw(target); break;
+                case BaihuState.QuakeStomp: RunQuakeStomp(target); break;
+                case BaihuState.RendBeams: RunRendBeams(target); break;
             }
 
-            // 白虎面向玩家
-            NPC.spriteDirection = NPC.velocity.X >= 0 ? 1 : -1;
-            NPC.rotation = NPC.velocity.X * 0.02f;
+            // 朝向玩家
+            NPC.spriteDirection = target.Center.X >= NPC.Center.X ? 1 : -1;
+            NPC.rotation = MathHelper.Clamp(NPC.velocity.X * 0.01f, -0.25f, 0.25f) * NPC.spriteDirection;
 
-            Lighting.AddLight(NPC.Center, new Vector3(0.9f, 0.9f, 1.0f) * glowIntensity);
+            Lighting.AddLight(NPC.Center, new Vector3(0.9f, 0.92f, 1.0f) * glowIntensity);
         }
 
         private void CheckPhaseTransition() {
-            if (!didPhase2Transition && IsPhase2 && !IsPhase3 &&
-                Phase != BossPhase.PhaseTransition_2 && Phase != BossPhase.Intro) {
-                TransitionTo(BossPhase.PhaseTransition_2);
+            if (State == BaihuState.Intro || State == BaihuState.PhaseTransition2 || State == BaihuState.PhaseTransition3)
+                return;
+            if (!didPhase2Transition && IsPhase2 && !IsPhase3) {
                 didPhase2Transition = true;
+                TransitionToState((int)BaihuState.PhaseTransition2);
             }
-            if (!didPhase3Transition && IsPhase3 &&
-                Phase != BossPhase.PhaseTransition_3 && Phase != BossPhase.PhaseTransition_2 && Phase != BossPhase.Intro) {
-                TransitionTo(BossPhase.PhaseTransition_3);
+            else if (!didPhase3Transition && IsPhase3) {
                 didPhase3Transition = true;
+                TransitionToState((int)BaihuState.PhaseTransition3);
             }
         }
 
-        private void TransitionTo(BossPhase newPhase) {
-            Phase = newPhase;
-            PhaseTimer = 0;
-            AttackTimer = 0;
-            SubState = 0;
-            chargeCount = 0;
-            comboStep = 0;
-            NPC.netUpdate = true;
-        }
-
-        private BossPhase GetRandomPhase1Attack() {
-            return (BossPhase)(Main.rand.Next(4) switch {
-                0 => (int)BossPhase.Phase1_MetalClaw,
-                1 => (int)BossPhase.Phase1_Pounce,
-                2 => (int)BossPhase.Phase1_BladeStorm,
-                _ => (int)BossPhase.Phase1_TigerRoar
-            });
-        }
-
-        private BossPhase GetRandomPhase2Attack() {
-            return (BossPhase)(Main.rand.Next(5) switch {
-                0 => (int)BossPhase.Phase2_FrenzyCharge,
-                1 => (int)BossPhase.Phase2_MetalRain,
-                2 => (int)BossPhase.Phase2_EarthShatter,
-                3 => (int)BossPhase.Phase2_IronWall,
-                _ => (int)BossPhase.Phase2_FuryCombo
-            });
-        }
-
-        private BossPhase GetRandomPhase3Attack() {
-            return (BossPhase)(Main.rand.Next(4) switch {
-                0 => (int)BossPhase.Phase3_MetalTempest,
-                1 => (int)BossPhase.Phase3_WhiteGoldBeam,
-                2 => (int)BossPhase.Phase3_ExtinctionClaw,
-                _ => (int)BossPhase.Phase3_TigerGodsFury
-            });
-        }
+        private void Shake(float amt) => ACMScreenShakeSystem.Add(amt);
 
         #endregion
 
-        #region 入场演出
+        #region 入场
 
         private void RunIntro(Player target) {
             if (PhaseTimer == 1) {
-                // 白虎从侧方闪现
                 float side = Main.rand.NextBool() ? -1 : 1;
-                NPC.Center = target.Center + new Vector2(side * 600, -200);
+                NPC.Center = target.Center + new Vector2(side * 700, -260);
                 NPC.velocity = Vector2.Zero;
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.2f }, target.Center);
             }
 
-            // 缓慢逼近，虎威压制
-            Vector2 targetPos = target.Center + new Vector2(0, -250);
-            NPC.Center = Vector2.Lerp(NPC.Center, targetPos, 0.025f);
+            Vector2 want = target.Center + new Vector2(0, -250);
+            NPC.Center = Vector2.Lerp(NPC.Center, want, 0.045f);
+            NPC.velocity *= 0.9f;
 
-            if (Main.netMode != NetmodeID.Server) {
-                // 金属光芒粒子
+            if (!Main.dedServ) {
                 for (int i = 0; i < 4; i++) {
-                    Vector2 dustPos = NPC.Center + Main.rand.NextVector2Circular(150, 150);
-                    Dust d = Dust.NewDustDirect(dustPos, 0, 0, DustID.Silver, 0, 0, 100, default, 2f);
+                    Vector2 dp = NPC.Center + Main.rand.NextVector2Circular(160, 160);
+                    Dust d = Dust.NewDustDirect(dp, 0, 0, DustID.Silver, 0, 0, 100, default, 2f);
                     d.noGravity = true;
-                    d.velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 4f;
+                    d.velocity = (NPC.Center - dp).SafeNormalize(Vector2.Zero) * 4f;
                 }
             }
 
-            if (PhaseTimer >= 100) {
-                // 虎啸震屏
+            if (PhaseTimer >= 95) {
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.5f, Volume = 1.3f }, NPC.Center);
-                if (Main.netMode != NetmodeID.Server) {
-                    PunchCameraModifier modifier = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 18f, 8f, 40, 2000f, FullName);
-                    Main.instance.CameraModifiers.Add(modifier);
-                }
-                TransitionTo(BossPhase.Phase1_Prowl);
+                Shake(12f);
+                ResetRotation(1);
+                AdvanceRotation();
             }
         }
 
         #endregion
 
-        #region 一阶段：铁虎
+        #region 猎手循环 (P1/P2)
 
-        private void RunPhase1Prowl(Player target) {
-            prowlAngle += 0.035f;
-            float radius = 320f + MathF.Sin(globalTime * 2f) * 50f;
+        // 潜行：纯追踪零弹，缓慢逼近积蓄气势
+        private void RunStalk(Player target) {
+            int dur = IsPhase2 ? 60 : 78;
+            prowlAngle += IsPhase2 ? 0.03f : 0.022f;
+            float radius = 360f + MathF.Sin(GlobalTime * 1.5f) * 40f;
+            Vector2 want = target.Center + new Vector2(MathF.Cos(prowlAngle), MathF.Sin(prowlAngle) * 0.4f) * radius + new Vector2(0, -110);
+            NPC.velocity = Vector2.Lerp(NPC.velocity, (want - NPC.Center) * 0.045f, 0.06f);
 
-            Vector2 orbitPos = target.Center + new Vector2(MathF.Cos(prowlAngle), MathF.Sin(prowlAngle) * 0.4f) * radius;
-            orbitPos.Y -= 150f;
-            NPC.velocity = Vector2.Lerp(NPC.velocity, (orbitPos - NPC.Center) * 0.07f, 0.1f);
-
-            if (Main.netMode != NetmodeID.Server && Main.rand.NextBool(4)) {
-                Dust d = Dust.NewDustDirect(NPC.Center, 0, 0, DustID.Silver, 0, 0, 150, default, 1.2f);
+            if (!Main.dedServ && Main.rand.NextBool(5)) {
+                Dust d = Dust.NewDustDirect(NPC.Center, 0, 0, DustID.Silver, 0, 0, 160, default, 1.0f);
                 d.noGravity = true;
                 d.velocity = -NPC.velocity * 0.1f;
             }
 
-            // 巡逻期间持续释放金属碎片
-            if (PhaseTimer % 20 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 14f;
-                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, toTarget,
-                    ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 5, 0f, Main.myPlayer);
-            }
-
-            if (PhaseTimer > 90) TransitionTo(GetRandomPhase1Attack());
+            if (AdvanceTelegraph(0, dur, 0))
+                AdvanceRotation();
         }
 
-        private void RunPhase1MetalClaw(Player target) {
-            if (SubState == 0) {
-                Vector2 toPlayer = (target.Center - NPC.Center);
-                if (toPlayer.Length() > 180f) {
-                    NPC.velocity = Vector2.Lerp(NPC.velocity, toPlayer.SafeNormalize(Vector2.Zero) * 24f, 0.14f);
-                }
-                else {
-                    SubState = 1;
-                    AttackTimer = 0;
-                    SoundEngine.PlaySound(SoundID.Item71 with { Pitch = -0.2f }, NPC.Center);
+        // 扑击：唯一高伤窗口；爪痕蓄满则蓄势(银爪预兆+更长预告)
+        private void RunPounce(Player target) {
+            int windup = pounceEmpowered ? 60 : 34;
+            int strike = 26;
+            int recover = 22;
 
-                    if (Main.netMode != NetmodeID.MultiplayerClient) {
-                        Vector2 dir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
-                        // 双层扇形爪击
-                        int clawCount = Main.expertMode ? 9 : 7;
-                        float totalSpread = MathHelper.ToRadians(70f);
-                        for (int layer = 0; layer < 2; layer++) {
-                            for (int i = 0; i < clawCount; i++) {
-                                float angle = -totalSpread / 2 + totalSpread / (clawCount - 1) * i;
-                                Vector2 vel = dir.RotatedBy(angle) * (16f + layer * 5f);
-                                int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                                    ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 4, 2f, Main.myPlayer);
-                                if (proj >= 0 && proj < Main.maxProjectiles)
-                                    Main.projectile[proj].timeLeft = 90;
+            switch (Telegraph) {
+                case TelegraphPhase.Windup:
+                    if (PhaseTimer == 1) {
+                        pounceEmpowered = clawCharge >= 3;
+                        if (pounceEmpowered) clawCharge = 0;
+                        windup = pounceEmpowered ? 60 : 34;
+                        SoundEngine.PlaySound(SoundID.Roar with { Pitch = pounceEmpowered ? -0.2f : 0.6f }, NPC.Center);
+                        if (OnServer) NPC.netUpdate = true;
+                    }
+                    Vector2 toP = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
+                    if (AttackTimer <= windup - 12)
+                        pounceDir = toP; // 末 12 tick 锁定，预告固定可读
+                    NPC.velocity = Vector2.Lerp(NPC.velocity, -toP * (pounceEmpowered ? 7f : 4f), 0.1f);
+                    break;
+
+                case TelegraphPhase.Strike:
+                    if (AttackTimer == 1) {
+                        float speed = (IsPhase2 ? 46f : 40f) + (pounceEmpowered ? 12f : 0f);
+                        NPC.velocity = pounceDir * speed;
+                        SoundEngine.PlaySound(SoundID.Item71 with { Pitch = -0.2f }, NPC.Center);
+                        Shake(pounceEmpowered ? 9f : 6f);
+                        if (pounceEmpowered && OnServer) {
+                            // 蓄势扑击：沿扑击路径甩出两道银爪裂脉
+                            float ang = pounceDir.ToRotation();
+                            BaihuRendBeam.Spawn(NPC.GetSource_FromAI(), NPC.Center, ang + 0.18f, 1100f, 10, 34, NPC.damage / 4);
+                            BaihuRendBeam.Spawn(NPC.GetSource_FromAI(), NPC.Center, ang - 0.18f, 1100f, 10, 34, NPC.damage / 4);
+                        }
+                    }
+                    if (AttackTimer > 14)
+                        NPC.velocity *= 0.93f;
+                    if (!Main.dedServ) {
+                        for (int i = 0; i < 3; i++) {
+                            Dust d = Dust.NewDustDirect(NPC.Center, 0, 0, DustID.Silver, 0, 0, 80, default, 1.8f);
+                            d.noGravity = true;
+                            d.velocity = -NPC.velocity * Main.rand.NextFloat(0.05f, 0.15f);
+                        }
+                    }
+                    break;
+
+                default: // Recover
+                    NPC.velocity *= 0.9f;
+                    break;
+            }
+
+            if (AdvanceTelegraph(windup, strike, recover)) {
+                pounceEmpowered = false;
+                AdvanceRotation();
+            }
+        }
+
+        // 爪击扇：可读扇形银爪，施加爪痕，积蓄蓄能
+        private void RunClawSwipe(Player target) {
+            int windup = 32, strike = 8, recover = 18;
+            switch (Telegraph) {
+                case TelegraphPhase.Windup:
+                    NPC.velocity *= 0.9f;
+                    Vector2 toP = (target.Center - NPC.Center);
+                    if (toP.Length() > 360f)
+                        NPC.velocity = Vector2.Lerp(NPC.velocity, toP.SafeNormalize(Vector2.UnitX) * 16f, 0.1f);
+                    break;
+                case TelegraphPhase.Strike:
+                    if (AttackTimer == 1) {
+                        SoundEngine.PlaySound(SoundID.Item71, NPC.Center);
+                        Shake(4f);
+                        clawCharge++;
+                        if (OnServer) {
+                            Vector2 dir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
+                            int count = Expert ? 9 : 7;
+                            float spread = MathHelper.ToRadians(70f);
+                            for (int layer = 0; layer < 2; layer++) {
+                                for (int i = 0; i < count; i++) {
+                                    float a = -spread / 2 + spread / (count - 1) * i;
+                                    Vector2 vel = dir.RotatedBy(a) * (15f + layer * 5f);
+                                    int pr = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
+                                        ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 4, 2f, Main.myPlayer);
+                                    if (pr >= 0 && pr < Main.maxProjectiles)
+                                        Main.projectile[pr].timeLeft = 95;
+                                }
                             }
-                        }
-                        // 音波追踪弹
-                        for (int i = -1; i <= 1; i++) {
-                            Vector2 roarVel = dir.RotatedBy(i * MathHelper.ToRadians(15)) * 12f;
-                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, roarVel,
-                                ModContent.ProjectileType<BaihuSonicRoar>(), NPC.damage / 4, 0f, Main.myPlayer);
+                            NPC.netUpdate = true;
                         }
                     }
-
-                    if (Main.netMode != NetmodeID.Server) {
-                        PunchCameraModifier modifier = new(NPC.Center, (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX), 10f, 5f, 15, 800f, FullName);
-                        Main.instance.CameraModifiers.Add(modifier);
-                    }
-                }
+                    break;
+                default:
+                    NPC.velocity *= 0.9f;
+                    break;
             }
-            else {
-                NPC.velocity *= 0.9f;
-                if (AttackTimer > 35) TransitionTo(BossPhase.Phase1_Prowl);
-            }
+            if (AdvanceTelegraph(windup, strike, recover))
+                AdvanceRotation();
         }
 
-        private void RunPhase1Pounce(Player target) {
-            if (SubState == 0) {
-                Vector2 away = (NPC.Center - target.Center).SafeNormalize(Vector2.UnitY) * 5f;
-                NPC.velocity = Vector2.Lerp(NPC.velocity, away, 0.1f);
+        // 金属回响：每第三片才是真的，2/3 为无害虚影
+        private void RunMetallicEcho(Player target) {
+            int windup = 46, strike = 6, recover = 22;
+            Vector2 hover = target.Center + new Vector2(0, -300);
+            NPC.velocity = Vector2.Lerp(NPC.velocity, (hover - NPC.Center) * 0.05f, 0.08f);
 
-                if (Main.netMode != NetmodeID.Server) {
-                    Dust d = Dust.NewDustDirect(NPC.position, NPC.width, NPC.height, DustID.Silver, 0, 0, 100, default, 1.5f);
-                    d.noGravity = true;
-                    d.velocity = (NPC.Center - d.position).SafeNormalize(Vector2.Zero) * 3f;
-                }
-
-                if (AttackTimer > 28) {
-                    SubState = 1;
-                    AttackTimer = 0;
-                    NPC.velocity = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX) * 36f;
-                    SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.8f }, NPC.Center);
+            if (Telegraph == TelegraphPhase.Strike && AttackTimer == 1) {
+                SoundEngine.PlaySound(SoundID.Item71 with { Pitch = 0.4f }, NPC.Center);
+                clawCharge++;
+                if (OnServer) {
+                    int count = 18;
+                    float radius = 620f;
+                    float baseAngle = Main.rand.NextFloat(MathHelper.TwoPi);
+                    for (int i = 0; i < count; i++) {
+                        float a = baseAngle + MathHelper.TwoPi / count * i;
+                        Vector2 pos = target.Center + new Vector2(MathF.Cos(a), MathF.Sin(a)) * radius;
+                        Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.Zero) * 11f;
+                        if (i % 3 == 0) {
+                            int pr = Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, vel,
+                                ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 4, 0f, Main.myPlayer);
+                            if (pr >= 0 && pr < Main.maxProjectiles)
+                                Main.projectile[pr].timeLeft = 120;
+                        }
+                        else {
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, vel,
+                                ModContent.ProjectileType<BaihuEchoDecoy>(), 0, 0f, Main.myPlayer);
+                        }
+                    }
                     NPC.netUpdate = true;
                 }
             }
-            else {
-                // 扑击期间留下金属碎片尾迹
-                if (AttackTimer % 3 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    Vector2 perpDir = NPC.velocity.SafeNormalize(Vector2.UnitX).RotatedBy(MathHelper.PiOver2);
-                    for (int side = -1; side <= 1; side += 2) {
-                        Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, perpDir * side * 6f,
-                            ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 5, 0f, Main.myPlayer);
-                    }
-                }
-
-                if (Main.netMode != NetmodeID.Server) {
-                    for (int i = 0; i < 4; i++) {
-                        Dust d = Dust.NewDustDirect(NPC.Center, 0, 0, DustID.Silver, 0, 0, 80, default, 2f);
-                        d.noGravity = true;
-                        d.velocity = -NPC.velocity * Main.rand.NextFloat(0.05f, 0.15f);
-                    }
-                }
-
-                if (AttackTimer > 22) NPC.velocity *= 0.92f;
-                if (AttackTimer > 35) {
-                    // 落地音波冲击
-                    if (Main.netMode != NetmodeID.MultiplayerClient) {
-                        for (int i = 0; i < 8; i++) {
-                            float angle = MathHelper.TwoPi / 8 * i;
-                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center,
-                                new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 10f,
-                                ModContent.ProjectileType<BaihuSonicRoar>(), NPC.damage / 5, 0f, Main.myPlayer);
-                        }
-                    }
-                    chargeCount++;
-                    if (chargeCount < 4) {
-                        SubState = 0;
-                        AttackTimer = 0;
-                    }
-                    else TransitionTo(BossPhase.Phase1_Prowl);
-                }
-            }
+            if (AdvanceTelegraph(windup, strike, recover))
+                AdvanceRotation();
         }
 
-        private void RunPhase1BladeStorm(Player target) {
-            Vector2 hoverPos = target.Center + new Vector2(0, -300);
-            NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.04f, 0.1f);
-
-            // 旋转金属刃环，更密集
-            int interval = Main.expertMode ? 10 : 14;
-            if (AttackTimer % interval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int bladeCount = Main.expertMode ? 14 : 10;
-                float baseAngle = globalTime * 2.5f;
-                for (int i = 0; i < bladeCount; i++) {
-                    float angle = baseAngle + MathHelper.TwoPi / bladeCount * i;
-                    Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 12f;
-                    int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                        ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 4, 1f, Main.myPlayer);
-                    if (proj >= 0 && proj < Main.maxProjectiles)
-                        Main.projectile[proj].timeLeft = 150;
-                }
-                SoundEngine.PlaySound(SoundID.Item71, NPC.Center);
-            }
-
-            // 同步音波弹射向玩家
-            if (AttackTimer % 25 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 14f;
-                for (int i = -1; i <= 1; i++) {
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center,
-                        toTarget.RotatedBy(i * MathHelper.ToRadians(12)),
-                        ModContent.ProjectileType<BaihuSonicRoar>(), NPC.damage / 5, 0f, Main.myPlayer);
-                }
-            }
-
-            if (AttackTimer > 100) TransitionTo(BossPhase.Phase1_Prowl);
-        }
-
-        private void RunPhase1TigerRoar(Player target) {
-            NPC.velocity *= 0.9f;
-
-            if (AttackTimer == 25) {
-                SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.3f, Volume = 1.5f }, NPC.Center);
-                if (Main.netMode != NetmodeID.Server) {
-                    PunchCameraModifier modifier = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 14f, 6f, 25, 1500f, FullName);
-                    Main.instance.CameraModifiers.Add(modifier);
-                }
-
-                // 3层环形音波弹幕
-                if (Main.netMode != NetmodeID.MultiplayerClient) {
-                    for (int ring = 0; ring < 3; ring++) {
-                        int count = 16 + ring * 4;
-                        for (int i = 0; i < count; i++) {
-                            float angle = MathHelper.TwoPi / count * i + ring * MathHelper.ToRadians(8f);
-                            Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * (7f + ring * 4f);
-                            int projType = ring == 1 ? ModContent.ProjectileType<BaihuSonicRoar>() : ModContent.ProjectileType<BaihuMetalShard>();
-                            int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                                projType, NPC.damage / 5, 0f, Main.myPlayer);
-                            if (proj >= 0 && proj < Main.maxProjectiles)
-                                Main.projectile[proj].timeLeft = 120;
+        // 铁壁：以虎啸朝向宣告虎形安全缺口的金属合围
+        private void RunIronWall(Player target) {
+            int windup = 52, strike = 6, recover = 24;
+            switch (Telegraph) {
+                case TelegraphPhase.Windup:
+                    if (PhaseTimer == 1) {
+                        // 缺口朝向：偏离玩家当前位置一侧(可逃可读)，由虎啸宣告
+                        ironGapAngle = Main.rand.NextFloat(MathHelper.TwoPi);
+                        SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.3f, Volume = 1.2f }, NPC.Center);
+                        if (OnServer) NPC.netUpdate = true;
+                    }
+                    NPC.velocity *= 0.92f;
+                    break;
+                case TelegraphPhase.Strike:
+                    if (AttackTimer == 1) {
+                        Shake(5f);
+                        SoundEngine.PlaySound(SoundID.Item14, NPC.Center);
+                        if (OnServer) {
+                            int count = Expert ? 34 : 28;
+                            float radius = 560f;
+                            float gapHalf = MathHelper.ToRadians(30f);
+                            for (int i = 0; i < count; i++) {
+                                float a = MathHelper.TwoPi / count * i;
+                                float diff = MathF.Abs(MathHelper.WrapAngle(a - ironGapAngle));
+                                if (diff < gapHalf) continue; // 虎形缺口
+                                Vector2 pos = target.Center + new Vector2(MathF.Cos(a), MathF.Sin(a)) * radius;
+                                Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.Zero) * 9f;
+                                int pr = Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, vel,
+                                    ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 4, 0f, Main.myPlayer);
+                                if (pr >= 0 && pr < Main.maxProjectiles)
+                                    Main.projectile[pr].timeLeft = 150;
+                            }
+                            NPC.netUpdate = true;
                         }
                     }
-                    // 瞄准金属碎片
-                    Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero);
-                    for (int i = -2; i <= 2; i++) {
-                        Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center,
-                            toTarget.RotatedBy(i * MathHelper.ToRadians(8)) * 18f,
-                            ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 4, 0f, Main.myPlayer);
-                    }
-                }
+                    break;
+                default:
+                    NPC.velocity *= 0.9f;
+                    break;
             }
-
-            if (Main.netMode != NetmodeID.Server && AttackTimer >= 20 && AttackTimer <= 35) {
-                for (int i = 0; i < 8; i++) {
-                    float angle = Main.rand.NextFloat(MathHelper.TwoPi);
-                    float radius = (AttackTimer - 20) * 18f;
-                    Vector2 dustPos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * radius;
-                    Dust d = Dust.NewDustDirect(dustPos, 0, 0, DustID.Silver, 0, 0, 100, default, 1.5f);
-                    d.noGravity = true;
-                    d.velocity = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 5f;
-                }
-            }
-
-            if (AttackTimer > 65) TransitionTo(BossPhase.Phase1_Prowl);
+            if (AdvanceTelegraph(windup, strike, recover))
+                AdvanceRotation();
         }
 
         #endregion
@@ -552,667 +501,297 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
         #region 阶段转换
 
         private void RunPhaseTransition2(Player target) {
-            NPC.velocity *= 0.93f;
+            NPC.velocity *= 0.92f;
             NPC.dontTakeDamage = true;
 
-            // 金属碎片向内聚集
-            if (Main.netMode != NetmodeID.Server) {
-                for (int i = 0; i < 10; i++) {
-                    float angle = Main.rand.NextFloat(MathHelper.TwoPi);
-                    float dist = 300 - PhaseTimer * 2;
-                    if (dist < 30) dist = 30;
-                    Vector2 dustPos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * dist;
-                    Dust d = Dust.NewDustDirect(dustPos, 0, 0, DustID.Silver, 0, 0, 50, default, 2.5f);
+            if (!Main.dedServ) {
+                for (int i = 0; i < 8; i++) {
+                    float a = Main.rand.NextFloat(MathHelper.TwoPi);
+                    float dist = MathF.Max(30f, 300f - PhaseTimer * 2.5f);
+                    Vector2 dp = NPC.Center + new Vector2(MathF.Cos(a), MathF.Sin(a)) * dist;
+                    Dust d = Dust.NewDustDirect(dp, 0, 0, DustID.Silver, 0, 0, 50, default, 2.5f);
                     d.noGravity = true;
-                    d.velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 6f;
+                    d.velocity = (NPC.Center - dp).SafeNormalize(Vector2.Zero) * 6f;
                 }
             }
 
-            if (PhaseTimer == 70) {
-                SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0f, Volume = 1.5f }, NPC.Center);
-                if (Main.netMode != NetmodeID.Server) {
-                    PunchCameraModifier modifier = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 20f, 10f, 45, 2000f, FullName);
-                    Main.instance.CameraModifiers.Add(modifier);
-                }
+            if (PhaseTimer == 60) {
+                SoundEngine.PlaySound(SoundID.Roar with { Volume = 1.5f }, NPC.Center);
+                Shake(10f);
             }
 
-            if (PhaseTimer >= 90) {
+            if (PhaseTimer >= 88) {
                 NPC.dontTakeDamage = false;
                 NPC.defense += 10;
                 NPC.damage = (int)(NPC.damage * 1.2f);
-                TransitionTo(BossPhase.Phase2_FrenzyCharge);
+                ResetRotation(2);
+                AdvanceRotation();
             }
         }
 
         private void RunPhaseTransition3(Player target) {
             NPC.velocity *= 0.9f;
             NPC.dontTakeDamage = true;
-            NPC.Center += Main.rand.NextVector2Circular(5, 5);
+            NPC.Center += Main.rand.NextVector2Circular(4, 4);
+            glowIntensity = MathHelper.Lerp(glowIntensity, 2f, 0.03f);
 
-            if (Main.netMode != NetmodeID.Server) {
-                for (int i = 0; i < 15; i++) {
-                    float angle = Main.rand.NextFloat(MathHelper.TwoPi);
-                    float dist = Main.rand.NextFloat(50, 250);
-                    Vector2 dustPos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * dist;
-                    int dustType = Main.rand.NextBool() ? DustID.Silver : DustID.GoldCoin;
-                    Dust d = Dust.NewDustDirect(dustPos, 0, 0, dustType, 0, 0, 50, default, 3f);
+            if (!Main.dedServ) {
+                for (int i = 0; i < 12; i++) {
+                    float a = Main.rand.NextFloat(MathHelper.TwoPi);
+                    float dist = Main.rand.NextFloat(50, 280);
+                    Vector2 dp = NPC.Center + new Vector2(MathF.Cos(a), MathF.Sin(a)) * dist;
+                    Dust d = Dust.NewDustDirect(dp, 0, 0, Main.rand.NextBool() ? DustID.Silver : DustID.GoldCoin, 0, 0, 50, default, 3f);
                     d.noGravity = true;
-                    d.velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 10f;
+                    d.velocity = (NPC.Center - dp).SafeNormalize(Vector2.Zero) * 10f;
                 }
             }
 
             if (PhaseTimer == 60) {
-                SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.5f, Volume = 2f }, NPC.Center);
-                if (Main.netMode != NetmodeID.Server) {
-                    PunchCameraModifier modifier = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 30f, 15f, 60, 3000f, FullName);
-                    Main.instance.CameraModifiers.Add(modifier);
-                }
-
-                // 金属爆发
-                if (Main.netMode != NetmodeID.MultiplayerClient) {
-                    for (int i = 0; i < 20; i++) {
-                        float angle = MathHelper.TwoPi / 20 * i;
-                        Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 14f;
-                        int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                            ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 3, 0f, Main.myPlayer);
-                        if (proj >= 0 && proj < Main.maxProjectiles) {
-                            Main.projectile[proj].timeLeft = 150;
-                        }
-                    }
-                }
+                SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.6f, Volume = 2f }, NPC.Center);
+                Shake(12f);
+                quakeFlash = 1f;
             }
 
-            if (PhaseTimer >= 120) {
+            if (PhaseTimer >= 110) {
                 NPC.dontTakeDamage = false;
                 NPC.defense += 15;
                 NPC.damage = (int)(NPC.damage * 1.3f);
                 glowIntensity = 2f;
-                TransitionTo(BossPhase.Phase3_FuryProwl);
+                ResetRotation(3);
+                AdvanceRotation();
             }
         }
 
         #endregion
 
-        #region 二阶段：钢虎
+        #region 白虎之形 (P3 落地)
 
-        private void RunPhase2FrenzyCharge(Player target) {
-            if (SubState == 0) {
-                NPC.velocity *= 0.8f;
-                NPC.Center += Main.rand.NextVector2Circular(3, 3);
-                if (AttackTimer > 15) {
-                    SubState = 1;
-                    AttackTimer = 0;
-                    NPC.velocity = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX) * 42f;
-                    SoundEngine.PlaySound(SoundID.Item71 with { Pitch = 0.5f }, NPC.Center);
-                    NPC.netUpdate = true;
-                }
-            }
-            else {
-                // 冲刺期间两侧金属尾迹
-                if (AttackTimer % 3 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    Vector2 perpDir = NPC.velocity.SafeNormalize(Vector2.UnitX).RotatedBy(MathHelper.PiOver2);
-                    for (int side = -1; side <= 1; side += 2) {
-                        Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, perpDir * side * 7f,
-                            ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 5, 0f, Main.myPlayer);
-                    }
-                }
-
-                if (Main.netMode != NetmodeID.Server) {
-                    for (int i = 0; i < 6; i++) {
-                        Dust d = Dust.NewDustDirect(NPC.Center, 0, 0, DustID.Silver, 0, 0, 80, default, 2.5f);
-                        d.noGravity = true;
-                        d.velocity = -NPC.velocity * Main.rand.NextFloat(0.05f, 0.15f);
-                    }
-                }
-                if (AttackTimer > 18) NPC.velocity *= 0.9f;
-                if (AttackTimer > 30) {
-                    // 每次冲刺结束释放音波爆发
-                    if (Main.netMode != NetmodeID.MultiplayerClient) {
-                        for (int i = 0; i < 10; i++) {
-                            float angle = MathHelper.TwoPi / 10 * i;
-                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center,
-                                new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 10f,
-                                ModContent.ProjectileType<BaihuSonicRoar>(), NPC.damage / 5, 0f, Main.myPlayer);
-                        }
-                    }
-                    chargeCount++;
-                    if (chargeCount < 7) {
-                        SubState = 0;
-                        AttackTimer = 0;
-                    }
-                    else TransitionTo(GetRandomPhase2Attack());
-                }
-            }
+        // 三阶段落地定位：贴近玩家水平线略偏前
+        private void GroundedHover(Player target, float xOffset, float yOffset, float ease = 0.06f) {
+            Vector2 want = target.Center + new Vector2(xOffset, yOffset);
+            NPC.velocity = Vector2.Lerp(NPC.velocity, (want - NPC.Center) * 0.06f, ease);
         }
 
-        private void RunPhase2MetalRain(Player target) {
-            Vector2 hoverPos = target.Center + new Vector2(0, -500);
-            NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.03f, 0.08f);
-
-            int interval = Main.expertMode ? 4 : 6;
-            if (AttackTimer % interval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int shardCount = Main.expertMode ? 4 : 3;
-                for (int i = 0; i < shardCount; i++) {
-                    Vector2 spawnPos = target.Center + new Vector2(Main.rand.NextFloat(-600, 600), -600);
-                    Vector2 vel = new Vector2(Main.rand.NextFloat(-2f, 2f), Main.rand.NextFloat(16f, 24f));
-                    int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
-                        ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 4, 0f, Main.myPlayer);
-                    if (proj >= 0 && proj < Main.maxProjectiles)
-                        Main.projectile[proj].timeLeft = 180;
-                }
-            }
-
-            // 双侧音波柱夺击
-            if (AttackTimer % 30 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int side = -1; side <= 1; side += 2) {
-                    for (int i = 0; i < 4; i++) {
-                        Vector2 pos = target.Center + new Vector2(side * 600, -200 + i * 100);
-                        Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, new Vector2(-side * 16f, 0),
-                            ModContent.ProjectileType<BaihuSonicRoar>(), NPC.damage / 4, 0f, Main.myPlayer);
-                    }
-                }
-            }
-
-            if (AttackTimer > 120) TransitionTo(GetRandomPhase2Attack());
-        }
-
-        private void RunPhase2EarthShatter(Player target) {
-            if (SubState == 0) {
-                Vector2 highPos = target.Center + new Vector2(0, -500);
-                NPC.velocity = Vector2.Lerp(NPC.velocity, (highPos - NPC.Center) * 0.06f, 0.1f);
-
-                // 蓄力期间向下招金属碎片
-                if (AttackTimer % 12 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    for (int i = 0; i < 3; i++) {
-                        Vector2 pos = NPC.Center + Main.rand.NextVector2Circular(200, 100);
-                        Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, new Vector2(0, 18f),
-                            ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 5, 0f, Main.myPlayer);
-                    }
-                }
-
-                if (AttackTimer > 35) {
-                    SubState = 1;
-                    AttackTimer = 0;
-                    NPC.velocity = new Vector2(0, 45f);
-                    SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.3f }, NPC.Center);
-                    NPC.netUpdate = true;
-                }
-            }
-            else if (SubState == 1) {
-                if (AttackTimer > 25 || NPC.Center.Y > target.Center.Y + 50) {
-                    SubState = 2;
-                    AttackTimer = 0;
-                    NPC.velocity = Vector2.Zero;
-
-                    if (Main.netMode != NetmodeID.MultiplayerClient) {
-                        // 双侧冲击波
-                        for (int i = 0; i < 12; i++) {
-                            float speed = 7f + i * 1.5f;
-                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, new Vector2(speed, -3f - i * 0.3f),
-                                ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 3, 0f, Main.myPlayer);
-                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, new Vector2(-speed, -3f - i * 0.3f),
-                                ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 3, 0f, Main.myPlayer);
-                        }
-                        // 音波环
-                        for (int i = 0; i < 12; i++) {
-                            float angle = MathHelper.TwoPi / 12 * i;
-                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center,
-                                new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 9f,
-                                ModContent.ProjectileType<BaihuSonicRoar>(), NPC.damage / 4, 0f, Main.myPlayer);
-                        }
-                    }
-
-                    SoundEngine.PlaySound(SoundID.Item14, NPC.Center);
-                    if (Main.netMode != NetmodeID.Server) {
-                        PunchCameraModifier modifier = new(NPC.Center, Vector2.UnitY, 25f, 12f, 30, 2000f, FullName);
-                        Main.instance.CameraModifiers.Add(modifier);
-                        for (int i = 0; i < 30; i++) {
-                            Dust d = Dust.NewDustDirect(NPC.Center + new Vector2(Main.rand.NextFloat(-100, 100), 0), 0, 0, DustID.Smoke, Main.rand.NextFloat(-5, 5), -Main.rand.NextFloat(3, 8), 100, default, 2f);
-                            d.noGravity = true;
-                        }
-                    }
-                }
-            }
-            else {
-                NPC.velocity *= 0.9f;
-                if (AttackTimer > 45) TransitionTo(GetRandomPhase2Attack());
-            }
-        }
-
-        private void RunPhase2IronWall(Player target) {
-            Vector2 hoverPos = target.Center + new Vector2(MathF.Sin(globalTime * 2.5f) * 200f, -280);
-            NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.05f, 0.12f);
-
-            // 旋转金属弹幕围绕boss，更快发射
-            if (AttackTimer % 18 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int orbCount = 8;
-                for (int i = 0; i < orbCount; i++) {
-                    float angle = MathHelper.TwoPi / orbCount * i + globalTime * 3.5f;
-                    Vector2 pos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 140f;
-                    Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.Zero) * 12f;
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, vel,
-                        ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 4, 0f, Main.myPlayer);
-                }
-            }
-
-            // 同步音波弹瞄准
-            if (AttackTimer % 25 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 14f;
-                for (int i = -1; i <= 1; i += 2) {
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center,
-                        toTarget.RotatedBy(i * MathHelper.ToRadians(20)),
-                        ModContent.ProjectileType<BaihuSonicRoar>(), NPC.damage / 4, 0f, Main.myPlayer);
-                }
-            }
-
-            NPC.defense = IsPhase3 ? 120 : 100;
-
-            if (AttackTimer > 150) {
-                NPC.defense = IsPhase3 ? 85 : 70;
-                TransitionTo(GetRandomPhase2Attack());
-            }
-        }
-
-        private void RunPhase2FuryCombo(Player target) {
-            switch (comboStep) {
-                case 0: // 扑击 + 尾迹
-                    if (SubState == 0) {
-                        NPC.velocity *= 0.85f;
-                        if (AttackTimer > 15) {
-                            SubState = 1;
-                            AttackTimer = 0;
-                            NPC.velocity = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX) * 38f;
-                            SoundEngine.PlaySound(SoundID.Item71 with { Pitch = 0.3f }, NPC.Center);
+        // 裂地灭世爪 RiftClaw — 跃高空，地面平行爪痕预告→落地银脉爆裂；站在爪痕之间的缝
+        private void RunRiftClaw(Player target) {
+            int windup = 76, strike = 30, recover = 40;
+            switch (Telegraph) {
+                case TelegraphPhase.Windup:
+                    if (PhaseTimer == 1) {
+                        SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.3f, Volume = 1.4f }, NPC.Center);
+                        if (OnServer) {
+                            // 平行竖向爪痕：在玩家两侧布数道竖脉，留出可站的缝；预告时长≈windup
+                            float[] off = Expert
+                                ? new[] { -640f, -440f, -240f, 240f, 440f, 640f }
+                                : new[] { -540f, -300f, 300f, 540f };
+                            foreach (float x in off) {
+                                Vector2 top = new Vector2(target.Center.X + x, target.Center.Y - 760);
+                                BaihuRendBeam.Spawn(NPC.GetSource_FromAI(), top, MathHelper.PiOver2, 1500f, windup, strike, NPC.damage / 3);
+                            }
                             NPC.netUpdate = true;
                         }
                     }
-                    else {
-                        // 冲刺尾迹
-                        if (AttackTimer % 3 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                            Vector2 perpDir = NPC.velocity.SafeNormalize(Vector2.UnitX).RotatedBy(MathHelper.PiOver2);
-                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, perpDir * 5f,
-                                ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 5, 0f, Main.myPlayer);
-                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, perpDir * -5f,
-                                ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 5, 0f, Main.myPlayer);
-                        }
-                        if (AttackTimer > 18) NPC.velocity *= 0.9f;
-                        if (AttackTimer > 30) {
-                            comboStep = 1;
-                            SubState = 0;
-                            AttackTimer = 0;
-                        }
-                    }
+                    // 跃至高空
+                    GroundedHover(target, 0, -440, 0.08f);
+                    // 渐强震屏
+                    Shake(2f + 6f * (AttackTimer / (float)windup));
                     break;
-
-                case 1: // 爪击 + 音波
-                    NPC.velocity *= 0.8f;
-                    if (AttackTimer == 10 && Main.netMode != NetmodeID.MultiplayerClient) {
-                        Vector2 dir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
-                        for (int i = -4; i <= 4; i++) {
-                            Vector2 vel = dir.RotatedBy(i * MathHelper.ToRadians(8f)) * 20f;
-                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                                ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 4, 0f, Main.myPlayer);
+                case TelegraphPhase.Strike:
+                    if (AttackTimer == 1) {
+                        // 落地：重砸 + 震波泛光
+                        NPC.velocity = new Vector2(0, 36f);
+                        Shake(12f);
+                        quakeFlash = 1f;
+                        SoundEngine.PlaySound(SoundID.Item14, NPC.Center);
+                        SoundEngine.PlaySound(SoundID.NPCDeath43 with { Pitch = -0.4f }, NPC.Center);
+                        if (!Main.dedServ) {
+                            for (int i = 0; i < 24; i++) {
+                                Dust d = Dust.NewDustDirect(target.Center + new Vector2(Main.rand.NextFloat(-700, 700), 40), 0, 0, DustID.Smoke, Main.rand.NextFloat(-4, 4), -Main.rand.NextFloat(2, 7), 120, default, 2f);
+                                d.noGravity = true;
+                            }
                         }
-                        for (int i = -1; i <= 1; i++) {
-                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center,
-                                dir.RotatedBy(i * MathHelper.ToRadians(15)) * 14f,
-                                ModContent.ProjectileType<BaihuSonicRoar>(), NPC.damage / 4, 0f, Main.myPlayer);
-                        }
-                        SoundEngine.PlaySound(SoundID.Item71, NPC.Center);
                     }
-                    if (AttackTimer > 25) {
-                        comboStep = 2;
-                        AttackTimer = 0;
-                    }
+                    NPC.velocity.Y *= 0.9f;
                     break;
+                default:
+                    NPC.velocity *= 0.9f;
+                    break;
+            }
+            if (AdvanceTelegraph(windup, strike, recover))
+                AdvanceRotation();
+        }
 
-                case 2: // 虎啸 + 双层环
+        // 震地踏 QuakeStomp — 落地踏出可读扩张震波(可跳/绕)
+        private void RunQuakeStomp(Player target) {
+            int windup = 40, strike = 22, recover = 26;
+            switch (Telegraph) {
+                case TelegraphPhase.Windup:
+                    GroundedHover(target, target.Center.X >= NPC.Center.X ? -260 : 260, -40);
+                    break;
+                case TelegraphPhase.Strike:
+                    if (AttackTimer == 1) {
+                        Shake(10f);
+                        quakeFlash = 1f;
+                        SoundEngine.PlaySound(SoundID.Item14 with { Pitch = -0.3f }, NPC.Center);
+                        if (OnServer)
+                            SpawnShockRing(NPC.Center, 460f, NPC.damage / 4);
+                        NPC.velocity = Vector2.Zero;
+                    }
+                    if (AttackTimer == 14 && OnServer)
+                        SpawnShockRing(NPC.Center, 620f, NPC.damage / 4);
+                    break;
+                default:
+                    NPC.velocity *= 0.9f;
+                    break;
+            }
+            if (AdvanceTelegraph(windup, strike, recover))
+                AdvanceRotation();
+        }
+
+        private void SpawnShockRing(Vector2 center, float maxRadius, int damage) {
+            int pr = Projectile.NewProjectile(NPC.GetSource_FromAI(), center, Vector2.Zero,
+                ModContent.ProjectileType<BaihuSonicRoar>(), damage, 0f, Main.myPlayer, 0f, maxRadius);
+            if (pr >= 0 && pr < Main.maxProjectiles)
+                Main.projectile[pr].netUpdate = true;
+        }
+
+        // 爪裂射线 RendBeams — 一组方向可读的银爪射线扫过
+        private void RunRendBeams(Player target) {
+            int windup = 50, strike = 16, recover = 26;
+            switch (Telegraph) {
+                case TelegraphPhase.Windup:
+                    if (PhaseTimer == 1) {
+                        SoundEngine.PlaySound(SoundID.Item71 with { Pitch = -0.3f }, NPC.Center);
+                        if (OnServer) {
+                            Vector2 dir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
+                            float baseAng = dir.ToRotation();
+                            int beams = Expert ? 5 : 3;
+                            for (int i = 0; i < beams; i++) {
+                                float a = baseAng + MathHelper.ToRadians(-24f + 48f / (beams - 1) * i);
+                                BaihuRendBeam.Spawn(NPC.GetSource_FromAI(), NPC.Center, a, 1700f, windup - 6 + i * 4, strike, NPC.damage / 3);
+                            }
+                            NPC.netUpdate = true;
+                        }
+                    }
+                    GroundedHover(target, target.Center.X >= NPC.Center.X ? -380 : 380, -120);
+                    break;
+                case TelegraphPhase.Strike:
+                    if (AttackTimer == 1) {
+                        Shake(8f);
+                        SoundEngine.PlaySound(SoundID.Item122, NPC.Center);
+                    }
                     NPC.velocity *= 0.85f;
-                    if (AttackTimer == 15) {
-                        SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.5f, Volume = 1.3f }, NPC.Center);
-                        if (Main.netMode != NetmodeID.MultiplayerClient) {
-                            for (int ring = 0; ring < 2; ring++) {
-                                int count = 20 + ring * 4;
-                                for (int i = 0; i < count; i++) {
-                                    float angle = MathHelper.TwoPi / count * i + ring * MathHelper.ToRadians(9f);
-                                    int projType = ring == 0 ? ModContent.ProjectileType<BaihuMetalShard>() : ModContent.ProjectileType<BaihuSonicRoar>();
-                                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center,
-                                        new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * (9f + ring * 5f),
-                                        projType, NPC.damage / 4, 0f, Main.myPlayer);
-                                }
-                            }
-                        }
-                        if (Main.netMode != NetmodeID.Server) {
-                            PunchCameraModifier modifier = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 12f, 5f, 20, 1000f, FullName);
-                            Main.instance.CameraModifiers.Add(modifier);
-                        }
-                    }
-                    if (AttackTimer > 40) TransitionTo(GetRandomPhase2Attack());
+                    break;
+                default:
+                    NPC.velocity *= 0.9f;
                     break;
             }
+            if (AdvanceTelegraph(windup, strike, recover))
+                AdvanceRotation();
         }
 
         #endregion
 
-        #region 三阶段：神虎
-
-        private void RunPhase3FuryProwl(Player target) {
-            prowlAngle += 0.06f;
-            float radius = 280f + MathF.Sin(globalTime * 3f) * 60f;
-            Vector2 orbitPos = target.Center + new Vector2(MathF.Cos(prowlAngle), MathF.Sin(prowlAngle) * 0.3f) * radius;
-            orbitPos.Y -= 180f;
-            NPC.velocity = Vector2.Lerp(NPC.velocity, (orbitPos - NPC.Center) * 0.1f, 0.12f);
-
-            if (Main.netMode != NetmodeID.Server && Main.rand.NextBool(2)) {
-                Dust d = Dust.NewDustDirect(NPC.Center + Main.rand.NextVector2Circular(60, 60), 0, 0, DustID.GoldCoin, 0, 0, 100, default, 2f);
-                d.noGravity = true;
-            }
-
-            // 持续双类型压制
-            if (PhaseTimer % 10 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero);
-                int projType = PhaseTimer % 20 == 0 ? ModContent.ProjectileType<BaihuSonicRoar>() : ModContent.ProjectileType<BaihuMetalShard>();
-                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, toTarget * 15f,
-                    projType, NPC.damage / 5, 0f, Main.myPlayer);
-            }
-
-            if (PhaseTimer > 60) TransitionTo(GetRandomPhase3Attack());
-        }
-
-        private void RunPhase3MetalTempest(Player target) {
-            Vector2 hoverPos = target.Center + new Vector2(0, -330);
-            NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.05f, 0.1f);
-
-            // 双层旋转金属弹幕，反向旋转
-            if (AttackTimer % 5 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                float baseAngle1 = AttackTimer * 0.18f;
-                float baseAngle2 = -AttackTimer * 0.12f;
-                int count = 4;
-                for (int i = 0; i < count; i++) {
-                    float angle1 = baseAngle1 + MathHelper.TwoPi / count * i;
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center,
-                        new Vector2(MathF.Cos(angle1), MathF.Sin(angle1)) * 13f,
-                        ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 4, 0f, Main.myPlayer);
-                    float angle2 = baseAngle2 + MathHelper.TwoPi / count * i;
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center,
-                        new Vector2(MathF.Cos(angle2), MathF.Sin(angle2)) * 10f,
-                        ModContent.ProjectileType<BaihuSonicRoar>(), NPC.damage / 5, 0f, Main.myPlayer);
-                }
-            }
-
-            // 收缩环从外围
-            if (AttackTimer % 30 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int ringCount = 16;
-                for (int i = 0; i < ringCount; i++) {
-                    float angle = MathHelper.TwoPi / ringCount * i;
-                    Vector2 pos = target.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 550f;
-                    Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.Zero) * 12f;
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, vel,
-                        ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 4, 0f, Main.myPlayer);
-                }
-            }
-
-            if (AttackTimer > 160) TransitionTo(BossPhase.Phase3_FuryProwl);
-        }
-
-        private void RunPhase3WhiteGoldBeam(Player target) {
-            if (SubState == 0) {
-                NPC.velocity *= 0.9f;
-                NPC.Center += Main.rand.NextVector2Circular(2, 2);
-
-                if (Main.netMode != NetmodeID.Server) {
-                    Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
-                    for (int i = 0; i < 3; i++) {
-                        Dust d = Dust.NewDustDirect(NPC.Center + toPlayer * Main.rand.NextFloat(50, 200), 0, 0, DustID.GoldCoin, 0, 0, 100, default, 2f);
-                        d.noGravity = true;
-                        d.velocity = toPlayer * 5f;
-                    }
-                }
-
-                // 蓄力时旋转风刃压制
-                if (AttackTimer % 12 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    float a = AttackTimer * 0.15f;
-                    for (int arm = 0; arm < 3; arm++) {
-                        Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center,
-                            new Vector2(MathF.Cos(a + arm * MathHelper.TwoPi / 3f), MathF.Sin(a + arm * MathHelper.TwoPi / 3f)) * 8f,
-                            ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 5, 0f, Main.myPlayer);
-                    }
-                }
-
-                if (AttackTimer > 40) {
-                    SubState = 1;
-                    AttackTimer = 0;
-                    NPC.netUpdate = true;
-                }
-            }
-            else {
-                // 多方向连续射线 + 音波追踪
-                int beamInterval = Main.expertMode ? 2 : 3;
-                if (AttackTimer % beamInterval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
-                    // 主射线
-                    Vector2 vel = toPlayer * 24f;
-                    vel = vel.RotatedByRandom(MathHelper.ToRadians(4f));
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center + toPlayer * 50f, vel,
-                        ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 3, 0f, Main.myPlayer);
-                    // 侧射线
-                    if (AttackTimer % (beamInterval * 2) == 0) {
-                        for (int i = -1; i <= 1; i += 2) {
-                            Vector2 sideVel = toPlayer.RotatedBy(i * MathHelper.ToRadians(25)) * 20f;
-                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, sideVel,
-                                ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 4, 0f, Main.myPlayer);
-                        }
-                    }
-                }
-
-                // 同步音波弹
-                if (AttackTimer % 15 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 14f;
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, toTarget,
-                        ModContent.ProjectileType<BaihuSonicRoar>(), NPC.damage / 4, 0f, Main.myPlayer);
-                }
-
-                if (AttackTimer > 80) TransitionTo(BossPhase.Phase3_FuryProwl);
-            }
-        }
-
-        private void RunPhase3ExtinctionClaw(Player target) {
-            if (SubState == 0) {
-                NPC.velocity *= 0.85f;
-                NPC.Center += Main.rand.NextVector2Circular(4, 4);
-
-                if (Main.netMode != NetmodeID.Server) {
-                    for (int i = 0; i < 6; i++) {
-                        Dust d = Dust.NewDustDirect(NPC.Center + Main.rand.NextVector2Circular(100, 100), 0, 0, DustID.GoldCoin, 0, 0, 50, default, 3f);
-                        d.noGravity = true;
-                        d.velocity = (NPC.Center - d.position).SafeNormalize(Vector2.Zero) * 6f;
-                    }
-                }
-
-                // 蓄力时旋转音波压制
-                if (AttackTimer % 8 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    float a = AttackTimer * 0.2f;
-                    for (int arm = 0; arm < 2; arm++) {
-                        Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center,
-                            new Vector2(MathF.Cos(a + arm * MathHelper.Pi), MathF.Sin(a + arm * MathHelper.Pi)) * 9f,
-                            ModContent.ProjectileType<BaihuSonicRoar>(), NPC.damage / 5, 0f, Main.myPlayer);
-                    }
-                }
-
-                if (AttackTimer > 50) {
-                    SubState = 1;
-                    AttackTimer = 0;
-                    SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.3f, Volume = 1.5f }, NPC.Center);
-
-                    // 5方向巨型爪击弹幕
-                    if (Main.netMode != NetmodeID.MultiplayerClient) {
-                        Vector2 dir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
-                        float[] angles = { -MathHelper.ToRadians(40f), -MathHelper.ToRadians(20f), 0, MathHelper.ToRadians(20f), MathHelper.ToRadians(40f) };
-                        foreach (float a in angles) {
-                            for (int i = 0; i < 10; i++) {
-                                Vector2 vel = dir.RotatedBy(a) * (10f + i * 2.5f);
-                                vel = vel.RotatedByRandom(MathHelper.ToRadians(2f));
-                                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                                    ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 3, 2f, Main.myPlayer);
-                            }
-                        }
-                        // 音波冲击波
-                        for (int i = 0; i < 16; i++) {
-                            float ringAngle = MathHelper.TwoPi / 16 * i;
-                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center,
-                                new Vector2(MathF.Cos(ringAngle), MathF.Sin(ringAngle)) * 11f,
-                                ModContent.ProjectileType<BaihuSonicRoar>(), NPC.damage / 4, 0f, Main.myPlayer);
-                        }
-                    }
-
-                    if (Main.netMode != NetmodeID.Server) {
-                        PunchCameraModifier modifier = new(NPC.Center, (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX), 22f, 12f, 40, 2000f, FullName);
-                        Main.instance.CameraModifiers.Add(modifier);
-                    }
-                    NPC.netUpdate = true;
-                }
-            }
-            else {
-                NPC.velocity *= 0.92f;
-                // 爆发后追踪弹
-                if (AttackTimer % 10 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 16f;
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, toTarget,
-                        ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 4, 0f, Main.myPlayer);
-                }
-                if (AttackTimer > 50) TransitionTo(BossPhase.Phase3_FuryProwl);
-            }
-        }
-
-        private void RunPhase3TigerGodsFury(Player target) {
-            if (SubState == 0) {
-                NPC.velocity *= 0.9f;
-                NPC.dontTakeDamage = true;
-                NPC.Center += Main.rand.NextVector2Circular(5, 5);
-
-                if (Main.netMode != NetmodeID.Server) {
-                    for (int i = 0; i < 15; i++) {
-                        float angle = Main.rand.NextFloat(MathHelper.TwoPi);
-                        float dist = Main.rand.NextFloat(50, 400);
-                        Vector2 dustPos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * dist;
-                        int dustType = Main.rand.NextBool() ? DustID.Silver : DustID.GoldCoin;
-                        Dust d = Dust.NewDustDirect(dustPos, 0, 0, dustType, 0, 0, 50, default, 3f);
-                        d.noGravity = true;
-                        d.velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 12f;
-                    }
-                }
-
-                // 蓄力时旋转双类型压制
-                if (AttackTimer % 8 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    float spiralAngle = AttackTimer * 0.2f;
-                    for (int arm = 0; arm < 3; arm++) {
-                        float a = spiralAngle + arm * MathHelper.TwoPi / 3f;
-                        Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center,
-                            new Vector2(MathF.Cos(a), MathF.Sin(a)) * 8f,
-                            ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 5, 0f, Main.myPlayer);
-                    }
-                }
-
-                if (AttackTimer > 70) {
-                    SubState = 1;
-                    AttackTimer = 0;
-                    NPC.dontTakeDamage = false;
-                    SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.8f, Volume = 2f }, NPC.Center);
-
-                    if (Main.netMode != NetmodeID.Server) {
-                        PunchCameraModifier modifier = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 35f, 15f, 60, 3000f, FullName);
-                        Main.instance.CameraModifiers.Add(modifier);
-                    }
-
-                    // 5波交错金属爆发
-                    if (Main.netMode != NetmodeID.MultiplayerClient) {
-                        for (int wave = 0; wave < 5; wave++) {
-                            int count = 18 + wave * 2;
-                            for (int i = 0; i < count; i++) {
-                                float angle = MathHelper.TwoPi / count * i + wave * MathHelper.ToRadians(9f);
-                                Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * (7f + wave * 4f);
-                                int projType = wave % 2 == 0 ? ModContent.ProjectileType<BaihuMetalShard>() : ModContent.ProjectileType<BaihuSonicRoar>();
-                                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                                    projType, NPC.damage / 3, 0f, Main.myPlayer);
-                            }
-                        }
-                        // 双侧金属墙夺击
-                        for (int side = -1; side <= 1; side += 2) {
-                            for (int i = 0; i < 6; i++) {
-                                Vector2 pos = target.Center + new Vector2(side * 700, -250 + i * 100);
-                                Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, new Vector2(-side * 18f, 0),
-                                    ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 3, 0f, Main.myPlayer);
-                            }
-                        }
-                    }
-                    NPC.netUpdate = true;
-                }
-            }
-            else if (SubState == 1) {
-                // 爆发后多次超高速冲刺
-                if (AttackTimer == 8) {
-                    NPC.velocity = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX) * 48f;
-                }
-                // 冲刺尾迹
-                if (AttackTimer >= 8 && AttackTimer % 3 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    Vector2 perpDir = NPC.velocity.SafeNormalize(Vector2.UnitX).RotatedBy(MathHelper.PiOver2);
-                    for (int side = -1; side <= 1; side += 2) {
-                        Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, perpDir * side * 7f,
-                            ModContent.ProjectileType<BaihuMetalShard>(), NPC.damage / 5, 0f, Main.myPlayer);
-                    }
-                }
-                if (AttackTimer > 25) NPC.velocity *= 0.9f;
-                if (AttackTimer > 38) {
-                    chargeCount++;
-                    if (chargeCount < 3) {
-                        AttackTimer = 0;
-                    }
-                    else {
-                        SubState = 2;
-                        AttackTimer = 0;
-                    }
-                }
-            }
-            else {
-                NPC.velocity *= 0.92f;
-                // 最后散射音波
-                if (AttackTimer % 8 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 14f;
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, toTarget,
-                        ModContent.ProjectileType<BaihuSonicRoar>(), NPC.damage / 4, 0f, Main.myPlayer);
-                }
-                if (AttackTimer > 35) TransitionTo(BossPhase.Phase3_FuryProwl);
-            }
-        }
-
-        #endregion
-
-        #region 绘制
+        #region 绘制 (含预警)
 
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+            DrawTelegraphs(spriteBatch);
+
             Texture2D texture = TextureAssets.Npc[Type].Value;
             Rectangle frame = NPC.frame;
             Vector2 origin = frame.Size() / 2f;
 
-            // 纹理正向朝右，面朝左时水平翻转
             bool facingRight = NPC.spriteDirection == 1;
             SpriteEffects effects = facingRight ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
             float drawRotation = facingRight ? NPC.rotation : -NPC.rotation;
 
-            // 虎影残像
             for (int i = NPCID.Sets.TrailCacheLength[Type] - 1; i > 0; i--) {
                 Vector2 trailPos = NPC.oldPos[i] + NPC.Size / 2f - screenPos;
-                float trailRot = NPC.oldRot[i];
-                bool trailRight = trailRot >= 0;
-                float trailDrawRot = trailRight ? trailRot : -trailRot;
                 float alpha = 0.35f * (1f - (float)i / NPCID.Sets.TrailCacheLength[Type]);
-                Color trailColor = drawColor * alpha;
-                spriteBatch.Draw(texture, trailPos, frame, trailColor, trailDrawRot, origin, NPC.scale, effects, 0f);
+                spriteBatch.Draw(texture, trailPos, frame, drawColor * alpha, drawRotation, origin, NPC.scale, effects, 0f);
             }
 
             Vector2 drawPos = NPC.Center - screenPos;
             spriteBatch.Draw(texture, drawPos, frame, drawColor, drawRotation, origin, NPC.scale, effects, 0f);
             return false;
+        }
+
+        // 攻击预警(银白主题/红致命)，服务端零绘制；红只给致命扑击线
+        private void DrawTelegraphs(SpriteBatch sb) {
+            if (Main.dedServ)
+                return;
+            Player target = Main.player[NPC.target];
+            if (target == null || !target.active)
+                return;
+
+            switch (State) {
+                case BaihuState.Pounce when InWindup: {
+                    float prog = MathHelper.Clamp(AttackTimer / (float)(pounceEmpowered ? 60 : 34), 0f, 1f);
+                    Vector2 end = NPC.Center + pounceDir * 1000f;
+                    ACMShaders.DrawBeam(NPC.Center, end, (pounceEmpowered ? 8f : 5f) * (0.4f + 0.6f * prog),
+                        TelegraphColors.Lethal, TelegraphColors.Lethal * 0.4f, 0.25f + 0.55f * prog,
+                        flowSpeed: 1f, flowScale: 3f, coreSharp: 3f);
+                    if (pounceEmpowered)
+                        ElementBloom(sb, 0.4f + 0.4f * prog, 150f); // 银爪预兆辉
+                    break;
+                }
+                case BaihuState.ClawSwipe when InWindup: {
+                    float prog = MathHelper.Clamp(AttackTimer / 32f, 0f, 1f);
+                    Vector2 dir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
+                    float baseAng = dir.ToRotation();
+                    float spread = MathHelper.ToRadians(70f);
+                    for (int i = -1; i <= 1; i++) {
+                        float a = baseAng + spread * 0.5f * i;
+                        Vector2 end = NPC.Center + a.ToRotationVector2() * 420f;
+                        ACMShaders.DrawBeam(NPC.Center, end, 3f, TelegraphColors.WhiteTiger,
+                            TelegraphColors.WhiteTiger * 0.3f, 0.3f * prog, flowSpeed: 1.5f, flowScale: 2.5f);
+                    }
+                    break;
+                }
+                case BaihuState.MetallicEcho when InWindup: {
+                    float prog = MathHelper.Clamp(AttackTimer / 46f, 0f, 1f);
+                    ElementTelegraphCircle(sb, target.Center, 620f * prog, 0.5f * prog, false);
+                    break;
+                }
+                case BaihuState.IronWall when InWindup: {
+                    float prog = MathHelper.Clamp(AttackTimer / 52f, 0f, 1f);
+                    ElementTelegraphCircle(sb, target.Center, 560f, 0.4f * prog, false);
+                    // 安全缺口：翠玉射线指明可逃方向
+                    Vector2 gapEnd = target.Center + ironGapAngle.ToRotationVector2() * 560f;
+                    ACMShaders.DrawBeam(target.Center, gapEnd, 10f, TelegraphColors.Safe,
+                        TelegraphColors.Safe * 0.4f, 0.5f * prog, flowSpeed: 0.6f, flowScale: 2f);
+                    break;
+                }
+                case BaihuState.QuakeStomp when InWindup: {
+                    float prog = MathHelper.Clamp(AttackTimer / 40f, 0f, 1f);
+                    DrawGroundDecal(sb, NPC.Center, 460f, 0.5f * prog);
+                    break;
+                }
+            }
+
+            // 落地震波泛光(裂地灭世爪/震地踏/相变)
+            if (quakeFlash > 0.02f)
+                ACMShaders.DrawRadialBloomAt(NPC.Center, 0.22f, quakeFlash, TelegraphColors.WhiteTiger, rayCount: 14f);
+        }
+
+        // 地纹(ArenaRunic) 落点圈 —— 缺着色器自动跳过(只是少一层装饰)
+        private void DrawGroundDecal(SpriteBatch sb, Vector2 worldCenter, float worldRadius, float intensity) {
+            if (intensity <= 0.01f)
+                return;
+            Effect fx = ACMShaders.ArenaRunic;
+            if (fx == null)
+                return;
+            ACMShaders.WorldDecalParams(worldCenter, worldRadius, out Vector2 uv, out float radFrac, out float aspect);
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(intensity, 0f, 1f));
+            fx.Parameters["uCenter"]?.SetValue(uv);
+            fx.Parameters["uRadius"]?.SetValue(radFrac);
+            fx.Parameters["uAspect"]?.SetValue(aspect);
+            fx.Parameters["uShape"]?.SetValue(0f);
+            fx.Parameters["uMode"]?.SetValue(0f);
+            fx.Parameters["uColorPrimary"]?.SetValue(TelegraphColors.WhiteTiger.ToVector4());
+            fx.Parameters["uColorSecondary"]?.SetValue(TelegraphColors.Lethal.ToVector4());
+            ACMShaders.DrawScreenSpaceDecal(sb, fx, BlendState.Additive);
         }
 
         #endregion

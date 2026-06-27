@@ -51,6 +51,17 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             return null;
         }
 
+        /// <summary>读取头部当前阶段 (P1 留痕判定); 头不在则默认 1。</summary>
+        protected int HeadPhase {
+            get {
+                if (NPC.realLife >= 0 && Main.npc[NPC.realLife].active && Main.npc[NPC.realLife].ModNPC is NetherDragonHead head)
+                    return head.Phase;
+                return 1;
+            }
+        }
+
+        private int TrailDamage => Main.masterMode ? 45 : (Main.expertMode ? 35 : 24);
+
         public override void AI() {
             base.AI();
             if (NPC.realLife >= 0 && Main.npc[NPC.realLife].active) {
@@ -60,17 +71,16 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             if (FatherNPC.Alives()) {
                 Vector2 pos = NPC.Center + NPC.Center.To(FatherNPC.Center) / 2;
                 for (int i = 0; i < NPC.velocity.Length() / 2; i++) {
-                    int dust = Dust.NewDust(pos, 1, 1, DustID.BlueTorch);
+                    int dust = Dust.NewDust(pos, 1, 1, DustID.GreenTorch, 0, 0, 120, new Color(110, 230, 150));
                     Main.dust[dust].noGravity = true;
                     Main.dust[dust].velocity = NPC.velocity.RotatedByRandom(0.6f);
                 }
 
-                // 身体段在雾气中移动时产生少量粒子（降低频率）
                 if (Main.netMode != NetmodeID.Server && NetherDragonFogSystem.IsActive) {
                     float fogDensity = NetherDragonFogSystem.GetFogDensityAt(NPC.Center);
                     if (fogDensity > 0.7f && Main.rand.NextBool(8)) {
                         Vector2 dustPos = NPC.Center + Main.rand.NextVector2Circular(30f, 30f);
-                        int fogDust = Dust.NewDust(dustPos, 1, 1, DustID.BlueTorch, 0, 0, 100, Color.Cyan, 0.6f);
+                        int fogDust = Dust.NewDust(dustPos, 1, 1, DustID.GreenTorch, 0, 0, 100, new Color(120, 90, 200), 0.6f);
                         Main.dust[fogDust].noGravity = true;
                         Main.dust[fogDust].velocity = Main.rand.NextVector2Circular(1f, 1f);
                         Main.dust[fogDust].alpha = 200;
@@ -78,8 +88,19 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                 }
             }
 
-            // 发光效果
-            Lighting.AddLight(NPC.Center, 0.1f, 0.3f, 0.5f);
+            // —— 龙身分段机制: P1《巡墓》沿途留驻留幽火 DoT 残痕 (可读空隙) ——
+            // 仅 body/tail 留痕(头不留); 每 4 节取 1 节 → 空间空隙; 计时器错相 → 时间空隙。
+            if (NPCWormType != WormType.Head && HeadPhase == 1 && SummonCount % 4 == 0) {
+                NPC.localAI[1] += 1f;
+                if (NPC.localAI[1] >= 55f) {
+                    NPC.localAI[1] = Main.rand.Next(8); // 错相, 避免整排同时落痕
+                    if (Main.netMode != NetmodeID.MultiplayerClient)
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
+                            ModContent.ProjectileType<NetherFlameTrail>(), TrailDamage, 0f);
+                }
+            }
+
+            Lighting.AddLight(NPC.Center, 0.12f, 0.32f, 0.2f);
         }
 
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
@@ -90,14 +111,14 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                 origin.Y = tex.Height / 2;
             }
 
-            // 蓝色幽冥色调
-            Color netherColor = Color.Lerp(drawColor, new Color(100, 150, 255), 0.4f);
+            // 幽蓝紫幽冥色调
+            Color netherColor = Color.Lerp(drawColor, new Color(120, 90, 200), 0.4f);
 
             // 根据雾气密度轻微调整颜色
             if (Main.netMode != NetmodeID.Server && NetherDragonFogSystem.IsActive) {
                 float fogDensity = NetherDragonFogSystem.GetFogDensityAt(NPC.Center);
                 if (fogDensity > 0.7f) {
-                    netherColor = Color.Lerp(netherColor, new Color(80, 120, 200), fogDensity * 0.15f);
+                    netherColor = Color.Lerp(netherColor, new Color(70, 50, 140), fogDensity * 0.15f);
                 }
             }
 

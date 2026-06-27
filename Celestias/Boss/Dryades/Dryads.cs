@@ -16,9 +16,21 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.Boss.Dryades
 {
     /// <summary>
-    /// 树精 - 大椿的弱化版本，月后初期Boss
-    /// 固定在原地不动的树类Boss，核心机制：潜入地下→靠近玩家的地面冒出
-    /// 贴图尺寸：520×552，底部60像素为树根需埋入地下
+    /// 树精 — 月后初期·潜地伏击树妖 (V2 burrow-centric rework)。
+    ///
+    /// 身份差异化 (vs 大椿 静态古树): 树精是**机动潜地伏击者**。约 50% 战斗在地下,
+    /// 地表窗口只有两招——根须爆发 RootBurst 与 刺球领域 SpikeField; 其余时间潜地, 在玩家脚边冒出。
+    ///
+    /// 核心节拍循环 (确定性, 非随机喷弹):
+    ///   [地表攻击] RootBurst / SpikeField 交替 → [潜地] 下沉(无敌) → 地下(冒出点地纹预警, 玩家须走开) → 冒出(根须放射 + 刺球陷阱) → 循环
+    ///
+    /// 招牌机制:
+    ///  - **冒出点预警**: 地下等待期在目标点画 ArenaRunic 绿色根须裂纹圈, 末段转赤红 = 此处即将致命冒出。
+    ///  - **刺球陷阱**: 冒出后散布 Acanthosphere 陷阱, 扎地 ~3s 后引爆 (空间封锁, 非直接投掷)。
+    ///  - **刺球领域**: 向心收缩刺环 + 一条缓慢旋转的安全辐条 (一条清晰规则: 跟着安全缝走)。
+    ///  - **P2 蔓生 Overgrown**: 每次潜地在**旧锚点**留下毒孢区 ~10s (火把/火系武器可烧除, 或直接跳过)——真·新机制, 非"P1 更快"。
+    ///
+    /// 贴图尺寸: 520×552, 底部 60 像素为树根需埋入地下。
     /// </summary>
     [AutoloadBossHead]
     public class Dryads : ModNPC
@@ -30,6 +42,10 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
         public const int RootBuryOffset = 60; // 树根埋入地下的像素偏移
         public const float Phase2Threshold = 0.50f;
 
+        // 主题色
+        private static readonly Color VerdantGreen = new(90, 210, 70);
+        private static readonly Color SporePoison = new(120, 200, 60);
+
         #endregion
 
         #region 状态枚举
@@ -37,19 +53,10 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
         public enum BossPhase
         {
             Intro,
-            Phase1_Idle,
-            Phase1_RootBurst,       // 根须爆发 - 地面涌出根须攻击玩家
-            Phase1_AcanthoToss,     // 刺球投掷 - 抛出多个刺球弹幕
-            Phase1_LeafBarrage,     // 落叶弹幕 - 叶片从上方洒落
-            Phase1_Burrow,          // 潜地转移 - 潜入地下，从玩家附近地面冒出
-            Phase1_VineLash,        // 藤蔓抽打 - 快速藤蔓弹幕
+            Surface_RootBurst,   // 地表窗口 A: 玩家脚边地面根须爆发 (逐点预告 → 喷涌)
+            Surface_SpikeField,  // 地表窗口 B: 向心收缩刺环 + 旋转安全辐条
+            Burrow,              // 潜地转移: 下沉 → 地下(冒出点预警) → 冒出(根须放射 + 刺球陷阱)
             PhaseTransition_2,
-            Phase2_Idle,
-            Phase2_RootStorm,       // 根须风暴 - 强化版根须爆发
-            Phase2_AcanthoBarrage,  // 刺球弹幕 - 密集刺球攻击
-            Phase2_Burrow,          // 强化潜地 - 更频繁更快速
-            Phase2_NatureWrath,     // 自然之怒 - 综合型攻击
-            Phase2_SpikeField,      // 刺球领域 - 环绕Boss的刺球防御圈
         }
 
         #endregion
@@ -74,8 +81,15 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
         private bool isRising;              // 是否正在上升
         private bool isBurrowing;           // 是否正在潜入/冒出中
         private float burrowProgress;       // 潜地进度 0=完全在地面, 1=完全在地下
-        private int attackCycle;
-        private Vector2 burrowTargetPos;    // 潜地后的目标冒出位置
+        private int attackCycle;            // 地表窗口交替计数 (RootBurst ↔ SpikeField)
+        private Vector2 burrowTargetPos;    // 潜地后的目标冒出位置（锚点空间）
+
+        // —— V2 演出/机制状态 ——
+        private float emergeTell;           // 冒出点地纹预警强度 0~1 (地下等待期 ramp)
+        private float emergeFlash;          // 冒出瞬间径向泛光闪 0~1 (衰减)
+        private Vector2 fieldCenter;        // 刺球领域收缩中心 (开招时捕获玩家位置)
+        private float fieldGapAngle;        // 安全辐条角度 (逐波缓慢旋转)
+        private float spokeTell;            // 安全辐条预告强度 0~1
 
         #endregion
 
@@ -127,7 +141,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
         }
 
         public override void ModifyNPCLoot(NPCLoot npcLoot) {
-            // 活木 - 掉落15~25个
+            // 活木 - 掉落45~60个
             npcLoot.Add(ItemDropRule.Common(ModContent.ItemType<Livinglog>(), minimumDropped: 45, maximumDropped: 60));
         }
 
@@ -230,6 +244,9 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
             return bestPos;
         }
 
+        /// <summary>当前锚点对应的地表世界 Y（树根埋点上方的地面线）。</summary>
+        private float GroundYOf(Vector2 anchor) => anchor.Y + TextureHeight / 2f - RootBuryOffset;
+
         public override void SendExtraAI(BinaryWriter writer) {
             writer.Write((int)Phase);
             writer.Write(globalTime);
@@ -243,6 +260,9 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
             writer.Write(attackCycle);
             writer.Write(burrowTargetPos.X);
             writer.Write(burrowTargetPos.Y);
+            writer.Write(fieldCenter.X);
+            writer.Write(fieldCenter.Y);
+            writer.Write(fieldGapAngle);
         }
 
         public override void ReceiveExtraAI(BinaryReader reader) {
@@ -256,6 +276,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
             burrowProgress = reader.ReadSingle();
             attackCycle = reader.ReadInt32();
             burrowTargetPos = new Vector2(reader.ReadSingle(), reader.ReadSingle());
+            fieldCenter = new Vector2(reader.ReadSingle(), reader.ReadSingle());
+            fieldGapAngle = reader.ReadSingle();
         }
 
         public override bool? DrawHealthBar(byte hbPosition, ref float scale, ref Vector2 position) {
@@ -336,6 +358,11 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                         Color.ForestGreen.ToVector3() * 6);
             }
 
+            // 视觉计时衰减 (各客户端本地)
+            if (emergeFlash > 0f) emergeFlash -= 0.04f;
+            if (Phase != BossPhase.Burrow) emergeTell = MathHelper.Lerp(emergeTell, 0f, 0.2f);
+            if (Phase != BossPhase.Surface_SpikeField) spokeTell = MathHelper.Lerp(spokeTell, 0f, 0.2f);
+
             NPC.TargetClosest();
             Player target = Main.player[NPC.target];
 
@@ -357,19 +384,10 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
 
             switch (Phase) {
                 case BossPhase.Intro: RunIntro(target); break;
-                case BossPhase.Phase1_Idle: RunPhase1Idle(target); break;
-                case BossPhase.Phase1_RootBurst: RunPhase1RootBurst(target); break;
-                case BossPhase.Phase1_AcanthoToss: RunPhase1AcanthoToss(target); break;
-                case BossPhase.Phase1_LeafBarrage: RunPhase1LeafBarrage(target); break;
-                case BossPhase.Phase1_Burrow: RunBurrow(target, false); break;
-                case BossPhase.Phase1_VineLash: RunPhase1VineLash(target); break;
+                case BossPhase.Surface_RootBurst: RunRootBurst(target); break;
+                case BossPhase.Surface_SpikeField: RunSpikeField(target); break;
+                case BossPhase.Burrow: RunBurrow(target, IsPhase2); break;
                 case BossPhase.PhaseTransition_2: RunPhaseTransition2(target); break;
-                case BossPhase.Phase2_Idle: RunPhase2Idle(target); break;
-                case BossPhase.Phase2_RootStorm: RunPhase2RootStorm(target); break;
-                case BossPhase.Phase2_AcanthoBarrage: RunPhase2AcanthoBarrage(target); break;
-                case BossPhase.Phase2_Burrow: RunBurrow(target, true); break;
-                case BossPhase.Phase2_NatureWrath: RunPhase2NatureWrath(target); break;
-                case BossPhase.Phase2_SpikeField: RunPhase2SpikeField(target); break;
             }
 
             // 自然光辉
@@ -405,32 +423,13 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
             NPC.netUpdate = true;
         }
 
-        private BossPhase GetRandomPhase1Attack() {
+        /// <summary>地表攻击窗口结束 → 潜地 (burrow-centric: 每个地表窗口后必潜地)。</summary>
+        private void GoBurrow() => TransitionTo(BossPhase.Burrow);
+
+        /// <summary>潜地冒出后 → 交替进入两个地表窗口 (确定性轮替, 非随机)。</summary>
+        private void GoSurface() {
             attackCycle++;
-            // 每3轮强制一次潜地
-            if (attackCycle % 3 == 0)
-                return BossPhase.Phase1_Burrow;
-
-            return (BossPhase)(Main.rand.Next(4) switch {
-                0 => (int)BossPhase.Phase1_RootBurst,
-                1 => (int)BossPhase.Phase1_AcanthoToss,
-                2 => (int)BossPhase.Phase1_LeafBarrage,
-                _ => (int)BossPhase.Phase1_VineLash,
-            });
-        }
-
-        private BossPhase GetRandomPhase2Attack() {
-            attackCycle++;
-            // 每3轮强制一次潜地
-            if (attackCycle % 3 == 0)
-                return BossPhase.Phase2_Burrow;
-
-            return (BossPhase)(Main.rand.Next(4) switch {
-                0 => (int)BossPhase.Phase2_RootStorm,
-                1 => (int)BossPhase.Phase2_AcanthoBarrage,
-                2 => (int)BossPhase.Phase2_NatureWrath,
-                _ => (int)BossPhase.Phase2_SpikeField,
-            });
+            TransitionTo((attackCycle % 2 == 0) ? BossPhase.Surface_RootBurst : BossPhase.Surface_SpikeField);
         }
 
         #endregion
@@ -444,7 +443,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
 
         private void RunIntro(Player target) {
             NPC.dontTakeDamage = true;
-            float groundWorldY = anchorPosition.Y + TextureHeight / 2f - RootBuryOffset;
+            float groundWorldY = GroundYOf(anchorPosition);
 
             // ========== 地面震动预兆（0-50）==========
             if (PhaseTimer <= IntroRumbleEnd) {
@@ -452,14 +451,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                     SoundEngine.PlaySound(SoundID.Item14 with { Pitch = -0.6f, Volume = 0.5f },
                         new Vector2(anchorPosition.X, groundWorldY));
 
-                if (PhaseTimer % 5 == 0 && Main.netMode != NetmodeID.Server) {
-                    float shakeStr = MathHelper.Lerp(1f, 5f, PhaseTimer / (float)IntroRumbleEnd);
-                    PunchCameraModifier modifier = new(
-                        new Vector2(anchorPosition.X, groundWorldY),
-                        Vector2.UnitY.RotatedByRandom(0.3f),
-                        shakeStr, 3f, 4, 2000f, FullName);
-                    Main.instance.CameraModifiers.Add(modifier);
-                }
+                if (PhaseTimer % 5 == 0)
+                    ACMUtils.AddScreenShake(MathHelper.Lerp(1f, 5f, PhaseTimer / (float)IntroRumbleEnd));
 
                 if (Main.netMode != NetmodeID.Server) {
                     int crackIntensity = (int)MathHelper.Lerp(1, 4, PhaseTimer / (float)IntroRumbleEnd);
@@ -526,13 +519,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                         }
                     }
 
-                    if (PhaseTimer % 7 == 0) {
-                        float shakeStr = 2f + riseSpeed * 3f;
-                        PunchCameraModifier modifier = new(
-                            NPC.Center, Vector2.UnitY.RotatedByRandom(0.3f),
-                            shakeStr, 3f, 5, 2000f, FullName);
-                        Main.instance.CameraModifiers.Add(modifier);
-                    }
+                    if (PhaseTimer % 7 == 0)
+                        ACMUtils.AddScreenShake(2f + riseSpeed * 3f);
                 }
 
                 float lightStr = MathHelper.Lerp(0.2f, 0.6f, riseProgress);
@@ -546,11 +534,13 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
 
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.4f, Volume = 1.2f }, NPC.Center);
                 SoundEngine.PlaySound(SoundID.Item14 with { Pitch = -0.5f, Volume = 1f }, NPC.Center);
+                emergeFlash = 1f;
 
                 if (Main.netMode != NetmodeID.Server) {
+                    // 入场一次性大震 (cinematic, §6.2 入场预算)
                     PunchCameraModifier modifier = new(NPC.Center,
                         (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(),
-                        20f, 10f, 50, 2500f, FullName);
+                        16f, 10f, 30, 2500f, FullName);
                     Main.instance.CameraModifiers.Add(modifier);
 
                     for (int i = 0; i < 30; i++) {
@@ -598,7 +588,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                 NPC.dontTakeDamage = false;
                 attackCycle = 0;
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.2f, Volume = 0.9f }, NPC.Center);
-                TransitionTo(BossPhase.Phase1_Idle);
+                TransitionTo(BossPhase.Surface_RootBurst);
             }
         }
 
@@ -606,17 +596,19 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
 
         #region 潜地机制（核心特色）
 
-        /// <summary>
-        /// 潜地转移 - 树精的核心机制
-        /// 过程：下沉入地 → 地下移动（不可见）→ 从玩家附近地面冒出
-        /// </summary>
-        private const int BurrowSinkDuration = 80;
-        private const int BurrowUndergroundWait = 60;
-        private const int BurrowRiseDuration = 80;
-        private const int BurrowP2SinkDuration = 55;
-        private const int BurrowP2UndergroundWait = 40;
-        private const int BurrowP2RiseDuration = 55;
+        // 更频繁、更快的潜地循环 (V2: burrow-centric, 增加潜地频率)
+        private const int BurrowSinkDuration = 50;
+        private const int BurrowUndergroundWait = 85;
+        private const int BurrowRiseDuration = 45;
+        private const int BurrowP2SinkDuration = 40;
+        private const int BurrowP2UndergroundWait = 65;
+        private const int BurrowP2RiseDuration = 38;
 
+        /// <summary>
+        /// 潜地转移 — 树精核心机制 (V2)。
+        ///  下沉(无敌) → 地下(冒出点 ArenaRunic 预警, 玩家须走开) → 冒出(根须放射 + 刺球陷阱 + 径向泛光)。
+        ///  P2: 下沉时在**旧锚点**留下毒孢区 (DryadsSporeZone)。
+        /// </summary>
         private void RunBurrow(Player target, bool isPhase2) {
             int sinkDur = isPhase2 ? BurrowP2SinkDuration : BurrowSinkDuration;
             int waitDur = isPhase2 ? BurrowP2UndergroundWait : BurrowUndergroundWait;
@@ -624,17 +616,24 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
             int totalSinkAndWait = sinkDur + waitDur;
             int totalDuration = totalSinkAndWait + riseDur;
 
-            float groundWorldY = anchorPosition.Y + TextureHeight / 2f - RootBuryOffset;
+            float groundWorldY = GroundYOf(anchorPosition);
 
             // ========== 阶段1：下沉 ==========
             if (PhaseTimer <= sinkDur) {
                 isBurrowing = true;
                 float sinkT = PhaseTimer / (float)sinkDur;
-                float easedT = sinkT * sinkT;
-                burrowProgress = easedT;
+                burrowProgress = sinkT * sinkT;
 
-                if (PhaseTimer == 1)
+                if (PhaseTimer == 1) {
                     SoundEngine.PlaySound(SoundID.Item14 with { Pitch = -0.7f, Volume = 0.6f }, NPC.Center);
+
+                    // P2 蔓生: 旧锚点留毒孢区 (~10s, 火烧/跳过)
+                    if (isPhase2 && Main.netMode != NetmodeID.MultiplayerClient) {
+                        Vector2 sporePos = new(anchorPosition.X, groundWorldY - 30f);
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), sporePos, Vector2.Zero,
+                            ModContent.ProjectileType<DryadsSporeZone>(), NPC.damage / 6, 0f, Main.myPlayer);
+                    }
+                }
 
                 if (Main.netMode != NetmodeID.Server && PhaseTimer % 4 == 0) {
                     for (int i = 0; i < 3; i++) {
@@ -648,14 +647,11 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                     }
                 }
 
-                if (Main.netMode != NetmodeID.Server && PhaseTimer % 8 == 0) {
-                    PunchCameraModifier modifier = new(NPC.Center,
-                        Vector2.UnitY, 3f + sinkT * 3f, 3f, 6, 1500f, FullName);
-                    Main.instance.CameraModifiers.Add(modifier);
-                }
+                if (PhaseTimer % 8 == 0)
+                    ACMUtils.AddScreenShake(3f + sinkT * 2f);
             }
 
-            // ========== 阶段2：地下（不可见）==========
+            // ========== 阶段2：地下（不可见）+ 冒出点预警 ==========
             if (PhaseTimer == sinkDur + 1) {
                 burrowProgress = 1f;
                 burrowTargetPos = FindGroundNearPlayer(target);
@@ -666,40 +662,39 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                 burrowProgress = 1f;
 
                 int warningTimer = (int)PhaseTimer - sinkDur;
-                if (warningTimer > waitDur / 3 && Main.netMode != NetmodeID.Server) {
-                    float targetGroundY = burrowTargetPos.Y + TextureHeight / 2f - RootBuryOffset;
-                    float warningIntensity = (float)(warningTimer - waitDur / 3) / (waitDur * 2f / 3);
-                    int dustCount = (int)(4 * warningIntensity) + 1;
+                float warnStart = waitDur * 0.22f;
+                // 冒出点地纹预警强度: 渐显 (供 PreDraw 的 ArenaRunic 圈)
+                emergeTell = MathHelper.Clamp((warningTimer - warnStart) / (waitDur - warnStart), 0f, 1f);
+
+                if (warningTimer > warnStart && Main.netMode != NetmodeID.Server) {
+                    float targetGroundY = GroundYOf(burrowTargetPos);
+                    int dustCount = (int)(4 * emergeTell) + 1;
                     for (int i = 0; i < dustCount; i++) {
+                        // 末段转赤红 = 致命 (TelegraphColors.Lethal)
                         Vector2 warnPos = new(
                             burrowTargetPos.X + Main.rand.NextFloat(-180, 180),
                             targetGroundY + Main.rand.NextFloat(-8, 8));
-                        Dust d = Dust.NewDustDirect(warnPos, 0, 0, DustID.GreenTorch,
+                        int dustType = emergeTell > 0.7f ? DustID.RedTorch : DustID.GreenTorch;
+                        Dust d = Dust.NewDustDirect(warnPos, 0, 0, dustType,
                             Main.rand.NextFloat(-1f, 1f), Main.rand.NextFloat(-3f, -0.5f),
-                            80, default, 1.5f * warningIntensity);
+                            80, default, 1.5f * emergeTell);
                         d.noGravity = true;
                     }
 
-                    if (warningTimer % 6 == 0) {
-                        PunchCameraModifier modifier = new(
-                            new Vector2(burrowTargetPos.X, targetGroundY),
-                            Vector2.UnitY.RotatedByRandom(0.2f),
-                            2f * warningIntensity, 2f, 4, 1500f, FullName);
-                        Main.instance.CameraModifiers.Add(modifier);
-                    }
+                    if (warningTimer % 6 == 0)
+                        ACMUtils.AddScreenShake(2f * emergeTell);
 
                     Lighting.AddLight(new Vector2(burrowTargetPos.X, targetGroundY),
-                        new Vector3(0.2f, 0.5f, 0.1f) * warningIntensity);
+                        new Vector3(0.2f, 0.5f, 0.1f) * emergeTell);
                 }
             }
 
             // ========== 阶段3：从新位置冒出 ==========
             if (PhaseTimer == totalSinkAndWait + 1) {
                 anchorPosition = burrowTargetPos;
+                emergeTell = 0f;
                 NPC.netUpdate = true;
-
-                SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.4f, Volume = 0.9f },
-                    anchorPosition);
+                SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.4f, Volume = 0.9f }, anchorPosition);
             }
 
             if (PhaseTimer > totalSinkAndWait && PhaseTimer <= totalDuration) {
@@ -707,7 +702,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                 float easedRise = 1f - (1f - riseT) * (1f - riseT);
                 burrowProgress = 1f - easedRise;
 
-                groundWorldY = anchorPosition.Y + TextureHeight / 2f - RootBuryOffset;
+                groundWorldY = GroundYOf(anchorPosition);
 
                 if (Main.netMode != NetmodeID.Server && PhaseTimer % 3 == 0) {
                     for (int i = 0; i < 4; i++) {
@@ -719,53 +714,47 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                             120, default, Main.rand.NextFloat(1.2f, 2.2f));
                         d.noGravity = false;
                     }
-                    if (riseT > 0.3f) {
-                        for (int i = 0; i < 2; i++) {
-                            Vector2 vinePos = new(
-                                anchorPosition.X + Main.rand.NextFloat(-200, 200),
-                                groundWorldY - Main.rand.NextFloat(0, 15));
-                            Dust d = Dust.NewDustDirect(vinePos, 0, 0, DustID.JungleGrass,
-                                Main.rand.NextFloat(-1f, 1f), Main.rand.NextFloat(-2.5f, -0.5f),
-                                100, default, 1.4f);
-                            d.noGravity = true;
-                        }
-                    }
                 }
 
-                if (Main.netMode != NetmodeID.Server && PhaseTimer % 6 == 0) {
-                    float shakeStr = 2f + riseT * 4f;
-                    PunchCameraModifier modifier = new(NPC.Center,
-                        Vector2.UnitY.RotatedByRandom(0.3f),
-                        shakeStr, 3f, 5, 2000f, FullName);
-                    Main.instance.CameraModifiers.Add(modifier);
-                }
+                if (PhaseTimer % 6 == 0)
+                    ACMUtils.AddScreenShake(2f + riseT * 3f);
             }
 
-            // ========== 冒出完成 ==========
+            // ========== 冒出完成: 根须放射 + 刺球陷阱 ==========
             if (PhaseTimer == totalDuration) {
                 burrowProgress = 0f;
                 isBurrowing = false;
+                emergeFlash = 1f;
 
                 SoundEngine.PlaySound(SoundID.Item14 with { Pitch = -0.3f, Volume = 0.9f }, NPC.Center);
+                ACMUtils.AddScreenShake(9f);
 
-                // 冒出时爆发藤蔓
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
-                    int spikeCount = isPhase2 ? 8 : 5;
-                    for (int i = 0; i < spikeCount; i++) {
-                        float angle = MathHelper.TwoPi / spikeCount * i;
+                    // 根须放射 (直线弹, 强制玩家拉开)
+                    int vineCount = isPhase2 ? 8 : 5;
+                    for (int i = 0; i < vineCount; i++) {
+                        float angle = MathHelper.TwoPi / vineCount * i;
                         Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * (isPhase2 ? 7f : 5f);
                         vel.Y -= 3f;
                         Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
                             ModContent.ProjectileType<DryadsVine>(), NPC.damage / 4, 1f, Main.myPlayer);
                     }
+
+                    // 刺球陷阱散布 (扎地 ~3s 后引爆, 空间封锁)
+                    int trapCount = isPhase2 ? 6 : 4;
+                    float trapGroundY = GroundYOf(anchorPosition);
+                    for (int i = 0; i < trapCount; i++) {
+                        float dx = ((float)i / (trapCount - 1) - 0.5f) * (isPhase2 ? 760f : 560f);
+                        dx += Main.rand.NextFloat(-40f, 40f);
+                        Vector2 spawn = new(anchorPosition.X + dx, trapGroundY - 220f);
+                        Vector2 vel = new(dx * 0.012f, Main.rand.NextFloat(2f, 4f));
+                        // ai0=1 陷阱模式 (经 NewProjectile 同步)
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), spawn, vel,
+                            ModContent.ProjectileType<Acanthosphere>(), NPC.damage / 4, 1f, Main.myPlayer, 1f);
+                    }
                 }
 
                 if (Main.netMode != NetmodeID.Server) {
-                    PunchCameraModifier modifier = new(NPC.Center,
-                        (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(),
-                        15f, 8f, 40, 2000f, FullName);
-                    Main.instance.CameraModifiers.Add(modifier);
-
                     for (int i = 0; i < 20; i++) {
                         float angle = Main.rand.NextFloat(MathHelper.TwoPi);
                         float speed = Main.rand.NextFloat(3f, 8f);
@@ -779,124 +768,115 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                 NPC.netUpdate = true;
             }
 
-            if (PhaseTimer > totalDuration + 30) {
-                TransitionTo(isPhase2 ? BossPhase.Phase2_Idle : BossPhase.Phase1_Idle);
-            }
+            // 冒出后短暂恢复 → 进入地表攻击窗口 (交替)
+            if (PhaseTimer > totalDuration + 25)
+                GoSurface();
         }
 
         #endregion
 
-        #region 一阶段攻击
-
-        private void RunPhase1Idle(Player target) {
-            if (PhaseTimer % 50 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 6f;
-                vel = vel.RotatedByRandom(MathHelper.ToRadians(15f));
-                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                    ModContent.ProjectileType<DryadsLeaf>(), NPC.damage / 5, 0.5f, Main.myPlayer);
-            }
-
-            if (PhaseTimer > 100) TransitionTo(GetRandomPhase1Attack());
-        }
+        #region 地表窗口 A — 根须爆发 RootBurst
 
         /// <summary>
-        /// 根须爆发 - 从玩家身边地面涌出根须
+        /// 玩家脚边地面逐点喷涌根须: 每根 DryadsVine(root 模式) 自带 30 tick 地纹/光束预告 → 喷涌。
+        /// 多波递进, 强制玩家持续走位 (telegraph 清晰, 红色只在喷涌瞬间)。
         /// </summary>
-        private void RunPhase1RootBurst(Player target) {
-            if (AttackTimer % 25 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int rootCount = Main.expertMode ? 5 : 4;
-                for (int i = 0; i < rootCount; i++) {
-                    Vector2 spawnPos = target.Center + new Vector2(
-                        Main.rand.NextFloat(-400, 400), 300);
-                    Vector2 vel = new Vector2(Main.rand.NextFloat(-1.5f, 1.5f), -Main.rand.NextFloat(8f, 14f));
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
-                        ModContent.ProjectileType<DryadsVine>(), NPC.damage / 4, 1f, Main.myPlayer);
+        private void RunRootBurst(Player target) {
+            const int Lead = 12;
+            const int WaveGap = 42;
+            int waveCount = IsPhase2 ? 4 : 3;
+
+            // 前摇
+            if (AttackTimer == 1)
+                SoundEngine.PlaySound(SoundID.Item64 with { Pitch = -0.4f, Volume = 0.6f }, NPC.Center);
+
+            for (int w = 0; w < waveCount; w++) {
+                int waveTick = Lead + w * WaveGap;
+                if ((int)AttackTimer == waveTick && Main.netMode != NetmodeID.MultiplayerClient) {
+                    int rootsPerWave = IsPhase2 ? 5 : 4;
+                    float groundY = GroundYOf(anchorPosition);
+                    // 围绕玩家在地表撒点 (玩家附近, 偏当前位置)
+                    float spread = 520f;
+                    for (int i = 0; i < rootsPerWave; i++) {
+                        float frac = rootsPerWave == 1 ? 0.5f : (float)i / (rootsPerWave - 1);
+                        float rx = target.Center.X + (frac - 0.5f) * spread + Main.rand.NextFloat(-30f, 30f);
+                        // 根须在玩家所在地表线喷涌 (用玩家脚下地表近似 boss 地表线)
+                        Vector2 spawn = new(rx, groundY + 24f);
+                        // ai0=1 根须喷涌(telegraph)模式 (经 NewProjectile 同步)
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), spawn, Vector2.Zero,
+                            ModContent.ProjectileType<DryadsVine>(), NPC.damage / 4, 1.5f, Main.myPlayer, 1f);
+                    }
+                    SoundEngine.PlaySound(SoundID.Item17 with { Pitch = -0.5f, Volume = 0.6f }, target.Center);
                 }
-                SoundEngine.PlaySound(SoundID.Item153 with { Pitch = -0.5f, Volume = 0.7f }, target.Center);
             }
 
-            if (Main.netMode != NetmodeID.Server && AttackTimer % 25 >= 15) {
-                for (int i = 0; i < 3; i++) {
-                    Vector2 warnPos = target.Center + new Vector2(
-                        Main.rand.NextFloat(-400, 400), 250 + Main.rand.NextFloat(0, 50));
-                    Dust d = Dust.NewDustDirect(warnPos, 0, 0, DustID.GreenTorch,
-                        0, Main.rand.NextFloat(-2f, -0.5f), 80, default, 1.3f);
-                    d.noGravity = true;
-                }
-            }
-
-            if (AttackTimer > 160) TransitionTo(BossPhase.Phase1_Idle);
+            int endTick = Lead + waveCount * WaveGap + 30;
+            if (AttackTimer > endTick)
+                GoBurrow();
         }
 
-        /// <summary>
-        /// 刺球投掷 - 向玩家方向投掷多个刺球
-        /// </summary>
-        private void RunPhase1AcanthoToss(Player target) {
-            if ((AttackTimer == 20 || AttackTimer == 60 || AttackTimer == 100) &&
-                Main.netMode != NetmodeID.MultiplayerClient) {
-                int tossCount = Main.expertMode ? 5 : 4;
-                Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
+        #endregion
 
-                for (int i = 0; i < tossCount; i++) {
-                    float spread = MathHelper.ToRadians(15f);
-                    Vector2 vel = toPlayer.RotatedBy(Main.rand.NextFloat(-spread, spread)) *
-                        Main.rand.NextFloat(7f, 12f);
-                    vel.Y -= 3f;
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center + toPlayer * 80f, vel,
-                        ModContent.ProjectileType<Acanthosphere>(), NPC.damage / 4, 1f, Main.myPlayer);
-                }
-                SoundEngine.PlaySound(SoundID.Item17 with { Pitch = -0.3f, Volume = 0.8f }, NPC.Center);
-            }
-
-            if (AttackTimer > 140) TransitionTo(BossPhase.Phase1_Idle);
-        }
+        #region 地表窗口 B — 刺球领域 SpikeField
 
         /// <summary>
-        /// 落叶弹幕 - 从Boss上方洒落刺球
+        /// 向心收缩刺环 + 一条缓慢旋转的安全辐条 (一条清晰规则)。
+        /// 开招捕获中心; 每波在收缩半径上铺满刺球, 留出安全辐条角度的缺口, 缺口逐波旋转。
+        /// 安全辐条由 PreDraw 画翠玉光束预告 (TelegraphColors.Safe)。
         /// </summary>
-        private void RunPhase1LeafBarrage(Player target) {
-            int wave = (int)(AttackTimer / 40);
-            int leafPerTick = 2 + wave;
-            if (leafPerTick > 5) leafPerTick = 5;
+        private void RunSpikeField(Player target) {
+            const int Lead = 26;
+            const int WaveGap = 48;
+            int waveCount = IsPhase2 ? 4 : 3;
+            float gapHalf = MathHelper.ToRadians(IsPhase2 ? 26f : 32f); // 安全缝半角
 
-            if (AttackTimer % 12 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int i = 0; i < leafPerTick; i++) {
-                    Vector2 spawnPos = target.Center + new Vector2(
-                        Main.rand.NextFloat(-500, 500), -400 - Main.rand.NextFloat(0, 150));
-                    Vector2 vel = new Vector2(
-                        Main.rand.NextFloat(-2.5f, 2.5f),
-                        Main.rand.NextFloat(5f, 10f));
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
-                        ModContent.ProjectileType<DryadsLeaf>(), NPC.damage / 5, 0.5f, Main.myPlayer);
+            if (AttackTimer == 1) {
+                fieldCenter = target.Center;
+                fieldGapAngle = Main.rand.NextFloat(MathHelper.TwoPi);
+                SoundEngine.PlaySound(SoundID.Item8 with { Pitch = -0.3f, Volume = 0.7f }, NPC.Center);
+                NPC.netUpdate = true;
+            }
+
+            // 安全辐条预告强度 (波前 ~18 tick 亮起)
+            float nearestLeadDist = 9999f;
+            for (int w = 0; w < waveCount; w++) {
+                int waveTick = Lead + w * WaveGap;
+                float dToWave = waveTick - AttackTimer;
+                if (dToWave > 0f && dToWave < nearestLeadDist) nearestLeadDist = dToWave;
+            }
+            spokeTell = MathHelper.Clamp(1f - nearestLeadDist / 18f, 0f, 1f);
+
+            for (int w = 0; w < waveCount; w++) {
+                int waveTick = Lead + w * WaveGap;
+                if ((int)AttackTimer == waveTick) {
+                    float ringRadius = MathHelper.Lerp(640f, 210f, waveCount == 1 ? 0f : (float)w / (waveCount - 1));
+
+                    if (Main.netMode != NetmodeID.MultiplayerClient) {
+                        int spikeCount = 20;
+                        float inwardSpeed = 2.0f + w * 0.35f;
+                        for (int i = 0; i < spikeCount; i++) {
+                            float angle = MathHelper.TwoPi / spikeCount * i;
+                            // 留出安全辐条缺口 (缺口角度逐波已旋转)
+                            float delta = MathHelper.WrapAngle(angle - fieldGapAngle);
+                            if (MathF.Abs(delta) < gapHalf) continue;
+                            Vector2 pos = fieldCenter + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * ringRadius;
+                            Vector2 vel = (fieldCenter - pos).SafeNormalize(Vector2.Zero) * inwardSpeed;
+                            // ai0=2 环刺模式 (无重力直线向心, 经 NewProjectile 同步)
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, vel,
+                                ModContent.ProjectileType<Acanthosphere>(), NPC.damage / 4, 0.5f, Main.myPlayer, 2f);
+                        }
+                    }
+
+                    SoundEngine.PlaySound(SoundID.Item17 with { Pitch = 0f, Volume = 0.6f }, fieldCenter);
+                    // 安全辐条缓慢旋转 (下一波缺口转动)
+                    fieldGapAngle += MathHelper.ToRadians(IsPhase2 ? 34f : 28f) * (Main.rand.NextBool() ? 1f : -1f);
+                    if (Main.netMode != NetmodeID.MultiplayerClient) NPC.netUpdate = true;
                 }
             }
 
-            if (AttackTimer % 40 == 0 && Main.netMode != NetmodeID.Server)
-                SoundEngine.PlaySound(SoundID.Grass with { Volume = 0.4f, Pitch = 0.2f }, target.Center);
-
-            if (AttackTimer > 180) TransitionTo(BossPhase.Phase1_Idle);
-        }
-
-        /// <summary>
-        /// 藤蔓抽打 - 快速扇形刺球
-        /// </summary>
-        private void RunPhase1VineLash(Player target) {
-            int lashInterval = Main.expertMode ? 16 : 20;
-
-            if (AttackTimer % lashInterval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int lashCount = Main.expertMode ? 5 : 4;
-                Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
-                float spreadAngle = MathHelper.ToRadians(10f);
-
-                for (int i = -lashCount / 2; i <= lashCount / 2; i++) {
-                    Vector2 vel = toPlayer.RotatedBy(i * spreadAngle) * 14f;
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                        ModContent.ProjectileType<DryadsVine>(), NPC.damage / 4, 1.5f, Main.myPlayer);
-                }
-                SoundEngine.PlaySound(SoundID.Item153 with { Pitch = -0.2f, Volume = 0.7f }, NPC.Center);
-            }
-
-            if (AttackTimer > 120) TransitionTo(BossPhase.Phase1_Idle);
+            int endTick = Lead + waveCount * WaveGap + 40;
+            if (AttackTimer > endTick)
+                GoBurrow();
         }
 
         #endregion
@@ -928,12 +908,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
 
             if (PhaseTimer == 50) {
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.6f, Volume = 1.3f }, NPC.Center);
-                if (Main.netMode != NetmodeID.Server) {
-                    PunchCameraModifier modifier = new(NPC.Center,
-                        (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(),
-                        20f, 10f, 50, 2500f, FullName);
-                    Main.instance.CameraModifiers.Add(modifier);
-                }
+                emergeFlash = 1f;
+                ACMUtils.AddScreenShake(11f);
 
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
                     for (int i = 0; i < 12; i++) {
@@ -950,148 +926,9 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                 NPC.defense += 15;
                 NPC.damage = (int)(NPC.damage * 1.2f);
                 attackCycle = 0;
-                TransitionTo(BossPhase.Phase2_Idle);
+                // 进入 P2: 直接潜地 (开始留毒孢区)
+                GoBurrow();
             }
-        }
-
-        #endregion
-
-        #region 二阶段攻击
-
-        private void RunPhase2Idle(Player target) {
-            if (PhaseTimer % 35 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 8f;
-                vel = vel.RotatedByRandom(MathHelper.ToRadians(20f));
-                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                    ModContent.ProjectileType<DryadsLeaf>(), NPC.damage / 5, 0.5f, Main.myPlayer);
-            }
-
-            if (PhaseTimer > 80) TransitionTo(GetRandomPhase2Attack());
-        }
-
-        /// <summary>
-        /// 根须风暴 - 强化版根须爆发
-        /// </summary>
-        private void RunPhase2RootStorm(Player target) {
-            if (AttackTimer % 18 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int rootCount = Main.expertMode ? 7 : 6;
-                for (int i = 0; i < rootCount; i++) {
-                    Vector2 spawnPos = target.Center + new Vector2(
-                        Main.rand.NextFloat(-500, 500), 350);
-                    Vector2 vel = new Vector2(Main.rand.NextFloat(-2f, 2f), -Main.rand.NextFloat(10f, 16f));
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
-                        ModContent.ProjectileType<DryadsVine>(), NPC.damage / 3, 1f, Main.myPlayer);
-                }
-                SoundEngine.PlaySound(SoundID.Item153 with { Pitch = -0.6f, Volume = 0.8f }, target.Center);
-            }
-
-            if (AttackTimer % 30 == 15 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int i = 0; i < 3; i++) {
-                    Vector2 spawnPos = target.Center + new Vector2(
-                        Main.rand.NextFloat(-400, 400), -500);
-                    Vector2 vel = new Vector2(Main.rand.NextFloat(-1f, 1f), Main.rand.NextFloat(6f, 10f));
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
-                        ModContent.ProjectileType<DryadsLeaf>(), NPC.damage / 4, 0.5f, Main.myPlayer);
-                }
-            }
-
-            if (AttackTimer > 180) TransitionTo(BossPhase.Phase2_Idle);
-        }
-
-        /// <summary>
-        /// 刺球弹幕 - 密集旋转散射
-        /// </summary>
-        private void RunPhase2AcanthoBarrage(Player target) {
-            float rotOffset = AttackTimer * 0.06f;
-
-            if (AttackTimer % 10 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int armCount = Main.expertMode ? 4 : 3;
-                for (int arm = 0; arm < armCount; arm++) {
-                    float angle = rotOffset + MathHelper.TwoPi / armCount * arm;
-                    Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 8f;
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                        ModContent.ProjectileType<Acanthosphere>(), NPC.damage / 4, 1f, Main.myPlayer);
-                }
-            }
-
-            if (AttackTimer % 35 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 12f;
-                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                    ModContent.ProjectileType<Acanthosphere>(), NPC.damage / 3, 1.5f, Main.myPlayer);
-            }
-
-            if (AttackTimer > 160) TransitionTo(BossPhase.Phase2_Idle);
-        }
-
-        /// <summary>
-        /// 自然之怒 - 综合攻击模式
-        /// </summary>
-        private void RunPhase2NatureWrath(Player target) {
-            if (AttackTimer == 15 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int ringCount = Main.expertMode ? 12 : 10;
-                for (int i = 0; i < ringCount; i++) {
-                    float angle = MathHelper.TwoPi / ringCount * i;
-                    Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 6f;
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                        ModContent.ProjectileType<DryadsLeaf>(), NPC.damage / 4, 1f, Main.myPlayer);
-                }
-                SoundEngine.PlaySound(SoundID.Item153 with { Pitch = -0.5f }, NPC.Center);
-            }
-
-            if (AttackTimer > 50 && AttackTimer < 120 && AttackTimer % 15 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int i = 0; i < 4; i++) {
-                    Vector2 spawnPos = target.Center + new Vector2(Main.rand.NextFloat(-450, 450), 350);
-                    Vector2 vel = new Vector2(Main.rand.NextFloat(-1.5f, 1.5f), -Main.rand.NextFloat(9f, 14f));
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
-                        ModContent.ProjectileType<DryadsVine>(), NPC.damage / 4, 1f, Main.myPlayer);
-                }
-            }
-
-            if (AttackTimer == 130 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int i = 0; i < 6; i++) {
-                    float angle = MathHelper.TwoPi / 6 * i;
-                    Vector2 spawnPos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 200f;
-                    Vector2 vel = (target.Center - spawnPos).SafeNormalize(Vector2.UnitY) * 10f;
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, vel,
-                        ModContent.ProjectileType<DryadsVine>(), NPC.damage / 3, 1f, Main.myPlayer);
-                }
-            }
-
-            if (AttackTimer > 170) TransitionTo(BossPhase.Phase2_Idle);
-        }
-
-        /// <summary>
-        /// 刺球领域 - 收缩型刺球牢笼
-        /// </summary>
-        private void RunPhase2SpikeField(Player target) {
-            if (AttackTimer == 15 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int ring = 0; ring < 2; ring++) {
-                    int spikeCount = 10 + ring * 4;
-                    float ringRadius = 350f + ring * 150f;
-                    int gapStart = Main.rand.Next(spikeCount);
-                    int gapSize = 3;
-                    for (int i = 0; i < spikeCount; i++) {
-                        if (i >= gapStart && i < gapStart + gapSize) continue;
-                        if (gapStart + gapSize > spikeCount && i < (gapStart + gapSize) % spikeCount) continue;
-
-                        float angle = MathHelper.TwoPi / spikeCount * i + ring * MathHelper.ToRadians(8f);
-                        Vector2 pos = target.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * ringRadius;
-                        Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.Zero) * (2f + ring * 0.5f);
-                        Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, vel,
-                            ModContent.ProjectileType<Acanthosphere>(), NPC.damage / 4, 0.5f, Main.myPlayer);
-                    }
-                }
-                SoundEngine.PlaySound(SoundID.Item153 with { Volume = 1f }, target.Center);
-            }
-
-            if (AttackTimer > 60 && AttackTimer % 20 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                Vector2 vel = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 11f;
-                vel = vel.RotatedByRandom(MathHelper.ToRadians(15f));
-                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, vel,
-                    ModContent.ProjectileType<Acanthosphere>(), NPC.damage / 4, 1f, Main.myPlayer);
-            }
-
-            if (AttackTimer > 160) TransitionTo(BossPhase.Phase2_Idle);
         }
 
         #endregion
@@ -1099,6 +936,11 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
         #region 绘制
 
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+            // —— V2 演出层 (server-zero-draw 已由助手内部 Main.dedServ 守卫) ——
+            DrawEmergeTell(spriteBatch);
+            DrawSpikeSafeSpoke(spriteBatch);
+            DrawEmergeBloom(spriteBatch);
+
             Texture2D texture = TextureAssets.Npc[Type].Value;
             Rectangle frame = new Rectangle(0, 0, texture.Width, texture.Height);
             Vector2 origin = new Vector2(TextureWidth / 2f, TextureHeight / 2f);
@@ -1119,6 +961,54 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                 NPC.scale, SpriteEffects.None, 0f);
 
             return false;
+        }
+
+        /// <summary>冒出点预警: ArenaRunic 绿色根须裂纹圈, 末段转赤红 (致命)。玩家须走开。</summary>
+        private void DrawEmergeTell(SpriteBatch sb) {
+            if (Main.dedServ || emergeTell <= 0.01f || burrowTargetPos == Vector2.Zero)
+                return;
+            Effect fx = ACMShaders.ArenaRunic;
+            if (fx == null)
+                return;
+
+            Vector2 markCenter = new(burrowTargetPos.X, GroundYOf(burrowTargetPos));
+            float worldRadius = MathHelper.Lerp(150f, 220f, emergeTell);
+            ACMShaders.WorldDecalParams(markCenter, worldRadius, out Vector2 uv, out float radUV, out float aspect);
+
+            // 绿 → 赤红 (emergeTell>0.7 后转致命)
+            Color primary = Color.Lerp(VerdantGreen, TelegraphColors.Lethal, MathHelper.Clamp((emergeTell - 0.7f) / 0.3f, 0f, 1f));
+            Color secondary = Color.Lerp(new Color(30, 90, 20), new Color(150, 20, 20), MathHelper.Clamp((emergeTell - 0.7f) / 0.3f, 0f, 1f));
+
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uCenter"]?.SetValue(uv);
+            fx.Parameters["uRadius"]?.SetValue(radUV);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(emergeTell, 0f, 1f));
+            fx.Parameters["uAspect"]?.SetValue(aspect);
+            fx.Parameters["uColorPrimary"]?.SetValue(primary.ToVector4());
+            fx.Parameters["uColorSecondary"]?.SetValue(secondary.ToVector4());
+            fx.Parameters["uRuneFreq"]?.SetValue(9f);
+            fx.Parameters["uMode"]?.SetValue(0f);
+            fx.Parameters["uShape"]?.SetValue(0f);
+
+            ACMShaders.DrawScreenSpaceDecal(sb, fx, BlendState.NonPremultiplied);
+        }
+
+        /// <summary>刺球领域安全辐条预告: 沿安全角画翠玉光束 (TelegraphColors.Safe), 指明可站位。</summary>
+        private void DrawSpikeSafeSpoke(SpriteBatch sb) {
+            if (Main.dedServ || spokeTell <= 0.01f || fieldCenter == Vector2.Zero)
+                return;
+            Vector2 dir = fieldGapAngle.ToRotationVector2();
+            Vector2 end = fieldCenter + dir * 700f;
+            Vector2 start = fieldCenter - dir * 700f; // 双向贯穿: 安全辐条整条都安全
+            ACMShaders.DrawBeam(start, end, 26f * spokeTell, TelegraphColors.Safe,
+                new Color(120, 255, 170), spokeTell * 0.8f, flowSpeed: 0.8f, flowScale: 1.4f);
+        }
+
+        /// <summary>冒出/相变瞬间: 绿色径向泛光闪 (DrawRadialBloomAt, 内部仲裁全屏名额)。</summary>
+        private void DrawEmergeBloom(SpriteBatch sb) {
+            if (Main.dedServ || emergeFlash <= 0.02f)
+                return;
+            ACMShaders.DrawRadialBloomAt(NPC.Center, 0.20f, emergeFlash * 0.85f, VerdantGreen, rayCount: 12f, falloff: 2.2f);
         }
 
         #endregion

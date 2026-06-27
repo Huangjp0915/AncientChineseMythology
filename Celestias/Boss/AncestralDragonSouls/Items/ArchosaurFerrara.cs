@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -104,6 +105,10 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, dustType, vel.X, vel.Y, 150, Color.White, 1.8f);
                 Main.dust[dust].noGravity = true;
             }
+
+            ACMWeaponBurst.Spawn(player.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.AncestralSoul, 1.1f, player.whoAmI);
+            WeaponVFX.AddScreenShake(target.Center, 2.5f);
         }
     }
 
@@ -158,6 +163,11 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls.Items
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            // 龙魂波动白青双层 ribbon (残魂溶解感)
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 16f,
+                outerColor: new Color(60, 120, 180, 120), innerColor: new Color(235, 250, 255, 180),
+                tex: ACMAsset.GlaciateWave, uvScroll: -Main.GlobalTimeWrappedHourly * 1.3f);
+
             Texture2D tex = ACMAsset.GlaciateWave ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = new Vector2(0, tex.Height / 2f);
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
@@ -192,6 +202,9 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, DustID.WhiteTorch, vel.X, vel.Y, 150, Color.White, 1.5f);
                 Main.dust[dust].noGravity = true;
             }
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.AncestralSoul, 0.8f, Projectile.owner);
         }
     }
 
@@ -249,6 +262,11 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls.Items
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            // 祖龙吐息白青→赤金双层 ribbon (与天幕同源色板)
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 30f,
+                outerColor: new Color(70, 130, 190, 130), innerColor: new Color(255, 200, 120, 185),
+                tex: ACMAsset.GlaciateWave, uvScroll: -Main.GlobalTimeWrappedHourly * 1.4f);
+
             Texture2D tex = ACMAsset.GlaciateWave ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = new Vector2(0, tex.Height / 2f);
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
@@ -291,6 +309,10 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, dustType, vel.X, vel.Y, 150, Color.White, 2.5f);
                 Main.dust[dust].noGravity = true;
             }
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.AncestralSoul, 1.6f, Projectile.owner);
+            WeaponVFX.AddScreenShake(target.Center, 4f);
         }
 
         public override void OnKill(int timeLeft) {

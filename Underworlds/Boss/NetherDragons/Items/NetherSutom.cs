@@ -1,7 +1,8 @@
-﻿using AncientChineseMythology.Underworlds.Tiles;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Tiles;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
-using System.Collections.Generic;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -454,6 +455,17 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons.Items
             SpriteEffects effects = SpriteEffects.None;
             float rotation = Projectile.rotation - MathHelper.PiOver2;
 
+            // 高速移动时的 DissolveBurn 冥焰残影 (拖在身后, 灼烧边)
+            float headSpeed = Projectile.velocity.Length();
+            if (headSpeed > 4.5f) {
+                float ghost = MathHelper.Clamp((headSpeed - 4.5f) / 12f, 0f, 0.55f);
+                Vector2 ghostPos = Projectile.Center - Projectile.velocity.SafeNormalize(Vector2.Zero) * 16f;
+                WeaponVFX.ApplyDissolveBurn(texture, ghostPos, frameRect, NetherFX.Cyan * ghost,
+                    rotation, origin, Projectile.scale, threshold: 0.4f, intensity: MathF.Min(1f, ghost * 2f),
+                    edgeColor: new Color(150, 230, 255, 180), edgeWidth: 0.1f, noiseScale: 2f,
+                    effects: effects);
+            }
+
             // 发光轮廓层（3层叠加）
             for (int i = 0; i < 3; i++) {
                 Vector2 offset = new Vector2(
@@ -475,6 +487,19 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons.Items
             Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, frameRect,
                 eyeGlow, rotation, origin, Projectile.scale * 1.02f, effects);
 
+            // 龙口冥焰: 喷火瞬间 (FlameTimer 刚归零) 的 BeamGrad 龙息 + 口部 RadialBloom
+            if (State == MinionState.Attacking && targetNPC != null && targetNPC.active && FlameTimer < 16f) {
+                float flash = 1f - FlameTimer / 16f;
+                Vector2 forward = Projectile.rotation.ToRotationVector2();
+                Vector2 mouth = Projectile.Center + forward * 28f * Projectile.scale;
+                float reach = MathHelper.Clamp(Vector2.Distance(mouth, targetNPC.Center), 90f, 540f);
+                ACMShaders.DrawBeam(mouth, mouth + forward * reach, 7f + 14f * flash,
+                    Color.Lerp(Color.White, NetherFX.Cyan, 0.4f), NetherFX.Violet, flash,
+                    flowSpeed: 3f, flowScale: 1.8f, coreSharp: 1.8f);
+                WeaponVFX.DrawRadialBloom(mouth, 0.03f + 0.06f * flash, 0.6f * flash, NetherFX.Cyan, 6f);
+                WeaponVFX.DrawGlowBurst(mouth, 0.4f + 0.9f * flash, Color.Lerp(Color.White, NetherFX.Cyan, 0.3f));
+            }
+
             return false;
         }
 
@@ -492,47 +517,19 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons.Items
     }
 
     /// <summary>
-    /// 幽冥龙焰弹幕
+    /// 幽冥龙焰弹幕 — 龙头喷出的青蓝冥焰火舌 (纯着色器自绘, 附录 B)。
     /// </summary>
     public class NetherDragonFlame : ModProjectile
     {
-        private const int MaxParticles = 20;
-        private List<FlameParticle> particles = new List<FlameParticle>();
+        public override string Texture => "Terraria/Images/Projectile_1";
 
-        private class FlameParticle
-        {
-            public Vector2 Position;
-            public Vector2 Velocity;
-            public float Life;
-            public float MaxLife;
-            public float Scale;
-            public float Rotation;
-            public Color BaseColor;
+        private const int MaxLife = 50;
+        private float Life => 1f - Projectile.timeLeft / (float)MaxLife;
 
-            public FlameParticle(Vector2 pos, Vector2 vel) {
-                Position = pos;
-                Velocity = vel;
-                MaxLife = Main.rand.NextFloat(0.5f, 1f);
-                Life = MaxLife;
-                Scale = Main.rand.NextFloat(0.6f, 1.2f);
-                Rotation = Main.rand.NextFloat(MathHelper.TwoPi);
-
-                float colorMix = Main.rand.NextFloat();
-                BaseColor = Color.Lerp(new Color(80, 120, 255), new Color(150, 200, 255), colorMix);
-            }
-
-            public void Update() {
-                Position += Velocity;
-                Velocity *= 0.96f;
-                Life -= 0.03f;
-                Rotation += 0.15f;
-                Scale *= 0.98f;
-            }
-
-            public float Alpha => Life / MaxLife;
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.TrailCacheLength[Type] = 10;
+            ProjectileID.Sets.TrailingMode[Type] = 2;
         }
-
-        public override string Texture => "Terraria/Images/Projectile_" + ProjectileID.None;
 
         public override void SetDefaults() {
             Projectile.width = 26;
@@ -541,7 +538,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons.Items
             Projectile.hostile = false;
             Projectile.DamageType = DamageClass.Summon;
             Projectile.penetrate = 2;
-            Projectile.timeLeft = 50;
+            Projectile.timeLeft = MaxLife;
             Projectile.tileCollide = true;
             Projectile.ignoreWater = false;
             Projectile.alpha = 255;
@@ -550,89 +547,49 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons.Items
         public override void AI() {
             Projectile.velocity.Y += 0.1f;
             Projectile.velocity *= 0.98f;
-
             Projectile.rotation = Projectile.velocity.ToRotation();
 
-            // 持续生成火焰粒子
-            for (int i = 0; i < 2; i++) {
-                Vector2 offset = Main.rand.NextVector2Circular(8, 8);
-                Vector2 particleVel = Projectile.velocity * 0.3f + Main.rand.NextVector2Circular(1.5f, 1.5f);
-                particles.Add(new FlameParticle(Projectile.Center + offset, particleVel));
+            if (Main.rand.NextBool(3)) {
+                Dust d = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(6, 6),
+                    Main.rand.NextBool() ? DustID.BlueTorch : DustID.PurpleTorch,
+                    Projectile.velocity * 0.2f, 120, default, 1.1f);
+                d.noGravity = true;
             }
 
-            // 更新并移除死亡粒子
-            for (int i = particles.Count - 1; i >= 0; i--) {
-                particles[i].Update();
-                if (particles[i].Life <= 0) {
-                    particles.RemoveAt(i);
-                }
-            }
-
-            // 限制粒子数量
-            while (particles.Count > MaxParticles) {
-                particles.RemoveAt(0);
-            }
-
-            // 环境粒子
-            if (Main.rand.NextBool(2)) {
-                int dust = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height,
-                    DustID.BlueTorch, Projectile.velocity.X * 0.5f, Projectile.velocity.Y * 0.5f,
-                    100, default, 1.3f);
-                Main.dust[dust].noGravity = true;
-            }
+            Lighting.AddLight(Projectile.Center, NetherFX.Mix(Life).ToVector3() * 0.7f);
         }
 
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
             target.AddBuff(BuffID.OnFire, 180);
-
-            // 击中爆发粒子
-            for (int i = 0; i < 10; i++) {
-                Vector2 particleVel = Main.rand.NextVector2Circular(4, 4);
-                particles.Add(new FlameParticle(target.Center, particleVel));
-            }
+            NetherFX.SoulDust(target.Center, 4f, 6, 1.2f);
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            // 绘制火焰粒子
-            foreach (var particle in particles) {
-                float alpha = particle.Alpha;
+            if (Main.dedServ)
+                return false;
 
-                for (int i = 0; i < 3; i++) {
-                    float layerProgress = i / 3f;
-                    float layerScale = particle.Scale * (1.3f - layerProgress * 0.4f);
-                    float layerAlpha = alpha * (1f - layerProgress * 0.5f);
+            float life = Life;
+            float size = MathHelper.Lerp(0.4f, 1f, MathF.Min(1f, life * 3f)) * (1f - life * 0.35f);
 
-                    Color layerColor = Color.Lerp(Color.White, particle.BaseColor, layerProgress);
-                    layerColor *= layerAlpha;
-
-                    int dust = Dust.NewDustPerfect(particle.Position, DustID.BlueTorch,
-                        Vector2.Zero, 0, layerColor, layerScale).dustIndex;
-                    Main.dust[dust].noGravity = true;
-                    Main.dust[dust].rotation = particle.Rotation;
+            // 火舌 BeamGrad 束 (尾→头)
+            Vector2 tail = Projectile.Center;
+            for (int i = Projectile.oldPos.Length - 1; i >= 0; i--) {
+                if (Projectile.oldPos[i] != Vector2.Zero) {
+                    tail = Projectile.oldPos[i] + Projectile.Size * 0.5f;
+                    break;
                 }
             }
+            ACMShaders.DrawBeam(tail, Projectile.Center, 10f + size * 14f,
+                Color.Lerp(Color.White, NetherFX.Cyan, 0.4f), Color.Lerp(NetherFX.Cyan, NetherFX.Violet, life),
+                1f - life * 0.5f, flowSpeed: 2.8f, flowScale: 1.6f, coreSharp: 1.7f);
 
-            // 核心高亮
-            for (int i = 0; i < 2; i++) {
-                float pulseScale = 1f + MathF.Sin(Main.GlobalTimeWrappedHourly * 10f) * 0.3f;
-                Color coreColor = new Color(200, 220, 255, 0) * 0.7f;
-
-                int dust = Dust.NewDustPerfect(Projectile.Center, DustID.BlueFairy,
-                    Vector2.Zero, 0, coreColor, 1.2f + i * 0.4f * pulseScale).dustIndex;
-                Main.dust[dust].noGravity = true;
-            }
-
-            Lighting.AddLight(Projectile.Center, 0.6f, 0.8f, 1.5f);
-
+            WeaponVFX.DrawGlowBurst(Projectile.Center, size,
+                Color.Lerp(Color.White, NetherFX.Cyan, 0.3f) * (1f - life * 0.4f));
             return false;
         }
 
         public override void OnKill(int timeLeft) {
-            // 消散粒子
-            for (int i = 0; i < 15; i++) {
-                Vector2 particleVel = Main.rand.NextVector2Circular(5, 5);
-                particles.Add(new FlameParticle(Projectile.Center, particleVel));
-            }
+            NetherFX.SoulDust(Projectile.Center, 5f, 10, 1.2f);
         }
     }
 }

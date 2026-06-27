@@ -703,6 +703,19 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             if (glowIntensity > 0) {
                 DrawGlow(spriteBatch, screenPos);
             }
+
+            // V2: 攻击中的尾巴沿尖端拉一道流动光束 (BeamGrad), 强化九尾攻击的打击感与可读边
+            if (IsAttacking && glowIntensity > 0.35f && JointCount >= 3) {
+                Vector2 tip = Joints[JointCount - 1];
+                Vector2 from = Joints[JointCount - 3];
+                Vector2 dir = (tip - from).SafeNormalize(Vector2.UnitX);
+                float reach = CurrentAttack == TailAttackType.VoidPierce ? 60f : 24f;
+                Color core = Color.Lerp(new Color(150, 230, 255), Color.White, 0.4f);
+                Color edge = new Color(120, 90, 200);
+                ACMShaders.DrawBeam(from, tip + dir * reach,
+                    MathHelper.Lerp(5f, 11f, glowIntensity), core, edge, glowIntensity,
+                    flowSpeed: 2.4f, flowScale: 2.0f, coreSharp: 2.4f);
+            }
         }
 
         /// <summary>

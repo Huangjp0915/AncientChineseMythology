@@ -50,6 +50,47 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             return false;
         }
 
+        /// <summary>
+        /// V2 签名时刻的全屏水下折射（GenericWarp · refraction 主题）。喂 Main.screenTarget 的昂贵后处理,
+        /// 受单一全屏后处理名额约束(<see cref="ACMShaders.RequestFullscreenSlot"/>): P2 没顶常驻轻度折射, P3 深渊加深,
+        /// 深渊漩涡时叠加向心吸入(uRadialPull) → 把"封路"升级成"被吸向中心"的可读压力。强度 0 直接早退。
+        /// 氛围底色/泛光由 <see cref="AoGuangSubmersionScreenSystem"/> 单独承担。
+        /// </summary>
+        public override void PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+            if (Main.dedServ || submersionWarp <= 0.01f)
+                return;
+            if (!ACMShaders.RequestFullscreenSlot())
+                return;
+
+            Effect fx = ACMShaders.GenericWarp;
+            if (fx == null)
+                return;
+
+            // 深渊漩涡向心吸力中心 = 漩涡(玩家位置); 其余时刻 = 龙王自身
+            Vector2 warpCenter = NPC.Center;
+            if (vortexInward > 0.05f) {
+                Player t = Main.player[NPC.target];
+                if (t.active && !t.dead)
+                    warpCenter = Vector2.Lerp(NPC.Center, t.Center, vortexInward);
+            }
+
+            Vector2 centerUV = (warpCenter - Main.screenPosition) / new Vector2(Main.screenWidth, Main.screenHeight);
+            float aspect = (float)Main.screenWidth / Main.screenHeight;
+
+            fx.Parameters["uTime"]?.SetValue(globalTime);
+            fx.Parameters["uCenter"]?.SetValue(centerUV);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(submersionWarp, 0f, 1f));
+            fx.Parameters["uRadius"]?.SetValue(0.95f);
+            fx.Parameters["uAspect"]?.SetValue(aspect);
+            fx.Parameters["uWarpScale"]?.SetValue(1.0f);
+            fx.Parameters["uChroma"]?.SetValue(0.35f);
+            fx.Parameters["uRadialPull"]?.SetValue(vortexInward * 0.9f); // 深渊漩涡向心吸入
+            fx.Parameters["uMode"]?.SetValue(5f);                        // 5 = refraction 主题
+            fx.Parameters["uTint"]?.SetValue(new Vector4(AoGuangHelper.OceanTeal.ToVector3(), 0.45f));
+
+            ACMShaders.ApplyScreenPostProcess(spriteBatch, fx);
+        }
+
         private void DrawWaterAura(SpriteBatch spriteBatch, Vector2 screenPos, Texture2D tex, Vector2 origin, float pulse) {
             if (waterAuraAlpha <= 0f) return;
 

@@ -13,9 +13,11 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
     /// </summary>
     public class GeoarchonMarker : ModProjectile
     {
-        private const int PillarCount = 7;
-        private const float RingRadius = 88f;
         private const int WarningFrames = 28;
+
+        private bool Mega => Projectile.ai[0] >= 1f;
+        private int PillarCount => Mega ? 12 : 7;
+        private float RingRadius => Mega ? 140f : 88f;
 
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/BlankProjectile";
 
@@ -72,8 +74,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
                 Vector2 pos = GetPillarPosition(i);
                 pos.Y = FindGroundY(pos.X, pos.Y - 400f);
 
-                float heightScale = i == 0 ? 1.15f : 0.92f;
-                int stagger = i * 3;
+                float heightScale = (i == 0 ? 1.15f : 0.92f) * (Mega ? 1.15f : 1f);
+                int stagger = i * (Mega ? 2 : 3);
 
                 Projectile.NewProjectile(
                     Projectile.GetSource_FromThis(),
@@ -157,6 +159,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
         private float warningFlash;
         private float pillarHeight;
         private float pillarWidth = 1f;
+        private int storedDamage;
 
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/BlankProjectile";
 
@@ -189,6 +192,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
             int activeLife = lifetime - startDelay;
 
             if (activeLife == 1) {
+                storedDamage = Projectile.damage;
                 pillarHeight = BaseHeight * MathHelper.Clamp(Projectile.ai[1], 0.75f, 1.25f);
                 Projectile.width = (int)(44 * pillarWidth);
                 Projectile.height = (int)pillarHeight;
@@ -248,8 +252,19 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
                 shatterProgress = ACMUtils.QuadIn(System.Math.Min(shatterT, 1f));
                 Projectile.damage = 0;
 
-                if (shatterFrame == 1 && Main.netMode != NetmodeID.Server) {
-                    SoundEngine.PlaySound(SoundID.Item27 with { Pitch = 0.2f, Volume = 0.65f }, Projectile.Center);
+                if (shatterFrame == 1) {
+                    if (Main.netMode != NetmodeID.Server)
+                        SoundEngine.PlaySound(SoundID.Item27 with { Pitch = 0.2f, Volume = 0.65f }, Projectile.Center);
+
+                    if (Main.netMode != NetmodeID.MultiplayerClient) {
+                        int shardType = ModContent.ProjectileType<GeocrystalBurst>();
+                        Vector2 tip = Projectile.Center - Vector2.UnitY * pillarHeight * 0.5f;
+                        for (int i = 0; i < 3; i++) {
+                            Vector2 vel = new Vector2(Main.rand.NextFloat(-4f, 4f), Main.rand.NextFloat(-11f, -6f));
+                            Projectile.NewProjectile(Projectile.GetSource_FromThis(), tip, vel,
+                                shardType, (int)(storedDamage * 0.35f), Projectile.knockBack * 0.4f, Projectile.owner);
+                        }
+                    }
                 }
 
                 if (Main.netMode != NetmodeID.Server && shatterFrame <= ShatterDuration) {

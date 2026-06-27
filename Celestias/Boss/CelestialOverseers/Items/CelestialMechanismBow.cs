@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -125,9 +126,17 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, DustID.GoldCoin, vel.X, vel.Y, 100, default, 1.5f);
                 Main.dust[dust].noGravity = true;
             }
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.ClockworkGold, 0.8f, Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            // 机关金 + 天青双层 ribbon
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 9f,
+                outerColor: new Color(80, 200, 180, 120), innerColor: new Color(255, 240, 180, 180),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.5f);
+
             Texture2D texture = ACMAsset.GlaciateWave ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = new Vector2(0, texture.Height / 2f);
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
@@ -229,9 +238,18 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
 
             target.AddBuff(BuffID.Slow, 90);
             SoundEngine.PlaySound(SoundID.Item14 with { Pitch = 0.5f, Volume = 0.5f }, target.Center);
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.ClockworkGold, 1.4f, Projectile.owner);
+            WeaponVFX.AddScreenShake(target.Center, 3f);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            // 光柱箭金芒双层 ribbon
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 16f,
+                outerColor: new Color(200, 130, 30, 120), innerColor: new Color(255, 245, 190, 185),
+                tex: ACMAsset.GlaciateWave, uvScroll: -Main.GlobalTimeWrappedHourly * 1.6f);
+
             Texture2D texture = ACMAsset.GlaciateWave ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = new Vector2(0, texture.Height / 2f);
             Vector2 drawPos = Projectile.Center - Main.screenPosition;

@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Underworlds.Tiles;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -165,41 +166,36 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 star.noGravity = true;
             }
 
+            //引魂"标记"演出: 命中点青黄魂火径向辉光 + 冲击环 (走 ACMWeaponBurst, 更新阶段安全)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.SoulFire, scale: 0.8f, owner: Projectile.owner);
+
             target.AddBuff(BuffID.Frostburn, 150);
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            //使用SoftGlow绘制引魂箭光效
-            Texture2D softGlow = ACMAsset.SoftGlow;
-            Texture2D blankStar = ACMAsset.BlankStar;
+            float brightness = MathHelper.Clamp(Projectile.timeLeft / 30f, 0.25f, 1f);
 
-            //箭头光球
-            if (softGlow != null) {
-                Vector2 glowOrigin = softGlow.Size() / 2f;
+            //BeamGrad 蓝魂能量拖尾 (沿飞行方向的发光箭体光束)
+            Vector2 head = Projectile.Center;
+            Vector2 dir = Projectile.velocity.SafeNormalize(Vector2.UnitY);
+            float beamLen = MathHelper.Clamp(Projectile.velocity.Length() * 3.2f, 36f, 130f);
+            ACMShaders.DrawBeam(head - dir * beamLen, head + dir * 6f, halfWidth: 7f,
+                core: new Color(170, 230, 255), edge: new Color(40, 90, 190),
+                intensity: brightness, flowSpeed: 2.2f, flowScale: 2.4f, coreSharp: 2.6f);
 
-                //拖尾光球
-                for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                    if (Projectile.oldPos[i] == Vector2.Zero) continue;
-                    float progress = 1f - (float)i / Projectile.oldPos.Length;
-                    Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                    Color trailColor = Color.Lerp(new Color(40, 80, 160), new Color(100, 200, 255), progress) * progress * 0.4f;
-                    trailColor.A = 0;
-                    Main.EntitySpriteDraw(softGlow, drawPos, null, trailColor, 0f, glowOrigin, 0.5f * progress, SpriteEffects.None, 0);
-                }
-
-                //主体光球
-                Color mainGlow = new Color(100, 180, 255) * 0.6f;
-                mainGlow.A = 0;
-                Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, mainGlow, 0f, glowOrigin, 0.7f, SpriteEffects.None, 0);
-            }
+            //箭头核心径向辉光 (走全屏名额, 名额满自动退化为柔光)
+            WeaponVFX.DrawRadialBloom(head, radiusFrac: 0.035f, intensity: brightness * 0.35f,
+                color: new Color(140, 210, 255), rayCount: 6f);
 
             //箭尖星光闪烁
+            Texture2D blankStar = ACMAsset.BlankStar;
             if (blankStar != null) {
                 Vector2 starOrigin = blankStar.Size() / 2f;
-                float pulse = 0.3f + MathF.Sin(HomingTimer * 0.2f) * 0.1f;
-                Color starColor = new Color(150, 220, 255) * 0.5f;
+                float pulse = (0.28f + MathF.Sin(HomingTimer * 0.2f) * 0.08f) * brightness;
+                Color starColor = new Color(160, 225, 255) * 0.5f;
                 starColor.A = 0;
-                Main.EntitySpriteDraw(blankStar, Projectile.Center - Main.screenPosition, null, starColor, HomingTimer * 0.1f, starOrigin, pulse, SpriteEffects.None, 0);
+                Main.EntitySpriteDraw(blankStar, head - Main.screenPosition, null, starColor, HomingTimer * 0.1f, starOrigin, pulse, SpriteEffects.None, 0);
             }
 
             return false;

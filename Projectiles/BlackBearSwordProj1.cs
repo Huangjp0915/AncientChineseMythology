@@ -1,4 +1,6 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
+using ReLogic.Content;
 using System;
 using Terraria;
 using Terraria.DataStructures;
@@ -8,10 +10,21 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Projectiles
 {
+    /// <summary>
+    /// 黑熊剑·重斩弹 — 可见质变 (纯表现): 厚重青铜剑气拖尾 (SwordTrail553),
+    /// 命中触发 <see cref="ACMWeaponBurst"/> 青铜重击爆发 + 屏震。机制/伤害不变。
+    /// </summary>
     public class BlackBearSwordProj1 : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear_Head_Boss"; //使用物品的纹理作为投射物的纹理
         private Vector2 mouseposition; //鼠标目标位置
+        private static Texture2D _trail553; //厚重剑气拖尾纹理 (静态缓存)
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.TrailCacheLength[Type] = 14;
+            ProjectileID.Sets.TrailingMode[Type] = 0;
+        }
+
         public override void SetDefaults() {
             Projectile.width = 20; //弹幕宽度
             Projectile.height = 20; //弹幕高度
@@ -121,6 +134,11 @@ namespace AncientChineseMythology.Projectiles
 
             if (Projectile.damage > 1)
                 Projectile.damage -= (int)(Projectile.damage * 0.25f);
+
+            // 青铜重击爆发 + 屏震 (纯表现)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Bronze, scale: 1.6f, owner: Projectile.owner);
+            WeaponVFX.AddScreenShake(target.Center, 2f);
         }
 
         [Obsolete]
@@ -139,9 +157,13 @@ namespace AncientChineseMythology.Projectiles
         public override bool PreDraw(ref Color lightColor)//predraw返回false即可禁用原版绘制
         {
             Main.projFrames[Type] = 1;//设置帧数为1，因为我们只需要一个帧的弹幕
-            ProjectileID.Sets.TrailingMode[Type] = 2;//设置尾迹模式为2，即尾迹为圆形
-            ProjectileID.Sets.TrailCacheLength[Type] = 6;//设置尾迹缓存长度为5，即最多保留5个尾迹
-            //同时，需要进行的绘制在这里面写就好
+
+            // 厚重青铜剑气拖尾 (SwordTrail553, 纯表现) — 在原残影之下叠一层加性 ribbon
+            _trail553 ??= ModContent.Request<Texture2D>(
+                "AncientChineseMythology/Textures/Projectiles/SwordTrail553", AssetRequestMode.ImmediateLoad).Value;
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 18f,
+                outerColor: new Color(140, 95, 30, 150), innerColor: new Color(235, 215, 140, 200),
+                tex: _trail553, uvScroll: -Main.GlobalTimeWrappedHourly * 1.2f);
 
             Texture2D texture = TextureAssets.Projectile[Type].Value;//声明本弹幕的材质
             Texture2D texture2 = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/Projectiles/BlackBearSwordProj1").Value;//声明尾迹材质

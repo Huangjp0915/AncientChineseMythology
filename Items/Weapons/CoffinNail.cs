@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Items.Materials;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Items.Materials;
 using AncientChineseMythology.Players;
 using Microsoft.Xna.Framework.Graphics;
 using System;
@@ -95,8 +96,8 @@ namespace AncientChineseMythology.Items.Weapons
     {
         public override string Texture => "AncientChineseMythology/Items/Weapons/CoffinNail";
         public override void SetStaticDefaults() {
-            ProjectileID.Sets.TrailCacheLength[Projectile.type] = 10;//轨迹长度
-            ProjectileID.Sets.TrailingMode[Projectile.type] = 2;//轨迹模式
+            ProjectileID.Sets.TrailCacheLength[Projectile.type] = 12;//轨迹长度
+            ProjectileID.Sets.TrailingMode[Projectile.type] = 0;//供 WeaponVFX.DrawProjectileTrail 取历史点
         }
         //AI状态变量
         private bool hasHitTarget = false;
@@ -220,6 +221,10 @@ namespace AncientChineseMythology.Items.Weapons
             //对目标施加恐惧效果
             target.AddBuff(BuffID.Confused, 180); //3秒混乱
             target.AddBuff(BuffID.OnFire, 300); //5秒燃烧，增加诡异感
+
+            //镇尸钉冥府命中演出 (致命纯红径向辉光 + 冲击环)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Fatal, scale: 1f, owner: Projectile.owner);
         }
 
         ///<summary>
@@ -289,8 +294,10 @@ namespace AncientChineseMythology.Items.Weapons
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            //绘制红色轨迹
-            DrawBloodTrail();
+            //血色双层 ribbon 拖尾 (外暗内亮)
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 11f,
+                outerColor: new Color(90, 8, 12, 160), innerColor: new Color(250, 40, 56, 200),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.4f);
 
             //绘制主体（带红色光晕）
             Texture2D texture = ModContent.Request<Texture2D>(Texture).Value;
@@ -325,42 +332,6 @@ namespace AncientChineseMythology.Items.Weapons
             );
 
             return false; //阻止默认绘制
-        }
-
-        ///<summary>
-        ///绘制血色轨迹
-        ///</summary>
-        private void DrawBloodTrail() {
-            float sengs = 0.5f;
-            //使用简化的轨迹绘制
-            for (int i = 1; i < Projectile.oldPos.Length; i++) {
-                if (Projectile.oldPos[i] == Vector2.Zero) {
-                    break;
-                }
-
-                float progress = (float)i / Projectile.oldPos.Length;
-                float opacity = (1f - progress) * sengs;
-                Color trailColor = Color.Lerp(Color.DarkRed, Color.Red, 1f - progress) * opacity;
-
-                Vector2 position = Projectile.oldPos[i] - Main.screenPosition + Projectile.Size / 2;
-                float scale = (1f - progress) * 1;
-
-                //绘制轨迹点
-                Texture2D pixel = TextureAssets.Projectile[Type].Value;
-                Main.EntitySpriteDraw(
-                    pixel,
-                    position,
-                    null,
-                    trailColor,
-                    Projectile.rotation + MathHelper.ToRadians(-50),
-                    Vector2.Zero,
-                    scale,
-                    SpriteEffects.None,
-                    0
-                );
-
-                sengs *= 0.9f;
-            }
         }
 
         public override void OnKill(int timeLeft) {

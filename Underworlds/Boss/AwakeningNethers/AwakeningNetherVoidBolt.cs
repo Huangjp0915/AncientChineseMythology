@@ -221,9 +221,9 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         public override void OnHitPlayer(Player target, Player.HurtInfo info) {
-            // 虚空侵蚀效果
+            // 虚空侵蚀效果 - 驱动魂蚀主题
+            target.GetModPlayer<AwakeningNetherPlayer>().AddSoulErosion(IsEnhanced ? 3 : 2);
             target.AddBuff(BuffID.Darkness, 180);
-            target.AddBuff(BuffID.Blackout, 120);
 
             // 命中音效
             SoundEngine.PlaySound(SoundID.NPCHit54 with { Pitch = 0.2f, Volume = 1.1f }, Projectile.Center);
@@ -364,7 +364,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         public override void OnHitPlayer(Player target, Player.HurtInfo info) {
-            target.AddBuff(BuffID.Confused, 60);
+            target.GetModPlayer<AwakeningNetherPlayer>().AddSoulErosion(1);
             SoundEngine.PlaySound(SoundID.Item29 with { Pitch = 0.3f }, Projectile.Center);
         }
 

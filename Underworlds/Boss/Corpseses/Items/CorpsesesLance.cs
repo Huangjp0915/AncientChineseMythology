@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -198,71 +199,40 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
                 anchorPos, tipPos, 16f, ref point);
         }
 
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), Projectile.Center,
+                ACMWeaponBurst.GhostGreen, scale: 0.95f, owner: Projectile.owner);
+        }
+
         public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
             Texture2D texture = ModContent.Request<Texture2D>(Texture).Value;
             Vector2 drawOrigin = texture.Size() / 2f;
 
-            // 绘制拖尾
-            for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                float progress = 1f - i / (float)Projectile.oldPos.Length;
-                Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                Color trailColor = new Color(150, 50, 200) * progress * 0.5f;
+            Color bone = new Color(214, 234, 208);
+            Color edge = new Color(40, 110, 70);
 
-                Main.EntitySpriteDraw(texture, drawPos, null, trailColor,
-                    Projectile.oldRot[i], drawOrigin, Projectile.scale * 0.9f, SpriteEffects.None);
-            }
+            // 枪迹双层拖尾 (外宽暗绿 + 内窄骨白)
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 14f,
+                outerColor: edge with { A = 130 }, innerColor: bone with { A = 190 },
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.6f);
 
-            // 绘制连接线（模拟手臂）
-            DrawArmConnection(anchorPos, tipPos, lightColor);
+            // 骨臂枪杆 → BeamGrad 鬼绿光束 (锚点→枪尖)
+            float stretch = MathHelper.Clamp(Vector2.Distance(anchorPos, tipPos) / MaxReach, 0f, 1f);
+            ACMShaders.DrawBeam(anchorPos, tipPos, MathHelper.Lerp(7f, 11f, stretch),
+                bone with { A = 210 }, edge with { A = 120 }, 0.85f, 1.5f, 2.2f, 2.2f);
 
-            // 绘制主体
-            Color mainColor = Color.Lerp(lightColor, new Color(180, 80, 255), 0.4f);
+            // 关节径向泛光 (枪尖 RadialBloom + 锚点柔光)
+            WeaponVFX.DrawRadialBloom(tipPos, 0.05f, 0.6f, TelegraphColors.GhostGreen, 6f);
+            WeaponVFX.DrawGlowBurst(anchorPos, 0.8f, TelegraphColors.GhostGreen * 0.5f);
+
+            // 枪体
+            Color mainColor = Color.Lerp(bone, edge, 0.2f);
             Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null,
                 mainColor, Projectile.rotation, drawOrigin, Projectile.scale, SpriteEffects.None);
 
             return false;
-        }
-
-        private void DrawArmConnection(Vector2 start, Vector2 end, Color baseColor) {
-            Vector2 diff = end - start;
-            float rotation = diff.ToRotation();
-            float length = diff.Length();
-
-            // 使用骨头纹理作为连接
-            Texture2D boneTexture = ModContent.Request<Texture2D>("Terraria/Images/Projectile_" + ProjectileID.BoneArrow).Value;
-
-            // 计算需要多少个骨头来填充这段距离
-            float boneLength = 16f; // 每个骨头段的长度
-            int boneCount = (int)Math.Ceiling(length / boneLength);
-
-            Vector2 origin = new Vector2(boneTexture.Width / 2f, boneTexture.Height / 2f);
-
-            for (int i = 0; i < boneCount; i++) {
-                float progress = i / (float)boneCount;
-                Vector2 position = Vector2.Lerp(start, end, progress);
-
-                // 颜色渐变 + 半透明效果
-                float alpha = 0.7f - progress * 0.3f;
-                Color boneColor = new Color(100, 50, 150) * alpha;
-
-                // 轻微的摆动效果，让骨头链看起来更有机
-                float wobble = MathF.Sin(Main.GlobalTimeWrappedHourly * 3f + i * 0.5f) * 0.1f;
-                float boneRotation = rotation + wobble + MathHelper.PiOver2;
-
-                // 缩放变化，靠近枪尖的骨头更小
-                float scale = MathHelper.Lerp(0.8f, 0.5f, progress);
-
-                Main.EntitySpriteDraw(boneTexture, position - Main.screenPosition, null,
-                    boneColor, boneRotation, origin, scale, SpriteEffects.None);
-            }
-
-            // 添加幽灵粒子效果
-            if (Main.rand.NextBool(5)) {
-                Vector2 randomPos = Vector2.Lerp(start, end, Main.rand.NextFloat());
-                int dust = Dust.NewDust(randomPos, 0, 0, DustID.Shadowflame, 0, 0, 100, default, 0.8f);
-                Main.dust[dust].noGravity = true;
-                Main.dust[dust].velocity *= 0.3f;
-            }
         }
     }
 }

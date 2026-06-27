@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -53,6 +54,7 @@ public class GluttonousFleshrangProj : ModProjectile
     private ref float Timer => ref Projectile.ai[0];
     private ref float HitCounter => ref Projectile.ai[1];
     private bool _isReturning;
+    private int _healFlash;
 
     private const int OutgoingDuration = 28;
     private const float ReturnAccel = 2.0f;
@@ -60,8 +62,8 @@ public class GluttonousFleshrangProj : ModProjectile
     private const float CatchRadius = 42f;
 
     public override void SetStaticDefaults() {
-        ProjectileID.Sets.TrailingMode[Type] = 2;
-        ProjectileID.Sets.TrailCacheLength[Type] = 20;
+        ProjectileID.Sets.TrailingMode[Type] = 0;
+        ProjectileID.Sets.TrailCacheLength[Type] = 16;
     }
 
     public override void SetDefaults() {
@@ -116,6 +118,9 @@ public class GluttonousFleshrangProj : ModProjectile
             d.noGravity = true;
         }
 
+        if (_healFlash > 0)
+            _healFlash--;
+
         // 暗红光照
         Lighting.AddLight(Projectile.Center, 0.5f, 0.08f, 0.06f);
     }
@@ -139,10 +144,15 @@ public class GluttonousFleshrangProj : ModProjectile
         if (healAmount > 0) {
             owner.Heal(healAmount);
             owner.HealEffect(healAmount);
+            _healFlash = 12; // 吸血血珠闪
         }
 
         target.AddBuff(BuffID.Ichor, 300);
         HitCounter++;
+
+        // 命中血肉爆发
+        ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+            ACMWeaponBurst.Profane, scale: 1f, owner: Projectile.owner);
 
         // 血液粒子爆发
         for (int i = 0; i < 10; i++) {
@@ -169,28 +179,23 @@ public class GluttonousFleshrangProj : ModProjectile
         Texture2D tex = TextureAssets.Projectile[Type].Value;
         Vector2 origin = tex.Size() / 2f;
 
+        // 统一双层暗红血肉拖尾; 返回加速时内层转纯绯红
+        Color inner = _isReturning ? new Color(248, 28, 120) : new Color(252, 58, 142);
+        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 13f,
+            outerColor: new Color(92, 4, 30),
+            innerColor: inner,
+            uvScroll: -Main.GlobalTimeWrappedHourly * (_isReturning ? 2.2f : 1.4f));
+
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
             DepthStencilState.None, RasterizerState.CullNone, null,
             Main.GameViewMatrix.TransformationMatrix);
 
-        // 血肉拖尾
-        for (int i = 0; i < Projectile.oldPos.Length; i++) {
-            if (Projectile.oldPos[i] == Vector2.Zero) continue;
-            float progress = 1f - (float)i / Projectile.oldPos.Length;
-            Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-            Color trailColor = Color.Lerp(new Color(200, 30, 20), new Color(255, 140, 120), progress)
-                * progress * (_isReturning ? 0.60f : 0.42f);
-            trailColor.A = 0;
-            float trailScale = Projectile.scale * progress * (_isReturning ? 0.95f : 0.82f);
-            sb.Draw(tex, drawPos, null, trailColor, Projectile.oldRot[i], origin, trailScale, SpriteEffects.None, 0);
-        }
-
         // 回程冲击波
         if (_isReturning && Projectile.velocity.Length() > 10f) {
             Texture2D wave = ACMAsset.GlaciateWave;
             sb.Draw(wave, Projectile.Center - Main.screenPosition, null,
-                new Color(220, 40, 30) * 0.50f,
+                new Color(150, 12, 20) * 0.50f,
                 Projectile.velocity.ToRotation(), wave.Size() * 0.5f,
                 new Vector2(0.5f, 0.20f), SpriteEffects.None, 0);
         }
@@ -198,11 +203,21 @@ public class GluttonousFleshrangProj : ModProjectile
         Texture2D sg = ACMAsset.SoftGlow;
         float pulse = 0.35f + 0.12f * MathF.Sin(Timer * 0.14f);
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-            new Color(220, 50, 40) * pulse, 0f,
+            new Color(180, 30, 30) * pulse, 0f,
             sg.Size() * 0.5f,
             _isReturning ? 0.80f : 0.60f, SpriteEffects.None, 0);
 
-        Color glowColor = new Color(200, 40, 30) * 0.30f;
+        // 吸血血珠闪 (Sparkle)
+        if (_healFlash > 0) {
+            float hf = _healFlash / 12f;
+            Texture2D sparkle = ACMAsset.Sparkle;
+            sb.Draw(sparkle, Projectile.Center - Main.screenPosition, null,
+                new Color(252, 58, 142) * (0.85f * hf),
+                Projectile.rotation, sparkle.Size() * 0.5f,
+                MathHelper.Lerp(0.20f, 0.85f, hf), SpriteEffects.None, 0);
+        }
+
+        Color glowColor = new Color(150, 20, 20) * 0.30f;
         glowColor.A = 0;
         sb.Draw(tex, Projectile.Center - Main.screenPosition, null,
             glowColor, Projectile.rotation, origin, Projectile.scale * 1.2f, SpriteEffects.None, 0);
@@ -211,17 +226,6 @@ public class GluttonousFleshrangProj : ModProjectile
         sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
             DepthStencilState.None, RasterizerState.CullNone, null,
             Main.GameViewMatrix.TransformationMatrix);
-
-        // 残影
-        for (int i = 1; i < Projectile.oldPos.Length; i += 2) {
-            if (Projectile.oldPos[i] == Vector2.Zero) continue;
-            float progress = 1f - (float)i / Projectile.oldPos.Length;
-            Vector2 afterPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-            float afterAlpha = progress * progress * (_isReturning ? 0.50f : 0.32f);
-            Color afterColor = Color.Lerp(lightColor, new Color(255, 160, 140), 0.25f) * afterAlpha;
-            float afterScale = Projectile.scale * MathHelper.Lerp(0.55f, 0.95f, progress);
-            sb.Draw(tex, afterPos, null, afterColor, Projectile.oldRot[i], origin, afterScale, SpriteEffects.None, 0);
-        }
 
         Color mainColor = Color.Lerp(lightColor, new Color(255, 200, 190), 0.25f);
         sb.Draw(tex, Projectile.Center - Main.screenPosition, null,
@@ -250,8 +254,8 @@ public class ProfaneTendrilChaser : ModProjectile
     private float _timer;
 
     public override void SetStaticDefaults() {
-        ProjectileID.Sets.TrailingMode[Type] = 2;
-        ProjectileID.Sets.TrailCacheLength[Type] = 8;
+        ProjectileID.Sets.TrailingMode[Type] = 0;
+        ProjectileID.Sets.TrailCacheLength[Type] = 12;
     }
 
     public override void SetDefaults() {
@@ -311,25 +315,30 @@ public class ProfaneTendrilChaser : ModProjectile
     public override bool PreDraw(ref Color lightColor) {
         SpriteBatch sb = Main.spriteBatch;
 
+        // 畸变眼球杖持续引导时: 玩家↔触手的血肉连接光束
+        Player owner = Main.player[Projectile.owner];
+        if (owner.active && owner.channel && !owner.dead
+            && owner.HeldItem?.type == ModContent.ItemType<AberrantEyeStaff>()) {
+            Vector2 hand = owner.MountedCenter
+                + owner.DirectionTo(Projectile.Center).SafeNormalize(Vector2.UnitX) * 28f;
+            ACMShaders.DrawBeam(hand, Projectile.Center, halfWidth: 4.5f,
+                core: new Color(252, 58, 142), edge: new Color(92, 4, 30), intensity: 0.6f);
+        }
+
+        // 统一双层暗红血肉拖尾
+        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 8f,
+            outerColor: new Color(92, 4, 30), innerColor: new Color(252, 58, 142),
+            uvScroll: -Main.GlobalTimeWrappedHourly * 1.6f);
+
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
             DepthStencilState.None, RasterizerState.CullNone, null,
             Main.GameViewMatrix.TransformationMatrix);
 
         Texture2D sg = ACMAsset.SoftGlow;
-        for (int i = 1; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
-            if (Projectile.oldPos[i] == Vector2.Zero) continue;
-            float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.45f;
-            sb.Draw(sg,
-                Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition,
-                null, new Color(200, 30, 20) * a, 0f,
-                sg.Size() * 0.5f,
-                0.25f, SpriteEffects.None, 0);
-        }
-
         float pulse = 0.50f + 0.15f * MathF.Sin((float)Main.timeForVisualEffects * 0.20f);
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-            new Color(220, 50, 30) * (0.55f * pulse), 0f,
+            new Color(180, 30, 25) * (0.55f * pulse), 0f,
             sg.Size() * 0.5f,
             0.30f, SpriteEffects.None, 0);
 

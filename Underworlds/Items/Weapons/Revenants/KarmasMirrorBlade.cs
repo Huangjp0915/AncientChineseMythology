@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Underworlds.Tiles;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -184,6 +185,10 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
             if (hit.Crit && Main.rand.NextBool(3)) {
                 target.SimpleStrikeNPC(damageDone / 3, hit.HitDirection, false, 0f, null, false, 0, true);
                 SoundEngine.PlaySound(SoundID.Item27 with { Volume = 0.6f, Pitch = 0.5f }, target.Center);
+
+                //镜像命中: 银紫镜面碎裂演出 (代偿 ReflectWard 全屏折射, 更新阶段安全且避开全屏后处理预算)
+                ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                    ACMWeaponBurst.AbyssPurple, scale: 1.3f, owner: Projectile.owner);
             }
 
             //附加减防
@@ -225,18 +230,10 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
             Texture2D texture = TextureAssets.Projectile[Type].Value;
             Vector2 origin = texture.Size() / 2f;
 
-            //镜面反射拖尾
-            for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                if (Projectile.oldPos[i] == Vector2.Zero) continue;
-                float progress = 1f - (float)i / Projectile.oldPos.Length;
-                Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-
-                //银白色到暗紫色渐变
-                Color trailColor = Color.Lerp(new Color(120, 80, 180), new Color(220, 220, 255), progress) * progress * 0.5f;
-                trailColor.A = 0;
-                float scale = Projectile.scale * progress;
-                Main.EntitySpriteDraw(texture, drawPos, null, trailColor, Projectile.oldRot[i], origin, scale, SpriteEffects.None, 0);
-            }
+            //银紫镜面轨道拖尾 (双层 ribbon: 外宽暗紫 + 内窄亮银)
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 16f,
+                outerColor: new Color(110, 75, 175, 150), innerColor: new Color(225, 225, 255, 200),
+                uvScroll: Main.GlobalTimeWrappedHourly * 1.6f);
 
             //绘制主体
             Color mainColor = Color.Lerp(lightColor, new Color(230, 220, 255), 0.3f);
@@ -246,20 +243,10 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
             Texture2D blankStar = ACMAsset.BlankStar;
             if (blankStar != null) {
                 Vector2 starOrigin = blankStar.Size() / 2f;
-                float pulse = 0.25f + MathF.Sin(Timer * 0.15f) * 0.08f;
-                Color starColor = new Color(200, 200, 255) * 0.4f;
+                float pulse = 0.28f + MathF.Sin(Timer * 0.15f) * 0.08f;
+                Color starColor = new Color(205, 205, 255) * 0.45f;
                 starColor.A = 0;
                 Main.EntitySpriteDraw(blankStar, Projectile.Center - Main.screenPosition, null, starColor, Timer * 0.1f, starOrigin, pulse, SpriteEffects.None, 0);
-            }
-
-            //使用Sparkle叠加碎裂光线
-            Texture2D sparkle = ACMAsset.Sparkle;
-            if (sparkle != null) {
-                Vector2 sparkleOrigin = sparkle.Size() / 2f;
-                float sparkPulse = 0.2f + MathF.Sin(Timer * 0.25f) * 0.05f;
-                Color sparkColor = new Color(180, 160, 220) * 0.3f;
-                sparkColor.A = 0;
-                Main.EntitySpriteDraw(sparkle, Projectile.Center - Main.screenPosition, null, sparkColor, -Timer * 0.08f, sparkleOrigin, sparkPulse, SpriteEffects.None, 0);
             }
 
             //镜面光晕
@@ -280,6 +267,10 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 );
                 death.noGravity = true;
             }
+
+            //返回玩家时银紫径向辉光 (return RadialBloom, 走 ACMWeaponBurst)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_Death(), Projectile.Center,
+                ACMWeaponBurst.AbyssPurple, scale: 0.85f, owner: Projectile.owner);
         }
     }
 }

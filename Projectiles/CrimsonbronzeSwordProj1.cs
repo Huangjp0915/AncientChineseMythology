@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.IO;
 using Terraria;
@@ -178,9 +179,19 @@ namespace AncientChineseMythology.Projectiles
                 effects = SpriteEffects.FlipHorizontally;
             }
 
+            // 赤橙剑芯光束 (沿刃身, 纯表现) — 仅在挥砍激活期绘制
+            if (timerCounter > 60) {
+                float bladeLen = Projectile.Size.Length() * Projectile.scale * 1.05f;
+                Vector2 bladeStart = Owner.MountedCenter;
+                Vector2 bladeEnd = bladeStart + Projectile.rotation.ToRotationVector2() * bladeLen;
+                float beamIntensity = MathHelper.Clamp(Projectile.Opacity, 0.25f, 1f);
+                ACMShaders.DrawBeam(bladeStart, bladeEnd, 12f * Projectile.scale,
+                    new Color(255, 60, 40), new Color(255, 165, 70), beamIntensity);
+            }
+
             Texture2D texture = TextureAssets.Projectile[Type].Value;
-            //设置拖尾效果
-            Microsoft.Xna.Framework.Color MyColor = Microsoft.Xna.Framework.Color.Gold;
+            //设置拖尾效果 (赤橙残影)
+            Microsoft.Xna.Framework.Color MyColor = new Microsoft.Xna.Framework.Color(255, 110, 45);
             MyColor.A = 0; //设置A为255以确保可见
                            //计算绘制位置和大小
             Microsoft.Xna.Framework.Rectangle destinationRectangle = new Microsoft.Xna.Framework.Rectangle(
@@ -287,6 +298,8 @@ namespace AncientChineseMythology.Projectiles
             if (!target.HasBuff(BuffID.OnFire)) {
                 target.AddBuff(BuffID.OnFire, 180); //给受伤的敌人添加燃烧效果
             }
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Crimson, scale: 1f, owner: Projectile.owner);
         }
         private void Attack_1() {
             if (!isattacking) {
@@ -315,6 +328,11 @@ namespace AncientChineseMythology.Projectiles
     internal class CrimsonbronzeSwordProj2 : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/CrimsonbronzeSwordProj2"; //使用物品的纹理作为投射物的纹理
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.TrailCacheLength[Type] = 12;
+            ProjectileID.Sets.TrailingMode[Type] = 0;
+        }
 
         public override void SetDefaults() {
             Projectile.knockBack = 0.6f; //击退
@@ -361,13 +379,18 @@ namespace AncientChineseMythology.Projectiles
             if (!target.HasBuff(BuffID.OnFire)) {
                 target.AddBuff(BuffID.OnFire, 180); //给受伤的敌人添加燃烧效果
             }
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Crimson, scale: 1.1f, owner: Projectile.owner);
         }
         public override bool PreDraw(ref Color lightColor)//predraw返回false即可禁用原版绘制
         {
             Main.projFrames[Type] = 1;//设置帧数为1，因为我们只需要一个帧的弹幕
-            ProjectileID.Sets.TrailingMode[Type] = 2;//设置尾迹模式为2，即尾迹为圆形
-            ProjectileID.Sets.TrailCacheLength[Type] = 8;//设置尾迹缓存长度为5，即最多保留5个尾迹
-            //同时，需要进行的绘制在这里面写就好
+
+            // 赤橙双层拖尾 + 橙焰核心 (纯表现)
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 10f,
+                outerColor: new Color(190, 30, 20, 150), innerColor: new Color(255, 165, 70, 200),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.5f);
+            WeaponVFX.DrawGlowBurst(Projectile.Center, 0.4f, new Color(255, 120, 50));
 
             Texture2D texture = TextureAssets.Projectile[Type].Value;//声明本弹幕的材质
             Rectangle rectangle = new Rectangle(//因为手动绘制需要自己填写帧图框,所以要先算出来

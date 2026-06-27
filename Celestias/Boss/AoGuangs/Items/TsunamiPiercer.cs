@@ -1,5 +1,7 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
+using System.Collections.Generic;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -110,7 +112,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
                 }
 
                 if (player.whoAmI == Main.myPlayer) {
-                    player.GetModPlayer<ScreenShakePlayer>().ShakeScreen(15, 30);
+                    player.GetModPlayer<ScreenShakePlayer>().ShakeScreen(12, 30);
                 }
             }
 
@@ -128,6 +130,10 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, dustType, vel.X, vel.Y, 100, default, 1.5f);
                 Main.dust[dust].noGravity = true;
             }
+
+            ACMWeaponBurst.Spawn(player.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.EastSeaWater, oceanPower >= MaxOceanPower ? 1.6f : 1f, player.whoAmI);
+            WeaponVFX.AddScreenShake(target.Center, 2.5f);
         }
 
         public override void ModifyTooltips(System.Collections.Generic.List<TooltipLine> tooltips) {
@@ -222,6 +228,9 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, dustType, vel.X, vel.Y, 100, default, 2f);
                 Main.dust[dust].noGravity = true;
             }
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.EastSeaWater, 0.9f, Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
@@ -316,9 +325,16 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, dustType, vel.X, vel.Y, 100, default, 2.2f);
                 Main.dust[dust].noGravity = true;
             }
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.EastSeaWater, 1.3f, Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 30f * waveScale,
+                outerColor: new Color(30, 90, 170, 130), innerColor: new Color(170, 240, 255, 175),
+                tex: ACMAsset.GlaciateWave, uvScroll: -Main.GlobalTimeWrappedHourly * 1.3f);
+
             Texture2D tex = ACMAsset.GlaciateWave ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = new Vector2(0, tex.Height / 2f);
 
@@ -420,9 +436,29 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
             }
 
             SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.7f, Volume = 0.6f }, target.Center);
+
+            // 龙翔突刺·处决级东海冰蓝命中演出
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.EastSeaWater, 2f, Projectile.owner);
+            WeaponVFX.AddScreenShake(target.Center, 6f);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            // 龙翔突刺招牌演出: 用蛇形 ribbon 在冲刺轨迹上画"水龙真身段" (现代化双层) + 核心径向辉光
+            var ribbon = new List<Vector2>(Projectile.oldPos.Length);
+            for (int i = 0; i < Projectile.oldPos.Length; i++) {
+                if (Projectile.oldPos[i] == Vector2.Zero) continue;
+                float waveOffset = MathF.Sin(dragonPhase - i * 0.3f) * 10f;
+                float rot = Projectile.oldRot.Length > i ? Projectile.oldRot[i] : Projectile.rotation;
+                Vector2 perp = rot.ToRotationVector2().RotatedBy(MathHelper.PiOver2);
+                ribbon.Add(Projectile.oldPos[i] + Projectile.Size / 2f + perp * waveOffset);
+            }
+            if (ribbon.Count >= 2)
+                WeaponVFX.DrawRibbonTrail(ribbon.ToArray(), baseWidth: 40f,
+                    outerColor: new Color(30, 90, 170, 150), innerColor: new Color(190, 245, 255, 190),
+                    tex: ACMAsset.GlaciateWave, uvScroll: -Main.GlobalTimeWrappedHourly * 1.5f);
+            WeaponVFX.DrawRadialBloom(Projectile.Center, 0.12f, 0.55f, new Color(120, 220, 255), 6f);
+
             Texture2D tex = ACMAsset.GlaciateWave ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = new Vector2(0, tex.Height / 2f);
 

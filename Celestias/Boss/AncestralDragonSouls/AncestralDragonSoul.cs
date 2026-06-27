@@ -40,6 +40,19 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
         /// <summary>是否为分裂出的副本龙</summary>
         public bool IsTwin;
 
+        /// <summary>
+        /// 双魂回拢「合体」后的视觉放大倍率 (纯绘制, 不改接触判定箱; 由所属龙头同步的 Merged 标志驱动,
+        /// 全客户端一致)。让合体后的"太初真身"显得更巨大, 而不引入失衡的判定箱变化。
+        /// </summary>
+        protected float MergeScaleMul() {
+            NPC owner = NPC;
+            if (NPCWormType != WormType.Head && NPC.realLife >= 0 && NPC.realLife < Main.maxNPCs)
+                owner = Main.npc[NPC.realLife];
+            if (owner.active && owner.ModNPC is AncestralDragonSoulHead h && h.Merged)
+                return 1.2f;
+            return 1f;
+        }
+
         public override void SetDefaults() {
             base.SetDefaults();
             NPC.width = 80;

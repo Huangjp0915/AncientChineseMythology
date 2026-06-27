@@ -1,5 +1,7 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
+using System.Collections.Generic;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -167,24 +169,26 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls.Items
 
             // 周期性释放龙魂能量
             if (Projectile.timeLeft % 30 == 0) {
-                int orbCount = 5;
-                for (int i = 0; i < orbCount; i++) {
-                    float angle = circleRotation + MathHelper.TwoPi * i / orbCount;
-                    Vector2 spawnPos = Projectile.Center + angle.ToRotationVector2() * 80f;
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    int orbCount = 5;
+                    for (int i = 0; i < orbCount; i++) {
+                        float angle = circleRotation + MathHelper.TwoPi * i / orbCount;
+                        Vector2 spawnPos = Projectile.Center + angle.ToRotationVector2() * 80f;
 
-                    // 寻找最近敌人
-                    NPC target = FindClosestNPC(spawnPos, 400f);
-                    if (target != null) {
-                        Vector2 vel = (target.Center - spawnPos).SafeNormalize(Vector2.Zero) * 12f;
-                        Projectile.NewProjectile(
-                            Projectile.GetSource_FromThis(),
-                            spawnPos,
-                            vel,
-                            ModContent.ProjectileType<ArchosaurSoulOrb>(),
-                            Projectile.damage / 3,
-                            Projectile.knockBack / 2f,
-                            Projectile.owner
-                        );
+                        // 寻找最近敌人
+                        NPC target = FindClosestNPC(spawnPos, 400f);
+                        if (target != null) {
+                            Vector2 vel = (target.Center - spawnPos).SafeNormalize(Vector2.Zero) * 12f;
+                            Projectile.NewProjectile(
+                                Projectile.GetSource_FromThis(),
+                                spawnPos,
+                                vel,
+                                ModContent.ProjectileType<ArchosaurSoulOrb>(),
+                                Projectile.damage / 3,
+                                Projectile.knockBack / 2f,
+                                Projectile.owner
+                            );
+                        }
                     }
                 }
 
@@ -212,6 +216,11 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls.Items
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            float circleAlpha = 1f - Projectile.alpha / 255f;
+            // 龙魂法阵核心白青径向辉光 (持续伤害区可读性)
+            WeaponVFX.DrawRadialBloom(Projectile.Center, 0.13f * Projectile.scale, 0.4f * circleAlpha,
+                new Color(200, 235, 255), 0f);
+
             Texture2D tex = ACMAsset.BlankStar ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = tex.Size() / 2f;
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
@@ -259,6 +268,9 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls.Items
 
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
             target.AddBuff(BuffID.Frostburn2, 180);
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.AncestralSoul, 0.8f, Projectile.owner);
         }
 
         public override void OnKill(int timeLeft) {
@@ -374,6 +386,9 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, DustID.WhiteTorch, vel.X, vel.Y, 150, Color.White, 1.2f);
                 Main.dust[dust].noGravity = true;
             }
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.AncestralSoul, 0.5f, Projectile.owner);
         }
 
         public override void OnKill(int timeLeft) {
@@ -448,21 +463,25 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls.Items
         private void ExplodeDragonBreath() {
             // 龙息爆发
             SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.2f, Volume = 1.2f }, Projectile.Center);
+            ACMWeaponBurst.Spawn(Projectile.GetSource_FromThis(), Projectile.Center,
+                ACMWeaponBurst.AncestralSoul, 2.6f, Projectile.owner);
 
             // 向四周发射龙息
-            int breathCount = 16;
-            for (int i = 0; i < breathCount; i++) {
-                float angle = MathHelper.TwoPi * i / breathCount;
-                Vector2 vel = angle.ToRotationVector2() * 15f;
-                Projectile.NewProjectile(
-                    Projectile.GetSource_FromThis(),
-                    Projectile.Center,
-                    vel,
-                    ModContent.ProjectileType<ArchosaurBreathWave>(),
-                    Projectile.damage / 2,
-                    Projectile.knockBack,
-                    Projectile.owner
-                );
+            if (Main.netMode != NetmodeID.MultiplayerClient) {
+                int breathCount = 16;
+                for (int i = 0; i < breathCount; i++) {
+                    float angle = MathHelper.TwoPi * i / breathCount;
+                    Vector2 vel = angle.ToRotationVector2() * 15f;
+                    Projectile.NewProjectile(
+                        Projectile.GetSource_FromThis(),
+                        Projectile.Center,
+                        vel,
+                        ModContent.ProjectileType<ArchosaurBreathWave>(),
+                        Projectile.damage / 2,
+                        Projectile.knockBack,
+                        Projectile.owner
+                    );
+                }
             }
 
             // 大爆发特效
@@ -478,10 +497,30 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls.Items
                 Main.dust[dust].noGravity = true;
             }
 
-            Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(20, 40);
+            Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(12, 40);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            // 祖龙虚影招牌演出: 半透明龙魂身段 ribbon (白青→赤金, 与 AncestralDragonSky 同源)
+            var soulRibbon = new List<Vector2>(Projectile.oldPos.Length);
+            for (int i = 0; i < Projectile.oldPos.Length; i++) {
+                if (Projectile.oldPos[i] == Vector2.Zero) continue;
+                float waveOffset = MathF.Sin(phantomPhase + i * 0.3f) * 12f;
+                float rot = Projectile.oldRot.Length > i ? Projectile.oldRot[i] : Projectile.rotation;
+                Vector2 perp = rot.ToRotationVector2().RotatedBy(MathHelper.PiOver2);
+                soulRibbon.Add(Projectile.oldPos[i] + Projectile.Size / 2f + perp * waveOffset);
+            }
+            if (soulRibbon.Count >= 2)
+                WeaponVFX.DrawRibbonTrail(soulRibbon.ToArray(), baseWidth: 48f,
+                    outerColor: new Color(70, 130, 190, 150), innerColor: new Color(255, 215, 130, 190),
+                    tex: ACMAsset.GlaciateWave, uvScroll: -Main.GlobalTimeWrappedHourly * 1.5f);
+
+            // 祖龙真身降临: 爆发瞬间短暂赤金定调 (≤0.15, 占唯一全屏名额); 平时退为白青径向辉光
+            if (hasExploded && Projectile.timeLeft > 70)
+                WeaponVFX.ApplyPaletteTint(Main.spriteBatch, new Color(40, 80, 140), new Color(255, 180, 90), 0.12f);
+            else
+                WeaponVFX.DrawRadialBloom(Projectile.Center, 0.16f, 0.5f, new Color(210, 240, 255), 8f);
+
             Texture2D tex = ACMAsset.GlaciateWave ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = new Vector2(0, tex.Height / 2f);
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
@@ -538,6 +577,11 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls.Items
             }
 
             SoundEngine.PlaySound(SoundID.NPCHit3 with { Pitch = 0.3f }, target.Center);
+
+            // 祖龙虚影·处决级演出
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.AncestralSoul, 2f, Projectile.owner);
+            WeaponVFX.AddScreenShake(target.Center, 6f);
         }
 
         public override void OnKill(int timeLeft) {

@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -237,6 +238,10 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
             if (hit.Crit) {
                 SoundEngine.PlaySound(SoundID.Item74 with { Pitch = 0.5f, Volume = 0.6f }, target.Center);
             }
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.ClockworkGold, hit.Crit ? 1.4f : 1.1f, Projectile.owner);
+            WeaponVFX.AddScreenShake(target.Center, 2.5f);
         }
 
         public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
@@ -349,9 +354,17 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, dustType, vel.X, vel.Y, 100, default, 2.5f);
                 Main.dust[dust].noGravity = true;
             }
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.ClockworkGold, 1.2f, Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            // 凤凰火羽双层 ribbon
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 24f * Projectile.scale,
+                outerColor: new Color(200, 90, 25, 120), innerColor: new Color(255, 235, 150, 180),
+                tex: ACMAsset.GlaciateWave, uvScroll: -Main.GlobalTimeWrappedHourly * 1.4f);
+
             Texture2D texture = ACMAsset.GlaciateWave ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = new Vector2(0, texture.Height / 2f);
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
@@ -424,6 +437,9 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialOverseers.Items
 
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
             target.AddBuff(BuffID.OnFire, 120);
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.ClockworkGold, 0.55f, Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {

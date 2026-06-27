@@ -1,4 +1,7 @@
-﻿using Terraria;
+﻿using System;
+using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework;
+using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -62,11 +65,56 @@ public class VineHunterBow : ModItem
 }
 
 /// <summary>
-/// 藤蔓猎弓的全局弹幕修改 - 对箭矢命中的敌人施加中毒
-/// 通过GlobalProjectile实现弓的特殊效果
+/// 藤蔓猎弓的全局弹幕修改 - 对箭矢命中的敌人施加中毒, 并为本弓发射的箭附加翠绿藤蔓拖尾。
+/// 通过GlobalProjectile实现弓的特殊效果 (表现层: 记录飞行轨迹点, 绘制双层 ribbon 拖尾)。
 /// </summary>
 public class VineHunterBowGlobalProj : GlobalProjectile
 {
+    public override bool InstancePerEntity => true;
+
+    /// <summary>本弹幕是否由藤蔓猎弓发射 (用于附加拖尾/命中演出, 不改变机制)。</summary>
+    private bool _fromVineBow;
+    private Vector2[] _history;
+    private int _histCount;
+
+    public override void OnSpawn(Projectile projectile, IEntitySource source) {
+        if (source is EntitySource_ItemUse itemSource && itemSource.Item?.ModItem is VineHunterBow)
+            _fromVineBow = true;
+    }
+
+    public override void AI(Projectile projectile) {
+        if (!_fromVineBow)
+            return;
+
+        // 记录最近轨迹点 (头→尾), 供 ribbon 拖尾使用
+        _history ??= new Vector2[12];
+        for (int i = _history.Length - 1; i > 0; i--)
+            _history[i] = _history[i - 1];
+        _history[0] = projectile.Center;
+        if (_histCount < _history.Length)
+            _histCount++;
+
+        // 少量藤蔓翠尘
+        if (Main.rand.NextBool(3)) {
+            Dust d = Dust.NewDustPerfect(projectile.Center, DustID.Grass,
+                -projectile.velocity * 0.1f + Main.rand.NextVector2Circular(0.4f, 0.4f),
+                90, default, 0.85f);
+            d.noGravity = true;
+        }
+    }
+
+    public override bool PreDraw(Projectile projectile, ref Color lightColor) {
+        if (_fromVineBow && _histCount >= 2) {
+            Vector2[] pts = new Vector2[_histCount];
+            Array.Copy(_history, pts, _histCount);
+            // 藤蔓短拖尾 (外暗深绿 + 内亮嫩绿)
+            WeaponVFX.DrawRibbonTrail(pts, baseWidth: 6f,
+                outerColor: new Color(40, 140, 50, 150), innerColor: new Color(150, 240, 120, 200),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.5f);
+        }
+        return true; // 保留箭矢贴图
+    }
+
     public override void OnHitNPC(Projectile projectile, NPC target, NPC.HitInfo hit, int damageDone) {
         Player owner = Main.player[projectile.owner];
         if (owner.active && owner.HeldItem?.ModItem is VineHunterBow) {
@@ -74,5 +122,8 @@ public class VineHunterBowGlobalProj : GlobalProjectile
                 target.AddBuff(BuffID.Poisoned, 90);
             }
         }
+        if (_fromVineBow)
+            ACMWeaponBurst.Spawn(projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Nature, scale: 0.6f, owner: projectile.owner);
     }
 }

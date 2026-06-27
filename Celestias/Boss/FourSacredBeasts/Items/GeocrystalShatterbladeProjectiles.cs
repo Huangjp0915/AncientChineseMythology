@@ -10,13 +10,35 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
 {
+    /// <summary>地晶共鸣 — 地晶剑连击积攒，迸射愈烈，满层触发地晶共鸣超载。</summary>
+    public class GeocrystalPlayer : ModPlayer
+    {
+        public const int MaxResonance = 6;
+        public int Resonance;
+        private int _decayTimer;
+
+        public void AddResonance() {
+            Resonance = Math.Min(MaxResonance, Resonance + 1);
+            _decayTimer = 120;
+        }
+
+        public override void PostUpdate() {
+            if (_decayTimer > 0)
+                _decayTimer--;
+            else if (Resonance > 0) {
+                Resonance--;
+                _decayTimer = 45;
+            }
+        }
+    }
+
     internal static class GeocrystalShatterbladeHelper
     {
         public static readonly Color LavaCore = new(255, 130, 35);
         public static readonly Color CrystalGlow = new(110, 200, 255);
 
-        public static void SpawnBurst(IEntitySource source, Vector2 center, int owner, int damage, float knockback) {
-            const int count = 5;
+        public static void SpawnBurst(IEntitySource source, Vector2 center, int owner, int damage, float knockback, int bonusShards = 0) {
+            int count = 5 + bonusShards;
 
             for (int i = 0; i < count; i++) {
                 float angle = MathHelper.TwoPi / count * i + Main.rand.NextFloat(-0.22f, 0.22f);
@@ -179,15 +201,47 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
             target.AddBuff(BuffID.OnFire3, 240);
 
+            GeocrystalPlayer resonance = Owner.GetModPlayer<GeocrystalPlayer>();
+            int bonusShards = resonance.Resonance;
+            resonance.AddResonance();
+
             GeocrystalShatterbladeHelper.SpawnBurst(
                 Owner.GetSource_ItemUse(Owner.HeldItem),
                 target.Center,
                 Owner.whoAmI,
                 damageDone,
-                Projectile.knockBack);
+                Projectile.knockBack,
+                bonusShards);
+
+            if (bonusShards >= GeocrystalPlayer.MaxResonance) {
+                SpawnResonanceOverload(target.Center, damageDone);
+            }
 
             if (Owner.whoAmI == Main.myPlayer) {
                 Owner.GetModPlayer<ScreenShakePlayer>().ShakeScreen(5, 10);
+            }
+        }
+
+        private void SpawnResonanceOverload(Vector2 center, int damageDone) {
+            SoundEngine.PlaySound(SoundID.Item70 with { Pitch = -0.4f, Volume = 1f }, center);
+
+            if (Main.netMode != NetmodeID.MultiplayerClient) {
+                int shardType = ModContent.ProjectileType<GeocrystalBurst>();
+                for (int i = 0; i < 10; i++) {
+                    float ang = MathHelper.TwoPi * i / 10f;
+                    Projectile.NewProjectile(Owner.GetSource_ItemUse(Owner.HeldItem), center,
+                        ang.ToRotationVector2() * Main.rand.NextFloat(11f, 16f), shardType,
+                        (int)(damageDone * 0.5f), Projectile.knockBack * 0.6f, Owner.whoAmI);
+                }
+            }
+
+            if (Main.netMode != NetmodeID.Server) {
+                for (int i = 0; i < 26; i++) {
+                    Vector2 vel = Main.rand.NextVector2CircularEdge(8f, 8f);
+                    int dustType = Main.rand.NextBool() ? DustID.Torch : DustID.GemDiamond;
+                    Dust d = Dust.NewDustPerfect(center, dustType, vel, 60, default, 2f);
+                    d.noGravity = true;
+                }
             }
         }
 

@@ -34,6 +34,15 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
 
         public override void AI() {
             serpentPhase += 0.18f;
+
+            NPC target = FindClosestNPC(460f);
+            if (target != null && Projectile.timeLeft > 20) {
+                Vector2 toTarget = (target.Center - Projectile.Center).SafeNormalize(Vector2.Zero);
+                float targetAngle = toTarget.ToRotation();
+                float newAngle = MathHelper.Lerp(Projectile.velocity.ToRotation(), targetAngle, 0.07f);
+                Projectile.velocity = newAngle.ToRotationVector2() * Projectile.velocity.Length();
+            }
+
             Projectile.rotation = Projectile.velocity.ToRotation();
 
             Vector2 perpendicular = Projectile.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
@@ -59,6 +68,21 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
                 Dust d = Dust.NewDustDirect(target.Center, 0, 0, DustID.GreenTorch, vel.X, vel.Y, 80, default, 1.5f);
                 d.noGravity = true;
             }
+        }
+
+        private NPC FindClosestNPC(float maxDistance) {
+            NPC closest = null;
+            float closestDist = maxDistance;
+            foreach (NPC npc in Main.npc) {
+                if (npc.active && !npc.friendly && !npc.dontTakeDamage && npc.CanBeChasedBy()) {
+                    float dist = Vector2.Distance(Projectile.Center, npc.Center);
+                    if (dist < closestDist) {
+                        closestDist = dist;
+                        closest = npc;
+                    }
+                }
+            }
+            return closest;
         }
 
         public override bool PreDraw(ref Color lightColor) {
@@ -240,6 +264,15 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items
                 Vector2 vel = angle.ToRotationVector2() * 6f;
                 Dust d = Dust.NewDustDirect(Projectile.Center, 0, 0, DustID.GreenTorch, vel.X, vel.Y, 90, default, 2f);
                 d.noGravity = true;
+            }
+
+            if (Main.netMode != NetmodeID.MultiplayerClient) {
+                int crossDamage = (int)(Projectile.damage * 0.55f);
+                for (int i = 0; i < 4; i++) {
+                    Vector2 vel = (MathHelper.PiOver2 * i + MathHelper.PiOver4).ToRotationVector2() * 13f;
+                    Projectile.NewProjectile(Projectile.GetSource_Death(), Projectile.Center, vel,
+                        ModContent.ProjectileType<WindserpentSlash>(), crossDamage, Projectile.knockBack * 0.5f, Projectile.owner);
+                }
             }
         }
     }

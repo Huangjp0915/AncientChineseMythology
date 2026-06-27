@@ -966,4 +966,367 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons
             }
         }
     }
+
+    // ============================================================
+    //  V2 天御金龙 — 天界身份机制弹幕 (替换密度档)
+    // ============================================================
+
+    /// <summary>
+    /// 天命赐福区 (Mandate Zone) — 站入圈内的玩家获得天庭赐福(增伤/减伤/回蓝), 但金龙会**优先**朝赐福区
+    /// 倾泻攻击 → 风险/回报取舍: 留在圈内拿 buff, 但更易被针对。纯增益, 自身不造成伤害。
+    /// ai[0]=半径(像素)。地纹用 ArenaRunic(金=安全) 绘制。
+    /// </summary>
+    public class MandateZone : ModProjectile
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+        private float Radius => Projectile.ai[0] <= 0 ? 200f : Projectile.ai[0];
+        private float runeRot;
+        private float fade;
+
+        public override void SetDefaults() {
+            Projectile.width = 16;
+            Projectile.height = 16;
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = 600;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+        }
+
+        public override void AI() {
+            runeRot += 0.01f;
+            if (Projectile.timeLeft < 60)
+                fade = MathHelper.Lerp(fade, 0f, 0.08f);
+            else
+                fade = MathHelper.Lerp(fade, 1f, 0.06f);
+
+            float r = Radius;
+            for (int i = 0; i < Main.maxPlayers; i++) {
+                Player p = Main.player[i];
+                if (!p.active || p.dead)
+                    continue;
+                if (Vector2.DistanceSquared(p.Center, Projectile.Center) < r * r) {
+                    p.AddBuff(BuffID.Endurance, 12);
+                    p.AddBuff(BuffID.Wrath, 12);
+                    p.AddBuff(BuffID.ManaRegeneration, 12);
+                }
+            }
+
+            if (!Main.dedServ && fade > 0.3f && Main.rand.NextBool(3)) {
+                float a = Main.rand.NextFloat(MathHelper.TwoPi);
+                Vector2 pos = Projectile.Center + a.ToRotationVector2() * r;
+                int d = Dust.NewDust(pos, 0, 0, DustID.GoldFlame, 0, 0, 120, default, 1.1f);
+                Main.dust[d].noGravity = true;
+                Main.dust[d].velocity = (Projectile.Center - pos).SafeNormalize(Vector2.Zero) * 1.5f;
+            }
+            Lighting.AddLight(Projectile.Center, 0.4f * fade, 0.35f * fade, 0.12f * fade);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ || fade <= 0.01f)
+                return false;
+            Effect fx = ACMShaders.ArenaRunic;
+            if (fx == null)
+                return false;
+
+            ACMShaders.WorldDecalParams(Projectile.Center, Radius, out Vector2 uv, out float radFrac, out float aspect);
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uCenter"]?.SetValue(uv);
+            fx.Parameters["uRadius"]?.SetValue(radFrac);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(fade, 0f, 1f) * 0.85f);
+            fx.Parameters["uAspect"]?.SetValue(aspect);
+            fx.Parameters["uColorPrimary"]?.SetValue(TelegraphColors.Gold.ToVector4());
+            fx.Parameters["uColorSecondary"]?.SetValue(TelegraphColors.Safe.ToVector4());
+            fx.Parameters["uRuneFreq"]?.SetValue(9f);
+            fx.Parameters["uMode"]?.SetValue(0f);
+            fx.Parameters["uShape"]?.SetValue(0f);
+
+            ACMShaders.DrawScreenSpaceDecal(Main.spriteBatch, fx, BlendState.NonPremultiplied);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 敕令法标 (Edict Beacon) — 敕令幕的**可破目标**: 只要场上还有法标, 它就持续向玩家降下预警雷雨;
+    /// 玩家必须摧毁场地边缘的法标来终止雷雨(**目标导向, 而非耐久海绵**)。可被友方弹幕/近战击破。
+    /// ai[0]=雷雨伤害; ai[1]=归属龙头 whoAmI。localAI[0]=耐久; localAI[1]=受击冷却。
+    /// </summary>
+    public class EdictBeacon : ModProjectile
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+        public const int MaxHealth = 6;
+        private float runeRot;
+        private float pulse;
+
+        public override void SetDefaults() {
+            Projectile.width = 84;
+            Projectile.height = 84;
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = 1500;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+        }
+
+        public override void OnSpawn(IEntitySource source) {
+            Projectile.localAI[0] = MaxHealth;
+        }
+
+        private Player NearestPlayer() {
+            Player best = null;
+            float bd = float.MaxValue;
+            for (int i = 0; i < Main.maxPlayers; i++) {
+                Player p = Main.player[i];
+                if (!p.active || p.dead)
+                    continue;
+                float d = Vector2.DistanceSquared(p.Center, Projectile.Center);
+                if (d < bd) { bd = d; best = p; }
+            }
+            return best;
+        }
+
+        public override void AI() {
+            runeRot += 0.04f;
+            pulse += 0.12f;
+            if (Projectile.localAI[1] > 0)
+                Projectile.localAI[1]--;
+
+            // —— 可破检测: 友方弹幕重叠 或 近战挥击靠近 ——
+            bool struck = false;
+            Rectangle box = Projectile.Hitbox;
+            for (int i = 0; i < Main.maxProjectiles; i++) {
+                Projectile op = Main.projectile[i];
+                if (!op.active || !op.friendly || op.hostile)
+                    continue;
+                if (op.Hitbox.Intersects(box)) { struck = true; break; }
+            }
+            if (!struck) {
+                for (int i = 0; i < Main.maxPlayers; i++) {
+                    Player p = Main.player[i];
+                    if (!p.active || p.dead)
+                        continue;
+                    if (p.itemAnimation > 0 && p.HeldItem != null && p.HeldItem.CountsAsClass(DamageClass.Melee)
+                        && Vector2.Distance(p.Center, Projectile.Center) < 70f + Projectile.width * 0.5f) {
+                        struck = true;
+                        break;
+                    }
+                }
+            }
+
+            if (struck && Projectile.localAI[1] <= 0) {
+                Projectile.localAI[1] = 12;
+                if (!Main.dedServ) {
+                    SoundEngine.PlaySound(SoundID.Item27 with { Pitch = 0.4f, Volume = 0.5f }, Projectile.Center);
+                    for (int i = 0; i < 8; i++) {
+                        Vector2 v = Main.rand.NextVector2CircularEdge(4, 4);
+                        int d = Dust.NewDust(Projectile.Center, 0, 0, DustID.GoldFlame, v.X, v.Y, 100, default, 1.4f);
+                        Main.dust[d].noGravity = true;
+                    }
+                }
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    Projectile.localAI[0]--;
+                    if (Projectile.localAI[0] <= 0)
+                        Projectile.Kill();
+                }
+            }
+
+            // —— 雷雨: 法标自身降下预警雷, 摧毁法标即减少雷雨, 全破即停 ——
+            if (Main.netMode != NetmodeID.MultiplayerClient && Projectile.timeLeft % 150 == 0) {
+                Player p = NearestPlayer();
+                if (p != null) {
+                    Vector2 t = p.Center + Main.rand.NextVector2Circular(520f, 360f);
+                    Projectile.NewProjectile(Projectile.GetSource_FromAI(), t + new Vector2(0, -1800f), Vector2.Zero,
+                        ModContent.ProjectileType<ForkedLightningWarning>(), (int)Projectile.ai[0], 4f, Main.myPlayer, t.X, t.Y);
+                }
+            }
+
+            Lighting.AddLight(Projectile.Center, 0.7f, 0.55f, 0.15f);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+            Texture2D star = ACMAsset.BlankStar;
+            Texture2D glow = ACMAsset.SoftGlow ?? star;
+            if (star == null)
+                return false;
+
+            float hp = MathHelper.Clamp(Projectile.localAI[0] / (float)MaxHealth, 0f, 1f);
+            // 耐久越低越红(越接近破除), 给玩家进度反馈
+            Color ring = Color.Lerp(TelegraphColors.Lethal, TelegraphColors.Gold, hp);
+            ring.A = 0;
+            float br = 1f + MathF.Sin(pulse) * 0.12f;
+            Vector2 pos = Projectile.Center - Main.screenPosition;
+
+            Color core = TelegraphColors.Gold;
+            core.A = 0;
+            if (glow != null)
+                Main.EntitySpriteDraw(glow, pos, null, core * 0.7f, 0f, glow.Size() / 2f, 1.2f * br, SpriteEffects.None, 0);
+
+            int seg = 10;
+            for (int i = 0; i < seg; i++) {
+                float a = runeRot + MathHelper.TwoPi * i / seg;
+                Vector2 rp = Projectile.Center + a.ToRotationVector2() * 40f - Main.screenPosition;
+                Main.EntitySpriteDraw(star, rp, null, ring * 0.85f, a, star.Size() / 2f, 0.3f * br, SpriteEffects.None, 0);
+            }
+            return false;
+        }
+
+        public override void OnKill(int timeLeft) {
+            if (!Main.dedServ) {
+                SoundEngine.PlaySound(SoundID.Item14 with { Pitch = 0.3f }, Projectile.Center);
+                for (int i = 0; i < 24; i++) {
+                    Vector2 v = Main.rand.NextVector2CircularEdge(7, 7);
+                    int dt = Main.rand.NextBool() ? DustID.GoldFlame : DustID.GoldCoin;
+                    int d = Dust.NewDust(Projectile.Center, 0, 0, dt, v.X, v.Y, 100, default, 1.8f);
+                    Main.dust[d].noGravity = true;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 天龙逆鳞 (Celestial Scale) — 俯冲时沿途脱落的**无敌**金鳞。引信到点会爆裂(末段转红预警)散射金能;
+    /// 若在爆裂前被友方弹幕/近战击中, 则被"反弹"为一道**无害金光束**并安全消散(玩家可主动拆弹)。
+    /// ai[0]=爆裂伤害; ai[2]=1 表示已被反弹。localAI[1]=受击冷却。
+    /// </summary>
+    public class CelestialScale : ModProjectile
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+        private float rot;
+        private Vector2 reflectDir = -Vector2.UnitY;
+
+        public override void SetDefaults() {
+            Projectile.width = 46;
+            Projectile.height = 46;
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = 170;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+        }
+
+        private bool Reflected => Projectile.ai[2] == 1f;
+
+        public override void AI() {
+            rot += 0.15f;
+            Projectile.velocity *= 0.94f;
+            if (Projectile.localAI[1] > 0)
+                Projectile.localAI[1]--;
+
+            if (Reflected) {
+                Lighting.AddLight(Projectile.Center, 0.9f, 0.8f, 0.3f);
+                return; // 反弹后等待光束绘制完自然消亡
+            }
+
+            // 拆弹检测 (爆裂前可被击中反弹)
+            bool struck = false;
+            Rectangle box = Projectile.Hitbox;
+            for (int i = 0; i < Main.maxProjectiles; i++) {
+                Projectile op = Main.projectile[i];
+                if (!op.active || !op.friendly || op.hostile)
+                    continue;
+                if (op.Hitbox.Intersects(box)) { struck = true; break; }
+            }
+            if (!struck) {
+                for (int i = 0; i < Main.maxPlayers; i++) {
+                    Player p = Main.player[i];
+                    if (!p.active || p.dead)
+                        continue;
+                    if (p.itemAnimation > 0 && p.HeldItem != null && p.HeldItem.CountsAsClass(DamageClass.Melee)
+                        && Vector2.Distance(p.Center, Projectile.Center) < 60f) {
+                        struck = true;
+                        break;
+                    }
+                }
+            }
+
+            if (struck && Projectile.localAI[1] <= 0) {
+                Projectile.ai[2] = 1f;
+                reflectDir = (-Vector2.UnitY).RotatedByRandom(0.5f);
+                Projectile.velocity = Vector2.Zero;
+                Projectile.timeLeft = 16;
+                Projectile.netUpdate = true;
+                if (!Main.dedServ) {
+                    SoundEngine.PlaySound(SoundID.Item122 with { Pitch = 0.5f, Volume = 0.6f }, Projectile.Center);
+                    ACMUtils.AddScreenShake(2f);
+                }
+            }
+
+            // 引信末段转红预警
+            if (Projectile.timeLeft < 40 && !Main.dedServ && Main.rand.NextBool(2)) {
+                int d = Dust.NewDust(Projectile.Center, 0, 0, DustID.RedTorch, 0, 0, 120, default, 1.3f);
+                Main.dust[d].noGravity = true;
+            }
+            Lighting.AddLight(Projectile.Center, 0.6f, 0.5f, 0.15f);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+            Texture2D star = ACMAsset.BlankStar;
+            Texture2D glow = ACMAsset.SoftGlow ?? star;
+
+            if (Reflected) {
+                // 反弹: 一道无害金光束 (DrawBeam, 金=安全/权威)
+                float p = MathHelper.Clamp(Projectile.timeLeft / 16f, 0f, 1f);
+                Vector2 end = Projectile.Center + reflectDir * 700f;
+                ACMShaders.DrawBeam(Projectile.Center, end, 26f * p, TelegraphColors.Gold, TelegraphColors.Holy, p, 2.0f, 2.2f);
+                if (glow != null) {
+                    Color c = TelegraphColors.Gold;
+                    c.A = 0;
+                    Main.EntitySpriteDraw(glow, Projectile.Center - Main.screenPosition, null, c * p, 0f, glow.Size() / 2f, 1.4f, SpriteEffects.None, 0);
+                }
+                return false;
+            }
+
+            if (star == null)
+                return false;
+            bool armed = Projectile.timeLeft < 40;
+            Color col = armed
+                ? Color.Lerp(TelegraphColors.Gold, TelegraphColors.Lethal, 0.6f + MathF.Sin(Main.GlobalTimeWrappedHourly * 14f) * 0.3f)
+                : TelegraphColors.Gold;
+            col.A = 0;
+            float sc = 0.32f + (armed ? MathF.Sin(Main.GlobalTimeWrappedHourly * 14f) * 0.06f : 0f);
+            Vector2 pos = Projectile.Center - Main.screenPosition;
+            if (glow != null)
+                Main.EntitySpriteDraw(glow, pos, null, col * 0.5f, 0f, glow.Size() / 2f, 1.1f, SpriteEffects.None, 0);
+            Main.EntitySpriteDraw(star, pos, null, col, rot, star.Size() / 2f, sc, SpriteEffects.None, 0);
+            return false;
+        }
+
+        public override void OnKill(int timeLeft) {
+            if (Reflected) {
+                if (!Main.dedServ) {
+                    for (int i = 0; i < 10; i++) {
+                        Vector2 v = Main.rand.NextVector2CircularEdge(4, 4);
+                        int d = Dust.NewDust(Projectile.Center, 0, 0, DustID.GoldFlame, v.X, v.Y, 100, default, 1.2f);
+                        Main.dust[d].noGravity = true;
+                    }
+                }
+                return;
+            }
+            // 未被拆弹 → 爆裂散射金能 (telegraph 已由红色引信给出)
+            if (!Main.dedServ) {
+                SoundEngine.PlaySound(SoundID.Item14 with { Pitch = -0.1f, Volume = 0.7f }, Projectile.Center);
+                ACMUtils.AddScreenShake(3f);
+                for (int i = 0; i < 18; i++) {
+                    Vector2 v = Main.rand.NextVector2CircularEdge(8, 8);
+                    int d = Dust.NewDust(Projectile.Center, 0, 0, DustID.GoldFlame, v.X, v.Y, 100, default, 1.8f);
+                    Main.dust[d].noGravity = true;
+                }
+            }
+            if (Main.netMode != NetmodeID.MultiplayerClient) {
+                int count = 10;
+                for (int i = 0; i < count; i++) {
+                    float a = MathHelper.TwoPi * i / count;
+                    Projectile.NewProjectile(Projectile.GetSource_Death(), Projectile.Center, a.ToRotationVector2() * 7f,
+                        ModContent.ProjectileType<GoldenEnergy>(), (int)Projectile.ai[0], 3f, Main.myPlayer);
+                }
+            }
+        }
+    }
 }

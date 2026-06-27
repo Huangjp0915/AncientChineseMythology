@@ -181,7 +181,7 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
                         }
 
                         SoundEngine.PlaySound(SoundID.Item122 with { Pitch = 0.2f }, NPC.Center);
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(10, 30);
+                        ACMUtils.AddScreenShake(8f);
                     }
                     break;
 

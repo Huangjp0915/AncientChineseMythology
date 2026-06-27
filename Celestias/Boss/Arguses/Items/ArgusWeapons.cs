@@ -51,6 +51,7 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses.Items
             tooltips.Add(new TooltipLine(Mod, "SoulPierceLore", "百目追魂弧凝瞳纹为弦，箭矢必贯弱点"));
             tooltips.Add(new TooltipLine(Mod, "SoulPierceEffect", "将箭矢化为瞳纹追踪箭"));
             tooltips.Add(new TooltipLine(Mod, "SoulPierceEffect2", "命中叠加弱点标记，满层穿魂引爆"));
+            tooltips.Add(new TooltipLine(Mod, "SoulPierceEffect3", "引爆迸射瞳光裂片，自动追猎其它敌人弱点"));
         }
 
         public override string Texture => "Terraria/Images/Item_" + ItemID.PulseBow;
@@ -298,6 +299,17 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses.Items
             target.AddBuff(BuffID.Ichor, 360);
             SoundEngine.PlaySound(SoundID.Item122 with { Volume = 0.85f, Pitch = 0.2f + HitStacks * 0.04f }, target.Center);
 
+            // 百目洞悉弱点：引爆后向四周敌人射出瞳光裂片
+            if (Projectile.owner == Main.myPlayer) {
+                int shardCount = 3 + (int)HitStacks;
+                int shardDamage = (int)Math.Max(Projectile.damage * 0.4f, AccumulatedDamage * 0.25f);
+                for (int s = 0; s < shardCount; s++) {
+                    Vector2 vel = (MathHelper.TwoPi * s / shardCount).ToRotationVector2() * 9f;
+                    Projectile.NewProjectile(Projectile.GetSource_FromThis(), target.Center, vel,
+                        ModContent.ProjectileType<ArgusIrisShard>(), shardDamage, 1f, Projectile.owner, ai0: target.whoAmI);
+                }
+            }
+
             for (int i = 0; i < 10 + (int)HitStacks * 4; i++) {
                 float angle = MathHelper.TwoPi * i / (10 + HitStacks * 4f);
                 Vector2 vel = angle.ToRotationVector2() * Main.rand.NextFloat(5f, 10f + HitStacks);
@@ -333,6 +345,84 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses.Items
                     0f, origin, pulse * (1.8f + HitStacks * 0.25f), SpriteEffects.None, 0);
             }
 
+            return false;
+        }
+    }
+
+    /// <summary>瞳光裂片 — 穿魂引爆时迸射的追踪虹彩碎光，自动锁定其它敌人弱点。</summary>
+    public class ArgusIrisShard : ModProjectile
+    {
+        public override string Texture => "AncientChineseMythology/Textures/Masking/LightShot";
+
+        private ref float SourceNPC => ref Projectile.ai[0];
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.TrailCacheLength[Type] = 10;
+            ProjectileID.Sets.TrailingMode[Type] = 2;
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = Projectile.height = 12;
+            Projectile.friendly = true;
+            Projectile.DamageType = DamageClass.Ranged;
+            Projectile.penetrate = 2;
+            Projectile.timeLeft = 120;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.extraUpdates = 1;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 10;
+        }
+
+        public override void AI() {
+            Projectile.rotation = Projectile.velocity.ToRotation();
+
+            NPC target = FindTarget();
+            if (target != null) {
+                Vector2 to = (target.Center - Projectile.Center).SafeNormalize(Vector2.Zero);
+                Projectile.velocity = Vector2.Lerp(Projectile.velocity, to * Projectile.velocity.Length(), 0.12f);
+            }
+
+            if (Main.rand.NextBool()) {
+                int dustType = Main.rand.NextBool() ? DustID.GoldFlame : DustID.PurpleTorch;
+                Dust d = Dust.NewDustPerfect(Projectile.Center, dustType, -Projectile.velocity * 0.1f, 100, default, 1f);
+                d.noGravity = true;
+            }
+            Lighting.AddLight(Projectile.Center, Vector3.Lerp(ArgusWeaponFx.IrisPurple.ToVector3(), ArgusWeaponFx.IrisGold.ToVector3(), 0.5f) * 0.45f);
+        }
+
+        private NPC FindTarget() {
+            int avoid = (int)SourceNPC;
+            NPC closest = null;
+            float closestDist = 560f;
+            for (int i = 0; i < Main.maxNPCs; i++) {
+                NPC npc = Main.npc[i];
+                if (!npc.CanBeChasedBy() || npc.whoAmI == avoid) continue;
+                float dist = Vector2.Distance(Projectile.Center, npc.Center);
+                if (dist < closestDist) { closestDist = dist; closest = npc; }
+            }
+            return closest;
+        }
+
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            target.AddBuff(BuffID.BrokenArmor, 240);
+            SoulPierceMark.TryApplyOrStack(Projectile, target, damageDone);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            Texture2D tex = ACMAsset.LightShot ?? TextureAssets.Projectile[Type].Value;
+            Vector2 origin = tex.Size() * 0.5f;
+            for (int i = Projectile.oldPos.Length - 1; i > 0; i--) {
+                if (Projectile.oldPos[i] == Vector2.Zero) continue;
+                float progress = 1f - i / (float)Projectile.oldPos.Length;
+                Color c = Color.Lerp(ArgusWeaponFx.IrisPurple, ArgusWeaponFx.IrisGold, progress) * (0.55f * progress);
+                c.A = 0;
+                Main.spriteBatch.Draw(tex, Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition, null, c,
+                    Projectile.oldRot[i], origin, new Vector2(0.4f * progress, 0.12f), SpriteEffects.None, 0);
+            }
+            Color main = Color.Lerp(ArgusWeaponFx.IrisGold, Color.White, 0.3f); main.A = 0;
+            Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, main,
+                Projectile.rotation, origin, new Vector2(0.5f, 0.14f), SpriteEffects.None, 0);
             return false;
         }
     }
@@ -469,6 +559,14 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses.Items
                 ModContent.ProjectileType<LuminanceStellarBurst>(),
                 (int)(Projectile.damage * 0.55f), Projectile.knockBack, Projectile.owner);
 
+            // 超新星抛射：四枚追踪星屑向外迸射后回旋追猎
+            for (int i = 0; i < 4; i++) {
+                Vector2 vel = (MathHelper.TwoPi * i / 4f + Main.rand.NextFloat(-0.3f, 0.3f)).ToRotationVector2() * Main.rand.NextFloat(7f, 11f);
+                Projectile.NewProjectile(Projectile.GetSource_FromThis(), position, vel,
+                    ModContent.ProjectileType<LuminanceStarlet>(),
+                    (int)(Projectile.damage * 0.32f), Projectile.knockBack * 0.4f, Projectile.owner);
+            }
+
             Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(6, 12);
         }
 
@@ -599,6 +697,102 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses.Items
         }
     }
 
+    /// <summary>星屑 — 恒星爆发抛射出的追踪流星碎光，短暂飞散后回旋锁敌。</summary>
+    public class LuminanceStarlet : ModProjectile
+    {
+        public override string Texture => "AncientChineseMythology/Textures/Masking/BlankStar";
+
+        private ref float Age => ref Projectile.ai[0];
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.TrailCacheLength[Type] = 12;
+            ProjectileID.Sets.TrailingMode[Type] = 2;
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = Projectile.height = 14;
+            Projectile.friendly = true;
+            Projectile.DamageType = DamageClass.Ranged;
+            Projectile.penetrate = 2;
+            Projectile.timeLeft = 150;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.extraUpdates = 1;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 12;
+        }
+
+        public override void AI() {
+            Age++;
+            Projectile.rotation += 0.3f;
+
+            if (Age < 12)
+                Projectile.velocity *= 0.93f;
+            else {
+                NPC target = FindClosest();
+                if (target != null) {
+                    Vector2 to = (target.Center - Projectile.Center).SafeNormalize(Vector2.Zero);
+                    float speed = MathHelper.Clamp(Projectile.velocity.Length() + 0.5f, 6f, 18f);
+                    Projectile.velocity = Vector2.Lerp(Projectile.velocity, to * speed, 0.1f);
+                }
+            }
+
+            if (Main.rand.NextBool()) {
+                int dustType = Main.rand.NextBool(3) ? DustID.YellowStarDust : (Main.rand.NextBool() ? DustID.PurpleTorch : DustID.BlueTorch);
+                Dust d = Dust.NewDustPerfect(Projectile.Center, dustType, -Projectile.velocity * 0.1f, 80, default, 1.2f);
+                d.noGravity = true;
+            }
+            Lighting.AddLight(Projectile.Center, 0.4f, 0.32f, 0.6f);
+        }
+
+        private NPC FindClosest() {
+            NPC closest = null;
+            float closestDist = 620f;
+            for (int i = 0; i < Main.maxNPCs; i++) {
+                NPC npc = Main.npc[i];
+                if (!npc.CanBeChasedBy()) continue;
+                float dist = Vector2.Distance(Projectile.Center, npc.Center);
+                if (dist < closestDist) { closestDist = dist; closest = npc; }
+            }
+            return closest;
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            SpriteBatch sb = Main.spriteBatch;
+            Texture2D star = ACMAsset.BlankStar ?? TextureAssets.Projectile[Type].Value;
+            Vector2 origin = star.Size() * 0.5f;
+            float pulse = 1f + MathF.Sin(Age * 0.3f) * 0.12f;
+
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+
+            for (int i = Projectile.oldPos.Length - 1; i > 0; i--) {
+                if (Projectile.oldPos[i] == Vector2.Zero) continue;
+                float progress = 1f - i / (float)Projectile.oldPos.Length;
+                Color c = Color.Lerp(new Color(200, 140, 255), new Color(120, 160, 255), progress) * (progress * 0.5f);
+                c.A = 0;
+                sb.Draw(star, Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition, null, c,
+                    Projectile.oldRot[i], origin, 0.18f * progress * pulse, SpriteEffects.None, 0);
+            }
+            Color core = new Color(245, 235, 255); core.A = 0;
+            sb.Draw(star, Projectile.Center - Main.screenPosition, null, core * 0.9f, Projectile.rotation, origin, 0.22f * pulse, SpriteEffects.None, 0);
+
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+            return false;
+        }
+
+        public override void OnKill(int timeLeft) {
+            if (Main.netMode == NetmodeID.Server) return;
+            for (int i = 0; i < 6; i++) {
+                Dust d = Dust.NewDustPerfect(Projectile.Center, DustID.YellowStarDust, Main.rand.NextVector2CircularEdge(3f, 3f), 70, default, 1.3f);
+                d.noGravity = true;
+            }
+        }
+    }
+
     /// <summary>
     /// 虹膜湮灭手铳 - 百目 Argus 掉落的手铳
     /// 将子弹化为耀金虹膜光弹；长按蓄力环聚虹膜，松手释放金色光弹连射爆发
@@ -719,6 +913,14 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses.Items
                 SoundEngine.PlaySound(SoundID.Item62 with { Pitch = 0.35f, Volume = 0.75f }, player.Center);
                 if (player.whoAmI == Main.myPlayer)
                     player.GetModPlayer<ScreenShakePlayer>().ShakeScreen(5, 10);
+
+                // 全视之眼：满蓄释放时召出悬浮虹瞳，自动洞察并连射光弹
+                int eyeType = ModContent.ProjectileType<ArgusAllSeeingEye>();
+                if (player.ownedProjectileCounts[eyeType] < 2) {
+                    Vector2 eyePos = player.Center + direction * 90f - new Vector2(0f, 60f);
+                    Projectile.NewProjectile(player.GetSource_ItemUse(Item), eyePos, Vector2.Zero,
+                        eyeType, (int)((Item.damage) * 0.45f), Item.knockBack, player.whoAmI);
+                }
             }
 
             for (int i = 0; i < (empowered ? 10 : 4); i++) {
@@ -739,6 +941,7 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses.Items
             tooltips.Add(new TooltipLine(Mod, "IrisLore", "「百目虹膜凝为铳口，耀金湮灭一切视界」"));
             tooltips.Add(new TooltipLine(Mod, "IrisEffect", "将子弹化为耀金虹膜光弹，命中时绽放湮灭爆炸"));
             tooltips.Add(new TooltipLine(Mod, "IrisEffect2", "长按蓄力环聚虹膜，松手释放金色光弹连射爆发"));
+            tooltips.Add(new TooltipLine(Mod, "IrisEffect3", "满蓄释放召出全视之眼，自动洞察敌人并连射虹膜光弹"));
         }
     }
 
@@ -955,6 +1158,100 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses.Items
                 DepthStencilState.None, RasterizerState.CullCounterClockwise, null,
                 Main.GameViewMatrix.TransformationMatrix);
 
+            return false;
+        }
+    }
+
+    /// <summary>全视之眼 — 满蓄释放召出的悬浮虹瞳，自动洞察敌人并周期连射虹膜光弹。</summary>
+    public class ArgusAllSeeingEye : ModProjectile
+    {
+        public override string Texture => "AncientChineseMythology/Textures/Masking/BlankStar";
+
+        private static readonly Color IrisGold = new(255, 210, 80);
+        private static readonly Color IrisPurple = new(180, 100, 255);
+
+        private ref float Age => ref Projectile.ai[0];
+        private ref float FireTimer => ref Projectile.ai[1];
+        private float pulse;
+
+        public override void SetDefaults() {
+            Projectile.width = Projectile.height = 40;
+            Projectile.friendly = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = 200;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.DamageType = DamageClass.Ranged;
+        }
+
+        public override bool? CanDamage() => false;
+
+        public override void AI() {
+            Age++;
+            pulse += 0.12f;
+            Player owner = Main.player[Projectile.owner];
+            if (!owner.active || owner.dead) { Projectile.Kill(); return; }
+
+            // 跟随玩家上方漂浮
+            Vector2 anchor = owner.Center - new Vector2(0f, 80f) + new Vector2(MathF.Sin(Age * 0.04f) * 40f, MathF.Cos(Age * 0.05f) * 16f);
+            Projectile.Center = Vector2.Lerp(Projectile.Center, anchor, 0.06f);
+
+            FireTimer++;
+            if (FireTimer >= 16f && Projectile.owner == Main.myPlayer) {
+                NPC target = FindClosest();
+                if (target != null) {
+                    FireTimer = 0f;
+                    Vector2 dir = (target.Center - Projectile.Center).SafeNormalize(Vector2.UnitX);
+                    Projectile.NewProjectile(Projectile.GetSource_FromThis(), Projectile.Center, dir * 17f,
+                        ModContent.ProjectileType<LuminousIrisShell>(), Projectile.damage, 2f, Projectile.owner, ai0: 1f);
+                    if (Main.netMode != NetmodeID.Server)
+                        SoundEngine.PlaySound(SoundID.Item12 with { Volume = 0.4f, Pitch = 0.5f }, Projectile.Center);
+                }
+            }
+
+            Lighting.AddLight(Projectile.Center, Vector3.Lerp(IrisPurple.ToVector3(), IrisGold.ToVector3(), 0.5f) * 0.7f);
+        }
+
+        private NPC FindClosest() {
+            NPC closest = null;
+            float closestDist = 900f;
+            for (int i = 0; i < Main.maxNPCs; i++) {
+                NPC npc = Main.npc[i];
+                if (!npc.CanBeChasedBy()) continue;
+                float dist = Vector2.Distance(Projectile.Center, npc.Center);
+                if (dist < closestDist) { closestDist = dist; closest = npc; }
+            }
+            return closest;
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            SpriteBatch sb = Main.spriteBatch;
+            Texture2D star = ACMAsset.BlankStar;
+            Texture2D glow = ACMAsset.SoftGlow;
+            Vector2 drawPos = Projectile.Center - Main.screenPosition;
+            float p = 1f + MathF.Sin(pulse) * 0.12f;
+            float fade = Projectile.timeLeft < 30 ? Projectile.timeLeft / 30f : 1f;
+
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+
+            if (glow != null) {
+                Color outer = IrisPurple * (0.5f * fade); outer.A = 0;
+                sb.Draw(glow, drawPos, null, outer, 0f, glow.Size() * 0.5f, 0.9f * p, SpriteEffects.None, 0);
+                Color iris = IrisGold * (0.6f * fade); iris.A = 0;
+                sb.Draw(glow, drawPos, null, iris, 0f, glow.Size() * 0.5f, 0.5f * p, SpriteEffects.None, 0);
+                Color pupil = new Color(20, 10, 30) * (0.85f * fade);
+                sb.Draw(glow, drawPos, null, pupil, 0f, glow.Size() * 0.5f, 0.22f, SpriteEffects.None, 0);
+            }
+            if (star != null) {
+                Color ring = Color.Lerp(IrisGold, Color.White, 0.4f) * (0.7f * fade); ring.A = 0;
+                sb.Draw(star, drawPos, null, ring, pulse * 0.4f, star.Size() * 0.5f, 0.3f * p, SpriteEffects.None, 0);
+            }
+
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
             return false;
         }
     }

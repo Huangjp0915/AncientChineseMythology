@@ -121,6 +121,9 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
             drawAlpha = 0f;
             moveTargetPos = NPC.Center;
 
+            // 地府身份层: 怨念账上限
+            UnderworldField.SetGrudgeMax(NPC, 100);
+
             base.OnSpawn(source);
         }
 
@@ -305,6 +308,9 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                             var bawPlayer = p.GetModPlayer<BAWPlayer>();
                             if (isPhase2) {
                                 bawPlayer.ApplyYinQiCorrosion(10);
+                                // 地府身份层·魂蚀 DoT: 二阶段减速领域内站位持续叠魂蚀 (轻量节流, 表达"地府"环境威胁)
+                                if (NPC.ai[0] % 30 == 0)
+                                    UnderworldField.AddSoulErosion(p, 1);
                                 // 二阶段脉冲效果
                                 if (slowFieldRadius > targetRadius * 0.6f && NPC.ai[0] % 40 == 0)
                                     SoundEngine.PlaySound(SoulPullSound, NPC.Center);
@@ -640,8 +646,14 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 }
             }
 
-            // 绘制主体
-            sb.Draw(tex, NPC.Center - scrPos, rec, col * drawAlpha, NPC.rotation, rec.Size() * 0.5f, NPC.scale, spe, 0);
+            // 绘制主体 —— 出场/复活期间走 DissolveBurn (魂->实体重凝, V2 soul-dissolve 首发验证)
+            float dissolve = 1f - drawAlpha;
+            bool dissolving = NPC.ai[3] < 0 && dissolve > 0.02f;
+            Color body = col; body.A = 255;
+            if (!(dissolving && BAWFX.DrawDissolveSprite(sb, tex, NPC.Center - scrPos, rec, body,
+                    NPC.rotation, rec.Size() * 0.5f, NPC.scale, spe, dissolve, BAWFX.WhiteDissolveEdge))) {
+                sb.Draw(tex, NPC.Center - scrPos, rec, col * drawAlpha, NPC.rotation, rec.Size() * 0.5f, NPC.scale, spe, 0);
+            }
 
             // 外发光（幽灵般的白光）
             var glowCol = new Color(200, 200, 255);
@@ -663,6 +675,20 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
             }
 
             return false;
+        }
+
+        public override void PostDraw(SpriteBatch sb, Vector2 scrPos, Color col) {
+            // 协同《阴阳勾魂》阴阳分屏 (yin-yang-split 首发验证); 内部走唯一全屏名额, 双使任一调用即可
+            BAWFX.DrawYinYangSplit(sb);
+        }
+
+        public override void OnHitByItem(Player player, Item item, NPC.HitInfo hit, int damageDone) {
+            // 地府身份层·怨念账: 玩家造业累积 (轻量, 不改伤害/调参)
+            UnderworldField.AddGrudge(NPC, Math.Max(1, damageDone / 150));
+        }
+
+        public override void OnHitByProjectile(Projectile projectile, NPC.HitInfo hit, int damageDone) {
+            UnderworldField.AddGrudge(NPC, Math.Max(1, damageDone / 150));
         }
 
         public override void OnKill() {

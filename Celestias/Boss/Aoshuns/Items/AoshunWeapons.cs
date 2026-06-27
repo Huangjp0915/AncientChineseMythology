@@ -18,6 +18,9 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns.Items
     /// </summary>
     public class ThunderlordHalberd : ModItem
     {
+        public const int OverchargeInterval = 4;
+        private int thrustCount;
+
         public override void SetDefaults() {
             Item.damage = 370;
             Item.DamageType = DamageClass.Melee;
@@ -37,13 +40,16 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns.Items
         }
 
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
-            Projectile.NewProjectile(source, player.Center, velocity, type, damage, knockback, player.whoAmI);
+            thrustCount = (thrustCount + 1) % OverchargeInterval;
+            float overcharged = thrustCount == 0 ? 1f : 0f;
+            Projectile.NewProjectile(source, player.Center, velocity, type, damage, knockback, player.whoAmI, overcharged);
             return false;
         }
 
         public override void ModifyTooltips(System.Collections.Generic.List<TooltipLine> tooltips) {
             tooltips.Add(new TooltipLine(Mod, "AoshunLore", "北海雷尊敖顺所持的雷霆方天戟"));
             tooltips.Add(new TooltipLine(Mod, "AoshunEffect", "突刺贯穿敌人，向周围弹射连锁闪电弧"));
+            tooltips.Add(new TooltipLine(Mod, "AoshunEffect2", $"每第 {OverchargeInterval} 次突刺过载，命中召落天罚落雷"));
         }
 
         public override string Texture => "Terraria/Images/Item_" + ItemID.Gungnir;
@@ -57,6 +63,9 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns.Items
         private float thrustProgress;
         private const float MaxExtend = 140f;
         private bool releasedPeakArc;
+        private bool struckOvercharge;
+
+        private bool Overcharged => Projectile.ai[0] >= 1f;
 
         private Player Owner => Main.player[Projectile.owner];
 
@@ -136,6 +145,14 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns.Items
             SoundEngine.PlaySound(SoundID.Item122 with { Pitch = 0.5f, Volume = 0.65f }, target.Center);
             ThunderlordHalberdChain.SpawnArcs(Projectile.GetSource_FromThis(), target.Center,
                 Projectile.damage, Projectile.knockBack, Projectile.owner, target.whoAmI, 0, 4);
+
+            if (Overcharged && !struckOvercharge && Main.netMode != NetmodeID.MultiplayerClient) {
+                struckOvercharge = true;
+                Vector2 start = target.Center + new Vector2(Main.rand.NextFloat(-40f, 40f), -520f);
+                Projectile.NewProjectile(Projectile.GetSource_FromThis(), start, new Vector2(0f, 24f),
+                    ModContent.ProjectileType<LightningEdictStrike>(), (int)(Projectile.damage * 0.9f), 0f, Projectile.owner,
+                    target.Center.X, target.Center.Y);
+            }
 
             if (!VaultUtils.isServer) {
                 AoshunHelper.CreateThunderBurst(target.Center, 80f, 2, 10);
@@ -292,9 +309,16 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns.Items
             tooltips.Add(new TooltipLine(Mod, "AoshunLore", "北海雷云凝成的风暴链鞭"));
             tooltips.Add(new TooltipLine(Mod, "AoshunEffect", "鞭击感电敌人，在命中目标间弹射连锁闪电"));
             tooltips.Add(new TooltipLine(Mod, "AoshunEffect2", "同一挥击内链接多个目标，后续命中伤害递减"));
+            tooltips.Add(new TooltipLine(Mod, "AoshunEffect3", "每第三次挥击在命中处钉下雷暴节点，周期电击周围敌人"));
         }
 
         public override string Texture => "Terraria/Images/Item_" + ItemID.ThornWhip;
+    }
+
+    /// <summary>风暴链鞭 — 追踪挥击次数，每第三击钉下雷暴节点。</summary>
+    public class StormchainPlayer : ModPlayer
+    {
+        public int SwingCount;
     }
 
     /// <summary>风暴链鞭 — 闪电链式鞭击弹幕。</summary>
@@ -303,6 +327,9 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns.Items
         public override string Texture => "Terraria/Images/Projectile_" + ProjectileID.ThornWhip;
 
         private ref float LastHitNpc => ref Projectile.localAI[0];
+
+        private bool dropNode;
+        private bool droppedNode;
 
         public override void SetStaticDefaults() {
             ProjectileID.Sets.IsAWhip[Type] = true;
@@ -317,6 +344,9 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns.Items
 
         public override void OnSpawn(IEntitySource source) {
             LastHitNpc = 0f;
+            var stormPlayer = Main.player[Projectile.owner].GetModPlayer<StormchainPlayer>();
+            stormPlayer.SwingCount++;
+            dropNode = stormPlayer.SwingCount % 3 == 0;
         }
 
         public override bool PreAI() {
@@ -360,6 +390,12 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns.Items
                 Projectile.damage, Projectile.knockBack, Projectile.owner, previousTarget);
 
             LastHitNpc = target.whoAmI + 1f;
+
+            if (dropNode && !droppedNode && Main.myPlayer == Projectile.owner) {
+                droppedNode = true;
+                Projectile.NewProjectile(Projectile.GetSource_FromThis(), target.Center, Vector2.Zero,
+                    ModContent.ProjectileType<StormchainNode>(), Math.Max(1, (int)(Projectile.damage * 0.6f)), Projectile.knockBack * 0.3f, Projectile.owner);
+            }
 
             if (!VaultUtils.isServer) {
                 AoshunHelper.CreateThunderBurst(target.Center, 70f, 2, 8);
@@ -448,6 +484,122 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns.Items
         }
     }
 
+    /// <summary>雷暴节点 — 风暴链鞭钉下的驻留雷桩，周期电击周围敌人。</summary>
+    public class StormchainNode : ModProjectile
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+
+        private const int Duration = 240;
+        private const float ZapRange = 280f;
+
+        private int zapTimer;
+        private float spin;
+        private float scaleUp;
+
+        public override void SetDefaults() {
+            Projectile.width = Projectile.height = 24;
+            Projectile.friendly = true;
+            Projectile.DamageType = DamageClass.SummonMeleeSpeed;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = Duration;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+        }
+
+        public override bool? CanDamage() => false;
+
+        public override void AI() {
+            Projectile.velocity = Vector2.Zero;
+            spin += 0.12f;
+            scaleUp = MathHelper.Lerp(scaleUp, 1f, 0.12f);
+            zapTimer++;
+
+            if (zapTimer >= 22) {
+                zapTimer = 0;
+                ZapNearest();
+            }
+
+            if (!VaultUtils.isServer && Main.rand.NextBool(2)) {
+                var d = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(14f, 14f), DustID.Electric);
+                d.noGravity = true;
+                d.scale = 1.2f * scaleUp;
+                d.color = AoshunHelper.LightningBlue;
+                d.velocity = Main.rand.NextVector2Circular(1.5f, 1.5f);
+            }
+
+            Lighting.AddLight(Projectile.Center, AoshunHelper.LightningBlue.ToVector3() * 0.7f * scaleUp);
+        }
+
+        private void ZapNearest() {
+            NPC target = null;
+            float best = ZapRange;
+            foreach (NPC npc in Main.ActiveNPCs) {
+                if (!npc.CanBeChasedBy()) continue;
+                float dist = Vector2.Distance(npc.Center, Projectile.Center);
+                if (dist < best) {
+                    best = dist;
+                    target = npc;
+                }
+            }
+
+            if (target == null) return;
+
+            if (!VaultUtils.isServer) {
+                AoshunHelper.CreateLightningTrail(Projectile.Center, target.Center - Projectile.Center, 1.1f);
+                StormchainNodeDraw(Projectile.Center, target.Center);
+                SoundEngine.PlaySound(SoundID.Item122 with { Pitch = 0.55f, Volume = 0.45f }, target.Center);
+            }
+
+            target.AddBuff(BuffID.Electrified, 180);
+            if (Main.myPlayer == Projectile.owner) {
+                target.SimpleStrikeNPC(Projectile.damage, target.Center.X > Projectile.Center.X ? 1 : -1, false, Projectile.knockBack);
+            }
+        }
+
+        private static void StormchainNodeDraw(Vector2 start, Vector2 end) {
+            int segments = Math.Max(4, (int)(Vector2.Distance(start, end) / 28f));
+            for (int i = 0; i <= segments; i++) {
+                float t = i / (float)segments;
+                Vector2 pos = Vector2.Lerp(start, end, t);
+                Vector2 perp = (end - start).SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
+                pos += perp * Main.rand.NextFloat(-9f, 9f) * (1f - MathF.Abs(t - 0.5f) * 1.4f);
+                var d = Dust.NewDustPerfect(pos, DustID.Electric, Main.rand.NextVector2Circular(1.2f, 1.2f));
+                d.noGravity = true;
+                d.scale = 1.25f;
+                d.color = Color.Lerp(AoshunHelper.ThunderPurple, AoshunHelper.ElectricWhite, t);
+            }
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            float fade = Math.Min(Projectile.timeLeft / 40f, 1f);
+
+            if (ACMAsset.SoftGlow != null) {
+                Texture2D glow = ACMAsset.SoftGlow;
+                Vector2 origin = glow.Size() / 2f;
+                Color c = AoshunHelper.LightningBlue * 0.6f * fade;
+                c.A = 0;
+                Main.spriteBatch.Draw(glow, Projectile.Center - Main.screenPosition, null, c, 0f, origin, 0.9f * scaleUp, SpriteEffects.None, 0f);
+            }
+
+            if (ACMAsset.BlankStar != null) {
+                Texture2D star = ACMAsset.BlankStar;
+                Vector2 origin = star.Size() / 2f;
+                Color c = AoshunHelper.ElectricWhite * 0.85f * fade;
+                c.A = 0;
+                Main.spriteBatch.Draw(star, Projectile.Center - Main.screenPosition, null, c, spin, origin, 0.3f * scaleUp, SpriteEffects.None, 0f);
+                Main.spriteBatch.Draw(star, Projectile.Center - Main.screenPosition, null, c * 0.6f, -spin * 0.7f, origin, 0.2f * scaleUp, SpriteEffects.None, 0f);
+            }
+
+            return false;
+        }
+
+        public override void OnKill(int timeLeft) {
+            if (!VaultUtils.isServer) {
+                AoshunHelper.CreateThunderBurst(Projectile.Center, 70f, 2, 10);
+            }
+        }
+    }
+
     /// <summary>
     /// 暴风连弩 - 敖顺掉落的连弩类远程武器
     /// 每次齐射三支雷暴弩箭，命中叠加雷暴标记并引爆
@@ -494,6 +646,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns.Items
             tooltips.Add(new TooltipLine(Mod, "AoshunLore", "以北海雷云铸成的风暴连弩"));
             tooltips.Add(new TooltipLine(Mod, "AoshunEffect", "每次齐射三支雷暴弩箭"));
             tooltips.Add(new TooltipLine(Mod, "AoshunEffect2", "命中叠加雷暴标记，三层或延时后引爆雷霆"));
+            tooltips.Add(new TooltipLine(Mod, "AoshunEffect3", "引爆向邻近敌人传递标记，触发链式雷爆"));
         }
     }
 
@@ -554,6 +707,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns.Items
             tooltips.Add(new TooltipLine(Mod, "EdictTomeLore", "「北海雷敕，符落天惊」"));
             tooltips.Add(new TooltipLine(Mod, "EdictTomeEffect", "在光标处展开落雷符箓阵列，阵内敌人周期性遭霆击"));
             tooltips.Add(new TooltipLine(Mod, "EdictTomeEffect2", "同步射出三枚追踪雷符，命中引发落雷并感电"));
+            tooltips.Add(new TooltipLine(Mod, "EdictTomeEffect3", "符阵过半时雷霆过载，自阵缘环射落雷"));
         }
 
         public override string Texture => "Terraria/Images/Item_" + ItemID.BookofSkulls;
@@ -671,6 +825,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns.Items
         private float pulsePhase;
         private int strikeTimer;
         private int auraTimer;
+        private bool overloaded;
 
         public override void SetDefaults() {
             Projectile.width = Projectile.height = 200;
@@ -712,6 +867,12 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns.Items
                 DealAuraDamage();
             }
 
+            // 符阵过半时引发一次雷霆过载，自阵缘环射落雷
+            if (!overloaded && life > 0.5f && arrayScale > 0.55f) {
+                overloaded = true;
+                OverloadPulse();
+            }
+
             if (!VaultUtils.isServer)
                 SpawnArrayParticles(life);
 
@@ -732,6 +893,23 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns.Items
                 strikePos.X, strikePos.Y);
 
             SoundEngine.PlaySound(SoundID.Item122 with { Pitch = 0.15f, Volume = 0.5f }, strikePos);
+        }
+
+        private void OverloadPulse() {
+            if (!VaultUtils.isServer) {
+                AoshunHelper.CreateThunderBurst(Projectile.Center, StrikeRadius, 3, 16);
+                SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.1f, Volume = 0.7f }, Projectile.Center);
+            }
+
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+
+            for (int i = 0; i < 5; i++) {
+                float angle = MathHelper.TwoPi * i / 5f + runeRotation;
+                Vector2 pos = Projectile.Center + angle.ToRotationVector2() * StrikeRadius * 0.7f;
+                Vector2 start = pos + new Vector2(Main.rand.NextFloat(-30f, 30f), -540f);
+                Projectile.NewProjectile(Projectile.GetSource_FromThis(), start, new Vector2(0f, 26f),
+                    ModContent.ProjectileType<LightningEdictStrike>(), (int)(Projectile.damage * 0.9f), 0f, Projectile.owner, pos.X, pos.Y);
+            }
         }
 
         private void DealAuraDamage() {
@@ -1021,7 +1199,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns.Items
 
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
             Projectile.NewProjectile(source, player.Center, velocity, type, damage, knockback, player.whoAmI, attackType);
-            attackType = (attackType + 1) % 2;
+            attackType = (attackType + 1) % 3;
             return false;
         }
 
@@ -1029,6 +1207,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns.Items
             tooltips.Add(new TooltipLine(Mod, "AzureRuinLore", "北海龙王敖顺陨落所铸的终局巨刃"));
             tooltips.Add(new TooltipLine(Mod, "AzureRuinEffect", "挥砍中段释放蔚蓝潮汐雷浪"));
             tooltips.Add(new TooltipLine(Mod, "AzureRuinEffect2", "雷浪命中感电敌人并连锁电弧"));
+            tooltips.Add(new TooltipLine(Mod, "AzureRuinEffect3", "每第三次挥砍倾泻三道滔天潮汐巨浪"));
         }
 
         public override string Texture => "Terraria/Images/Item_" + ItemID.BreakerBlade;
@@ -1120,17 +1299,28 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns.Items
 
                     if (!_waveFired && Timer >= execDur * 0.40f) {
                         _waveFired = true;
+                        bool heavy = (int)Projectile.ai[0] == 2;
                         Vector2 waveDir = Owner.DirectionTo(Main.MouseWorld);
-                        int waveDamage = (int)(Owner.GetTotalDamage(DamageClass.Melee).ApplyTo(Owner.HeldItem.damage) * 1.35f);
-                        Projectile.NewProjectile(Owner.GetSource_ItemUse(Owner.HeldItem),
-                            Owner.Center, waveDir * 20f,
-                            ModContent.ProjectileType<AzureRuinTidal>(),
-                            waveDamage,
-                            Owner.HeldItem.knockBack * 0.75f, Owner.whoAmI);
-                        SoundEngine.PlaySound(SoundID.Item122 with { Pitch = 0.35f, Volume = 0.95f }, Owner.position);
+                        float baseDamage = Owner.GetTotalDamage(DamageClass.Melee).ApplyTo(Owner.HeldItem.damage);
+                        int waveDamage = (int)(baseDamage * (heavy ? 1.7f : 1.35f));
+                        float waveScale = heavy ? 1.7f : 1f;
 
                         if (Owner.whoAmI == Main.myPlayer) {
-                            Owner.GetModPlayer<ScreenShakePlayer>().ShakeScreen(6, 12);
+                            int waveCount = heavy ? 3 : 1;
+                            for (int w = 0; w < waveCount; w++) {
+                                float spread = heavy ? MathHelper.ToRadians(18f * (w - 1)) : 0f;
+                                Projectile.NewProjectile(Owner.GetSource_ItemUse(Owner.HeldItem),
+                                    Owner.Center, waveDir.RotatedBy(spread) * 20f,
+                                    ModContent.ProjectileType<AzureRuinTidal>(),
+                                    waveDamage,
+                                    Owner.HeldItem.knockBack * (heavy ? 1.1f : 0.75f), Owner.whoAmI, waveScale);
+                            }
+                        }
+
+                        SoundEngine.PlaySound(SoundID.Item122 with { Pitch = heavy ? 0.05f : 0.35f, Volume = 1f }, Owner.position);
+
+                        if (Owner.whoAmI == Main.myPlayer) {
+                            Owner.GetModPlayer<ScreenShakePlayer>().ShakeScreen(heavy ? 10 : 6, heavy ? 16 : 12);
                         }
                     }
 
@@ -1253,6 +1443,8 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns.Items
     {
         public override string Texture => "AncientChineseMythology/Textures/Masking/GlaciateWave";
 
+        private float sizeScale = 1f;
+
         public override void SetStaticDefaults() {
             ProjectileID.Sets.TrailingMode[Type] = 2;
             ProjectileID.Sets.TrailCacheLength[Type] = 18;
@@ -1269,6 +1461,15 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns.Items
             Projectile.usesLocalNPCImmunity = true;
             Projectile.localNPCHitCooldown = 8;
             Projectile.ignoreWater = true;
+        }
+
+        public override void OnSpawn(IEntitySource source) {
+            sizeScale = Projectile.ai[0] >= 1f ? Projectile.ai[0] : 1f;
+            if (sizeScale > 1.1f) {
+                Projectile.width = (int)(90 * sizeScale);
+                Projectile.height = (int)(44 * sizeScale);
+                Projectile.timeLeft = 62;
+            }
         }
 
         public override void AI() {
@@ -1353,8 +1554,8 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns.Items
             Texture2D branch = ACMAsset.LightningBranch;
 
             float life = 1f - Projectile.timeLeft / 55f;
-            float scaleX = MathHelper.Lerp(1.75f, 0.55f, ACMUtils.QuadIn(life));
-            float scaleY = MathHelper.Lerp(0.62f, 0.20f, ACMUtils.QuadIn(life));
+            float scaleX = MathHelper.Lerp(1.75f, 0.55f, ACMUtils.QuadIn(life)) * sizeScale;
+            float scaleY = MathHelper.Lerp(0.62f, 0.20f, ACMUtils.QuadIn(life)) * sizeScale;
             float alpha = ACMUtils.QuadOut(1f - life) * 0.94f;
 
             sb.End();
@@ -1606,6 +1807,8 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns.Items
                 nearby.AddBuff(BuffID.Electrified, 240);
                 if (Main.myPlayer == Projectile.owner) {
                     nearby.SimpleStrikeNPC(Math.Max(1, bonusDamage / 2), 0, false, 0f, null, false, 0, true);
+                    // 连锁引爆：向邻近敌人传递一层雷暴标记，触发链式爆炸
+                    TryApplyOrStack(Projectile, nearby, Math.Max(1, (int)(AccumulatedDamage * 0.35f)));
                 }
             }
 

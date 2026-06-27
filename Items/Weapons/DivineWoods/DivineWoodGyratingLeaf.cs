@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -6,6 +7,7 @@ using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 using AncientChineseMythology.Celestias.Boss.Dryades.Items;
+using AncientChineseMythology.Helpers;
 
 namespace AncientChineseMythology.Items.Weapons.DivineWoods;
 
@@ -171,6 +173,9 @@ public class DivineWoodGyratingLeafProj : ModProjectile
             burst.noGravity = true;
         }
 
+        ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+            ACMWeaponBurst.DivineWood, scale: 1f, owner: Projectile.owner);
+
         // 每次命中释放3片旋风叶
         if (Projectile.owner == Main.myPlayer) {
             for (int i = 0; i < 3; i++) {
@@ -185,6 +190,10 @@ public class DivineWoodGyratingLeafProj : ModProjectile
         // 每5次命中触发自然裁决：释放花瓣弹幕环
         if (HitCounter % 5 == 0) {
             SoundEngine.PlaySound(SoundID.Item17 with { Volume = 1f, Pitch = 0.5f }, target.Center);
+
+            // 裁决冲击环 (DrawShockwaveRing + Sparkle 由演出弹幕承载)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.DivineWood, scale: 1.6f, owner: Projectile.owner);
 
             if (Projectile.owner == Main.myPlayer) {
                 for (int i = 0; i < 12; i++) {
@@ -211,31 +220,18 @@ public class DivineWoodGyratingLeafProj : ModProjectile
         Texture2D tex = TextureAssets.Projectile[Type].Value;
         Vector2 origin = tex.Size() / 2f;
 
+        // 双层 ribbon 拖尾 — 回程加速段加亮加宽
+        float ret = _isReturning ? 1f : 0f;
+        WeaponVFX.DrawProjectileTrail(Projectile,
+            baseWidth: MathHelper.Lerp(13f, 19f, ret),
+            outerColor: new Color(20, 110, 55, (byte)MathHelper.Lerp(120, 175, ret)),
+            innerColor: new Color(170, 255, 150, (byte)MathHelper.Lerp(170, 235, ret)),
+            tex: ACMAsset.GlaciateWave, uvScroll: -Main.GlobalTimeWrappedHourly * (1.2f + ret));
+
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
             DepthStencilState.None, RasterizerState.CullNone, null,
             Main.GameViewMatrix.TransformationMatrix);
-
-        // 拖尾
-        for (int i = 0; i < Projectile.oldPos.Length; i++) {
-            if (Projectile.oldPos[i] == Vector2.Zero) continue;
-            float progress = 1f - (float)i / Projectile.oldPos.Length;
-            Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-            Color trailColor = Color.Lerp(new Color(50, 200, 60), new Color(180, 255, 190), progress)
-                * progress * (_isReturning ? 0.60f : 0.45f);
-            trailColor.A = 0;
-            float trailScale = Projectile.scale * progress * (_isReturning ? 0.95f : 0.85f);
-            sb.Draw(tex, drawPos, null, trailColor, Projectile.oldRot[i], origin, trailScale, SpriteEffects.None, 0);
-        }
-
-        // 回程时显示冲击波
-        if (_isReturning && Projectile.velocity.Length() > 10f) {
-            Texture2D wave = ACMAsset.GlaciateWave;
-            sb.Draw(wave, Projectile.Center - Main.screenPosition, null,
-                new Color(60, 220, 80) * 0.50f,
-                Projectile.velocity.ToRotation(), wave.Size() * 0.5f,
-                new Vector2(0.5f, 0.20f), SpriteEffects.None, 0);
-        }
 
         Texture2D sg = ACMAsset.SoftGlow;
         float pulse = 0.35f + 0.1f * MathF.Sin(Timer * 0.12f);

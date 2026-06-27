@@ -43,6 +43,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         private float chargeProgress;
         private float sweepAngle;
         private int sweepLaserIndex = -1;
+        private int slamTimer;
 
         // 激光模式参数
         private const int LaserChargeTime = 80;
@@ -103,7 +104,15 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 case 5:
                     AI_SweepingLaser();
                     break;
+                case 6:
+                    AI_SealContract();
+                    break;
             }
+        }
+
+        public override void OnHitPlayer(Player target, Player.HurtInfo info) {
+            // 冥眼/封印命中 -> 叠加冥律
+            target.GetModPlayer<YinJudgmentPlayer>().AddDecreeStack();
         }
 
         #region 模式0：列阵激光
@@ -724,6 +733,88 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
             if (localTimer > totalDuration + 30)
                 Projectile.Kill();
+        }
+
+        #endregion
+
+        #region 模式6：镇魂封印收缩环
+
+        /// <summary>
+        /// 镇魂封印收缩环（Act II 强制阶段）：
+        /// 冥眼绕固定封印中心（owner.SealCenter）缓慢收缩，形成困住玩家的牢笼。
+        /// - SealState==0：收缩中，接触造成中等伤害（墙壁压迫）。
+        /// - SealState==1：弱点（鬼门关钥）被击破 -> 冥眼向外飞散消失，不造成伤害（逃脱成功）。
+        /// - SealState==2 / 完全收缩：处决性合击，冲向中心造成重击后消散。
+        /// ModeParam = 环上角度。
+        /// </summary>
+        private void AI_SealContract() {
+            NPC owner = FindOwner();
+            if (owner == null || owner.ModNPC is not YinEmperor emperor) {
+                Projectile.Kill();
+                return;
+            }
+
+            if (localTimer == 1)
+                Projectile.timeLeft = 800;
+
+            Vector2 center = emperor.SealCenter;
+            int sealState = emperor.SealState;
+            float angle = ModeParam;
+
+            // 破封：向外飞散消失
+            if (sealState == 1) {
+                Projectile.damage = 0;
+                if (Projectile.velocity.LengthSquared() < 4f)
+                    Projectile.velocity = (Projectile.Center - center).SafeNormalize(Vector2.UnitY) * 13f;
+                Projectile.velocity *= 1.01f;
+                Projectile.rotation += 0.2f;
+                Projectile.alpha += 10;
+                if (Main.netMode != NetmodeID.Server && Main.rand.NextBool(2)) {
+                    var d = Dust.NewDustPerfect(Projectile.Center, DustID.IceTorch);
+                    d.noGravity = true;
+                    d.scale = 1.2f;
+                }
+                if (Projectile.alpha >= 255)
+                    Projectile.Kill();
+                return;
+            }
+
+            float progress = MathHelper.Clamp(localTimer / (float)YinEmperor.SealContractTime, 0f, 1f);
+
+            // 超时合拢 / 完全收缩 -> 处决性合击
+            if (sealState == 2 || progress >= 1f) {
+                Projectile.damage = YinEmperorHelper.GetScaledDamage(140);
+                Projectile.Center = Vector2.Lerp(Projectile.Center, center, 0.22f);
+                Projectile.rotation = (center - Projectile.Center).ToRotation() + MathHelper.PiOver2;
+                if (Main.netMode != NetmodeID.Server) {
+                    YinEmperorHelper.CreateImperialTrail(Projectile.Center, (center - Projectile.Center) * 0.1f, 1.2f);
+                }
+                slamTimer++;
+                if (slamTimer > 36) {
+                    Projectile.alpha += 14;
+                    if (Projectile.alpha >= 255)
+                        Projectile.Kill();
+                }
+                return;
+            }
+
+            // 正常收缩
+            float radius = MathHelper.Lerp(520f, 110f, ACMUtils.SineInOut(progress));
+            angle += 0.012f;
+            ModeParam = angle;
+            Vector2 desired = center + angle.ToRotationVector2() * radius;
+            Projectile.Center = Vector2.Lerp(Projectile.Center, desired, 0.3f);
+            Projectile.rotation = (center - Projectile.Center).ToRotation() + MathHelper.PiOver2;
+            Projectile.damage = YinEmperorHelper.GetScaledDamage(70);
+            Projectile.alpha = 0;
+
+            // 收缩警示粒子
+            if (Main.netMode != NetmodeID.Server && Main.rand.NextBool(3)) {
+                var d = Dust.NewDustPerfect(Projectile.Center, DustID.Shadowflame);
+                d.noGravity = true;
+                d.scale = 1.1f;
+                d.velocity = (center - Projectile.Center).SafeNormalize(Vector2.Zero) * 1.5f;
+            }
         }
 
         #endregion

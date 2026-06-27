@@ -1,5 +1,8 @@
-﻿using AncientChineseMythology.Underworlds.Tiles;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Tiles;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -73,6 +76,9 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 spark.noGravity = true;
             }
 
+            //枪口径向辉光闪 (青黄魂火, 走专属一次性枪口闪弹, 更新阶段安全)
+            NetherfireMuzzleFlash.Spawn(source, muzzlePos, muzzleDir, player.whoAmI);
+
             return false;
         }
 
@@ -93,7 +99,8 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
 
     /// <summary>
     /// 幽火弹丸弹幕 - 带有冥火拖尾的散射弹丸，命中时产生冥烟爆裂
-    /// 使用ACMAsset.LightShot叠加光弹效果，ACMAsset.EmberShards命中碎片
+    /// 表现重做: 双层短拖尾 (<see cref="WeaponVFX.DrawProjectileTrail"/>) + LightShot 光弹核;
+    /// 命中走 <see cref="ACMWeaponBurst"/> 青黄魂火演出。
     /// </summary>
     public class NetherfireBullet : ModProjectile
     {
@@ -172,23 +179,22 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 );
                 smoke.noGravity = true;
             }
+
+            //命中演出: 青黄魂火径向辉光 + 冲击环 (走 ACMWeaponBurst, 更新阶段安全)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.SoulFire, scale: 0.7f, owner: Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            //使用LightShot灰度图绘制幽火光弹
+            //双层短拖尾 (外宽暗冥紫 + 内窄亮幽火)
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 7f,
+                outerColor: new Color(70, 30, 110, 140), innerColor: new Color(200, 110, 240, 190),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.6f);
+
+            //使用LightShot灰度图绘制幽火光弹核心
             Texture2D lightShot = ACMAsset.LightShot;
             if (lightShot != null) {
                 Vector2 origin = lightShot.Size() / 2f;
-
-                //拖尾光弹
-                for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                    if (Projectile.oldPos[i] == Vector2.Zero) continue;
-                    float progress = 1f - (float)i / Projectile.oldPos.Length;
-                    Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                    Color trailColor = Color.Lerp(new Color(60, 20, 100), new Color(180, 80, 220), progress) * progress * 0.5f;
-                    trailColor.A = 0;
-                    Main.EntitySpriteDraw(lightShot, drawPos, null, trailColor, Projectile.oldRot[i], origin, 0.4f * progress, SpriteEffects.None, 0);
-                }
 
                 //主体光弹
                 Color mainColor = new Color(200, 100, 255) * 0.8f;
@@ -227,6 +233,70 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 );
                 smoke.noGravity = true;
             }
+        }
+    }
+
+    /// <summary>
+    /// 幽火铳·枪口闪弹 (纯视觉, damage=0): 开火瞬间在枪口跑一道青黄魂火
+    /// <see cref="WeaponVFX.DrawRadialBloom"/> 闪光 + <see cref="ACMShaders.DrawBeam"/> 短热浪锥。
+    /// 绘制只在 PreDraw, 开火阶段仅 <see cref="Spawn"/> 触发 (仅 owner 客户端)。
+    /// </summary>
+    public class NetherfireMuzzleFlash : ModProjectile
+    {
+        public override string Texture => "Terraria/Images/Projectile_1";
+        private const int Life = 10;
+
+        private ref float DirX => ref Projectile.ai[0];
+        private ref float DirY => ref Projectile.ai[1];
+
+        public static void Spawn(IEntitySource source, Vector2 worldPos, Vector2 dir, int owner) {
+            if (Main.dedServ || Main.myPlayer != owner)
+                return;
+            Projectile.NewProjectile(source, worldPos, Vector2.Zero,
+                ModContent.ProjectileType<NetherfireMuzzleFlash>(), 0, 0f, owner, dir.X, dir.Y);
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = 2;
+            Projectile.height = 2;
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = Life;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.alpha = 255;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+
+        public override void AI() {
+            Projectile.velocity = Vector2.Zero;
+            Lighting.AddLight(Projectile.Center, 0.6f, 0.55f, 0.3f);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+
+            float life = 1f - Projectile.timeLeft / (float)Life; // 0→1
+            float fade = MathHelper.Clamp(1f - life, 0f, 1f);     // 开火最亮, 快速衰减
+
+            Vector2 dir = new Vector2(DirX, DirY);
+            if (dir == Vector2.Zero)
+                dir = Vector2.UnitX;
+            dir.Normalize();
+
+            //短热浪锥 (BeamGrad), 沿枪口方向
+            ACMShaders.DrawBeam(Projectile.Center - dir * 6f, Projectile.Center + dir * (28f + fade * 18f),
+                halfWidth: 9f * fade + 2f, core: new Color(255, 230, 150), edge: new Color(120, 220, 200),
+                intensity: fade * 0.9f, flowSpeed: 3.5f, flowScale: 2.6f, coreSharp: 2.4f);
+
+            //枪口径向辉光 (青黄魂火, 走全屏名额, 名额满退化为柔光)
+            WeaponVFX.DrawRadialBloom(Projectile.Center, radiusFrac: 0.025f + fade * 0.02f,
+                intensity: fade * 0.55f, color: new Color(255, 225, 140), rayCount: 6f);
+
+            return false;
         }
     }
 }

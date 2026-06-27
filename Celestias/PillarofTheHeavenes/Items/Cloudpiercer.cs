@@ -1,4 +1,5 @@
 ﻿using AncientChineseMythology.Celestias.PillarofTheHeavenes.Tiles;
+using AncientChineseMythology.Helpers;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -144,9 +145,17 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, dustType, vel.X, vel.Y, 100, default, 1.8f);
                 Main.dust[dust].noGravity = true;
             }
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.HeavenlyPillar, 0.8f, Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            // 穿云箭金白祥瑞双层 ribbon
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 9f,
+                outerColor: new Color(150, 220, 235, 120), innerColor: new Color(255, 250, 210, 180),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.5f);
+
             Texture2D tex = TextureAssets.Projectile[Type].Value;
             Vector2 origin = tex.Size() / 2f;
 
@@ -157,6 +166,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
 
                 Color trailColor = Color.Lerp(new Color(100, 200, 180), Color.Gold, progress);
                 trailColor *= progress * 0.6f;
+                trailColor.A = 0;
 
                 Vector2 pos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
                 Main.spriteBatch.Draw(tex, pos, null, trailColor, Projectile.oldRot[i], origin, Projectile.scale * progress, SpriteEffects.None, 0f);
@@ -164,6 +174,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
 
             // 主体发光
             Color glowColor = Color.Gold * 0.5f;
+            glowColor.A = 0;
             Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, glowColor, Projectile.rotation, origin, Projectile.scale * 1.2f, SpriteEffects.None, 0f);
 
             Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, lightColor, Projectile.rotation, origin, Projectile.scale, SpriteEffects.None, 0f);

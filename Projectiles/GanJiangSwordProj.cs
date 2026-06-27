@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,6 +12,10 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Projectiles
 {
+    /// <summary>
+    /// 干将剑刃 (主/左键) — 干将莫邪双剑之"赤"暖刃。可见质变 (纯表现):
+    /// 剑气改赤橙暖色, 命中触发 <see cref="ACMWeaponBurst"/> 赤铜爆发 (旋斩重击放大)。机制/伤害不变。
+    /// </summary>
     public class GanJiangSwordProj : ModProjectile
     {
         private const float SWINGRANGE = 1.67f * (float)Math.PI;
@@ -147,12 +152,16 @@ namespace AncientChineseMythology.Projectiles
             for (int i = 0; i < particleCount; i++) {
                 Vector2 velocity = Main.rand.NextVector2Circular(4f, 6f);
 
-                //创建粒子
-                Dust dust = Dust.NewDustPerfect(target.Center, DustID.Clentaminator_Green, velocity, 100, Color.Blue, 1f);
+                //创建粒子 (赤暖刃)
+                Dust dust = Dust.NewDustPerfect(target.Center, DustID.Torch, velocity, 100, default, 1f);
                 dust.noGravity = true;
                 dust.fadeIn = 0.8f;
                 dust.scale = 1f;
             }
+            // 第三连击(旋斩)放大爆发演出
+            float burstScale = CurrentAttack == AttackType.Spin ? 1.5f : 1f;
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Crimson, scale: burstScale, owner: Projectile.owner);
         }
         public struct CustomVertex : IVertexType
         {
@@ -195,7 +204,7 @@ namespace AncientChineseMythology.Projectiles
 
             List<ColoredVertex> ve = new List<ColoredVertex>();
 
-            Color color = Color.LightGreen * 1f;
+            Color color = new Color(255, 95, 45) * 1f; // 赤暖剑气
             if (CurrentAttack == AttackType.Swing && CurrentStage != AttackStage.Prepare) {
                 if (Projectile.spriteDirection > 0) {
                     for (int i = 0; i < 12; i++) {

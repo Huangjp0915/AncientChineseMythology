@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
 using AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs;
 using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
@@ -63,15 +64,17 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
             if (!target.boss && target.life < target.lifeMax * 0.25f) {
                 target.SimpleStrikeNPC(target.life + 10, hit.HitDirection, true, 0f, null, false, 0, true);
                 SoundEngine.PlaySound(SoundID.Item14 with { Volume = 1.5f, Pitch = -0.8f }, target.Center);
-                for (int i = 0; i < 50; i++) {
-                    Vector2 vel = Main.rand.NextVector2CircularEdge(16f, 16f);
-                    Dust kill = Dust.NewDustPerfect(target.Center, DustID.Torch, vel, 40, new Color(80, 0, 0), 3.5f);
-                    kill.noGravity = true;
-                }
+                // 处决: 致命红命中爆发 + 全屏审判 (ElementalScreenTint 暗红 + RadialBloom 核)
+                ACMWeaponBurst.Spawn(player.GetSource_OnHit(target), target.Center, ACMWeaponBurst.LethalRed, 2.4f, player.whoAmI);
+                SpawnJudgment(player, target.Center, execute: true);
+                WeaponVFX.AddScreenShake(target.Center, 7f);
             }
 
             if (hit.Crit) {
                 SoundEngine.PlaySound(SoundID.Item119 with { Volume = 1.2f, Pitch = -0.6f }, target.Center);
+                // 暴击连锁审判: 全屏黑紫定调 + 核心泛光
+                SpawnJudgment(player, target.Center, execute: false);
+                WeaponVFX.AddScreenShake(target.Center, 5f);
                 for (int i = 0; i < Main.maxNPCs; i++) {
                     NPC nearby = Main.npc[i];
                     if (!nearby.CanBeChasedBy() || nearby.whoAmI == target.whoAmI) continue;
@@ -81,6 +84,17 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
                     }
                 }
             }
+            else {
+                ACMWeaponBurst.Spawn(player.GetSource_OnHit(target), target.Center, ACMWeaponBurst.FengduVoid, 1.1f, player.whoAmI);
+            }
+        }
+
+        // 全屏审判演出弹幕 (仅本地客户端生成, 纯视觉)
+        private static void SpawnJudgment(Player player, Vector2 worldPos, bool execute) {
+            if (Main.dedServ || Main.myPlayer != player.whoAmI)
+                return;
+            Projectile.NewProjectile(player.GetSource_Misc("ImperatorJudgment"), worldPos, Vector2.Zero,
+                ModContent.ProjectileType<ImperatorJudgmentFlash>(), 0, 0f, player.whoAmI, execute ? 1f : 0f);
         }
 
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
@@ -172,31 +186,32 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
             target.AddBuff(BuffID.ShadowFlame, 600);
             target.AddBuff(BuffID.OnFire3, 600);
-            for (int i = 0; i < 18; i++) {
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center, ACMWeaponBurst.FengduVoid, 1f, Projectile.owner);
+            for (int i = 0; i < 8; i++) {
                 Vector2 vel = Main.rand.NextVector2Circular(10f, 10f);
-                Dust burst = Dust.NewDustPerfect(target.Center, DustID.Torch, vel, 60, new Color(80, 0, 0), Main.rand.NextFloat(2.5f, 3.5f));
+                Dust burst = Dust.NewDustPerfect(target.Center, DustID.Torch, vel, 60, new Color(120, 30, 60), Main.rand.NextFloat(2.5f, 3.5f));
                 burst.noGravity = true;
             }
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            Texture2D glaciate = ACMAsset.GlaciateWave;
             float opacity = (255 - Projectile.alpha) / 255f;
-            if (glaciate != null) {
-                Vector2 origin = glaciate.Size() / 2f;
-                for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                    if (Projectile.oldPos[i] == Vector2.Zero) continue;
-                    float progress = 1f - (float)i / Projectile.oldPos.Length;
-                    Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                    Color trailColor = Color.Lerp(new Color(180, 20, 20), new Color(40, 0, 0), 1f - progress) * progress * opacity * 0.8f;
-                    trailColor.A = 0;
-                    float scale = 0.7f * progress;
-                    Main.EntitySpriteDraw(glaciate, drawPos, null, trailColor, Projectile.oldRot[i], origin, new Vector2(scale, scale * 0.4f), SpriteEffects.None, 0);
-                }
-                Color mainColor = new Color(220, 40, 40) * opacity * 0.9f;
-                mainColor.A = 0;
-                Main.EntitySpriteDraw(glaciate, Projectile.Center - Main.screenPosition, null, mainColor, Projectile.rotation, origin, new Vector2(0.8f, 0.35f), SpriteEffects.None, 0);
-            }
+
+            // 双层刀气拖尾 (外宽暗紫 + 内窄赤芯), 沿历史点构成弧形扫劈
+            WeaponVFX.DrawProjectileTrail(Projectile, 46f * Projectile.scale,
+                new Color(90, 25, 150) * opacity, new Color(255, 70, 90) * opacity,
+                ACMAsset.GlaciateWave, uvScroll: -0.04f, subdivisions: 3);
+
+            // BeamGrad 刀刃锋线 (尾→刃, 赤芯黑紫边), 即时挥砍的锐利前沿
+            Vector2 dir = Projectile.velocity.SafeNormalize(Vector2.UnitX);
+            Vector2 tip = Projectile.Center + dir * 60f * Projectile.scale;
+            Vector2 tail = Projectile.Center - dir * 70f * Projectile.scale;
+            ACMShaders.DrawBeam(tail, tip, 26f * Projectile.scale,
+                new Color(255, 80, 95), new Color(70, 18, 120), opacity * 0.9f,
+                flowSpeed: 2.2f, flowScale: 2.4f, coreSharp: 2.6f);
+
+            // 刃心柔光
+            WeaponVFX.DrawGlowBurst(Projectile.Center, (1.4f + opacity) * Projectile.scale, new Color(160, 40, 90) * (opacity * 0.7f));
             return false;
         }
 
@@ -278,39 +293,55 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
             float progress = Timer / 45f;
             float opacity = 1f - progress;
 
-            Texture2D slashBurst = ACMAsset.SlashBurst;
-            if (slashBurst != null) {
-                Vector2 origin = slashBurst.Size() / 2f;
-                for (int i = 0; i < 4; i++) {
-                    float angle = MathHelper.PiOver4 * i + Timer * 0.03f;
-                    Color burstColor = Color.Lerp(new Color(255, 60, 30), new Color(80, 0, 0), progress) * opacity * 0.7f;
-                    burstColor.A = 0;
-                    float scale = 0.3f + progress * 0.4f;
-                    Main.EntitySpriteDraw(slashBurst, Projectile.Center - Main.screenPosition, null, burstColor, angle, origin, new Vector2(scale * 0.5f, scale), SpriteEffects.None, 0);
-                }
-            }
+            // 吸卷冲击环 (向心收口的虚空裂口)
+            float ringR = MathHelper.Lerp(150f, 24f, progress);
+            WeaponVFX.DrawShockwaveRing(Projectile.Center, ringR, 16f, opacity * 0.8f,
+                new Color(190, 120, 255), new Color(40, 10, 70));
 
-            Texture2D softGlow = ACMAsset.SoftGlow;
-            if (softGlow != null) {
-                Vector2 origin = softGlow.Size() / 2f;
-                float pulse = 2.5f + MathF.Sin(Timer * 0.4f) * 0.5f;
-                Color coreColor = new Color(200, 30, 30) * opacity * 0.8f;
-                coreColor.A = 0;
-                Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, coreColor, 0f, origin, pulse, SpriteEffects.None, 0);
-                Color haloColor = new Color(60, 0, 0) * opacity * 0.5f;
-                haloColor.A = 0;
-                Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, haloColor, 0f, origin, pulse * 1.5f, SpriteEffects.None, 0);
-            }
-
+            // 吸积旋臂 (赤金边的环面碎屑)
             Texture2D emberShards = ACMAsset.EmberShards;
             if (emberShards != null) {
                 Vector2 origin = emberShards.Size() / 2f;
-                Color shardColor = new Color(255, 80, 20) * opacity * 0.6f;
+                Color shardColor = new Color(200, 90, 255) * opacity * 0.6f;
                 shardColor.A = 0;
-                float shardScale = 0.5f + progress * 0.3f;
-                Main.EntitySpriteDraw(emberShards, Projectile.Center - Main.screenPosition, null, shardColor, Timer * 0.15f, origin, shardScale, SpriteEffects.None, 0);
+                float shardScale = 0.6f + progress * 0.4f;
+                Main.EntitySpriteDraw(emberShards, Projectile.Center - Main.screenPosition, null, shardColor, Timer * 0.18f, origin, shardScale, SpriteEffects.None, 0);
+            }
+
+            // 奇点暗芯 + 紫晕
+            Texture2D softGlow = ACMAsset.SoftGlow;
+            if (softGlow != null) {
+                Vector2 origin = softGlow.Size() / 2f;
+                Color dark = new Color(12, 4, 22) * (0.9f * opacity);
+                dark.A = 0;
+                Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, dark, 0f, origin, (2.6f + MathF.Sin(Timer * 0.4f) * 0.4f), SpriteEffects.None, 0);
+                Color halo = new Color(120, 50, 210) * (opacity * 0.5f);
+                halo.A = 0;
+                Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, halo, 0f, origin, 3.6f, SpriteEffects.None, 0);
             }
             return false;
+        }
+
+        // 第三击虚空漩涡的签名时刻: GenericWarp 黑洞吸卷扭曲 (本武器唯一全屏后处理, 走名额仲裁)
+        public override void PostDraw(Color lightColor) {
+            if (Main.dedServ || Main.gameMenu)
+                return;
+            float progress = Timer / 45f;
+            float warp = MathHelper.Clamp(1f - progress, 0f, 1f);
+            if (warp < 0.05f || !ACMShaders.RequestFullscreenSlot())
+                return;
+            Effect fx = ACMShaders.GenericWarp;
+            if (fx == null)
+                return;
+            ACMShaders.SetCommonParams(fx, Projectile.Center, warp);
+            fx.Parameters["uRadius"]?.SetValue(0.55f);
+            fx.Parameters["uWarpScale"]?.SetValue(1.5f);
+            fx.Parameters["uChroma"]?.SetValue(0.7f);
+            fx.Parameters["uRadialPull"]?.SetValue(0.9f); // 向心吸入
+            fx.Parameters["uMode"]?.SetValue(4f);          // void 黑洞档
+            fx.Parameters["uTint"]?.SetValue(new Vector4(0.32f, 0.12f, 0.5f, 0.7f));
+            SpriteBatch sb = Main.spriteBatch;
+            ACMShaders.ApplyScreenPostProcess(sb, fx, bindNoise: true);
         }
 
         public override void OnKill(int timeLeft) {
@@ -325,6 +356,61 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
                 Dust death = Dust.NewDustPerfect(Projectile.Center, DustID.Wraith, vel, 80, default, Main.rand.NextFloat(2.5f, 4f));
                 death.noGravity = true;
             }
+        }
+    }
+
+    /// <summary>
+    /// 全屏审判演出 (纯视觉, 本地客户端): 处决=暗红定调; 暴击=黑紫定调。
+    /// ElementalScreenTint 短暂染屏 + RadialBloom 核心泛光 (单次"短暂定调")。
+    /// </summary>
+    public class ImperatorJudgmentFlash : ModProjectile
+    {
+        public override string Texture => "Terraria/Images/Projectile_1";
+        private const int Life = 26;
+
+        public override void SetDefaults() {
+            Projectile.width = 2;
+            Projectile.height = 2;
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = Life;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.alpha = 255;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+        public override bool? CanDamage() => false;
+        public override void AI() => Projectile.velocity = Vector2.Zero;
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+
+            float life = MathHelper.Clamp(Projectile.timeLeft / (float)Life, 0f, 1f); // 1→0
+            bool execute = Projectile.ai[0] > 0.5f;
+            Color tint = execute ? new Color(140, 16, 22) : new Color(70, 24, 130);
+            Color tintLow = execute ? new Color(30, 2, 6) : new Color(14, 4, 30);
+            Color bloom = execute ? new Color(255, 60, 70) : new Color(180, 110, 255);
+
+            // ElementalScreenTint 短暂染屏 (不读 screenTarget, 不占全屏名额)
+            Effect tintFx = ACMShaders.ElementalScreenTint;
+            if (tintFx != null) {
+                ACMShaders.SetCommonParams(tintFx, Projectile.Center, life);
+                tintFx.Parameters["uTint"]?.SetValue(new Vector4(tint.ToVector3(), 0.34f * life));
+                tintFx.Parameters["uTint2"]?.SetValue(new Vector4(tintLow.ToVector3(), 0f));
+                tintFx.Parameters["uVignette"]?.SetValue(0.5f);
+                tintFx.Parameters["uFogScale"]?.SetValue(2.4f);
+                SpriteBatch sb = Main.spriteBatch;
+                sb.End();
+                ACMShaders.DrawFullscreenOverlay(tintFx, BlendState.AlphaBlend);
+                ACMShaders.RestoreDefaultBatch(sb);
+            }
+
+            // 核心泛光 (RadialBloom 占全屏名额, 名额被占自动退化柔光)
+            WeaponVFX.DrawRadialBloom(Projectile.Center, 0.2f, life * 0.85f, bloom, 10f);
+            return false;
         }
     }
 }

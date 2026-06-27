@@ -1,7 +1,9 @@
-﻿using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
 using AncientChineseMythology.Underworlds.Items.Weapons.Revenants;
 using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
+using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -70,6 +72,11 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
             target.AddBuff(BuffID.OnFire3, 600);
             target.AddBuff(BuffID.Ichor, 600);
 
+            // 命中冲击演出 (暗冥紫径向辉光 + 冲击环)
+            ACMWeaponBurst.Spawn(player.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.AbyssPurple, scale: hit.Crit ? 1.5f : 1f, owner: player.whoAmI);
+            WeaponVFX.AddScreenShake(target.Center, hit.Crit ? 4f : 2f);
+
             // 非Boss敌人血量低于15%时直接斩杀
             if (!target.boss && target.life < target.lifeMax * 0.15f) {
                 target.SimpleStrikeNPC(target.life + 10, hit.HitDirection, true, 0f, null, false, 0, true);
@@ -79,6 +86,11 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
                     Dust kill = Dust.NewDustPerfect(target.Center, DustID.Shadowflame, vel, 60, default, 3f);
                     kill.noGravity = true;
                 }
+                // 处决升级演出: 屠神溶解崩解 (DissolveBurn) + 致命纯红命中爆 (LethalRed), 仅本机生成
+                YamaExecuteFinisher.Spawn(player.GetSource_OnHit(target), target.Center, target.width + target.height, player.whoAmI);
+                ACMWeaponBurst.Spawn(player.GetSource_OnHit(target), target.Center,
+                    ACMWeaponBurst.LethalRed, scale: 1.7f, owner: player.whoAmI);
+                WeaponVFX.AddScreenShake(target.Center, 8f);
             }
 
             for (int i = 0; i < 25; i++) {
@@ -199,22 +211,28 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
                 );
                 burst.noGravity = true;
             }
+            // 屠神斩波命中冲击演出 (暗冥紫)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.AbyssPurple, scale: 1f, owner: Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            float opacity = (255 - Projectile.alpha) / 255f;
+
+            // 屠神斩 BeamGrad 主刃 (沿飞行轴的暗冥紫光束, 随消隐淡出)
+            Vector2 dir = Projectile.rotation.ToRotationVector2();
+            ACMShaders.DrawBeam(Projectile.Center - dir * 70f, Projectile.Center + dir * 70f, 26f * opacity,
+                new Color(235, 180, 255), new Color(120, 40, 200), opacity,
+                flowSpeed: 2.0f, flowScale: 2.2f, coreSharp: 2.4f);
+
+            // 双层带状斩迹 (外宽暗紫 + 内窄亮紫)
+            WeaponVFX.DrawProjectileTrail(Projectile, 24f,
+                new Color(120, 40, 200, 150), new Color(235, 190, 255, 200),
+                uvScroll: -(float)Main.timeForVisualEffects * 0.03f);
+
             Texture2D glaciate = ACMAsset.GlaciateWave;
             if (glaciate != null) {
                 Vector2 origin = glaciate.Size() / 2f;
-                float opacity = (255 - Projectile.alpha) / 255f;
-                for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                    if (Projectile.oldPos[i] == Vector2.Zero) continue;
-                    float progress = 1f - (float)i / Projectile.oldPos.Length;
-                    Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                    Color trailColor = Color.Lerp(new Color(255, 80, 220), new Color(150, 30, 200), 1f - progress) * progress * opacity * 0.7f;
-                    trailColor.A = 0;
-                    float scale = 0.6f * progress;
-                    Main.EntitySpriteDraw(glaciate, drawPos, null, trailColor, Projectile.oldRot[i], origin, new Vector2(scale, scale * 0.5f), SpriteEffects.None, 0);
-                }
                 Color mainColor = new Color(255, 150, 255) * opacity * 0.9f;
                 mainColor.A = 0;
                 Main.EntitySpriteDraw(glaciate, Projectile.Center - Main.screenPosition, null, mainColor, Projectile.rotation, origin, new Vector2(0.7f, 0.4f), SpriteEffects.None, 0);
@@ -235,6 +253,63 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
                 );
                 death.noGravity = true;
             }
+        }
+    }
+
+    /// <summary>
+    /// 屠神处决演出弹幕 (纯视觉, damage=0): 斩杀低血敌人瞬间在其位置展开 DissolveBurn 溶解崩解斩痕
+    /// (致命纯红灼边) + 冲击环 + 径向辉光。绘制只在 PreDraw, 命中阶段仅 <see cref="Spawn"/> 触发。
+    /// </summary>
+    public class YamaExecuteFinisher : ModProjectile
+    {
+        public override string Texture => "Terraria/Images/Projectile_1";
+        private const int Life = 30;
+        private float Size => Projectile.ai[0] <= 0f ? 80f : Projectile.ai[0];
+
+        public static void Spawn(IEntitySource source, Vector2 worldPos, float size, int owner) {
+            if (Main.dedServ || Main.myPlayer != owner)
+                return;
+            Projectile.NewProjectile(source, worldPos, Vector2.Zero,
+                ModContent.ProjectileType<YamaExecuteFinisher>(), 0, 0f, owner, size);
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = 2;
+            Projectile.height = 2;
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = Life;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.alpha = 255;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+        public override void AI() => Projectile.velocity = Vector2.Zero;
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+            float life = 1f - Projectile.timeLeft / (float)Life;
+            float fade = MathHelper.Clamp(1f - life, 0f, 1f);
+
+            Texture2D slash = ACMAsset.SlashBurst;
+            if (slash != null && slash.Width > 0) {
+                Vector2 origin = slash.Size() * 0.5f;
+                float scale = (Size / slash.Width) * MathHelper.Lerp(1.6f, 2.8f, life);
+                WeaponVFX.ApplyDissolveBurn(slash, Projectile.Center, null,
+                    new Color(250, 40, 56), 0f, origin, scale,
+                    threshold: life, intensity: fade,
+                    edgeColor: new Color(255, 140, 90, 255), edgeWidth: 0.11f, noiseScale: 2.6f);
+            }
+
+            WeaponVFX.DrawShockwaveRing(Projectile.Center, 16f + life * 120f, 12f, fade * 0.85f,
+                new Color(255, 110, 110), new Color(150, 12, 18));
+            if (fade > 0.4f)
+                WeaponVFX.DrawRadialBloom(Projectile.Center, 0.08f, fade * 0.6f, new Color(250, 60, 70), 8f);
+
+            return false;
         }
     }
 }

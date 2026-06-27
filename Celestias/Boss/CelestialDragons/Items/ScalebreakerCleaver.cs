@@ -1,5 +1,7 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
+using System.Collections.Generic;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -121,6 +123,10 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, DustID.GoldCoin, vel.X, vel.Y, 100, default, 1.5f);
                 Main.dust[dust].noGravity = true;
             }
+
+            ACMWeaponBurst.Spawn(player.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.GoldDragon, dragonFury >= MaxFury ? 1.6f : 1.1f, player.whoAmI);
+            WeaponVFX.AddScreenShake(target.Center, 2.5f);
         }
 
         public override void ModifyTooltips(System.Collections.Generic.List<TooltipLine> tooltips) {
@@ -217,6 +223,9 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
             if (hit.Crit) {
                 SoundEngine.PlaySound(SoundID.Item74 with { Pitch = 0.3f, Volume = 0.6f }, target.Center);
             }
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.GoldDragon, 1.2f, Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
@@ -306,9 +315,17 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, DustID.GoldFlame, vel.X, vel.Y, 100, default, 1.5f);
                 Main.dust[dust].noGravity = true;
             }
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.GoldDragon, 0.8f, Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            // 金龙气刃双层 ribbon
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 14f,
+                outerColor: new Color(200, 130, 30, 120), innerColor: new Color(255, 240, 170, 180),
+                tex: ACMAsset.GlaciateWave, uvScroll: -Main.GlobalTimeWrappedHourly * 1.4f);
+
             Texture2D texture = ACMAsset.GlaciateWave ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = new Vector2(0, texture.Height / 2f);
 
@@ -407,9 +424,18 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
             }
 
             SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.8f, Volume = 0.5f }, target.Center);
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.GoldDragon, 1.5f, Projectile.owner);
+            WeaponVFX.AddScreenShake(target.Center, 4f);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            // 巨龙咆哮波金龙双层 ribbon
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 26f * waveScale,
+                outerColor: new Color(200, 110, 25, 130), innerColor: new Color(255, 240, 170, 185),
+                tex: ACMAsset.GlaciateWave, uvScroll: -Main.GlobalTimeWrappedHourly * 1.3f);
+
             Texture2D texture = ACMAsset.GlaciateWave ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = new Vector2(0, texture.Height / 2f);
 
@@ -529,9 +555,26 @@ namespace AncientChineseMythology.Celestias.Boss.CelestialDragons.Items
             }
 
             SoundEngine.PlaySound(SoundID.Item119 with { Pitch = 0.5f, Volume = 0.7f }, target.Center);
+
+            // 逆鳞之怒·处决级金龙演出
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.GoldDragon, 2f, Projectile.owner);
+            WeaponVFX.AddScreenShake(target.Center, 6f);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            // 逆鳞之怒招牌演出: 半透明金龙身段 ribbon + 金芒径向辉光
+            var ribbon = new List<Vector2>(Projectile.oldPos.Length);
+            for (int i = 0; i < Projectile.oldPos.Length; i++) {
+                if (Projectile.oldPos[i] == Vector2.Zero) continue;
+                ribbon.Add(Projectile.oldPos[i] + Projectile.Size / 2f);
+            }
+            if (ribbon.Count >= 2)
+                WeaponVFX.DrawRibbonTrail(ribbon.ToArray(), baseWidth: 30f * Projectile.scale,
+                    outerColor: new Color(200, 110, 25, 150), innerColor: new Color(255, 240, 170, 190),
+                    tex: ACMAsset.GlaciateWave, uvScroll: -Main.GlobalTimeWrappedHourly * 1.5f);
+            WeaponVFX.DrawRadialBloom(Projectile.Center, 0.1f, 0.5f, new Color(255, 210, 110), 6f);
+
             Texture2D texture = ACMAsset.LightShot ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = texture.Size() / 2f;
 

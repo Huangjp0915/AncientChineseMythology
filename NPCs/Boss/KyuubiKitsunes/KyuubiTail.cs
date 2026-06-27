@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 
@@ -80,6 +81,20 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         private Color tailColor = Color.White;
         private float glowIntensity = 0f;
 
+        // —— V2: 尾巴角色 / 钉位 / 幻影真身 ——
+        /// <summary>二阶段分工: -1=无, 0=刺客(striker) 1=术士(caster) 2=鞭尾(whip)。尾尖辉光按此色编码。</summary>
+        public int Role { get; set; } = -1;
+        /// <summary>角色色 (尾尖辉光 / ribbon 用)。Role 设定时由本体填入。</summary>
+        public Color RoleTint { get; set; } = Color.Transparent;
+        /// <summary>幻影真身尾尖额外提亮 (0~1) — 让玩家一眼读出"哪个九尾是真"。</summary>
+        public float TipGlowBoost { get; set; } = 0f;
+        /// <summary>狐火曼陀罗钉位模式: 尾尖固定指向九边形顶点。</summary>
+        public bool Pinned { get; set; } = false;
+        /// <summary>钉位目标 (世界坐标)。</summary>
+        public Vector2 PinnedTarget { get; set; }
+
+        private bool HasRole => Role >= 0 && RoleTint.A > 0;
+
         public enum TailAttackType
         {
             None,
@@ -154,6 +169,12 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
 
             if (IsAttacking) {
                 UpdateAttack(globalTime);
+            }
+            else if (Pinned) {
+                // 曼陀罗钉位: 尾尖固定指向九边形顶点, 大幅延展
+                TargetPosition = PinnedTarget;
+                targetExtension = MaxExtensionMultiplier * 0.85f;
+                glowIntensity = MathHelper.Lerp(glowIntensity, 0.65f, 0.08f);
             }
             else {
                 UpdateIdleMotion(ownerVelocity, globalTime);
@@ -712,6 +733,17 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             if (bodyTex == null || tipTex == null)
                 return;
 
+            // V2: 狐火 ribbon 拖尾 (图元拖尾原语), 发光时叠在尾骨上 — 角色色编码
+            if (glowIntensity > 0.15f && Joints != null) {
+                Color baseTint = HasRole ? RoleTint : new Color(255, 180, 80);
+                Color ribOuter = baseTint * 0.7f;
+                Color ribInner = Color.Lerp(baseTint, Color.White, 0.4f);
+                ribOuter.A = (byte)MathHelper.Clamp(150f * glowIntensity, 0, 255);
+                ribInner.A = (byte)MathHelper.Clamp(190f * glowIntensity, 0, 255);
+                WeaponVFX.DrawRibbonTrail(Joints, 13f, ribOuter, ribInner,
+                    uvScroll: -(float)Main.GlobalTimeWrappedHourly * 2f);
+            }
+
             // 绘制所有体节
             for (int i = 0; i < JointCount - 1; i++) {
                 DrawSegment(spriteBatch, screenPos, bodyTex, i, lightColor);
@@ -733,10 +765,10 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             if (!ShowTelegraph || TelegraphLength <= 0)
                 return;
 
-            // 预判线参数
+            // 预判线参数 — 致命攻击预警统一纯红 (全局观感契约 §6.1: 红=致命且唯一)
             float pulseTime = (float)Main.timeForVisualEffects * 0.1f;
             float pulse = 0.5f + 0.5f * MathF.Sin(pulseTime * 8f);
-            Color telegraphColor = Color.Lerp(Color.OrangeRed, Color.Gold, pulse) * (0.3f + pulse * 0.3f);
+            Color telegraphColor = TelegraphColors.Lethal * (0.35f + pulse * 0.35f);
             telegraphColor.A = 0; // 加性混合
 
             Vector2 startPos = RootPosition;
@@ -785,7 +817,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
 
             // 在终点绘制警告标记
             float warningPulse = 1f + 0.3f * MathF.Sin(pulseTime * 12f);
-            Color warningColor = Color.Red * (0.5f + pulse * 0.3f);
+            Color warningColor = TelegraphColors.Lethal * (0.6f + pulse * 0.3f);
             warningColor.A = 0;
 
             Texture2D tipTex = KyuubiKitsune.MissesTop;
@@ -860,12 +892,13 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             Vector2 direction = (lastJoint - prevJoint).SafeNormalize(Vector2.UnitY);
             float rotation = direction.ToRotation();
 
-            // 尾尖颜色，发光时更亮
-            Color tipColor = Color.Lerp(lightColor, Color.Gold, glowIntensity);
+            // 尾尖颜色，发光时更亮 — 角色色编码 (striker/caster/whip 各异色)
+            Color tipBase = HasRole ? RoleTint : Color.Gold;
+            Color tipColor = Color.Lerp(lightColor, tipBase, MathHelper.Clamp(glowIntensity + TipGlowBoost, 0f, 1f));
             tipColor = Color.Lerp(tipColor, tailColor, 0.3f);
 
-            // 尾尖缩放
-            float tipScale = segmentWidths[JointCount - 1] * 1.2f;
+            // 尾尖缩放 — 幻影真身尾尖更大更亮
+            float tipScale = segmentWidths[JointCount - 1] * (1.2f + TipGlowBoost * 0.5f);
 
             // 绘制尾尖
             spriteBatch.Draw(
@@ -879,6 +912,24 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
                 SpriteEffects.None,
                 0f
             );
+
+            // 尾尖角色辉光 (加性, 颜色编码 + 真身提亮)
+            float tipGlow = glowIntensity + TipGlowBoost;
+            if (tipGlow > 0.05f) {
+                Color glowCol = (HasRole ? RoleTint : new Color(255, 200, 90)) * (tipGlow * 0.6f);
+                glowCol.A = 0;
+                spriteBatch.Draw(
+                    texture,
+                    lastJoint - screenPos,
+                    null,
+                    glowCol,
+                    rotation,
+                    new Vector2(0, texture.Height * 0.5f),
+                    tipScale * 1.6f,
+                    SpriteEffects.None,
+                    0f
+                );
+            }
         }
 
         /// <summary>

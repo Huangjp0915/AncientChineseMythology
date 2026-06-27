@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
 using AncientChineseMythology.Underworlds.Items.Weapons.Revenants;
 using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
@@ -179,21 +180,24 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
                 }
             }
 
+            // 升级演出: 冥府罗网束缚结界 (ArenaRunic 牢笼网) + 幽冥龙青命中爆, 仅本机生成
+            NetherNetField.Spawn(Projectile.GetSource_OnHit(target), target.Center, Projectile.owner);
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.NetherGrudge, scale: 1.3f, owner: Projectile.owner);
+            WeaponVFX.AddScreenShake(target.Center, 3f);
+
             SoundEngine.PlaySound(SoundID.Item14 with { Volume = 0.6f, Pitch = 0.5f }, target.Center);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            // 冥罗青蓝双层带状拖尾
+            WeaponVFX.DrawProjectileTrail(Projectile, 16f,
+                new Color(30, 110, 150), new Color(110, 240, 255),
+                uvScroll: Timer * 0.025f);
+
             Texture2D softGlow = ACMAsset.SoftGlow;
             if (softGlow != null) {
                 Vector2 glowOrigin = softGlow.Size() / 2f;
-                for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                    if (Projectile.oldPos[i] == Vector2.Zero) continue;
-                    float progress = 1f - (float)i / Projectile.oldPos.Length;
-                    Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                    Color trailColor = Color.Lerp(new Color(30, 100, 120), new Color(100, 240, 255), progress) * progress * 0.5f;
-                    trailColor.A = 0;
-                    Main.EntitySpriteDraw(softGlow, drawPos, null, trailColor, 0f, glowOrigin, 0.7f * progress, SpriteEffects.None, 0);
-                }
                 float pulse1 = 1f + MathF.Sin(Timer * 0.18f) * 0.15f;
                 Color innerGlow = new Color(100, 250, 255) * 0.8f;
                 innerGlow.A = 0;
@@ -226,6 +230,10 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
                 float starScale = 0.35f + MathF.Sin(Timer * 0.3f) * 0.1f;
                 Main.EntitySpriteDraw(blankStar, Projectile.Center - Main.screenPosition, null, starColor, Timer * 0.12f, starOrigin, starScale, SpriteEffects.None, 0);
             }
+
+            // 寂灭冥球核辉光 (RadialBloom, 走全屏名额, 满则退化为柔光)
+            float corePulse = 0.5f + MathF.Sin(Timer * 0.18f) * 0.12f;
+            WeaponVFX.DrawRadialBloom(Projectile.Center, 0.05f, corePulse, new Color(110, 240, 255), 0f);
             return false;
         }
 
@@ -244,6 +252,81 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
                 );
                 shadow.noGravity = true;
             }
+        }
+    }
+
+    /// <summary>
+    /// 冥罗网减速区演出弹幕 (纯视觉, damage=0): 命中瞬间在敌群中心展开 ArenaRunic 冥府罗网法阵地纹 (青蓝),
+    /// 标识 300 范围寂灭减速区, 配冲击环 + 径向辉光。绘制只在 PreDraw。
+    /// </summary>
+    public class NetherNetField : ModProjectile
+    {
+        public override string Texture => "Terraria/Images/Projectile_1";
+        private const int Life = 54;
+        private const float ZoneRadius = 300f;
+
+        public static void Spawn(IEntitySource source, Vector2 worldPos, int owner) {
+            if (Main.dedServ || Main.myPlayer != owner)
+                return;
+            Projectile.NewProjectile(source, worldPos, Vector2.Zero,
+                ModContent.ProjectileType<NetherNetField>(), 0, 0f, owner);
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = 2;
+            Projectile.height = 2;
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = Life;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.alpha = 255;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+
+        public override void AI() {
+            Projectile.velocity = Vector2.Zero;
+            Lighting.AddLight(Projectile.Center, 0.3f, 0.8f, 1f);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+
+            float life = 1f - Projectile.timeLeft / (float)Life;
+            float fade = MathHelper.Clamp(life < 0.18f ? life / 0.18f : 1f - (life - 0.18f) / 0.82f, 0f, 1f);
+            Color primary = new Color(110, 240, 255);
+            Color secondary = new Color(30, 110, 160);
+            SpriteBatch sb = Main.spriteBatch;
+
+            // —— ArenaRunic 冥罗网法阵地纹 (扩张展开到减速区半径) ——
+            Effect fx = ACMShaders.ArenaRunic;
+            if (fx != null) {
+                float radius = ZoneRadius * (0.5f + life * 0.5f);
+                ACMShaders.WorldDecalParams(Projectile.Center, radius, out Vector2 uv, out float rFrac, out float aspect);
+                fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+                fx.Parameters["uCenter"]?.SetValue(uv);
+                fx.Parameters["uRadius"]?.SetValue(rFrac);
+                fx.Parameters["uIntensity"]?.SetValue(fade * 0.8f);
+                fx.Parameters["uAspect"]?.SetValue(aspect);
+                fx.Parameters["uColorPrimary"]?.SetValue(primary.ToVector4());
+                fx.Parameters["uColorSecondary"]?.SetValue(secondary.ToVector4());
+                fx.Parameters["uRuneFreq"]?.SetValue(12f);
+                fx.Parameters["uMode"]?.SetValue(0f);
+                fx.Parameters["uShape"]?.SetValue(0f);
+
+                sb.End();
+                ACMShaders.DrawScreenSpaceDecalStandalone(fx, BlendState.Additive);
+                ACMShaders.RestoreDefaultBatch(sb);
+            }
+
+            WeaponVFX.DrawShockwaveRing(Projectile.Center, 16f + life * 200f, 12f, fade * 0.8f, primary, secondary);
+            if (fade > 0.4f)
+                WeaponVFX.DrawRadialBloom(Projectile.Center, 0.07f, fade * 0.6f, primary, 8f);
+
+            return false;
         }
     }
 }

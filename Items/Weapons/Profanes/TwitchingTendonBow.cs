@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -83,7 +84,7 @@ public class TendonSpineBolt : ModProjectile
         => "AncientChineseMythology/Textures/Masking/LightShot";
 
     public override void SetStaticDefaults() {
-        ProjectileID.Sets.TrailingMode[Type] = 2;
+        ProjectileID.Sets.TrailingMode[Type] = 0;
         ProjectileID.Sets.TrailCacheLength[Type] = 14;
     }
 
@@ -123,6 +124,11 @@ public class TendonSpineBolt : ModProjectile
     }
 
     public override bool PreDraw(ref Color lightColor) {
+        // 统一双层暗红血肉脊椎拖尾
+        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 9f,
+            outerColor: new Color(96, 8, 14), innerColor: new Color(255, 92, 72),
+            uvScroll: -Main.GlobalTimeWrappedHourly * 1.8f);
+
         SpriteBatch sb = Main.spriteBatch;
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
@@ -132,27 +138,12 @@ public class TendonSpineBolt : ModProjectile
         Texture2D lsh = ACMAsset.LightShot;
         Texture2D sg = ACMAsset.SoftGlow;
 
-        for (int i = 1; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
-            if (Projectile.oldPos[i] == Vector2.Zero) continue;
-            float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.60f;
-            sb.Draw(lsh,
-                Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition,
-                null, new Color(200, 25, 15) * a, Projectile.oldRot[i],
-                lsh.Size() * 0.5f,
-                new Vector2(0.50f + i * 0.014f, 0.14f), SpriteEffects.None, 0);
-            sb.Draw(lsh,
-                Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition,
-                null, new Color(255, 140, 120) * (a * 0.30f), Projectile.oldRot[i],
-                lsh.Size() * 0.5f,
-                new Vector2(0.25f, 0.07f), SpriteEffects.None, 0);
-        }
-
         sb.Draw(lsh, Projectile.Center - Main.screenPosition, null,
             new Color(220, 40, 30),
             Projectile.rotation, lsh.Size() * 0.5f,
             new Vector2(0.85f, 0.20f), SpriteEffects.None, 0);
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-            new Color(200, 50, 40) * 0.70f, 0f,
+            new Color(180, 35, 30) * 0.70f, 0f,
             sg.Size() * 0.5f,
             0.40f, SpriteEffects.None, 0);
 
@@ -183,8 +174,8 @@ public class TendonSpiralBlade : ModProjectile
         => "AncientChineseMythology/Textures/Masking/BlankStar";
 
     public override void SetStaticDefaults() {
-        ProjectileID.Sets.TrailingMode[Type] = 2;
-        ProjectileID.Sets.TrailCacheLength[Type] = 10;
+        ProjectileID.Sets.TrailingMode[Type] = 0;
+        ProjectileID.Sets.TrailCacheLength[Type] = 12;
     }
 
     private bool _homing;
@@ -246,6 +237,11 @@ public class TendonSpiralBlade : ModProjectile
     }
 
     public override bool PreDraw(ref Color lightColor) {
+        // 统一双层暗红血肉拖尾
+        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 8f,
+            outerColor: new Color(96, 8, 14), innerColor: new Color(255, 92, 72),
+            uvScroll: -Main.GlobalTimeWrappedHourly * 1.6f);
+
         SpriteBatch sb = Main.spriteBatch;
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
@@ -256,22 +252,12 @@ public class TendonSpiralBlade : ModProjectile
         Texture2D sg = ACMAsset.SoftGlow;
         float pulse = 0.55f + 0.18f * MathF.Sin((float)Main.timeForVisualEffects * 0.20f);
 
-        for (int i = 1; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
-            if (Projectile.oldPos[i] == Vector2.Zero) continue;
-            float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.45f;
-            sb.Draw(sg,
-                Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition,
-                null, new Color(200, 30, 20) * a, 0f,
-                sg.Size() * 0.5f,
-                0.30f, SpriteEffects.None, 0);
-        }
-
         sb.Draw(star, Projectile.Center - Main.screenPosition, null,
             new Color(220, 50, 30) * (0.80f * pulse),
             Projectile.rotation, star.Size() * 0.5f,
             0.55f, SpriteEffects.None, 0);
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-            new Color(255, 100, 80) * (0.55f * pulse), 0f,
+            new Color(255, 92, 72) * (0.55f * pulse), 0f,
             sg.Size() * 0.5f,
             0.40f, SpriteEffects.None, 0);
 
@@ -350,6 +336,10 @@ public class TendonEyeballShot : ModProjectile
         _exploded = true;
 
         SoundEngine.PlaySound(SoundID.NPCDeath1 with { Pitch = -0.3f, Volume = 0.8f }, Projectile.Center);
+
+        // 巨眼弹爆裂血肉脉冲 (径向辉光 + 冲击环)
+        ACMWeaponBurst.Spawn(Projectile.GetSource_Death(), Projectile.Center,
+            ACMWeaponBurst.Profane, scale: 1.2f, owner: Projectile.owner);
 
         // 血液大爆发
         for (int i = 0; i < 25; i++) {

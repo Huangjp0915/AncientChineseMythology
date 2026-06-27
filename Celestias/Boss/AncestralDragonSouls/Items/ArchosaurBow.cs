@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -176,6 +177,10 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls.Items
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 9f,
+                outerColor: new Color(60, 120, 180, 120), innerColor: new Color(235, 250, 255, 180),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.4f);
+
             Texture2D tex = ACMAsset.BlankStar ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = tex.Size() / 2f;
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
@@ -217,6 +222,9 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls.Items
                 int dust = Dust.NewDust(target.Center, 0, 0, DustID.WhiteTorch, vel.X, vel.Y, 150, Color.White, 1.5f);
                 Main.dust[dust].noGravity = true;
             }
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.AncestralSoul, 0.8f, Projectile.owner);
         }
 
         public override void OnKill(int timeLeft) {
@@ -280,6 +288,10 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls.Items
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 14f,
+                outerColor: new Color(60, 120, 180, 120), innerColor: new Color(235, 250, 255, 180),
+                tex: ACMAsset.GlaciateWave, uvScroll: -Main.GlobalTimeWrappedHourly * 1.5f);
+
             Texture2D tex = ACMAsset.GlaciateWave ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = new Vector2(tex.Width / 2f, 0);
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
@@ -326,6 +338,9 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls.Items
             }
 
             SoundEngine.PlaySound(SoundID.Item10 with { Pitch = 0.3f, Volume = 0.4f }, target.Center);
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.AncestralSoul, 1.2f, Projectile.owner);
         }
 
         public override void OnKill(int timeLeft) {

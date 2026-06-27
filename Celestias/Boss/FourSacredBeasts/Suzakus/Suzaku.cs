@@ -1,6 +1,7 @@
 ﻿using AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Items;
 using AncientChineseMythology.Items.Materials;
 using AncientChineseMythology.Systems;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.IO;
@@ -16,78 +17,91 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
 {
     /// <summary>
-    /// 朱雀 - 南方神兽，火/日属性
-    /// 凤凰形态的Boss，华丽的火焰攻击
-    /// 一阶段：炎鸟翱翔，火球与火柱
-    /// 二阶段：太阳之翼，凤凰俯冲与烈焰漩涡
-    /// 三阶段：涅槃朱雀，浴火重生与终极火雨
+    /// 朱雀 Suzaku —— 南方·火·涅槃凤凰（四圣兽 V2）。
+    ///
+    /// V2 重做要点（见 docs/BOSS_REDO_V2/03_CELESTIAS_OTHERS_V2 §4.5）：
+    ///  ● 继承 <see cref="SacredBeastBase"/>：确定性轮替（<see cref="GetPhaseRotation"/>）替代 V1 随机 hub，
+    ///    杀掉 NirvanaFlight 纯加速巡逻与 VermillionRain 每 2~4 帧喷弹。
+    ///  ● 占位弹清除：V1 的 <c>ProjectileID.InfernoFriendlyBlast</c> 全部换成自定义焰弹
+    ///    （<see cref="SuzakuEmber"/> 快窄 / <see cref="SuzakuFeather"/> 慢宽 / <see cref="SuzakuSunPillar"/> 火柱 /
+    ///    <see cref="SuzakuSolarBeam"/> 审判光束）。
+    ///  ● 签名 set-piece「涅槃重生」：<see cref="CheckDead"/> 首次坠亡 → 清场 → 灰烬沉默(PaletteLUT 灰)
+    ///    → 爆燃复生(PaletteLUT 赤 + RadialBloom + 竞技场点燃) → 进入"涅槃形态"凤凰循环（PhoenixDance + SolarJudgment）直至真正死亡。
+    ///  ● 表现层全部走硬化 <see cref="ACMShaders"/>：DrawBeam 光束、DrawRadialBloomAt 太阳泛光、
+    ///    ArenaRunic 太阳法阵地纹、ElementalScreenTint 火幕、PaletteLUT 涅槃灰↔赤。
     /// </summary>
     [AutoloadBossHead]
-    public class Suzaku : ModNPC
+    public class Suzaku : SacredBeastBase
     {
-        #region 常量定义
+        #region 五行身份 / 阈值
 
-        public const float Phase2Threshold = 0.60f;
-        public const float Phase3Threshold = 0.30f;
-        public const float RebirthThreshold = 0.10f;
+        public override SacredElement Element => SacredElement.Fire;
+        public override string SkyName => SuzakuSky.SkyName;
+
+        // 供天幕等无实例引用的血量阈值常量（基类虚属性据此返回）。
+        public const float HpPhase2 = 0.60f;
+        public const float HpPhase3 = 0.30f;
+
+        public override float Phase2Threshold => HpPhase2;
+        public override float Phase3Threshold => HpPhase3;
 
         #endregion
 
-        #region 状态枚举
+        #region 状态枚举（写入 RawState=ai[0]）
 
-        public enum BossPhase
+        public enum St
         {
             Intro,
-            Phase1_Soar,
-            Phase1_FireballBarrage,
-            Phase1_FlamePillar,
-            Phase1_FeatherRain,
-            Phase1_HeatWave,
-            PhaseTransition_2,
-            Phase2_PhoenixDive,
-            Phase2_SunCircle,
-            Phase2_SolarFlare,
-            Phase2_FlameTornado,
-            Phase2_WingStorm,
-            PhaseTransition_3,
-            Phase3_NirvanaFlight,
-            Phase3_VermillionRain,
-            Phase3_SolarJudgment,
-            Phase3_PhoenixDance,
-            Phase3_NirvanaFlames,
-            Phase3_Rebirth
+            Hub,                 // 确定性轮替枢纽（按当前档位选下一招）
+            P1_FeatherFan,
+            P1_EmberBarrage,
+            P1_SunPillars,
+            Trans2,
+            P2_PhoenixDive,
+            P2_SolarBeams,
+            P2_FeatherStorm,
+            P2_SunPillars,
+            Trans3,
+            P3_SolarJudgment,
+            P3_PhoenixDance,
+            P3_SunPillarChess,
+            Rebirth              // 涅槃重生签名
         }
+
+        private St State => (St)RawState;
+        private void Goto(St s) => TransitionToState((int)s);
 
         #endregion
 
-        #region 状态属性
+        #region 持久字段（SendExtraAI 同步）
 
-        public BossPhase Phase {
-            get => (BossPhase)(int)NPC.ai[0];
-            set => NPC.ai[0] = (int)value;
-        }
-
-        public ref float PhaseTimer => ref NPC.ai[1];
-        public ref float AttackTimer => ref NPC.ai[2];
-        public ref float SubState => ref NPC.ai[3];
-
-        public bool IsPhase2 => NPC.life < NPC.lifeMax * Phase2Threshold;
-        public bool IsPhase3 => NPC.life < NPC.lifeMax * Phase3Threshold;
-
-        private float globalTime;
         private bool didPhase2Transition;
         private bool didPhase3Transition;
         private bool didRebirth;
-
+        private bool nirvanaForm;     // 涅槃形态（重生后）
         private int diveCount;
-        private float soarAngle;
+        private Vector2 diveTarget;   // 锁定俯冲落点（固定，非逐帧追踪）
         private float glowIntensity = 1f;
-        private float wingSpread;
-        private int frameCounter;
 
         #endregion
 
-        #region ModNPC重写
+        #region 本地视觉（不需同步）
+
+        private int frameCounter;
+        private float fxBloom;        // RadialBloom 瞬态
+        private float fxRunic;        // ArenaRunic 法阵
+        private float rebirthLut;     // PaletteLUT 强度
+        private float rebirthSat = 1f;
+        private Vector4 rebirthShadow;
+        private Vector4 rebirthHi;
+
+        private const int DiveWindup = 40;     // 固定 40 帧地面影子预警（§6.3）
+        private const int AshEnd = 80;          // 涅槃·灰烬沉默结束
+        private const int RebirthEnd = 160;     // 涅槃·复生结束
+
+        #endregion
+
+        #region SetDefaults / 静态
 
         public override void SetStaticDefaults() {
             Main.npcFrameCount[Type] = 4;
@@ -145,29 +159,31 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
         }
 
         public override void OnSpawn(IEntitySource source) {
-            Phase = BossPhase.Intro;
-            PhaseTimer = 0;
-            globalTime = 0;
+            Goto(St.Intro);
             if (Main.netMode != NetmodeID.MultiplayerClient)
                 NPC.netUpdate = true;
         }
 
         public override void SendExtraAI(BinaryWriter writer) {
-            writer.Write((int)Phase);
-            writer.Write(globalTime);
+            SendSacredBeastAI(writer);
             writer.Write(didPhase2Transition);
             writer.Write(didPhase3Transition);
             writer.Write(didRebirth);
+            writer.Write(nirvanaForm);
             writer.Write(diveCount);
+            writer.WriteVector2(diveTarget);
+            writer.Write(glowIntensity);
         }
 
         public override void ReceiveExtraAI(BinaryReader reader) {
-            Phase = (BossPhase)reader.ReadInt32();
-            globalTime = reader.ReadSingle();
+            ReceiveSacredBeastAI(reader);
             didPhase2Transition = reader.ReadBoolean();
             didPhase3Transition = reader.ReadBoolean();
             didRebirth = reader.ReadBoolean();
+            nirvanaForm = reader.ReadBoolean();
             diveCount = reader.ReadInt32();
+            diveTarget = reader.ReadVector2();
+            glowIntensity = reader.ReadSingle();
         }
 
         public override bool? DrawHealthBar(byte hbPosition, ref float scale, ref Vector2 position) {
@@ -177,50 +193,43 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
 
         public override bool CheckActive() => false;
 
-        public override void FindFrame(int frameHeight) {
-            // 4帧: 第0帧=冲刺, 0-3循环=飞行动画
-            switch (Phase) {
-                // 冲刺姿态 (第0帧)
-                case BossPhase.Phase2_PhoenixDive when SubState == 1:
-                case BossPhase.Phase3_PhoenixDance when SubState == 1:
-                    NPC.frame.Y = 0;
-                    frameCounter = 0;
-                    break;
+        #endregion
 
-                // 静止/转阶段: 慢速飞行循环
-                case BossPhase.Intro:
-                case BossPhase.PhaseTransition_2:
-                case BossPhase.PhaseTransition_3:
-                case BossPhase.Phase3_Rebirth:
-                    frameCounter++;
-                    if (frameCounter >= 10) {
-                        frameCounter = 0;
-                        NPC.frame.Y += frameHeight;
-                        if (NPC.frame.Y >= frameHeight * 4)
-                            NPC.frame.Y = 0;
-                    }
-                    break;
+        #region 涅槃重生机制（保留 CheckDead）
 
-                // 默认: 正常飞行循环
-                default: {
-                    bool isFast = NPC.velocity.LengthSquared() > 100f;
-                    int rate = isFast ? 4 : 6;
-                    frameCounter++;
-                    if (frameCounter >= rate) {
-                        frameCounter = 0;
-                        NPC.frame.Y += frameHeight;
-                        if (NPC.frame.Y >= frameHeight * 4)
-                            NPC.frame.Y = 0;
+        public override bool CheckDead() {
+            // 首次坠亡 → 涅槃重生（V1 认可的核心概念，V2 升格为签名 set-piece）
+            if (!didRebirth) {
+                didRebirth = true;
+                nirvanaForm = true;
+                NPC.life = (int)(NPC.lifeMax * 0.22f);
+                NPC.dontTakeDamage = true;
+
+                // 清场：抹去所有敌意弹幕（"重生时刻"的留白）
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    for (int i = 0; i < Main.maxProjectiles; i++) {
+                        Projectile p = Main.projectile[i];
+                        if (p.active && p.hostile && p.damage > 0) p.Kill();
                     }
-                    break;
                 }
+
+                ResetRotation(3);
+                diveCount = 0;
+                Goto(St.Rebirth);
+                NPC.netUpdate = true;
+                return false;
             }
+            return true;
         }
 
+        #endregion
+
+        #region OnKill / HitEffect
+
         public override void HitEffect(NPC.HitInfo hit) {
-            for (int i = 0; i < 6; i++) {
+            if (Main.dedServ) return;
+            for (int i = 0; i < 6; i++)
                 Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Torch, hit.HitDirection * 2f, -1f, 100, default, 2f);
-            }
             if (NPC.life <= 0) {
                 for (int i = 0; i < 50; i++) {
                     Dust d = Dust.NewDustDirect(NPC.position, NPC.width, NPC.height, DustID.SolarFlare, 0, 0, 100, default, 3f);
@@ -238,153 +247,116 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
             }
         }
 
-        public override bool CheckDead() {
-            // 涅槃重生机制：第一次到达0HP时恢复20%生命
-            if (!didRebirth && IsPhase3) {
-                didRebirth = true;
-                NPC.life = (int)(NPC.lifeMax * 0.20f);
-                NPC.dontTakeDamage = true;
-                TransitionTo(BossPhase.Phase3_Rebirth);
-                NPC.netUpdate = true;
-                return false;
-            }
-            return true;
-        }
-
         #endregion
 
-        #region AI主循环
+        #region AI 主循环
 
         public override void AI() {
-            globalTime += 1f / 60f;
-            wingSpread = 0.8f + MathF.Sin(globalTime * 4f) * 0.2f;
+            fxBloom *= 0.9f;
+            fxRunic = MathHelper.Lerp(fxRunic, 0f, 0.05f);
 
-            NPC.TargetClosest();
-            Player target = Main.player[NPC.target];
+            if (!RunStandardPrologue(out Player target))
+                return;
 
-            if (!target.active || target.dead) {
-                NPC.TargetClosest();
-                target = Main.player[NPC.target];
-                if (!target.active || target.dead) {
-                    NPC.velocity.Y -= 1f;
-                    NPC.EncourageDespawn(30);
-                    return;
-                }
+            if (State != St.Intro && State != St.Trans2 && State != St.Trans3 && State != St.Rebirth)
+                CheckPhaseTransition();
+
+            switch (State) {
+                case St.Intro: RunIntro(target); break;
+                case St.Hub: RunHub(target); break;
+                case St.P1_FeatherFan: RunFeatherFan(target); break;
+                case St.P1_EmberBarrage: RunEmberBarrage(target); break;
+                case St.P1_SunPillars: RunSunPillars(target, 4, 130); break;
+                case St.Trans2: RunTransition2(target); break;
+                case St.P2_PhoenixDive: RunDiveAttack(target, 3); break;
+                case St.P2_SolarBeams: RunSolarBeams(target, 3); break;
+                case St.P2_FeatherStorm: RunFeatherStorm(target); break;
+                case St.P2_SunPillars: RunSunPillars(target, 6, 150); break;
+                case St.Trans3: RunTransition3(target); break;
+                case St.P3_SolarJudgment: RunSolarJudgment(target); break;
+                case St.P3_PhoenixDance: RunDiveAttack(target, nirvanaForm ? 5 : 4); break;
+                case St.P3_SunPillarChess: RunSunPillarChess(target); break;
+                case St.Rebirth: RunRebirth(target); break;
             }
 
-            CheckPhaseTransition();
-            PhaseTimer++;
-            AttackTimer++;
-
-            switch (Phase) {
-                case BossPhase.Intro: RunIntro(target); break;
-                case BossPhase.Phase1_Soar: RunPhase1Soar(target); break;
-                case BossPhase.Phase1_FireballBarrage: RunPhase1FireballBarrage(target); break;
-                case BossPhase.Phase1_FlamePillar: RunPhase1FlamePillar(target); break;
-                case BossPhase.Phase1_FeatherRain: RunPhase1FeatherRain(target); break;
-                case BossPhase.Phase1_HeatWave: RunPhase1HeatWave(target); break;
-                case BossPhase.PhaseTransition_2: RunPhaseTransition2(target); break;
-                case BossPhase.Phase2_PhoenixDive: RunPhase2PhoenixDive(target); break;
-                case BossPhase.Phase2_SunCircle: RunPhase2SunCircle(target); break;
-                case BossPhase.Phase2_SolarFlare: RunPhase2SolarFlare(target); break;
-                case BossPhase.Phase2_FlameTornado: RunPhase2FlameTornado(target); break;
-                case BossPhase.Phase2_WingStorm: RunPhase2WingStorm(target); break;
-                case BossPhase.PhaseTransition_3: RunPhaseTransition3(target); break;
-                case BossPhase.Phase3_NirvanaFlight: RunPhase3NirvanaFlight(target); break;
-                case BossPhase.Phase3_VermillionRain: RunPhase3VermillionRain(target); break;
-                case BossPhase.Phase3_SolarJudgment: RunPhase3SolarJudgment(target); break;
-                case BossPhase.Phase3_PhoenixDance: RunPhase3PhoenixDance(target); break;
-                case BossPhase.Phase3_NirvanaFlames: RunPhase3NirvanaFlames(target); break;
-                case BossPhase.Phase3_Rebirth: RunPhase3Rebirth(target); break;
-            }
+            UpdateRebirthGrade();
 
             NPC.spriteDirection = NPC.velocity.X >= 0 ? 1 : -1;
             NPC.rotation = NPC.velocity.X * 0.015f;
 
-            // 火焰光源
-            float fireIntensity = IsPhase3 ? 2f : (IsPhase2 ? 1.5f : 1f);
-            Lighting.AddLight(NPC.Center, new Vector3(1f, 0.4f, 0.1f) * glowIntensity * fireIntensity);
+            float fireMul = nirvanaForm ? 2.4f : IsPhase3 ? 2f : IsPhase2 ? 1.5f : 1f;
+            Lighting.AddLight(NPC.Center, new Vector3(1f, 0.4f, 0.1f) * glowIntensity * fireMul);
 
-            // 常态火焰粒子
-            if (Main.netMode != NetmodeID.Server && Phase != BossPhase.Intro) {
+            if (!Main.dedServ && State != St.Intro) {
                 for (int i = 0; i < 3; i++) {
                     Dust d = Dust.NewDustDirect(NPC.position, NPC.width, NPC.height, DustID.Torch, 0, -2f, 100, default, 2f);
                     d.noGravity = true;
                     d.velocity += -NPC.velocity * 0.05f;
                 }
             }
+
+            // 发布屏幕氛围标量（赤焰火幕 + 瞬态泛光/法阵）
+            float tint = (nirvanaForm || IsPhase3) ? 0.62f : IsPhase2 ? 0.5f : 0.38f;
+            if (State == St.Intro || State == St.Rebirth) tint *= 0.6f;
+            SuzakuScreenSystem.Publish(NPC.Center, tint, MathHelper.Clamp(fxBloom, 0f, 1f), MathHelper.Clamp(fxRunic, 0f, 1f), GlobalTime);
         }
 
         private void CheckPhaseTransition() {
-            if (!didPhase2Transition && IsPhase2 && !IsPhase3 &&
-                Phase != BossPhase.PhaseTransition_2 && Phase != BossPhase.Intro) {
-                TransitionTo(BossPhase.PhaseTransition_2);
+            if (!didPhase2Transition && IsPhase2 && !IsPhase3) {
                 didPhase2Transition = true;
+                Goto(St.Trans2);
             }
-            if (!didPhase3Transition && IsPhase3 &&
-                Phase != BossPhase.PhaseTransition_3 && Phase != BossPhase.PhaseTransition_2 && Phase != BossPhase.Intro) {
-                TransitionTo(BossPhase.PhaseTransition_3);
+            else if (!didPhase3Transition && IsPhase3) {
                 didPhase3Transition = true;
+                Goto(St.Trans3);
             }
         }
 
-        private void TransitionTo(BossPhase newPhase) {
-            Phase = newPhase;
-            PhaseTimer = 0;
-            AttackTimer = 0;
-            SubState = 0;
-            diveCount = 0;
-            NPC.netUpdate = true;
-        }
-
-        private BossPhase GetRandomPhase1Attack() {
-            return (BossPhase)(Main.rand.Next(4) switch {
-                0 => (int)BossPhase.Phase1_FireballBarrage,
-                1 => (int)BossPhase.Phase1_FlamePillar,
-                2 => (int)BossPhase.Phase1_FeatherRain,
-                _ => (int)BossPhase.Phase1_HeatWave
-            });
-        }
-
-        private BossPhase GetRandomPhase2Attack() {
-            return (BossPhase)(Main.rand.Next(5) switch {
-                0 => (int)BossPhase.Phase2_PhoenixDive,
-                1 => (int)BossPhase.Phase2_SunCircle,
-                2 => (int)BossPhase.Phase2_SolarFlare,
-                3 => (int)BossPhase.Phase2_FlameTornado,
-                _ => (int)BossPhase.Phase2_WingStorm
-            });
-        }
-
-        private BossPhase GetRandomPhase3Attack() {
-            return (BossPhase)(Main.rand.Next(4) switch {
-                0 => (int)BossPhase.Phase3_VermillionRain,
-                1 => (int)BossPhase.Phase3_SolarJudgment,
-                2 => (int)BossPhase.Phase3_PhoenixDance,
-                _ => (int)BossPhase.Phase3_NirvanaFlames
-            });
-        }
-
-        private int FireProjectile(Vector2 pos, Vector2 vel, int damage) {
-            if (Main.netMode == NetmodeID.MultiplayerClient) return -1;
-            int proj = Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, vel,
-                ProjectileID.InfernoFriendlyBlast, damage, 0f, Main.myPlayer);
-            if (proj >= 0 && proj < Main.maxProjectiles) {
-                Main.projectile[proj].friendly = false;
-                Main.projectile[proj].hostile = true;
-                Main.projectile[proj].tileCollide = false;
-                Main.projectile[proj].timeLeft = 180;
-            }
-            return proj;
+        // —— 确定性轮替表 ——
+        protected override int[] GetPhaseRotation(int phaseTier) {
+            if (nirvanaForm)
+                return [(int)St.P3_PhoenixDance, (int)St.P3_SolarJudgment, (int)St.P3_SunPillarChess];
+            return phaseTier switch {
+                1 => [(int)St.P1_FeatherFan, (int)St.P1_EmberBarrage, (int)St.P1_SunPillars],
+                2 => [(int)St.P2_PhoenixDive, (int)St.P2_SolarBeams, (int)St.P2_FeatherStorm, (int)St.P2_SunPillars],
+                _ => [(int)St.P3_SolarJudgment, (int)St.P3_PhoenixDance, (int)St.P3_SunPillarChess],
+            };
         }
 
         #endregion
 
-        #region 入场演出
+        #region 弹幕助手
+
+        private int Fire(Vector2 pos, Vector2 vel, int type, int dmg, float ai0 = 0f, float ai1 = 0f) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return -1;
+            return Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, vel, type, dmg, 0f, Main.myPlayer, ai0, ai1);
+        }
+
+        private int EmberType => ModContent.ProjectileType<SuzakuEmber>();
+        private int FeatherType => ModContent.ProjectileType<SuzakuFeather>();
+        private int PillarType => ModContent.ProjectileType<SuzakuSunPillar>();
+        private int BeamType => ModContent.ProjectileType<SuzakuSolarBeam>();
+
+        private int EmberDmg => NPC.damage / 5;
+        private int FeatherDmg => NPC.damage / 4;
+        private int PillarDmg => NPC.damage / 3;
+        private int BeamDmg => NPC.damage / 3;
+
+        /// <summary>在玩家脚下一带生成一根自预警火柱（落点 = 玩家所在水平 + 偏移）。</summary>
+        private void SpawnPillarAt(Player target, float xOffset) {
+            Vector2 ground = new(target.Center.X + xOffset, target.Center.Y + 230f);
+            // SunPillar 以 Bottom 锚地：Center 上移半高
+            Vector2 center = ground + new Vector2(0, -280f);
+            Fire(center, Vector2.Zero, PillarType, PillarDmg);
+        }
+
+        #endregion
+
+        #region 入场
 
         private void RunIntro(Player target) {
+            NPC.dontTakeDamage = true;
             if (PhaseTimer == 1) {
-                // 朱雀从天空降临，烈焰环绕
                 NPC.Center = target.Center + new Vector2(0, -800);
                 NPC.velocity = Vector2.Zero;
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.5f }, target.Center);
@@ -393,8 +365,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
             Vector2 targetPos = target.Center + new Vector2(0, -350);
             NPC.Center = Vector2.Lerp(NPC.Center, targetPos, 0.02f);
 
-            // 降临火焰特效
-            if (Main.netMode != NetmodeID.Server) {
+            if (!Main.dedServ) {
                 for (int i = 0; i < 8; i++) {
                     Vector2 dustPos = NPC.Center + Main.rand.NextVector2Circular(200, 200);
                     Dust d = Dust.NewDustDirect(dustPos, 0, 0, DustID.SolarFlare, 0, -3f, 100, default, 2.5f);
@@ -404,188 +375,148 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
             }
 
             if (PhaseTimer >= 110) {
-                // 展翅爆发
+                NPC.dontTakeDamage = false;
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = 1f, Volume = 1.5f }, NPC.Center);
-
-                if (Main.netMode != NetmodeID.Server) {
-                    PunchCameraModifier modifier = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 15f, 8f, 35, 2000f, FullName);
-                    Main.instance.CameraModifiers.Add(modifier);
-
+                ShakeScreen(12f, 8f, 35);
+                fxBloom = 0.7f;
+                if (!Main.dedServ) {
                     for (int i = 0; i < 30; i++) {
                         Dust d = Dust.NewDustDirect(NPC.Center, 0, 0, DustID.SolarFlare, 0, 0, 100, default, 3f);
                         d.noGravity = true;
                         d.velocity = Main.rand.NextVector2Circular(15, 15);
                     }
                 }
-
-                TransitionTo(BossPhase.Phase1_Soar);
+                ResetRotation(1);
+                Goto(St.Hub);
             }
         }
 
         #endregion
 
-        #region 一阶段：炎鸟
+        #region 轮替枢纽
 
-        private void RunPhase1Soar(Player target) {
-            soarAngle += 0.025f;
-            float xRadius = 380f;
-            float yRadius = 180f;
-            Vector2 soarPos = target.Center + new Vector2(MathF.Sin(soarAngle * 2f) * xRadius, MathF.Sin(soarAngle) * yRadius - 300);
-            NPC.velocity = Vector2.Lerp(NPC.velocity, (soarPos - NPC.Center) * 0.06f, 0.08f);
+        private void RunHub(Player target) {
+            int tier = nirvanaForm ? 3 : PhaseTier;
+            int window = nirvanaForm ? 38 : tier == 1 ? 70 : tier == 2 ? 58 : 52;
 
-            // 翔翔期间持续释放火焰弹幕
-            if (PhaseTimer % 18 == 0) {
-                Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 12f;
-                FireProjectile(NPC.Center, toTarget, NPC.damage / 5);
-            }
+            // 凤翔环绕（无伤位移，危险全部交给被轮替到的招式）
+            float t = GlobalTime;
+            float xR = nirvanaForm ? 300f : 360f;
+            Vector2 soar = target.Center + new Vector2(MathF.Sin(t * 1.6f) * xR, MathF.Sin(t * 1.1f) * 130f - 300f);
+            NPC.velocity = Vector2.Lerp(NPC.velocity, (soar - NPC.Center) * 0.06f, 0.08f);
 
-            if (PhaseTimer > 100) TransitionTo(GetRandomPhase1Attack());
-        }
-
-        private void RunPhase1FireballBarrage(Player target) {
-            Vector2 hoverPos = target.Center + new Vector2(MathF.Sin(globalTime * 2.5f) * 250f, -330);
-            NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.05f, 0.1f);
-
-            int interval = Main.expertMode ? 5 : 8;
-            if (AttackTimer % interval == 0) {
-                Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
-                // 多散射火球
-                for (int i = -1; i <= 1; i++) {
-                    float speed = 15f + Main.rand.NextFloat(0f, 4f);
-                    Vector2 vel = toPlayer.RotatedBy(i * MathHelper.ToRadians(10f) + Main.rand.NextFloat(-0.05f, 0.05f)) * speed;
-                    FireProjectile(NPC.Center, vel, NPC.damage / 4);
-                }
-                SoundEngine.PlaySound(SoundID.Item34 with { Pitch = 0.3f, Volume = 0.6f }, NPC.Center);
-            }
-
-            // 同步地面火柱
-            if (AttackTimer % 20 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                float xOff = Main.rand.NextFloat(-350, 350);
-                Vector2 pos = target.Center + new Vector2(xOff, 400);
-                FireProjectile(pos, new Vector2(0, -16f), NPC.damage / 5);
-            }
-
-            if (AttackTimer > 90) TransitionTo(BossPhase.Phase1_Soar);
-        }
-
-        private void RunPhase1FlamePillar(Player target) {
-            NPC.velocity = Vector2.Lerp(NPC.velocity, (target.Center + new Vector2(0, -400) - NPC.Center) * 0.03f, 0.06f);
-
-            if (AttackTimer % 18 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int pillarCount = Main.expertMode ? 6 : 4;
-                for (int i = 0; i < pillarCount; i++) {
-                    float xOff = Main.rand.NextFloat(-450, 450);
-                    // 上下火柱夺击
-                    Vector2 posBottom = target.Center + new Vector2(xOff, 400);
-                    FireProjectile(posBottom, new Vector2(0, -20f), NPC.damage / 4);
-                    Vector2 posTop = target.Center + new Vector2(xOff + Main.rand.NextFloat(-100, 100), -600);
-                    FireProjectile(posTop, new Vector2(0, 16f), NPC.damage / 5);
-                }
-                SoundEngine.PlaySound(SoundID.Item45 with { Pitch = -0.2f }, target.Center);
-            }
-
-            // 同步追踪火球
-            if (AttackTimer % 25 == 0) {
-                Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 12f;
-                FireProjectile(NPC.Center, toTarget, NPC.damage / 5);
-            }
-
-            if (AttackTimer > 100) TransitionTo(BossPhase.Phase1_Soar);
-        }
-
-        private void RunPhase1FeatherRain(Player target) {
-            Vector2 hoverPos = target.Center + new Vector2(0, -430);
-            NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.04f, 0.08f);
-            NPC.velocity.X += MathF.Sin(globalTime * 3f) * 2f;
-
-            int interval = Main.expertMode ? 4 : 7;
-            if (AttackTimer % interval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int featherCount = Main.expertMode ? 5 : 3;
-                for (int i = 0; i < featherCount; i++) {
-                    Vector2 pos = NPC.Center + Main.rand.NextVector2Circular(120, 40);
-                    Vector2 vel = new Vector2(Main.rand.NextFloat(-5f, 5f), Main.rand.NextFloat(8f, 15f));
-                    FireProjectile(pos, vel, NPC.damage / 5);
+            if (PhaseTimer >= window) {
+                int next = NextAttack(tier);
+                if (next >= 0) {
+                    diveCount = 0;
+                    Goto((St)next);
                 }
             }
+        }
 
-            // 每30帧释放扩散环
-            if (AttackTimer % 30 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int count = 10;
+        #endregion
+
+        #region 一阶段招式
+
+        // 焰羽扇（慢宽弹，中等预告）
+        private void RunFeatherFan(Player target) {
+            Vector2 hover = target.Center + new Vector2(MathF.Sin(GlobalTime * 2f) * 150f, -330);
+            NPC.velocity = Vector2.Lerp(NPC.velocity, (hover - NPC.Center) * 0.05f, 0.1f);
+
+            if (AttackTimer < 35) {
+                // 预告：聚焰
+                if (!Main.dedServ && AttackTimer % 3 == 0) {
+                    Dust d = Dust.NewDustDirect(NPC.Center + Main.rand.NextVector2Circular(60, 60), 0, 0, DustID.SolarFlare, 0, 0, 100, default, 2f);
+                    d.noGravity = true;
+                    d.velocity = (NPC.Center - d.position).SafeNormalize(Vector2.Zero) * 4f;
+                }
+                if (AttackTimer == 30) fxBloom = 0.4f;
+            }
+            else if (AttackTimer == 35 || AttackTimer == 50 || AttackTimer == 65) {
+                SoundEngine.PlaySound(SoundID.Item73 with { Pitch = -0.2f }, NPC.Center);
+                Vector2 dir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
+                int count = Main.expertMode ? 7 : 5;
+                float spread = MathHelper.ToRadians(42f);
                 for (int i = 0; i < count; i++) {
-                    float angle = MathHelper.TwoPi / count * i;
-                    FireProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 7f, NPC.damage / 5);
+                    float a = -spread / 2 + spread / (count - 1) * i;
+                    Fire(NPC.Center, dir.RotatedBy(a) * 7.5f, FeatherType, FeatherDmg);
                 }
             }
 
-            if (AttackTimer > 110) TransitionTo(BossPhase.Phase1_Soar);
+            if (AttackTimer > 88) Goto(St.Hub);
         }
 
-        private void RunPhase1HeatWave(Player target) {
-            NPC.velocity *= 0.92f;
+        // 余烬弹幕（快窄弹，小预告）
+        private void RunEmberBarrage(Player target) {
+            Vector2 hover = target.Center + new Vector2(MathF.Sin(GlobalTime * 2.5f) * 250f, -300);
+            NPC.velocity = Vector2.Lerp(NPC.velocity, (hover - NPC.Center) * 0.05f, 0.1f);
 
-            if (AttackTimer == 15) {
-                SoundEngine.PlaySound(SoundID.Item45 with { Volume = 1.3f }, NPC.Center);
-
-                // 双层火焰环
-                if (Main.netMode != NetmodeID.MultiplayerClient) {
-                    int count1 = Main.expertMode ? 22 : 16;
-                    for (int i = 0; i < count1; i++) {
-                        float angle = MathHelper.TwoPi / count1 * i;
-                        FireProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 9f, NPC.damage / 5);
-                    }
-                    int count2 = Main.expertMode ? 18 : 12;
-                    for (int i = 0; i < count2; i++) {
-                        float angle = MathHelper.TwoPi / count2 * i + MathHelper.ToRadians(10f);
-                        FireProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 14f, NPC.damage / 5);
-                    }
-                }
-
-                if (Main.netMode != NetmodeID.Server) {
-                    for (int i = 0; i < 20; i++) {
-                        Dust d = Dust.NewDustDirect(NPC.Center, 0, 0, DustID.SolarFlare, 0, 0, 100, default, 2.5f);
-                        d.noGravity = true;
-                        d.velocity = Main.rand.NextVector2Circular(10, 10);
-                    }
-                }
+            if (AttackTimer == 20) fxBloom = 0.3f;
+            if (AttackTimer == 30) {
+                // 同步两根火柱牵制（自预警）
+                SpawnPillarAt(target, -260);
+                SpawnPillarAt(target, 260);
             }
 
-            // 后续瞄准火球
-            if (AttackTimer > 25 && AttackTimer % 10 == 0 && AttackTimer < 55) {
-                Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 14f;
-                FireProjectile(NPC.Center, toTarget, NPC.damage / 5);
+            if (AttackTimer > 20 && AttackTimer < 78 && AttackTimer % 6 == 0) {
+                Vector2 dir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
+                int count = Main.expertMode ? 3 : 2;
+                for (int i = 0; i < count; i++) {
+                    Fire(NPC.Center, dir.RotatedBy(Main.rand.NextFloat(-0.12f, 0.12f)) * (16f + Main.rand.NextFloat(0, 3f)), EmberType, EmberDmg);
+                }
+                if (Main.rand.NextBool(3)) SoundEngine.PlaySound(SoundID.Item34 with { Volume = 0.5f }, NPC.Center);
             }
 
-            if (AttackTimer > 60) TransitionTo(BossPhase.Phase1_Soar);
+            if (AttackTimer > 90) Goto(St.Hub);
+        }
+
+        // 火柱阵（自预警地面太阳符）
+        private void RunSunPillars(Player target, int count, int duration) {
+            Vector2 hover = target.Center + new Vector2(0, -400);
+            NPC.velocity = Vector2.Lerp(NPC.velocity, (hover - NPC.Center) * 0.04f, 0.07f);
+            fxRunic = MathHelper.Max(fxRunic, 0.4f);
+
+            if (AttackTimer == 20) {
+                SoundEngine.PlaySound(SoundID.Item45 with { Volume = 1.1f }, target.Center);
+                float span = 520f;
+                for (int i = 0; i < count; i++) {
+                    float x = -span + (span * 2f) * i / (count - 1) + Main.rand.NextFloat(-40, 40);
+                    SpawnPillarAt(target, x);
+                }
+            }
+            // 余烬牵制
+            if (AttackTimer > 30 && AttackTimer % 18 == 0) {
+                Vector2 dir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
+                Fire(NPC.Center, dir * 14f, EmberType, EmberDmg);
+            }
+
+            if (AttackTimer > duration) Goto(St.Hub);
         }
 
         #endregion
 
-        #region 阶段转换
+        #region 阶段过渡
 
-        private void RunPhaseTransition2(Player target) {
+        private void RunTransition2(Player target) {
             NPC.velocity *= 0.9f;
             NPC.dontTakeDamage = true;
+            fxBloom = MathHelper.Max(fxBloom, PhaseTimer / 90f * 0.6f);
 
-            // 火焰向内聚集，凤凰涅槃强化
-            if (Main.netMode != NetmodeID.Server) {
+            if (!Main.dedServ) {
                 for (int i = 0; i < 12; i++) {
                     float angle = Main.rand.NextFloat(MathHelper.TwoPi);
-                    float dist = 400 - PhaseTimer * 3;
-                    if (dist < 40) dist = 40;
-                    Vector2 dustPos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * dist;
-                    int dustType = Main.rand.NextBool() ? DustID.SolarFlare : DustID.Torch;
-                    Dust d = Dust.NewDustDirect(dustPos, 0, 0, dustType, 0, 0, 50, default, 2.5f);
+                    float dist = MathF.Max(40f, 400 - PhaseTimer * 3);
+                    Vector2 dp = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * dist;
+                    Dust d = Dust.NewDustDirect(dp, 0, 0, Main.rand.NextBool() ? DustID.SolarFlare : DustID.Torch, 0, 0, 50, default, 2.5f);
                     d.noGravity = true;
-                    d.velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 8f;
+                    d.velocity = (NPC.Center - dp).SafeNormalize(Vector2.Zero) * 8f;
                 }
             }
 
             if (PhaseTimer == 70) {
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.8f, Volume = 1.5f }, NPC.Center);
-                if (Main.netMode != NetmodeID.Server) {
-                    PunchCameraModifier modifier = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 20f, 10f, 45, 2000f, FullName);
-                    Main.instance.CameraModifiers.Add(modifier);
-                }
+                ShakeScreen(12f, 10f, 45);
+                fxBloom = 0.9f;
             }
 
             if (PhaseTimer >= 90) {
@@ -593,39 +524,36 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
                 NPC.defense += 10;
                 NPC.damage = (int)(NPC.damage * 1.2f);
                 glowIntensity = 1.5f;
-                TransitionTo(BossPhase.Phase2_PhoenixDive);
+                ResetRotation(2);
+                Goto(St.Hub);
             }
         }
 
-        private void RunPhaseTransition3(Player target) {
+        private void RunTransition3(Player target) {
             NPC.velocity *= 0.85f;
             NPC.dontTakeDamage = true;
             NPC.Center += Main.rand.NextVector2Circular(4, 4);
+            fxBloom = MathHelper.Max(fxBloom, PhaseTimer / 120f * 0.7f);
 
-            if (Main.netMode != NetmodeID.Server) {
+            if (!Main.dedServ) {
                 for (int i = 0; i < 18; i++) {
                     float angle = Main.rand.NextFloat(MathHelper.TwoPi);
                     float dist = Main.rand.NextFloat(50, 300);
-                    Vector2 dustPos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * dist;
-                    Dust d = Dust.NewDustDirect(dustPos, 0, 0, DustID.SolarFlare, 0, 0, 50, default, 3.5f);
+                    Vector2 dp = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * dist;
+                    Dust d = Dust.NewDustDirect(dp, 0, 0, DustID.SolarFlare, 0, 0, 50, default, 3.5f);
                     d.noGravity = true;
-                    d.velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 12f;
+                    d.velocity = (NPC.Center - dp).SafeNormalize(Vector2.Zero) * 12f;
                 }
             }
 
             if (PhaseTimer == 60) {
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.3f, Volume = 2f }, NPC.Center);
-                if (Main.netMode != NetmodeID.Server) {
-                    PunchCameraModifier modifier = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 30f, 15f, 60, 3000f, FullName);
-                    Main.instance.CameraModifiers.Add(modifier);
-                }
-
-                // 火焰爆发
+                ShakeScreen(12f, 15f, 60, 3000f);
+                fxBloom = 1f;
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
-                    for (int i = 0; i < 24; i++) {
-                        float angle = MathHelper.TwoPi / 24 * i;
-                        Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 12f;
-                        FireProjectile(NPC.Center, vel, NPC.damage / 3);
+                    for (int i = 0; i < 20; i++) {
+                        float angle = MathHelper.TwoPi / 20 * i;
+                        Fire(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 9f, FeatherType, FeatherDmg);
                     }
                 }
             }
@@ -635,43 +563,43 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
                 NPC.defense += 15;
                 NPC.damage = (int)(NPC.damage * 1.3f);
                 glowIntensity = 2.5f;
-                TransitionTo(BossPhase.Phase3_NirvanaFlight);
+                ResetRotation(3);
+                Goto(St.Hub);
             }
         }
 
         #endregion
 
-        #region 二阶段：太阳之翼
+        #region 凤凰俯冲（固定 40 帧地面影子预警）
 
-        private void RunPhase2PhoenixDive(Player target) {
-            if (SubState == 0) {
-                Vector2 highPos = target.Center + new Vector2(Main.rand.NextFloat(-200, 200), -550);
-                NPC.velocity = Vector2.Lerp(NPC.velocity, (highPos - NPC.Center) * 0.07f, 0.12f);
+        private void RunDiveAttack(Player target, int maxDives) {
+            if (SubStateRaw == 0) {
+                // —— 蓄力 / 锁定落点 ——
+                if (AttackTimer == 1) {
+                    diveTarget = target.Center;   // 固定落点（非逐帧追踪）
+                }
+                Vector2 apex = diveTarget + new Vector2(0, -520);
+                NPC.velocity = Vector2.Lerp(NPC.velocity, (apex - NPC.Center) * 0.08f, 0.12f);
 
-                if (Main.netMode != NetmodeID.Server) {
+                if (!Main.dedServ) {
                     Dust d = Dust.NewDustDirect(NPC.Center, 0, 0, DustID.SolarFlare, 0, 0, 100, default, 2f);
                     d.noGravity = true;
                     d.velocity = (NPC.Center - d.position).SafeNormalize(Vector2.Zero) * 3f;
                 }
 
-                // 蓄力时旋转火焰压制
-                if (AttackTimer % 10 == 0) {
-                    float a = AttackTimer * 0.15f;
-                    for (int arm = 0; arm < 2; arm++) {
-                        FireProjectile(NPC.Center, new Vector2(MathF.Cos(a + arm * MathHelper.Pi), MathF.Sin(a + arm * MathHelper.Pi)) * 8f, NPC.damage / 5);
-                    }
-                }
-
-                if (AttackTimer > 30) {
-                    SubState = 1;
+                if (AttackTimer >= DiveWindup) {
+                    SubStateRaw = 1;
                     AttackTimer = 0;
-                    NPC.velocity = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY) * 40f;
+                    NPC.velocity = (diveTarget - NPC.Center).SafeNormalize(Vector2.UnitY) * 42f;
                     SoundEngine.PlaySound(SoundID.Roar with { Pitch = 1f }, NPC.Center);
-                    NPC.netUpdate = true;
+                    ShakeScreen(6f, 8f, 20);
+                    if (Main.netMode != NetmodeID.MultiplayerClient)
+                        NPC.netUpdate = true;
                 }
             }
             else {
-                if (Main.netMode != NetmodeID.Server) {
+                // —— 俯冲 ——
+                if (!Main.dedServ) {
                     for (int i = 0; i < 5; i++) {
                         Dust d = Dust.NewDustDirect(NPC.Center, 0, 0, DustID.SolarFlare, 0, 0, 80, default, 3f);
                         d.noGravity = true;
@@ -679,485 +607,349 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
                     }
                 }
 
-                // 两侧火焰尾迹 + 后方散射
-                if (AttackTimer % 3 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    Vector2 perpDir = new Vector2(-NPC.velocity.Y, NPC.velocity.X).SafeNormalize(Vector2.Zero);
-                    FireProjectile(NPC.Center + perpDir * 40f, perpDir * 7f, NPC.damage / 5);
-                    FireProjectile(NPC.Center - perpDir * 40f, -perpDir * 7f, NPC.damage / 5);
-                    // 后方散射
-                    Vector2 backVel = -NPC.velocity.SafeNormalize(Vector2.Zero) * 5f;
-                    FireProjectile(NPC.Center, backVel.RotatedByRandom(MathHelper.ToRadians(30)), NPC.damage / 6);
+                // 焰羽尾迹
+                if (AttackTimer % 3 == 0) {
+                    Vector2 perp = new Vector2(-NPC.velocity.Y, NPC.velocity.X).SafeNormalize(Vector2.Zero);
+                    Fire(NPC.Center + perp * 40f, perp * 6f, FeatherType, FeatherDmg);
+                    Fire(NPC.Center - perp * 40f, -perp * 6f, FeatherType, FeatherDmg);
                 }
 
-                if (AttackTimer > 22) NPC.velocity *= 0.9f;
-                if (AttackTimer > 35) {
-                    // 落地火焰环
+                bool reached = NPC.Center.Y >= diveTarget.Y - 20f || AttackTimer > 28;
+                if (AttackTimer > 18) NPC.velocity *= 0.9f;
+
+                if (reached) {
+                    fxBloom = 0.8f;
+                    ShakeScreen(8f, 9f, 22);
+                    SoundEngine.PlaySound(SoundID.Item14 with { Pitch = -0.3f }, NPC.Center);
                     if (Main.netMode != NetmodeID.MultiplayerClient) {
-                        for (int i = 0; i < 10; i++) {
-                            float angle = MathHelper.TwoPi / 10 * i;
-                            FireProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 8f, NPC.damage / 5);
+                        int n = nirvanaForm ? 14 : 10;
+                        for (int i = 0; i < n; i++) {
+                            float angle = MathHelper.TwoPi / n * i;
+                            Fire(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 8f, EmberType, EmberDmg);
                         }
                     }
                     diveCount++;
-                    if (diveCount < 5) {
-                        SubState = 0;
+                    if (diveCount < maxDives) {
+                        SubStateRaw = 0;
                         AttackTimer = 0;
                     }
-                    else TransitionTo(GetRandomPhase2Attack());
+                    else Goto(St.Hub);
                 }
             }
-        }
-
-        private void RunPhase2SunCircle(Player target) {
-            NPC.velocity = Vector2.Lerp(NPC.velocity, (target.Center + new Vector2(0, -400) - NPC.Center) * 0.04f, 0.08f);
-
-            // 3层收缩火焰环
-            if (AttackTimer == 25 && Main.netMode != NetmodeID.MultiplayerClient) {
-                float[] radii = { 450f, 320f, 200f };
-                int[] counts = { 28, 22, 16 };
-                for (int ring = 0; ring < 3; ring++) {
-                    for (int i = 0; i < counts[ring]; i++) {
-                        float angle = MathHelper.TwoPi / counts[ring] * i + ring * MathHelper.ToRadians(8f);
-                        Vector2 pos = target.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * radii[ring];
-                        Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.Zero) * (5f + ring * 3f);
-                        FireProjectile(pos, vel, NPC.damage / 4);
-                    }
-                }
-                SoundEngine.PlaySound(SoundID.Item45 with { Volume = 1.2f }, target.Center);
-            }
-
-            // 同步瞄准火球
-            if (AttackTimer > 30 && AttackTimer % 8 == 0 && AttackTimer < 80) {
-                Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 14f;
-                for (int i = -1; i <= 1; i += 2) {
-                    FireProjectile(NPC.Center, toTarget.RotatedBy(i * MathHelper.ToRadians(15)), NPC.damage / 5);
-                }
-            }
-
-            if (AttackTimer > 100) TransitionTo(GetRandomPhase2Attack());
-        }
-
-        private void RunPhase2SolarFlare(Player target) {
-            Vector2 hoverPos = target.Center + new Vector2(MathF.Sin(globalTime * 2.5f) * 280f, -330);
-            NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.05f, 0.1f);
-
-            // 密集追踪火球
-            if (AttackTimer % 12 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int flareCount = Main.expertMode ? 5 : 3;
-                for (int i = 0; i < flareCount; i++) {
-                    float angle = Main.rand.NextFloat(MathHelper.TwoPi);
-                    Vector2 pos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 80f;
-                    Vector2 vel = (target.Center - pos).SafeNormalize(Vector2.Zero) * 12f;
-                    vel = vel.RotatedByRandom(MathHelper.ToRadians(10f));
-                    FireProjectile(pos, vel, NPC.damage / 4);
-                }
-                SoundEngine.PlaySound(SoundID.Item34 with { Volume = 0.5f }, NPC.Center);
-            }
-
-            // 同步旋转火焰臂
-            if (AttackTimer % 6 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                float spiralAngle = AttackTimer * 0.12f;
-                for (int arm = 0; arm < 2; arm++) {
-                    float a = spiralAngle + arm * MathHelper.Pi;
-                    FireProjectile(NPC.Center, new Vector2(MathF.Cos(a), MathF.Sin(a)) * 10f, NPC.damage / 5);
-                }
-            }
-
-            if (AttackTimer > 100) TransitionTo(GetRandomPhase2Attack());
-        }
-
-        private void RunPhase2FlameTornado(Player target) {
-            Vector2 hoverPos = target.Center + new Vector2(0, -380);
-            NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.04f, 0.08f);
-
-            // 双旋转火焰螺旋，反向
-            if (AttackTimer % 3 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                float spiralAngle1 = AttackTimer * 0.14f;
-                float spiralAngle2 = -AttackTimer * 0.10f;
-                float radius1 = 50f + AttackTimer * 2.5f;
-                float radius2 = 80f + AttackTimer * 1.8f;
-
-                Vector2 pos1 = target.Center + new Vector2(MathF.Cos(spiralAngle1), MathF.Sin(spiralAngle1)) * radius1;
-                FireProjectile(pos1, new Vector2(MathF.Cos(spiralAngle1 + MathHelper.PiOver2), MathF.Sin(spiralAngle1 + MathHelper.PiOver2)) * 4f, NPC.damage / 5);
-
-                Vector2 pos2 = target.Center + new Vector2(MathF.Cos(spiralAngle2), MathF.Sin(spiralAngle2)) * radius2;
-                FireProjectile(pos2, new Vector2(MathF.Cos(spiralAngle2 + MathHelper.PiOver2), MathF.Sin(spiralAngle2 + MathHelper.PiOver2)) * 3f, NPC.damage / 5);
-            }
-
-            // 同步瞄准火球
-            if (AttackTimer % 20 == 0) {
-                Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 13f;
-                FireProjectile(NPC.Center, toTarget, NPC.damage / 5);
-            }
-
-            if (AttackTimer > 130) TransitionTo(GetRandomPhase2Attack());
-        }
-
-        private void RunPhase2WingStorm(Player target) {
-            NPC.velocity *= 0.92f;
-            NPC.Center += Main.rand.NextVector2Circular(3, 3);
-
-            int interval = Main.expertMode ? 4 : 6;
-            if (AttackTimer % interval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                Vector2 dir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
-                int count = 7;
-                float spread = MathHelper.ToRadians(50f);
-                for (int i = 0; i < count; i++) {
-                    float angle = -spread / 2 + spread / (count - 1) * i;
-                    Vector2 vel = dir.RotatedBy(angle) * Main.rand.NextFloat(14f, 20f);
-                    FireProjectile(NPC.Center, vel, NPC.damage / 4);
-                }
-                SoundEngine.PlaySound(SoundID.Item34 with { Pitch = 0.5f, Volume = 0.4f }, NPC.Center);
-            }
-
-            // 同步地面火柱
-            if (AttackTimer % 15 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int i = 0; i < 3; i++) {
-                    Vector2 pos = target.Center + new Vector2(Main.rand.NextFloat(-400, 400), 400);
-                    FireProjectile(pos, new Vector2(0, -18f), NPC.damage / 5);
-                }
-            }
-
-            if (AttackTimer > 80) TransitionTo(GetRandomPhase2Attack());
         }
 
         #endregion
 
-        #region 三阶段：涅槃朱雀
+        #region 赤日审判光束（DrawBeam）
 
-        private void RunPhase3NirvanaFlight(Player target) {
-            soarAngle += 0.04f;
-            float radius = 350f;
-            Vector2 soarPos = target.Center + new Vector2(MathF.Cos(soarAngle) * radius, MathF.Sin(soarAngle * 2f) * 150f - 300);
-            NPC.velocity = Vector2.Lerp(NPC.velocity, (soarPos - NPC.Center) * 0.08f, 0.1f);
+        // 二阶段：少量扇形扫掠光束
+        private void RunSolarBeams(Player target, int beamCount) {
+            Vector2 hover = target.Center + new Vector2(0, -360);
+            NPC.velocity = Vector2.Lerp(NPC.velocity, (hover - NPC.Center) * 0.04f, 0.08f);
 
-            // 涅槃火焰尾迹
-            if (Main.netMode != NetmodeID.Server) {
-                for (int i = 0; i < 4; i++) {
-                    Dust d = Dust.NewDustDirect(NPC.Center + Main.rand.NextVector2Circular(50, 50), 0, 0, DustID.SolarFlare, 0, 0, 100, default, 2.5f);
-                    d.noGravity = true;
-                    d.velocity = -NPC.velocity * 0.1f;
-                }
-            }
-
-            // 涅槃巡航火压制
-            if (PhaseTimer % 12 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                float a = PhaseTimer * 0.2f;
-                for (int arm = 0; arm < 3; arm++) {
-                    float angle = a + arm * MathHelper.TwoPi / 3f;
-                    FireProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 9f, NPC.damage / 6);
-                }
-            }
-            if (PhaseTimer % 20 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 14f;
-                FireProjectile(NPC.Center, toTarget, NPC.damage / 5);
-            }
-
-            if (PhaseTimer > 70) TransitionTo(GetRandomPhase3Attack());
-        }
-
-        private void RunPhase3VermillionRain(Player target) {
-            Vector2 hoverPos = target.Center + new Vector2(0, -500);
-            NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.04f, 0.08f);
-
-            int interval = Main.expertMode ? 2 : 4;
-            if (AttackTimer % interval == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int count = Main.expertMode ? 5 : 3;
-                for (int i = 0; i < count; i++) {
-                    float x = target.Center.X + Main.rand.NextFloat(-600, 600);
-                    Vector2 pos = new Vector2(x, target.Center.Y - 700);
-                    Vector2 vel = new Vector2(Main.rand.NextFloat(-2f, 2f), Main.rand.NextFloat(16f, 22f));
-                    FireProjectile(pos, vel, NPC.damage / 4);
-                }
-            }
-
-            // 同步两侧水平火墙
-            if (AttackTimer % 25 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                for (int side = -1; side <= 1; side += 2) {
-                    for (int i = 0; i < 6; i++) {
-                        Vector2 pos = target.Center + new Vector2(side * 700, -300 + i * 100);
-                        FireProjectile(pos, new Vector2(-side * 14f, 0), NPC.damage / 5);
+            if (AttackTimer == 25) {
+                SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.2f }, NPC.Center);
+                fxBloom = 0.5f;
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    Vector2 baseDir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
+                    float spread = MathHelper.ToRadians(28f);
+                    for (int i = 0; i < beamCount; i++) {
+                        float a = beamCount == 1 ? 0 : -spread + (spread * 2f) * i / (beamCount - 1);
+                        Vector2 dir = baseDir.RotatedBy(a);
+                        float sweep = (i % 2 == 0 ? 1f : -1f) * 0.006f;
+                        Fire(NPC.Center, dir, BeamType, BeamDmg, NPC.whoAmI, sweep);
                     }
                 }
             }
 
-            if (AttackTimer > 140) TransitionTo(BossPhase.Phase3_NirvanaFlight);
+            if (AttackTimer > 120) Goto(St.Hub);
         }
 
-        private void RunPhase3SolarJudgment(Player target) {
-            if (SubState == 0) {
+        // 三阶段签名：径向审判（处决级 75 帧预告）
+        private void RunSolarJudgment(Player target) {
+            if (SubStateRaw == 0) {
                 NPC.velocity *= 0.9f;
                 NPC.Center += Main.rand.NextVector2Circular(3, 3);
+                fxRunic = MathHelper.Max(fxRunic, AttackTimer / 75f * 0.8f);
+                fxBloom = MathHelper.Max(fxBloom, AttackTimer / 75f * 0.6f);
 
-                if (Main.netMode != NetmodeID.Server) {
-                    for (int i = 0; i < 8; i++) {
-                        Dust d = Dust.NewDustDirect(NPC.Center + Main.rand.NextVector2Circular(120, 120), 0, 0, DustID.SolarFlare, 0, 0, 50, default, 3f);
-                        d.noGravity = true;
-                        d.velocity = (NPC.Center - d.position).SafeNormalize(Vector2.Zero) * 6f;
-                    }
-                }
-
-                // 蓄力时旋转火焰臂
-                if (AttackTimer % 8 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    float a = AttackTimer * 0.18f;
-                    for (int arm = 0; arm < 3; arm++) {
-                        float angle = a + arm * MathHelper.TwoPi / 3f;
-                        FireProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 7f, NPC.damage / 5);
-                    }
-                }
-
-                if (AttackTimer > 55) {
-                    SubState = 1;
-                    AttackTimer = 0;
-
-                    SoundEngine.PlaySound(SoundID.Item45 with { Pitch = -0.5f, Volume = 1.5f }, NPC.Center);
-
-                    // 5环层叠火球爆发
-                    if (Main.netMode != NetmodeID.MultiplayerClient) {
-                        Vector2 dir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
-                        for (int ring = 0; ring < 5; ring++) {
-                            int count = 10 + ring * 3;
-                            for (int i = 0; i < count; i++) {
-                                float angle = MathHelper.TwoPi / count * i + ring * MathHelper.ToRadians(12f);
-                                Vector2 vel = dir * (8f + ring * 4f) + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 5f;
-                                FireProjectile(NPC.Center, vel, NPC.damage / 3);
-                            }
-                        }
-                    }
-
-                    if (Main.netMode != NetmodeID.Server) {
-                        PunchCameraModifier modifier = new(NPC.Center, (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY), 15f, 10f, 30, 2000f, FullName);
-                        Main.instance.CameraModifiers.Add(modifier);
-                    }
-                    NPC.netUpdate = true;
-                }
-            }
-            else {
-                NPC.velocity *= 0.9f;
-
-                // 爆发后追踪火球持续压制
-                if (AttackTimer % 10 == 0 && AttackTimer < 40 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 12f;
-                    for (int i = -1; i <= 1; i++) {
-                        FireProjectile(NPC.Center, toTarget.RotatedBy(i * MathHelper.ToRadians(12)), NPC.damage / 5);
-                    }
-                }
-
-                if (AttackTimer > 50) TransitionTo(BossPhase.Phase3_NirvanaFlight);
-            }
-        }
-
-        private void RunPhase3PhoenixDance(Player target) {
-            if (SubState == 0) {
-                NPC.velocity *= 0.8f;
-                // 蓄力时向外放火焰
-                if (AttackTimer % 5 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    float a = AttackTimer * 0.3f;
-                    FireProjectile(NPC.Center, new Vector2(MathF.Cos(a), MathF.Sin(a)) * 8f, NPC.damage / 6);
-                }
-                if (AttackTimer > 12) {
-                    SubState = 1;
-                    AttackTimer = 0;
-                    NPC.velocity = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX) * 45f;
-                    SoundEngine.PlaySound(SoundID.Roar with { Pitch = 1.2f, Volume = 0.8f }, NPC.Center);
-                    NPC.netUpdate = true;
-                }
-            }
-            else {
-                if (Main.netMode != NetmodeID.Server) {
-                    for (int i = 0; i < 4; i++) {
-                        Dust d = Dust.NewDustDirect(NPC.Center, 0, 0, DustID.SolarFlare, 0, 0, 80, default, 2.5f);
-                        d.noGravity = true;
-                        d.velocity = -NPC.velocity * Main.rand.NextFloat(0.05f, 0.15f);
-                    }
-                }
-
-                // 冲刺火焰尾迹
-                if (AttackTimer % 3 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    Vector2 perpDir = new Vector2(-NPC.velocity.Y, NPC.velocity.X).SafeNormalize(Vector2.Zero);
-                    FireProjectile(NPC.Center + perpDir * 30f, perpDir * 5f, NPC.damage / 6);
-                    FireProjectile(NPC.Center - perpDir * 30f, -perpDir * 5f, NPC.damage / 6);
-                }
-
-                // 冲刺中释放星形弹幕
-                if (AttackTimer == 10 && Main.netMode != NetmodeID.MultiplayerClient) {
+                if (!Main.dedServ && AttackTimer % 5 == 0) {
                     for (int i = 0; i < 6; i++) {
-                        float angle = MathHelper.TwoPi / 6 * i;
-                        for (int j = 1; j <= 4; j++) {
-                            FireProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * (5f + j * 3f), NPC.damage / 4);
-                        }
-                    }
-                }
-
-                if (AttackTimer > 18) NPC.velocity *= 0.9f;
-                if (AttackTimer > 25) {
-                    diveCount++;
-                    if (diveCount < 7) {
-                        SubState = 0;
-                        AttackTimer = 0;
-                    }
-                    else TransitionTo(BossPhase.Phase3_NirvanaFlight);
-                }
-            }
-        }
-
-        private void RunPhase3NirvanaFlames(Player target) {
-            if (SubState == 0) {
-                NPC.velocity *= 0.88f;
-                NPC.dontTakeDamage = true;
-                NPC.Center += Main.rand.NextVector2Circular(5, 5);
-
-                if (Main.netMode != NetmodeID.Server) {
-                    for (int i = 0; i < 15; i++) {
-                        float angle = Main.rand.NextFloat(MathHelper.TwoPi);
-                        float dist = Main.rand.NextFloat(60, 400);
-                        Vector2 dustPos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * dist;
-                        Dust d = Dust.NewDustDirect(dustPos, 0, 0, DustID.SolarFlare, 0, 0, 50, default, 3.5f);
+                        Vector2 dp = NPC.Center + Main.rand.NextVector2Circular(160, 160);
+                        Dust d = Dust.NewDustDirect(dp, 0, 0, DustID.SolarFlare, 0, 0, 50, default, 3f);
                         d.noGravity = true;
-                        d.velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 12f;
+                        d.velocity = (NPC.Center - dp).SafeNormalize(Vector2.Zero) * 6f;
                     }
                 }
+                if (AttackTimer % 20 == 0 && AttackTimer > 0)
+                    ShakeScreen(MathHelper.Clamp(4f + AttackTimer / 20f, 0f, 12f), 8f, 18);
 
-                // 蓄力时旋转火焰臂压制
-                if (AttackTimer % 8 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    float a = AttackTimer * 0.15f;
-                    for (int arm = 0; arm < 3; arm++) {
-                        float angle = a + arm * MathHelper.TwoPi / 3f;
-                        FireProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 10f, NPC.damage / 5);
-                    }
-                }
-
-                if (AttackTimer > 75) {
-                    SubState = 1;
+                if (AttackTimer >= 75) {
+                    SubStateRaw = 1;
                     AttackTimer = 0;
-                    NPC.dontTakeDamage = false;
-
-                    SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.5f, Volume = 2f }, NPC.Center);
-
-                    if (Main.netMode != NetmodeID.Server) {
-                        PunchCameraModifier modifier = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 30f, 15f, 60, 3000f, FullName);
-                        Main.instance.CameraModifiers.Add(modifier);
-                    }
-
-                    // 6波旋转火焰弹幕
+                    SoundEngine.PlaySound(SoundID.Item122 with { Volume = 1.2f }, NPC.Center);
+                    ShakeScreen(12f, 11f, 30, 2500f);
+                    fxBloom = 1f;
                     if (Main.netMode != NetmodeID.MultiplayerClient) {
-                        for (int wave = 0; wave < 6; wave++) {
-                            int count = 16 + wave * 4;
-                            for (int i = 0; i < count; i++) {
-                                float angle = MathHelper.TwoPi / count * i + wave * MathHelper.ToRadians(8f);
-                                Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * (5f + wave * 3f);
-                                FireProjectile(NPC.Center, vel, NPC.damage / 3);
-                            }
+                        int beams = nirvanaForm ? 8 : 6;
+                        for (int i = 0; i < beams; i++) {
+                            float a = MathHelper.TwoPi / beams * i;
+                            float sweep = (i % 2 == 0 ? 1f : -1f) * 0.008f;
+                            Fire(NPC.Center, a.ToRotationVector2(), BeamType, BeamDmg, NPC.whoAmI, sweep);
                         }
-                        // 双侧火墙
-                        for (int side = -1; side <= 1; side += 2) {
-                            for (int i = 0; i < 8; i++) {
-                                Vector2 pos = target.Center + new Vector2(side * 700, -350 + i * 100);
-                                FireProjectile(pos, new Vector2(-side * 16f, 0), NPC.damage / 4);
-                            }
-                        }
-                        // 火雨
-                        for (int i = 0; i < 20; i++) {
-                            float x = target.Center.X + Main.rand.NextFloat(-600, 600);
-                            Vector2 pos = new Vector2(x, target.Center.Y - 700);
-                            Vector2 vel = new Vector2(0, Main.rand.NextFloat(14f, 22f));
-                            FireProjectile(pos, vel, NPC.damage / 4);
-                        }
+                        // 环绕落点火柱（审判落地）
+                        for (int i = 0; i < 5; i++)
+                            SpawnPillarAt(target, -480 + 240 * i);
                     }
                     NPC.netUpdate = true;
                 }
             }
             else {
                 NPC.velocity *= 0.92f;
-
-                // 爆发后追踪火球持续压制
-                if (AttackTimer % 8 == 0 && AttackTimer < 50 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    Vector2 toTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero) * 13f;
-                    for (int i = -1; i <= 1; i++) {
-                        FireProjectile(NPC.Center, toTarget.RotatedBy(i * MathHelper.ToRadians(10)), NPC.damage / 5);
-                    }
-                }
-
-                if (AttackTimer > 60) TransitionTo(BossPhase.Phase3_NirvanaFlight);
-            }
-        }
-
-        private void RunPhase3Rebirth(Player target) {
-            NPC.velocity *= 0.9f;
-            NPC.dontTakeDamage = true;
-            NPC.Center += Main.rand.NextVector2Circular(4, 4);
-
-            if (Main.netMode != NetmodeID.Server) {
-                float intensity = PhaseTimer / 120f;
-                for (int i = 0; i < (int)(20 * intensity); i++) {
-                    float angle = Main.rand.NextFloat(MathHelper.TwoPi);
-                    float dist = Main.rand.NextFloat(50, 200);
-                    Vector2 dustPos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * dist;
-                    int dustType = Main.rand.NextBool() ? DustID.SolarFlare : DustID.Torch;
-                    Dust d = Dust.NewDustDirect(dustPos, 0, 0, dustType, 0, 0, 50, default, 3f + intensity);
-                    d.noGravity = true;
-                    d.velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * (5f + intensity * 5f);
-                }
-            }
-
-            if (PhaseTimer == 80) {
-                SoundEngine.PlaySound(SoundID.Roar with { Pitch = 1f, Volume = 2f }, NPC.Center);
-                if (Main.netMode != NetmodeID.Server) {
-                    PunchCameraModifier modifier = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 30f, 15f, 60, 3000f, FullName);
-                    Main.instance.CameraModifiers.Add(modifier);
-
-                    for (int i = 0; i < 50; i++) {
-                        Dust d = Dust.NewDustDirect(NPC.Center, 0, 0, DustID.SolarFlare, 0, 0, 100, default, 4f);
-                        d.noGravity = true;
-                        d.velocity = Main.rand.NextVector2Circular(20, 20);
-                    }
-                }
-
-                // 重生爆发: 双层同心圆
-                if (Main.netMode != NetmodeID.MultiplayerClient) {
-                    for (int i = 0; i < 36; i++) {
-                        float angle = MathHelper.TwoPi / 36 * i;
-                        FireProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 16f, NPC.damage / 3);
-                    }
-                    for (int i = 0; i < 24; i++) {
-                        float angle = MathHelper.TwoPi / 24 * i + MathHelper.ToRadians(7.5f);
-                        FireProjectile(NPC.Center, new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 10f, NPC.damage / 3);
-                    }
-                }
-            }
-
-            if (PhaseTimer >= 120) {
-                NPC.dontTakeDamage = false;
-                glowIntensity = 3f;
-                TransitionTo(BossPhase.Phase3_NirvanaFlight);
+                fxRunic = MathHelper.Max(fxRunic, 0.4f);
+                if (AttackTimer > 105) Goto(St.Hub);
             }
         }
 
         #endregion
 
+        #region 焰羽风暴 / 火柱棋局
+
+        private void RunFeatherStorm(Player target) {
+            NPC.velocity *= 0.93f;
+            NPC.Center += Main.rand.NextVector2Circular(2, 2);
+
+            if (AttackTimer == 25) fxBloom = 0.4f;
+
+            if (AttackTimer > 30 && AttackTimer < 105 && AttackTimer % 14 == 0) {
+                SoundEngine.PlaySound(SoundID.Item73 with { Volume = 0.6f }, NPC.Center);
+                int ring = 10;
+                float baseA = GlobalTime * 2f;
+                for (int i = 0; i < ring; i++) {
+                    float a = baseA + MathHelper.TwoPi / ring * i;
+                    Fire(NPC.Center, new Vector2(MathF.Cos(a), MathF.Sin(a)) * 6.5f, FeatherType, FeatherDmg);
+                }
+                Vector2 dir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
+                for (int i = -1; i <= 1; i++)
+                    Fire(NPC.Center, dir.RotatedBy(i * MathHelper.ToRadians(12)) * 15f, EmberType, EmberDmg);
+            }
+
+            if (AttackTimer > 118) Goto(St.Hub);
+        }
+
+        // 火柱"棋局"：交错太阳符，留安全格
+        private void RunSunPillarChess(Player target) {
+            Vector2 hover = target.Center + new Vector2(0, -420);
+            NPC.velocity = Vector2.Lerp(NPC.velocity, (hover - NPC.Center) * 0.04f, 0.07f);
+            fxRunic = MathHelper.Max(fxRunic, 0.7f);
+
+            const float spacing = 200f;
+            // 第一波：偶数格
+            if (AttackTimer == 20) {
+                SoundEngine.PlaySound(SoundID.Item45 with { Volume = 1.1f }, target.Center);
+                for (int i = -3; i <= 3; i += 2)
+                    SpawnPillarAt(target, i * spacing);
+            }
+            // 第二波：奇数格（错位 → 形成棋盘可走缝）
+            if (AttackTimer == 20 + SuzakuSunPillar.WindupTicks + SuzakuSunPillar.StrikeTicks) {
+                for (int i = -2; i <= 2; i += 2)
+                    SpawnPillarAt(target, i * spacing);
+            }
+
+            if (AttackTimer > 170) Goto(St.Hub);
+        }
+
+        #endregion
+
+        #region 涅槃重生 set-piece
+
+        private void RunRebirth(Player target) {
+            NPC.velocity *= 0.9f;
+            NPC.dontTakeDamage = true;
+            NPC.Center += Main.rand.NextVector2Circular(3, 3);
+
+            if (PhaseTimer < AshEnd) {
+                // —— 灰烬沉默 ——
+                if (!Main.dedServ && Main.rand.NextBool()) {
+                    Dust d = Dust.NewDustDirect(NPC.position, NPC.width, NPC.height, DustID.Ash, Main.rand.NextFloat(-1, 1), Main.rand.NextFloat(-2, 0), 120, default, 1.6f);
+                    d.noGravity = false;
+                }
+            }
+            else if (PhaseTimer == AshEnd) {
+                // —— 爆燃复生：竞技场点燃 ——
+                SoundEngine.PlaySound(SoundID.Roar with { Pitch = 1f, Volume = 2f }, NPC.Center);
+                ShakeScreen(12f, 15f, 60, 3000f);
+                fxBloom = 1f;
+                fxRunic = 1f;
+                glowIntensity = 3f;
+                if (!Main.dedServ) {
+                    for (int i = 0; i < 60; i++) {
+                        Dust d = Dust.NewDustDirect(NPC.Center, 0, 0, DustID.SolarFlare, 0, 0, 100, default, 4f);
+                        d.noGravity = true;
+                        d.velocity = Main.rand.NextVector2Circular(22, 22);
+                    }
+                }
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    // 双层同心焰环
+                    for (int i = 0; i < 30; i++) {
+                        float a = MathHelper.TwoPi / 30 * i;
+                        Fire(NPC.Center, new Vector2(MathF.Cos(a), MathF.Sin(a)) * 13f, FeatherType, FeatherDmg);
+                    }
+                    for (int i = 0; i < 22; i++) {
+                        float a = MathHelper.TwoPi / 22 * i + MathHelper.ToRadians(8f);
+                        Fire(NPC.Center, new Vector2(MathF.Cos(a), MathF.Sin(a)) * 8f, EmberType, EmberDmg);
+                    }
+                    // 竞技场点燃：环形火柱
+                    for (int i = 0; i < 6; i++)
+                        SpawnPillarAt(target, -600 + 240 * i);
+                }
+            }
+            else {
+                // —— 复生余波（火焰自玩家外缘升腾）——
+                fxRunic = MathHelper.Max(fxRunic, 0.5f);
+                if (!Main.dedServ && PhaseTimer % 4 == 0) {
+                    for (int i = 0; i < 6; i++) {
+                        Vector2 dp = NPC.Center + Main.rand.NextVector2Circular(220, 220);
+                        Dust d = Dust.NewDustDirect(dp, 0, 0, DustID.SolarFlare, 0, 0, 50, default, 3f);
+                        d.noGravity = true;
+                        d.velocity = new Vector2(0, -Main.rand.NextFloat(2, 6));
+                    }
+                }
+            }
+
+            if (PhaseTimer >= RebirthEnd) {
+                NPC.dontTakeDamage = false;
+                ResetRotation(3);
+                diveCount = 0;
+                Goto(St.Hub);
+            }
+        }
+
+        private void UpdateRebirthGrade() {
+            if (State == St.Rebirth) {
+                if (PhaseTimer <= AshEnd) {
+                    float g = MathHelper.Clamp(PhaseTimer / AshEnd, 0f, 1f);
+                    rebirthLut = g;
+                    rebirthSat = MathHelper.Lerp(1f, 0.1f, g);
+                    rebirthShadow = new Vector4(new Color(64, 60, 58).ToVector3(), 0.6f * g);
+                    rebirthHi = new Vector4(new Color(120, 116, 112).ToVector3(), 0.6f * g);
+                }
+                else {
+                    float g = MathHelper.Clamp((PhaseTimer - AshEnd) / (RebirthEnd - AshEnd), 0f, 1f);
+                    rebirthLut = MathHelper.Lerp(1f, 0.85f, g);
+                    rebirthSat = MathHelper.Lerp(0.1f, 1.5f, g);
+                    rebirthShadow = new Vector4(new Color(120, 18, 12).ToVector3(), 0.7f);
+                    rebirthHi = new Vector4(new Color(255, 150, 70).ToVector3(), 0.7f);
+                }
+            }
+            else {
+                rebirthLut = MathHelper.Lerp(rebirthLut, 0f, 0.08f);
+            }
+        }
+
+        #endregion
+
+        #region 绘制
+
+        public override void FindFrame(int frameHeight) {
+            bool dashing = (State == St.P2_PhoenixDive || State == St.P3_PhoenixDance) && SubStateRaw == 1;
+            if (dashing) {
+                NPC.frame.Y = 0;
+                frameCounter = 0;
+                return;
+            }
+
+            bool slow = State == St.Intro || State == St.Trans2 || State == St.Trans3 || State == St.Rebirth;
+            int rate = slow ? 10 : (NPC.velocity.LengthSquared() > 100f ? 4 : 6);
+            frameCounter++;
+            if (frameCounter >= rate) {
+                frameCounter = 0;
+                NPC.frame.Y += frameHeight;
+                if (NPC.frame.Y >= frameHeight * 4)
+                    NPC.frame.Y = 0;
+            }
+        }
+
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+            // 俯冲蓄力：固定落点地面影子预警（非致命赤 → 末段转金）
+            DrawDiveTelegraph(spriteBatch, screenPos);
+
             Texture2D texture = TextureAssets.Npc[Type].Value;
             Rectangle frame = NPC.frame;
             Vector2 origin = frame.Size() / 2f;
 
-            // 纹理正面朝右：面朝左时水平翻转，同时取反旋转以保持视觉一致
             bool facingRight = NPC.spriteDirection >= 0;
             SpriteEffects effects = facingRight ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
             float drawRotation = facingRight ? NPC.rotation : -NPC.rotation;
 
-            // 火焰残影
+            // 涅槃灰烬：本体压暗 → 复生回明
+            Color bodyColor = drawColor;
+            if (State == St.Rebirth && PhaseTimer < AshEnd) {
+                float g = MathHelper.Clamp(PhaseTimer / (float)AshEnd, 0f, 1f);
+                bodyColor = Color.Lerp(drawColor, new Color(70, 65, 62), g);
+            }
+
             for (int i = NPCID.Sets.TrailCacheLength[Type] - 1; i > 0; i--) {
                 Vector2 trailPos = NPC.oldPos[i] + NPC.Size / 2f - screenPos;
                 float alpha = 0.5f * (1f - (float)i / NPCID.Sets.TrailCacheLength[Type]);
-                Color trailColor = drawColor * alpha;
-                trailColor.G = (byte)Math.Min(trailColor.G * 1.3f, 255);
+                Color trailColor = bodyColor * alpha;
+                trailColor.G = (byte)Math.Min(trailColor.G * 1.1f, 255);
                 spriteBatch.Draw(texture, trailPos, frame, trailColor, drawRotation, origin,
                     NPC.scale * (1f - i * 0.015f), effects, 0f);
             }
 
             Vector2 drawPos = NPC.Center - screenPos;
-            spriteBatch.Draw(texture, drawPos, frame, drawColor, drawRotation, origin, NPC.scale, effects, 0f);
+            spriteBatch.Draw(texture, drawPos, frame, bodyColor, drawRotation, origin, NPC.scale, effects, 0f);
             return false;
         }
+
+        private void DrawDiveTelegraph(SpriteBatch sb, Vector2 screenPos) {
+            if (Main.dedServ) return;
+            bool windup = (State == St.P2_PhoenixDive || State == St.P3_PhoenixDance) && SubStateRaw == 0 && AttackTimer >= 1;
+            if (!windup) return;
+
+            float grow = MathHelper.Clamp(AttackTimer / (float)DiveWindup, 0f, 1f);
+            Texture2D glow = ACMAsset.SoftGlow;
+            if (glow == null) return;
+            Vector2 pos = diveTarget - screenPos;
+            Vector2 go = glow.Size() / 2f;
+
+            // 非致命赤 → 临击转金（提示"即将致命"）
+            Color c = Color.Lerp(TelegraphColors.Vermilion, TelegraphColors.Gold, grow * grow);
+            c.A = 0;
+
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+            // 椭圆地影（横向压扁）
+            sb.Draw(glow, pos, null, c * (0.4f + grow * 0.5f), 0f, go, new Vector2(2.0f, 0.7f) * (0.5f + grow * 0.6f), SpriteEffects.None, 0f);
+            sb.Draw(glow, pos, null, c * 0.6f, 0f, go, new Vector2(1.1f, 0.4f) * (0.4f + grow * 0.5f), SpriteEffects.None, 0f);
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+        }
+
+        // PaletteLUT 涅槃灰↔赤 全屏调色（单一全屏后处理名额）
+        public override void PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+            if (Main.dedServ || rebirthLut <= 0.01f) return;
+            if (!MythologyConfig.FullscreenShadersEnabled) return;
+            if (!ACMShaders.RequestFullscreenSlot()) return;
+
+            Effect fx = ACMShaders.PaletteLUT;
+            if (fx == null) return;
+
+            fx.Parameters["uTime"]?.SetValue(GlobalTime);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(rebirthLut, 0f, 1f));
+            fx.Parameters["uAspect"]?.SetValue((float)Main.screenWidth / Main.screenHeight);
+            fx.Parameters["uSaturation"]?.SetValue(rebirthSat);
+            fx.Parameters["uHueShift"]?.SetValue(0f);
+            fx.Parameters["uShadowTint"]?.SetValue(rebirthShadow);
+            fx.Parameters["uHighlightTint"]?.SetValue(rebirthHi);
+            fx.Parameters["uSplit"]?.SetValue(0f);
+
+            ACMShaders.ApplyScreenPostProcess(spriteBatch, fx);
+        }
+
+        #endregion
     }
 }

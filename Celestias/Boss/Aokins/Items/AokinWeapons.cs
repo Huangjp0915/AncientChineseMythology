@@ -72,6 +72,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
             tooltips.Add(new TooltipLine(Mod, "DragonLore", "焰纹铸成的南海龙枪，枪尖缠绕焚风"));
             tooltips.Add(new TooltipLine(Mod, "DragonEffect", "突刺留下焚风 trail，每四次释放焚风冲击"));
             tooltips.Add(new TooltipLine(Mod, "DragonEffect2", "命中叠加点燃层数，层数越高灼烧越久、伤害越高"));
+            tooltips.Add(new TooltipLine(Mod, "DragonEffect3", "点燃叠满 8 层时再次命中，引爆「焚天涅槃」赤焰新星"));
         }
     }
 
@@ -158,6 +159,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
 
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
             InfernoDragonSpearGlobalNPC.ApplyBrand(target, 1);
+            InfernoDragonSpearGlobalNPC.TryDetonateNova(target, Projectile.owner, Projectile.damage, Projectile.knockBack, Projectile.GetSource_FromThis());
 
             for (int i = 0; i < 10; i++) {
                 Vector2 vel = Projectile.velocity.SafeNormalize(Vector2.Zero).RotatedByRandom(0.6f) * Main.rand.NextFloat(4f, 9f);
@@ -171,6 +173,17 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
 
         public override bool PreDraw(ref Color lightColor) {
             Texture2D tex = TextureAssets.Item[ModContent.ItemType<InfernoDragonSpear>()].Value;
+
+            // 焚风刃影 — 沿突刺轴向叠加 SlashBurst 喷发，呈现炽焰拉伸感
+            if (ACMAsset.SlashBurst != null && thrustProgress > 0.05f) {
+                float burstAlpha = MathF.Sin(thrustProgress * MathF.PI) * 0.85f;
+                Vector2 burstPos = Owner.MountedCenter + Projectile.rotation.ToRotationVector2() * 70f;
+                Color burstColor = Color.Lerp(AokinHelper.MoltenOrange, AokinHelper.BlazingGold, 0.4f) * burstAlpha;
+                burstColor.A = 0;
+                Main.spriteBatch.Draw(ACMAsset.SlashBurst, burstPos - Main.screenPosition, null, burstColor,
+                    Projectile.rotation + MathHelper.PiOver2, new Vector2(ACMAsset.SlashBurst.Width / 2f, ACMAsset.SlashBurst.Height),
+                    new Vector2(0.2f, 0.32f), SpriteEffects.None, 0f);
+            }
 
             Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, lightColor,
                 Projectile.rotation + MathHelper.ToRadians(68), tex.Size() / 2f, Projectile.scale, SpriteEffects.None, 0f);
@@ -244,6 +257,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
 
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
             InfernoDragonSpearGlobalNPC.ApplyBrand(target, 2);
+            InfernoDragonSpearGlobalNPC.TryDetonateNova(target, Projectile.owner, (int)(Projectile.damage * 0.8f), Projectile.knockBack, Projectile.GetSource_FromThis());
             target.AddBuff(BuffID.OnFire3, 150);
 
             Vector2 knockDir = (target.Center - Projectile.Center).SafeNormalize(Vector2.Zero);
@@ -302,6 +316,50 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
             }
             else {
                 npc.AddBuff(BuffID.OnFire, duration);
+            }
+        }
+
+        /// <summary>点燃叠满（8 层）时引爆「焚天涅槃」赤焰新星，消耗层数造成范围灼烧。</summary>
+        public static void TryDetonateNova(NPC npc, int owner, int baseDamage, float knockback, IEntitySource source) {
+            if (!npc.active || npc.friendly || npc.dontTakeDamage) return;
+
+            var brand = npc.GetGlobalNPC<InfernoDragonSpearGlobalNPC>();
+            if (brand.infernoStacks < MaxStacks) return;
+
+            brand.infernoStacks = 0;
+            brand.stackTimer = 0;
+
+            Vector2 center = npc.Center;
+            int novaDamage = (int)(baseDamage * 2.4f);
+            SoundEngine.PlaySound(SoundID.Item74 with { Pitch = -0.35f, Volume = 1f }, center);
+            SoundEngine.PlaySound(SoundID.Item14 with { Pitch = -0.1f, Volume = 0.7f }, center);
+
+            if (Main.netMode != NetmodeID.MultiplayerClient) {
+                foreach (NPC other in Main.ActiveNPCs) {
+                    if (!other.CanBeChasedBy()) continue;
+                    if (Vector2.Distance(other.Center, center) > 200f) continue;
+
+                    other.SimpleStrikeNPC(novaDamage, other.Center.X > center.X ? 1 : -1, false, knockback * 0.5f);
+                    other.AddBuff(BuffID.OnFire3, 300);
+                    var ob = other.GetGlobalNPC<InfernoDragonSpearGlobalNPC>();
+                    ob.infernoStacks = Math.Min(MaxStacks, ob.infernoStacks + 2);
+                    ob.stackTimer = StackDecayDelay;
+                }
+            }
+
+            if (Main.dedServ) return;
+
+            AokinHelper.CreateDragonFireBurst(center, 200f, 4, 20);
+            AokinHelper.CreateFlameVortex(center, 160f, 1.6f, 36);
+            for (int i = 0; i < 28; i++) {
+                float angle = MathHelper.TwoPi * i / 28f;
+                Vector2 vel = angle.ToRotationVector2() * Main.rand.NextFloat(6f, 13f);
+                int dustType = Main.rand.Next(3) switch { 0 => DustID.Torch, 1 => DustID.SolarFlare, _ => DustID.RedTorch };
+                var d = Dust.NewDustPerfect(center, dustType, vel, 60, default, Main.rand.NextFloat(2f, 3.2f));
+                d.noGravity = true;
+            }
+            if (owner == Main.myPlayer) {
+                Main.player[owner].GetModPlayer<ScreenShakePlayer>().ShakeScreen(6, 14);
             }
         }
 
@@ -367,6 +425,12 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
 
             return false;
         }
+
+        public override void ModifyTooltips(List<TooltipLine> tooltips) {
+            tooltips.Add(new TooltipLine(Mod, "DragonLore", "南海龙鳞淬铸的双生火环，交缠飞旋"));
+            tooltips.Add(new TooltipLine(Mod, "DragonEffect", "掷出两枚火环，去程与回程各造成一次打击，回程暴击强化"));
+            tooltips.Add(new TooltipLine(Mod, "DragonEffect2", "两环同场时之间架起焚焰锁链，灼烧穿过锁链的敌人"));
+        }
     }
 
     /// <summary>
@@ -380,6 +444,8 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
         private ref float CoilPhase => ref Projectile.localAI[0];
         private ref float CoreX => ref Projectile.localAI[1];
         private ref float CoreY => ref Projectile.localAI[2];
+
+        private int tetherCooldown;
 
         private Player Owner => Main.player[Projectile.owner];
 
@@ -437,7 +503,72 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
 
             ApplyCoilMotion(ref coreVelocity, returning);
             SpawnFlameCoilParticles(returning);
+
+            // 双环交缠：低序号环负责维护两环之间的焚焰锁链，灼烧穿过锁链的敌人
+            if (RingIndex < 0.5f) {
+                HandleFlameTether();
+            }
+
             Lighting.AddLight(Projectile.Center, AokinHelper.MoltenOrange.ToVector3() * 0.65f);
+        }
+
+        private Projectile FindPartnerRing() {
+            foreach (Projectile p in Main.ActiveProjectiles) {
+                if (p.whoAmI == Projectile.whoAmI) continue;
+                if (p.type == Projectile.type && p.owner == Projectile.owner) return p;
+            }
+            return null;
+        }
+
+        private void HandleFlameTether() {
+            Projectile partner = FindPartnerRing();
+            if (partner == null) return;
+
+            if (tetherCooldown > 0) {
+                tetherCooldown--;
+                return;
+            }
+
+            if (Main.netMode != NetmodeID.MultiplayerClient) {
+                Vector2 a = Projectile.Center;
+                Vector2 b = partner.Center;
+                bool hitAny = false;
+                foreach (NPC npc in Main.ActiveNPCs) {
+                    if (!npc.CanBeChasedBy()) continue;
+                    float pt = 0f;
+                    if (Collision.CheckAABBvLineCollision(npc.Hitbox.TopLeft(), npc.Hitbox.Size(), a, b, 22f, ref pt)) {
+                        npc.SimpleStrikeNPC((int)(Projectile.damage * 0.5f), 0, false, 0f);
+                        npc.AddBuff(BuffID.OnFire, 180);
+                        hitAny = true;
+                    }
+                }
+                if (hitAny && !Main.dedServ) {
+                    SoundEngine.PlaySound(SoundID.Item73 with { Volume = 0.35f, Pitch = 0.3f }, Projectile.Center);
+                }
+            }
+            tetherCooldown = 12;
+        }
+
+        private void DrawFlameTether() {
+            Projectile partner = FindPartnerRing();
+            if (partner == null || ACMAsset.LightShot == null) return;
+
+            Vector2 a = Projectile.Center - Main.screenPosition;
+            Vector2 b = partner.Center - Main.screenPosition;
+            Vector2 mid = (a + b) / 2f;
+            float rot = (b - a).ToRotation();
+            float len = Vector2.Distance(a, b);
+            float pulse = 0.8f + MathF.Sin(CoilPhase * 2f) * 0.2f;
+
+            Color beam = AokinHelper.MoltenOrange * 0.55f * pulse;
+            beam.A = 0;
+            Main.spriteBatch.Draw(ACMAsset.LightShot, mid, null, beam, rot, ACMAsset.LightShot.Size() / 2f,
+                new Vector2(len / ACMAsset.LightShot.Width, 0.24f * pulse), SpriteEffects.None, 0f);
+
+            Color core = AokinHelper.BlazingGold * 0.7f * pulse;
+            core.A = 0;
+            Main.spriteBatch.Draw(ACMAsset.LightShot, mid, null, core, rot, ACMAsset.LightShot.Size() / 2f,
+                new Vector2(len / ACMAsset.LightShot.Width, 0.1f * pulse), SpriteEffects.None, 0f);
         }
 
         private void ApplyCoilMotion(ref Vector2 coreVelocity, bool returning) {
@@ -510,6 +641,10 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
             Vector2 origin = tex.Size() / 2f;
             float pulse = 1f + MathF.Sin(CoilPhase * 2f) * 0.08f;
 
+            if (RingIndex < 0.5f) {
+                DrawFlameTether();
+            }
+
             for (int i = 0; i < Projectile.oldPos.Length; i++) {
                 if (Projectile.oldPos[i] == Vector2.Zero)
                     continue;
@@ -560,6 +695,8 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
     /// </summary>
     public class CrimsonMaelstromBow : ModItem
     {
+        public const int MaelstromThreshold = 5;
+
         public override void SetDefaults() {
             Item.damage = 360;
             Item.DamageType = DamageClass.Ranged;
@@ -584,9 +721,21 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
         }
 
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
+            var maelstromPlayer = player.GetModPlayer<CrimsonMaelstromPlayer>();
+            bool surge = maelstromPlayer.ConsumeMaelstromSurge();
+
             for (int i = -1; i <= 1; i++) {
                 Vector2 spreadVel = velocity.RotatedBy(MathHelper.ToRadians(4f * i));
-                Projectile.NewProjectile(source, position, spreadVel, type, damage, knockback, player.whoAmI);
+                float ai0 = (surge && i == 0) ? 1f : 0f;
+                int arrowDamage = surge ? (int)(damage * 1.2f) : damage;
+                Projectile.NewProjectile(source, position, spreadVel, type, arrowDamage, knockback, player.whoAmI, ai0);
+            }
+
+            if (surge) {
+                SoundEngine.PlaySound(SoundID.Item73 with { Pitch = -0.1f, Volume = 0.9f }, player.Center);
+                if (Main.netMode != NetmodeID.Server) {
+                    AokinHelper.CreateFlameVortex(position, 52f, 1.2f, 24);
+                }
             }
 
             return false;
@@ -594,11 +743,39 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
 
         public override void ModifyTooltips(List<TooltipLine> tooltips) {
             tooltips.Add(new TooltipLine(Mod, "DragonLore", "以龙筋为弦的南海火龙神弓"));
-            tooltips.Add(new TooltipLine(Mod, "DragonEffect", "将箭矢转化为赤色旋风暴箭"));
-            tooltips.Add(new TooltipLine(Mod, "DragonEffect2", "命中敌人时生成小型火龙卷"));
+            tooltips.Add(new TooltipLine(Mod, "DragonEffect", "将箭矢转化为赤色旋风暴箭，命中生成小型火龙卷"));
+            tooltips.Add(new TooltipLine(Mod, "DragonEffect2", $"每命中 {MaelstromThreshold} 次，下一箭凝成赤潮巨旋风，卷吸并灼烧成群敌人"));
         }
 
         public override string Texture => "Terraria/Images/Item_" + ItemID.Marrow;
+    }
+
+    /// <summary>赤潮旋涡弓 — 追踪命中计数，满计数后下一射凝成赤潮巨旋风。</summary>
+    public class CrimsonMaelstromPlayer : ModPlayer
+    {
+        private int hitCount;
+        private bool pendingSurge;
+
+        public void RegisterHit() {
+            if (pendingSurge) {
+                return;
+            }
+
+            hitCount++;
+            if (hitCount >= CrimsonMaelstromBow.MaelstromThreshold) {
+                hitCount = 0;
+                pendingSurge = true;
+            }
+        }
+
+        public bool ConsumeMaelstromSurge() {
+            if (!pendingSurge) {
+                return false;
+            }
+
+            pendingSurge = false;
+            return true;
+        }
     }
 
     /// <summary>
@@ -610,6 +787,8 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
 
         private float stormPhase;
         private float baseSpeed;
+
+        private ref float IsMaelstrom => ref Projectile.ai[0];
 
         public override void SetStaticDefaults() {
             ProjectileID.Sets.TrailCacheLength[Type] = 12;
@@ -656,7 +835,14 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
             target.AddBuff(BuffID.OnFire3, 180);
 
-            for (int i = 0; i < 8; i++) {
+            Player owner = Main.player[Projectile.owner];
+            if (owner.active && !owner.dead) {
+                owner.GetModPlayer<CrimsonMaelstromPlayer>().RegisterHit();
+            }
+
+            bool maelstrom = IsMaelstrom >= 1f;
+
+            for (int i = 0; i < (maelstrom ? 14 : 8); i++) {
                 Vector2 vel = Main.rand.NextVector2CircularEdge(5, 5);
                 int dustType = Main.rand.NextBool() ? DustID.Torch : DustID.SolarFlare;
                 int dust = Dust.NewDust(target.Center, 0, 0, dustType, vel.X, vel.Y, 100, default, 1.6f);
@@ -664,18 +850,21 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
             }
 
             if (Main.myPlayer == Projectile.owner) {
+                float tornadoScale = maelstrom ? 1.85f : 1f;
+                float damageMult = maelstrom ? 0.85f : 0.55f;
                 Projectile.NewProjectile(
                     Projectile.GetSource_FromThis(),
                     target.Center,
                     Vector2.Zero,
                     ModContent.ProjectileType<MiniCrimsonFireTornado>(),
-                    (int)(Projectile.damage * 0.55f),
+                    (int)(Projectile.damage * damageMult),
                     Projectile.knockBack * 0.4f,
-                    Projectile.owner
+                    Projectile.owner,
+                    tornadoScale
                 );
             }
 
-            SoundEngine.PlaySound(SoundID.Item34 with { Pitch = 0.1f, Volume = 0.6f }, target.Center);
+            SoundEngine.PlaySound(SoundID.Item34 with { Pitch = maelstrom ? -0.15f : 0.1f, Volume = maelstrom ? 0.85f : 0.6f }, target.Center);
         }
 
         public override bool PreDraw(ref Color lightColor) {
@@ -722,10 +911,20 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
         private float tornadoRotation;
         private float tornadoAlpha;
         private float tornadoHeight;
-        private const float MaxHeight = 220f;
+        private float sizeScale = 1f;
+        private float MaxHeight => 220f * sizeScale;
 
         public override void SetStaticDefaults() {
             ProjectileID.Sets.DrawScreenCheckFluff[Type] = 600;
+        }
+
+        public override void OnSpawn(IEntitySource source) {
+            sizeScale = Projectile.ai[0] >= 1f ? Projectile.ai[0] : 1f;
+            if (sizeScale > 1.2f) {
+                Projectile.timeLeft = 140;
+                Projectile.width = 60;
+                Projectile.height = 60;
+            }
         }
 
         public override void SetDefaults() {
@@ -747,12 +946,13 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
             tornadoHeight = MathHelper.Lerp(tornadoHeight, MaxHeight, 0.06f);
             Projectile.velocity *= 0.92f;
 
+            float pullRange = 110f * sizeScale;
             foreach (NPC npc in Main.npc) {
                 if (!npc.active || npc.friendly || npc.dontTakeDamage) continue;
                 float distance = Vector2.Distance(npc.Center, Projectile.Center);
-                if (distance < 110f && distance > 20f) {
+                if (distance < pullRange && distance > 20f) {
                     Vector2 pullDir = (Projectile.Center - npc.Center).SafeNormalize(Vector2.Zero);
-                    npc.velocity += pullDir * 0.35f;
+                    npc.velocity += pullDir * 0.35f * sizeScale;
                 }
             }
 
@@ -782,7 +982,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
             float distance = MathF.Abs(targetX - Projectile.Center.X);
             float targetY = targetHitbox.Center.Y;
             float heightDiff = MathF.Abs(targetY - Projectile.Center.Y);
-            return distance < 34f && heightDiff < tornadoHeight / 2;
+            return distance < 34f * sizeScale && heightDiff < tornadoHeight / 2;
         }
 
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
@@ -889,6 +1089,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
             tooltips.Add(new TooltipLine(Mod, "DragonLore", "南海龙魂凝成的余烬法杖，唤出炽焰幼龙"));
             tooltips.Add(new TooltipLine(Mod, "DragonEffect", "余烬幼龙环绕助战，啃咬敌人并周期吐出熔岩蛋"));
             tooltips.Add(new TooltipLine(Mod, "DragonEffect2", "熔岩蛋爆炸造成范围灼烧，叠加点燃效果"));
+            tooltips.Add(new TooltipLine(Mod, "DragonEffect3", "近身时喷吐扇形龙焰，灼烧并叠加点燃层数"));
         }
     }
 
@@ -917,8 +1118,10 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
 
         private ref float EggCooldown => ref Projectile.localAI[0];
         private ref float WingPhase => ref Projectile.localAI[1];
+        private ref float BreathCooldown => ref Projectile.ai[0];
 
         private const float EggInterval = 100f;
+        private const float BreathInterval = 190f;
         private const float OrbitRadius = 95f;
         private const float TargetRange = 680f;
 
@@ -961,6 +1164,9 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
             WingPhase += 0.18f;
             if (EggCooldown > 0f) {
                 EggCooldown--;
+            }
+            if (BreathCooldown > 0f) {
+                BreathCooldown--;
             }
 
             NPC target = FindTarget(player, TargetRange);
@@ -1016,6 +1222,42 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
             if (EggCooldown <= 0f && Main.netMode != NetmodeID.MultiplayerClient) {
                 SpitLavaEgg(target);
                 EggCooldown = EggInterval;
+            }
+
+            if (BreathCooldown <= 0f && distance < 380f && Main.netMode != NetmodeID.MultiplayerClient) {
+                BreatheFire(target);
+                BreathCooldown = BreathInterval;
+            }
+        }
+
+        private void BreatheFire(NPC target) {
+            Vector2 direction = (target.Center - Projectile.Center).SafeNormalize(Vector2.UnitX);
+            SoundEngine.PlaySound(SoundID.Item34 with { Pitch = -0.2f, Volume = 0.6f }, Projectile.Center);
+
+            for (int i = -2; i <= 2; i++) {
+                Vector2 vel = direction.RotatedBy(MathHelper.ToRadians(11f * i)) * 9.5f;
+                int flame = Projectile.NewProjectile(
+                    Projectile.GetSource_FromThis(),
+                    Projectile.Center + direction * 18f,
+                    vel,
+                    ModContent.ProjectileType<DraconicEmberFlame>(),
+                    (int)(Projectile.damage * 0.7f),
+                    Projectile.knockBack * 0.5f,
+                    Projectile.owner);
+
+                if (flame >= 0 && flame < Main.maxProjectiles) {
+                    Main.projectile[flame].originalDamage = Projectile.originalDamage;
+                }
+            }
+
+            if (!Main.dedServ) {
+                for (int i = 0; i < 10; i++) {
+                    Vector2 vel = direction.RotatedByRandom(0.4f) * Main.rand.NextFloat(3f, 7f);
+                    var d = Dust.NewDustPerfect(Projectile.Center + direction * 14f, Main.rand.NextBool() ? DustID.Torch : DustID.SolarFlare);
+                    d.noGravity = true;
+                    d.scale = 1.6f;
+                    d.velocity = vel;
+                }
             }
         }
 
@@ -1271,6 +1513,77 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
         }
     }
 
+    /// <summary>余烬龙焰 — 余烬幼龙喷吐的扇形龙焰短弹。</summary>
+    public class DraconicEmberFlame : ModProjectile
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.MinionShot[Type] = true;
+            ProjectileID.Sets.TrailingMode[Type] = 2;
+            ProjectileID.Sets.TrailCacheLength[Type] = 8;
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = Projectile.height = 16;
+            Projectile.friendly = true;
+            Projectile.DamageType = DamageClass.Summon;
+            Projectile.penetrate = 2;
+            Projectile.timeLeft = 48;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 8;
+            Projectile.extraUpdates = 1;
+        }
+
+        public override void AI() {
+            Projectile.rotation = Projectile.velocity.ToRotation();
+            Projectile.velocity *= 0.985f;
+
+            if (Main.netMode != NetmodeID.Server && Main.rand.NextBool()) {
+                var d = Dust.NewDustPerfect(Projectile.Center, Main.rand.NextBool() ? DustID.Torch : DustID.SolarFlare);
+                d.noGravity = true;
+                d.scale = 1.3f;
+                d.velocity = Projectile.velocity * 0.2f;
+            }
+
+            Lighting.AddLight(Projectile.Center, AokinHelper.MoltenOrange.ToVector3() * 0.5f);
+        }
+
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            target.AddBuff(BuffID.OnFire3, 120);
+            InfernoDragonSpearGlobalNPC.ApplyBrand(target, 1);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            Texture2D tex = ACMAsset.SoftGlow ?? TextureAssets.Projectile[Type].Value;
+            Vector2 origin = tex.Size() / 2f;
+
+            for (int i = 0; i < Projectile.oldPos.Length; i++) {
+                if (Projectile.oldPos[i] == Vector2.Zero) continue;
+                float progress = 1f - (float)i / Projectile.oldPos.Length;
+                Color c = Color.Lerp(AokinHelper.BlazingGold, AokinHelper.DragonFlameRed, 1f - progress) * progress * 0.5f;
+                c.A = 0;
+                Main.spriteBatch.Draw(tex, Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition, null, c, 0f, origin, 0.5f * progress, SpriteEffects.None, 0f);
+            }
+
+            Color core = AokinHelper.MoltenOrange * 0.8f;
+            core.A = 0;
+            Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, core, 0f, origin, 0.45f, SpriteEffects.None, 0f);
+            return false;
+        }
+
+        public override void OnKill(int timeLeft) {
+            if (Main.dedServ) return;
+            for (int i = 0; i < 6; i++) {
+                var d = Dust.NewDustPerfect(Projectile.Center, DustID.Torch, Main.rand.NextVector2Circular(3f, 3f));
+                d.noGravity = true;
+                d.scale = 1.3f;
+            }
+        }
+    }
+
     /// <summary>
     /// 唤流星杖 - 敖钦掉落的火系法师武器
     /// 蓄力在目标处刻印龙纹法阵，松手后降下多枚焰陨流星
@@ -1390,6 +1703,7 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
             tooltips.Add(new TooltipLine(Mod, "MeteorLore", "「龙纹既成，焰陨随行」"));
             tooltips.Add(new TooltipLine(Mod, "MeteorEffect", "长按在光标处刻印龙纹法阵"));
             tooltips.Add(new TooltipLine(Mod, "MeteorEffect2", "松手后降下多枚焰陨流星，蓄力越久数量越多"));
+            tooltips.Add(new TooltipLine(Mod, "MeteorEffect3", "流星陨落处残留灼热熔池，持续灼烧驻足的敌人"));
         }
     }
 
@@ -1663,11 +1977,30 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
         }
 
         public override void OnKill(int timeLeft) {
+            if (Main.myPlayer == Projectile.owner) {
+                Projectile.NewProjectile(
+                    Projectile.GetSource_Death(),
+                    Projectile.Center,
+                    Vector2.Zero,
+                    ModContent.ProjectileType<MeteorCallerFlamePool>(),
+                    Math.Max(1, (int)(Projectile.damage * 0.3f)),
+                    0f,
+                    Projectile.owner);
+            }
+
             if (Main.netMode == NetmodeID.Server)
                 return;
 
             AokinHelper.CreateDragonFireBurst(Projectile.Center, 48f, 2, 10);
             SoundEngine.PlaySound(SoundID.Item14 with { Pitch = 0.1f, Volume = 0.55f }, Projectile.Center);
+
+            if (ACMAsset.SlashBurst != null) {
+                for (int i = 0; i < 3; i++) {
+                    var d = Dust.NewDustPerfect(Projectile.Center, DustID.SolarFlare, Main.rand.NextVector2Circular(2f, 2f));
+                    d.noGravity = true;
+                    d.scale = 2.4f;
+                }
+            }
 
             for (int i = 0; i < 14; i++) {
                 Vector2 vel = Main.rand.NextVector2Circular(5, 5);
@@ -1675,6 +2008,72 @@ namespace AncientChineseMythology.Celestias.Boss.Aokins.Items
                 int dust = Dust.NewDust(Projectile.Center, 0, 0, dustType, vel.X, vel.Y, 100, default, 2f);
                 Main.dust[dust].noGravity = true;
             }
+        }
+    }
+
+    /// <summary>焰陨余烬池 — 流星陨落后残留的灼热熔池，持续灼烧驻足的敌人。</summary>
+    public class MeteorCallerFlamePool : ModProjectile
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+
+        private float scaleUp;
+
+        public override void SetDefaults() {
+            Projectile.width = Projectile.height = 90;
+            Projectile.friendly = true;
+            Projectile.DamageType = DamageClass.Magic;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = 180;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 30;
+        }
+
+        public override void AI() {
+            scaleUp = MathHelper.Lerp(scaleUp, 1f, 0.1f);
+            Projectile.velocity = Vector2.Zero;
+
+            if (Main.netMode != NetmodeID.Server) {
+                for (int i = 0; i < 2; i++) {
+                    Vector2 pos = Projectile.Center + Main.rand.NextVector2Circular(45f, 18f);
+                    var d = Dust.NewDustPerfect(pos, Main.rand.NextBool() ? DustID.Torch : DustID.SolarFlare);
+                    d.noGravity = true;
+                    d.scale = 1.6f * scaleUp;
+                    d.velocity = new Vector2(0f, -Main.rand.NextFloat(1f, 3f));
+                }
+            }
+
+            Lighting.AddLight(Projectile.Center, AokinHelper.DragonFlameRed.ToVector3() * 0.7f * scaleUp);
+        }
+
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            target.AddBuff(BuffID.OnFire3, 120);
+            InfernoDragonSpearGlobalNPC.ApplyBrand(target, 1);
+        }
+
+        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
+            float dx = MathF.Abs(targetHitbox.Center.X - Projectile.Center.X);
+            float dy = MathF.Abs(targetHitbox.Center.Y - Projectile.Center.Y);
+            return dx < 55f * scaleUp && dy < 32f * scaleUp;
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            Texture2D tex = ACMAsset.SoftGlow ?? TextureAssets.Projectile[Type].Value;
+            Vector2 origin = tex.Size() / 2f;
+            float pulse = 0.85f + MathF.Sin((float)Main.timeForVisualEffects * 0.2f) * 0.15f;
+            float fade = Math.Min(Projectile.timeLeft / 40f, 1f);
+
+            Color outer = AokinHelper.DragonFlameRed * 0.5f * fade * pulse;
+            outer.A = 0;
+            Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, outer, 0f, origin,
+                new Vector2(1.4f, 0.7f) * scaleUp * pulse, SpriteEffects.None, 0f);
+
+            Color core = AokinHelper.MoltenOrange * 0.45f * fade;
+            core.A = 0;
+            Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, core, 0f, origin,
+                new Vector2(0.9f, 0.45f) * scaleUp, SpriteEffects.None, 0f);
+            return false;
         }
     }
 }

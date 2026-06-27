@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -6,6 +7,7 @@ using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 using AncientChineseMythology.Celestias.Boss.Dryades.Items;
+using AncientChineseMythology.Helpers;
 
 namespace AncientChineseMythology.Items.Weapons.DivineWoods;
 
@@ -106,9 +108,22 @@ public class DivineWoodLeafBolt : ModProjectile
                 Main.rand.NextVector2Circular(5f, 5f), 60, default, 1.8f);
             d.noGravity = true;
         }
+        ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+            ACMWeaponBurst.DivineWood, scale: 0.9f, owner: Projectile.owner);
     }
 
     public override bool PreDraw(ref Color lightColor) {
+        // 出膛瞬间的小型径向辉光预警 (满拉释放)
+        float release = MathHelper.Clamp((Projectile.timeLeft - 168f) / 12f, 0f, 1f);
+        if (release > 0.01f)
+            WeaponVFX.DrawRadialBloom(Projectile.Center, 0.06f, release * 0.6f,
+                new Color(120, 255, 140), 6f);
+
+        // 绿芯双层 ribbon 拖尾
+        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 8f,
+            outerColor: new Color(20, 110, 55, 160), innerColor: new Color(170, 255, 150, 210),
+            tex: ACMAsset.LightShot, uvScroll: -Main.GlobalTimeWrappedHourly * 2.4f);
+
         SpriteBatch sb = Main.spriteBatch;
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
@@ -117,21 +132,6 @@ public class DivineWoodLeafBolt : ModProjectile
 
         Texture2D lsh = ACMAsset.LightShot;
         Texture2D sg = ACMAsset.SoftGlow;
-
-        for (int i = 1; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
-            if (Projectile.oldPos[i] == Vector2.Zero) continue;
-            float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.65f;
-            sb.Draw(lsh,
-                Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition,
-                null, new Color(60, 210, 70) * a, Projectile.oldRot[i],
-                lsh.Size() * 0.5f,
-                new Vector2(0.50f + i * 0.014f, 0.14f), SpriteEffects.None, 0);
-            sb.Draw(lsh,
-                Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition,
-                null, new Color(200, 255, 210) * (a * 0.35f), Projectile.oldRot[i],
-                lsh.Size() * 0.5f,
-                new Vector2(0.25f, 0.07f), SpriteEffects.None, 0);
-        }
 
         sb.Draw(lsh, Projectile.Center - Main.screenPosition, null,
             new Color(100, 255, 120),
@@ -233,6 +233,11 @@ public class DivineWoodSpiralLeaf : ModProjectile
     }
 
     public override bool PreDraw(ref Color lightColor) {
+        // 细双层 ribbon 拖尾 (螺旋叶刃)
+        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 4f,
+            outerColor: new Color(20, 110, 55, 140), innerColor: new Color(170, 255, 150, 200),
+            uvScroll: -Main.GlobalTimeWrappedHourly * 2f);
+
         SpriteBatch sb = Main.spriteBatch;
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
@@ -242,16 +247,6 @@ public class DivineWoodSpiralLeaf : ModProjectile
         Texture2D star = ACMAsset.BlankStar;
         Texture2D sg = ACMAsset.SoftGlow;
         float pulse = 0.6f + 0.2f * MathF.Sin((float)Main.timeForVisualEffects * 0.18f);
-
-        for (int i = 1; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
-            if (Projectile.oldPos[i] == Vector2.Zero) continue;
-            float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.50f;
-            sb.Draw(sg,
-                Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition,
-                null, new Color(60, 200, 80) * a, 0f,
-                sg.Size() * 0.5f,
-                0.35f, SpriteEffects.None, 0);
-        }
 
         sb.Draw(star, Projectile.Center - Main.screenPosition, null,
             new Color(80, 255, 100) * (0.85f * pulse),

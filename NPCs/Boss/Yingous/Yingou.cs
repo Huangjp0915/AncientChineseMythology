@@ -79,6 +79,16 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
         private float bladeScatterCharge;
         private int bladeScatterRingCount;
 
+        //===== V2 视觉演出 (纯本地, 不联网; 由已同步的 PhaseTimer/状态驱动) =====
+        private float climaxBloom;          //0~1 高潮径向泛光 (DrawRadialBloomAt)
+        private Vector2 climaxBloomCenter;
+        private Color climaxBloomColor = TelegraphColors.Gold;
+        private float saberTell;            //0~1 大刀地狱/散射 saber-tell 地纹环 (ArenaRunic)
+        private Vector2 saberTellCenter;
+        private float saberTellRadius;
+        private Color saberTellColor = TelegraphColors.Lethal;
+        private float ambientTint;          //0~1 冥刃染屏 (ElementalScreenTint, 经 YingouScreenSystem)
+
         //公开访问器，供手部获取冲刺状态
         public int FrenzyDashState => frenzyDashState;
         public int FrenzyDashStateTimer => frenzyDashStateTimer;
@@ -266,6 +276,12 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             //更新动作冷却
             if (actionCooldown > 0) actionCooldown--;
 
+            //V2 视觉演出衰减 (阶段代码本帧可覆盖目标值)
+            climaxBloom *= 0.9f;
+            if (climaxBloom < 0.01f) climaxBloom = 0f;
+            saberTell = MathHelper.Lerp(saberTell, 0f, 0.12f);
+            ambientTint = MathHelper.Lerp(ambientTint, 0f, 0.05f);
+
             //持续性侵略动作系统 - 贯穿所有阶段
             ProcessAggressiveActions(target);
 
@@ -292,6 +308,17 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                     RunRecoverDash(target);
                     break;
             }
+
+            //发布冥刃染屏氛围 (廉价 overlay, 不占全屏后处理名额)
+            if (!VaultUtils.isServer)
+                YingouScreenSystem.Publish(ambientTint, (float)Main.GlobalTimeWrappedHourly);
+        }
+
+        //在世界点触发一次高潮泛光 (DrawRadialBloomAt 由 PreDraw 逐帧绘制并衰减)
+        private void TriggerClimaxBloom(Vector2 worldCenter, Color color) {
+            climaxBloom = 1f;
+            climaxBloomCenter = worldCenter;
+            climaxBloomColor = color;
         }
 
         private void InitializeHandReferences() {
@@ -359,7 +386,8 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             if (!didIntroShock && introAppear > 0.92f) {
                 didIntroShock = true;
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.4f, Volume = 1.2f }, NPC.Center);
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(10, 40);
+                ACMUtils.AddScreenShake(12f); //入场定格 (§6.2)
+                TriggerClimaxBloom(NPC.Center, TelegraphColors.Gold);
                 for (int k = 0; k < 40; k++) {
                     Vector2 vel = Main.rand.NextVector2Circular(12, 12);
                     int dust = Dust.NewDust(NPC.Center, 0, 0, DustID.Torch, vel.X, vel.Y, 120, default, 2.2f);
@@ -418,7 +446,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             //检查是否到了发射火球的时机
             if (PhaseTimer % 90 == 55) { //调整时机避免与主攻击重叠
                 DoFanFire(target, 7 + (Main.expertMode ? 2 : 0) + (Main.masterMode ? 2 : 0), 75, 18f, 24f); //稍微降低弹幕密度和速度
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(7, 20); //降低震动强度
+                ACMUtils.AddScreenShake(6f); //落地/爆发 (§6.2)
                 SoundEngine.PlaySound(SoundID.Item74 with { Pitch = 0.2f, Volume = 1.1f }, NPC.Center); //降低音量
             }
 
@@ -528,6 +556,16 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             saberCharge = MathHelper.Clamp(saberCharge + 0.015f, 0, 1); //稍微降低蓄力速度
             NPC.velocity *= 0.88f; //稍微增加阻力
 
+            //V2: 大刀地狱 saber-tell 地纹环 (蓄力期蓝→红渐变) + 冥刃染屏全程渐浓
+            float saberChargeT = MathHelper.Clamp(PhaseTimer / 100f, 0f, 1f);
+            ambientTint = Math.Max(ambientTint, 0.40f + saberChargeT * 0.35f);
+            if (PhaseTimer < 120) { //仅蓄力窗口显示地纹环, 之后让位给弹幕
+                saberTell = Math.Max(saberTell, saberChargeT * 0.85f);
+                saberTellCenter = NPC.Center;
+                saberTellRadius = 360f;
+                saberTellColor = Color.Lerp(new Color(150, 200, 255), TelegraphColors.Lethal, saberChargeT);
+            }
+
             //稍微调整悬浮位置 - 降低侵略性
             Vector2 hover = target.Center + new Vector2(0, -380 + MathF.Sin(PhaseTimer * 0.06f) * 40); //增加高度，降低波动
             Vector2 lateralDrift = new Vector2(MathF.Sin(PhaseTimer * 0.035f) * 60, 0); //降低侧向漂移
@@ -545,7 +583,8 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
 
             if (PhaseTimer == 100) { //稍微延后蓄力完成时间，给玩家更多准备时间
                 SoundEngine.PlaySound(SoundID.ForceRoar with { Pitch = -0.3f, Volume = 1.2f }, NPC.Center); //降低音量
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(12, 35); //降低震动强度
+                ACMUtils.AddScreenShake(10f); //相变/大招释放 (§6.2)
+                TriggerClimaxBloom(NPC.Center, Color.Lerp(TelegraphColors.Flame, TelegraphColors.Lethal, 0.5f));
             }
 
             //适当降低威慑性动作展示频率
@@ -627,6 +666,16 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             NPC.Center += (focus - NPC.Center) * 0.12f; //稍微降低移动速度
             NPC.velocity *= 0.82f; //增加阻力
 
+            //V2: 环形散射 saber-tell 地纹环 (蓄力期金→红渐变) + 冥刃染屏
+            float scatterChargeT = MathHelper.Clamp(PhaseTimer / 80f, 0f, 1f);
+            ambientTint = Math.Max(ambientTint, 0.35f + scatterChargeT * 0.30f);
+            if (PhaseTimer < 90) {
+                saberTell = Math.Max(saberTell, scatterChargeT * 0.9f);
+                saberTellCenter = NPC.Center;
+                saberTellRadius = 320f;
+                saberTellColor = Color.Lerp(TelegraphColors.Gold, TelegraphColors.Lethal, scatterChargeT);
+            }
+
             //Telegraph 环光 - 更华丽
             if (!VaultUtils.isServer && PhaseTimer % 4 == 0) { //降低粒子频率
                 for (int i = 0; i < 10; i++) { //稍微减少粒子数量
@@ -673,7 +722,8 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 int count = 22 + (Main.expertMode ? 4 : 0) + (Main.masterMode ? 3 : 0); //降低弹幕数量
                 float speed = 18f + (PhaseTimer - 85) * 0.25f; //降低速度
                 ShootScatterRing(target.Center + VaultUtils.RandVr(550, 700), count, speed, startRot);
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(8, 20); //降低震动强度
+                ACMUtils.AddScreenShake(7f); //大招释放 (§6.2)
+                TriggerClimaxBloom(NPC.Center, Color.Lerp(TelegraphColors.Gold, TelegraphColors.Lethal, 0.4f));
                 SoundEngine.PlaySound(SoundID.Item74 with { Pitch = 0.3f - (PhaseTimer - 85) * 0.012f, Volume = 1.2f }, NPC.Center); //降低音量
             }
 
@@ -727,7 +777,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                         ModContent.ProjectileType<SaberHell>(), GetBossDamage(0.9f), 2);
                 }
             }
-            Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(6, 18);
+            ACMUtils.AddScreenShake(5f);
             SoundEngine.PlaySound(SoundID.Item71 with { PitchVariance = 0.2f, Volume = 1f }, target.Center);
         }
 
@@ -742,7 +792,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 Projectile.NewProjectile(NPC.GetSource_FromAI(), spawn, -dir * 24,
                     ModContent.ProjectileType<SaberHell>(), GetBossDamage(1f), 2);
             }
-            Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(9, 22);
+            ACMUtils.AddScreenShake(7f);
             SoundEngine.PlaySound(SoundID.Item71 with { Pitch = -0.3f, Volume = 1.1f }, target.Center);
         }
 
@@ -794,7 +844,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                         ModContent.ProjectileType<SaberHell>(), GetBossDamage(0.8f), 2);
                 }
             }
-            Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(7, 20);
+            ACMUtils.AddScreenShake(6f);
             SoundEngine.PlaySound(SoundID.Item71 with { PitchVariance = 0.3f, Volume = 1f }, target.Center);
         }
 
@@ -804,7 +854,7 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                 Vector2 dashDir = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY).RotatedBy(Main.rand.NextFloat(-0.2f, 0.2f));
                 NPC.velocity = dashDir * 30f;
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.2f }, NPC.Center);
-                Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(8, 24);
+                ACMUtils.AddScreenShake(7f); //回收冲刺 (§6.2)
             }
             NPC.velocity *= 0.985f;
             if (PhaseTimer > 40) {
@@ -828,6 +878,8 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
         }
 
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+            DrawV2Telegraphs(spriteBatch);
+
             Texture2D mainValue = TextureAssets.Npc[NPC.type].Value;
             float sengs = 0.25f;
             for (int i = 0; i < NPC.oldPos.Length; i++) {
@@ -855,9 +907,55 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             return false;
         }
 
+        //V2 演出绘制: saber-tell 地纹环 (ArenaRunic) + 冲刺预告线 (DrawBeam) + 高潮泛光 (DrawRadialBloomAt)。
+        //全部走硬化 ACMShaders 助手 (自管批次并恢复默认批); 服务端零绘制; 全屏泛光占本帧唯一名额。
+        private void DrawV2Telegraphs(SpriteBatch sb) {
+            if (Main.dedServ)
+                return;
+
+            //1) saber-tell 地纹环 — 大刀地狱 / 环形散射蓄力预警 (蓝/金 → 红致命渐变)
+            if (saberTell > 0.01f) {
+                Effect runic = ACMShaders.ArenaRunic;
+                if (runic != null) {
+                    ACMShaders.WorldDecalParams(saberTellCenter, saberTellRadius, out Vector2 c, out float r, out float aspect);
+                    runic.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+                    runic.Parameters["uCenter"]?.SetValue(c);
+                    runic.Parameters["uRadius"]?.SetValue(r);
+                    runic.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(saberTell, 0f, 1f));
+                    runic.Parameters["uAspect"]?.SetValue(aspect);
+                    runic.Parameters["uColorPrimary"]?.SetValue(saberTellColor.ToVector4());
+                    runic.Parameters["uColorSecondary"]?.SetValue(new Color(40, 10, 20).ToVector4());
+                    runic.Parameters["uRuneFreq"]?.SetValue(13f);
+                    runic.Parameters["uMode"]?.SetValue(0f);
+                    runic.Parameters["uShape"]?.SetValue(0f);
+                    ACMShaders.DrawScreenSpaceDecal(sb, runic, BlendState.NonPremultiplied);
+                }
+            }
+
+            //2) 狂暴冲刺预告线 — 冲刺即接触伤害源, 必须可读预告 (§6.6); 蓄力越满越红
+            if (Phase == BossPhase.FrenzyDash && frenzyDashState == 0) {
+                Player tgt = Main.player[NPC.target];
+                if (tgt.Alives()) {
+                    float ramp = MathHelper.Clamp(frenzyDashStateTimer / 40f, 0f, 1f);
+                    Vector2 dir = NPC.DirectionTo(tgt.Center);
+                    Color core = Color.Lerp(new Color(150, 200, 255), TelegraphColors.Lethal, ramp);
+                    Color edge = new Color(150, 20, 30) { A = 0 };
+                    ACMShaders.DrawBeam(NPC.Center, NPC.Center + dir * 1700f, MathHelper.Lerp(4f, 22f, ramp),
+                        core, edge, 0.25f + ramp * 0.6f, flowSpeed: 2.6f, flowScale: 2.2f, coreSharp: 2.6f);
+                }
+            }
+
+            //3) 高潮径向泛光 — 入场/相变/大招释放; 占本帧唯一全屏名额
+            if (climaxBloom > 0.01f) {
+                ACMShaders.DrawRadialBloomAt(climaxBloomCenter, 0.16f + (1f - climaxBloom) * 0.18f,
+                    climaxBloom, climaxBloomColor, rayCount: 9f, falloff: 2.6f);
+            }
+        }
+
         private void RunFrenzyDash(Player target) {
             //Telegraph -> Dash -> Recover，重复 frenzyDashTotal 次
             frenzyDashStateTimer++;
+            ambientTint = Math.Max(ambientTint, 0.30f); //冲刺幕轻度冥刃染屏
             switch (frenzyDashState) {
                 case 0: //telegraph
                     NPC.velocity *= 0.88f; //稍微增加阻力
@@ -871,7 +969,8 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
                         frenzyDashDir = NPC.DirectionTo(target.Center).RotatedBy(Main.rand.NextFloat(-0.2f, 0.2f));
                         NPC.velocity = frenzyDashDir * 32f; //稍微降低冲刺速度
                         SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.15f, Volume = 0.8f, MaxInstances = 6 }, NPC.Center); //降低音量
-                        Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(7, 16); //降低震动强度
+                        ACMUtils.AddScreenShake(6f); //冲刺发动命中帧震动 (§6.2)
+                        TriggerClimaxBloom(NPC.Center, Color.Lerp(TelegraphColors.Flame, TelegraphColors.Gold, 0.4f));
                         frenzyDashState = 1; frenzyDashStateTimer = 0;
                         DoFanFire(target, 5 + (Main.expertMode ? 2 : 0) + (Main.masterMode ? 1 : 0), 60, 16f, 20f); //降低弹幕数量和速度
                     }
@@ -901,9 +1000,27 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
         }
 
         //===== 侵略性动作系统 =====
+        //专家/大师: 主图案高潮发射窗口内, 收住手部侵略性花活, 避免与脚本主弹幕叠成不可读 (审计小注)。
+        //仅在更高难度且处于高潮窗口时生效, 普通难度与 FSM 行为不变。
+        private bool IsClimaxBusy() {
+            switch (Phase) {
+                case BossPhase.SaberHell:
+                    return PhaseTimer > 130 && saberPatternIndex < saberPatternsPerPhase;
+                case BossPhase.BladeScatter:
+                    return PhaseTimer >= 60 && PhaseTimer <= 120;
+                case BossPhase.FrenzyDash:
+                    return frenzyDashState == 1; //冲刺命中帧窗口
+                default:
+                    return false;
+            }
+        }
+
         private void ProcessAggressiveActions(Player target) {
             //跳过intro阶段的侵略动作
             if (Phase == BossPhase.Intro) return;
+
+            //专家/大师: 高潮主图案窗口内不再插入手部侵略花活 (减少并发图案重叠, 轻触)
+            if ((Main.expertMode || Main.masterMode) && IsClimaxBusy()) return;
 
             //根据距离和阶段调整侵略性
             float distToPlayer = Vector2.Distance(NPC.Center, target.Center);

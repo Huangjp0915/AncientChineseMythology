@@ -1,11 +1,17 @@
-﻿using AncientChineseMythology.Items.Bronze;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Items.Bronze;
 using AncientChineseMythology.Projectiles;
+using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Items.Weapons.Swords
 {
+    /// <summary>
+    /// 青铜剑 — 可见质变 (纯表现): 挥砍带青铜暖金尘拖尾, 命中泛 SoftGlow 闪;
+    /// 1% 处决触发 <see cref="ACMWeaponBurst"/> 青铜暖金绿爆发。机制/伤害不变。
+    /// </summary>
     public class BronzeSword : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Swords/BronzeSword"; //使用物品的纹理作为投射物的纹理
@@ -30,9 +36,26 @@ namespace AncientChineseMythology.Items.Weapons.Swords
             Item.shootSpeed = 1f; //射击速度
         }
 
+        // 青铜暖金尘拖尾 (纯表现, 模拟青铜剑气)
+        public override void MeleeEffects(Player player, Rectangle hitbox) {
+            if (Main.rand.NextBool(2)) {
+                int type = Main.rand.NextBool(4) ? DustID.GoldFlame : DustID.Copper;
+                Dust d = Dust.NewDustDirect(new Vector2(hitbox.X, hitbox.Y), hitbox.Width, hitbox.Height, type);
+                d.noGravity = true;
+                d.velocity *= 0.4f;
+                d.scale = Main.rand.NextFloat(0.8f, 1.3f);
+            }
+            Lighting.AddLight(hitbox.Center.ToVector2(), 0.4f, 0.33f, 0.12f);
+        }
+
         public override void OnHitNPC(Player player, NPC target, NPC.HitInfo hit, int damageDone) {
             if (!target.HasBuff(BuffID.Poisoned)) {
                 target.AddBuff(BuffID.Poisoned, 180); //给目标添加中毒状态
+            }
+            // 命中 SoftGlow 闪 (轻量, 隔次触发省开销)
+            if (Main.rand.NextBool(2)) {
+                ACMWeaponBurst.Spawn(player.GetSource_OnHit(target), target.Center,
+                    ACMWeaponBurst.Bronze, scale: 0.7f, owner: player.whoAmI);
             }
         }
 
@@ -42,6 +65,9 @@ namespace AncientChineseMythology.Items.Weapons.Swords
                 target.life = 0;
                 target.HitEffect();
                 target.checkDead();
+                // 1% 处决: 青铜暖金绿爆发演出
+                ACMWeaponBurst.Spawn(player.GetSource_OnHit(target), target.Center,
+                    ACMWeaponBurst.Bronze, scale: 1.3f, owner: player.whoAmI);
             }
         }
 

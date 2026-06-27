@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -158,6 +159,9 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
                 Main.dust[dust].noGravity = true;
             }
 
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.EastSeaWater, isReturning ? 1.3f : 1f, Projectile.owner);
+
             // 多次命中后释放水波
             if (hitCount >= 5) {
                 hitCount = 0;
@@ -174,6 +178,11 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            // 现代化螺旋双层 ribbon (外深青 + 内冰蓝), 飞行"吸水成漩涡"观感
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 16f,
+                outerColor: new Color(30, 90, 170, 130), innerColor: new Color(170, 240, 255, 180),
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.6f);
+
             Texture2D tex = TextureAssets.Item[ModContent.ItemType<JadeDragonChakram>()].Value;
             Vector2 origin = tex.Size() / 2f;
 
@@ -264,6 +273,11 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs.Items
             }
 
             Lighting.AddLight(Projectile.Center, AoGuangHelper.DragonBlue.ToVector3() * 0.4f);
+        }
+
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.EastSeaWater, 0.7f, Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {

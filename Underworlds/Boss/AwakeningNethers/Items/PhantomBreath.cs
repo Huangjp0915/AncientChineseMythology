@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -46,10 +47,12 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers.Items
             // 蓄力逻辑
             if (player.channel && player.HasAmmo(Item)) {
                 chargeTime++;
-                // 满蓄力提示
+                // 满蓄力提示 (蓄力环径向泛光峰值 — RadialBloom ramp 顶点)
                 if (chargeTime == MaxCharge - 1) {
                     SoundEngine.PlaySound(SoundID.Item29 with { Pitch = 0.5f, Volume = 0.8f }, player.Center);
                     AwakeningNetherHelper.CreateSoulBurst(player.Center, 40f, 1, 8);
+                    ACMWeaponBurst.Spawn(player.GetSource_ItemUse(Item), player.Center,
+                        ACMWeaponBurst.AbyssPurple, scale: 1.3f, owner: player.whoAmI);
                 }
                 if (chargeTime > MaxCharge) chargeTime = MaxCharge;
 
@@ -177,34 +180,30 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers.Items
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
             SpriteBatch sb = Main.spriteBatch;
             var tex = TextureAssets.Projectile[Type].Value;
             Vector2 origin = tex.Size() / 2f;
 
-            // 拖尾
-            for (int i = Projectile.oldPos.Length - 1; i >= 0; i--) {
-                if (Projectile.oldPos[i] == Vector2.Zero) continue;
-
-                float progress = 1f - i / (float)Projectile.oldPos.Length;
-                Color trailColor = IsGhost
-                    ? AwakeningNetherHelper.NetherCyan * progress * 0.5f
-                    : AwakeningNetherHelper.AwakeningPurple * progress * 0.6f;
-                trailColor.A = 0;
-
-                Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
-                sb.Draw(tex, drawPos, null, trailColor, Projectile.oldRot[i], origin,
-                    Projectile.scale * (0.5f + progress * 0.5f), SpriteEffects.None, 0);
-            }
-
-            // 主体
             Color mainColor = IsGhost ? AwakeningNetherHelper.NetherCyan : AwakeningNetherHelper.AwakeningPurple;
 
-            // 光晕
-            Color glowColor = mainColor;
-            glowColor.A = 0;
+            // 龙息双层拖尾 (外宽暗 + 内窄亮)
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: IsGhost ? 10f : 14f,
+                outerColor: AwakeningNetherHelper.VoidDarkPurple with { A = 130 },
+                innerColor: mainColor with { A = 190 },
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.4f);
+
+            // 龙息光束芯 (BeamGrad)
+            Vector2 dir = Projectile.velocity.SafeNormalize(Vector2.UnitY);
+            ACMShaders.DrawBeam(Projectile.Center - dir * 34f, Projectile.Center + dir * 22f,
+                IsGhost ? 8f : 11f, mainColor with { A = 220 },
+                AwakeningNetherHelper.VoidDarkPurple with { A = 110 }, 0.9f, 2.0f, 2.2f);
+
+            // 箭体光晕 + 实体
+            Color glowColor = mainColor; glowColor.A = 0;
             sb.Draw(tex, Projectile.Center - Main.screenPosition, null, glowColor * 0.5f,
                 Projectile.rotation, origin, Projectile.scale * 1.4f, SpriteEffects.None, 0);
-
             sb.Draw(tex, Projectile.Center - Main.screenPosition, null, mainColor with { A = 0 },
                 Projectile.rotation, origin, Projectile.scale, SpriteEffects.None, 0);
 
@@ -316,10 +315,19 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers.Items
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
             SpriteBatch sb = Main.spriteBatch;
+
+            // 幽魂双层拖尾
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 9f,
+                outerColor: AwakeningNetherHelper.VoidDarkPurple with { A = 120 },
+                innerColor: AwakeningNetherHelper.NetherCyan with { A = 180 },
+                uvScroll: Main.GlobalTimeWrappedHourly * 1.5f);
 
             // 使用高级核心绘制
             float pulse = 1f + MathF.Sin(pulsePhase) * 0.2f;
+            WeaponVFX.DrawGlowBurst(Projectile.Center, 0.9f * pulse, AwakeningNetherHelper.NetherCyan * 0.5f);
             AwakeningNetherHelper.DrawVoidCore(sb, Projectile.Center,
                 AwakeningNetherHelper.NetherCyan,
                 AwakeningNetherHelper.SoulPink,
@@ -385,8 +393,37 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers.Items
             Lighting.AddLight(Projectile.Center, AwakeningNetherHelper.AwakeningPurple.ToVector3() * growthScale);
         }
 
-        public override bool PreDraw(ref Color lightColor) {
+        // 满蓄毁灭龙息的处决级短暂染屏 (ElementalScreenTint, 强度 ≤ 0.15, 走全屏名额)
+        private static void ApplyDevastationTint(float intensity) {
+            if (Main.dedServ || Main.gameMenu || intensity <= 0.01f)
+                return;
+            if (!ACMShaders.RequestFullscreenSlot())
+                return;
+            Effect fx = ACMShaders.ElementalScreenTint;
+            if (fx == null)
+                return;
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(intensity, 0f, 0.15f));
+            fx.Parameters["uAspect"]?.SetValue((float)Main.screenWidth / Main.screenHeight);
+            fx.Parameters["uTint"]?.SetValue(new Vector4(AwakeningNetherHelper.AwakeningPurple.ToVector3(), 0.45f));
+            fx.Parameters["uTint2"]?.SetValue(new Vector4(AwakeningNetherHelper.VoidDarkPurple.ToVector3(), 0f));
+            fx.Parameters["uVignette"]?.SetValue(0.6f);
+            fx.Parameters["uFogScale"]?.SetValue(2.4f);
             SpriteBatch sb = Main.spriteBatch;
+            sb.End();
+            ACMShaders.DrawFullscreenOverlay(fx, BlendState.AlphaBlend);
+            ACMShaders.RestoreDefaultBatch(sb);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+            SpriteBatch sb = Main.spriteBatch;
+
+            // 出膛瞬间: 满蓄处决级染屏 (finisher), 随飞行快速淡出
+            float bornFade = MathHelper.Clamp((Projectile.timeLeft - 108f) / 12f, 0f, 1f);
+            if (bornFade > 0.02f)
+                ApplyDevastationTint(0.13f * bornFade);
 
             // 绘制巨型拖尾
             for (int i = Projectile.oldPos.Length - 1; i >= 0; i--) {
@@ -403,7 +440,15 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers.Items
                     trailScale, pulsePhase + i * 0.2f);
             }
 
-            // 主体
+            // 毁灭龙息主束 (BeamGrad, 粗→宽渐变束)
+            Vector2 dir = Projectile.velocity.SafeNormalize(Vector2.UnitX);
+            ACMShaders.DrawBeam(Projectile.Center - dir * 90f * growthScale, Projectile.Center + dir * 40f * growthScale,
+                34f * growthScale, AwakeningNetherHelper.AwakeningPurple with { A = 220 },
+                AwakeningNetherHelper.DestructionRed with { A = 130 }, 0.95f, 1.6f, 2.0f, 2.4f);
+
+            // 主体核心 + 径向泛光
+            WeaponVFX.DrawRadialBloom(Projectile.Center, 0.1f * growthScale, 0.7f,
+                AwakeningNetherHelper.AwakeningPurple, 8f);
             AwakeningNetherHelper.DrawVoidCore(sb, Projectile.Center,
                 AwakeningNetherHelper.AwakeningPurple,
                 AwakeningNetherHelper.DestructionRed,

@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -95,6 +96,11 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers.Items
                 d.scale = 1.5f;
                 d.velocity = Main.rand.NextVector2Circular(8, 8);
             }
+
+            // 冥渊命中演出 (幽冥紫径向辉光 + 冲击环) + 轻度屏震
+            ACMWeaponBurst.Spawn(player.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.AbyssPurple, scale: 1.1f, owner: player.whoAmI);
+            WeaponVFX.AddScreenShake(target.Center, 3f);
         }
 
         public override void ModifyTooltips(System.Collections.Generic.List<TooltipLine> tooltips) {
@@ -173,38 +179,35 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers.Items
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
             SpriteBatch sb = Main.spriteBatch;
             var tex = TextureAssets.Projectile[Type].Value;
             Vector2 origin = tex.Size() / 2f;
 
-            // 绘制拖尾
-            for (int i = Projectile.oldPos.Length - 1; i >= 0; i--) {
-                if (Projectile.oldPos[i] == Vector2.Zero) continue;
+            float pulse = 1f + MathF.Sin(pulsePhase) * 0.12f;
+            Color beamCore = SlashType == 2 ? AwakeningNetherHelper.NetherCyan : AwakeningNetherHelper.AwakeningPurple;
 
-                float progress = 1f - i / (float)Projectile.oldPos.Length;
-                Color trailColor = Color.Lerp(AwakeningNetherHelper.VoidDarkPurple,
-                    AwakeningNetherHelper.AwakeningPurple, progress) * progress * 0.6f;
-                trailColor.A = 0;
+            // 双层斩波拖尾 (外宽暗冥紫 + 内窄亮芯)
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 26f * pulse,
+                outerColor: AwakeningNetherHelper.VoidDarkPurple with { A = 150 },
+                innerColor: beamCore with { A = 200 },
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.6f);
 
-                Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
-                float trailScale = Projectile.scale * (0.5f + progress * 0.5f);
+            // 龙脊斩波光束 (BeamGrad): 沿斩波轴贯穿
+            Vector2 dir = Projectile.velocity.SafeNormalize(Vector2.UnitX);
+            Vector2 beamStart = Projectile.Center - dir * 70f * pulse;
+            Vector2 beamEnd = Projectile.Center + dir * 70f * pulse;
+            ACMShaders.DrawBeam(beamStart, beamEnd, 22f * pulse,
+                beamCore with { A = 220 }, AwakeningNetherHelper.VoidDarkPurple with { A = 120 },
+                0.9f, 1.8f, 2.2f, 2.4f);
 
-                sb.Draw(tex, drawPos, null, trailColor, Projectile.oldRot[i], origin, trailScale / 3f, SpriteEffects.None, 0);
-            }
-
-            // 主体
-            float pulse = 1f + MathF.Sin(pulsePhase) * 0.1f;
-            Color mainColor = AwakeningNetherHelper.AwakeningPurple;
-            mainColor.A = 200;
-
-            // 外层光晕
-            Color glowColor = mainColor;
-            glowColor.A = 0;
-            sb.Draw(tex, Projectile.Center - Main.screenPosition, null, glowColor * 0.4f,
+            // 核心刃体 (加性辉光 + 实体)
+            Color glow = beamCore; glow.A = 0;
+            sb.Draw(tex, Projectile.Center - Main.screenPosition, null, glow * 0.45f,
                 Projectile.rotation, origin, Projectile.scale * pulse * 1.3f / 3f, SpriteEffects.None, 0);
-
-            // 核心
-            sb.Draw(tex, Projectile.Center - Main.screenPosition, null, mainColor,
+            Color body = beamCore; body.A = 200;
+            sb.Draw(tex, Projectile.Center - Main.screenPosition, null, body,
                 Projectile.rotation, origin, Projectile.scale * pulse / 3f, SpriteEffects.None, 0);
 
             return false;
@@ -218,6 +221,9 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers.Items
                 d.scale = 1.5f;
                 d.velocity = Main.rand.NextVector2Circular(6, 6);
             }
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.AbyssPurple, scale: 0.85f, owner: Projectile.owner);
         }
 
         public override void OnKill(int timeLeft) {
@@ -281,30 +287,52 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers.Items
             Lighting.AddLight(Projectile.Center, AwakeningNetherHelper.NetherCyan.ToVector3() * 0.4f);
         }
 
+        // 次元裂斩的局部空间撕裂扭曲 (GenericWarp · rift, 走全屏名额仲裁, 仅出生瞬间短促触发)
+        private static void ApplyRiftWarp(Vector2 worldCenter, float intensity) {
+            if (Main.dedServ || intensity <= 0.01f)
+                return;
+            if (!ACMShaders.RequestFullscreenSlot())
+                return;
+            Effect fx = ACMShaders.GenericWarp;
+            if (fx == null)
+                return;
+            Vector2 uv = (worldCenter - Main.screenPosition) / new Vector2(Main.screenWidth, Main.screenHeight);
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uCenter"]?.SetValue(uv);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(intensity, 0f, 1f));
+            fx.Parameters["uRadius"]?.SetValue(0.15f);
+            fx.Parameters["uAspect"]?.SetValue((float)Main.screenWidth / Main.screenHeight);
+            fx.Parameters["uWarpScale"]?.SetValue(1.3f);
+            fx.Parameters["uChroma"]?.SetValue(0.65f);
+            fx.Parameters["uRadialPull"]?.SetValue(0.8f);
+            fx.Parameters["uMode"]?.SetValue(3f); // rift
+            fx.Parameters["uTint"]?.SetValue(new Vector4(AwakeningNetherHelper.AwakeningPurple.ToVector3(), 0.4f));
+            ACMShaders.ApplyScreenPostProcess(Main.spriteBatch, fx, bindNoise: true);
+        }
+
         public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
             SpriteBatch sb = Main.spriteBatch;
             var tex = TextureAssets.Projectile[Type].Value;
             Vector2 origin = tex.Size() / 2f;
 
-            // 次元裂隙效果拖尾
-            Vector2 perpendicular = Projectile.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
+            // 出生瞬间撕裂空间 (GenericWarp), 随存活快速衰减
+            float bornFade = MathHelper.Clamp((Projectile.timeLeft - 33f) / 12f, 0f, 1f);
+            if (bornFade > 0.02f)
+                ApplyRiftWarp(Projectile.Center, bornFade * 0.55f);
 
-            for (int i = Projectile.oldPos.Length - 1; i >= 0; i--) {
-                if (Projectile.oldPos[i] == Vector2.Zero) continue;
+            // 锯齿裂隙双层拖尾 (紫→青冥流)
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 18f,
+                outerColor: AwakeningNetherHelper.VoidDarkPurple with { A = 140 },
+                innerColor: AwakeningNetherHelper.NetherCyan with { A = 180 },
+                uvScroll: Main.GlobalTimeWrappedHourly * 2f);
 
-                float progress = 1f - i / (float)Projectile.oldPos.Length;
-
-                // 锯齿形裂隙
-                float zigzag = MathF.Sin(pulsePhase + i * 0.5f) * 10f * progress;
-                Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2 + perpendicular * zigzag - Main.screenPosition;
-
-                Color trailColor = Color.Lerp(AwakeningNetherHelper.VoidDarkPurple,
-                    AwakeningNetherHelper.NetherCyan, progress) * progress * 0.5f;
-                trailColor.A = 0;
-
-                sb.Draw(tex, drawPos, null, trailColor, Projectile.oldRot[i], origin,
-                    Projectile.scale * (0.4f + progress * 0.6f) / 3f, SpriteEffects.None, 0);
-            }
+            // 裂隙光束 (BeamGrad, 青冥芯)
+            Vector2 dir = Projectile.velocity.SafeNormalize(Vector2.UnitX);
+            ACMShaders.DrawBeam(Projectile.Center - dir * 55f, Projectile.Center + dir * 55f, 14f,
+                AwakeningNetherHelper.NetherCyan with { A = 220 },
+                AwakeningNetherHelper.VoidDarkPurple with { A = 120 }, 0.95f, 2.2f, 2.4f, 2.6f);
 
             // 主体 - 带有闪烁效果
             float flash = MathF.Sin(pulsePhase * 3f) * 0.3f + 0.7f;
@@ -321,6 +349,9 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers.Items
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
             // 次元裂隙命中效果
             AwakeningNetherHelper.CreateDimensionTear(Projectile.Center, target.Center, 0.4f);
+
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.AbyssPurple, scale: 0.9f, owner: Projectile.owner);
 
             target.AddBuff(BuffID.ShadowFlame, 180);
         }

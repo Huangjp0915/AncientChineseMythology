@@ -9,7 +9,6 @@ using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.GameContent.ItemDropRules;
-using Terraria.Graphics.CameraModifiers;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -98,6 +97,21 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
         private Vector2 chargeTarget;
         private float comboMultiplier => 1f + comboCount * 0.12f;
         private int counterCooldown;
+
+        // ===== V2 断罪判决演出状态 (纯本地视觉, 客户端确定性驱动) =====
+        private int hitstopTimer;          // 处决砸落"全屏定格"近似: Boss 帧冻结
+        private int verdictBloomTimer;     // 处决泛光寿命
+        private int verdictBloomMax = 1;
+        private Vector2 verdictBloomCenter;
+        private float verdictBloomPeak;    // 该次泛光峰值强度
+        private float chargeRamp;          // 蓄力渐强泛光 0~1
+        private int sealRunicTimer;        // 符印封锁区地纹寿命
+        private float sealRunicPeak;       // 符印地纹峰值强度
+        private Vector2 sealRunicCenter;
+        private float sealRunicRadius = 320f;
+
+        private struct JudgmentBeam { public Vector2 Start, End; public int Time, MaxTime; public float Width; }
+        private readonly JudgmentBeam[] judgmentBeams = new JudgmentBeam[8];
 
         #endregion
 
@@ -224,10 +238,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
 
         public override void OnKill() {
             DownedBossSystem.downedVigor = true;
-            if (Main.netMode != NetmodeID.Server) {
-                PunchCameraModifier mod = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 25f, 12f, 60, 2000f, FullName);
-                Main.instance.CameraModifiers.Add(mod);
-            }
+            ACMScreenShakeSystem.Add(16f);
         }
 
         #endregion
@@ -235,8 +246,18 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
         #region AI主循环
 
         public override void AI() {
+            // 断罪判决处决"全屏定格"近似: Boss 帧冻结 (各端确定性, 维持同步), 期间维持泛光/震动
+            if (hitstopTimer > 0) {
+                hitstopTimer--;
+                NPC.velocity = Vector2.Zero;
+                PublishVerdictVisuals();
+                return;
+            }
+
             globalTime += 1f / 60f;
             if (counterCooldown > 0) counterCooldown--;
+            TickVerdictTimers();
+            chargeRamp = MathHelper.Lerp(chargeRamp, 0f, 0.08f);
 
             NPC.TargetClosest();
             Player target = Main.player[NPC.target];
@@ -283,6 +304,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
             }
 
             UpdateVisuals();
+            PublishVerdictVisuals();
         }
 
         private void UpdateVisuals() {
@@ -362,6 +384,71 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
                 ai0: 1f, ai1: SealDetonateTime);
         }
 
+        // ===== V2 断罪判决演出助手 (确定性, 各端独立触发; 服务端无害) =====
+
+        /// <summary>触发处决砸落泛光 + 屏幕震动 (可选 Boss 帧冻结 hitstop)。</summary>
+        private void TriggerVerdictSlam(Vector2 center, float peak, int life, float shake, int hitstop = 0) {
+            verdictBloomCenter = center;
+            verdictBloomPeak = peak;
+            verdictBloomTimer = life;
+            verdictBloomMax = System.Math.Max(life, 1);
+            if (hitstop > 0)
+                hitstopTimer = System.Math.Max(hitstopTimer, hitstop);
+            ACMScreenShakeSystem.Add(shake);
+        }
+
+        /// <summary>登记一道判决光束 (世界坐标, 寿命 life 帧)。</summary>
+        private void AddJudgmentBeam(Vector2 start, Vector2 end, int life, float width) {
+            for (int i = 0; i < judgmentBeams.Length; i++) {
+                if (judgmentBeams[i].Time <= 0) {
+                    judgmentBeams[i] = new JudgmentBeam { Start = start, End = end, Time = life, MaxTime = System.Math.Max(life, 1), Width = width };
+                    return;
+                }
+            }
+        }
+
+        /// <summary>点亮符印封锁区地纹 (引爆将近=渐亮的可读预警)。</summary>
+        private void MarkSealZone(Vector2 center, float radius, float peak, int life) {
+            sealRunicCenter = center;
+            sealRunicRadius = radius;
+            sealRunicPeak = peak;
+            sealRunicTimer = System.Math.Max(sealRunicTimer, life);
+        }
+
+        private void TickVerdictTimers() {
+            if (verdictBloomTimer > 0) verdictBloomTimer--;
+            if (sealRunicTimer > 0) sealRunicTimer--;
+            for (int i = 0; i < judgmentBeams.Length; i++)
+                if (judgmentBeams[i].Time > 0) judgmentBeams[i].Time--;
+        }
+
+        private void PublishVerdictVisuals() {
+            if (Main.dedServ) return;
+
+            int tier = IsPhase3 ? 2 : IsPhase2 ? 1 : 0;
+
+            float counterTell = 0f;
+            if (isCounterReady)
+                counterTell = 0.55f + MathF.Sin(globalTime * 12f) * 0.35f;
+
+            float bloom = 0f;
+            if (verdictBloomTimer > 0) {
+                float t = verdictBloomTimer / (float)verdictBloomMax;   // 1→0
+                bloom = verdictBloomPeak * MathF.Sin(MathHelper.Clamp(t, 0f, 1f) * MathHelper.Pi);
+            }
+            bloom = System.Math.Max(bloom, chargeRamp * 0.5f);
+            Vector2 bloomCenter = verdictBloomTimer > 0 ? verdictBloomCenter : NPC.Center;
+
+            float sealRunic = 0f;
+            if (sealRunicTimer > 0)
+                sealRunic = sealRunicPeak * MathHelper.Clamp(sealRunicTimer / 30f, 0.25f, 1f);
+
+            VigorVerdictSystem.Publish(tier, MathHelper.Clamp(counterTell, 0f, 1f),
+                sealRunicCenter, sealRunicRadius, MathHelper.Clamp(sealRunic, 0f, 1f),
+                bloomCenter, 0.16f + (1f - bloom) * 0.22f, MathHelper.Clamp(bloom, 0f, 1f),
+                (float)Main.GlobalTimeWrappedHourly);
+        }
+
         #endregion
 
         #region 入场演出
@@ -410,10 +497,9 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
                 NPC.Opacity = 1f;
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.6f, Volume = 1.5f }, NPC.Center);
 
-                if (Main.netMode != NetmodeID.Server) {
-                    PunchCameraModifier mod = new(NPC.Center, Vector2.UnitY, 22f, 12f, 50, 2000f, FullName);
-                    Main.instance.CameraModifiers.Add(mod);
+                ACMScreenShakeSystem.Add(14f);
 
+                if (Main.netMode != NetmodeID.Server) {
                     for (int i = 0; i < 40; i++) {
                         float a = MathHelper.TwoPi / 40 * i;
                         Dust d = Dust.NewDustDirect(NPC.Center, 0, 0, DustID.GoldFlame,
@@ -522,6 +608,9 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
         private void AI_P1_SealLock(Player target) {
             Vector2 hoverPos = target.Center + new Vector2(0, -400);
             NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.04f, 0.08f);
+
+            if (AttackTimer > 10)
+                MarkSealZone(target.Center, 250f, 0.7f, 6);
 
             if (AttackTimer == 15 && Main.netMode != NetmodeID.MultiplayerClient) {
                 for (int i = 0; i < 6; i++) {
@@ -650,10 +739,8 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
                     AttackTimer = 0;
                     NPC.velocity = Vector2.Zero;
 
-                    if (Main.netMode != NetmodeID.Server) {
-                        PunchCameraModifier mod = new(NPC.Center, Vector2.UnitY, 18f, 10f, 30, 1500f, FullName);
-                        Main.instance.CameraModifiers.Add(mod);
-                    }
+                    TriggerVerdictSlam(NPC.Center + new Vector2(0, 40), 0.55f, 16, 10f);
+                    AddJudgmentBeam(NPC.Center + new Vector2(0, -900), NPC.Center + new Vector2(0, 60), 14, 24f);
                     SoundEngine.PlaySound(SoundID.Item14 with { Volume = 1.2f }, NPC.Center);
 
                     if (Main.netMode != NetmodeID.MultiplayerClient) {
@@ -708,10 +795,8 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
 
             if (PhaseTimer == 60) {
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.5f, Volume = 1.3f }, NPC.Center);
-                if (Main.netMode != NetmodeID.Server) {
-                    PunchCameraModifier mod = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 22f, 12f, 50, 2000f, FullName);
-                    Main.instance.CameraModifiers.Add(mod);
-                }
+                ACMScreenShakeSystem.Add(11f);
+                TriggerVerdictSlam(NPC.Center, 0.6f, 18, 0f);
 
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
                     for (int i = 0; i < 12; i++) {
@@ -757,10 +842,8 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
 
             if (PhaseTimer == 70) {
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.8f, Volume = 1.6f }, NPC.Center);
-                if (Main.netMode != NetmodeID.Server) {
-                    PunchCameraModifier mod = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 30f, 15f, 70, 3000f, FullName);
-                    Main.instance.CameraModifiers.Add(mod);
-                }
+                ACMScreenShakeSystem.Add(12f);
+                TriggerVerdictSlam(NPC.Center, 0.75f, 22, 0f);
 
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
                     for (int i = 0; i < 16; i++) {
@@ -915,10 +998,12 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
                         }
                         SoundEngine.PlaySound(SoundID.Item100 with { Pitch = -0.5f, Volume = 1.1f }, chargeTarget);
                     }
+                    MarkSealZone(chargeTarget, 280f, 0.85f, 70);
                     NPC.netUpdate = true;
                 }
             }
             else if (SubState == 1) {
+                MarkSealZone(chargeTarget, 280f, 0.85f, 8);
                 if (Main.netMode != NetmodeID.Server) {
                     for (int i = 0; i < 4; i++) {
                         Dust d = Dust.NewDustDirect(chargeTarget + Main.rand.NextVector2Circular(200, 200),
@@ -942,10 +1027,8 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
                     AttackTimer = 0;
                     NPC.velocity = Vector2.Zero;
 
-                    if (Main.netMode != NetmodeID.Server) {
-                        PunchCameraModifier mod = new(NPC.Center, Vector2.UnitY, 25f, 12f, 45, 2000f, FullName);
-                        Main.instance.CameraModifiers.Add(mod);
-                    }
+                    TriggerVerdictSlam(NPC.Center + new Vector2(0, 40), 0.7f, 18, 12f, hitstop: 3);
+                    AddJudgmentBeam(NPC.Center + new Vector2(0, -1000), NPC.Center + new Vector2(0, 60), 16, 30f);
                     SoundEngine.PlaySound(SoundID.Item14 with { Volume = 1.5f }, NPC.Center);
 
                     if (Main.netMode != NetmodeID.MultiplayerClient) {
@@ -1044,11 +1127,10 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
             }
             else if (SubState == 2) {
                 if (AttackTimer == 1) {
-                    NPC.velocity = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX) * 50f;
-                    if (Main.netMode != NetmodeID.Server) {
-                        PunchCameraModifier mod = new(NPC.Center, (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY), 25f, 10f, 30, 1500f, FullName);
-                        Main.instance.CameraModifiers.Add(mod);
-                    }
+                    Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
+                    NPC.velocity = toPlayer * 50f;
+                    TriggerVerdictSlam(NPC.Center, 0.7f, 16, 12f, hitstop: 3);
+                    AddJudgmentBeam(NPC.Center, NPC.Center + toPlayer * 1100f, 14, 26f);
                 }
 
                 if (AttackTimer == 12 && Main.netMode != NetmodeID.MultiplayerClient) {
@@ -1154,6 +1236,9 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
             Vector2 hoverPos = target.Center + new Vector2(0, -350);
             NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.04f, 0.08f);
 
+            if (AttackTimer > 8)
+                MarkSealZone(target.Center, 440f, 0.8f, 6);
+
             if (AttackTimer == 10 && Main.netMode != NetmodeID.MultiplayerClient) {
                 SoundEngine.PlaySound(SoundID.Item100 with { Pitch = -0.5f, Volume = 1.2f }, target.Center);
                 for (int dir = 0; dir < 4; dir++) {
@@ -1248,10 +1333,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
                                     ModContent.ProjectileType<RunicCleaveWaves>(), NPC.damage / 3, 1f, Main.myPlayer);
                             }
                         }
-                        if (Main.netMode != NetmodeID.Server) {
-                            PunchCameraModifier mod = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 20f, 10f, 30, 2000f, FullName);
-                            Main.instance.CameraModifiers.Add(mod);
-                        }
+                        ACMScreenShakeSystem.Add(10f);
                         TransitionTo(BossPhase.Phase3_Pursuit);
                     }
                 }
@@ -1263,6 +1345,12 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
                 NPC.velocity *= 0.88f;
                 NPC.dontTakeDamage = true;
                 NPC.Center += Main.rand.NextVector2Circular(5, 5);
+
+                // 长蓄力: 渐强金色收束泛光 + 渐强震屏 + 向心符印法阵 ("宣判"前奏)
+                chargeRamp = MathHelper.Clamp(AttackTimer / 90f, 0f, 1f);
+                if (AttackTimer % 12 == 0)
+                    ACMScreenShakeSystem.Add(2f + chargeRamp * 6f);
+                MarkSealZone(target.Center, 360f, 0.35f + chargeRamp * 0.55f, 6);
 
                 if (Main.netMode != NetmodeID.Server) {
                     for (int i = 0; i < 15; i++) {
@@ -1291,15 +1379,26 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
                     NPC.dontTakeDamage = false;
                     SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.7f, Volume = 1.6f }, NPC.Center);
 
-                    if (Main.netMode != NetmodeID.Server) {
-                        PunchCameraModifier mod = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 30f, 15f, 70, 3000f, FullName);
-                        Main.instance.CameraModifiers.Add(mod);
-                    }
+                    // 断罪判决"宣判"定格: 主 hitstop(4f) + 金色收束泛光 + 大震 + 天柱判决光束
+                    chargeRamp = 0f;
+                    TriggerVerdictSlam(NPC.Center, 1f, 26, 12f, hitstop: 4);
+                    AddJudgmentBeam(NPC.Center + new Vector2(0, -1100), NPC.Center + new Vector2(0, 80), 24, 42f);
+                    MarkSealZone(target.Center, 380f, 1f, 36);
                     NPC.netUpdate = true;
                 }
             }
             else {
                 NPC.velocity *= 0.92f;
+
+                // 每波刃墙: 判决光束 + 轻收束泛光 + 中震 (各端确定性视觉; 弹幕飞行中不冻结 Boss 避免突兀)
+                for (int wave = 0; wave < 6; wave++) {
+                    if (AttackTimer == wave * 15 + 5) {
+                        float beamAngle = MathHelper.TwoPi / 6 * wave;
+                        Vector2 beamDir = beamAngle.ToRotationVector2();
+                        AddJudgmentBeam(NPC.Center, NPC.Center + beamDir * 1000f, 12, 22f);
+                        TriggerVerdictSlam(NPC.Center, 0.5f, 12, 7f);
+                    }
+                }
 
                 for (int wave = 0; wave < 6; wave++) {
                     if (AttackTimer == wave * 15 + 5 && Main.netMode != NetmodeID.MultiplayerClient) {
@@ -1379,6 +1478,10 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
             Vector2 origin = frame.Size() / 2f;
             SpriteEffects effects = NPC.spriteDirection == -1 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
 
+            // 断罪判决光束 + 格挡反击护罩环 (硬化 ACMShaders, 缺着色器自动降级)
+            DrawCounterRing(spriteBatch);
+            DrawJudgmentBeams();
+
             // 格挡态金色脉冲护盾
             if (isCounterReady) {
                 float shieldPulse = MathF.Sin(globalTime * 10f) * 0.3f + 0.7f;
@@ -1412,6 +1515,46 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
             }
 
             return false;
+        }
+
+        // 判决光束 (BeamGrad): 金白芯 + 暖金边, 寿命包络淡出。非致命预警 → 不用红。
+        private void DrawJudgmentBeams() {
+            if (Main.dedServ)
+                return;
+            Color core = new(255, 240, 180);
+            Color edge = TelegraphColors.Gold;
+            for (int i = 0; i < judgmentBeams.Length; i++) {
+                JudgmentBeam b = judgmentBeams[i];
+                if (b.Time <= 0)
+                    continue;
+                float life = b.Time / (float)b.MaxTime;          // 1→0
+                float intensity = MathF.Sin(MathHelper.Clamp(life, 0f, 1f) * MathHelper.Pi * 0.5f);
+                ACMShaders.DrawBeam(b.Start, b.End, b.Width * (0.4f + 0.6f * life),
+                    core, edge * 0.5f, intensity, flowSpeed: 2.2f, flowScale: 2.4f, coreSharp: 2.6f, coreGlow: 1.5f);
+            }
+        }
+
+        // 格挡反击护罩环 (ArenaRunic 法阵): 冷→暖金脉冲, "现在别打"的世界级 tell。
+        private void DrawCounterRing(SpriteBatch sb) {
+            if (Main.dedServ || !isCounterReady)
+                return;
+            Effect fx = ACMShaders.ArenaRunic;
+            if (fx == null)
+                return;
+
+            float pulse = 0.55f + MathF.Sin(globalTime * 12f) * 0.35f;
+            ACMShaders.WorldDecalParams(NPC.Center, 140f, out Vector2 uv, out float radFrac, out float aspect);
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uCenter"]?.SetValue(uv);
+            fx.Parameters["uRadius"]?.SetValue(radFrac);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(pulse, 0f, 1f));
+            fx.Parameters["uAspect"]?.SetValue(aspect);
+            fx.Parameters["uColorPrimary"]?.SetValue(new Vector4(TelegraphColors.Gold.ToVector3(), 1f));
+            fx.Parameters["uColorSecondary"]?.SetValue(new Vector4(new Color(255, 150, 50).ToVector3(), 1f));
+            fx.Parameters["uRuneFreq"]?.SetValue(14f);
+            fx.Parameters["uMode"]?.SetValue(0f);
+            fx.Parameters["uShape"]?.SetValue(0f);
+            ACMShaders.DrawScreenSpaceDecal(sb, fx, BlendState.Additive);
         }
 
         #endregion

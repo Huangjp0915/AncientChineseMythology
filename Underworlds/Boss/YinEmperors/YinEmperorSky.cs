@@ -21,6 +21,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         // 动态效果参数
         private float dragonPulse;
         private float lightningTimer;
+        private Vector2 bossCenter;
 
         internal static string name;
 
@@ -59,6 +60,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 }
 
                 if (boss != null) {
+                    bossCenter = boss.Center;
                     float distance = Main.LocalPlayer.Distance(boss.Center);
                     float t = MathHelper.Clamp(distance / 1600f, 0f, 1f);
 
@@ -113,6 +115,72 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
                 // 冥雷闪烁
                 DrawNetherLightning(spriteBatch);
+
+                // 酆帝诏书 - 阴阳半场判罚
+                DrawYinYangField(spriteBatch);
+
+                // 终诏 - 十字激光预告
+                DrawFinalDecreeTelegraph(spriteBatch);
+            }
+        }
+
+        /// <summary>
+        /// 阴阳半场：以分界线把场地分为阴(左)/阳(右)两半，站错半场会被灼魂 DoT。
+        /// 安全半场偏暗、危险半场泛红脉动，切换前有预警闪烁。
+        /// </summary>
+        private void DrawYinYangField(SpriteBatch sb) {
+            if (!YinEmperor.YinYangActive) return;
+
+            var pixel = TextureAssets.MagicPixel.Value;
+            float cxScreen = YinEmperor.YinYangCenterX - Main.screenPosition.X;
+            int divider = (int)MathHelper.Clamp(cxScreen, 0, Main.screenWidth);
+
+            int safe = YinEmperor.YinYangSafeSide;
+            float danger = 0.5f + 0.5f * MathF.Sin(dragonPulse * 4f);
+            float warnBoost = YinEmperor.YinYangWarning ? (0.5f + 0.5f * MathF.Sin(dragonPulse * 16f)) * 0.18f : 0f;
+
+            Color yin = new Color(45, 18, 80);
+            Color yang = new Color(80, 62, 22);
+
+            Color leftCol = safe == 0
+                ? yin * 0.16f
+                : Color.Lerp(yin, YinEmperorHelper.NetherBloodRed, 0.55f) * (0.16f + danger * 0.14f + warnBoost);
+            Color rightCol = safe == 1
+                ? yang * 0.16f
+                : Color.Lerp(yang, YinEmperorHelper.NetherBloodRed, 0.55f) * (0.16f + danger * 0.14f + warnBoost);
+
+            sb.Draw(pixel, new Rectangle(0, 0, divider, Main.screenHeight), leftCol);
+            sb.Draw(pixel, new Rectangle(divider, 0, Main.screenWidth - divider, Main.screenHeight), rightCol);
+
+            // 分界线
+            Color line = Color.Lerp(YinEmperorHelper.ImperialGold, YinEmperorHelper.AbyssPurple, 0.4f);
+            line.A = 0;
+            float lineGlow = 0.5f + 0.5f * MathF.Sin(dragonPulse * 3f);
+            sb.Draw(pixel, new Rectangle(divider - 3, 0, 6, Main.screenHeight), line * (0.5f + lineGlow * 0.3f));
+            sb.Draw(pixel, new Rectangle(divider - 10, 0, 20, Main.screenHeight), line * 0.12f);
+        }
+
+        /// <summary>
+        /// 终诏十字激光预告：八向充能警示线，随 FinalDecreeCharge 增亮，给玩家 ~4s 反应窗口。
+        /// </summary>
+        private void DrawFinalDecreeTelegraph(SpriteBatch sb) {
+            float charge = YinEmperor.FinalDecreeCharge;
+            if (charge <= 0.001f || charge >= 1f) return;
+
+            var pixel = TextureAssets.MagicPixel.Value;
+            Vector2 origin = bossCenter - Main.screenPosition;
+
+            Color warn = YinEmperorHelper.NetherBloodRed;
+            warn.A = 0;
+            float alpha = charge * 0.5f;
+            float width = 2f + charge * 8f;
+            float len = 2600f;
+
+            for (int i = 0; i < 8; i++) {
+                float angle = MathHelper.PiOver4 * i;
+                sb.Draw(pixel, origin, new Rectangle(0, 0, 1, 1),
+                    warn * alpha, angle, new Vector2(0f, 0.5f),
+                    new Vector2(len, width), SpriteEffects.None, 0);
             }
         }
 

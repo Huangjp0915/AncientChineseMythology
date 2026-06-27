@@ -142,6 +142,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas.Items
             tooltips.Add(new TooltipLine(Mod, "PagodaLore", "「宝塔层叠，财宝聚灵」"));
             tooltips.Add(new TooltipLine(Mod, "PagodaEffect", "在光标处召唤宝塔，同处可叠至六层"));
             tooltips.Add(new TooltipLine(Mod, "PagodaEffect2", "拾取钱币为宝塔增伤，层数越高范围与伤害越强"));
+            tooltips.Add(new TooltipLine(Mod, "PagodaEffect3", "宝塔镇敌自行聚财生层；四层以上射出招财金镖追猎敌人"));
         }
     }
 
@@ -157,6 +158,13 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas.Items
         private int fortuneDecayTimer;
 
         public float GetFortuneDamageMultiplier() => 1f + FortuneStacks * 0.04f;
+
+        /// <summary>由宝塔自身「聚财」机制直接累积福缘层数（不消耗实际钱币）。</summary>
+        public void AddFortune(int amount) {
+            if (amount <= 0) return;
+            FortuneStacks = Math.Min(MaxFortuneStacks, FortuneStacks + amount);
+            fortuneDecayTimer = 0;
+        }
 
         public override void ResetEffects() {
             fortuneDecayTimer++;
@@ -287,6 +295,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas.Items
 
             int damage = Math.Max(1, (int)(Projectile.damage * GetDamageMultiplier() * 0.35f));
             float radiusSq = radius * radius;
+            int struck = 0;
 
             for (int i = 0; i < Main.maxNPCs; i++) {
                 NPC npc = Main.npc[i];
@@ -297,11 +306,40 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas.Items
                     continue;
 
                 npc.SimpleStrikeNPC(damage, Owner.direction, false, Projectile.knockBack);
+                struck++;
+            }
+
+            // 财神聚财：宝塔镇压敌人时自行凝聚福缘（无需实际钱币）
+            if (struck > 0 && Main.rand.NextBool(3))
+                Owner.GetModPlayer<TreasurePagodaStaffPlayer>().AddFortune(1);
+
+            // 高层宝塔（≥4 层）射出招财金镖，自动追猎最近之敌
+            if (struck > 0 && StackTier >= 4 && Projectile.owner == Main.myPlayer) {
+                NPC target = FindNearestNPC(radius * 3f);
+                if (target != null) {
+                    Vector2 dir = (target.Center - Projectile.Center).SafeNormalize(Vector2.UnitY);
+                    Projectile.NewProjectile(Projectile.GetSource_FromThis(), Projectile.Center, dir * 10f,
+                        ModContent.ProjectileType<TreasureCoinBolt>(),
+                        Math.Max(1, (int)(Projectile.damage * GetDamageMultiplier() * 0.22f)),
+                        Projectile.knockBack, Projectile.owner);
+                }
             }
 
             if (Main.rand.NextBool(3)) {
                 SoundEngine.PlaySound(SoundID.Item4 with { Pitch = -0.2f + StackTier * 0.05f, Volume = 0.35f }, Projectile.Center);
             }
+        }
+
+        private NPC FindNearestNPC(float maxRange) {
+            NPC closest = null;
+            float closestDist = maxRange;
+            for (int i = 0; i < Main.maxNPCs; i++) {
+                NPC npc = Main.npc[i];
+                if (!npc.CanBeChasedBy()) continue;
+                float dist = Vector2.Distance(Projectile.Center, npc.Center);
+                if (dist < closestDist) { closestDist = dist; closest = npc; }
+            }
+            return closest;
         }
 
         private void SpawnPagodaParticles(float radius) {
@@ -366,6 +404,99 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas.Items
         }
     }
 
+    /// <summary>招财金镖 — 宝塔/库藏掷出的旋转金币，自动追猎敌人，命中迸散金光。</summary>
+    public class TreasureCoinBolt : ModProjectile
+    {
+        public override string Texture => "AncientChineseMythology/Textures/Masking/LightShot";
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.TrailCacheLength[Type] = 8;
+            ProjectileID.Sets.TrailingMode[Type] = 2;
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = Projectile.height = 16;
+            Projectile.friendly = true;
+            Projectile.DamageType = DamageClass.Magic;
+            Projectile.penetrate = 2;
+            Projectile.timeLeft = 150;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 10;
+        }
+
+        public override void AI() {
+            Projectile.rotation += 0.32f;
+
+            NPC target = FindClosest();
+            if (target != null) {
+                Vector2 to = (target.Center - Projectile.Center).SafeNormalize(Vector2.Zero);
+                float speed = MathHelper.Clamp(Projectile.velocity.Length() + 0.4f, 8f, 16f);
+                Projectile.velocity = Vector2.Lerp(Projectile.velocity, to * speed, 0.09f);
+            }
+
+            if (Main.rand.NextBool(2)) {
+                int dust = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height, DustID.GoldCoin, 0f, 0f, 100, default, 1.1f);
+                Main.dust[dust].noGravity = true;
+                Main.dust[dust].velocity *= 0.3f;
+            }
+            Lighting.AddLight(Projectile.Center, VaisravanaHelper.TowerGold.ToVector3() * 0.5f);
+        }
+
+        private NPC FindClosest() {
+            NPC closest = null;
+            float closestDist = 700f;
+            for (int i = 0; i < Main.maxNPCs; i++) {
+                NPC npc = Main.npc[i];
+                if (!npc.CanBeChasedBy()) continue;
+                float dist = Vector2.Distance(Projectile.Center, npc.Center);
+                if (dist < closestDist) { closestDist = dist; closest = npc; }
+            }
+            return closest;
+        }
+
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            if (Main.netMode == NetmodeID.Server) return;
+            SoundEngine.PlaySound(SoundID.CoinPickup with { Volume = 0.4f, Pitch = 0.3f }, target.Center);
+            for (int i = 0; i < 6; i++) {
+                int dust = Dust.NewDust(target.position, target.width, target.height, DustID.GoldCoin, 0f, 0f, 100, default, 1.3f);
+                Main.dust[dust].noGravity = true;
+                Main.dust[dust].velocity = Main.rand.NextVector2Circular(4f, 4f);
+            }
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            SpriteBatch sb = Main.spriteBatch;
+            Texture2D tex = ACMAsset.LightShot ?? TextureAssets.Projectile[Type].Value;
+            Texture2D glow = ACMAsset.SoftGlow;
+            Vector2 drawPos = Projectile.Center - Main.screenPosition;
+
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+
+            for (int i = Projectile.oldPos.Length - 1; i > 0; i--) {
+                if (Projectile.oldPos[i] == Vector2.Zero) continue;
+                float progress = 1f - i / (float)Projectile.oldPos.Length;
+                Color c = VaisravanaHelper.TowerGold * (0.5f * progress); c.A = 0;
+                sb.Draw(tex, Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition, null, c,
+                    Projectile.oldRot[i], tex.Size() * 0.5f, 0.35f * progress, SpriteEffects.None, 0);
+            }
+            if (glow != null) {
+                Color g = VaisravanaHelper.TowerGold * 0.6f; g.A = 0;
+                sb.Draw(glow, drawPos, null, g, 0f, glow.Size() * 0.5f, 0.5f, SpriteEffects.None, 0);
+            }
+            Color core = VaisravanaHelper.ImmortalGold; core.A = 0;
+            sb.Draw(tex, drawPos, null, core, Projectile.rotation, tex.Size() * 0.5f, 0.4f, SpriteEffects.None, 0);
+
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+            return false;
+        }
+    }
+
     /// <summary>
     /// 库藏虚空狙 - 毗沙门天王掉落的狙击枪
     /// 发射生长型虚空弹，命中后坍缩并吸引附近敌人
@@ -417,6 +548,12 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas.Items
             return false;
         }
 
+        public override void ModifyTooltips(List<TooltipLine> tooltips) {
+            tooltips.Add(new TooltipLine(Mod, "VaultLore", "毗沙门库藏所铸的虚空狙击"));
+            tooltips.Add(new TooltipLine(Mod, "VaultEffect", "发射随飞行持续生长的虚空弹，越大越痛"));
+            tooltips.Add(new TooltipLine(Mod, "VaultEffect2", "命中触发虚空坍缩聚怪；坍缩瓦解时迸射招财金镖洗劫敌群"));
+        }
+
         public override string Texture => "Terraria/Images/Item_" + ItemID.SniperRifle;
     }
 
@@ -461,6 +598,12 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas.Items
             }
 
             return false;
+        }
+
+        public override void ModifyTooltips(List<TooltipLine> tooltips) {
+            tooltips.Add(new TooltipLine(Mod, "CircletLore", "毗沙门天冠所化的耀能权杖"));
+            tooltips.Add(new TooltipLine(Mod, "CircletEffect", "释放五枚耀能环螺旋收束后追踪冲刺"));
+            tooltips.Add(new TooltipLine(Mod, "CircletEffect2", "耀能环消逝时加冕爆发，绽放天冠光环造成范围重创"));
         }
 
         public override string Texture => "Terraria/Images/Item_" + ItemID.StaffofRegrowth;
@@ -603,6 +746,13 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas.Items
         }
 
         public override void OnKill(int timeLeft) {
+            // 加冕爆发 — 耀能环消逝时绽放天冠光环
+            if (Main.netMode != NetmodeID.MultiplayerClient && IsHoming >= 0.5f) {
+                Projectile.NewProjectile(Projectile.GetSource_FromThis(), Projectile.Center, Vector2.Zero,
+                    ModContent.ProjectileType<CelestialCrownBurst>(),
+                    (int)(Projectile.damage * 0.6f), Projectile.knockBack, Projectile.owner);
+            }
+
             if (Main.netMode == NetmodeID.Server) return;
 
             for (int i = 0; i < 8; i++) {
@@ -610,6 +760,74 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas.Items
                 int dust = Dust.NewDust(Projectile.Center, 0, 0, DustID.WhiteTorch, vel.X, vel.Y, 100, default, 1.3f);
                 Main.dust[dust].noGravity = true;
             }
+        }
+    }
+
+    /// <summary>天冠加冕爆发 — 耀能环消逝时绽放的圣洁光环，造成范围重创。</summary>
+    public class CelestialCrownBurst : ModProjectile
+    {
+        public override string Texture => "AncientChineseMythology/Textures/Masking/SoftGlow";
+
+        private const int Duration = 30;
+        private ref float Age => ref Projectile.ai[0];
+
+        public override void SetDefaults() {
+            Projectile.width = Projectile.height = 90;
+            Projectile.friendly = true;
+            Projectile.DamageType = DamageClass.Magic;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = Duration;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 10;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+
+        public override void AI() {
+            Age++;
+            float radius = MathHelper.SmoothStep(20f, 110f, Age / Duration);
+            if (Main.netMode != NetmodeID.Server) {
+                for (int i = 0; i < 5; i++) {
+                    float ang = Main.rand.NextFloat(MathHelper.TwoPi);
+                    Vector2 pos = Projectile.Center + ang.ToRotationVector2() * radius;
+                    Dust d = Dust.NewDustPerfect(pos, DustID.WhiteTorch, ang.ToRotationVector2() * 2f, 90, default, 1.4f);
+                    d.noGravity = true;
+                }
+            }
+            Lighting.AddLight(Projectile.Center, VaisravanaHelper.ImmortalGold.ToVector3() * 0.8f);
+        }
+
+        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
+            float radius = MathHelper.SmoothStep(20f, 110f, Age / Duration);
+            return VaultUtils.CircleIntersectsRectangle(Projectile.Center, radius, targetHitbox);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            SpriteBatch sb = Main.spriteBatch;
+            float progress = Age / Duration;
+            float radius = MathHelper.SmoothStep(20f, 110f, progress);
+            float alpha = MathHelper.SmoothStep(1f, 0f, progress) * 0.9f;
+            Vector2 drawPos = Projectile.Center - Main.screenPosition;
+
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+
+            VaisravanaHelper.DrawImmortalHalo(sb, Projectile.Center, radius, VaisravanaHelper.ImmortalGold, Age * 0.1f, alpha);
+            Texture2D sg = ACMAsset.SoftGlow;
+            if (sg != null) {
+                Color g = VaisravanaHelper.TowerGold * (alpha * 0.5f); g.A = 0;
+                sb.Draw(sg, drawPos, null, g, 0f, sg.Size() * 0.5f, radius / 70f, SpriteEffects.None, 0);
+                Color core = VaisravanaHelper.PureWhite * (alpha * 0.6f); core.A = 0;
+                sb.Draw(sg, drawPos, null, core, 0f, sg.Size() * 0.5f, radius / 180f, SpriteEffects.None, 0);
+            }
+
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+            return false;
         }
     }
 
@@ -636,6 +854,10 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas.Items
             player.statDefense += BonusDefense;
             player.thorns = MathHelper.Max(player.thorns, ThornsStrength);
             player.GetModPlayer<TreasurePagodaCharmPlayer>().pagodaWard = true;
+        }
+
+        public override void ModifyTooltips(List<TooltipLine> tooltips) {
+            tooltips.Add(new TooltipLine(Mod, "CharmFortune", "持有福缘越高，反震宝塔虚影越强、越多（最多三道）"));
         }
 
         public override string Texture => "Terraria/Images/Item_" + ItemID.PaladinsShield;
@@ -675,19 +897,27 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas.Items
 
             retaliateCooldown = 12;
 
+            // 财气护体：玩家身上的福缘层数越高，反震宝塔虚影越强、越多
+            int fortune = Player.GetModPlayer<TreasurePagodaStaffPlayer>().FortuneStacks;
+            float fortuneMult = 1f + fortune * 0.06f;
+
             Vector2 spawn = origin ?? Player.Center;
             Vector2 direction = (npc.Center - spawn).SafeNormalize(Vector2.UnitY);
-            int damage = Math.Max(80, (int)(hurtInfo.SourceDamage * TreasurePagodaCharm.ThornsStrength * 0.35f + Player.statDefense * 2));
+            int damage = (int)(Math.Max(80, (int)(hurtInfo.SourceDamage * TreasurePagodaCharm.ThornsStrength * 0.35f + Player.statDefense * 2)) * fortuneMult);
 
-            Projectile.NewProjectile(
-                Player.GetSource_OnHurt(hurtInfo.DamageSource),
-                spawn,
-                direction * 18f,
-                ModContent.ProjectileType<TreasurePagodaPhantom>(),
-                damage,
-                4f,
-                Player.whoAmI,
-                ai0: npc.whoAmI);
+            int phantomCount = fortune >= 16 ? 3 : (fortune >= 8 ? 2 : 1);
+            for (int i = 0; i < phantomCount; i++) {
+                Vector2 vel = direction.RotatedBy(MathHelper.Lerp(-0.35f, 0.35f, phantomCount == 1 ? 0.5f : i / (float)(phantomCount - 1))) * 18f;
+                Projectile.NewProjectile(
+                    Player.GetSource_OnHurt(hurtInfo.DamageSource),
+                    spawn,
+                    vel,
+                    ModContent.ProjectileType<TreasurePagodaPhantom>(),
+                    damage,
+                    4f,
+                    Player.whoAmI,
+                    ai0: npc.whoAmI);
+            }
 
             if (VaultUtils.isServer)
                 return;
@@ -1023,8 +1253,17 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas.Items
 
             Lighting.AddLight(Projectile.Center, new Vector3(0.45f, 0.35f, 0.7f) * (1f - progress * 0.5f));
 
-            if (Projectile.timeLeft == 1 && Projectile.owner == Main.myPlayer)
+            if (Projectile.timeLeft == 1 && Projectile.owner == Main.myPlayer) {
                 Main.player[Projectile.owner].GetModPlayer<ScreenShakePlayer>().ShakeScreen(4, 8);
+
+                // 库藏「劫财」：坍缩瓦解时，从虚空中迸射招财金镖洗劫被困之敌
+                for (int i = 0; i < 5; i++) {
+                    Vector2 vel = (MathHelper.TwoPi * i / 5f).ToRotationVector2() * Main.rand.NextFloat(6f, 10f);
+                    Projectile.NewProjectile(Projectile.GetSource_FromThis(), Projectile.Center, vel,
+                        ModContent.ProjectileType<TreasureCoinBolt>(),
+                        Math.Max(1, (int)(Projectile.damage * 0.5f)), Projectile.knockBack * 0.4f, Projectile.owner);
+                }
+            }
         }
 
         public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {

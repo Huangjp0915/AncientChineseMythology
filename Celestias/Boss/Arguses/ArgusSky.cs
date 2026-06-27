@@ -145,8 +145,16 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
             // 天目瞳孔缓慢浮现
             float targetPupilAlpha = isPhase3 ? 0.6f : isPhase2 ? 0.35f : 0.15f;
             float targetPupilScale = isPhase3 ? 1.2f : isPhase2 ? 0.9f : 0.6f;
-            pupilAlpha = MathHelper.Lerp(pupilAlpha, targetPupilAlpha, 0.008f);
-            pupilScale = MathHelper.Lerp(pupilScale, targetPupilScale, 0.006f);
+
+            // 「全视之域」签名: 巨眼骤然睁大并锁定玩家 (由 Argus.DomainSignal 驱动)
+            float domain = MathHelper.Clamp(Argus.DomainSignal, 0f, 1f);
+            if (domain > 0.01f) {
+                targetPupilAlpha = MathHelper.Lerp(targetPupilAlpha, 0.9f, domain);
+                targetPupilScale = MathHelper.Lerp(targetPupilScale, 1.55f, domain);
+            }
+            // 域内快速睁眼, 平时缓慢浮现
+            pupilAlpha = MathHelper.Lerp(pupilAlpha, targetPupilAlpha, domain > 0.01f ? 0.05f : 0.008f);
+            pupilScale = MathHelper.Lerp(pupilScale, targetPupilScale, domain > 0.01f ? 0.04f : 0.006f);
         }
 
         private static NPC FindBoss() {
@@ -266,6 +274,17 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
             float alpha = pupilAlpha * intensity;
             float centerX = Main.screenWidth * 0.5f;
             float centerY = Main.screenHeight * 0.3f;
+
+            // 全视之域: 巨眼瞳孔偏移锁定本地玩家 ("被注视"压迫感)
+            float domain = MathHelper.Clamp(Argus.DomainSignal, 0f, 1f);
+            if (domain > 0.01f) {
+                Player lp = Main.LocalPlayer;
+                if (lp != null && lp.active) {
+                    Vector2 sp = lp.Center - Main.screenPosition;
+                    centerX += (sp.X - centerX) * 0.25f * domain;
+                    centerY += (sp.Y - centerY) * 0.12f * domain;
+                }
+            }
 
             // 外层: 椭圆形"眼白" — 柔和紫色
             float outerScaleX = pupilScale * Main.screenWidth * 0.25f / glow.Width;

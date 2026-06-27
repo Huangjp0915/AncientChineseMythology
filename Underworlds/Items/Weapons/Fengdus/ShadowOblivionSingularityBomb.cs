@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
 using AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs;
 using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
@@ -181,6 +182,13 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
             SoundEngine.PlaySound(SoundID.Item14 with { Volume = 2f, Pitch = -1f }, Projectile.Center);
             SoundEngine.PlaySound(SoundID.Item119 with { Volume = 1.5f, Pitch = -0.5f }, Projectile.Center);
 
+            // 内爆: RadialBloom + ElementalScreenTint 虚空定调 (引力透镜→内爆的收束高潮)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_FromThis(), Projectile.Center, ACMWeaponBurst.FengduVoid, 3f, Projectile.owner);
+            if (Main.myPlayer == Projectile.owner)
+                Projectile.NewProjectile(Projectile.GetSource_FromThis(), Projectile.Center, Vector2.Zero,
+                    ModContent.ProjectileType<SingularityImplosionFlash>(), 0, 0f, Projectile.owner);
+            WeaponVFX.AddScreenShake(Projectile.Center, 11f);
+
             // Damage all enemies in explosion radius
             for (int i = 0; i < Main.maxNPCs; i++) {
                 NPC npc = Main.npc[i];
@@ -209,8 +217,8 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
 
             // Massive explosion visuals
             // Ring of particles expanding outward
-            for (int i = 0; i < 80; i++) {
-                float angle = MathHelper.TwoPi / 80f * i;
+            for (int i = 0; i < 36; i++) {
+                float angle = MathHelper.TwoPi / 36f * i;
                 Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * Main.rand.NextFloat(12f, 25f);
                 int dustType = Main.rand.NextBool(3) ? DustID.Shadowflame : DustID.Wraith;
                 Dust ring = Dust.NewDustPerfect(Projectile.Center, dustType, vel, 40,
@@ -220,7 +228,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
             }
 
             // Secondary inner burst
-            for (int i = 0; i < 50; i++) {
+            for (int i = 0; i < 20; i++) {
                 Vector2 vel = Main.rand.NextVector2Circular(18f, 18f);
                 Dust inner = Dust.NewDustPerfect(Projectile.Center, DustID.Torch, vel, 60,
                     new Color(200, 100, 255), Main.rand.NextFloat(2f, 4f));
@@ -228,7 +236,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
             }
 
             // Vertical pillars
-            for (int i = 0; i < 30; i++) {
+            for (int i = 0; i < 16; i++) {
                 Dust upward = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(30, 30),
                     DustID.Shadowflame, new Vector2(Main.rand.NextFloat(-2f, 2f), -Main.rand.NextFloat(10f, 25f)),
                     40, new Color(160, 60, 255), Main.rand.NextFloat(2.5f, 4f));
@@ -298,9 +306,35 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
                     Main.EntitySpriteDraw(blankStar, Projectile.Center - Main.screenPosition, null, starColor,
                         Timer * 0.15f, starOrigin, pulse, SpriteEffects.None, 0);
                 }
+
+                // 吸积冲击环 (向心收口, 读作"即将内爆"的可读预警)
+                float ringR = MathHelper.Lerp(GravityRadius * 0.5f, 40f, wellProgress);
+                WeaponVFX.DrawShockwaveRing(Projectile.Center, ringR, 18f, (0.3f + wellProgress * 0.5f),
+                    new Color(190, 120, 255), new Color(30, 8, 55));
             }
 
             return false;
+        }
+
+        // ★ 签名时刻: GenericWarp 黑洞引力透镜 (居中于奇点, 本武器唯一全屏后处理)
+        public override void PostDraw(Color lightColor) {
+            if (Main.dedServ || Main.gameMenu || Phase != 1)
+                return;
+            float wellProgress = MathHelper.Clamp(Timer / GravityDuration, 0f, 1f);
+            float intensity = 0.4f + wellProgress * 0.6f; // 蓄力越久, 吞噬越强
+            if (!ACMShaders.RequestFullscreenSlot())
+                return;
+            Effect fx = ACMShaders.GenericWarp;
+            if (fx == null)
+                return;
+            ACMShaders.SetCommonParams(fx, Projectile.Center, intensity);
+            fx.Parameters["uRadius"]?.SetValue(0.4f + wellProgress * 0.35f);
+            fx.Parameters["uWarpScale"]?.SetValue(1.8f);
+            fx.Parameters["uChroma"]?.SetValue(0.85f);
+            fx.Parameters["uRadialPull"]?.SetValue(0.7f + wellProgress * 0.5f); // 强向心吸入
+            fx.Parameters["uMode"]?.SetValue(4f);  // void 黑洞: 中心压暗成黑洞
+            fx.Parameters["uTint"]?.SetValue(new Vector4(0.22f, 0.08f, 0.4f, 0.6f));
+            ACMShaders.ApplyScreenPostProcess(Main.spriteBatch, fx, bindNoise: true);
         }
     }
 
@@ -365,6 +399,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
             if (Timer >= EchoDuration) {
                 // Mini detonation
                 SoundEngine.PlaySound(SoundID.Item14 with { Volume = 0.8f, Pitch = 0.3f }, Projectile.Center);
+                ACMWeaponBurst.Spawn(Projectile.GetSource_FromThis(), Projectile.Center, ACMWeaponBurst.FengduVoid, 1.4f, Projectile.owner);
 
                 for (int i = 0; i < Main.maxNPCs; i++) {
                     NPC npc = Main.npc[i];
@@ -376,8 +411,8 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
                     }
                 }
 
-                for (int i = 0; i < 30; i++) {
-                    float angle = MathHelper.TwoPi / 30f * i;
+                for (int i = 0; i < 16; i++) {
+                    float angle = MathHelper.TwoPi / 16f * i;
                     Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * Main.rand.NextFloat(6f, 12f);
                     Dust ring = Dust.NewDustPerfect(Projectile.Center, DustID.Shadowflame, vel, 40,
                         new Color(160, 60, 255), Main.rand.NextFloat(2f, 3f));
@@ -405,6 +440,53 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Fengdus
                     0f, origin, size * 1.4f, SpriteEffects.None, 0);
             }
 
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 奇点内爆演出 (纯视觉, 本地客户端): ElementalScreenTint 虚空黑紫定调 + RadialBloom 内爆核。
+    /// </summary>
+    public class SingularityImplosionFlash : ModProjectile
+    {
+        public override string Texture => "Terraria/Images/Projectile_1";
+        private const int Life = 30;
+
+        public override void SetDefaults() {
+            Projectile.width = 2;
+            Projectile.height = 2;
+            Projectile.friendly = false;
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = Life;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.alpha = 255;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+        public override bool? CanDamage() => false;
+        public override void AI() => Projectile.velocity = Vector2.Zero;
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+            float life = MathHelper.Clamp(Projectile.timeLeft / (float)Life, 0f, 1f);
+
+            Effect tintFx = ACMShaders.ElementalScreenTint;
+            if (tintFx != null) {
+                ACMShaders.SetCommonParams(tintFx, Projectile.Center, life);
+                tintFx.Parameters["uTint"]?.SetValue(new Vector4(new Color(70, 24, 130).ToVector3(), 0.34f * life));
+                tintFx.Parameters["uTint2"]?.SetValue(new Vector4(new Color(12, 4, 26).ToVector3(), 0f));
+                tintFx.Parameters["uVignette"]?.SetValue(0.55f);
+                tintFx.Parameters["uFogScale"]?.SetValue(2.4f);
+                SpriteBatch sb = Main.spriteBatch;
+                sb.End();
+                ACMShaders.DrawFullscreenOverlay(tintFx, BlendState.AlphaBlend);
+                ACMShaders.RestoreDefaultBatch(sb);
+            }
+
+            WeaponVFX.DrawRadialBloom(Projectile.Center, 0.26f, life * 0.9f, new Color(180, 110, 255), 12f);
             return false;
         }
     }

@@ -1,4 +1,6 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using System;
+using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.ModLoader;
 
@@ -206,45 +208,38 @@ namespace AncientChineseMythology.Projectiles
         }
 
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            // 命中点金辉演出 (一次性, 不频繁)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Gold, scale: 0.5f, owner: Projectile.owner);
             Projectile.Kill();
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+
+            // 表现层重做: 用共享 BeamGrad 流动渐变光束 + 端点柔光取代逐帧动画贴图。
             Player player = Main.player[Projectile.owner];
             float effectiveDistance = Projectile.ai[1];
             LaserState state = (LaserState)(int)Projectile.localAI[0];
-            string texturePath = FiringTexturePath;
-            int frameCount = FiringFrameCount;
-            if (state == LaserState.Continuous) {
-                texturePath = ContinuousTexturePath;
-                frameCount = ContinuousFrameCount;
-            }
-            else if (state == LaserState.Ending) {
-                texturePath = EndingTexturePath;
-                frameCount = EndingFrameCount;
-            }
 
-            Texture2D texture = ModContent.Request<Texture2D>(texturePath).Value;
-            int frameHeight = texture.Height / frameCount;
-            Rectangle frame = new Rectangle(0, Projectile.frame * frameHeight, texture.Width, frameHeight);
+            Vector2 start = player.Center;
+            Vector2 diff = (Main.MouseWorld - start).SafeNormalize(Vector2.UnitY);
+            Vector2 end = start + diff * effectiveDistance;
 
-            //绘制原点设为贴图上方中点，使贴图的顶部始终对齐玩家中心
-            Vector2 drawOrigin = new Vector2(frame.Width / 2f, 0f);
-            float scale = effectiveDistance / frameHeight;
-            if (scale < 0.1f)
-                scale = 0.1f;
+            // 结束态随帧淡出
+            float fade = 1f;
+            if (state == LaserState.Ending)
+                fade = 1f - MathHelper.Clamp(Projectile.frame / (float)EndingFrameCount, 0f, 1f);
+            float pulse = (0.85f + 0.15f * (float)Math.Sin(Main.GlobalTimeWrappedHourly * 10f)) * fade;
+            if (pulse <= 0.02f)
+                return false;
 
-            Main.EntitySpriteDraw(
-                texture,
-                player.Center - Main.screenPosition,
-                frame,
-                Color.White,
-                Projectile.rotation,
-                drawOrigin,
-                scale,
-                SpriteEffects.None,
-                0
-            );
+            ACMShaders.DrawBeam(start, end, 12f * fade,
+                new Color(255, 230, 150, 210), new Color(210, 130, 40, 130), pulse,
+                flowSpeed: 2.2f, flowScale: 2.5f);
+            WeaponVFX.DrawGlowBurst(end, 0.7f * fade, new Color(255, 215, 120) * fade);
+            WeaponVFX.DrawGlowBurst(start, 0.5f * fade, new Color(255, 225, 150) * fade);
             return false;
         }
     }

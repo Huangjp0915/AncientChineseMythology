@@ -11,8 +11,8 @@ using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.GameContent.ItemDropRules;
-using Terraria.Graphics.CameraModifiers;
 using Terraria.ID;
+using Terraria.Localization;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
@@ -125,6 +125,14 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
 
         //Lissajous漂移参数
         private float lissajousTime;
+
+        //玉璧绝防 Jade Aegis — 玉色六边折射护罩 (ReflectWard 着色器验证目标; 着色器经 ACMShaders.ReflectWard 取用)
+        private float wardFlash;                      //受击面板亮起脉冲 0~1 (驱动 shader uFlash)
+        private Vector2 wardHitDir = Vector2.UnitX;   //最近一次受击方向(面板裂纹定位)
+        private bool wardAnnounced;                   //本次绝防是否已播报"玉璧绝防"
+
+        //玉璧绝防 玉色 (冷蓝→玉青, §6.1 安全色: 无敌中=玉, 非红)
+        private static readonly Color JadeWardColor = new(150, 230, 200);
 
         #endregion
 
@@ -301,10 +309,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
 
         public override void OnKill() {
             DownedBossSystem.downedXuanwu = true;
-            if (Main.netMode != NetmodeID.Server) {
-                PunchCameraModifier modifier = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 20f, 10f, 60, 2000f, FullName);
-                Main.instance.CameraModifiers.Add(modifier);
-            }
+            //死亡定格震动 (§6.2 入场/死亡 ≤16, 经统一预算 max-not-additive + ScreenShakeScale)
+            ACMScreenShakeSystem.Add(14f);
         }
 
         #endregion
@@ -413,6 +419,9 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
             //闪光衰减
             phaseFlash *= 0.9f;
 
+            //玉璧受击面板亮起脉冲衰减
+            wardFlash *= 0.88f;
+
             //着色器强度在没有特殊攻击时自然回落
             frostTargetIntensity *= 0.97f;
             if (causticsTargetIntensity > 0.15f && !IsAttackUsingCaustics())
@@ -446,6 +455,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
             SubState = 0;
             strikeCount = 0;
             absoluteDefenseActive = false;
+            wardAnnounced = false;
             NPC.dontTakeDamage = false;
             NPC.netUpdate = true;
         }
@@ -685,10 +695,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
 
             if (PhaseTimer >= 120) {
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.5f, Volume = 1.5f }, NPC.Center);
+                ACMScreenShakeSystem.Add(12f); //入场落定 (§6.2)
                 if (Main.netMode != NetmodeID.Server) {
-                    PunchCameraModifier modifier = new(NPC.Center, Vector2.UnitY, 15f, 8f, 40, 2000f, FullName);
-                    Main.instance.CameraModifiers.Add(modifier);
-
                     for (int i = 0; i < 20; i++) {
                         Dust d = Dust.NewDustDirect(NPC.Center, 0, 0, DustID.Ice, 0, 0, 100, default, 2.5f);
                         d.noGravity = true;
@@ -892,10 +900,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
 
                     // 震屏
                     SoundEngine.PlaySound(SoundID.Item14 with { Pitch = -1f, Volume = 1.5f }, NPC.Center);
-                    if (Main.netMode != NetmodeID.Server) {
-                        PunchCameraModifier camMod = new(NPC.Center, Vector2.UnitY, 22f, 14f, 45, 2000f, FullName);
-                        Main.instance.CameraModifiers.Add(camMod);
-                    }
+                    ACMScreenShakeSystem.Add(10f); //跳砸落地 (§6.2)
 
                     // 弹幕爆发
                     if (Main.netMode != NetmodeID.MultiplayerClient) {
@@ -1149,10 +1154,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                 phaseFlash = 0.5f;
                 causticsTargetIntensity = 0.5f;
                 frostTargetIntensity = 0.1f;
-                if (Main.netMode != NetmodeID.Server) {
-                    PunchCameraModifier modifier = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 20f, 10f, 45, 2000f, FullName);
-                    Main.instance.CameraModifiers.Add(modifier);
-                }
+                ACMScreenShakeSystem.Add(11f); //二阶段相变 (§6.2 相变 8–12)
             }
 
             if (PhaseTimer >= 100) {
@@ -1210,10 +1212,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                 frostTargetIntensity = 0.2f;
                 causticsTargetIntensity = 0.15f;
                 shieldVisual = 0f;
-                if (Main.netMode != NetmodeID.Server) {
-                    PunchCameraModifier modifier = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 30f, 15f, 60, 3000f, FullName);
-                    Main.instance.CameraModifiers.Add(modifier);
-                }
+                ACMScreenShakeSystem.Add(12f); //三阶段相变定格 (§6.2)
 
                 // 冰水爆发
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
@@ -1565,14 +1564,21 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
             absoluteDefenseActive = true;
             NPC.dontTakeDamage = true;
 
-            //激活时冰霜脉冲
+            //玉璧绝防 Jade Aegis 起手: 钉死 + 护罩成形 = "停火"预告信号 (§6.1 安全色: 玉, 非红)
             if (AttackTimer == 1) {
                 frostTargetIntensity = 0.6f;
                 phaseFlash = 0.4f;
+                wardFlash = 0.6f; //护罩骤起, 全面板一闪
                 SoundEngine.PlaySound(SoundID.Item28 with { Pitch = -0.8f, Volume = 1.3f }, NPC.Center);
+                //护罩升起的玉色冲击 (§6.2 大招 8–12, 经统一预算 max-not-additive)
+                ACMScreenShakeSystem.Add(9f);
+                if (!wardAnnounced) {
+                    wardAnnounced = true;
+                    AnnounceJadeAegis();
+                }
             }
 
-            //六边形盾可视化
+            //六边形玉璧盾可视化: 缓升 (cold→jade 在绘制端按 shieldVisual 插值)
             shieldVisual = MathHelper.Lerp(shieldVisual, 1f, 0.08f);
             frostTargetIntensity = MathHelper.Max(frostTargetIntensity, 0.25f);
 
@@ -1598,31 +1604,57 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
             if (AttackTimer > 100) {
                 absoluteDefenseActive = false;
                 NPC.dontTakeDamage = false;
-                //盾碎裂闪光
+                //玉璧消解: 盾碎裂闪光 + 玉色面板全亮一闪
                 phaseFlash = 0.5f;
                 frostTargetIntensity = 0.4f;
-                if (Main.netMode != NetmodeID.Server) {
-                    PunchCameraModifier modifier = new(NPC.Center, Vector2.UnitY, 10f, 6f, 25, 1500f, FullName);
-                    Main.instance.CameraModifiers.Add(modifier);
-                }
+                wardFlash = 1f;
+                ACMScreenShakeSystem.Add(8f);
                 TransitionTo(BossPhase.Phase3_Drift);
             }
         }
 
+        /// <summary>"玉璧绝防 / Jade Aegis" 战斗播报 — 让"停火"信号有文字与色彩双重可读性。</summary>
+        private void AnnounceJadeAegis() {
+            if (Main.dedServ)
+                return;
+            string text = Language.GetTextValue("Mods.AncientChineseMythology.NPCs.Xuanwu.JadeAegis");
+            CombatText.NewText(NPC.getRect(), JadeWardColor, text, true);
+        }
+
         /// <summary>
-        /// 绝对防御受击反射 — 近战攻击时发射反射冰锥
+        /// 绝对防御受击反射 — 近战命中时对应面板亮起裂纹 + 迸射反射冰锥 (玉璧绝防核心反馈)。
+        /// 反射判定服务器权威; 面板亮起/裂纹纯本地视觉。
         /// </summary>
         public override void ModifyIncomingHit(ref NPC.HitModifiers modifiers) {
-            if (absoluteDefenseActive && Main.netMode != NetmodeID.MultiplayerClient) {
-                //受击方向反射冰锥
-                Player attacker = Main.player[NPC.target];
-                Vector2 reflectDir = (attacker.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
+            if (!absoluteDefenseActive)
+                return;
+
+            Player attacker = Main.player[NPC.target];
+            Vector2 reflectDir = (attacker.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
+
+            //玉璧面板亮起: 记录受击方向供绘制端定位裂纹, 触发全罩 uFlash 脉冲
+            wardHitDir = reflectDir;
+            wardFlash = 1f;
+            shieldVisual = MathHelper.Min(shieldVisual + 0.3f, 1.5f);
+            ACMScreenShakeSystem.Add(2f); //格挡级 ≤2 (§6.2)
+
+            //本地: 受击面板处迸玉色裂纹粒子 (打它=自伤的视觉不言自明)
+            if (!Main.dedServ) {
+                SoundEngine.PlaySound(SoundID.Item27 with { Pitch = 0.4f, Volume = 0.7f }, NPC.Center);
+                Vector2 panelPos = NPC.Center + reflectDir * 150f;
+                for (int i = 0; i < 10; i++) {
+                    Vector2 v = reflectDir.RotatedByRandom(MathHelper.ToRadians(40f)) * Main.rand.NextFloat(2f, 6f);
+                    Dust d = Dust.NewDustPerfect(panelPos, DustID.IceTorch, v, 60, JadeWardColor, 1.6f);
+                    d.noGravity = true;
+                }
+            }
+
+            //受击方向反射冰锥 (服务器权威)
+            if (Main.netMode != NetmodeID.MultiplayerClient) {
                 for (int i = -1; i <= 1; i++) {
                     Vector2 vel = reflectDir.RotatedBy(i * MathHelper.ToRadians(15f)) * 5f;
                     IceProjectile(NPC.Center + reflectDir * 80f, vel, NPC.damage / 6, 200, 1, 20); //冰裂分叉反射
                 }
-                //盾闪光反馈
-                shieldVisual = MathHelper.Min(shieldVisual + 0.3f, 1.5f);
             }
         }
 
@@ -1670,10 +1702,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                         PillarWave(target.Center + new Vector2(-400, 0), Vector2.UnitX, 8, NPC.damage / 4, 100f, 4);
                     }
 
-                    if (Main.netMode != NetmodeID.Server) {
-                        PunchCameraModifier modifier = new(NPC.Center, Vector2.UnitX, 18f, 10f, 35, 2000f, FullName);
-                        Main.instance.CameraModifiers.Add(modifier);
-                    }
+                    ACMScreenShakeSystem.Add(10f); //潮涌冲击 (§6.2 大招)
                     NPC.netUpdate = true;
                 }
             }
@@ -1766,10 +1795,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                     phaseFlash = 0.8f;
                     causticsTargetIntensity = 0.5f;
 
-                    if (Main.netMode != NetmodeID.Server) {
-                        PunchCameraModifier modifier = new(NPC.Center, (Main.rand.NextFloat() * MathHelper.TwoPi).ToRotationVector2(), 30f, 15f, 60, 3000f, FullName);
-                        Main.instance.CameraModifiers.Add(modifier);
-                    }
+                    ACMScreenShakeSystem.Add(12f); //北辰审判释放 (§6.2 大招)
 
                     //北辰星柱: 冰域围笼 + 弧光追猎 + 冰裂扇形
                     if (Main.netMode != NetmodeID.MultiplayerClient) {
@@ -1858,12 +1884,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                 }
                 phaseFlash = 0.3f;
                 SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.5f, Volume = 1.5f }, target.Center);
-
-                if (Main.netMode != NetmodeID.Server) {
-                    Main.instance.CameraModifiers.Add(
-                        new Terraria.Graphics.CameraModifiers.PunchCameraModifier(
-                            target.Center, Vector2.UnitY, 15f, 8f, 25, 1500f, FullName));
-                }
+                ACMScreenShakeSystem.Add(9f); //冰柱阵涌出 (§6.2)
             }
             //阶段C(45帧): 螺旋冰柱阵 — 围绕玩家螺旋展开
             else if (AttackTimer == 45) {
@@ -2001,11 +2022,22 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
         }
 
         private void DrawShaderEffects(SpriteBatch sb) {
-            EnsureNoiseTexture();
-            if (noiseTexture == null) return;
+            if (Main.dedServ) return;
+
+            // 全屏后处理名额 (§C.4#2): 多 Boss 同屏每帧仅一个生效, 且尊重 MythologyConfig.EnableFullscreenShaders。
+            // 名额被占用/被关闭 → 直接 return; 此时玉璧由 PreDraw 的 CPU 六边盾 (DrawHexShield) 兜底, 画面不缺失。
+            if (!ACMShaders.RequestFullscreenSlot()) return;
 
             Vector2 screenCenter = (NPC.Center - Main.screenPosition) / new Vector2(Main.screenWidth, Main.screenHeight);
             float aspect = (float)Main.screenWidth / Main.screenHeight;
+
+            // —— 玉璧绝防优先: ReflectWard 折射护罩 (签名 set-piece, 着色器验证目标) ——
+            // 绝防期间护罩为唯一全屏后处理, 替代下方冰霜/焦散组合, 严守同屏 ≤1。
+            if (shieldVisual > 0.05f && DrawReflectWard(sb, screenCenter, aspect))
+                return;
+
+            EnsureNoiseTexture();
+            if (noiseTexture == null) return;
 
             //冰霜扭曲
             if (frostIntensity > 0.01f) {
@@ -2063,6 +2095,39 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                         Main.GameViewMatrix.TransformationMatrix);
                 }
             }
+        }
+
+        /// <summary>
+        /// 玉璧绝防 Jade Aegis — ReflectWard 全屏折射护罩 (玄武签名 set-piece, 着色器验证目标)。
+        /// 喂 Main.screenTarget 做罩内折射 + 六边面板格亮起 + 受击面板脉冲 (uFlash)。
+        /// 经 <see cref="ACMShaders.ApplyScreenPostProcess"/> 套用 (自动绑共享噪声 + 恢复默认批)。
+        /// 着色器缺失 (未编译) → 返回 false, 由 PreDraw 的 CPU 六边盾兜底。
+        /// </summary>
+        private bool DrawReflectWard(SpriteBatch sb, Vector2 screenCenter, float aspect) {
+            Effect ward = ACMShaders.ReflectWard;
+            if (ward == null) return false;
+
+            //护罩半径: 世界 ~175px → 屏幕高度比例 (与既有冰霜扭曲同坐标约定, 默认缩放)。
+            float radiusUV = 175f / Main.screenHeight;
+            float intensity = MathHelper.Clamp(shieldVisual, 0f, 1f);
+
+            //冷蓝 → 玉青: shieldVisual 越满越偏玉 (§6.1 "无敌中"=安全玉色, 非红)。
+            Color wardCol = Color.Lerp(new Color(120, 190, 240), JadeWardColor, intensity);
+            Vector4 colVec = wardCol.ToVector4();
+            colVec.W = 0.65f + 0.35f * MathHelper.Clamp(wardFlash, 0f, 1f); //a = 面板亮度, 受击更亮
+
+            ward.Parameters["uTime"]?.SetValue(globalTime);
+            ward.Parameters["uCenter"]?.SetValue(screenCenter);
+            ward.Parameters["uRadius"]?.SetValue(radiusUV);
+            ward.Parameters["uIntensity"]?.SetValue(intensity);
+            ward.Parameters["uAspect"]?.SetValue(aspect);
+            ward.Parameters["uColor"]?.SetValue(colVec);
+            ward.Parameters["uHexScale"]?.SetValue(11f);
+            ward.Parameters["uRefract"]?.SetValue(0.85f);
+            ward.Parameters["uFlash"]?.SetValue(MathHelper.Clamp(wardFlash, 0f, 1f));
+
+            ACMShaders.ApplyScreenPostProcess(sb, ward, bindNoise: true);
+            return true;
         }
 
         #endregion
@@ -2143,18 +2208,25 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
             float alpha = shieldVisual;
             float shieldRadius = 160f + MathF.Sin(globalTime * 3f) * 10f;
 
+            //玉璧绝防: 冷蓝 → 玉青 (随 shieldVisual 越满越偏玉, 与 ReflectWard 着色器色调一致)。
+            float jadeBlend = MathHelper.Clamp(shieldVisual, 0f, 1f);
+            Color vertexCol = Color.Lerp(new Color(100, 200, 255, 0), new Color(150, 230, 200, 0), jadeBlend);
+            Color starCol = Color.Lerp(new Color(180, 240, 255, 0), new Color(200, 255, 220, 0), jadeBlend);
+            Color edgeCol = Color.Lerp(new Color(80, 180, 255, 0), new Color(130, 225, 190, 0), jadeBlend);
+            Color centerCol = Color.Lerp(new Color(60, 150, 240, 0), new Color(110, 210, 175, 0), jadeBlend);
+            //受击面板亮起: wardFlash 抬升整体亮度
+            float hitBoost = 1f + wardFlash * 0.8f;
+
             //六个顶点的六边形盾
             for (int i = 0; i < 6; i++) {
                 float angle = MathHelper.TwoPi / 6f * i + globalTime * 0.5f;
                 Vector2 point = drawPos + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * shieldRadius;
 
                 //顶点SoftGlow
-                Color pointColor = new Color(100, 200, 255, 0) * (alpha * 0.6f);
-                sb.Draw(glow, point, null, pointColor, 0f, go, 0.6f, SpriteEffects.None, 0f);
+                sb.Draw(glow, point, null, vertexCol * (alpha * 0.6f * hitBoost), 0f, go, 0.6f, SpriteEffects.None, 0f);
 
                 //顶点BlankStar旋转
-                Color starColor = new Color(180, 240, 255, 0) * (alpha * 0.4f);
-                sb.Draw(star, point, null, starColor, globalTime * 2f + i, so, 0.1f, SpriteEffects.None, 0f);
+                sb.Draw(star, point, null, starCol * (alpha * 0.4f * hitBoost), globalTime * 2f + i, so, 0.1f, SpriteEffects.None, 0f);
 
                 //边: 用多个小SoftGlow连接两个顶点
                 float nextAngle = MathHelper.TwoPi / 6f * ((i + 1) % 6) + globalTime * 0.5f;
@@ -2164,14 +2236,12 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Xuanwus
                     float t = (float)s / segments;
                     Vector2 edgePos = Vector2.Lerp(point, nextPoint, t);
                     float edgePulse = MathF.Sin(globalTime * 4f + s + i * 2f) * 0.3f + 0.7f;
-                    Color edgeColor = new Color(80, 180, 255, 0) * (alpha * 0.3f * edgePulse);
-                    sb.Draw(glow, edgePos, null, edgeColor, 0f, go, 0.25f, SpriteEffects.None, 0f);
+                    sb.Draw(glow, edgePos, null, edgeCol * (alpha * 0.3f * edgePulse * hitBoost), 0f, go, 0.25f, SpriteEffects.None, 0f);
                 }
             }
 
             //中心护盾辉光
-            Color centerShield = new Color(60, 150, 240, 0) * (alpha * 0.15f);
-            sb.Draw(glow, drawPos, null, centerShield, 0f, go, shieldRadius / (glow.Width / 2f), SpriteEffects.None, 0f);
+            sb.Draw(glow, drawPos, null, centerCol * (alpha * 0.15f), 0f, go, shieldRadius / (glow.Width / 2f), SpriteEffects.None, 0f);
         }
 
         private void DrawEnhancedTrail(SpriteBatch sb, Texture2D texture, Rectangle frame, Vector2 origin,

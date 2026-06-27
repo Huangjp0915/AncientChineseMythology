@@ -1,4 +1,6 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -160,6 +162,13 @@ public class MossExplosion : ModProjectile
         Projectile.ai[0]++;
         float radius = Projectile.ai[0] * 6f;
 
+        // 爆炸首帧: 翠绿命中演出 (径向辉光 + 冲击环 + 泛光) + 落地屏震
+        if (Projectile.ai[0] == 1f) {
+            WeaponVFX.AddScreenShake(Projectile.Center, 4f);
+            ACMWeaponBurst.Spawn(Projectile.GetSource_FromAI(), Projectile.Center,
+                ACMWeaponBurst.Nature, scale: 1.6f, owner: Projectile.owner);
+        }
+
         // 蘑菇云主体 - 边缘扩散的绿色火焰粒子
         int dustCount = Projectile.ai[0] < 10 ? 6 : 3;
         for (int i = 0; i < dustCount; i++) {
@@ -196,6 +205,46 @@ public class MossExplosion : ModProjectile
 
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
         target.AddBuff(BuffID.Poisoned, 120);
+    }
+
+    public override bool PreDraw(ref Color lightColor) {
+        if (Main.dedServ)
+            return false;
+
+        float t = MathHelper.Clamp(Projectile.ai[0] / 30f, 0f, 1f); // 0→1
+        float fade = 1f - t;
+        if (fade <= 0.01f)
+            return false;
+
+        Vector2 center = Projectile.Center - Main.screenPosition;
+        SpriteBatch sb = Main.spriteBatch;
+        sb.End();
+        sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
+            DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+
+        // 柔光核心 (绿)
+        Texture2D glow = ACMAsset.SoftGlow;
+        if (glow != null)
+            sb.Draw(glow, center, null, new Color(70, 210, 90, 0) * fade, 0f,
+                glow.Size() * 0.5f, 2f + t * 5f, SpriteEffects.None, 0f);
+
+        // 爆裂火花 (扩张旋转)
+        Texture2D sparkle = ACMAsset.Sparkle;
+        if (sparkle != null)
+            sb.Draw(sparkle, center, null, new Color(160, 255, 130, 0) * fade, Projectile.rotation + t * 0.6f,
+                sparkle.Size() * 0.5f, 0.6f + t * 2.2f, SpriteEffects.None, 0f);
+
+        // 向上喷发的剑气光柱 (蘑菇云升腾)
+        Texture2D slash = ACMAsset.SlashBurst;
+        if (slash != null) {
+            Vector2 slashOrigin = new Vector2(slash.Width * 0.5f, slash.Height);
+            sb.Draw(slash, center, null, new Color(110, 230, 100, 0) * fade * 0.85f, 0f,
+                slashOrigin, new Vector2(0.25f + t * 0.2f, 0.25f + t * 0.45f), SpriteEffects.None, 0f);
+        }
+
+        sb.End();
+        ACMShaders.RestoreDefaultBatch(sb);
+        return false;
     }
 
     public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {

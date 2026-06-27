@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
 using AncientChineseMythology.Underworlds.Boss.NetherKitsunes.Items;
 using Microsoft.Xna.Framework.Graphics;
 using System;
@@ -160,6 +161,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
         private int phase = 0; // 0=扩张, 1=稳定, 2=收缩爆发, 3=消散
         private float phaseTimer = 0f;
         private bool hasExploded = false;
+        private int explosionDrawTimer = 0; // 毁灭波表现层倒计时 (本地视觉)
 
         public override void SetDefaults() {
             Projectile.width = 32;
@@ -177,6 +179,8 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
         public override void AI() {
             phaseTimer++;
             rotationOffset += 0.03f;
+            if (explosionDrawTimer > 0)
+                explosionDrawTimer--;
 
             switch (phase) {
                 case 0: // 扩张形成
@@ -206,6 +210,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
 
                     if (!hasExploded && phaseTimer >= 18) {
                         hasExploded = true;
+                        explosionDrawTimer = 18; // 触发毁灭波表现层 (所有客户端)
                         TriggerExplosion();
                     }
 
@@ -288,6 +293,11 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
             if (Main.LocalPlayer.Distance(Projectile.Center) < 800f) {
                 Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>()?.ShakeScreen(12, 20);
             }
+
+            // 终极毁灭波·处决演出: 妲己狐魅紫红巨型径向辉光 + 冲击环 (ACMWeaponBurst) + 强屏震
+            WeaponVFX.AddScreenShake(Projectile.Center, 12f);
+            ACMWeaponBurst.Spawn(Projectile.GetSource_FromThis(), Projectile.Center,
+                ACMWeaponBurst.FoxCharm, scale: 2f, owner: Projectile.owner);
         }
 
         public override bool? CanDamage() {
@@ -301,14 +311,66 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            if (ringAlpha <= 0.01f) return false;
-
             SpriteBatch sb = Main.spriteBatch;
 
-            // 绘制魅惑之环
+            // ── 节拍三·火焰魂魄毁灭波 (爆发瞬间, 全屏后处理走单一名额仲裁) ──
+            if (explosionDrawTimer > 0) {
+                float tt = explosionDrawTimer / 18f; // 1→0
+                if (explosionDrawTimer >= 15) {
+                    // 起爆 4 帧: PaletteLUT 短暂染屏"定格" (强度 ≤0.15, 占全屏名额)
+                    WeaponVFX.ApplyPaletteTint(sb,
+                        shadowTint: new Color(60, 10, 40), highlightTint: new Color(255, 160, 210),
+                        intensity: 0.13f * tt, saturation: 1.1f);
+                }
+                else {
+                    // 余波: 巨型径向泛光 (狐魅紫红)
+                    WeaponVFX.DrawRadialBloom(Projectile.Center, 0.34f, 0.9f * tt,
+                        new Color(255, 120, 170), 14f);
+                }
+            }
+
+            if (ringAlpha <= 0.01f)
+                return false;
+
+            // 绘制魅惑之环 (双色线段环, 原语)
             DrawCharmRing(sb);
 
+            // ── 节拍一·魅惑之环锁定: 双层冲击环包圈 (狐魅紫红) ──
+            if (phase <= 1) {
+                WeaponVFX.DrawShockwaveRing(Projectile.Center, ringRadius, 18f, ringAlpha * 0.7f,
+                    new Color(255, 120, 170), new Color(150, 20, 95));
+                WeaponVFX.DrawShockwaveRing(Projectile.Center, ringRadius * 0.7f, 12f, ringAlpha * 0.5f,
+                    new Color(255, 170, 90), new Color(165, 40, 20));
+            }
+
+            // ── 节拍二·收缩刺击: 向心折射 (GenericWarp refraction) + 收口冲击环 ──
+            if (phase == 2) {
+                WeaponVFX.DrawShockwaveRing(Projectile.Center, ringRadius + 20f, 22f, 0.9f,
+                    new Color(255, 140, 180), new Color(180, 30, 110));
+                DrawContractionWarp(0.5f);
+            }
+
             return false;
+        }
+
+        /// <summary>收缩阶段向心折射 (GenericWarp · refraction), 走单一全屏后处理名额仲裁。</summary>
+        private void DrawContractionWarp(float intensity) {
+            if (Main.dedServ || Main.gameMenu || intensity <= 0.01f)
+                return;
+            if (!ACMShaders.RequestFullscreenSlot())
+                return;
+            Effect fx = ACMShaders.GenericWarp;
+            if (fx == null)
+                return;
+
+            ACMShaders.SetCommonParams(fx, Projectile.Center, intensity);
+            fx.Parameters["uRadius"]?.SetValue(0.32f);
+            fx.Parameters["uWarpScale"]?.SetValue(1.2f);
+            fx.Parameters["uChroma"]?.SetValue(0.7f);
+            fx.Parameters["uRadialPull"]?.SetValue(0.8f); // 向心吸入 = 收缩
+            fx.Parameters["uMode"]?.SetValue(5f);          // refraction
+            fx.Parameters["uTint"]?.SetValue(new Vector4(new Color(255, 120, 170).ToVector3(), 0.35f));
+            ACMShaders.ApplyScreenPostProcess(Main.spriteBatch, fx, bindNoise: true);
         }
 
         private void DrawCharmRing(SpriteBatch sb) {
@@ -648,6 +710,10 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
                 Dust d = Dust.NewDustPerfect(target.Center, dustType, vel, 100, default, 2f);
                 d.noGravity = true;
             }
+
+            // 妲己狐魅紫红命中演出 (尾刺命中, 主毁灭波另由魅惑之环承担)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.FoxCharm, scale: 1.1f, owner: Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
@@ -660,6 +726,18 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
                 bodyTex = TextureAssets.Projectile[ProjectileID.WoodenArrowFriendly].Value;
             if (tipTex == null)
                 tipTex = TextureAssets.Projectile[ProjectileID.WoodenArrowFriendly].Value;
+
+            // 狐魅紫红 (掺火焰金) 双层 ribbon 覆盖尾骨 + 尾尖柔光, 贯穿全程
+            if (glowIntensity > 0.05f) {
+                Color outer = new Color(165, 20, 95, (int)(160 * glowIntensity));
+                Color inner = Color.Lerp(new Color(255, 160, 210), new Color(255, 215, 140), colorShift);
+                inner.A = (byte)(200 * glowIntensity);
+                WeaponVFX.DrawRibbonTrail(joints, baseWidth: 20f,
+                    outerColor: outer, innerColor: inner,
+                    uvScroll: -Main.GlobalTimeWrappedHourly * 2.2f);
+                WeaponVFX.DrawGlowBurst(joints[JointCount - 1], 0.6f + glowIntensity * 0.9f,
+                    Color.Lerp(new Color(255, 90, 150), new Color(255, 200, 110), colorShift) * glowIntensity);
+            }
 
             SpriteBatch spriteBatch = Main.spriteBatch;
 
@@ -846,13 +924,14 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
     /// </summary>
     public class DakkiSoulBolt : ModProjectile
     {
-        public override string Texture => "Terraria/Images/Projectile_" + ProjectileID.SpectreWrath;
+        public override string Texture => "Terraria/Images/Projectile_" + ProjectileID.ShadowOrb;
 
         private float homingStrength = 0f;
 
         public override void SetStaticDefaults() {
             ProjectileID.Sets.TrailCacheLength[Projectile.type] = 10;
             ProjectileID.Sets.TrailingMode[Projectile.type] = 2;
+            Main.instance.LoadProjectile(ProjectileID.ShadowOrb);
         }
 
         public override void SetDefaults() {
@@ -914,7 +993,6 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes.Items
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            Main.instance.LoadProjectile(ProjectileID.ShadowOrb);
             Texture2D texture = TextureAssets.Projectile[ProjectileID.ShadowOrb].Value;
             Vector2 origin = texture.Size() / 2f;
 

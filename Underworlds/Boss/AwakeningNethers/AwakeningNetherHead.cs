@@ -19,17 +19,18 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
     public class AwakeningNetherHead : AwakeningNether
     {
         public override WormType NPCWormType => WormType.Head;
-        // AI状态枚举
+
+        /// <summary>
+        /// 脚本化三幕结构（非血量密度档）。每一幕改变战斗"规则"而非数值。
+        /// </summary>
         private enum AIState
         {
-            Circling,           // 环绕玩家
-            DashPrepare,        // 冲刺准备
-            Dash,               // 冲刺攻击
-            VoidBreath,         // 虚空吐息
-            SoulStorm,          // 灵魂风暴
-            DimensionRift,      // 次元裂隙
-            VoidDevour,         // 虚空吞噬（新增）
-            DesperateFury       // 狂暴阶段（低血量时）
+            ActI_Patrol,    // 第一幕 冥界巡游：环绕 + 单条预告吐息走廊（地面魂蚀残留）
+            ActII_Rift,     // 第二幕 次元裂隙：成对传送门，龙穿门冲刺
+            ActII_Storm,    // 第二幕 裂隙后的一次性预告灵魂风暴
+            ActIII_Vortex,  // 第三幕 虚空吞噬：中央漩涡 + 可清除噬魂卫星 + 集中爆发
+            Finality,       // 觉醒终末（一次性）：龙体拉直 + 巨型吐息扫射 + 同步体节激光
+            ActTransition   // 幕间转换（含无敌预告节拍）
         }
 
         private AIState CurrentState {
@@ -37,25 +38,49 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
             set => NPC.ai[0] = (float)value;
         }
 
-        // 状态计时器
-        private int stateTimer = 0;
-        private int attackTimer = 0;
-        private int dashCount = 0;
-        private const int MaxDashes = 4; // 增加冲刺次数
+        // 计时器与子状态
+        private int stateTimer = 0;     // 倒数计时（用于转换/计时窗口）
+        private int attackTimer = 0;    // 子步骤计时（递增）
+        private int subPhase = 0;       // 当前状态内的子步骤
+        private int globalTimer = 0;    // 全局计时（被动机制节拍）
 
-        // 冲刺参数
-        private Vector2 dashTarget;
-        private float dashSpeed = 40f; // 提升冲刺速度
+        // 幕控制
+        private int act = 1;            // 当前幕 1/2/3
+        private int pendingAct = 1;     // 转换目标幕
+        private bool finalityDone = false; // 觉醒终末是否已触发（一次性）
 
-        // 阶段控制
-        private bool isPhase2 = false; // 50%血量以下
-        private bool isPhase3 = false; // 25%血量以下
+        // 次元裂隙之门
+        private Vector2 gateEntrance;
+        private Vector2 gateExit;
+        private int gateDashes = 0;
+        private const int GateDashTarget = 2;
+
+        // 第一幕吐息走廊高度
+        private float laneY;
+
+        // 第三幕漩涡
+        private Vector2 vortexCenter;
+
+        // 阶段控制（仅用于绘制配色，由血量推导）
+        private bool isPhase2 = false; // 进入第二幕及之后
+        private bool isPhase3 = false; // 进入第三幕及之后
 
         // 视觉效果参数
         private float pulsePhase = 0f;
         private float auraIntensity = 0f;
         private float[] energyWaveRadius = new float[3];
         private float[] energyWaveAlpha = new float[3];
+
+        // ===== V2 演出标量 (纯本地视觉, 经 AwakeningNetherScreenSystem / PostDraw 消费) =====
+        private float fogTint = 0f;     // ElementalScreenTint 冥雾 (每幕递进加深)
+        private float riftWarp = 0f;    // GenericWarp · rift (次元裂隙门冲刺)
+        private float voidWarp = 0f;    // GenericWarp · void + uRadialPull (虚空吞噬"被吸入")
+        private float bloom = 0f;       // RadialBloom (吐息/激光帘幕/终末喷发)
+        private float runic = 0f;       // ArenaRunic (裂隙门/漩涡向心收口预警)
+        private Vector2 bloomCenter;
+        private Vector2 runicCenter;
+        private float runicRadius = 340f;
+        private bool runicLethal = false;
 
         public override void ChangeSummonType() {
             SummonNPCType = ModContent.NPCType<AwakeningNetherBody>();
@@ -133,60 +158,87 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         public override void AI() {
             base.AI();
             UnderworldPlayer.UnderworldEffect = true;
+            // 每帧默认可受击，仅转换/预告节拍主动开启无敌。
+            NPC.dontTakeDamage = false;
             if (!NPC.HasValidTarget)
                 NPC.TargetClosest(true);
 
-            // 更新视觉效果
+            // 更新视觉效果 + 由血量推导绘制配色用阶段
             pulsePhase += 0.08f;
+            float lifePct = (float)NPC.life / NPC.lifeMax;
+            isPhase2 = lifePct <= 0.6f;
+            isPhase3 = lifePct <= 0.3f;
             auraIntensity = MathHelper.Lerp(auraIntensity, isPhase3 ? 1.5f : (isPhase2 ? 1.2f : 1f), 0.02f);
             UpdateEnergyWaves();
-
-            // 持续的能量光环粒子
             CreateAuraParticles();
-
-            // 检查阶段转换
-            CheckPhaseTransition();
 
             // 初始化
             if (NPC.localAI[0] == 0f) {
-                CurrentState = AIState.Circling;
-                stateTimer = 180;
+                CurrentState = AIState.ActI_Patrol;
+                act = 1;
+                stateTimer = 0;
+                attackTimer = 0;
+                subPhase = 0;
                 NPC.localAI[0] = 1f;
             }
 
-            // 状态机
+            // 幕转换（脚本化，改变规则）
+            CheckActTransition(lifePct);
+
             stateTimer--;
             attackTimer++;
+            globalTimer++;
+
+            // 体节作为机制：持续释放虚空魂雾
+            EmitSegmentMiasma();
+
+            // V2 演出标量：冥雾每幕加深 + 非持续标量自然衰减（各 beat 按需抬升）
+            UpdatePresentationTargets();
 
             switch (CurrentState) {
-                case AIState.Circling:
-                    CirclingBehavior();
+                case AIState.ActI_Patrol:
+                    ActIPatrolBehavior();
                     break;
-                case AIState.DashPrepare:
-                    DashPrepareBehavior();
+                case AIState.ActII_Rift:
+                    ActIIRiftBehavior();
                     break;
-                case AIState.Dash:
-                    DashBehavior();
+                case AIState.ActII_Storm:
+                    ActIIStormBehavior();
                     break;
-                case AIState.VoidBreath:
-                    VoidBreathBehavior();
+                case AIState.ActIII_Vortex:
+                    ActIIIVortexBehavior();
                     break;
-                case AIState.SoulStorm:
-                    SoulStormBehavior();
+                case AIState.Finality:
+                    FinalityBehavior();
                     break;
-                case AIState.DimensionRift:
-                    DimensionRiftBehavior();
-                    break;
-                case AIState.VoidDevour:
-                    VoidDevourBehavior();
-                    break;
-                case AIState.DesperateFury:
-                    DesperateFuryBehavior();
+                case AIState.ActTransition:
+                    ActTransitionBehavior();
                     break;
             }
 
-            // 旋转和朝向
             UpdateRotation();
+
+            // 发布 V2 演出标量（纯本地视觉）
+            if (!Main.dedServ) {
+                AwakeningNetherScreenSystem.Publish(fogTint, bloom, bloomCenter,
+                    runic, runicCenter, runicRadius, runicLethal, (float)Main.GlobalTimeWrappedHourly);
+            }
+        }
+
+        /// <summary>
+        /// V2 演出标量驱动：冥雾随幕递进加深；裂隙/虚空扭曲、泛光、符阵预警为脉冲式，自然衰减、各 beat 抬升。
+        /// </summary>
+        private void UpdatePresentationTargets() {
+            float fogTarget = act >= 3 ? 0.42f : (act == 2 ? 0.30f : 0.18f);
+            fogTint = MathHelper.Lerp(fogTint, fogTarget, 0.02f);
+
+            riftWarp = MathHelper.Lerp(riftWarp, 0f, 0.05f);
+            voidWarp = MathHelper.Lerp(voidWarp, 0f, 0.06f);
+            bloom = MathHelper.Lerp(bloom, 0f, 0.08f);
+            runic = MathHelper.Lerp(runic, 0f, 0.06f);
+
+            // 默认泛光中心跟随头部（具体 beat 会就近改写）
+            bloomCenter = NPC.Center;
         }
 
         /// <summary>
@@ -218,27 +270,80 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         /// <summary>
-        /// 检查阶段转换
+        /// 脚本化幕转换：60% → 第二幕，30% → 第三幕，15% → 觉醒终末（一次性）。
+        /// 每次转换都有无敌预告节拍，且改变战斗"规则"。
         /// </summary>
-        private void CheckPhaseTransition() {
-            float lifePercent = (float)NPC.life / NPC.lifeMax;
+        private void CheckActTransition(float lifePct) {
+            if (CurrentState == AIState.ActTransition || CurrentState == AIState.Finality)
+                return;
 
-            if (!isPhase2 && lifePercent <= 0.5f) {
-                isPhase2 = true;
-                SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.3f }, NPC.Center);
-                // 阶段转换特效
-                CreatePhaseTransitionEffect();
+            // 觉醒终末：一次性，深入第三幕后触发（替代旧的 DesperateFury 喷弹狂暴）
+            if (!finalityDone && lifePct <= 0.15f) {
+                EnterFinality();
+                return;
             }
 
-            if (!isPhase3 && lifePercent <= 0.25f) {
-                isPhase3 = true;
-                SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.6f, Volume = 1.3f }, NPC.Center);
-                CreatePhaseTransitionEffect();
-                // 进入狂暴状态
-                if (CurrentState != AIState.DesperateFury) {
-                    CurrentState = AIState.DesperateFury;
-                    stateTimer = 600;
-                }
+            int targetAct = lifePct > 0.6f ? 1 : (lifePct > 0.3f ? 2 : 3);
+            if (targetAct > act) {
+                pendingAct = targetAct;
+                EnterTransition();
+            }
+        }
+
+        private void EnterTransition() {
+            CurrentState = AIState.ActTransition;
+            stateTimer = 75;
+            subPhase = 0;
+            attackTimer = 0;
+            NPC.velocity *= 0.3f;
+            SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.4f, Volume = 1.3f }, NPC.Center);
+            CreatePhaseTransitionEffect();
+            ACMUtils.AddScreenShake(12f);
+            bloom = 1f;
+            bloomCenter = NPC.Center;
+            riftWarp = System.Math.Max(riftWarp, 0.5f);
+            NPC.netUpdate = true;
+        }
+
+        private void EnterFinality() {
+            finalityDone = true;
+            CurrentState = AIState.Finality;
+            stateTimer = 0;
+            attackTimer = 0;
+            subPhase = 0;
+            NPC.velocity *= 0.3f;
+            SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.7f, Volume = 1.5f }, NPC.Center);
+            CreatePhaseTransitionEffect();
+            ACMUtils.AddScreenShake(12f);
+            bloom = 1f;
+            bloomCenter = NPC.Center;
+            voidWarp = System.Math.Max(voidWarp, 0.5f);
+            NPC.netUpdate = true;
+        }
+
+        /// <summary>
+        /// 幕间转换 - 无敌预告节拍，结束后进入目标幕的起始状态。
+        /// </summary>
+        private void ActTransitionBehavior() {
+            NPC.dontTakeDamage = true; // i-frame 节拍：转换中无敌，给玩家喘息与可读性
+            NPC.velocity *= 0.9f;
+
+            // 向玩家上方汇聚
+            Vector2 hover = Target.Center + new Vector2(0, -320f);
+            NPC.velocity = Vector2.Lerp(NPC.velocity, (hover - NPC.Center) * 0.05f, 0.08f);
+
+            if (Main.netMode != NetmodeID.Server && Main.rand.NextBool(2)) {
+                Vector2 v = Main.rand.NextVector2CircularEdge(12f, 12f);
+                int d = Dust.NewDust(NPC.Center, 0, 0, DustID.Shadowflame, v.X, v.Y, 100, default, 2.2f);
+                Main.dust[d].noGravity = true;
+            }
+
+            if (stateTimer <= 0) {
+                act = pendingAct;
+                attackTimer = 0;
+                subPhase = 0;
+                CurrentState = act >= 3 ? AIState.ActIII_Vortex : AIState.ActII_Rift;
+                NPC.netUpdate = true;
             }
         }
 
@@ -267,13 +372,12 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
             AwakeningNetherHelper.CreateScreenFlash(NPC.Center, AwakeningNetherHelper.AwakeningPurple, 0.8f);
         }
 
-        /// <summary>
-        /// 环绕玩家移动
-        /// </summary>
-        private void CirclingBehavior() {
-            float radius = isPhase2 ? 350f : 450f;
-            float speed = isPhase2 ? 0.06f : 0.04f;
+        // ============================ 第一幕 冥界巡游 ============================
 
+        /// <summary>
+        /// 环绕玩家的基础移动。
+        /// </summary>
+        private void CircleTarget(float radius, float speed) {
             NPC.ai[1] += speed;
             if (NPC.ai[1] > MathHelper.TwoPi)
                 NPC.ai[1] -= MathHelper.TwoPi;
@@ -282,297 +386,449 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 MathF.Cos(NPC.ai[1]) * radius,
                 MathF.Sin(NPC.ai[1]) * radius * 0.6f - 200f
             );
-
             Vector2 toTarget = targetPos - NPC.Center;
-            float inertia = isPhase2 ? 15f : 20f;
+            float inertia = 18f;
             NPC.velocity = (NPC.velocity * (inertia - 1) + toTarget / 8f) / inertia;
+        }
 
-            // 周期性发射弹幕
-            if (attackTimer % (isPhase2 ? 60 : 90) == 0) {
-                ShootVoidBolts();
-            }
+        /// <summary>
+        /// 第一幕：环绕巡游 + 一条预告型吐息走廊（在地面留下魂蚀残留）。
+        /// 体节同时被动释放魂雾。
+        /// </summary>
+        private void ActIPatrolBehavior() {
+            CircleTarget(440f, 0.04f);
 
-            // 状态转换
-            if (stateTimer <= 0) {
-                ChooseNextState();
+            switch (subPhase) {
+                case 0: // 巡游窗口：少量可读追踪弹
+                    if (attackTimer % 70 == 0)
+                        ShootVoidBolts();
+                    if (attackTimer >= 160) {
+                        subPhase = 1;
+                        attackTimer = 0;
+                        laneY = Target.Center.Y + 170f; // 地面走廊高度
+                        SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.2f, Volume = 0.9f }, NPC.Center);
+                    }
+                    break;
+
+                case 1: // 吐息预告（45）：口部聚能，标示即将到来的走廊
+                    NPC.velocity *= 0.96f;
+                    if (Main.netMode != NetmodeID.Server) {
+                        Vector2 mouth = NPC.Center + NPC.rotation.ToRotationVector2() * 50f;
+                        for (int i = 0; i < 3; i++) {
+                            Vector2 p = mouth + Main.rand.NextVector2Circular(70f, 70f);
+                            var d = Dust.NewDustPerfect(p, DustID.Shadowflame);
+                            d.noGravity = true;
+                            d.scale = 1.6f;
+                            d.velocity = (mouth - p) * 0.1f;
+                        }
+                        // 走廊地面预告标线
+                        if (attackTimer % 3 == 0) {
+                            float tx = Target.Center.X + Main.rand.NextFloat(-520f, 520f);
+                            var d = Dust.NewDustPerfect(new Vector2(tx, laneY), DustID.PurpleTorch);
+                            d.noGravity = true;
+                            d.scale = 1.1f;
+                        }
+                    }
+                    if (attackTimer >= 45) {
+                        subPhase = 2;
+                        attackTimer = 0;
+                    }
+                    break;
+
+                case 2: // 吐息扫射（55）：沿走廊扫过，铺设魂雾残留
+                    if (attackTimer % 7 == 0)
+                        FireBreathSweep();
+                    if (attackTimer % 13 == 0)
+                        SpawnMiasma(new Vector2(Target.Center.X + Main.rand.NextFloat(-500f, 500f), laneY), 1.3f);
+                    // 吐息走廊泛光（口部）
+                    bloom = System.Math.Max(bloom, 0.45f);
+                    bloomCenter = NPC.Center + NPC.rotation.ToRotationVector2() * 50f;
+                    if (attackTimer >= 55) {
+                        subPhase = 0;
+                        attackTimer = 0;
+                    }
+                    break;
             }
         }
 
         /// <summary>
-        /// 冲刺准备
+        /// 单条吐息走廊：吐息焦点沿走廊水平扫过。
         /// </summary>
-        private void DashPrepareBehavior() {
-            // 减速并瞄准玩家
-            NPC.velocity *= 0.92f;
+        private void FireBreathSweep() {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
 
-            // 锁定目标位置
-            if (stateTimer == 45) {
-                dashTarget = Target.Center + Target.velocity * 25f; // 增强预判
-                SoundEngine.PlaySound(SoundID.Item8 with { Pitch = 0.5f, Volume = 1.2f }, NPC.Center);
+            float t = attackTimer / 55f;
+            float sweepX = Target.Center.X + MathHelper.Lerp(-500f, 500f, t);
+            Vector2 lanePoint = new Vector2(sweepX, laneY);
+            Vector2 dir = (lanePoint - NPC.Center).SafeNormalize(Vector2.UnitY);
 
-                // 蓄力漩涡特效
-                AwakeningNetherHelper.CreateVoidVortex(NPC.Center, 100f, 0.8f, 30);
-            }
+            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center + dir * 50f, dir * 13f,
+                ModContent.ProjectileType<AwakeningNetherBreath>(), GetProjectileDamage(70), 0f, Main.myPlayer);
+            SoundEngine.PlaySound(SoundID.Item74 with { Pitch = -0.2f, Volume = 0.8f }, NPC.Center);
+        }
 
-            // 持续蓄力粒子
-            if (stateTimer < 45 && stateTimer > 0) {
-                float chargeProgress = 1f - stateTimer / 45f;
-                for (int i = 0; i < 3; i++) {
-                    Vector2 dustPos = NPC.Center + Main.rand.NextVector2Circular(100f * (1f - chargeProgress), 100f * (1f - chargeProgress));
-                    Vector2 dustVel = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * (5f + chargeProgress * 5f);
-                    var d = Dust.NewDustPerfect(dustPos, DustID.Shadowflame);
-                    d.noGravity = true;
-                    d.scale = 1.5f + chargeProgress;
-                    d.velocity = dustVel;
-                }
-            }
+        // ============================ 第二幕 次元裂隙 ============================
 
-            if (stateTimer <= 0) {
-                CurrentState = AIState.Dash;
-                stateTimer = 50; // 延长冲刺时间
-                Vector2 direction = (dashTarget - NPC.Center).SafeNormalize(Vector2.UnitY);
-                NPC.velocity = direction * dashSpeed;
-                SoundEngine.PlaySound(SoundID.DD2_WyvernDiveDown with { Pitch = -0.3f, Volume = 1.3f }, NPC.Center);
+        /// <summary>
+        /// 第二幕：成对传送门。龙在两门之间穿梭冲刺，玩家选择跟随哪扇门。
+        /// 灵魂风暴只在一次成功的穿门序列之后释放。
+        /// </summary>
+        private void ActIIRiftBehavior() {
+            switch (subPhase) {
+                case 0: // 短暂巡游后开启成对门
+                    CircleTarget(420f, 0.05f);
+                    if (attackTimer >= 70) {
+                        float side = Main.rand.NextBool() ? -1f : 1f;
+                        gateEntrance = Target.Center + new Vector2(side * 640f, -120f);
+                        gateExit = Target.Center + new Vector2(-side * 640f, -120f);
+                        SpawnGate(gateEntrance);
+                        SpawnGate(gateExit);
+                        gateDashes = 0;
+                        subPhase = 1;
+                        attackTimer = 0;
+                        SoundEngine.PlaySound(SoundID.Item117 with { Pitch = -0.3f, Volume = 1.2f }, NPC.Center);
+                        ACMUtils.AddScreenShake(8f);
+                        // 入口裂隙门符阵预备（向心收口预告，可读落点；主题色非致命）
+                        runicCenter = gateEntrance;
+                        runicRadius = 300f;
+                        runicLethal = false;
+                        runic = System.Math.Max(runic, 0.45f);
+                        riftWarp = System.Math.Max(riftWarp, 0.3f);
+                    }
+                    break;
 
-                // 冲刺爆发特效
-                TriggerEnergyWave();
-                AwakeningNetherHelper.CreateSoulBurst(NPC.Center, 80f, 2, 12);
+                case 1: // 蓄力（等门完全开启，预告）
+                    Vector2 charge = gateEntrance + (gateEntrance - Target.Center).SafeNormalize(Vector2.UnitX) * 220f;
+                    NPC.velocity = Vector2.Lerp(NPC.velocity, (charge - NPC.Center) * 0.06f, 0.1f);
+                    // 裂隙扭曲渐强 + 符阵转致命（龙即将穿门冲刺）
+                    riftWarp = System.Math.Max(riftWarp, 0.3f + attackTimer / 50f * 0.35f);
+                    runicCenter = gateEntrance;
+                    runic = System.Math.Max(runic, 0.6f);
+                    runicLethal = attackTimer > 28;
+                    if (Main.netMode != NetmodeID.Server && attackTimer % 2 == 0) {
+                        Vector2 p = NPC.Center + Main.rand.NextVector2Circular(80f, 80f);
+                        var d = Dust.NewDustPerfect(p, DustID.Shadowflame);
+                        d.noGravity = true;
+                        d.scale = 1.5f;
+                        d.velocity = (NPC.Center - p) * 0.12f;
+                    }
+                    if (attackTimer >= 50) {
+                        subPhase = 2;
+                        attackTimer = 0;
+                        NPC.velocity = (gateEntrance - NPC.Center).SafeNormalize(Vector2.UnitY) * 42f;
+                        SoundEngine.PlaySound(SoundID.DD2_WyvernDiveDown with { Pitch = -0.3f, Volume = 1.3f }, NPC.Center);
+                    }
+                    break;
+
+                case 2: // 穿门冲刺 - 在两门之间往返
+                    AwakeningNetherHelper.CreateVoidTrail(NPC.Center, NPC.velocity, 1.5f);
+                    // 持续转向入口门
+                    NPC.velocity = Vector2.Lerp(NPC.velocity,
+                        (gateEntrance - NPC.Center).SafeNormalize(Vector2.UnitY) * 42f, 0.05f);
+                    // 裂隙扭曲维持高位 + 入口门致命符阵
+                    riftWarp = System.Math.Max(riftWarp, 0.65f);
+                    runicCenter = gateEntrance;
+                    runic = System.Math.Max(runic, 0.7f);
+                    runicLethal = true;
+
+                    if (NPC.Center.Distance(gateEntrance) < 90f) {
+                        NPC.Center = gateExit; // 从另一扇门冲出
+                        NPC.velocity = (gateEntrance - gateExit).SafeNormalize(Vector2.UnitY) * 42f;
+                        gateDashes++;
+                        SoundEngine.PlaySound(SoundID.Item122 with { Pitch = 0.2f, Volume = 1.1f }, NPC.Center);
+                        AwakeningNetherHelper.CreateSoulBurst(NPC.Center, 80f, 2, 14);
+                        ACMUtils.AddScreenShake(6f);
+                        // 穿门贯出的泛光 + 裂隙脉冲
+                        bloom = System.Math.Max(bloom, 0.8f);
+                        bloomCenter = NPC.Center;
+                        riftWarp = 0.85f;
+                        if (gateDashes >= GateDashTarget) {
+                            subPhase = 3;
+                            attackTimer = 0;
+                        }
+                    }
+                    if (attackTimer >= 150) { // 安全兜底
+                        subPhase = 3;
+                        attackTimer = 0;
+                    }
+                    break;
+
+                case 3: // 收尾 → 释放灵魂风暴
+                    NPC.velocity *= 0.9f;
+                    if (attackTimer >= 25) {
+                        CurrentState = AIState.ActII_Storm;
+                        subPhase = 0;
+                        attackTimer = 0;
+                    }
+                    break;
             }
         }
 
         /// <summary>
-        /// 冲刺攻击
+        /// 第二幕：穿门成功后的一次性预告灵魂风暴（非持续喷射）。
         /// </summary>
-        private void DashBehavior() {
-            // 高速拖尾特效
-            AwakeningNetherHelper.CreateVoidTrail(NPC.Center, NPC.velocity, 1.5f);
+        private void ActIIStormBehavior() {
+            Vector2 hover = Target.Center - new Vector2(0, 380f);
+            NPC.velocity = Vector2.Lerp(NPC.velocity, (hover - NPC.Center) * 0.05f, 0.08f);
 
-            // 冲刺过程中产生次元撕裂
-            if (Main.rand.NextBool(3) && stateTimer > 20) {
-                Vector2 perpendicular = NPC.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
-                Vector2 tearStart = NPC.Center + perpendicular * Main.rand.NextFloat(-50f, 50f);
-                Vector2 tearEnd = tearStart - NPC.velocity.SafeNormalize(Vector2.Zero) * 80f;
-                AwakeningNetherHelper.CreateDimensionTear(tearStart, tearEnd, 0.5f);
+            switch (subPhase) {
+                case 0: // 预告聚能（50）
+                    if (attackTimer == 1)
+                        SoundEngine.PlaySound(SoundID.Item8 with { Pitch = 0.4f }, NPC.Center);
+                    if (Main.netMode != NetmodeID.Server && attackTimer % 2 == 0) {
+                        Vector2 p = NPC.Center + Main.rand.NextVector2CircularEdge(140f, 140f);
+                        var d = Dust.NewDustPerfect(p, DustID.ShadowbeamStaff);
+                        d.noGravity = true;
+                        d.scale = 1.4f;
+                        d.velocity = (NPC.Center - p) * 0.08f;
+                    }
+                    if (attackTimer >= 50) {
+                        subPhase = 1;
+                        attackTimer = 0;
+                    }
+                    break;
+
+                case 1: // 一次性爆发
+                    if (attackTimer == 1) {
+                        ShootSoulStorm();
+                        TriggerEnergyWave();
+                        ACMUtils.AddScreenShake(10f);
+                        bloom = 0.9f;
+                        bloomCenter = NPC.Center;
+                    }
+                    if (attackTimer >= 45) {
+                        CurrentState = AIState.ActII_Rift;
+                        subPhase = 0;
+                        attackTimer = 0;
+                    }
+                    break;
             }
+        }
 
-            if (stateTimer <= 15) {
-                NPC.velocity *= 0.94f;
+        // ============================ 第三幕 虚空吞噬 ============================
+
+        /// <summary>
+        /// 第三幕：中央漩涡固定约 5 秒。环绕的可清除噬魂卫星集中爆发，而非持续喷弹。
+        /// </summary>
+        private void ActIIIVortexBehavior() {
+            switch (subPhase) {
+                case 0: // 移到中央 + 预告 + 生成噬魂卫星
+                    vortexCenter = Target.Center - new Vector2(0, 280f);
+                    NPC.velocity = Vector2.Lerp(NPC.velocity, (vortexCenter - NPC.Center) * 0.05f, 0.08f);
+                    if (attackTimer == 1)
+                        SoundEngine.PlaySound(SoundID.Item117 with { Pitch = -0.5f, Volume = 1.2f }, NPC.Center);
+                    // 漩涡奇点向心收口预警（虚空扭曲渐起）
+                    voidWarp = System.Math.Max(voidWarp, attackTimer / 55f * 0.45f);
+                    runicCenter = vortexCenter;
+                    runicRadius = 360f;
+                    runicLethal = false;
+                    runic = System.Math.Max(runic, 0.35f + attackTimer / 55f * 0.35f);
+                    if (attackTimer >= 55) {
+                        SpawnSoulSatellites();
+                        AwakeningNetherHelper.CreateVoidVortex(NPC.Center, 220f, 1.2f, 50);
+                        ACMUtils.AddScreenShake(12f);
+                        bloom = 0.9f;
+                        bloomCenter = vortexCenter;
+                        voidWarp = System.Math.Max(voidWarp, 0.6f);
+                        subPhase = 1;
+                        attackTimer = 0;
+                    }
+                    break;
+
+                case 1: // 漩涡活跃（约5秒）：将玩家拉向漩涡
+                    Vector2 hover = Target.Center - new Vector2(0, 300f);
+                    NPC.velocity = Vector2.Lerp(NPC.velocity, (hover - NPC.Center) * 0.04f, 0.07f);
+                    // 虚空吞噬"被吸入"：全屏向心扭曲 + 致命奇点符阵
+                    voidWarp = System.Math.Max(voidWarp, isPhase3 ? 0.75f : 0.6f);
+                    runicCenter = vortexCenter;
+                    runic = System.Math.Max(runic, 0.6f);
+                    runicLethal = true;
+
+                    float dist = Target.Center.Distance(NPC.Center);
+                    if (dist > 130f) {
+                        Vector2 pull = (NPC.Center - Target.Center).SafeNormalize(Vector2.Zero);
+                        Target.velocity += pull * 0.3f;
+                    }
+                    if (attackTimer % 12 == 0)
+                        AwakeningNetherHelper.CreateVoidVortex(NPC.Center, 200f, 0.6f, 18);
+
+                    if (attackTimer >= 300) {
+                        subPhase = 2;
+                        attackTimer = 0;
+                    }
+                    break;
+
+                case 2: // 喘息后循环
+                    NPC.velocity *= 0.92f;
+                    if (attackTimer >= 60) {
+                        subPhase = 0;
+                        attackTimer = 0;
+                    }
+                    break;
             }
+        }
 
-            if (stateTimer <= 0) {
-                dashCount++;
-                if (dashCount < MaxDashes && isPhase2) {
-                    // 连续冲刺 - 更短的准备时间
-                    CurrentState = AIState.DashPrepare;
-                    stateTimer = isPhase3 ? 20 : 25;
-                }
-                else {
-                    dashCount = 0;
-                    ChooseNextState();
-                }
+        // ============================ 觉醒终末（一次性）============================
+
+        /// <summary>
+        /// 觉醒终末：龙体拉直 + 一次巨型吐息扫射 + 同步体节激光，随后回到第三幕循环。
+        /// 取代旧的 DesperateFury 喷弹狂暴。
+        /// </summary>
+        private void FinalityBehavior() {
+            switch (subPhase) {
+                case 0: // 拉直龙体 + 预告（60），起手短暂无敌
+                    if (attackTimer <= 22)
+                        NPC.dontTakeDamage = true;
+                    float dirSign = NPC.Center.X < Target.Center.X ? 1f : -1f;
+                    Vector2 straightTarget = new Vector2(Target.Center.X + dirSign * 1000f, Target.Center.Y - 240f);
+                    NPC.velocity = Vector2.Lerp(NPC.velocity,
+                        (straightTarget - NPC.Center).SafeNormalize(Vector2.Zero) * 15f, 0.06f);
+                    if (Main.netMode != NetmodeID.Server) {
+                        for (int i = 0; i < 4; i++) {
+                            Vector2 p = NPC.Center + Main.rand.NextVector2CircularEdge(160f, 160f);
+                            var d = Dust.NewDustPerfect(p, DustID.ShadowbeamStaff);
+                            d.noGravity = true;
+                            d.scale = 2f;
+                            d.velocity = (NPC.Center - p) * 0.1f;
+                        }
+                    }
+                    // 觉醒终末蓄力：泛光渐强（处决级签名）
+                    bloom = System.Math.Max(bloom, attackTimer / 60f * 0.8f);
+                    bloomCenter = NPC.Center;
+                    if (attackTimer >= 60) {
+                        subPhase = 1;
+                        attackTimer = 0;
+                        FireSegmentLasers();
+                        SoundEngine.PlaySound(SoundID.Item73 with { Pitch = -0.4f, Volume = 1.4f }, NPC.Center);
+                        ACMUtils.AddScreenShake(12f);
+                        // 激光帘幕展开的全屏泛光
+                        bloom = 1f;
+                        bloomCenter = NPC.Center;
+                    }
+                    break;
+
+                case 1: // 巨型吐息扫射（与体节激光同步，90）
+                    NPC.velocity *= 0.97f;
+                    if (attackTimer % 5 == 0)
+                        FireFinalityBreath();
+                    // 终末吐息走廊泛光
+                    bloom = System.Math.Max(bloom, 0.5f);
+                    bloomCenter = NPC.Center + NPC.rotation.ToRotationVector2() * 50f;
+                    if (attackTimer >= 90) {
+                        subPhase = 2;
+                        attackTimer = 0;
+                    }
+                    break;
+
+                case 2: // 收尾 → 回到第三幕循环
+                    NPC.velocity *= 0.92f;
+                    if (attackTimer >= 30) {
+                        CurrentState = AIState.ActIII_Vortex;
+                        subPhase = 0;
+                        attackTimer = 0;
+                    }
+                    break;
             }
         }
 
         /// <summary>
-        /// 虚空吐息 - 扇形弹幕
+        /// 觉醒终末的巨型吐息扇形（横扫）。
         /// </summary>
-        private void VoidBreathBehavior() {
-            // 缓慢跟踪玩家
-            Vector2 targetPos = Target.Center - new Vector2(0, 300f);
-            Vector2 toTarget = targetPos - NPC.Center;
-            NPC.velocity = Vector2.Lerp(NPC.velocity, toTarget * 0.05f, 0.1f);
+        private void FireFinalityBreath() {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
 
-            // 发射扇形弹幕
-            int fireRate = isPhase2 ? 8 : 12;
-            if (attackTimer % fireRate == 0 && stateTimer > 60) {
-                ShootVoidBreath();
-            }
-
-            if (stateTimer <= 0) {
-                ChooseNextState();
-            }
-        }
-
-        /// <summary>
-        /// 灵魂风暴 - 环形弹幕
-        /// </summary>
-        private void SoulStormBehavior() {
-            // 在玩家上方盘旋
-            Vector2 targetPos = Target.Center - new Vector2(0, 400f);
-            Vector2 toTarget = targetPos - NPC.Center;
-            NPC.velocity = Vector2.Lerp(NPC.velocity, toTarget * 0.04f, 0.08f);
-
-            // 发射环形弹幕
-            int fireRate = isPhase2 ? 20 : 30;
-            if (attackTimer % fireRate == 0 && stateTimer > 90) {
-                ShootSoulStorm();
-            }
-
-            if (stateTimer <= 0) {
-                ChooseNextState();
-            }
-        }
-
-        /// <summary>
-        /// 次元裂隙 - 召唤虚空裂隙
-        /// </summary>
-        private void DimensionRiftBehavior() {
-            // 快速移动
-            float angle = NPC.ai[1] * 0.08f;
-            Vector2 targetPos = Target.Center + new Vector2(MathF.Cos(angle) * 500f, MathF.Sin(angle) * 300f);
-            Vector2 toTarget = targetPos - NPC.Center;
-            NPC.velocity = Vector2.Lerp(NPC.velocity, toTarget * 0.08f, 0.12f);
-            NPC.ai[1]++;
-
-            // 创建次元裂隙
-            if (stateTimer == 150 || stateTimer == 100 || stateTimer == 50) {
-                CreateDimensionRift();
-            }
-
-            if (stateTimer <= 0) {
-                ChooseNextState();
-            }
-        }
-
-        /// <summary>
-        /// 虚空吞噬 - 新增的终极攻击模式
-        /// </summary>
-        private void VoidDevourBehavior() {
-            // 移动到玩家上方
-            Vector2 targetPos = Target.Center - new Vector2(0, 350f);
-            Vector2 toTarget = targetPos - NPC.Center;
-            NPC.velocity = Vector2.Lerp(NPC.velocity, toTarget * 0.06f, 0.1f);
-
-            // 产生吸引效果
-            if (stateTimer > 60 && stateTimer < 180) {
-                // 创建持续的虚空漩涡
-                if (stateTimer % 10 == 0) {
-                    AwakeningNetherHelper.CreateVoidVortex(NPC.Center, 200f, 0.6f, 20);
-                }
-
-                // 对玩家产生轻微吸引
-                Vector2 pullDir = (NPC.Center - Target.Center).SafeNormalize(Vector2.Zero);
-                float pullStrength = 2f * (1f - Vector2.Distance(Target.Center, NPC.Center) / 500f);
-                if (pullStrength > 0) {
-                    Target.velocity += pullDir * pullStrength * 0.1f;
-                }
-
-                // 周期性发射追踪弹
-                if (stateTimer % 20 == 0) {
-                    ShootVoidBolts();
-                }
-            }
-
-            // 结束时的大爆发
-            if (stateTimer == 60) {
-                // 发射大量灵魂弹
-                ShootMassiveSoulStorm();
-                TriggerEnergyWave();
-                SoundEngine.PlaySound(SoundID.Item117 with { Pitch = -0.5f, Volume = 1.3f }, NPC.Center);
-            }
-
-            if (stateTimer <= 0) {
-                ChooseNextState();
-            }
-        }
-
-        /// <summary>
-        /// 狂暴阶段 - 低血量时的疯狂攻击
-        /// </summary>
-        private void DesperateFuryBehavior() {
-            // 疯狂追击玩家
             Vector2 toPlayer = (Target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
-            float targetSpeed = 10f; // 提升速度
-
-            NPC.velocity = Vector2.Lerp(NPC.velocity, toPlayer * targetSpeed, 0.18f);
-
-            // 持续高速拖尾
-            AwakeningNetherHelper.CreateVoidTrail(NPC.Center, NPC.velocity, 2f);
-
-            // 持续发射弹幕
-            if (attackTimer % 12 == 0) {
-                ShootVoidBolts();
+            float sweep = MathF.Sin(attackTimer * 0.12f) * MathHelper.ToRadians(40f);
+            int count = 5;
+            float spread = MathHelper.ToRadians(50f);
+            for (int i = 0; i < count; i++) {
+                float a = sweep - spread / 2 + spread * i / (count - 1);
+                Vector2 dir = toPlayer.RotatedBy(a);
+                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center + dir * 50f, dir * 13f,
+                    ModContent.ProjectileType<AwakeningNetherBreath>(), GetProjectileDamage(80), 0f, Main.myPlayer, ai0: 1);
             }
-
-            if (attackTimer % 40 == 0) {
-                ShootSoulStorm();
-            }
-
-            // 周期性创建裂隙
-            if (attackTimer % 90 == 0) {
-                CreateDimensionRift();
-            }
-
-            // 狂暴特效 - 持续的能量爆发
-            if (Main.rand.NextBool(2)) {
-                Vector2 pos = NPC.Center + Main.rand.NextVector2Circular(60f, 60f);
-                var d = Dust.NewDustPerfect(pos, DustID.ShadowbeamStaff);
-                d.noGravity = true;
-                d.scale = 2f;
-                d.velocity = Main.rand.NextVector2Circular(4, 4);
-            }
-
-            // 周期性能量波
-            if (attackTimer % 60 == 0) {
-                TriggerEnergyWave();
-            }
-
-            if (stateTimer <= 0) {
-                stateTimer = 250;
-                // 狂暴阶段间歇性切换到冲刺或吞噬
-                int choice = Main.rand.Next(3);
-                if (choice == 0) {
-                    CurrentState = AIState.DashPrepare;
-                    stateTimer = 35;
-                }
-                else if (choice == 1) {
-                    CurrentState = AIState.VoidDevour;
-                    stateTimer = 200;
-                }
-            }
+            SoundEngine.PlaySound(SoundID.Item74 with { Pitch = -0.3f, Volume = 1f }, NPC.Center);
         }
 
         /// <summary>
-        /// 选择下一个状态
+        /// 同步体节激光：沿龙体取样体节，同时向下喷射激光，形成可读的激光帘幕。
         /// </summary>
-        private void ChooseNextState() {
-            int choice = Main.rand.Next(isPhase2 ? 6 : 4);
+        private void FireSegmentLasers() {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
 
-            switch (choice) {
-                case 0:
-                    CurrentState = AIState.Circling;
-                    stateTimer = isPhase2 ? 120 : 180;
-                    break;
-                case 1:
-                    CurrentState = AIState.DashPrepare;
-                    stateTimer = 45;
-                    dashCount = 0;
-                    break;
-                case 2:
-                    CurrentState = AIState.VoidBreath;
-                    stateTimer = isPhase2 ? 150 : 200;
-                    attackTimer = 0;
-                    break;
-                case 3:
-                    CurrentState = AIState.SoulStorm;
-                    stateTimer = isPhase2 ? 180 : 220;
-                    attackTimer = 0;
-                    break;
-                case 4:
-                    CurrentState = AIState.DimensionRift;
-                    stateTimer = 180;
-                    NPC.ai[1] = 0;
-                    break;
-                case 5:
-                    CurrentState = AIState.VoidDevour;
-                    stateTimer = 240;
-                    break;
+            var segs = GetSegments();
+            if (segs.Count == 0)
+                return;
+            int step = Math.Max(1, segs.Count / 12);
+            for (int i = 0; i < segs.Count; i += step) {
+                NPC seg = segs[i];
+                Projectile.NewProjectile(NPC.GetSource_FromAI(), seg.Center, Vector2.Zero,
+                    ModContent.ProjectileType<AwakeningNetherSegmentLaser>(), GetProjectileDamage(110), 0f, Main.myPlayer,
+                    ai0: seg.whoAmI, ai1: MathHelper.PiOver2);
             }
+            SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.2f, Volume = 1.2f }, NPC.Center);
+        }
 
-            // 狂暴阶段强制进入狂暴
-            if (isPhase3 && Main.rand.NextBool(2)) {
-                CurrentState = AIState.DesperateFury;
-                stateTimer = 250;
+        // ============================ 体节机制 / 生成辅助 ============================
+
+        /// <summary>
+        /// 收集本龙的所有体节（身体 + 尾巴）。
+        /// </summary>
+        private System.Collections.Generic.List<NPC> GetSegments() {
+            var list = new System.Collections.Generic.List<NPC>();
+            for (int i = 0; i < Main.maxNPCs; i++) {
+                NPC n = Main.npc[i];
+                if (n.active && n.whoAmI != NPC.whoAmI && n.realLife == NPC.whoAmI)
+                    list.Add(n);
+            }
+            return list;
+        }
+
+        /// <summary>
+        /// 体节作为机制：按幕的节拍从随机体节释放虚空魂雾。
+        /// </summary>
+        private void EmitSegmentMiasma() {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
+            int cadence = act >= 3 ? 50 : (act == 2 ? 70 : 95);
+            if (globalTimer % cadence != 0)
+                return;
+            var segs = GetSegments();
+            if (segs.Count == 0)
+                return;
+            NPC seg = segs[Main.rand.Next(segs.Count)];
+            SpawnMiasma(seg.Center, 1f);
+        }
+
+        private void SpawnMiasma(Vector2 pos, float size) {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
+            Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, Vector2.Zero,
+                ModContent.ProjectileType<AwakeningNetherMiasma>(), GetProjectileDamage(25), 0f, Main.myPlayer, ai0: size);
+        }
+
+        private void SpawnGate(Vector2 pos) {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
+            Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, Vector2.Zero,
+                ModContent.ProjectileType<AwakeningNetherRift>(), GetProjectileDamage(80), 0f, Main.myPlayer,
+                ai0: isPhase3 ? 1 : 0);
+        }
+
+        private void SpawnSoulSatellites() {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
+            int count = isPhase3 ? 6 : 5;
+            int who = NPC.target;
+            for (int i = 0; i < count; i++) {
+                float a = MathHelper.TwoPi * i / count;
+                Vector2 spawnPos = Target.Center + a.ToRotationVector2() * 330f;
+                Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, Vector2.Zero,
+                    ModContent.ProjectileType<AwakeningNetherSoulSatellite>(), GetProjectileDamage(85), 0f, Main.myPlayer,
+                    ai0: who, ai1: a);
             }
         }
 
@@ -696,77 +952,6 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         /// <summary>
-        /// 大规模灵魂风暴 - 虚空吞噬结束时使用
-        /// </summary>
-        private void ShootMassiveSoulStorm() {
-            if (Main.netMode == NetmodeID.MultiplayerClient)
-                return;
-
-            int damage = GetProjectileDamage(75);
-
-            // 多波次发射
-            for (int wave = 0; wave < 3; wave++) {
-                int count = 12 + wave * 4;
-                float angleOffset = wave * 0.15f;
-
-                for (int i = 0; i < count; i++) {
-                    float angle = MathHelper.TwoPi * i / count + angleOffset;
-                    Vector2 direction = angle.ToRotationVector2();
-                    float speed = 8f + wave * 2f;
-
-                    Projectile.NewProjectile(
-                        NPC.GetSource_FromAI(),
-                        NPC.Center,
-                        direction * speed,
-                        ModContent.ProjectileType<AwakeningNetherSoulOrb>(),
-                        damage,
-                        0f,
-                        ai0: 1,
-                        ai1: wave
-                    );
-                }
-            }
-
-            // 大规模特效
-            AwakeningNetherHelper.CreateSoulBurst(NPC.Center, 150f, 5, 30);
-            AwakeningNetherHelper.CreateScreenFlash(NPC.Center, AwakeningNetherHelper.SoulPink, 0.6f);
-        }
-
-        /// <summary>
-        /// 创建次元裂隙
-        /// </summary>
-        private void CreateDimensionRift() {
-            if (Main.netMode == NetmodeID.MultiplayerClient)
-                return;
-
-            int damage = GetProjectileDamage(100);
-
-            // 在玩家附近随机位置创建裂隙
-            Vector2 riftPos = Target.Center + Main.rand.NextVector2Circular(350f, 350f);
-
-            // 确保裂隙不会太近或太远
-            float dist = Vector2.Distance(riftPos, Target.Center);
-            if (dist < 100f) {
-                riftPos = Target.Center + (riftPos - Target.Center).SafeNormalize(Vector2.UnitX) * 150f;
-            }
-
-            Projectile.NewProjectile(
-                NPC.GetSource_FromAI(),
-                riftPos,
-                Vector2.Zero,
-                ModContent.ProjectileType<AwakeningNetherRift>(),
-                damage,
-                0f,
-                ai0: isPhase2 ? 1 : 0 // 大小等级
-            );
-
-            SoundEngine.PlaySound(SoundID.Item117 with { Pitch = -0.3f, Volume = 1.2f }, riftPos);
-
-            // 裂隙创建特效
-            AwakeningNetherHelper.CreateDimensionTear(NPC.Center, riftPos, 0.8f);
-        }
-
-        /// <summary>
         /// 获取弹幕伤害（根据难度调整）
         /// </summary>
         private int GetProjectileDamage(int baseDamage) {
@@ -808,10 +993,59 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 d.velocity = velocity;
             }
 
-            // 屏幕闪烁
+            // 屏幕闪烁 + 死亡定格震屏（一次性，纳入统一预算）
             AwakeningNetherHelper.CreateScreenFlash(NPC.Center, AwakeningNetherHelper.AwakeningPurple, 1.5f);
+            ACMUtils.AddScreenShake(16f);
 
             SoundEngine.PlaySound(SoundID.NPCDeath14 with { Pitch = -0.5f, Volume = 1.8f }, NPC.Center);
+        }
+
+        /// <summary>
+        /// 全屏 screenTarget 扭曲 (GenericWarp · rift/void) — 占本帧唯一全屏后处理名额 (§C.4#2)。
+        /// 第三幕虚空吞噬优先 (void + 强 uRadialPull 向心吸入)；否则次元裂隙门冲刺 (rift)。
+        /// </summary>
+        public override void PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+            if (Main.dedServ)
+                return;
+
+            bool useVoid = voidWarp > 0.04f;
+            float intensity = useVoid ? voidWarp : riftWarp;
+            if (intensity <= 0.02f)
+                return;
+            if (!ACMShaders.RequestFullscreenSlot())
+                return;
+
+            Effect fx = ACMShaders.GenericWarp;
+            if (fx == null)
+                return;
+
+            Vector2 center = useVoid ? vortexCenter : (riftWarp > 0.04f ? gateEntrance : NPC.Center);
+            Vector2 centerUV = (center - Main.screenPosition) / new Vector2(Main.screenWidth, Main.screenHeight);
+            float aspect = (float)Main.screenWidth / Main.screenHeight;
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uCenter"]?.SetValue(centerUV);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(intensity, 0f, 1f));
+            fx.Parameters["uAspect"]?.SetValue(aspect);
+            if (useVoid) {
+                // 虚空吞噬：强向心吸入 + 中心压暗成黑洞 + 色散（"被吸入"感）
+                fx.Parameters["uRadius"]?.SetValue(0.75f);
+                fx.Parameters["uWarpScale"]?.SetValue(1.5f);
+                fx.Parameters["uChroma"]?.SetValue(0.8f);
+                fx.Parameters["uRadialPull"]?.SetValue(0.9f);
+                fx.Parameters["uMode"]?.SetValue(4f); // void
+                fx.Parameters["uTint"]?.SetValue(new Vector4(AwakeningNetherHelper.VoidDarkPurple.ToVector3(), 0.55f));
+            }
+            else {
+                // 次元裂隙门：中等向心吸入 + 色散裂空
+                fx.Parameters["uRadius"]?.SetValue(0.55f);
+                fx.Parameters["uWarpScale"]?.SetValue(1.3f);
+                fx.Parameters["uChroma"]?.SetValue(0.7f);
+                fx.Parameters["uRadialPull"]?.SetValue(0.6f);
+                fx.Parameters["uMode"]?.SetValue(3f); // rift
+                fx.Parameters["uTint"]?.SetValue(new Vector4(TelegraphColors.NetherViolet.ToVector3(), 0.5f));
+            }
+
+            ACMShaders.ApplyScreenPostProcess(spriteBatch, fx);
         }
 
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {

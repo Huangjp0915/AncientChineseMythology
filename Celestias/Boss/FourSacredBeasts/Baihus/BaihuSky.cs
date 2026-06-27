@@ -116,8 +116,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
             if (shouldBeActive) {
                 if (!active) Activate(Vector2.Zero);
                 bossHealthPercent = (float)boss.life / boss.lifeMax;
-                isPhase2 = bossHealthPercent < Baihu.Phase2Threshold;
-                isPhase3 = bossHealthPercent < Baihu.Phase3Threshold;
+                isPhase2 = bossHealthPercent < 0.60f;
+                isPhase3 = bossHealthPercent < 0.30f;
 
                 float target = isPhase3 ? MaxIntensity * 1.25f : isPhase2 ? MaxIntensity * 1.1f : MaxIntensity;
                 intensity = MathHelper.Lerp(intensity, target, FadeInSpeed);

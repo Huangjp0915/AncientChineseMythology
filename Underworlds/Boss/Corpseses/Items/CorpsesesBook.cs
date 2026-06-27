@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.Audio;
@@ -43,6 +44,8 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
             Projectile.NewProjectile(source, leftHandPos, Vector2.Zero, type, damage, knockback, player.whoAmI, 0, -1);
             Projectile.NewProjectile(source, rightHandPos, Vector2.Zero, type, damage, knockback, player.whoAmI, 0, 1);
 
+            ACMWeaponBurst.Spawn(source, targetPos, ACMWeaponBurst.GhostGreen, scale: 0.9f, owner: player.whoAmI);
+
             return false;
         }
 
@@ -74,6 +77,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
 
         private int Direction => (int)Projectile.ai[1]; // -1 左手, 1 右手
         private ref float PhaseTimer => ref Projectile.localAI[0];
+        private ref float ClapFlash => ref Projectile.localAI[1]; // 拍击冲击扭曲衰减标量
         private Vector2 startPos;
         private Vector2 clapTarget;
 
@@ -96,6 +100,8 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
 
         public override void AI() {
             PhaseTimer++;
+            if (ClapFlash > 0f)
+                ClapFlash *= 0.86f;
 
             switch (Phase) {
                 case HandPhase.Appearing:
@@ -171,6 +177,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
             // 拍击瞬间
             else if (PhaseTimer == 10) {
                 Projectile.Center = clapTarget;
+                ClapFlash = 1f; // 触发拍击空间冲击扭曲 (PreDraw 内消费)
 
                 // 只让右手生成弹幕和音效
                 if (Direction > 0 && Main.myPlayer == Projectile.owner) {
@@ -221,25 +228,65 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
             return Phase == HandPhase.Clapping && PhaseTimer >= 10 && PhaseTimer < 15;
         }
 
+        // 拍击空间冲击扭曲 (GenericWarp · void, 走全屏名额仲裁, 仅拍击瞬间短促)
+        private static void ApplyClapWarp(Vector2 worldCenter, float intensity) {
+            if (Main.dedServ || intensity <= 0.01f)
+                return;
+            if (!ACMShaders.RequestFullscreenSlot())
+                return;
+            Effect fx = ACMShaders.GenericWarp;
+            if (fx == null)
+                return;
+            Vector2 uv = (worldCenter - Main.screenPosition) / new Vector2(Main.screenWidth, Main.screenHeight);
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uCenter"]?.SetValue(uv);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(intensity, 0f, 1f));
+            fx.Parameters["uRadius"]?.SetValue(0.18f);
+            fx.Parameters["uAspect"]?.SetValue((float)Main.screenWidth / Main.screenHeight);
+            fx.Parameters["uWarpScale"]?.SetValue(1.4f);
+            fx.Parameters["uChroma"]?.SetValue(0.5f);
+            fx.Parameters["uRadialPull"]?.SetValue(-0.6f); // 向外推 (拍击冲击波)
+            fx.Parameters["uMode"]?.SetValue(0f);
+            fx.Parameters["uTint"]?.SetValue(new Vector4(TelegraphColors.GhostGreen.ToVector3(), 0.3f));
+            ACMShaders.ApplyScreenPostProcess(Main.spriteBatch, fx, bindNoise: true);
+        }
+
         public override bool PreDraw(ref Color lightColor) {
-            Texture2D texture = ModContent.Request<Texture2D>(Texture).Value; // 暂用骷髅王手
+            if (Main.dedServ)
+                return false;
+            Texture2D texture = ModContent.Request<Texture2D>(Texture).Value;
             Vector2 origin = texture.Size() / 2f;
             SpriteEffects effects = Direction > 0 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
 
-            Color drawColor = new Color(180, 80, 255, 255 - Projectile.alpha);
+            Color bone = new Color(208, 232, 205);
+            Color edge = TelegraphColors.GhostGreen;
+            float vis = 1f - Projectile.alpha / 255f;
 
-            // 发光层
+            // 拍击瞬间: 空间冲击扭曲
+            if (ClapFlash > 0.06f)
+                ApplyClapWarp(Projectile.Center, ClapFlash * 0.5f);
+
+            // 出现 / 消散: 幽手虚实切换 (DissolveBurn 灼烧边缘)
+            if (Phase == HandPhase.Appearing || Phase == HandPhase.Dissipating) {
+                WeaponVFX.ApplyDissolveBurn(texture, Projectile.Center, null, bone,
+                    Projectile.rotation, origin,
+                    scale: Projectile.scale, threshold: 1f - vis,
+                    intensity: MathHelper.Clamp(vis, 0.05f, 1f), edgeColor: edge,
+                    edgeWidth: 0.12f, noiseScale: 2.2f, effects: effects);
+                return false;
+            }
+
+            // 实体手掌 + 鬼绿光晕
+            Color glow = edge; glow.A = 0;
             for (int i = 0; i < 3; i++) {
                 Vector2 offset = new Vector2(MathF.Cos(Main.GlobalTimeWrappedHourly * 3f + i * MathHelper.TwoPi / 3f),
                                             MathF.Sin(Main.GlobalTimeWrappedHourly * 3f + i * MathHelper.TwoPi / 3f)) * 4f;
-                Color glowColor = new Color(150, 50, 200, 0) * (1f - Projectile.alpha / 255f) * 0.5f;
                 Main.EntitySpriteDraw(texture, Projectile.Center + offset - Main.screenPosition, null,
-                    glowColor, Projectile.rotation, origin, Projectile.scale * 1.1f, effects);
+                    glow * 0.4f, Projectile.rotation, origin, Projectile.scale * 1.1f, effects);
             }
-
-            // 主体
+            Color body = Color.Lerp(bone, edge, 0.22f); body.A = 255;
             Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null,
-                drawColor, Projectile.rotation, origin, Projectile.scale, effects);
+                body, Projectile.rotation, origin, Projectile.scale, effects);
 
             return false;
         }
@@ -292,23 +339,25 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses.Items
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
             Texture2D texture = ModContent.Request<Texture2D>("Terraria/Images/Projectile_" + ProjectileID.ShadowFlame).Value;
             Vector2 origin = texture.Size() / 2f;
 
-            // 拖尾
-            for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                float progress = 1f - i / (float)Projectile.oldPos.Length;
-                Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                Color trailColor = new Color(100, 50, 150) * progress * 0.5f;
+            Color bone = new Color(210, 235, 205);
+            Color edge = new Color(40, 110, 70);
 
-                Main.EntitySpriteDraw(texture, drawPos, null, trailColor,
-                    Projectile.oldRot[i], origin, Projectile.scale * 0.8f, SpriteEffects.None);
-            }
+            // 双层鬼绿拖尾 (外宽暗绿 + 内窄骨白)
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 10f,
+                outerColor: edge with { A = 130 }, innerColor: bone with { A = 190 },
+                uvScroll: -Main.GlobalTimeWrappedHourly * 1.5f);
 
-            // 主体
-            Color mainColor = new Color(180, 80, 255);
-            Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null,
-                mainColor, Projectile.rotation, origin, Projectile.scale, SpriteEffects.None);
+            // 主体 (骨白核 + 鬼绿光晕)
+            Color glow = TelegraphColors.GhostGreen; glow.A = 0;
+            Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null, glow * 0.5f,
+                Projectile.rotation, origin, Projectile.scale * 1.4f, SpriteEffects.None);
+            Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null, bone,
+                Projectile.rotation, origin, Projectile.scale, SpriteEffects.None);
 
             return false;
         }
