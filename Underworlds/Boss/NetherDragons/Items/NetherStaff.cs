@@ -1,6 +1,5 @@
 ﻿using AncientChineseMythology.Helpers;
 using AncientChineseMythology.Underworlds.Tiles;
-using Microsoft.Xna.Framework;
 using System;
 using Terraria;
 using Terraria.Audio;

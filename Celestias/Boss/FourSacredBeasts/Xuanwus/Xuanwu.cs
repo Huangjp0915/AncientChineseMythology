@@ -2,7 +2,6 @@
 using AncientChineseMythology.Items.Materials;
 using AncientChineseMythology.Systems;
 using Microsoft.Xna.Framework.Graphics;
-using Terraria.Graphics;
 using ReLogic.Content;
 using System;
 using System.IO;

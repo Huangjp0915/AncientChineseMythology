@@ -1,10 +1,8 @@
-using System;
-using System.Collections.Generic;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
+using System;
+using System.Collections.Generic;
 using Terraria;
-using Terraria.Graphics;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Helpers

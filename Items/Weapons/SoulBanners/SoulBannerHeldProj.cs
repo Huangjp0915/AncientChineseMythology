@@ -1,8 +1,7 @@
+using AncientChineseMythology.Helpers;
+using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.IO;
-using AncientChineseMythology.Helpers;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -44,8 +43,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
         private ref float GlobalTimer => ref Projectile.ai[1];
 
         // localAI slots
-        private BannerPhase CurrentPhase
-        {
+        private BannerPhase CurrentPhase {
             get => (BannerPhase)(int)Projectile.localAI[0];
             set { Projectile.localAI[0] = (int)value; phaseTimer = 0; }
         }
@@ -74,13 +72,11 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
         private float ChannelTime => BaseChannel * growthChannelMul / Owner.GetTotalAttackSpeed(Projectile.DamageType);
         private float AbsorbRadius => growthAbsorbRadius;
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             ProjectileID.Sets.HeldProjDoesNotUsePlayerGfxOffY[Type] = true;
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Projectile.width = 84;
             Projectile.height = 120;
             Projectile.friendly = true;
@@ -94,8 +90,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             Projectile.timeLeft = 10000;
         }
 
-        public override void OnSpawn(IEntitySource source)
-        {
+        public override void OnSpawn(IEntitySource source) {
             AimAngle = Projectile.velocity.ToRotation();
             Projectile.velocity = Vector2.Zero;
             Projectile.spriteDirection = MathF.Cos(AimAngle) >= 0 ? 1 : -1;
@@ -110,26 +105,22 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             growthRatio = sbPlayer.GrowthRatio;
         }
 
-        public override void SendExtraAI(BinaryWriter writer)
-        {
+        public override void SendExtraAI(BinaryWriter writer) {
             writer.Write((sbyte)Projectile.spriteDirection);
             writer.Write(AimAngle);
         }
 
-        public override void ReceiveExtraAI(BinaryReader reader)
-        {
+        public override void ReceiveExtraAI(BinaryReader reader) {
             Projectile.spriteDirection = reader.ReadSByte();
             AimAngle = reader.ReadSingle();
         }
 
-        public override void AI()
-        {
+        public override void AI() {
             Owner.heldProj = Projectile.whoAmI;
             Owner.itemAnimation = 2;
             Owner.itemTime = 2;
 
-            if (!Owner.active || Owner.dead || Owner.noItems || Owner.CCed)
-            {
+            if (!Owner.active || Owner.dead || Owner.noItems || Owner.CCed) {
                 Projectile.Kill();
                 return;
             }
@@ -138,8 +129,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             GlobalTimer++;
             phaseTimer++;
 
-            switch (CurrentPhase)
-            {
+            switch (CurrentPhase) {
                 case BannerPhase.Raise: RaisePhase(); break;
                 case BannerPhase.Thrust: ThrustPhase(); break;
                 case BannerPhase.Channel: ChannelPhase(); break;
@@ -150,8 +140,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
         }
 
         // ── 举幡：从身后缓缓提起幡旗 ──
-        private void RaisePhase()
-        {
+        private void RaisePhase() {
             float t = Math.Clamp(phaseTimer / RaiseTime, 0f, 1f);
 
             // 幡旗从身后浮现，逐渐显形
@@ -159,8 +148,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             currentExtend = MathHelper.Lerp(StartOffset, 15f, ACMUtils.SineInOut(t));
 
             // 上升的幽灵粒子：多层次
-            if (Main.rand.NextBool(2))
-            {
+            if (Main.rand.NextBool(2)) {
                 Vector2 dustPos = Owner.Center + Main.rand.NextVector2Circular(24f, 35f);
                 Dust dust = Dust.NewDustDirect(dustPos, 1, 1, DustID.DungeonSpirit,
                     Main.rand.NextFloat(-0.5f, 0.5f), -Main.rand.NextFloat(1.5f, 3f), 150, default, 0.5f + 0.4f * t);
@@ -169,8 +157,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             }
 
             // 暗影火焰升腾（阴气汇聚感）
-            if (t > 0.3f && Main.rand.NextBool(3))
-            {
+            if (t > 0.3f && Main.rand.NextBool(3)) {
                 Vector2 flamePos = Owner.Center + new Vector2(Main.rand.NextFloat(-15f, 15f), Main.rand.NextFloat(0f, 10f));
                 Dust flame = Dust.NewDustDirect(flamePos, 1, 1, DustID.Shadowflame,
                     0f, -Main.rand.NextFloat(1f, 2.5f), 100, default, 0.7f * t);
@@ -178,8 +165,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             }
 
             // 脚下阴气烟雾
-            if (Main.rand.NextBool(4))
-            {
+            if (Main.rand.NextBool(4)) {
                 Vector2 smokePos = Owner.Bottom + new Vector2(Main.rand.NextFloat(-30f, 30f), Main.rand.NextFloat(-5f, 5f));
                 Dust smoke = Dust.NewDustDirect(smokePos, 1, 1, DustID.Smoke,
                     Main.rand.NextFloat(-0.3f, 0.3f), -0.3f, 200, new Color(80, 30, 120), 0.8f);
@@ -189,11 +175,9 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             if (phaseTimer == 3)
                 SoundEngine.PlaySound(SoundID.Item29 with { Volume = 0.4f, Pitch = -0.3f }, Owner.Center);
 
-            if (phaseTimer >= RaiseTime)
-            {
+            if (phaseTimer >= RaiseTime) {
                 // 初始化残影位置
-                for (int i = 0; i < AfterimageLength; i++)
-                {
+                for (int i = 0; i < AfterimageLength; i++) {
                     afterimagePositions[i] = Projectile.Center;
                     afterimageRotations[i] = Projectile.rotation;
                 }
@@ -202,8 +186,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
         }
 
         // ── 祭幡：猛力向前直刺（不是弧扫！） ──
-        private void ThrustPhase()
-        {
+        private void ThrustPhase() {
             float t = Math.Clamp(phaseTimer / ThrustTime, 0f, 1f);
 
             bannerScale = 1f;
@@ -221,11 +204,9 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             Vector2 perp = new(-dir.Y, dir.X);
 
             // 双螺旋尾迹粒子
-            if (t > 0.15f)
-            {
+            if (t > 0.15f) {
                 float spiralAngle = phaseTimer * 1.2f;
-                for (int s = 0; s < 2; s++)
-                {
+                for (int s = 0; s < 2; s++) {
                     float side = s == 0 ? 1f : -1f;
                     float spiralR = 8f + 10f * t;
                     Vector2 offset = perp * (MathF.Sin(spiralAngle + s * MathF.PI) * spiralR);
@@ -238,8 +219,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             }
 
             // 沿路径的暗影火焰拖尾
-            if (t > 0.2f && Main.rand.NextBool(2))
-            {
+            if (t > 0.2f && Main.rand.NextBool(2)) {
                 float trailDist = currentExtend * Main.rand.NextFloat(0.3f, 0.95f);
                 Vector2 trailPos = Owner.MountedCenter + dir * trailDist + perp * Main.rand.NextFloat(-8f, 8f);
                 Dust flame = Dust.NewDustDirect(trailPos, 1, 1, DustID.Shadowflame,
@@ -248,10 +228,8 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             }
 
             // 幡尖前方散射粒子
-            if (t > 0.4f)
-            {
-                for (int i = 0; i < 2; i++)
-                {
+            if (t > 0.4f) {
+                for (int i = 0; i < 2; i++) {
                     Vector2 vel = dir * Main.rand.NextFloat(5f, 9f) + Main.rand.NextVector2Circular(2.5f, 2.5f);
                     Dust dust = Dust.NewDustDirect(tipPos, 1, 1, DustID.DungeonSpirit,
                         vel.X, vel.Y, 60, default, 1.0f + 0.4f * t);
@@ -269,10 +247,8 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
         }
 
         /// <summary>更新残影位置队列</summary>
-        private void UpdateAfterimages()
-        {
-            for (int i = AfterimageLength - 1; i > 0; i--)
-            {
+        private void UpdateAfterimages() {
+            for (int i = AfterimageLength - 1; i > 0; i--) {
                 afterimagePositions[i] = afterimagePositions[i - 1];
                 afterimageRotations[i] = afterimageRotations[i - 1];
             }
@@ -282,8 +258,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
 
         // ── 引魂：幡旗驻留原地，释放吸魂漩涡 ──
         // 这是万魂幡独有的核心阶段——没有任何剑会"停在前方持续吸魂"
-        private void ChannelPhase()
-        {
+        private void ChannelPhase() {
             float t = Math.Clamp(phaseTimer / ChannelTime, 0f, 1f);
 
             bannerScale = 1f;
@@ -303,10 +278,8 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             Vector2 perp = new(-dir.Y, dir.X);
 
             // 幡旗末端飘荡粒子（强化版）
-            for (int i = 0; i < 2; i++)
-            {
-                if (Main.rand.NextBool(2))
-                {
+            for (int i = 0; i < 2; i++) {
+                if (Main.rand.NextBool(2)) {
                     Dust dust = Dust.NewDustDirect(
                         tipPos + perp * Main.rand.NextFloat(-25f, 25f),
                         1, 1, DustID.DungeonSpirit,
@@ -319,8 +292,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             }
 
             // 暗影火焰漂浮（鬼火感）
-            if (Main.rand.NextBool(3))
-            {
+            if (Main.rand.NextBool(3)) {
                 float angle = Main.rand.NextFloat(MathHelper.TwoPi);
                 float radius = Main.rand.NextFloat(25f, 60f);
                 Vector2 firePos = tipPos + angle.ToRotationVector2() * radius;
@@ -330,8 +302,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             }
 
             // 地面阴气弥漫
-            if (Main.rand.NextBool(4))
-            {
+            if (Main.rand.NextBool(4)) {
                 Vector2 groundPos = new(tipPos.X + Main.rand.NextFloat(-80f, 80f), tipPos.Y + 40f);
                 Dust mist = Dust.NewDustDirect(groundPos, 1, 1, DustID.Smoke,
                     Main.rand.NextFloat(-0.5f, 0.5f), -Main.rand.NextFloat(0.3f, 0.8f),
@@ -340,10 +311,8 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             }
 
             // 间歇性灵魂脉冲波纹
-            if ((int)phaseTimer % 15 == 0)
-            {
-                for (int i = 0; i < 12; i++)
-                {
+            if ((int)phaseTimer % 15 == 0) {
+                for (int i = 0; i < 12; i++) {
                     float pulseAngle = MathHelper.TwoPi * i / 12f;
                     float pulseR = 30f + 20f * t;
                     Vector2 pulsePos = tipPos + pulseAngle.ToRotationVector2() * pulseR;
@@ -358,8 +327,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
         }
 
         // ── 收魂：收回幡旗，灵魂凝聚爆发 ──
-        private void RetractPhase()
-        {
+        private void RetractPhase() {
             float t = Math.Clamp(phaseTimer / RetractTime, 0f, 1f);
 
             bannerScale = 1f - ACMUtils.QuadIn(t) * 0.3f;
@@ -367,8 +335,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             currentExtend = MathHelper.Lerp(MaxExtend, 0f, ACMUtils.QuadIn(t));
 
             // 收回起始瞬间的灵魂爆发
-            if (!hasBurstPlayed)
-            {
+            if (!hasBurstPlayed) {
                 hasBurstPlayed = true;
                 SoulBurst();
             }
@@ -381,14 +348,12 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
         /// 定位幡旗 —— 沿固定瞄准方向的直线延伸，不做弧形旋转
         /// 参考 HalberdThrust 的直刺定位方式
         /// </summary>
-        private void PositionBanner()
-        {
+        private void PositionBanner() {
             Vector2 aimDir = AimAngle.ToRotationVector2();
             float armAngle = AimAngle - MathHelper.PiOver2;
 
             // 举幡阶段：手臂从偏下方抬到瞄准方向
-            if (CurrentPhase == BannerPhase.Raise)
-            {
+            if (CurrentPhase == BannerPhase.Raise) {
                 float raiseT = Math.Clamp(phaseTimer / RaiseTime, 0f, 1f);
                 float startOffset = MathHelper.ToRadians(40f) * Projectile.spriteDirection;
                 armAngle = MathHelper.Lerp(armAngle + startOffset, armAngle, ACMUtils.SineInOut(raiseT));
@@ -423,8 +388,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
         /// <summary>
         /// 刺出到达终点时的冲击波效果
         /// </summary>
-        private void ThrustImpact()
-        {
+        private void ThrustImpact() {
             Vector2 dir = AimAngle.ToRotationVector2();
             Vector2 impactPos = Owner.MountedCenter + dir * MaxExtend;
 
@@ -436,8 +400,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
                 Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(3.5f, 8);
 
             // 外圈环形冲击波（大粒子）
-            for (int i = 0; i < 18; i++)
-            {
+            for (int i = 0; i < 18; i++) {
                 float angle = MathHelper.TwoPi * i / 18f;
                 Vector2 vel = angle.ToRotationVector2() * Main.rand.NextFloat(4f, 8f);
                 Dust dust = Dust.NewDustDirect(impactPos, 1, 1, DustID.PurpleTorch,
@@ -447,8 +410,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             }
 
             // 内圈暗影冲击
-            for (int i = 0; i < 10; i++)
-            {
+            for (int i = 0; i < 10; i++) {
                 float angle = MathHelper.TwoPi * i / 10f;
                 Vector2 vel = angle.ToRotationVector2() * Main.rand.NextFloat(2f, 5f);
                 Dust shadow = Dust.NewDustDirect(impactPos, 1, 1, DustID.Shadowflame,
@@ -457,8 +419,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             }
 
             // 前向幽灵冲击粒子（强化）
-            for (int i = 0; i < 12; i++)
-            {
+            for (int i = 0; i < 12; i++) {
                 Vector2 vel = dir * Main.rand.NextFloat(6f, 14f) + Main.rand.NextVector2Circular(3f, 3f);
                 Dust ghost = Dust.NewDustDirect(impactPos, 1, 1, DustID.DungeonSpirit,
                     vel.X, vel.Y, 40, default, 1.6f);
@@ -467,8 +428,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             }
 
             // 沿前方的扇形冲击线
-            for (int i = 0; i < 8; i++)
-            {
+            for (int i = 0; i < 8; i++) {
                 float spread = MathHelper.ToRadians(Main.rand.NextFloat(-35f, 35f));
                 Vector2 vel = (AimAngle + spread).ToRotationVector2() * Main.rand.NextFloat(8f, 16f);
                 Dust beam = Dust.NewDustDirect(impactPos, 1, 1, DustID.ShadowbeamStaff,
@@ -477,8 +437,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             }
 
             // 向后反向飘散的残魂碎片
-            for (int i = 0; i < 5; i++)
-            {
+            for (int i = 0; i < 5; i++) {
                 Vector2 vel = -dir * Main.rand.NextFloat(2f, 5f) + Main.rand.NextVector2Circular(3f, 3f);
                 Dust wisp = Dust.NewDustDirect(impactPos, 1, 1, DustID.DungeonSpirit,
                     vel.X, vel.Y, 120, default, 0.8f);
@@ -490,15 +449,13 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
         /// 引魂漩涡 —— 万魂幡的核心视觉效果
         /// 灵魂从周围敌人身上被抽离，螺旋飞向幡旗末端的漩涡中心
         /// </summary>
-        private void SpawnSoulVortex(float channelProgress)
-        {
+        private void SpawnSoulVortex(float channelProgress) {
             Vector2 dir = AimAngle.ToRotationVector2();
             Vector2 vortexCenter = Owner.MountedCenter + dir * currentExtend;
             float expandedRadius = AbsorbRadius * ACMUtils.QuadOut(Math.Min(channelProgress * 3f, 1f));
 
             // ── 从敌人身上抽取灵魂粒子（强化：多层次抽魂） ──
-            for (int i = 0; i < Main.maxNPCs; i++)
-            {
+            for (int i = 0; i < Main.maxNPCs; i++) {
                 NPC npc = Main.npc[i];
                 if (!npc.CanBeChasedBy(this)) continue;
 
@@ -506,8 +463,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
                 if (dist > expandedRadius) continue;
 
                 // 主灵魂流：大型螺旋灵魂粒子
-                if (Main.rand.NextBool(2))
-                {
+                if (Main.rand.NextBool(2)) {
                     Vector2 soulPos = npc.Center + Main.rand.NextVector2Circular(npc.width * 0.5f, npc.height * 0.5f);
                     Vector2 toVortex = (vortexCenter - soulPos).SafeNormalize(Vector2.Zero);
                     Vector2 tangent = new(-toVortex.Y, toVortex.X);
@@ -521,8 +477,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
                 }
 
                 // 暗影灵魂流：暗色伴随粒子
-                if (Main.rand.NextBool(3))
-                {
+                if (Main.rand.NextBool(3)) {
                     Vector2 darkPos = npc.Center + Main.rand.NextVector2Circular(npc.width * 0.3f, npc.height * 0.3f);
                     Vector2 toV = (vortexCenter - darkPos).SafeNormalize(Vector2.Zero);
                     Vector2 darkVel = toV * Main.rand.NextFloat(5f, 9f);
@@ -533,8 +488,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
                 }
 
                 // 微光碎片：宝石紫色点缀
-                if (Main.rand.NextBool(5))
-                {
+                if (Main.rand.NextBool(5)) {
                     Vector2 sparkPos = npc.Center + Main.rand.NextVector2Circular(npc.width * 0.6f, npc.height * 0.6f);
                     Vector2 toV = (vortexCenter - sparkPos).SafeNormalize(Vector2.Zero);
                     Dust spark = Dust.NewDustDirect(sparkPos, 1, 1, DustID.GemAmethyst,
@@ -545,8 +499,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
 
             // ── 漩涡中心旋转粒子（双层螺旋） ──
             int vortexCount = (int)(6 + 8 * ACMUtils.QuadOut(Math.Min(channelProgress * 2f, 1f)));
-            for (int j = 0; j < vortexCount; j++)
-            {
+            for (int j = 0; j < vortexCount; j++) {
                 float angle = Main.rand.NextFloat(MathHelper.TwoPi);
                 float radius = Main.rand.NextFloat(10f, 45f);
                 Vector2 pos = vortexCenter + angle.ToRotationVector2() * radius;
@@ -562,8 +515,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
 
             // ── 内核脉动粒子（漩涡核心的高亮点） ──
             float coreIntensity = 0.5f + 0.5f * MathF.Sin(phaseTimer * 0.4f);
-            for (int k = 0; k < (int)(3 * coreIntensity + 1); k++)
-            {
+            for (int k = 0; k < (int)(3 * coreIntensity + 1); k++) {
                 Vector2 corePos = vortexCenter + Main.rand.NextVector2Circular(8f, 8f);
                 Dust core = Dust.NewDustDirect(corePos, 1, 1, DustID.PurpleTorch,
                     0f, 0f, 40, default, 1.0f + 0.5f * coreIntensity);
@@ -572,11 +524,9 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             }
 
             // ── 外圈引气粒子环（双环） ──
-            if (channelProgress > 0.15f)
-            {
+            if (channelProgress > 0.15f) {
                 // 外环
-                for (int r = 0; r < 2; r++)
-                {
+                for (int r = 0; r < 2; r++) {
                     if (!Main.rand.NextBool(2)) continue;
                     float ringAngle = Main.rand.NextFloat(MathHelper.TwoPi);
                     float ringR = expandedRadius * (r == 0 ? Main.rand.NextFloat(0.7f, 1f) : Main.rand.NextFloat(0.4f, 0.6f));
@@ -592,12 +542,10 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             }
 
             // ── 八方符阵射线（仪式感） ──
-            if (channelProgress > 0.3f && (int)phaseTimer % 3 == 0)
-            {
+            if (channelProgress > 0.3f && (int)phaseTimer % 3 == 0) {
                 int directions = 8;
                 float baseAngle = phaseTimer * 0.06f;
-                for (int d = 0; d < directions; d++)
-                {
+                for (int d = 0; d < directions; d++) {
                     float rayAngle = baseAngle + MathHelper.TwoPi * d / directions;
                     float rayDist = expandedRadius * (0.2f + 0.6f * channelProgress);
                     Vector2 rayPos = vortexCenter + rayAngle.ToRotationVector2() * rayDist;
@@ -611,8 +559,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
         /// <summary>
         /// 收魂时灵魂凝聚爆发
         /// </summary>
-        private void SoulBurst()
-        {
+        private void SoulBurst() {
             Vector2 burstCenter = Projectile.Center;
             SoundEngine.PlaySound(SoundID.Item103 with { Volume = 0.7f, Pitch = 0.5f }, burstCenter);
             SoundEngine.PlaySound(SoundID.NPCDeath39 with { Volume = 0.4f, Pitch = -0.3f }, burstCenter);
@@ -622,8 +569,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
                 Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(4f, 10);
 
             // 第一波：向外爆发的幽灵（大型）
-            for (int i = 0; i < 24; i++)
-            {
+            for (int i = 0; i < 24; i++) {
                 float angle = MathHelper.TwoPi * i / 24f;
                 Vector2 vel = angle.ToRotationVector2() * Main.rand.NextFloat(5f, 12f);
                 Dust dust = Dust.NewDustDirect(burstCenter, 1, 1, DustID.DungeonSpirit,
@@ -633,8 +579,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             }
 
             // 第二波：暗影火焰环
-            for (int i = 0; i < 16; i++)
-            {
+            for (int i = 0; i < 16; i++) {
                 float angle = MathHelper.TwoPi * i / 16f + 0.1f;
                 Vector2 vel = angle.ToRotationVector2() * Main.rand.NextFloat(3f, 7f);
                 Dust flame = Dust.NewDustDirect(burstCenter, 1, 1, DustID.Shadowflame,
@@ -643,8 +588,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             }
 
             // 第三波：紫色能量内爆
-            for (int i = 0; i < 14; i++)
-            {
+            for (int i = 0; i < 14; i++) {
                 Vector2 vel = Main.rand.NextVector2CircularEdge(4f, 4f);
                 Dust energy = Dust.NewDustDirect(burstCenter, 1, 1, DustID.PurpleTorch,
                     vel.X, vel.Y, 60, default, 1.8f);
@@ -653,8 +597,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             }
 
             // 宝石碎光散射
-            for (int i = 0; i < 8; i++)
-            {
+            for (int i = 0; i < 8; i++) {
                 Vector2 vel = Main.rand.NextVector2CircularEdge(6f, 6f);
                 Dust gem = Dust.NewDustDirect(burstCenter, 1, 1, DustID.GemAmethyst,
                     vel.X, vel.Y, 0, default, 0.8f);
@@ -662,8 +605,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             }
 
             // 向上升腾的残魂
-            for (int i = 0; i < 6; i++)
-            {
+            for (int i = 0; i < 6; i++) {
                 Vector2 pos = burstCenter + Main.rand.NextVector2Circular(20f, 10f);
                 Dust rising = Dust.NewDustDirect(pos, 1, 1, DustID.DungeonSpirit,
                     Main.rand.NextFloat(-1f, 1f), -Main.rand.NextFloat(3f, 6f), 80, default, 1.2f);
@@ -672,8 +614,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             }
         }
 
-        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone)
-        {
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
             // 微震反馈
             if (Projectile.owner == Main.myPlayer)
                 Main.LocalPlayer.GetModPlayer<ScreenShakePlayer>().ShakeScreen(1.5f, 4);
@@ -683,8 +624,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
                 ACMWeaponBurst.Soul, scale: 0.9f, owner: Projectile.owner);
 
             // 灵魂从敌人身上飞向幡旗（多层次）
-            for (int i = 0; i < 10; i++)
-            {
+            for (int i = 0; i < 10; i++) {
                 Vector2 toOwner = (Projectile.Center - target.Center).SafeNormalize(Vector2.Zero);
                 Vector2 tangent = new(-toOwner.Y, toOwner.X);
                 Vector2 vel = toOwner * Main.rand.NextFloat(5f, 11f)
@@ -699,8 +639,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             }
 
             // 暗影碎片
-            for (int i = 0; i < 4; i++)
-            {
+            for (int i = 0; i < 4; i++) {
                 Vector2 toOwner = (Projectile.Center - target.Center).SafeNormalize(Vector2.Zero);
                 Vector2 vel = toOwner * Main.rand.NextFloat(3f, 7f) + Main.rand.NextVector2Circular(2f, 2f);
                 Dust shadow = Dust.NewDustDirect(target.Center, 1, 1, DustID.Shadowflame,
@@ -709,40 +648,34 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             }
 
             // 命中闪光
-            for (int i = 0; i < 3; i++)
-            {
+            for (int i = 0; i < 3; i++) {
                 Dust flash = Dust.NewDustDirect(target.Center, 1, 1, DustID.GemAmethyst,
                     Main.rand.NextFloat(-3f, 3f), Main.rand.NextFloat(-3f, 3f), 0, default, 0.5f);
                 flash.noGravity = true;
             }
 
             // 吸取生命（受成长影响）
-            if (Main.rand.NextBool(3))
-            {
+            if (Main.rand.NextBool(3)) {
                 int healAmount = Math.Max(1, (int)(damageDone / 20f * growthHealMul));
                 Main.player[Projectile.owner].Heal(healAmount);
             }
         }
 
-        public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers)
-        {
+        public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers) {
             modifiers.HitDirectionOverride = target.position.X > Owner.MountedCenter.X ? 1 : -1;
         }
 
-        public override bool? CanDamage()
-        {
+        public override bool? CanDamage() {
             // 举幡阶段不造成伤害
             if (CurrentPhase == BannerPhase.Raise)
                 return false;
             return base.CanDamage();
         }
 
-        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox)
-        {
+        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
             Vector2 dir = AimAngle.ToRotationVector2();
 
-            if (CurrentPhase == BannerPhase.Channel)
-            {
+            if (CurrentPhase == BannerPhase.Channel) {
                 // 引魂阶段：以漩涡为中心的范围攻击（比视效略小）
                 Vector2 vortexCenter = Owner.MountedCenter + dir * currentExtend;
                 float checkRadius = AbsorbRadius * 0.45f;
@@ -751,8 +684,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
                     MathHelper.Clamp(vortexCenter.Y, targetHitbox.Top, targetHitbox.Bottom));
                 return Vector2.Distance(vortexCenter, closest) < checkRadius;
             }
-            else
-            {
+            else {
                 // 刺出/收回阶段：沿幡旗杆身的线段碰撞
                 Vector2 start = Owner.MountedCenter;
                 Vector2 end = start + dir * Math.Max(currentExtend, 0f);
@@ -762,8 +694,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             }
         }
 
-        public override void CutTiles()
-        {
+        public override void CutTiles() {
             Vector2 dir = AimAngle.ToRotationVector2();
             Vector2 start = Owner.MountedCenter;
             Vector2 end = start + dir * Math.Max(currentExtend, 0f);
@@ -771,8 +702,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
         }
 
         // ── 自定义绘制 ──
-        public override bool PreDraw(ref Color lightColor)
-        {
+        public override bool PreDraw(ref Color lightColor) {
             Texture2D texture = TextureAssets.Projectile[Type].Value;
             Vector2 origin = new(texture.Width / 2f, texture.Height / 2f);
             SpriteEffects effects = Projectile.spriteDirection < 0
@@ -786,15 +716,12 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
                 new Color(150, 60, 255) * (0.4f + 0.5f * growthRatio));
 
             // 2) 引魂阶段: 幽紫吸魂弧 (spectral ribbon 螺旋汇入幡尖)
-            if (CurrentPhase == BannerPhase.Channel)
-            {
+            if (CurrentPhase == BannerPhase.Channel) {
                 int arcs = 3;
-                for (int a = 0; a < arcs; a++)
-                {
+                for (int a = 0; a < arcs; a++) {
                     Vector2[] pts = new Vector2[8];
                     float baseA = GlobalTimer * 0.1f + a * MathHelper.TwoPi / arcs;
-                    for (int k = 0; k < 8; k++)
-                    {
+                    for (int k = 0; k < 8; k++) {
                         float t = k / 7f;
                         float r = MathHelper.Lerp(230f, 12f, t) * (0.6f + 0.4f * growthRatio);
                         float ang = baseA + t * 2.2f;
@@ -812,8 +739,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             }
 
             // ── 阶段光晕强度 ──
-            float glowIntensity = CurrentPhase switch
-            {
+            float glowIntensity = CurrentPhase switch {
                 BannerPhase.Channel => 0.6f + 0.3f * MathF.Sin(phaseTimer * 0.3f),
                 BannerPhase.Thrust => 0.4f + 0.45f * Math.Clamp(phaseTimer / ThrustTime, 0f, 1f),
                 BannerPhase.Retract => 0.7f * (1f - Math.Clamp(phaseTimer / RetractTime, 0f, 1f)),
@@ -821,10 +747,8 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             };
 
             // ── 刺出阶段：残影拖尾 ──
-            if (CurrentPhase == BannerPhase.Thrust)
-            {
-                for (int i = AfterimageLength - 1; i >= 1; i--)
-                {
+            if (CurrentPhase == BannerPhase.Thrust) {
+                for (int i = AfterimageLength - 1; i >= 1; i--) {
                     float progress = 1f - (float)i / AfterimageLength;
                     float alpha = progress * 0.35f;
                     float scale = Projectile.scale * (0.8f + 0.2f * progress);
@@ -844,12 +768,10 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             }
 
             // ── 收回阶段：消散残影 ──
-            if (CurrentPhase == BannerPhase.Retract)
-            {
+            if (CurrentPhase == BannerPhase.Retract) {
                 float retractT = Math.Clamp(phaseTimer / RetractTime, 0f, 1f);
                 Vector2 aimDir = AimAngle.ToRotationVector2();
-                for (int i = 1; i <= 4; i++)
-                {
+                for (int i = 1; i <= 4; i++) {
                     Vector2 trailPos = Projectile.Center + aimDir * i * 16f * (1f - retractT);
                     float alpha = (1f - retractT) * 0.25f * (1f - i / 5f);
                     Color fadeColor = new Color(130, 50, 200) * alpha;
@@ -861,8 +783,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             }
 
             // ── 引魂阶段：多层光环（法阵感） ──
-            if (CurrentPhase == BannerPhase.Channel)
-            {
+            if (CurrentPhase == BannerPhase.Channel) {
                 float channelT = Math.Clamp(phaseTimer / ChannelTime, 0f, 1f);
 
                 // 外层大光环：缓慢脉冲
@@ -902,8 +823,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
                 Projectile.scale * 1.14f, effects, 0);
 
             // ── 刺出阶段额外的前方高亮 ──
-            if (CurrentPhase == BannerPhase.Thrust)
-            {
+            if (CurrentPhase == BannerPhase.Thrust) {
                 float thrustT = Math.Clamp(phaseTimer / ThrustTime, 0f, 1f);
                 Color thrustGlow = new Color(200, 100, 255) * (0.3f * thrustT);
                 Main.EntitySpriteDraw(texture,

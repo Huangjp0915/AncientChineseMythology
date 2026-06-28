@@ -1,7 +1,7 @@
-﻿using Microsoft.Xna.Framework.Graphics;
-using System;
-using AncientChineseMythology.Underworlds.Boss.NetherDragons.Items;
+﻿using AncientChineseMythology.Underworlds.Boss.NetherDragons.Items;
 using AncientChineseMythology.Underworlds.Items.Materials;
+using Microsoft.Xna.Framework.Graphics;
+using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent;

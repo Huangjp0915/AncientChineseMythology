@@ -1,4 +1,3 @@
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using System;
@@ -63,13 +62,11 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 
         public override string Texture => "AncientChineseMythology/Textures/Masking/SoftGlow";
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             ProjectileID.Sets.DrawScreenCheckFluff[Type] = 4800;
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Projectile.width = 2;
             Projectile.height = 2;
             Projectile.damage = 0;
@@ -84,13 +81,11 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
         }
 
         public override void DrawBehind(int index, List<int> behindNPCsAndTiles, List<int> behindNPCs,
-            List<int> behindProjectiles, List<int> overPlayers, List<int> overWiresUI)
-        {
+            List<int> behindProjectiles, List<int> overPlayers, List<int> overWiresUI) {
             behindNPCs.Add(index);
         }
 
-        public override void Unload()
-        {
+        public override void Unload() {
             noiseTexture?.Dispose();
             noiseTexture = null;
             arenaEffect = null;
@@ -100,11 +95,9 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 
         #region AI
 
-        public override void AI()
-        {
+        public override void AI() {
             // 检查Boss是否存活
-            if (!IsBossAlive())
-            {
+            if (!IsBossAlive()) {
                 Projectile.Kill();
                 return;
             }
@@ -134,27 +127,23 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             }
 
             // 服务端：界外伤害
-            if (Main.netMode != NetmodeID.MultiplayerClient)
-            {
+            if (Main.netMode != NetmodeID.MultiplayerClient) {
                 damageTimer++;
-                if (damageTimer >= DamageInterval)
-                {
+                if (damageTimer >= DamageInterval) {
                     damageTimer = 0;
                     ApplyOutOfBoundsDamage();
                 }
             }
 
             // 客户端：推力 + 边缘粒子
-            if (Main.netMode != NetmodeID.Server)
-            {
+            if (Main.netMode != NetmodeID.Server) {
                 ApplyPushForce();
                 SpawnEdgeParticles();
             }
 
             // 光照
             float glow = 0.4f + MathF.Sin(animTime * 2f) * 0.1f;
-            for (int i = 0; i < 8; i++)
-            {
+            for (int i = 0; i < 8; i++) {
                 float angle = MathHelper.TwoPi / 8 * i + animTime * 0.3f;
                 Vector2 lightPos = Projectile.Center + new Vector2(
                     MathF.Cos(angle) * currentRadius,
@@ -163,24 +152,20 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             }
         }
 
-        private bool IsBossAlive()
-        {
+        private bool IsBossAlive() {
             int idx = BossIndex;
             return idx >= 0 && idx < Main.maxNPCs &&
                    Main.npc[idx].active &&
                    Main.npc[idx].type == ModContent.NPCType<Dazheng>();
         }
 
-        private void ApplyOutOfBoundsDamage()
-        {
-            for (int i = 0; i < Main.maxPlayers; i++)
-            {
+        private void ApplyOutOfBoundsDamage() {
+            for (int i = 0; i < Main.maxPlayers; i++) {
                 Player p = Main.player[i];
                 if (!p.active || p.dead) continue;
 
                 float dist = Vector2.Distance(p.Center, Projectile.Center);
-                if (dist > currentRadius)
-                {
+                if (dist > currentRadius) {
                     int dmg = 50;
                     if (Main.expertMode) dmg = 75;
                     if (Main.masterMode) dmg = 100;
@@ -192,16 +177,14 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             }
         }
 
-        private void ApplyPushForce()
-        {
+        private void ApplyPushForce() {
             Player local = Main.LocalPlayer;
             if (!local.active || local.dead) return;
 
             float dist = Vector2.Distance(local.Center, Projectile.Center);
             float warnDist = currentRadius * PushStartPercent;
 
-            if (dist > warnDist)
-            {
+            if (dist > warnDist) {
                 Vector2 pushDir = (Projectile.Center - local.Center).SafeNormalize(Vector2.Zero);
                 float excess = (dist - warnDist) / (currentRadius * (1f - PushStartPercent));
                 excess = MathHelper.Clamp(excess, 0f, 3f);
@@ -210,10 +193,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             }
         }
 
-        private void SpawnEdgeParticles()
-        {
-            if (Main.rand.NextBool(3))
-            {
+        private void SpawnEdgeParticles() {
+            if (Main.rand.NextBool(3)) {
                 float angle = Main.rand.NextFloat(MathHelper.TwoPi);
                 float radius = currentRadius + Main.rand.NextFloat(-40f, 40f);
                 Vector2 pos = Projectile.Center + new Vector2(
@@ -228,8 +209,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             }
 
             // 偶尔的金色亮点
-            if (Main.rand.NextBool(8))
-            {
+            if (Main.rand.NextBool(8)) {
                 float angle = Main.rand.NextFloat(MathHelper.TwoPi);
                 Vector2 pos = Projectile.Center + new Vector2(
                     MathF.Cos(angle), MathF.Sin(angle)) * currentRadius;
@@ -244,8 +224,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 
         #region 绘制
 
-        public override bool PreDraw(ref Color lightColor)
-        {
+        public override bool PreDraw(ref Color lightColor) {
             if (Main.dedServ || fadeProgress <= 0.01f)
                 return false;
 
@@ -313,14 +292,12 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 
         #region 资源管理
 
-        private static void EnsureNoiseTexture()
-        {
+        private static void EnsureNoiseTexture() {
             if (noiseTexture == null || noiseTexture.IsDisposed)
                 noiseTexture = GenerateNoiseTexture(Main.graphics.GraphicsDevice);
         }
 
-        private static Effect GetEffect()
-        {
+        private static Effect GetEffect() {
             arenaEffect ??= ModContent.Request<Effect>(
                 "AncientChineseMythology/Effects/DazhengArenaCircle",
                 AssetRequestMode.ImmediateLoad);
@@ -331,13 +308,11 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
         /// 生成可平铺的三通道分形噪声纹理
         /// R/G/B 各通道为独立噪声，着色器中分别采样以获得丰富的有机纹路
         /// </summary>
-        private static Texture2D GenerateNoiseTexture(GraphicsDevice device, int size = 256)
-        {
+        private static Texture2D GenerateNoiseTexture(GraphicsDevice device, int size = 256) {
             Color[] pixels = new Color[size * size];
             byte[][] channels = new byte[3][];
 
-            for (int c = 0; c < 3; c++)
-            {
+            for (int c = 0; c < 3; c++) {
                 channels[c] = new byte[size * size];
                 float[,] noise = GenerateTileableFBM(size, octaves: 5, seed: 42 + c * 173);
 
@@ -358,8 +333,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
         /// 可平铺的分形布朗运动 (FBM) 噪声
         /// 多八度值噪声叠加，边缘无缝衔接
         /// </summary>
-        private static float[,] GenerateTileableFBM(int size, int octaves, int seed)
-        {
+        private static float[,] GenerateTileableFBM(int size, int octaves, int seed) {
             float[,] result = new float[size, size];
             Random rng = new(seed);
 
@@ -367,8 +341,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             float frequency = 1f;
             float maxValue = 0f;
 
-            for (int oct = 0; oct < octaves; oct++)
-            {
+            for (int oct = 0; oct < octaves; oct++) {
                 int grid = Math.Max(2, (int)(4 * frequency));
 
                 // 生成格点随机值
@@ -377,18 +350,15 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                     lattice[i] = (float)rng.NextDouble();
 
                 // 平铺：右边缘 = 左边缘，下边缘 = 上边缘
-                for (int i = 0; i <= grid; i++)
-                {
+                for (int i = 0; i <= grid; i++) {
                     lattice[i * (grid + 1) + grid] = lattice[i * (grid + 1)];
                     lattice[grid * (grid + 1) + i] = lattice[i];
                 }
                 lattice[grid * (grid + 1) + grid] = lattice[0];
 
                 // 双线性插值 + smoothstep
-                for (int y = 0; y < size; y++)
-                {
-                    for (int x = 0; x < size; x++)
-                    {
+                for (int y = 0; y < size; y++) {
+                    for (int x = 0; x < size; x++) {
                         float fx = (float)x / size * grid;
                         float fy = (float)y / size * grid;
                         int ix = Math.Min((int)fx, grid - 1);
@@ -418,8 +388,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             }
 
             // 归一化到 0~1
-            if (maxValue > 0)
-            {
+            if (maxValue > 0) {
                 for (int y = 0; y < size; y++)
                     for (int x = 0; x < size; x++)
                         result[x, y] /= maxValue;

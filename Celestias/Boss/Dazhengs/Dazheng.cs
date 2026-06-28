@@ -1,6 +1,5 @@
 ﻿using AncientChineseMythology.Celestias.Boss.Dazhengs.Items;
 using AncientChineseMythology.Systems;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.IO;

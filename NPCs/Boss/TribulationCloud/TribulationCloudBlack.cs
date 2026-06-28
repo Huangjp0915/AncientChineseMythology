@@ -1,7 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using Terraria;
-
-namespace AncientChineseMythology.NPCs.Boss.TribulationCloud
+﻿namespace AncientChineseMythology.NPCs.Boss.TribulationCloud
 {
     /// <summary>
     /// 玄雷劫云 (黑) —— 固定节奏点雷, 教玩家"读拍子"。蓄力后在记录的站位原地落雷, 节奏稳定可预读。

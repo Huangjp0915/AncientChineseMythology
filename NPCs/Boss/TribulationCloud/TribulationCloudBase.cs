@@ -1,6 +1,5 @@
 using AncientChineseMythology.Players;
 using AncientChineseMythology.Systems;
-using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;

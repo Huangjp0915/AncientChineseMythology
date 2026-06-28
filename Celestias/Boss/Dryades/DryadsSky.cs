@@ -1,4 +1,3 @@
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -16,10 +15,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
         public override int Music => -1;
         public override SceneEffectPriority Priority => SceneEffectPriority.BossLow;
         public override bool IsSceneEffectActive(Player player) => NPC.AnyNPCs(ModContent.NPCType<Dryads>());
-        public override void SpecialVisuals(Player player, bool isActive)
-        {
-            if (player.Alives())
-            {
+        public override void SpecialVisuals(Player player, bool isActive) {
+            if (player.Alives()) {
                 player.ManageSpecialBiomeVisuals(DryadsSky.SkyName, isActive);
             }
         }
@@ -78,8 +75,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
 
         #region IACMLoader 注册
 
-        void IACMLoader.LoadData()
-        {
+        void IACMLoader.LoadData() {
             SkyManager.Instance[SkyName] = this;
             Filters.Scene[SkyName] = new Filter(new ScreenShaderData("FilterMiniTower")
                 .UseColor(0.04f, 0.07f, 0.03f)
@@ -94,8 +90,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
 
         #region CustomSky 生命周期
 
-        public override void Activate(Vector2 position, params object[] args)
-        {
+        public override void Activate(Vector2 position, params object[] args) {
             active = true;
             intensity = 0f;
             bossHealthPercent = 1f;
@@ -111,15 +106,13 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
         public override bool IsActive() => active || intensity > 0.01f;
         public override void Reset() { active = false; intensity = 0f; }
 
-        public override void Update(GameTime gameTime)
-        {
+        public override void Update(GameTime gameTime) {
             globalTime += (float)gameTime.ElapsedGameTime.TotalSeconds;
 
             NPC boss = FindBoss();
             bool shouldBeActive = boss != null && boss.active;
 
-            if (shouldBeActive)
-            {
+            if (shouldBeActive) {
                 if (!active) Activate(Vector2.Zero);
                 bossHealthPercent = (float)boss.life / boss.lifeMax;
                 isPhase2 = bossHealthPercent < Dryads.Phase2Threshold;
@@ -127,8 +120,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                 float target = isPhase2 ? MaxIntensity * 1.1f : MaxIntensity;
                 intensity = MathHelper.Lerp(intensity, target, FadeInSpeed);
             }
-            else
-            {
+            else {
                 intensity -= FadeOutSpeed;
                 if (intensity <= 0f) { intensity = 0f; if (active) Deactivate(); }
             }
@@ -140,10 +132,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
             for (int i = 0; i < ShadowCount; i++) shadowPhases[i] += 0.007f;
         }
 
-        private static NPC FindBoss()
-        {
-            foreach (NPC npc in Main.ActiveNPCs)
-            {
+        private static NPC FindBoss() {
+            foreach (NPC npc in Main.ActiveNPCs) {
                 if (npc.type == ModContent.NPCType<Dryads>() && npc.active) return npc;
             }
             return null;
@@ -153,10 +143,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
 
         #region Draw
 
-        public override void Draw(SpriteBatch spriteBatch, float minDepth, float maxDepth)
-        {
-            if (maxDepth >= 0 && minDepth < 0 && intensity > 0.01f)
-            {
+        public override void Draw(SpriteBatch spriteBatch, float minDepth, float maxDepth) {
+            if (maxDepth >= 0 && minDepth < 0 && intensity > 0.01f) {
                 DrawBackground(spriteBatch);
                 DrawFog(spriteBatch);
                 DrawRootPulses(spriteBatch);
@@ -170,16 +158,14 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
 
         #region 层1 — 幽暗森林渐变底色
 
-        private void DrawBackground(SpriteBatch sb)
-        {
+        private void DrawBackground(SpriteBatch sb) {
             Texture2D pixel = VaultAsset.placeholder2.Value;
             Rectangle screen = new(0, 0, Main.screenWidth, Main.screenHeight);
 
             sb.Draw(pixel, screen, DeepForest * intensity * 0.8f);
 
             int bands = 10;
-            for (int i = 0; i < bands; i++)
-            {
+            for (int i = 0; i < bands; i++) {
                 float t = (float)i / bands;
                 int h = Main.screenHeight / bands;
                 Rectangle r = new(0, i * h, Main.screenWidth, h + 1);
@@ -207,15 +193,13 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
 
         #region 层2 — 森林迷雾
 
-        private void DrawFog(SpriteBatch sb)
-        {
+        private void DrawFog(SpriteBatch sb) {
             Texture2D tex = ACMAsset.Smoke;
             if (tex == null) return;
             int fs = tex.Width / 4;
             Vector2 origin = new(fs / 2f);
 
-            for (int i = 0; i < FogCount; i++)
-            {
+            for (int i = 0; i < FogCount; i++) {
                 FogCloud f = fogs[i];
                 if (!f.IsActive) continue;
 
@@ -238,14 +222,12 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
 
         #region 层3 — 根须光脉
 
-        private void DrawRootPulses(SpriteBatch sb)
-        {
+        private void DrawRootPulses(SpriteBatch sb) {
             Texture2D tex = ACMAsset.GlaciateWave;
             if (tex == null) return;
             Vector2 origin = new(tex.Width / 2f, tex.Height / 2f);
 
-            for (int i = 0; i < RootPulseCount; i++)
-            {
+            for (int i = 0; i < RootPulseCount; i++) {
                 RootPulse pulse = rootPulses[i];
                 if (pulse.Alpha <= 0.01f) continue;
 
@@ -269,8 +251,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
             }
 
             // 二阶段：底部翠绿光晕
-            if (isPhase2)
-            {
+            if (isPhase2) {
                 Texture2D glow = ACMAsset.SoftGlow;
                 if (glow == null) return;
                 Vector2 glowOrigin = glow.Size() / 2f;
@@ -289,14 +270,12 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
 
         #region 层4 — 孢子粒子
 
-        private void DrawSpores(SpriteBatch sb)
-        {
+        private void DrawSpores(SpriteBatch sb) {
             Texture2D tex = ACMAsset.SoftGlow ?? ACMAsset.BlankStar;
             if (tex == null) return;
             Vector2 origin = tex.Size() / 2f;
 
-            for (int i = 0; i < SporeCount; i++)
-            {
+            for (int i = 0; i < SporeCount; i++) {
                 Spore spore = spores[i];
                 if (!spore.IsActive) continue;
 
@@ -321,8 +300,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                     SpriteEffects.None, 0f);
 
                 // 外圈微弱光晕
-                if (i % 3 == 0)
-                {
+                if (i % 3 == 0) {
                     Color glowC = SporeGlow * alpha * 0.15f;
                     glowC.A = 0;
                     sb.Draw(tex, dp, null, glowC, 0f, origin, scale * breathScale * 1.8f,
@@ -335,8 +313,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
 
         #region 层5 — 树影暗角
 
-        private void DrawTreeShadows(SpriteBatch sb)
-        {
+        private void DrawTreeShadows(SpriteBatch sb) {
             Texture2D glow = ACMAsset.SoftGlow;
             if (glow == null) return;
             Vector2 go = glow.Size() / 2f;
@@ -344,16 +321,14 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
             float baseAlpha = intensity * 0.25f;
             if (isPhase2) baseAlpha *= 1.4f;
 
-            for (int i = 0; i < ShadowCount; i++)
-            {
+            for (int i = 0; i < ShadowCount; i++) {
                 float phase = shadowPhases[i];
                 float sway = MathF.Sin(phase * 2f + i * 0.9f) * 25f;
                 float breathe = 0.85f + MathF.Sin(phase * 1.5f + i * 0.7f) * 0.15f;
 
                 Vector2 pos;
                 float baseScale;
-                switch (i % 4)
-                {
+                switch (i % 4) {
                     case 0:
                         pos = new Vector2(-25 + sway * 0.3f, Main.screenHeight * (0.2f + i * 0.13f));
                         baseScale = 2f;
@@ -390,11 +365,9 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
 
         #region 层6 — 暗角 + 脉冲
 
-        private void DrawVignette(SpriteBatch sb)
-        {
+        private void DrawVignette(SpriteBatch sb) {
             Texture2D glow = ACMAsset.SoftGlow;
-            if (glow != null)
-            {
+            if (glow != null) {
                 Vector2 go = glow.Size() / 2f;
                 float va = intensity * 0.45f;
                 if (isPhase2) va *= 1.3f;
@@ -432,8 +405,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
 
         #region 地表着色
 
-        public override Color OnTileColor(Color inColor)
-        {
+        public override Color OnTileColor(Color inColor) {
             Color tint = Color.Lerp(Color.White, new Color(40, 55, 30), intensity * 0.35f);
             return new Color(
                 (int)(inColor.R * tint.R / 255f),
@@ -461,17 +433,14 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
             public Vector2 Velocity;
             private int cooldown;
 
-            public void Reset()
-            {
+            public void Reset() {
                 IsActive = false;
                 AnimProgress = 0f;
                 cooldown = Main.rand.Next(5, 40);
             }
 
-            public void Update(float mul)
-            {
-                if (!IsActive)
-                {
+            public void Update(float mul) {
+                if (!IsActive) {
                     if (--cooldown <= 0) Activate(mul);
                     return;
                 }
@@ -481,8 +450,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                 if (AnimProgress >= 1f) Reset();
             }
 
-            private void Activate(float mul)
-            {
+            private void Activate(float mul) {
                 IsActive = true;
                 AnimProgress = 0f;
                 AnimSpeed = Main.rand.NextFloat(0.001f, 0.004f);
@@ -512,16 +480,14 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
             private readonly float glowDuration;
             private bool glowing;
 
-            public RootPulse(int i)
-            {
+            public RootPulse(int i) {
                 index = i;
                 period = 5f + i * 1.8f;
                 glowDuration = 2f + i * 0.4f;
                 Reset();
             }
 
-            public void Reset()
-            {
+            public void Reset() {
                 Alpha = 0f;
                 timer = 0f;
                 glowing = false;
@@ -530,36 +496,30 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                 Angle = -0.03f + index * 0.018f;
             }
 
-            public void Update(float gTime, bool intense)
-            {
+            public void Update(float gTime, bool intense) {
                 timer += 1f / 60f;
                 float p = intense ? period * 0.65f : period;
                 float pos = timer % p;
 
-                if (pos < glowDuration && !glowing)
-                {
+                if (pos < glowDuration && !glowing) {
                     glowing = true;
                     ScreenX = Main.screenWidth * (0.15f + index * 0.2f)
                             + MathF.Sin(gTime * 0.3f + index * 1.3f) * (Main.screenWidth * 0.04f);
                     Angle = -0.03f + index * 0.018f + MathF.Sin(gTime * 0.2f + index) * 0.02f;
                 }
 
-                if (glowing)
-                {
-                    if (pos < glowDuration)
-                    {
+                if (glowing) {
+                    if (pos < glowDuration) {
                         float t = pos / glowDuration;
                         Alpha = t < 0.25f ? t / 0.25f : 1f - (t - 0.25f) / 0.75f;
                         Alpha = MathHelper.Clamp(Alpha, 0f, 1f);
                     }
-                    else
-                    {
+                    else {
                         glowing = false;
                         Alpha = 0f;
                     }
                 }
-                else
-                {
+                else {
                     Alpha = MathHelper.Lerp(Alpha, 0f, 0.1f);
                 }
             }
@@ -579,17 +539,14 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
             private float swayPhase;
             private float driftPhase;
 
-            public void Reset()
-            {
+            public void Reset() {
                 IsActive = false;
                 AnimProgress = 0f;
                 cooldown = Main.rand.Next(8, 60);
             }
 
-            public void Update(float gTime)
-            {
-                if (!IsActive)
-                {
+            public void Update(float gTime) {
+                if (!IsActive) {
                     if (--cooldown <= 0) Activate();
                     return;
                 }
@@ -601,8 +558,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                 if (AnimProgress >= 1f) Reset();
             }
 
-            private void Activate()
-            {
+            private void Activate() {
                 IsActive = true;
                 AnimProgress = 0f;
                 AnimSpeed = Main.rand.NextFloat(0.003f, 0.01f);

@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.Xna.Framework;
+﻿using System.Collections.Generic;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
@@ -12,13 +10,11 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
     {
         public override string Texture => "AncientChineseMythology/Items/Weapons/SoulBanners/SoulBanner";
 
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             Item.ResearchUnlockCount = 1;
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.damage = 52;
             Item.DamageType = DamageClass.Summon;
             Item.width = 40;
@@ -40,10 +36,8 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
 
         public override bool AltFunctionUse(Player player) => true;
 
-        public override bool CanUseItem(Player player)
-        {
-            if (player.altFunctionUse == 2)
-            {
+        public override bool CanUseItem(Player player) {
+            if (player.altFunctionUse == 2) {
                 Item.useTime = 36;
                 Item.useAnimation = 36;
                 Item.mana = 30;
@@ -52,8 +46,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
                 if (player.ownedProjectileCounts[minionType] >= 1)
                     return false;
             }
-            else
-            {
+            else {
                 Item.useTime = 30;
                 Item.useAnimation = 30;
                 Item.mana = 15;
@@ -63,30 +56,25 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
         }
 
         /// <summary>成长系统：根据灵魂数量动态修改武器伤害</summary>
-        public override void ModifyWeaponDamage(Player player, ref StatModifier damage)
-        {
+        public override void ModifyWeaponDamage(Player player, ref StatModifier damage) {
             var sbPlayer = player.GetModPlayer<SoulBannerPlayer>();
             damage *= sbPlayer.DamageMultiplier;
         }
 
         /// <summary>成长系统：根据灵魂数量动态修改击退</summary>
-        public override void ModifyWeaponKnockback(Player player, ref StatModifier knockback)
-        {
+        public override void ModifyWeaponKnockback(Player player, ref StatModifier knockback) {
             var sbPlayer = player.GetModPlayer<SoulBannerPlayer>();
             knockback *= sbPlayer.KnockbackMultiplier;
         }
 
-        public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback)
-        {
-            if (player.altFunctionUse == 2)
-            {
+        public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
+            if (player.altFunctionUse == 2) {
                 player.AddBuff(ModContent.BuffType<SoulBannerMinionBuff>(), 2);
                 var proj = Projectile.NewProjectileDirect(source, player.Center, Vector2.Zero,
                     ModContent.ProjectileType<SoulBannerMinion>(), damage, knockback, player.whoAmI);
                 proj.originalDamage = Item.damage;
             }
-            else
-            {
+            else {
                 Projectile.NewProjectile(source, position, velocity,
                     ModContent.ProjectileType<SoulBannerHeldProj>(), damage, knockback, player.whoAmI);
             }
@@ -95,20 +83,17 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
         }
 
         /// <summary>成长系统：动态 Tooltip 显示灵魂数量和成长加成</summary>
-        public override void ModifyTooltips(List<TooltipLine> tooltips)
-        {
+        public override void ModifyTooltips(List<TooltipLine> tooltips) {
             Player player = Main.LocalPlayer;
             var sbPlayer = player.GetModPlayer<SoulBannerPlayer>();
 
-            if (sbPlayer.soulCap > 0)
-            {
+            if (sbPlayer.soulCap > 0) {
                 float ratio = sbPlayer.GrowthRatio;
                 int pct = (int)(ratio * 100);
                 string soulLine = $"[c/B455FF:灵魂：{sbPlayer.soulCount} / {sbPlayer.soulCap}  ({pct}%)]";
                 tooltips.Add(new TooltipLine(Mod, "SoulCount", soulLine));
 
-                if (sbPlayer.soulCount > 0)
-                {
+                if (sbPlayer.soulCount > 0) {
                     int dmgPct = (int)((sbPlayer.DamageMultiplier - 1f) * 100);
                     int radiusPct = (int)((sbPlayer.AbsorbRadiusMultiplier - 1f) * 100);
                     int healPct = (int)((sbPlayer.HealMultiplier - 1f) * 100);
@@ -116,8 +101,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
                     tooltips.Add(new TooltipLine(Mod, "SoulBonus", bonusLine));
                 }
             }
-            else
-            {
+            else {
                 tooltips.Add(new TooltipLine(Mod, "SoulHint", "[c/666666:击败更强大的妖魔以唤醒幡中亡魂]"));
             }
 
@@ -127,10 +111,8 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
                 tooltips.Add(new TooltipLine(Mod, "SoulNextBoss", $"[c/555555:{nextBoss}]"));
         }
 
-        private static string GetNextBossHint(SoulBannerPlayer sbPlayer)
-        {
-            foreach (var tier in SoulBannerPlayer.Tiers)
-            {
+        private static string GetNextBossHint(SoulBannerPlayer sbPlayer) {
+            foreach (var tier in SoulBannerPlayer.Tiers) {
                 if (!sbPlayer.defeatedBossTiers.Contains(tier.TierId))
                     return $"击败下一位强敌以解锁灵魂上限 → {tier.CapValue}";
             }

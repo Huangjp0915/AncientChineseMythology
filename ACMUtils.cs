@@ -1,8 +1,6 @@
-﻿using System;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
+using System;
 using Terraria;
-using Terraria.Graphics;
 
 namespace AncientChineseMythology
 {

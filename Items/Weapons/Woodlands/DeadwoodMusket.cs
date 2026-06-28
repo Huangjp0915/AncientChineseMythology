@@ -1,5 +1,4 @@
 ﻿using AncientChineseMythology.Helpers;
-using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;

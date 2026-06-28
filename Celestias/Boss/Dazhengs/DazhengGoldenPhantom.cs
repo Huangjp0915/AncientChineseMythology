@@ -1,4 +1,3 @@
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -58,7 +57,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                     if (Projectile.velocity.Length() < maxSpeed)
                         Projectile.velocity *= 1.02f;
                 }
-            } else {
+            }
+            else {
                 // 缓慢漂浮+脉动
                 Projectile.velocity *= 0.98f;
                 float driftAngle = glowPhase * 0.5f;

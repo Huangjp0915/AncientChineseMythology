@@ -1,12 +1,9 @@
-using System;
-using Microsoft.Xna.Framework;
-using Terraria;
-using Terraria.ID;
-using Terraria.Localization;
-using Terraria.DataStructures;
-using Terraria.ModLoader;
 using AncientChineseMythology.Underworlds.Boss.AwakeningNethers;
 using AncientChineseMythology.Underworlds.Boss.YinEmperors;
+using System;
+using Terraria;
+using Terraria.ID;
+using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Underworlds
 {

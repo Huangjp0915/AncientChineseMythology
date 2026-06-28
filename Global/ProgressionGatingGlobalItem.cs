@@ -6,7 +6,6 @@ using AncientChineseMythology.Items.Summons;
 using AncientChineseMythology.Systems;
 using AncientChineseMythology.Underworlds.Items;
 using Terraria;
-using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Global

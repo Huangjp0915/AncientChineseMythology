@@ -1,4 +1,3 @@
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using System;
@@ -54,8 +53,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts
                 Asset<Effect> asset = ModContent.Request<Effect>(path, AssetRequestMode.ImmediateLoad);
                 _cache[canonicalName] = asset;
                 return asset?.Value;
-            }
-            catch {
+            } catch {
                 _missing.Add(canonicalName);
                 return null;
             }

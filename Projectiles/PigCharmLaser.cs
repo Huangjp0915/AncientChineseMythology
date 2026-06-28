@@ -1,6 +1,5 @@
-﻿using System;
-using AncientChineseMythology.Helpers;
-using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Helpers;
+using System;
 using Terraria;
 using Terraria.ModLoader;
 

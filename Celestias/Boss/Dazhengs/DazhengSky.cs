@@ -1,4 +1,3 @@
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
@@ -16,10 +15,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
         public override int Music => -1;
         public override SceneEffectPriority Priority => SceneEffectPriority.BossLow;
         public override bool IsSceneEffectActive(Player player) => NPC.AnyNPCs(ModContent.NPCType<Dazheng>());
-        public override void SpecialVisuals(Player player, bool isActive)
-        {
-            if (player.Alives())
-            {
+        public override void SpecialVisuals(Player player, bool isActive) {
+            if (player.Alives()) {
                 player.ManageSpecialBiomeVisuals(DazhengSky.SkyName, isActive);
             }
         }
@@ -81,8 +78,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 
         #region IACMLoader 注册
 
-        void IACMLoader.LoadData()
-        {
+        void IACMLoader.LoadData() {
             SkyManager.Instance[SkyName] = this;
             Filters.Scene[SkyName] = new Filter(new ScreenShaderData("FilterMiniTower")
                 .UseColor(0.06f, 0.08f, 0.03f)
@@ -97,8 +93,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 
         #region CustomSky 生命周期
 
-        public override void Activate(Vector2 position, params object[] args)
-        {
+        public override void Activate(Vector2 position, params object[] args) {
             active = true;
             intensity = 0f;
             bossHealthPercent = 1f;
@@ -114,15 +109,13 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
         public override bool IsActive() => active || intensity > 0.01f;
         public override void Reset() { active = false; intensity = 0f; }
 
-        public override void Update(GameTime gameTime)
-        {
+        public override void Update(GameTime gameTime) {
             globalTime += (float)gameTime.ElapsedGameTime.TotalSeconds;
 
             NPC boss = FindBoss();
             bool shouldBeActive = boss != null && boss.active;
 
-            if (shouldBeActive)
-            {
+            if (shouldBeActive) {
                 if (!active) Activate(Vector2.Zero);
                 bossHealthPercent = (float)boss.life / boss.lifeMax;
                 isPhase2 = bossHealthPercent < Dazheng.Phase2Threshold;
@@ -133,8 +126,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 float target = isPhase2 ? MaxIntensity * 1.15f : MaxIntensity;
                 intensity = MathHelper.Lerp(intensity, target, FadeInSpeed);
             }
-            else
-            {
+            else {
                 intensity -= FadeOutSpeed;
                 if (intensity <= 0f) { intensity = 0f; if (active) Deactivate(); }
             }
@@ -146,10 +138,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             for (int i = 0; i < VineTendrilCount; i++) vinePhases[i] += 0.008f;
         }
 
-        private static NPC FindBoss()
-        {
-            foreach (NPC npc in Main.ActiveNPCs)
-            {
+        private static NPC FindBoss() {
+            foreach (NPC npc in Main.ActiveNPCs) {
                 if (npc.type == ModContent.NPCType<Dazheng>() && npc.active) return npc;
             }
             return null;
@@ -159,10 +149,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 
         #region Draw
 
-        public override void Draw(SpriteBatch spriteBatch, float minDepth, float maxDepth)
-        {
-            if (maxDepth >= 0 && minDepth < 0 && intensity > 0.01f)
-            {
+        public override void Draw(SpriteBatch spriteBatch, float minDepth, float maxDepth) {
+            if (maxDepth >= 0 && minDepth < 0 && intensity > 0.01f) {
                 DrawBackground(spriteBatch);
                 DrawCanopy(spriteBatch);
                 DrawGodRays(spriteBatch);
@@ -176,8 +164,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 
         #region 层1 — 深林渐变底色
 
-        private void DrawBackground(SpriteBatch sb)
-        {
+        private void DrawBackground(SpriteBatch sb) {
             Texture2D pixel = VaultAsset.placeholder2.Value;
             Rectangle screen = new(0, 0, Main.screenWidth, Main.screenHeight);
 
@@ -186,8 +173,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 
             // 多段渐变：顶部深绿 → 中部琥珀暖光 → 底部古木褐
             int bands = 12;
-            for (int i = 0; i < bands; i++)
-            {
+            for (int i = 0; i < bands; i++) {
                 float t = (float)i / bands;
                 int h = Main.screenHeight / bands;
                 Rectangle r = new(0, i * h, Main.screenWidth, h + 1);
@@ -221,15 +207,13 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 
         #region 层2 — 树冠剪影
 
-        private void DrawCanopy(SpriteBatch sb)
-        {
+        private void DrawCanopy(SpriteBatch sb) {
             Texture2D tex = ACMAsset.Smoke;
             if (tex == null) return;
             int fs = tex.Width / 4;
             Vector2 origin = new(fs / 2f);
 
-            for (int i = 0; i < CanopyCount; i++)
-            {
+            for (int i = 0; i < CanopyCount; i++) {
                 CanopyCloud c = canopies[i];
                 if (!c.IsActive) continue;
 
@@ -248,8 +232,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 sb.Draw(tex, dp, src, cc, c.Rotation, origin, c.Scale, SpriteEffects.None, 0f);
 
                 // 微弱金色叶片光晕
-                if (i % 4 == 0)
-                {
+                if (i % 4 == 0) {
                     Color glow = LeafGold * alpha * 0.12f;
                     glow.A = 0;
                     sb.Draw(tex, dp, src, glow, c.Rotation * 0.95f, origin, c.Scale * 1.2f, SpriteEffects.None, 0f);
@@ -261,14 +244,12 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 
         #region 层3 — 金色神光（God Rays）
 
-        private void DrawGodRays(SpriteBatch sb)
-        {
+        private void DrawGodRays(SpriteBatch sb) {
             Texture2D tex = ACMAsset.GlaciateWave;
             if (tex == null) return;
             Vector2 origin = new(tex.Width / 2f, tex.Height / 2f);
 
-            for (int i = 0; i < GodRayCount; i++)
-            {
+            for (int i = 0; i < GodRayCount; i++) {
                 GodRay ray = godRays[i];
                 if (ray.Alpha <= 0.01f) continue;
 
@@ -291,8 +272,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             }
 
             // 二阶段：额外的密集金辉
-            if (isPhase2)
-            {
+            if (isPhase2) {
                 Texture2D glow = ACMAsset.SoftGlow;
                 if (glow == null) return;
                 Vector2 glowOrigin = glow.Size() / 2f;
@@ -312,14 +292,12 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 
         #region 层4 — 落叶粒子
 
-        private void DrawLeaves(SpriteBatch sb)
-        {
+        private void DrawLeaves(SpriteBatch sb) {
             Texture2D tex = ACMAsset.Sparkle ?? ACMAsset.BlankStar;
             if (tex == null) return;
             Vector2 origin = tex.Size() / 2f;
 
-            for (int i = 0; i < LeafCount; i++)
-            {
+            for (int i = 0; i < LeafCount; i++) {
                 FallingLeaf leaf = leaves[i];
                 if (!leaf.IsActive) continue;
 
@@ -349,8 +327,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 
         #region 层5 — 藤蔓暗角
 
-        private void DrawVineTendrils(SpriteBatch sb)
-        {
+        private void DrawVineTendrils(SpriteBatch sb) {
             Texture2D glow = ACMAsset.SoftGlow;
             if (glow == null) return;
             Vector2 go = glow.Size() / 2f;
@@ -358,8 +335,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             float baseAlpha = intensity * 0.3f;
             if (isPhase2) baseAlpha *= 1.5f;
 
-            for (int i = 0; i < VineTendrilCount; i++)
-            {
+            for (int i = 0; i < VineTendrilCount; i++) {
                 float phase = vinePhases[i];
                 float sway = MathF.Sin(phase * 2.5f + i * 1.1f) * 30f;
                 float breathe = 0.9f + MathF.Sin(phase * 1.8f + i) * 0.15f;
@@ -367,8 +343,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 // 沿屏幕四边分布
                 Vector2 pos;
                 float baseScale;
-                switch (i % 4)
-                {
+                switch (i % 4) {
                     case 0: // 左边
                         pos = new Vector2(-20 + sway * 0.3f, Main.screenHeight * (0.2f + i * 0.12f));
                         baseScale = 1.8f;
@@ -403,11 +378,9 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 
         #region 层6 — 暗角 + 金色脉冲
 
-        private void DrawVignette(SpriteBatch sb)
-        {
+        private void DrawVignette(SpriteBatch sb) {
             Texture2D glow = ACMAsset.SoftGlow;
-            if (glow != null)
-            {
+            if (glow != null) {
                 Vector2 go = glow.Size() / 2f;
                 float va = intensity * 0.5f;
                 if (isPhase2) va *= 1.3f;
@@ -441,8 +414,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 
         #region 地表着色
 
-        public override Color OnTileColor(Color inColor)
-        {
+        public override Color OnTileColor(Color inColor) {
             // 偏暖的金绿色调
             Color tint = Color.Lerp(Color.White, new Color(55, 60, 35), intensity * 0.3f);
             return new Color(
@@ -471,17 +443,14 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             public Vector2 Velocity;
             private int cooldown;
 
-            public void Reset()
-            {
+            public void Reset() {
                 IsActive = false;
                 AnimProgress = 0f;
                 cooldown = Main.rand.Next(5, 50);
             }
 
-            public void Update(float mul)
-            {
-                if (!IsActive)
-                {
+            public void Update(float mul) {
+                if (!IsActive) {
                     if (--cooldown <= 0) Activate(mul);
                     return;
                 }
@@ -491,8 +460,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 if (AnimProgress >= 1f) Reset();
             }
 
-            private void Activate(float mul)
-            {
+            private void Activate(float mul) {
                 IsActive = true;
                 AnimProgress = 0f;
                 AnimSpeed = Main.rand.NextFloat(0.0008f, 0.003f);
@@ -520,16 +488,14 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             private readonly float glowDuration;
             private bool glowing;
 
-            public GodRay(int i)
-            {
+            public GodRay(int i) {
                 index = i;
                 period = 4f + i * 1.5f;
                 glowDuration = 1.8f + i * 0.3f;
                 Reset();
             }
 
-            public void Reset()
-            {
+            public void Reset() {
                 Alpha = 0f;
                 timer = 0f;
                 glowing = false;
@@ -538,14 +504,12 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 Angle = -0.05f + index * 0.025f;
             }
 
-            public void Update(float gTime, bool intense)
-            {
+            public void Update(float gTime, bool intense) {
                 timer += 1f / 60f;
                 float p = intense ? period * 0.6f : period;
                 float pos = timer % p;
 
-                if (pos < glowDuration && !glowing)
-                {
+                if (pos < glowDuration && !glowing) {
                     glowing = true;
                     // 光柱位置有微弱的左右飘动
                     ScreenX = Main.screenWidth * (0.1f + index * 0.18f)
@@ -553,23 +517,19 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                     Angle = -0.05f + index * 0.025f + MathF.Sin(gTime * 0.25f + index) * 0.03f;
                 }
 
-                if (glowing)
-                {
-                    if (pos < glowDuration)
-                    {
+                if (glowing) {
+                    if (pos < glowDuration) {
                         float t = pos / glowDuration;
                         // 缓入缓出
                         Alpha = t < 0.3f ? t / 0.3f : 1f - (t - 0.3f) / 0.7f;
                         Alpha = MathHelper.Clamp(Alpha, 0f, 1f);
                     }
-                    else
-                    {
+                    else {
                         glowing = false;
                         Alpha = 0f;
                     }
                 }
-                else
-                {
+                else {
                     Alpha = MathHelper.Lerp(Alpha, 0f, 0.1f);
                 }
             }
@@ -588,17 +548,14 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             private int cooldown;
             private float swayPhase;
 
-            public void Reset()
-            {
+            public void Reset() {
                 IsActive = false;
                 AnimProgress = 0f;
                 cooldown = Main.rand.Next(10, 80);
             }
 
-            public void Update(float gTime)
-            {
-                if (!IsActive)
-                {
+            public void Update(float gTime) {
+                if (!IsActive) {
                     if (--cooldown <= 0) Activate();
                     return;
                 }
@@ -609,8 +566,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 if (AnimProgress >= 1f) Reset();
             }
 
-            private void Activate()
-            {
+            private void Activate() {
                 IsActive = true;
                 AnimProgress = 0f;
                 AnimSpeed = Main.rand.NextFloat(0.004f, 0.012f);

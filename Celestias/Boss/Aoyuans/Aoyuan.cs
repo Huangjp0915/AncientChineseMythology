@@ -1,11 +1,11 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using AncientChineseMythology.Celestias.Boss.Aoyuans.Items;
+using AncientChineseMythology.Items.Materials;
+using Microsoft.Xna.Framework.Graphics;
 using System.IO;
 using Terraria;
 using Terraria.GameContent.ItemDropRules;
 using Terraria.ID;
 using Terraria.ModLoader;
-using AncientChineseMythology.Celestias.Boss.Aoyuans.Items;
-using AncientChineseMythology.Items.Materials;
 
 namespace AncientChineseMythology.Celestias.Boss.Aoyuans
 {

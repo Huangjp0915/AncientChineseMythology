@@ -1,9 +1,7 @@
-using AncientChineseMythology;
 using AncientChineseMythology.Celestias.Boss.Aoshuns;
 using AncientChineseMythology.Celestias.PillarofTheHeavenes.Items;
 using AncientChineseMythology.Celestias.PillarofTheHeavenes.Tiles;
 using AncientChineseMythology.Items.Materials;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;

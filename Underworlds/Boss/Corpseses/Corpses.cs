@@ -1,5 +1,4 @@
 ﻿using AncientChineseMythology.Systems;
-using AncientChineseMythology.Underworlds;
 using AncientChineseMythology.Underworlds.Boss.Corpseses.Items;
 using Microsoft.Xna.Framework.Graphics;
 using System;

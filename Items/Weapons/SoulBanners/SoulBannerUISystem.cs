@@ -1,6 +1,5 @@
-using System.Collections.Generic;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
+using System.Collections.Generic;
 using Terraria;
 using Terraria.ModLoader;
 using Terraria.UI;
@@ -18,30 +17,26 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
         private UserInterface _userInterface;
         private SoulBannerUI _uiState;
 
-        public override void Load()
-        {
+        public override void Load() {
             _uiState = new SoulBannerUI();
             _uiState.Activate();
             _userInterface = new UserInterface();
             _userInterface.SetState(_uiState);
         }
 
-        public override void Unload()
-        {
+        public override void Unload() {
             _uiState = null;
             _userInterface = null;
         }
 
-        public override void UpdateUI(GameTime gameTime)
-        {
+        public override void UpdateUI(GameTime gameTime) {
             // 判定条件：按住 Shift + 手持万魂幡
             bool shouldShow = false;
 
             Player player = Main.LocalPlayer;
             if (player.active && !player.dead
                 && player.HeldItem != null
-                && player.HeldItem.type == ModContent.ItemType<SoulBanner>())
-            {
+                && player.HeldItem.type == ModContent.ItemType<SoulBanner>()) {
                 KeyboardState kb = Keyboard.GetState();
                 if (kb.IsKeyDown(Keys.LeftShift) || kb.IsKeyDown(Keys.RightShift))
                     shouldShow = true;
@@ -51,15 +46,12 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             _userInterface?.Update(gameTime);
         }
 
-        public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers)
-        {
+        public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers) {
             int index = layers.FindIndex(l => l.Name.Equals("Vanilla: Mouse Text"));
-            if (index != -1)
-            {
+            if (index != -1) {
                 layers.Insert(index, new LegacyGameInterfaceLayer(
                     "AncientChineseMythology: SoulBanner Growth Panel",
-                    () =>
-                    {
+                    () => {
                         _userInterface.Draw(Main.spriteBatch, new GameTime());
                         return true;
                     },

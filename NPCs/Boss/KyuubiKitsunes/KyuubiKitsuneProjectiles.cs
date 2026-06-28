@@ -1,5 +1,4 @@
 using AncientChineseMythology.Helpers;
-using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
 using Terraria.ID;

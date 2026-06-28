@@ -1,7 +1,6 @@
-using System;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Graphics;
+using System;
 using Terraria;
 using Terraria.GameContent;
 using Terraria.UI;
@@ -45,14 +44,12 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
 
         public bool Visible { get; set; }
 
-        public override void Update(GameTime gameTime)
-        {
+        public override void Update(GameTime gameTime) {
             base.Update(gameTime);
 
             float target = Visible ? 1f : 0f;
             fadeAlpha = MathHelper.Lerp(fadeAlpha, target, 0.15f);
-            if (fadeAlpha < 0.01f)
-            {
+            if (fadeAlpha < 0.01f) {
                 fadeAlpha = 0f;
                 scrollOffset = 0; // 关闭时重置滚动
             }
@@ -63,16 +60,14 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
                 Main.LocalPlayer.mouseInterface = true;
         }
 
-        public override void ScrollWheel(UIScrollWheelEvent evt)
-        {
+        public override void ScrollWheel(UIScrollWheelEvent evt) {
             if (!Visible) return;
             int totalRows = SoulBannerPlayer.Tiers.Length;
             int maxScroll = Math.Max(0, totalRows - MaxVisibleBossRows);
             scrollOffset = Math.Clamp(scrollOffset - Math.Sign(evt.ScrollWheelValue), 0, maxScroll);
         }
 
-        protected override void DrawSelf(SpriteBatch sb)
-        {
+        protected override void DrawSelf(SpriteBatch sb) {
             if (fadeAlpha < 0.01f) return;
 
             var sbPlayer = Main.LocalPlayer.GetModPlayer<SoulBannerPlayer>();
@@ -154,8 +149,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             Utils.DrawBorderString(sb, soulLabel, new Vector2(cx, cy), LabelColor * a, 0.85f);
             cy += 22;
 
-            if (hasBar)
-            {
+            if (hasBar) {
                 int barX = cx;
                 int barW = PanelW - Padding * 2;
                 int barH = 14;
@@ -179,16 +173,14 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
 
                 cy += barH + 8;
             }
-            else
-            {
+            else {
                 cy += 4;
             }
 
             // ══════════════════════════════════════
             //  成长加成
             // ══════════════════════════════════════
-            if (hasStats)
-            {
+            if (hasStats) {
                 sb.Draw(pixel, new Rectangle(cx, cy, PanelW - Padding * 2, 1), PanelBorder * (a * 0.3f));
                 cy += 6;
 
@@ -222,15 +214,13 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             // 只绘制可见范围内的 Boss 行（scrollOffset ~ scrollOffset+MaxVisibleBossRows）
             bool foundNext = false;
             // 先扫描一遍确定 foundNext 在 scrollOffset 之前是否已出现
-            for (int i = 0; i < scrollOffset && i < tiers.Length; i++)
-            {
+            for (int i = 0; i < scrollOffset && i < tiers.Length; i++) {
                 if (!sbPlayer.defeatedBossTiers.Contains(tiers[i].TierId) && !foundNext)
                     foundNext = true;
             }
 
             int endRow = Math.Min(tiers.Length, scrollOffset + visibleBossRows);
-            for (int i = scrollOffset; i < endRow; i++)
-            {
+            for (int i = scrollOffset; i < endRow; i++) {
                 int drawY = cy + (i - scrollOffset) * RowH;
                 var tier = tiers[i];
                 bool defeated = sbPlayer.defeatedBossTiers.Contains(tier.TierId);
@@ -239,21 +229,18 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
                 Color nameColor;
                 Color capColor;
 
-                if (defeated)
-                {
+                if (defeated) {
                     icon = "✦";
                     nameColor = DefeatedColor;
                     capColor = DefeatedColor * 0.7f;
                 }
-                else if (!foundNext)
-                {
+                else if (!foundNext) {
                     icon = "▸";
                     nameColor = NextColor;
                     capColor = NextColor * 0.8f;
                     foundNext = true;
                 }
-                else
-                {
+                else {
                     icon = "✧";
                     nameColor = LockedColor;
                     capColor = LockedColor * 0.6f;
@@ -271,8 +258,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             cy += visibleBossRows * RowH;
 
             // 滚动提示
-            if (tiers.Length > MaxVisibleBossRows)
-            {
+            if (tiers.Length > MaxVisibleBossRows) {
                 int maxScroll = tiers.Length - MaxVisibleBossRows;
                 string scrollHint = scrollOffset < maxScroll
                     ? "▼ 滚轮查看更多 ▼"
@@ -295,8 +281,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
 
         /// <summary>绘制一行属性：左侧标签 + 右侧数值</summary>
         private static void DrawStatLine(SpriteBatch sb, DynamicSpriteFont font,
-            int x, ref int y, float alpha, string label, string value, Color valColor)
-        {
+            int x, ref int y, float alpha, string label, string value, Color valColor) {
             Utils.DrawBorderString(sb, label, new Vector2(x, y), LabelColor * alpha, 0.78f);
 
             Vector2 valSize = font.MeasureString(value) * 0.78f;

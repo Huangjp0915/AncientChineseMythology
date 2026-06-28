@@ -18,8 +18,6 @@ using AncientChineseMythology.NPCs.Boss.KyuubiKitsunes;
 
 using AncientChineseMythology.NPCs.Boss.Yingous;
 
-using Microsoft.Xna.Framework;
-
 using Microsoft.Xna.Framework.Graphics;
 
 using System;

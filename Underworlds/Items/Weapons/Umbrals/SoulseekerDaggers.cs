@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
-using AncientChineseMythology.Helpers;
+﻿using AncientChineseMythology.Helpers;
 using AncientChineseMythology.Underworlds.Tiles;
 using Microsoft.Xna.Framework.Graphics;
+using System.Collections.Generic;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;

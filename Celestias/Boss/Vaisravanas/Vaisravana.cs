@@ -1,8 +1,8 @@
-﻿using System;
-using System.IO;
-using AncientChineseMythology.Celestias.Boss.Vaisravanas.Items;
+﻿using AncientChineseMythology.Celestias.Boss.Vaisravanas.Items;
 using AncientChineseMythology.Items.Materials;
 using AncientChineseMythology.Systems;
+using System;
+using System.IO;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;

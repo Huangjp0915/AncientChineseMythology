@@ -1,6 +1,5 @@
 ﻿using AncientChineseMythology.Systems;
 using AncientChineseMythology.WaterStyles;
-using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.Graphics.Capture;
 using Terraria.ModLoader;

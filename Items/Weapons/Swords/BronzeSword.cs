@@ -1,7 +1,6 @@
 ﻿using AncientChineseMythology.Helpers;
 using AncientChineseMythology.Items.Bronze;
 using AncientChineseMythology.Projectiles;
-using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;

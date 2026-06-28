@@ -1,5 +1,3 @@
-using AncientChineseMythology;
-using AncientChineseMythology.Celestias.Boss.Aoshuns;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;

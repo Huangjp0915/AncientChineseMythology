@@ -2,7 +2,6 @@ using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using System;
 using Terraria;
-using Terraria.Audio;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Menus
@@ -50,16 +49,14 @@ namespace AncientChineseMythology.Menus
 
         // ═══════════ 生命周期 ═══════════
 
-        public override void Load()
-        {
+        public override void Load() {
             logo = ModContent.Request<Texture2D>("AncientChineseMythology/Menus/Logo");
             softGlow = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/Masking/SoftGlow");
 
             InitClouds();
         }
 
-        public override void OnSelected()
-        {
+        public override void OnSelected() {
             timer = 0f;
             for (int i = 0; i < MaxMotes; i++)
                 SpawnMote(ref motes[i], randomStart: true);
@@ -77,17 +74,14 @@ namespace AncientChineseMythology.Menus
 
         // ═══════════ 更新 ═══════════
 
-        public override void Update(bool isOnTitleScreen)
-        {
+        public override void Update(bool isOnTitleScreen) {
             timer += 0.016f; // ≈60fps
 
             // 更新灵粒
-            for (int i = 0; i < MaxMotes; i++)
-            {
+            for (int i = 0; i < MaxMotes; i++) {
                 ref MoteDust m = ref motes[i];
                 m.Life += 1f / (m.MaxLife * 60f);
-                if (m.Life >= 1f)
-                {
+                if (m.Life >= 1f) {
                     SpawnMote(ref m, randomStart: false);
                     continue;
                 }
@@ -97,8 +91,7 @@ namespace AncientChineseMythology.Menus
             }
 
             // 更新云层
-            for (int i = 0; i < MaxClouds; i++)
-            {
+            for (int i = 0; i < MaxClouds; i++) {
                 ref CloudLayer c = ref clouds[i];
                 c.X += c.Speed;
                 if (c.X > Main.screenWidth + 600)
@@ -112,8 +105,7 @@ namespace AncientChineseMythology.Menus
 
         public override bool PreDrawLogo(SpriteBatch sb,
             ref Vector2 logoDrawCenter, ref float logoRotation,
-            ref float logoScale, ref Color drawColor)
-        {
+            ref float logoScale, ref Color drawColor) {
             // ── 1. 全屏暗色背景（混沌深渊色） ──
             DrawFullScreenGradient(sb);
 
@@ -140,11 +132,9 @@ namespace AncientChineseMythology.Menus
 
         public override void PostDrawLogo(SpriteBatch sb,
             Vector2 logoDrawCenter, float logoRotation,
-            float logoScale, Color drawColor)
-        {
+            float logoScale, Color drawColor) {
             // Logo 后方光晕
-            if (softGlow?.IsLoaded == true)
-            {
+            if (softGlow?.IsLoaded == true) {
                 Texture2D glow = softGlow.Value;
                 float pulse = 0.6f + MathF.Sin(timer * 1.5f) * 0.15f;
                 sb.Draw(glow, logoDrawCenter,
@@ -162,8 +152,7 @@ namespace AncientChineseMythology.Menus
         /// <summary>
         /// 全屏渐变：顶部深紫黑 → 底部墨蓝，营造"混沌初开"的幽暗氛围
         /// </summary>
-        private void DrawFullScreenGradient(SpriteBatch sb)
-        {
+        private void DrawFullScreenGradient(SpriteBatch sb) {
             int w = Main.screenWidth;
             int h = Main.screenHeight;
             int bands = 16;
@@ -175,8 +164,7 @@ namespace AncientChineseMythology.Menus
 
             Texture2D pixel = Terraria.GameContent.TextureAssets.MagicPixel.Value;
 
-            for (int i = 0; i < bands; i++)
-            {
+            for (int i = 0; i < bands; i++) {
                 float t = (float)i / (bands - 1);
                 Color c;
                 if (t < 0.5f)
@@ -191,13 +179,11 @@ namespace AncientChineseMythology.Menus
         /// <summary>
         /// 绘制缓慢飘动的云雾层（仙气缭绕感）
         /// </summary>
-        private void DrawClouds(SpriteBatch sb)
-        {
+        private void DrawClouds(SpriteBatch sb) {
             if (softGlow?.IsLoaded != true) return;
             Texture2D glow = softGlow.Value;
 
-            for (int i = 0; i < MaxClouds; i++)
-            {
+            for (int i = 0; i < MaxClouds; i++) {
                 ref CloudLayer c = ref clouds[i];
                 float fade = c.Alpha * (0.7f + MathF.Sin(timer * 0.5f + i * 1.3f) * 0.3f);
                 Color col = new Color(160, 140, 200, 0) * (fade * 0.12f);
@@ -214,14 +200,12 @@ namespace AncientChineseMythology.Menus
         /// <summary>
         /// 绘制上浮灵粒（金色 / 青玉色微光点）
         /// </summary>
-        private void DrawMotes(SpriteBatch sb)
-        {
+        private void DrawMotes(SpriteBatch sb) {
             if (softGlow?.IsLoaded != true) return;
             Texture2D glow = softGlow.Value;
             Vector2 origin = new(glow.Width / 2f, glow.Height / 2f);
 
-            for (int i = 0; i < MaxMotes; i++)
-            {
+            for (int i = 0; i < MaxMotes; i++) {
                 ref MoteDust m = ref motes[i];
                 // 淡入淡出
                 float alpha = m.Life < 0.2f
@@ -244,8 +228,7 @@ namespace AncientChineseMythology.Menus
         /// <summary>
         /// 四角暗角晕影，将视觉焦点引向画面中心与 Logo
         /// </summary>
-        private void DrawVignette(SpriteBatch sb)
-        {
+        private void DrawVignette(SpriteBatch sb) {
             if (softGlow?.IsLoaded != true) return;
             Texture2D glow = softGlow.Value;
             Vector2 origin = new(glow.Width / 2f, glow.Height / 2f);
@@ -268,8 +251,7 @@ namespace AncientChineseMythology.Menus
 
         // ═══════════ 粒子初始化 ═══════════
 
-        private void SpawnMote(ref MoteDust m, bool randomStart)
-        {
+        private void SpawnMote(ref MoteDust m, bool randomStart) {
             m.Pos = new Vector2(
                 Main.rand.Next(-40, Math.Max(41, Main.screenWidth + 40)),
                 Main.rand.Next(Math.Max(1, Main.screenHeight / 3), Math.Max(2, Main.screenHeight + 60)));
@@ -282,12 +264,9 @@ namespace AncientChineseMythology.Menus
             m.Hue = Main.rand.NextFloat();
         }
 
-        private void InitClouds()
-        {
-            for (int i = 0; i < MaxClouds; i++)
-            {
-                clouds[i] = new CloudLayer
-                {
+        private void InitClouds() {
+            for (int i = 0; i < MaxClouds; i++) {
+                clouds[i] = new CloudLayer {
                     X = Main.rand.Next(-400, Math.Max(1, Main.screenWidth + 400)),
                     Y = 50 + Main.rand.Next(0, Math.Max(1, Main.screenHeight / 2)),
                     Speed = (i % 2 == 0 ? 1 : -1) * (0.15f + Main.rand.NextFloat() * 0.25f),

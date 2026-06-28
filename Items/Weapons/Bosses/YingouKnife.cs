@@ -1,6 +1,5 @@
 ﻿using AncientChineseMythology.Helpers;
 using AncientChineseMythology.NPCs.Boss.Yingous;
-using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;

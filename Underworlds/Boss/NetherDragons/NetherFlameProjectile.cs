@@ -1,9 +1,7 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
-using System;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
-using AncientChineseMythology.Underworlds;
 
 namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 {

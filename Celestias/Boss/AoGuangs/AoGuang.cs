@@ -1,5 +1,4 @@
 ﻿using AncientChineseMythology.Celestias.Boss.AoGuangs.Items;
-using AncientChineseMythology.Celestias.Boss.AoGuangs.Items;
 using AncientChineseMythology.Items.Materials;
 using System;
 using System.IO;

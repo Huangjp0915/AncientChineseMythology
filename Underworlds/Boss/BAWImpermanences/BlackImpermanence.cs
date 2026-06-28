@@ -1,5 +1,5 @@
-﻿using AncientChineseMythology.Underworlds.Boss.BAWImpermanences.Items;
-using AncientChineseMythology.Systems;
+﻿using AncientChineseMythology.Systems;
+using AncientChineseMythology.Underworlds.Boss.BAWImpermanences.Items;
 using AncientChineseMythology.Underworlds.Items.Materials;
 using Microsoft.Xna.Framework.Graphics;
 using System;

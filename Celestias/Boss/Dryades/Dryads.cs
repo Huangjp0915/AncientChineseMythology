@@ -1,6 +1,5 @@
 ﻿using AncientChineseMythology.Celestias.Boss.Dryades.Items;
 using AncientChineseMythology.Systems;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.IO;
@@ -347,7 +346,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                 else if (isBurrowing) {
                     float burrowOffset = burrowProgress * (TextureHeight + 60f);
                     NPC.Center = anchorPosition + new Vector2(0, burrowOffset);
-                } else
+                }
+                else
                     NPC.Center = anchorPosition;
             }
 

@@ -1,6 +1,5 @@
 using AncientChineseMythology.Helpers;
 using AncientChineseMythology.Items.Materials;
-using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;

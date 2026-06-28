@@ -1,4 +1,3 @@
-using AncientChineseMythology.Celestias.Boss.Aoyuans;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;

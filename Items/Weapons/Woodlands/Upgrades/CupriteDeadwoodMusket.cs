@@ -1,6 +1,5 @@
 using AncientChineseMythology.Helpers;
 using AncientChineseMythology.Items.Materials;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.DataStructures;

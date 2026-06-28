@@ -1,4 +1,3 @@
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
@@ -162,7 +161,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                         c = Color.Lerp(new Color(255, 200, 80) * 0.6f, new Color(180, 120, 30) * 0.2f, t);
                     else
                         c = Color.Lerp(new Color(60, 180, 40) * 0.7f, new Color(30, 100, 20) * 0.2f, t);
-                } else {
+                }
+                else {
                     width = 8f * scaleFactor;
                     if (IsGolden)
                         c = new Color(255, 240, 180) * (0.5f * (1f - t));

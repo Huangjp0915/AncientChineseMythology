@@ -1,8 +1,7 @@
-﻿using System;
-using AncientChineseMythology.Helpers;
+﻿using AncientChineseMythology.Helpers;
 using AncientChineseMythology.Underworlds.Boss.Spectres;
 using AncientChineseMythology.Underworlds.Tiles;
-using Microsoft.Xna.Framework.Graphics;
+using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;

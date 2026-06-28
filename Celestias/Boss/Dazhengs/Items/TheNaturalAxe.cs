@@ -1,5 +1,4 @@
 ﻿using AncientChineseMythology.Helpers;
-using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -13,13 +12,11 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs.Items
     /// </summary>
     public class TheNaturalAxe : ModItem
     {
-        public override void SetStaticDefaults()
-        {
+        public override void SetStaticDefaults() {
             Item.ResearchUnlockCount = 1;
         }
 
-        public override void SetDefaults()
-        {
+        public override void SetDefaults() {
             Item.width = 48;
             Item.height = 48;
             Item.damage = 200;
@@ -37,18 +34,15 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs.Items
             Item.tileBoost = 4;
         }
 
-        public override bool AltFunctionUse(Player player)
-        {
+        public override bool AltFunctionUse(Player player) {
             return true;
         }
 
         // 翠金"自然之力"挥砍尘 (仅左键斧砍时, 不改伤害/机制) — 外翠内金双色随机, 表现"伐木·植林"自然循环。
-        public override void MeleeEffects(Player player, Rectangle hitbox)
-        {
+        public override void MeleeEffects(Player player, Rectangle hitbox) {
             if (player.altFunctionUse == 2)
                 return;
-            if (Main.rand.NextBool(2))
-            {
+            if (Main.rand.NextBool(2)) {
                 int type = Main.rand.NextBool(3) ? DustID.GoldFlame : DustID.GrassBlades;
                 Dust d = Dust.NewDustDirect(new Vector2(hitbox.X, hitbox.Y), hitbox.Width, hitbox.Height, type);
                 d.noGravity = true;
@@ -59,10 +53,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs.Items
         }
 
         // 命中翠金自然爆发 (径向辉光 + 冲击环, 走 ACMWeaponBurst — 更新阶段安全) + 轻屏震。
-        public override void OnHitNPC(Player player, NPC target, NPC.HitInfo hit, int damageDone)
-        {
-            for (int i = 0; i < 6; i++)
-            {
+        public override void OnHitNPC(Player player, NPC target, NPC.HitInfo hit, int damageDone) {
+            for (int i = 0; i < 6; i++) {
                 Dust d = Dust.NewDustPerfect(target.Center, DustID.GrassBlades,
                     Main.rand.NextVector2Circular(3.2f, 3.2f), 60, default, Main.rand.NextFloat(1f, 1.5f));
                 d.noGravity = true;
@@ -72,10 +64,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs.Items
             WeaponVFX.AddScreenShake(target.Center, 2.5f);
         }
 
-        public override bool CanUseItem(Player player)
-        {
-            if (player.altFunctionUse == 2)
-            {
+        public override bool CanUseItem(Player player) {
+            if (player.altFunctionUse == 2) {
                 // 右键种树模式
                 Item.noMelee = true;
                 Item.noUseGraphic = true;
@@ -84,8 +74,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs.Items
                 Item.useAnimation = 20;
                 Item.UseSound = SoundID.Grass;
             }
-            else
-            {
+            else {
                 // 左键斧头模式
                 Item.noMelee = false;
                 Item.noUseGraphic = false;
@@ -98,10 +87,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs.Items
             return base.CanUseItem(player);
         }
 
-        public override bool? UseItem(Player player)
-        {
-            if (player.altFunctionUse == 2)
-            {
+        public override bool? UseItem(Player player) {
+            if (player.altFunctionUse == 2) {
                 PlantTreesNearCursor(player);
                 return true;
             }
@@ -109,17 +96,14 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs.Items
             return base.UseItem(player);
         }
 
-        private void PlantTreesNearCursor(Player player)
-        {
+        private void PlantTreesNearCursor(Player player) {
             Point cursorTile = Main.MouseWorld.ToTileCoordinates();
             int radius = 6;
             int planted = 0;
             int maxPlant = 5;
 
-            for (int x = cursorTile.X - radius; x <= cursorTile.X + radius && planted < maxPlant; x++)
-            {
-                for (int y = cursorTile.Y - radius; y <= cursorTile.Y + radius && planted < maxPlant; y++)
-                {
+            for (int x = cursorTile.X - radius; x <= cursorTile.X + radius && planted < maxPlant; x++) {
+                for (int y = cursorTile.Y - radius; y <= cursorTile.Y + radius && planted < maxPlant; y++) {
                     if (!WorldGen.InWorld(x, y, 10))
                         continue;
 
@@ -144,8 +128,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs.Items
                     if (y - 1 < 0 || Main.tile[x, y - 1].HasTile)
                         continue;
 
-                    if (WorldGen.PlaceTile(x, y, TileID.Saplings, mute: false, forced: false, player.whoAmI))
-                    {
+                    if (WorldGen.PlaceTile(x, y, TileID.Saplings, mute: false, forced: false, player.whoAmI)) {
                         planted++;
                         if (Main.netMode != NetmodeID.SinglePlayer)
                             NetMessage.SendTileSquare(-1, x, y);
@@ -153,10 +136,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs.Items
                 }
             }
 
-            if (planted > 0)
-            {
-                for (int i = 0; i < planted * 4; i++)
-                {
+            if (planted > 0) {
+                for (int i = 0; i < planted * 4; i++) {
                     Vector2 dustPos = Main.MouseWorld + Main.rand.NextVector2Circular(96f, 64f);
                     Dust dust = Dust.NewDustDirect(dustPos, 4, 4, DustID.Grass, 0f, -2f, 100, default, 1.2f);
                     dust.noGravity = true;
