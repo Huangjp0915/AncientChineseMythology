@@ -1983,27 +1983,38 @@ NPCs: {
 	Qinlong.DisplayName: Qinglong
 	Baihu.DisplayName: Baihu
 	Suzaku.DisplayName: Suzaku
-	Xuanwu.DisplayName: Xuanwu
-	Xuanwu.JadeAegis: Jade Aegis
+
+	Xuanwu: {
+		DisplayName: Xuanwu
+		JadeAegis: Jade Aegis
+	}
+
 	SoulHarvester.DisplayName: Soul Harvester
 	ThebonesinTheTomb.DisplayName: Thebonesin The Tomb
 	TheDeceasedPerson.DisplayName: The Deceased Person
 	AzureDragonBody.DisplayName: Azure Dragon Body
 	AzureDragonHead.DisplayName: Azure Dragon Head
 	AzureDragonTail.DisplayName: Azure Dragon Tail
-	YinEmperor.DisplayName: Yin Emperor
+
+	YinEmperor: {
+		DisplayName: Yin Emperor
+
+		Dialog: {
+			Intro: The Yin Emperor descends. Kneel, mortal — your soul is summoned to judgment.
+			ActI: Rite of Fengdu. Let the nether decree be inscribed upon you.
+			ActII: You are bound within the Soul-Quelling Prison. Shatter the Ghost Gate Lock, or be sealed forever.
+			ActIII: Imperial Verdict! There is no appeal before the throne of the dead.
+			SoulSeal: The seal contracts. Break the lock to escape!
+			SealBroken: Impudent... you tore the gate from its hinges.
+			YinYang: Edict of Fengdu — stand within the favored half, or your soul shall burn.
+			FinalDecree: The Final Decree is written. Witness it.
+			Phantom: So you reach the end. Behold the Seal of the Yin Sovereign.
+			ExecutePrompt: The Fengdu regalia answers — strike now to execute the decree!
+			Executed: Impossible... the verdict... turned upon me...
+		}
+	}
+
 	GhostGateLock.DisplayName: Ghost Gate Lock
-	YinEmperor.Dialog.Intro: The Yin Emperor descends. Kneel, mortal — your soul is summoned to judgment.
-	YinEmperor.Dialog.ActI: Rite of Fengdu. Let the nether decree be inscribed upon you.
-	YinEmperor.Dialog.ActII: You are bound within the Soul-Quelling Prison. Shatter the Ghost Gate Lock, or be sealed forever.
-	YinEmperor.Dialog.ActIII: Imperial Verdict! There is no appeal before the throne of the dead.
-	YinEmperor.Dialog.SoulSeal: The seal contracts. Break the lock to escape!
-	YinEmperor.Dialog.SealBroken: Impudent... you tore the gate from its hinges.
-	YinEmperor.Dialog.YinYang: Edict of Fengdu — stand within the favored half, or your soul shall burn.
-	YinEmperor.Dialog.FinalDecree: The Final Decree is written. Witness it.
-	YinEmperor.Dialog.Phantom: So you reach the end. Behold the Seal of the Yin Sovereign.
-	YinEmperor.Dialog.ExecutePrompt: The Fengdu regalia answers — strike now to execute the decree!
-	YinEmperor.Dialog.Executed: Impossible... the verdict... turned upon me...
 	Aokin.DisplayName: Aokin
 	Aoyuan.DisplayName: Aoyuan
 	AoyuanBody.DisplayName: Aoyuan Body
@@ -2579,6 +2590,50 @@ Projectiles: {
 	NetherChainBladeProjectile.DisplayName: Nether Chain Blade Projectile
 	WraithLanternGhost.DisplayName: Wraith Lantern Ghost
 	WraithLanternTether.DisplayName: Wraith Lantern Tether
+	ArgentPulseRail.DisplayName: Argent Pulse Rail
+	AzureTidalNova.DisplayName: Azure Tidal Nova
+	BlackTortoiseGuardNova.DisplayName: Black Tortoise Guard Nova
+	PhoenixDive.DisplayName: Phoenix Dive
+	StarfireSupernova.DisplayName: Starfire Supernova
+	ThunderclapSkyStrike.DisplayName: Thunderclap Sky Strike
+	ACMWeaponBurst.DisplayName: A C M Weapon Burst
+	ArrogantSylvanScreenTint.DisplayName: Arrogant Sylvan Screen Tint
+	CupriteAcornProj.DisplayName: Cuprite Acorn Proj
+	CupriteEmeraldBolt.DisplayName: Cuprite Emerald Bolt
+	CupriteMossBombProj.DisplayName: Cuprite Moss Bomb Proj
+	CupriteNatureLeaf.DisplayName: Cuprite Nature Leaf
+	XuanTieArrow.DisplayName: Xuan Tie Arrow
+	XuanTieBoomerangProj.DisplayName: Xuan Tie Boomerang Proj
+	NiuMaRevivalCircle.DisplayName: Niu Ma Revival Circle
+	SoulOrbProj.DisplayName: Soul Orb Proj
+	CorpsesBoneRainMarker.DisplayName: Corpses Bone Rain Marker
+	NetherSoulExplosion.DisplayName: Nether Soul Explosion
+	NetherSoulSpark.DisplayName: Nether Soul Spark
+	DragonDetonationFlash.DisplayName: Dragon Detonation Flash
+	FrostJudgmentFlash.DisplayName: Frost Judgment Flash
+	ImperatorJudgmentFlash.DisplayName: Imperator Judgment Flash
+	SingularityImplosionFlash.DisplayName: Singularity Implosion Flash
+	VoidSoulShatter.DisplayName: Void Soul Shatter
+	DamnedSoulChain.DisplayName: Damned Soul Chain
+	KarmaMirrorWard.DisplayName: Karma Mirror Ward
+	MyriadDemonRuneField.DisplayName: Myriad Demon Rune Field
+	NetherNetField.DisplayName: Nether Net Field
+	OblivionVoidFinisher.DisplayName: Oblivion Void Finisher
+	SoulCannonMuzzleFlash.DisplayName: Soul Cannon Muzzle Flash
+	SoulEatPaletteFinisher.DisplayName: Soul Eat Palette Finisher
+	SoulShatterBlastFX.DisplayName: Soul Shatter Blast F X
+	YamaExecuteFinisher.DisplayName: Yama Execute Finisher
+	FateJudgmentField.DisplayName: Fate Judgment Field
+	NetherfireMuzzleFlash.DisplayName: Netherfire Muzzle Flash
+	NetherRockBlastFX.DisplayName: Nether Rock Blast F X
+	BloodfiendLifestealThread.DisplayName: Bloodfiend Lifesteal Thread
+	JudgmentRuneBolt.DisplayName: Judgment Rune Bolt
+	NetherboneArrow.DisplayName: Netherbone Arrow
+	SoulDevourerRift.DisplayName: Soul Devourer Rift
+	SoulLanternBolt.DisplayName: Soul Lantern Bolt
+	SoulLanternMinion.DisplayName: Soul Lantern Minion
+	SoulseekerSoulChain.DisplayName: Soulseeker Soul Chain
+	YamasJudgmentRune.DisplayName: Yamas Judgment Rune
 }
 
 HeavenBiome.DisplayName: Heaven
@@ -2861,6 +2916,11 @@ Buffs: {
 		DisplayName: Nether Decree
 		Description: Marked by the Yin Emperor's decree. At full marks, your soul is bound in place.
 	}
+
+	SoulLanternMinionBuff: {
+		DisplayName: Soul Lantern Minion Buff
+		Description: Mods.AncientChineseMythology.Buffs.SoulLanternMinionBuff.Description
+	}
 }
 
 WorldGen: {
@@ -2879,4 +2939,44 @@ Corpses: {
 	RitualBreak: Gate of Life — Array Broken!
 	RitualComplete: Soul Sacrifice Complete
 	CityGate: The City of the Wrongfully Dead Seals Shut
+}
+
+Configs: {
+	MythologyConfig: {
+		DisplayName: Mythology Config
+
+		EnableFullscreenShaders: {
+			Label: Enable Fullscreen Shaders
+			Tooltip: ""
+		}
+
+		ScreenShakeScale: {
+			Label: Screen Shake Scale
+			Tooltip: ""
+		}
+
+		TrailQuality: {
+			Label: Trail Quality
+			Tooltip: ""
+		}
+	}
+
+	TrailQualityLevel: {
+		Tooltip: ""
+
+		Off: {
+			Label: Off
+			Tooltip: ""
+		}
+
+		Med: {
+			Label: Med
+			Tooltip: ""
+		}
+
+		High: {
+			Label: High
+			Tooltip: ""
+		}
+	}
 }

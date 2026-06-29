@@ -2105,27 +2105,38 @@ NPCs: {
 	Qinlong.DisplayName: 青龙
 	Baihu.DisplayName: 白虎
 	Suzaku.DisplayName: 朱雀
-	Xuanwu.DisplayName: 玄武
-	Xuanwu.JadeAegis: 玉璧绝防
+
+	Xuanwu: {
+		DisplayName: 玄武
+		JadeAegis: 玉璧绝防
+	}
+
 	SoulHarvester.DisplayName: Soul Harvester
 	ThebonesinTheTomb.DisplayName: Thebonesin The Tomb
 	TheDeceasedPerson.DisplayName: The Deceased Person
 	AzureDragonBody.DisplayName: Azure Dragon Body
 	AzureDragonHead.DisplayName: Azure Dragon Head
 	AzureDragonTail.DisplayName: Azure Dragon Tail
-	YinEmperor.DisplayName: Yin Emperor
+
+	YinEmperor: {
+		DisplayName: Yin Emperor
+
+		Dialog: {
+			Intro: 阴天子降临。跪下吧，凡人——汝之魂魄已被传唤受审。
+			ActI: 酆都仪典。受冥律铭刻于身。
+			ActII: 汝困于镇魂狱中。击破鬼门关钥，否则将被永世封印。
+			ActIII: 帝裁降下！冥府王座之前，绝无申辩。
+			SoulSeal: 封印正在收缩，击破关钥逃脱！
+			SealBroken: 放肆……竟将鬼门生生掀开。
+			YinYang: 酆帝诏书——立于得宠半场，否则魂焚。
+			FinalDecree: 终诏已书，且看分晓。
+			Phantom: 汝竟至此。且观——阴帝印现。
+			ExecutePrompt: 酆都帝器共鸣——此刻出手，执行裁决！
+			Executed: 不可能……这裁决……竟反噬于吾……
+		}
+	}
+
 	GhostGateLock.DisplayName: 鬼门关钥
-	YinEmperor.Dialog.Intro: 阴天子降临。跪下吧，凡人——汝之魂魄已被传唤受审。
-	YinEmperor.Dialog.ActI: 酆都仪典。受冥律铭刻于身。
-	YinEmperor.Dialog.ActII: 汝困于镇魂狱中。击破鬼门关钥，否则将被永世封印。
-	YinEmperor.Dialog.ActIII: 帝裁降下！冥府王座之前，绝无申辩。
-	YinEmperor.Dialog.SoulSeal: 封印正在收缩，击破关钥逃脱！
-	YinEmperor.Dialog.SealBroken: 放肆……竟将鬼门生生掀开。
-	YinEmperor.Dialog.YinYang: 酆帝诏书——立于得宠半场，否则魂焚。
-	YinEmperor.Dialog.FinalDecree: 终诏已书，且看分晓。
-	YinEmperor.Dialog.Phantom: 汝竟至此。且观——阴帝印现。
-	YinEmperor.Dialog.ExecutePrompt: 酆都帝器共鸣——此刻出手，执行裁决！
-	YinEmperor.Dialog.Executed: 不可能……这裁决……竟反噬于吾……
 	Aokin.DisplayName: Aokin
 	Aoyuan.DisplayName: Aoyuan
 	AoyuanBody.DisplayName: Aoyuan Body
@@ -2701,6 +2712,50 @@ Projectiles: {
 	// NetherChainBladeProjectile.DisplayName: Nether Chain Blade Projectile
 	// WraithLanternGhost.DisplayName: Wraith Lantern Ghost
 	// WraithLanternTether.DisplayName: Wraith Lantern Tether
+	// ArgentPulseRail.DisplayName: Argent Pulse Rail
+	// AzureTidalNova.DisplayName: Azure Tidal Nova
+	// BlackTortoiseGuardNova.DisplayName: Black Tortoise Guard Nova
+	// PhoenixDive.DisplayName: Phoenix Dive
+	// StarfireSupernova.DisplayName: Starfire Supernova
+	// ThunderclapSkyStrike.DisplayName: Thunderclap Sky Strike
+	// ACMWeaponBurst.DisplayName: A C M Weapon Burst
+	// ArrogantSylvanScreenTint.DisplayName: Arrogant Sylvan Screen Tint
+	// CupriteAcornProj.DisplayName: Cuprite Acorn Proj
+	// CupriteEmeraldBolt.DisplayName: Cuprite Emerald Bolt
+	// CupriteMossBombProj.DisplayName: Cuprite Moss Bomb Proj
+	// CupriteNatureLeaf.DisplayName: Cuprite Nature Leaf
+	// XuanTieArrow.DisplayName: Xuan Tie Arrow
+	// XuanTieBoomerangProj.DisplayName: Xuan Tie Boomerang Proj
+	// NiuMaRevivalCircle.DisplayName: Niu Ma Revival Circle
+	// SoulOrbProj.DisplayName: Soul Orb Proj
+	// CorpsesBoneRainMarker.DisplayName: Corpses Bone Rain Marker
+	// NetherSoulExplosion.DisplayName: Nether Soul Explosion
+	// NetherSoulSpark.DisplayName: Nether Soul Spark
+	// DragonDetonationFlash.DisplayName: Dragon Detonation Flash
+	// FrostJudgmentFlash.DisplayName: Frost Judgment Flash
+	// ImperatorJudgmentFlash.DisplayName: Imperator Judgment Flash
+	// SingularityImplosionFlash.DisplayName: Singularity Implosion Flash
+	// VoidSoulShatter.DisplayName: Void Soul Shatter
+	// DamnedSoulChain.DisplayName: Damned Soul Chain
+	// KarmaMirrorWard.DisplayName: Karma Mirror Ward
+	// MyriadDemonRuneField.DisplayName: Myriad Demon Rune Field
+	// NetherNetField.DisplayName: Nether Net Field
+	// OblivionVoidFinisher.DisplayName: Oblivion Void Finisher
+	// SoulCannonMuzzleFlash.DisplayName: Soul Cannon Muzzle Flash
+	// SoulEatPaletteFinisher.DisplayName: Soul Eat Palette Finisher
+	// SoulShatterBlastFX.DisplayName: Soul Shatter Blast F X
+	// YamaExecuteFinisher.DisplayName: Yama Execute Finisher
+	// FateJudgmentField.DisplayName: Fate Judgment Field
+	// NetherfireMuzzleFlash.DisplayName: Netherfire Muzzle Flash
+	// NetherRockBlastFX.DisplayName: Nether Rock Blast F X
+	// BloodfiendLifestealThread.DisplayName: Bloodfiend Lifesteal Thread
+	// JudgmentRuneBolt.DisplayName: Judgment Rune Bolt
+	// NetherboneArrow.DisplayName: Netherbone Arrow
+	// SoulDevourerRift.DisplayName: Soul Devourer Rift
+	// SoulLanternBolt.DisplayName: Soul Lantern Bolt
+	// SoulLanternMinion.DisplayName: Soul Lantern Minion
+	// SoulseekerSoulChain.DisplayName: Soulseeker Soul Chain
+	// YamasJudgmentRune.DisplayName: Yamas Judgment Rune
 }
 
 HeavenBiome.DisplayName: Heaven
@@ -2983,6 +3038,11 @@ Buffs: {
 		DisplayName: 冥律
 		Description: 被阴天子的冥律标记。叠满层数时，魂魄将被定身锁定原地。
 	}
+
+	SoulLanternMinionBuff: {
+		// DisplayName: Soul Lantern Minion Buff
+		// Description: Mods.AncientChineseMythology.Buffs.SoulLanternMinionBuff.Description
+	}
 }
 
 WorldGen: {
@@ -3001,4 +3061,44 @@ Corpses: {
 	RitualBreak: 生门已破！
 	RitualComplete: 魂祭已成
 	CityGate: 枉死城门闭合
+}
+
+Configs: {
+	MythologyConfig: {
+		// DisplayName: Mythology Config
+
+		EnableFullscreenShaders: {
+			// Label: Enable Fullscreen Shaders
+			// Tooltip: ""
+		}
+
+		ScreenShakeScale: {
+			// Label: Screen Shake Scale
+			// Tooltip: ""
+		}
+
+		TrailQuality: {
+			// Label: Trail Quality
+			// Tooltip: ""
+		}
+	}
+
+	TrailQualityLevel: {
+		// Tooltip: ""
+
+		Off: {
+			// Label: Off
+			// Tooltip: ""
+		}
+
+		Med: {
+			// Label: Med
+			// Tooltip: ""
+		}
+
+		High: {
+			// Label: High
+			// Tooltip: ""
+		}
+	}
 }

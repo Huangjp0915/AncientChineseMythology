@@ -185,7 +185,7 @@ namespace AncientChineseMythology
 
         /// <summary>恢复项目默认 SpriteBatch 状态 (PointClamp + GameViewMatrix), 避免污染后续绘制 (§C.4#5)。</summary>
         public static void RestoreDefaultBatch(SpriteBatch sb) {
-            sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
+              sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
                 DepthStencilState.None, RasterizerState.CullNone, null,
                 Main.GameViewMatrix.TransformationMatrix);
         }
