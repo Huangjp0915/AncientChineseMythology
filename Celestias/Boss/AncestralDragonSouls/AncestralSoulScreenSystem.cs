@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
+using Terraria.GameContent;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
@@ -24,27 +25,34 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
         private static float _tint;     // ElementalScreenTint 强度
         private static float _runic;    // ArenaRunic 谜题环强度
         private static float _bloom;    // RadialBloom 泛光强度
+        private static float _flash;    // 白屏顿帧 (合体/终爆, 全场限量节拍), 自衰减
         private static Vector2 _center;
         private static float _time;
         private static ulong _lastPublishFrame;
 
-        /// <summary>由 Boss 每帧调用, 发布太初氛围标量 (纯本地视觉)。</summary>
-        public static void Publish(Vector2 center, float tint, float runic, float bloom, float time) {
+        /// <summary>由 Boss 每帧调用, 发布太初氛围标量 (纯本地视觉)。flash 为一次性白屏顿帧脉冲。</summary>
+        public static void Publish(Vector2 center, float tint, float runic, float bloom, float time, float flash = 0f) {
             _center = center;
             _tint = tint;
             _runic = runic;
             _bloom = bloom;
             _time = time;
+            if (flash > _flash)
+                _flash = flash;
             _lastPublishFrame = Main.GameUpdateCount;
         }
 
         public override void OnWorldUnload() {
-            _tint = _runic = _bloom = 0f;
+            _tint = _runic = _bloom = _flash = 0f;
         }
 
         public override void PostDrawTiles() {
             if (Main.dedServ || Main.gameMenu)
                 return;
+
+            // 顿帧脉冲无论配置开关都要衰减 (防配置关闭期间滞留, 重开时凭空白屏)
+            _flash *= 0.86f;
+
             if (!MythologyConfig.FullscreenShadersEnabled)
                 return;
 
@@ -58,6 +66,20 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
             DrawAmbientTint();
             DrawDaoRunic();
             DrawBloom();
+            DrawWhiteFlash();
+        }
+
+        // ===== 白屏顿帧: 合体 / 终爆的一次性冲击帧 (纯色白, ~12f 衰减) =====
+        private static void DrawWhiteFlash() {
+            if (_flash <= 0.02f)
+                return;
+
+            SpriteBatch sb = Main.spriteBatch;
+            sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null, Matrix.Identity);
+            sb.Draw(TextureAssets.MagicPixel.Value, new Rectangle(0, 0, Main.screenWidth, Main.screenHeight),
+                Color.White * MathHelper.Clamp(_flash, 0f, 1f));
+            sb.End();
         }
 
         // ===== ElementalScreenTint: 太初灰白雾氛围 =====

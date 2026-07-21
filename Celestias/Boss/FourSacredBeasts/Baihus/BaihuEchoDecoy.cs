@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework.Graphics;
+using System;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -52,8 +53,9 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
             Vector2 origin = new(gridSize / 2f, gridSize / 2f);
 
             float fade = MathHelper.Clamp(Projectile.timeLeft / 40f, 0f, 1f);
-            // 暗灰半透 → 与真实碎片(亮银)区分
-            Color c = new Color(110, 118, 132) * (0.45f * fade);
+            // 去饱和闪烁: 灰片按 7 帧周期忽隐忽现(与真片的稳定微金光形成对照, 更明确 2/3 是假的)
+            float flicker = 0.55f + 0.45f * MathF.Sin(Projectile.timeLeft * (MathHelper.TwoPi / 7f) + Projectile.identity * 1.7f);
+            Color c = new Color(112, 114, 120) * (0.42f * fade * flicker);
             sb.Draw(shardTex, drawPos, frame, c, Projectile.rotation, origin, 0.11f, SpriteEffects.None, 0f);
             return false;
         }

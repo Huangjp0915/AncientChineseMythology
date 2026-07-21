@@ -51,6 +51,10 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
         // 四季天幕染色 (向当前主导季节平滑过渡)
         private Color seasonTint = DazhengSeasons.Tint(0);
 
+        // 死亡演出联动: 神光熄灭 / 漂移减速 / 落叶转密 / 终爆金脉冲
+        private float deathProgress;
+        private float deathFlash;
+
         // 颜色定义 — 大椿：墨绿 / 琥珀金 / 古木褐
         private static readonly Color DeepMoss = new(10, 30, 12);
         private static readonly Color AncientAmber = new(140, 100, 30);
@@ -120,21 +124,34 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 bossHealthPercent = (float)boss.life / boss.lifeMax;
                 isPhase2 = bossHealthPercent < Dazheng.Phase2Threshold;
 
-                if (boss.ModNPC is Dazheng dz)
+                if (boss.ModNPC is Dazheng dz) {
                     seasonTint = Color.Lerp(seasonTint, DazhengSeasons.Tint(dz.CurrentSeason), 0.02f);
+                    // 死亡演出联动
+                    deathProgress = dz.DeathProgress;
+                    deathFlash = dz.IsDying && boss.ai[1] >= Dazheng.DeathBurstTick
+                        ? MathHelper.Clamp(1f - (boss.ai[1] - Dazheng.DeathBurstTick) / 32f, 0f, 1f)
+                        : 0f;
+                }
 
                 float target = isPhase2 ? MaxIntensity * 1.15f : MaxIntensity;
                 intensity = MathHelper.Lerp(intensity, target, FadeInSpeed);
             }
             else {
+                deathProgress = 0f;
+                deathFlash = 0f;
                 intensity -= FadeOutSpeed;
                 if (intensity <= 0f) { intensity = 0f; if (active) Deactivate(); }
             }
 
-            float driftMul = isPhase2 ? 1.4f : 1f;
+            // 死亡演出: 树冠漂移减速 (世界屏息), 落叶转密 (山林同悲)
+            float driftMul = (isPhase2 ? 1.4f : 1f) * MathHelper.Lerp(1f, 0.35f, deathProgress);
             for (int i = 0; i < CanopyCount; i++) canopies[i].Update(driftMul);
             for (int i = 0; i < GodRayCount; i++) godRays[i].Update(globalTime, isPhase2);
-            for (int i = 0; i < LeafCount; i++) leaves[i].Update(globalTime);
+            for (int i = 0; i < LeafCount; i++) {
+                leaves[i].Update(globalTime);
+                if (deathProgress > 0.05f)
+                    leaves[i].Update(globalTime); // 双速更新 = 落叶转急
+            }
             for (int i = 0; i < VineTendrilCount; i++) vinePhases[i] += 0.008f;
         }
 
@@ -249,11 +266,15 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             if (tex == null) return;
             Vector2 origin = new(tex.Width / 2f, tex.Height / 2f);
 
+            // 死亡演出: 神光渐熄 (万木神域随树神一同暗下去)
+            float quench = 1f - MathHelper.Clamp(deathProgress * 1.6f, 0f, 1f);
+
             for (int i = 0; i < GodRayCount; i++) {
                 GodRay ray = godRays[i];
                 if (ray.Alpha <= 0.01f) continue;
 
-                float alpha = ray.Alpha * intensity;
+                float alpha = ray.Alpha * intensity * quench;
+                if (alpha <= 0.01f) continue;
 
                 // 金色光柱
                 Color rayC = Color.Lerp(AncientAmber, SacredGold, ray.Alpha) * alpha * 0.35f;
@@ -408,6 +429,13 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             Color bottomC = BarkBrown * pulse * 0.5f;
             bottomC.A = 0;
             sb.Draw(pixel, new Rectangle(0, Main.screenHeight * 3 / 4, Main.screenWidth, Main.screenHeight / 4), bottomC);
+
+            // 死亡终爆: 全天幕金色脉冲 (生命归还山林的那一帧, 天空也亮起来)
+            if (deathFlash > 0.02f) {
+                Color flashC = Color.Lerp(SacredGold, new Color(200, 255, 170), 0.4f) * (deathFlash * 0.3f * intensity);
+                flashC.A = 0;
+                sb.Draw(pixel, new Rectangle(0, 0, Main.screenWidth, Main.screenHeight), flashC);
+            }
         }
 
         #endregion

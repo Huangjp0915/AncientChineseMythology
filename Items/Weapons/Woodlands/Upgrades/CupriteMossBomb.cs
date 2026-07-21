@@ -1,42 +1,29 @@
 using AncientChineseMythology.Helpers;
 using AncientChineseMythology.Items.Materials;
 using Terraria;
-using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Items.Weapons.Woodlands.Upgrades;
 
 /// <summary>
-/// 赤铜苔藓爆弹 — 投掷"灼苔弹" <see cref="CupriteMossBombProj"/>。
-/// 可见质变: 飞行 ember 拖尾, 爆炸保留绿色蘑菇云 AoE (机制不变) 并叠加赤铜灼烧演出 (径向辉光 + 冲击环 + 落地屏震)。
+/// 赤铜苔藓爆弹 — 完整继承孢子二段 (弹跳引信 / 直击立爆 / 孢子芽) 机制身份,
+/// 叠赤铜灼烧风味: 火孢 (点燃小云) + 爆炸点燃 + 直击已点燃目标迸火星 (燃烧链)。
 /// </summary>
-public class CupriteMossBomb : ModItem
+public class CupriteMossBomb : MossBomb
 {
+    protected override int BombType => ModContent.ProjectileType<CupriteMossBombProj>();
+
     public override void SetDefaults() {
+        base.SetDefaults();
         Item.damage = 45;
         Item.crit = 6;
-        Item.DamageType = DamageClass.Ranged;
-        Item.width = 24;
-        Item.height = 24;
         Item.useTime = 30;
         Item.useAnimation = 30;
-        Item.useStyle = ItemUseStyleID.Swing;
-        Item.knockBack = 5f;
         Item.value = Item.buyPrice(gold: 2);
         Item.rare = ItemRarityID.Orange;
-        Item.UseSound = SoundID.Item1;
-        Item.autoReuse = false;
-        Item.noMelee = true;
-        Item.noUseGraphic = true;
         Item.shoot = ModContent.ProjectileType<CupriteMossBombProj>();
         Item.shootSpeed = 11f;
-    }
-
-    public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
-        Vector2 launchVel = velocity + new Vector2(0, -2f);
-        Projectile.NewProjectile(source, position, launchVel, type, damage, knockback, player.whoAmI);
-        return false;
     }
 
     public override void AddRecipes() {
@@ -50,10 +37,12 @@ public class CupriteMossBomb : ModItem
 }
 
 /// <summary>
-/// 灼苔弹 — 继承 <see cref="MossBombProj"/> 弧线/爆炸机制 (含绿色蘑菇云 AoE), 增强为赤铜灼烧表现。
+/// 灼苔弹 — 继承弹跳引信/孢子芽机制 (SporeTheme=1 → 火孢 + 赤铜蘑菇云), 增强灼烧表现。
 /// </summary>
 public class CupriteMossBombProj : MossBombProj
 {
+    protected override int SporeTheme => 1;
+
     public override void AI() {
         base.AI();
         if (Main.rand.NextBool(2)) {
@@ -64,17 +53,21 @@ public class CupriteMossBombProj : MossBombProj
         Lighting.AddLight(Projectile.Center, 0.45f, 0.22f, 0.06f);
     }
 
-    public override void OnKill(int timeLeft) {
-        base.OnKill(timeLeft); // 绿色蘑菇云 AoE + 毒 (机制不变)
+    public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+        base.OnHitNPC(target, hit, damageDone);
+        CupriteEmberSpark.TryChain(Projectile, target, DamageClass.Ranged); // 直击已燃目标 → 火星
+        target.AddBuff(BuffID.OnFire, 120);
+    }
 
-        // 赤铜灼烧叠层
+    public override void OnKill(int timeLeft) {
+        base.OnKill(timeLeft); // 蘑菇云 AoE + 孢子芽 (赤铜主题由 SporeTheme 传入)
+
+        // 赤铜灼烧叠层: 火星环 + 更重的落地感
         for (int i = 0; i < 16; i++) {
             Vector2 vel = Main.rand.NextVector2CircularEdge(6f, 6f);
             Dust d = Dust.NewDustPerfect(Projectile.Center, DustID.Torch, vel, 40, default, Main.rand.NextFloat(1.3f, 2.2f));
             d.noGravity = true;
         }
-        ACMWeaponBurst.Spawn(Projectile.GetSource_Death(), Projectile.Center,
-            ACMWeaponBurst.CupriteBurn, scale: 2f, owner: Projectile.owner);
         WeaponVFX.AddScreenShake(Projectile.Center, 5f);
     }
 
@@ -82,6 +75,6 @@ public class CupriteMossBombProj : MossBombProj
         WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 9f,
             outerColor: new Color(180, 60, 20, 130), innerColor: new Color(255, 180, 80, 180),
             uvScroll: -Main.GlobalTimeWrappedHourly * 1.5f);
-        return base.PreDraw(ref lightColor); // 原版弹体贴图
+        return base.PreDraw(ref lightColor); // 弹体贴图 + 引信闪烁
     }
 }

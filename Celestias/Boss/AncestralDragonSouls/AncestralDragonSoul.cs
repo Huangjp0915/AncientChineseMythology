@@ -8,8 +8,10 @@ using Terraria.ID;
 namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
 {
     /// <summary>
-    /// 祖龙残魂基类 - 迷幻仙气风格的大后期超级Boss
-    /// 颜色风格偏向白色和雾气，具有空灵飘渺的视觉效果
+    /// 祖龙残魂基类 — 「星海归墟」虚实对比核心:
+    /// 龙身由星尘聚形 (AncestralSoulBody 着色器: 溶解显形/星散 + 幽魂虚化 + 体内流光),
+    /// **透明度即威胁读法**: 虚化=无接触伤害可穿行, 凝实=猎杀线。
+    /// 整龙由头部统一合批绘制 (段节 PreDraw 让渡), 段节只保留逻辑与备用自绘。
     /// </summary>
     public abstract class AncestralDragonSoul : BasicWorm
     {
@@ -40,17 +42,44 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
         /// <summary>是否为分裂出的副本龙</summary>
         public bool IsTwin;
 
+        // ===== 虚实对比 视觉标量 (各端本地由同步状态确定性推导, 不入包) =====
+
+        /// <summary>幽魂虚化程度 0=凝实 1=全虚化。头部每帧计算, 段节从宿主头复制。</summary>
+        public float GhostLevel;
+
+        /// <summary>出生显形溶解 1→0 (逐节 36 帧, 长龙天然形成"从头到尾编织成形")。</summary>
+        protected float spawnDissolve = 1f;
+
+        /// <summary>死亡星散溶解 0→1 (由宿主头 Death 状态驱动, 尾梢先散)。</summary>
+        protected float deathDissolve;
+
+        /// <summary>合体太初金染 0→1。</summary>
+        protected float mergeGold;
+
+        /// <summary>供着色器使用的最终溶解值。</summary>
+        public float DissolveLevel => MathF.Max(spawnDissolve, deathDissolve);
+
+        /// <summary>取本段所属的龙头 ModNPC (头部返回自身), 失效返回 null。</summary>
+        public AncestralDragonSoulHead OwnerHead {
+            get {
+                if (this is AncestralDragonSoulHead selfHead)
+                    return selfHead;
+                if (NPC.realLife >= 0 && NPC.realLife < Main.maxNPCs) {
+                    NPC owner = Main.npc[NPC.realLife];
+                    if (owner.active && owner.ModNPC is AncestralDragonSoulHead h)
+                        return h;
+                }
+                return null;
+            }
+        }
+
         /// <summary>
         /// 双魂回拢「合体」后的视觉放大倍率 (纯绘制, 不改接触判定箱; 由所属龙头同步的 Merged 标志驱动,
         /// 全客户端一致)。让合体后的"太初真身"显得更巨大, 而不引入失衡的判定箱变化。
         /// </summary>
         protected float MergeScaleMul() {
-            NPC owner = NPC;
-            if (NPCWormType != WormType.Head && NPC.realLife >= 0 && NPC.realLife < Main.maxNPCs)
-                owner = Main.npc[NPC.realLife];
-            if (owner.active && owner.ModNPC is AncestralDragonSoulHead h && h.Merged)
-                return 1.2f;
-            return 1f;
+            AncestralDragonSoulHead h = OwnerHead;
+            return h != null && h.Merged ? 1.2f : 1f;
         }
 
         public override void SetDefaults() {
@@ -90,15 +119,35 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
             return null;
         }
 
+        /// <summary>
+        /// 接触伤害窗口 = 宿主头的凝实状态 (虚化的幽魂可以穿过玩家, 与透明度读法严格对齐)。
+        /// </summary>
+        public override bool CanHitPlayer(Player target, ref int cooldownSlot) {
+            AncestralDragonSoulHead h = OwnerHead;
+            return h == null || h.ContactDamageActive;
+        }
+
         public override void AI() {
             base.AI();
 
             globalTime += 1f / 60f;
             soulPulsePhase += 0.08f;
 
+            // 出生显形: 36 帧从星尘编织成形
+            if (spawnDissolve > 0f)
+                spawnDissolve = MathF.Max(0f, spawnDissolve - 1f / 36f);
+
             // 如果跟随父级，更新连接
             if (NPC.realLife >= 0 && Main.npc[NPC.realLife].active) {
                 NPC.dontTakeDamage = Main.npc[NPC.realLife].dontTakeDamage;
+            }
+
+            // 段节视觉标量从宿主头复制 (各端本地确定性推导)
+            AncestralDragonSoulHead head = OwnerHead;
+            if (head != null && !ReferenceEquals(head, this)) {
+                GhostLevel = head.GhostLevel;
+                mergeGold = MathHelper.Lerp(mergeGold, head.Merged ? 1f : 0f, 0.04f);
+                deathDissolve = head.DeathDissolveFor(segmentIndex);
             }
 
             // 身体段连接粒子效果
@@ -106,8 +155,8 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
                 SpawnConnectionParticles();
             }
 
-            // 龙魂发光效果
-            float pulseIntensity = 0.6f + MathF.Sin(soulPulsePhase) * 0.2f;
+            // 龙魂发光效果: 越虚化越暗淡 (读法一致)
+            float pulseIntensity = (0.6f + MathF.Sin(soulPulsePhase) * 0.2f) * (1f - GhostLevel * 0.55f) * (1f - deathDissolve);
             Lighting.AddLight(NPC.Center, new Vector3(0.9f, 0.95f, 1f) * pulseIntensity);
         }
 
@@ -127,12 +176,12 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
             // 锚点:父节点后方固定距离
             Vector2 anchor = FatherNPC.Center - dirToParent * targetDist;
 
-            // 蛇形波:沿身体传导,越靠近尾部幅度越大
+            // 蛇形波:沿身体传导,越靠近尾部幅度越大; 虚化时波幅放大 (幽魂更飘忽)
             float segPhase = globalTime * 5.2f - segmentIndex * 0.42f;
             float parentSpeed = FatherNPC.velocity.Length();
             float speedFactor = MathHelper.Clamp(parentSpeed / 18f, 0.35f, 1.5f);
             float segFactor = MathHelper.Clamp(segmentIndex / 30f, 0.4f, 1.3f);
-            float waveAmp = 15f * speedFactor * segFactor;
+            float waveAmp = 15f * speedFactor * segFactor * (1f + GhostLevel * 0.8f);
             Vector2 perp = dirToParent.RotatedBy(MathHelper.PiOver2);
             anchor += perp * MathF.Sin(segPhase) * waveAmp;
 
@@ -155,6 +204,8 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
         /// <summary>生成身体段之间的连接粒子</summary>
         protected virtual void SpawnConnectionParticles() {
             if (Main.netMode == NetmodeID.Server) return;
+            // 隔节生成, 双子期两条长龙也不至于 dust 爆表
+            if ((segmentIndex & 1) == 1) return;
 
             Vector2 midPoint = NPC.Center + NPC.Center.To(FatherNPC.Center) / 2;
 
@@ -169,97 +220,51 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
                 }
             }
 
-            // 龙魂残影粒子
-            if (Main.rand.NextBool(8)) {
+            // 虚化期: 星尘从体侧剥离 (视觉=正在化作星屑)
+            if (GhostLevel > 0.4f && Main.rand.NextBool(6)) {
                 Vector2 dustPos = NPC.Center + Main.rand.NextVector2Circular(40, 40);
-                int dust = Dust.NewDust(dustPos, 1, 1, DustID.Clentaminator_Cyan, 0, 0, 150, Color.White, 0.8f);
+                int dust = Dust.NewDust(dustPos, 1, 1, DustID.Clentaminator_Cyan, 0, 0, 150, Color.White, 0.9f);
                 Main.dust[dust].noGravity = true;
-                Main.dust[dust].velocity = Main.rand.NextVector2Circular(1f, 1f);
+                Main.dust[dust].velocity = new Vector2(0, -Main.rand.NextFloat(0.5f, 1.6f));
                 Main.dust[dust].alpha = 180;
             }
         }
 
+        /// <summary>贴图轴向补正 (尾部贴图纵向, 绘制时需 +PiOver2); 头部合批与备用自绘共用。</summary>
+        internal virtual float DrawRotationOffset => 0f;
+
+        /// <summary>宿主头存活时段节绘制全部让渡给头部合批; 否则回退自绘。</summary>
+        protected bool HeadHandlesDrawing {
+            get {
+                if (NPC.IsABestiaryIconDummy)
+                    return false;
+                AncestralDragonSoulHead h = OwnerHead;
+                return h != null && !ReferenceEquals(h, this) && h.NPC.active;
+            }
+        }
+
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+            if (HeadHandlesDrawing)
+                return false;
+
+            // 备用自绘 (宿主头缺失 / 图鉴)
             Texture2D tex = TextureAssets.Npc[Type].Value;
             Vector2 origin = tex.Size() / 2f;
-
-            // 计算灵魂脉动效果
             float soulPulse = 1f + MathF.Sin(soulPulsePhase + NPC.whoAmI * 0.3f) * 0.08f;
 
-            // 迷幻仙气色调 - 白色偏青的空灵效果
             Color mistColor = Color.Lerp(drawColor, new Color(230, 240, 255), 0.5f);
             mistColor = Color.Lerp(mistColor, Color.White, 0.3f);
 
-            // 外层光晕（迷幻效果）
-            DrawMysticalGlow(spriteBatch, screenPos, tex, origin, soulPulse);
-
-            // 绘制拖尾（仙气效果）
-            if (NPCWormType == WormType.Head) {
-                DrawEtherealTrail(spriteBatch, screenPos, tex, origin);
-            }
-
-            // 主体绘制
             SpriteEffects effects = NPC.spriteDirection == -1 ? SpriteEffects.FlipVertically : SpriteEffects.None;
             spriteBatch.Draw(tex, NPC.Center - screenPos, null, mistColor * NPC.Opacity,
-                NPC.rotation, origin, NPC.scale * soulPulse, effects, 0f);
+                NPC.rotation + DrawRotationOffset, origin, NPC.scale * soulPulse, effects, 0f);
 
-            // 内层发光
             Color innerGlow = new Color(255, 255, 255) * 0.3f * soulPulse;
             innerGlow.A = 0;
             spriteBatch.Draw(tex, NPC.Center - screenPos, null, innerGlow,
-                NPC.rotation, origin, NPC.scale * 0.9f, effects, 0f);
+                NPC.rotation + DrawRotationOffset, origin, NPC.scale * 0.9f, effects, 0f);
 
             return false;
-        }
-
-        /// <summary>绘制迷幻光晕效果</summary>
-        protected virtual void DrawMysticalGlow(SpriteBatch spriteBatch, Vector2 screenPos, Texture2D tex, Vector2 origin, float pulse) {
-            SpriteEffects effects = NPC.spriteDirection == -1 ? SpriteEffects.FlipVertically : SpriteEffects.None;
-
-            // 多层光晕营造迷幻效果
-            for (int i = 0; i < 3; i++) {
-                float layerOffset = i * 0.15f;
-                float layerScale = 1.1f + i * 0.1f + MathF.Sin(soulPulsePhase * 2f + i) * 0.05f;
-                float layerAlpha = (0.25f - i * 0.06f) * mistAlpha;
-
-                // 颜色渐变：白色 -> 淡青 -> 淡紫
-                Color layerColor = i switch {
-                    0 => new Color(255, 255, 255),
-                    1 => new Color(220, 240, 255),
-                    _ => new Color(230, 220, 255)
-                };
-                layerColor *= layerAlpha;
-                layerColor.A = 0;
-
-                // 轻微的位置偏移创造飘渺感
-                Vector2 offset = new Vector2(MathF.Sin(globalTime * 2f + i), MathF.Cos(globalTime * 1.5f + i)) * 3f;
-
-                spriteBatch.Draw(tex, NPC.Center + offset - screenPos, null, layerColor,
-                    NPC.rotation, origin, NPC.scale * layerScale * pulse, effects, 0f);
-            }
-        }
-
-        /// <summary>绘制空灵拖尾效果</summary>
-        protected virtual void DrawEtherealTrail(SpriteBatch spriteBatch, Vector2 screenPos, Texture2D tex, Vector2 origin) {
-            SpriteEffects effects = NPC.spriteDirection == -1 ? SpriteEffects.FlipVertically : SpriteEffects.None;
-
-            for (int i = 0; i < NPC.oldPos.Length; i++) {
-                if (NPC.oldPos[i] == Vector2.Zero) continue;
-
-                float progress = 1f - (float)i / NPC.oldPos.Length;
-                float trailAlpha = progress * 0.2f * mistAlpha;
-
-                // 白色到淡青的渐变拖尾
-                Color trailColor = Color.Lerp(new Color(255, 255, 255), new Color(200, 230, 255), 1f - progress);
-                trailColor *= trailAlpha;
-                trailColor.A = 0;
-
-                Vector2 pos = NPC.oldPos[i] + NPC.Size / 2f - screenPos;
-                float scale = NPC.scale * progress * 0.95f;
-
-                spriteBatch.Draw(tex, pos, null, trailColor,
-                    NPC.oldRot[i], origin, scale, effects, 0f);
-            }
         }
     }
 }

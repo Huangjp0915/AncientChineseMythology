@@ -10,8 +10,10 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
 {
     /// <summary>
     /// 万魂幡成长面板 —— 纯 DrawSelf 手绘 UI
-    /// 显示灵魂数量/进度条、Boss 阶层列表、成长加成数值
-    /// 面板高度动态计算；Boss 列表超出可见区域时支持滚轮滚动
+    /// 显示灵魂数量/进度条、大招状态、Boss 阶层列表、成长加成数值。
+    /// 即时反馈: 增魂脉冲 (数字弹跳 + 条尾闪光 + "+N 魂"浮字)、满魂呼吸辉光、
+    /// 大招就绪金色行。面板高度动态计算; Boss 列表超出可见区域时支持滚轮滚动。
+    /// 交互语义不变: 按住 Shift 显示, 滚轮翻 Boss 列表。
     /// </summary>
     public class SoulBannerUI : UIState
     {
@@ -30,11 +32,13 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
         private static readonly Color DimColor = new(90, 90, 110);
         private static readonly Color BarBg = new(30, 15, 50, 200);
         private static readonly Color BarFill = new(140, 55, 220);
+        private static readonly Color BarFillDeep = new(80, 30, 140);
         private static readonly Color BarGlow = new(190, 120, 255);
         private static readonly Color DefeatedColor = new(100, 255, 140);
         private static readonly Color LockedColor = new(110, 70, 70);
         private static readonly Color NextColor = new(255, 210, 80);
-        private static readonly Color SectionTitleColor = new(160, 130, 200);
+        private static readonly Color UltReadyColor = new(255, 210, 80);
+        private static readonly Color FullSoulGlow = new(225, 180, 255);
 
         private float fadeAlpha;
         private float glowPhase;
@@ -78,6 +82,10 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             float a = fadeAlpha;
             bool hasStats = sbPlayer.soulCount > 0;
             bool hasBar = sbPlayer.soulCap > 0;
+            float ratio = sbPlayer.GrowthRatio;
+            bool fullSoul = hasBar && ratio >= 0.999f;
+            // 增魂脉冲 0~1 (30 帧衰减)
+            float gainPulse = sbPlayer.lastGainTimer > 0 ? sbPlayer.lastGainTimer / 30f : 0f;
 
             // ── 动态计算面板高度 ──
             int visibleBossRows = Math.Min(tiers.Length, MaxVisibleBossRows);
@@ -86,6 +94,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
                        + 8                             // 分隔线
                        + 22                            // 灵魂标签
                        + (hasBar ? 22 : 4)             // 进度条或间距
+                       + (hasBar ? 20 : 0)             // 大招状态行
                        + (hasStats ? 6 + 5 * 20 + 4 : 0) // 属性区
                        + 8                             // Boss 分隔线
                        + 22                            // Boss 标题
@@ -100,19 +109,33 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             int py = (Main.screenHeight - panelH) / 2;
 
             // ══════════════════════════════════════
-            //  背景 + 边框
+            //  背景 + 边框 (满魂时边框呼吸辉光)
             // ══════════════════════════════════════
             sb.Draw(pixel, new Rectangle(px, py, PanelW, panelH), PanelBg * a);
 
+            float breathe = fullSoul ? 0.55f + 0.45f * MathF.Sin(glowPhase * 1.6f) : 0f;
+            Color borderCol = fullSoul
+                ? Color.Lerp(PanelBorder, FullSoulGlow, breathe)
+                : PanelBorder;
+
             int bw = 2;
-            sb.Draw(pixel, new Rectangle(px, py, PanelW, bw), PanelBorder * a);
-            sb.Draw(pixel, new Rectangle(px, py + panelH - bw, PanelW, bw), PanelBorder * a);
-            sb.Draw(pixel, new Rectangle(px, py, bw, panelH), PanelBorder * a);
-            sb.Draw(pixel, new Rectangle(px + PanelW - bw, py, bw, panelH), PanelBorder * a);
+            sb.Draw(pixel, new Rectangle(px, py, PanelW, bw), borderCol * a);
+            sb.Draw(pixel, new Rectangle(px, py + panelH - bw, PanelW, bw), borderCol * a);
+            sb.Draw(pixel, new Rectangle(px, py, bw, panelH), borderCol * a);
+            sb.Draw(pixel, new Rectangle(px + PanelW - bw, py, bw, panelH), borderCol * a);
+
+            // 满魂: 边框外一圈柔和溢光
+            if (fullSoul) {
+                Color halo = FullSoulGlow * (a * 0.25f * breathe);
+                sb.Draw(pixel, new Rectangle(px - 2, py - 2, PanelW + 4, 2), halo);
+                sb.Draw(pixel, new Rectangle(px - 2, py + panelH, PanelW + 4, 2), halo);
+                sb.Draw(pixel, new Rectangle(px - 2, py, 2, panelH), halo);
+                sb.Draw(pixel, new Rectangle(px + PanelW, py, 2, panelH), halo);
+            }
 
             // 四角高亮
             float cornerGlow = 0.6f + 0.4f * MathF.Sin(glowPhase);
-            Color cg = PanelBorder * (a * cornerGlow);
+            Color cg = borderCol * (a * cornerGlow);
             int cl = 12;
             sb.Draw(pixel, new Rectangle(px, py, cl, bw + 1), cg);
             sb.Draw(pixel, new Rectangle(px, py, bw + 1, cl), cg);
@@ -127,13 +150,14 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             int cy = py + Padding;
 
             // ══════════════════════════════════════
-            //  标题
+            //  标题 (满魂时镀上暖金)
             // ══════════════════════════════════════
             string title = "〈 万魂幡 · 魂录 〉";
             Vector2 titleSize = font.MeasureString(title) * 0.95f;
             float titleX = px + (PanelW - titleSize.X) / 2f;
+            Color titleCol = fullSoul ? Color.Lerp(TitleColor, UltReadyColor, breathe * 0.7f) : TitleColor;
             ChatManager.DrawColorCodedStringWithShadow(sb, font, title,
-                new Vector2(titleX, cy), TitleColor * a, 0f, Vector2.Zero, new Vector2(0.95f));
+                new Vector2(titleX, cy), titleCol * a, 0f, Vector2.Zero, new Vector2(0.95f));
             cy += (int)titleSize.Y + 6;
 
             // 分隔线
@@ -141,26 +165,57 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             cy += 8;
 
             // ══════════════════════════════════════
-            //  灵魂进度
+            //  灵魂进度 (增魂脉冲: 数字弹跳 + "+N 魂"浮字)
             // ══════════════════════════════════════
             string soulLabel = hasBar
                 ? $"灵魂：{sbPlayer.soulCount} / {sbPlayer.soulCap}"
                 : "灵魂：尚未觉醒";
-            Utils.DrawBorderString(sb, soulLabel, new Vector2(cx, cy), LabelColor * a, 0.85f);
+            float labelScale = 0.85f * (1f + 0.22f * gainPulse * gainPulse);
+            Color labelCol = Color.Lerp(LabelColor, BarGlow, gainPulse);
+            Utils.DrawBorderString(sb, soulLabel, new Vector2(cx, cy), labelCol * a, labelScale);
+
+            if (gainPulse > 0f && sbPlayer.lastGainAmount > 0) {
+                string gainText = $"+{sbPlayer.lastGainAmount} 魂";
+                Vector2 gainSize = font.MeasureString(gainText) * 0.8f;
+                float floatUp = (1f - gainPulse) * 10f;
+                Utils.DrawBorderString(sb, gainText,
+                    new Vector2(px + PanelW - Padding - gainSize.X, cy - floatUp),
+                    new Color(200, 140, 255) * (a * gainPulse), 0.8f);
+            }
             cy += 22;
 
             if (hasBar) {
                 int barX = cx;
                 int barW = PanelW - Padding * 2;
                 int barH = 14;
-                float ratio = sbPlayer.GrowthRatio;
 
                 sb.Draw(pixel, new Rectangle(barX, cy, barW, barH), BarBg * a);
                 int fillW = (int)(barW * ratio);
-                if (fillW > 0)
-                    sb.Draw(pixel, new Rectangle(barX, cy, fillW, barH), BarFill * a);
+                if (fillW > 0) {
+                    // 双色纵向渐变 (上亮下深, 两条横带模拟)
+                    sb.Draw(pixel, new Rectangle(barX, cy, fillW, barH), BarFillDeep * a);
+                    sb.Draw(pixel, new Rectangle(barX, cy, fillW, barH / 2), BarFill * a);
+                }
                 if (fillW > 2)
                     sb.Draw(pixel, new Rectangle(barX, cy, fillW, 2), BarGlow * (a * 0.6f));
+
+                // 增魂脉冲: 条尾闪光扩散
+                if (gainPulse > 0f && fillW > 2) {
+                    int flashW = (int)(14 + 26 * (1f - gainPulse));
+                    int flashX = Math.Max(barX, barX + fillW - flashW);
+                    sb.Draw(pixel, new Rectangle(flashX, cy, Math.Min(flashW, fillW), barH),
+                        BarGlow * (a * 0.65f * gainPulse));
+                }
+
+                // 满魂流光: 一道亮带沿条循环
+                if (fullSoul) {
+                    float sweep = glowPhase * 0.35f % 1f;
+                    int sweepW = 26;
+                    int sweepX = barX + (int)((barW - sweepW) * sweep);
+                    sb.Draw(pixel, new Rectangle(sweepX, cy, sweepW, barH),
+                        FullSoulGlow * (a * 0.35f));
+                }
+
                 sb.Draw(pixel, new Rectangle(barX, cy, barW, 1), PanelBorder * (a * 0.4f));
                 sb.Draw(pixel, new Rectangle(barX, cy + barH - 1, barW, 1), PanelBorder * (a * 0.4f));
                 sb.Draw(pixel, new Rectangle(barX, cy, 1, barH), PanelBorder * (a * 0.4f));
@@ -172,6 +227,20 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
                     new Vector2(barX + (barW - pctSize.X) / 2f, cy - 1), Color.White * a, 0.7f);
 
                 cy += barH + 8;
+
+                // ── 大招状态行 ──
+                if (sbPlayer.UltReady) {
+                    float ultBreathe = 0.7f + 0.3f * MathF.Sin(glowPhase * 2.2f);
+                    string ultText = "◈ 万魂齐哭 · 就绪 —— 右键悬浮幡引爆";
+                    Utils.DrawBorderString(sb, ultText, new Vector2(cx, cy),
+                        UltReadyColor * (a * ultBreathe), 0.78f);
+                }
+                else {
+                    string ultText = $"◈ 万魂齐哭 · 蓄魂 {sbPlayer.soulCount}/{SoulBannerPlayer.UltMinSouls}";
+                    Utils.DrawBorderString(sb, ultText, new Vector2(cx, cy),
+                        DimColor * a, 0.78f);
+                }
+                cy += 20;
             }
             else {
                 cy += 4;

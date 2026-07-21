@@ -8,82 +8,87 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
 {
     /// <summary>
-    /// 觉醒幽冥龙 - 虚空弹
-    /// 终局级追踪弹幕，带有强烈的视觉拖尾和能量效果
+    /// 觉醒幽冥龙 - 虚空弹 (V3 公平版)
+    /// 公平阀门三件套: 出膛 wind-up (前 30f 速度 40%→100%, 杀 telefrag)、
+    /// 追踪 210f 硬截止、近身 180px 内放弃追踪直线掠过 (奖励贴身走位)。
+    /// 配色收敛: 觉醒紫主体 + 鬼绿芯。
     /// </summary>
     public class AwakeningNetherVoidBolt : ModProjectile
     {
         public override string Texture => AwakeningNetherHelper.Path + "VoidCore";
 
-        private float homingStrength = 0.04f;
-        private float pulsePhase = 0f;
-        private float chargeLevel = 0f;
-        private float wobblePhase = 0f;
+        public const int HomingCutoff = 210; // 追踪硬截止 (帧)
+        private const int WindupTime = 30;
 
-        // 是否为强化版本
+        private float pulsePhase;
+        private int age;
+
+        // 是否为强化版本 (狂暴)
         private bool IsEnhanced => Projectile.ai[0] > 0;
         // 追踪强度等级
         private int TrackingLevel => (int)Projectile.ai[1];
 
         public override void SetStaticDefaults() {
-            ProjectileID.Sets.TrailCacheLength[Projectile.type] = 20;
+            ProjectileID.Sets.TrailCacheLength[Projectile.type] = 14;
             ProjectileID.Sets.TrailingMode[Projectile.type] = 2;
         }
 
         public override void SetDefaults() {
-            Projectile.width = 30;
-            Projectile.height = 30;
+            Projectile.width = 28;
+            Projectile.height = 28;
             Projectile.hostile = true;
             Projectile.friendly = false;
             Projectile.tileCollide = false;
             Projectile.penetrate = 1;
-            Projectile.timeLeft = 360;
+            Projectile.timeLeft = 330;
             Projectile.alpha = 50;
         }
 
         public override void AI() {
-            // 逐渐充能
-            chargeLevel = MathHelper.Lerp(chargeLevel, 1f, 0.03f);
+            age++;
             pulsePhase += 0.15f;
-            wobblePhase += 0.1f;
+            Projectile.rotation = Projectile.velocity.ToRotation();
 
-            // 旋转效果
-            Projectile.rotation += MathF.Sin(wobblePhase) * 0.08f + 0.05f;
+            // 出膛 wind-up: 前 30f 由 40% 速度爬升到 100% (转阶段/齐射瞬间必然可逃)
+            float windup = MathHelper.Lerp(0.4f, 1f, MathHelper.Clamp(age / (float)WindupTime, 0f, 1f));
+            float targetSpeed = (IsEnhanced ? 17f : 13f) * windup;
 
-            // 追踪玩家
             Player target = FindTarget();
-            if (target != null) {
-                float trackingMod = 1f + TrackingLevel * 0.3f;
-                float currentHomingStrength = homingStrength * trackingMod * chargeLevel;
-
+            bool mayHome = age < HomingCutoff && target != null
+                && target.Distance(Projectile.Center) > 180f; // 近身放弃追踪 — 直线掠过
+            if (mayHome) {
+                float homing = (0.035f + TrackingLevel * 0.012f) * windup;
                 Vector2 toTarget = (target.Center - Projectile.Center).SafeNormalize(Vector2.Zero);
-                float targetSpeed = IsEnhanced ? 16f : 12f;
-                float distance = Vector2.Distance(target.Center, Projectile.Center);
-
-                // 距离越近追踪越强
-                if (distance < 400f) {
-                    currentHomingStrength *= 1f + (1f - distance / 400f) * 0.5f;
-                }
-
-                Projectile.velocity = Vector2.Lerp(Projectile.velocity, toTarget * targetSpeed, currentHomingStrength);
+                Projectile.velocity = Vector2.Lerp(Projectile.velocity, toTarget * targetSpeed, homing);
+            }
+            else {
+                // 截止后保持直线, 只做速度整定
+                Projectile.velocity = Projectile.velocity.SafeNormalize(Vector2.UnitY) * MathHelper.Lerp(
+                    Projectile.velocity.Length(), targetSpeed, 0.06f);
             }
 
-            // 侧向飘移增加不可预测性
-            Vector2 perpendicular = Projectile.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
-            float drift = MathF.Sin(wobblePhase * 1.8f + Projectile.whoAmI * 0.7f) * 2.5f;
-            Projectile.position += perpendicular * drift;
+            if (!Main.dedServ) {
+                if (Main.rand.NextBool(2)) {
+                    var d = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(12f, 12f), DustID.Shadowflame);
+                    d.noGravity = true;
+                    d.scale = 1.2f;
+                    d.velocity = -Projectile.velocity * 0.15f;
+                    d.alpha = 80;
+                }
+                if (Main.rand.NextBool(4)) {
+                    var d = Dust.NewDustPerfect(Projectile.Center, DustID.CursedTorch);
+                    d.noGravity = true;
+                    d.scale = 0.9f;
+                    d.velocity = Main.rand.NextVector2Circular(1.5f, 1.5f);
+                }
+            }
 
-            // 粒子效果
-            CreateParticleEffects();
-
-            // 发光
-            float lightIntensity = 0.5f + chargeLevel * 0.5f;
-            Lighting.AddLight(Projectile.Center, AwakeningNetherHelper.AwakeningPurple.ToVector3() * lightIntensity);
+            Lighting.AddLight(Projectile.Center, AwakeningNetherHelper.AwakeningPurple.ToVector3() * 0.5f);
         }
 
         private Player FindTarget() {
             Player closest = null;
-            float closestDist = 1000f;
+            float closestDist = 1200f;
             foreach (var p in Main.player) {
                 if (p != null && p.active && !p.dead) {
                     float dist = p.Distance(Projectile.Center);
@@ -96,183 +101,84 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
             return closest;
         }
 
-        private void CreateParticleEffects() {
-            // 主拖尾粒子
-            if (Main.rand.NextBool(2)) {
-                Vector2 dustOffset = Main.rand.NextVector2Circular(15, 15);
-                var d = Dust.NewDustPerfect(Projectile.Center + dustOffset, DustID.Shadowflame);
-                d.noGravity = true;
-                d.scale = 1.3f * chargeLevel;
-                d.velocity = -Projectile.velocity * 0.15f + dustOffset * 0.08f;
-                d.alpha = 80;
-            }
-
-            // 能量粒子
-            if (Main.rand.NextBool(3)) {
-                var d = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(20, 20), DustID.PurpleTorch);
-                d.noGravity = true;
-                d.scale = 1.0f;
-                d.velocity = Main.rand.NextVector2Circular(2, 2);
-            }
-
-            // 强化版额外粒子
-            if (IsEnhanced && Main.rand.NextBool(2)) {
-                var d = Dust.NewDustPerfect(Projectile.Center, DustID.PurpleCrystalShard);
-                d.noGravity = true;
-                d.scale = 0.8f;
-                d.velocity = -Projectile.velocity * 0.2f;
-            }
-
-            // 尾迹粒子
-            if (Projectile.oldPos.Length > 5 && Projectile.oldPos[5] != Vector2.Zero) {
-                Vector2 tailPos = Projectile.oldPos[5] + Projectile.Size / 2;
-                if (Main.rand.NextBool(3)) {
-                    var d = Dust.NewDustPerfect(tailPos, DustID.Shadowflame);
-                    d.noGravity = true;
-                    d.scale = 0.7f;
-                    d.velocity = Main.rand.NextVector2Circular(1, 1);
-                    d.alpha = 150;
-                }
-            }
-        }
-
         public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
             SpriteBatch sb = Main.spriteBatch;
+            Texture2D glow = ACMAsset.SoftGlow;
+            if (glow == null)
+                return false;
+            Vector2 origin = glow.Size() / 2f;
 
-            // 绘制多层拖尾
-            DrawMultiLayerTrail(sb);
+            // 单层拖尾 (紫)
+            for (int i = Projectile.oldPos.Length - 1; i >= 0; i -= 2) {
+                if (Projectile.oldPos[i] == Vector2.Zero)
+                    continue;
+                float progress = 1f - (float)i / Projectile.oldPos.Length;
+                Color tc = AwakeningNetherHelper.AwakeningPurple * (progress * 0.4f);
+                tc.A = 0;
+                sb.Draw(glow, Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition, null, tc,
+                    0f, origin, (0.5f + progress * 0.6f) * (IsEnhanced ? 1.3f : 1f), SpriteEffects.None, 0);
+            }
 
-            // 绘制核心
-            DrawCore(sb);
-
+            // 紫壳 + 鬼绿芯 + 白点 (统一深渊色语言)
+            float pulse = 1f + MathF.Sin(pulsePhase) * 0.15f;
+            float scaleMod = IsEnhanced ? 1.35f : 1.05f;
+            sb.Draw(glow, Projectile.Center - Main.screenPosition, null,
+                AwakeningNetherHelper.AwakeningPurple with { A = 0 } * 0.8f,
+                0f, origin, 1.35f * pulse * scaleMod, SpriteEffects.None, 0);
+            sb.Draw(glow, Projectile.Center - Main.screenPosition, null,
+                TelegraphColors.GhostGreen with { A = 0 } * 0.75f,
+                0f, origin, 0.8f * pulse * scaleMod, SpriteEffects.None, 0);
+            sb.Draw(glow, Projectile.Center - Main.screenPosition, null,
+                Color.White with { A = 0 } * 0.55f,
+                0f, origin, 0.36f * pulse * scaleMod, SpriteEffects.None, 0);
             return false;
         }
 
-        private void DrawMultiLayerTrail(SpriteBatch sb) {
-            var tex = BAWImpermanences.BAWHelper.DustTexture;
-            if (tex == null) return;
-
-            Vector2 origin = tex.Size() / 2f;
-
-            // 外层光晕拖尾
-            for (int layer = 0; layer < 2; layer++) {
-                for (int i = Projectile.oldPos.Length - 1; i >= 0; i--) {
-                    if (Projectile.oldPos[i] == Vector2.Zero) continue;
-
-                    float progress = 1f - (float)i / Projectile.oldPos.Length;
-                    float trailAlpha = progress * 0.5f * chargeLevel;
-                    float trailScale = (0.6f + progress * 1.2f) * (layer == 0 ? 1.8f : 1.2f);
-
-                    Color trailColor = layer == 0
-                        ? AwakeningNetherHelper.VoidDarkPurple * trailAlpha * 0.3f
-                        : AwakeningNetherHelper.AwakeningPurple * trailAlpha * 0.5f;
-                    trailColor.A = 0;
-
-                    Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
-
-                    // 波动偏移
-                    float wobble = MathF.Sin(wobblePhase + i * 0.4f) * 4f;
-                    drawPos.Y += wobble;
-
-                    sb.Draw(tex, drawPos, null, trailColor, Projectile.oldRot[i], origin, trailScale, SpriteEffects.None, 0);
-                }
-            }
-
-            // 能量线拖尾（连接各点）
-            for (int i = 1; i < Projectile.oldPos.Length; i++) {
-                if (Projectile.oldPos[i] == Vector2.Zero || Projectile.oldPos[i - 1] == Vector2.Zero) continue;
-
-                Vector2 start = Projectile.oldPos[i - 1] + Projectile.Size / 2;
-                Vector2 end = Projectile.oldPos[i] + Projectile.Size / 2;
-
-                float progress = 1f - (float)i / Projectile.oldPos.Length;
-                Color lineColor = AwakeningNetherHelper.NetherCyan * progress * 0.3f * chargeLevel;
-
-                AwakeningNetherHelper.DrawEnergyBeam(sb, start, end, lineColor, 8f * progress, pulsePhase);
-            }
-        }
-
-        private void DrawCore(SpriteBatch sb) {
-            float coreScale = (IsEnhanced ? 1.5f : 1.2f) * chargeLevel;
-
-            // 使用高级核心绘制
-            AwakeningNetherHelper.DrawVoidCore(sb, Projectile.Center,
-                AwakeningNetherHelper.AwakeningPurple,
-                AwakeningNetherHelper.NetherCyan,
-                coreScale, pulsePhase, IsEnhanced);
-
-            // 强化版额外的能量环
-            if (IsEnhanced) {
-                var tex = BAWImpermanences.BAWHelper.DustTexture;
-                if (tex == null) return;
-
-                for (int i = 0; i < 4; i++) {
-                    float angle = pulsePhase * 2f + i * MathHelper.PiOver2;
-                    float dist = 25f * chargeLevel;
-                    Vector2 ringPos = Projectile.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * dist;
-
-                    Color ringColor = AwakeningNetherHelper.SoulPink;
-                    ringColor.A = 0;
-
-                    sb.Draw(tex, ringPos - Main.screenPosition, null, ringColor * 0.6f,
-                        angle, tex.Size() / 2f, 0.6f, SpriteEffects.None, 0);
-                }
-            }
-        }
-
         public override void OnHitPlayer(Player target, Player.HurtInfo info) {
-            // 虚空侵蚀效果 - 驱动魂蚀主题
             target.GetModPlayer<AwakeningNetherPlayer>().AddSoulErosion(IsEnhanced ? 3 : 2);
             target.AddBuff(BuffID.Darkness, 180);
-
-            // 命中音效
-            SoundEngine.PlaySound(SoundID.NPCHit54 with { Pitch = 0.2f, Volume = 1.1f }, Projectile.Center);
-
-            // 命中特效
-            AwakeningNetherHelper.CreateSoulBurst(target.Center, 60f, 2, 12);
+            SoundEngine.PlaySound(SoundID.NPCHit54 with { Pitch = 0.2f, Volume = 1f }, Projectile.Center);
         }
 
         public override void OnKill(int timeLeft) {
-            SoundEngine.PlaySound(SoundID.Item10 with { Pitch = 0.4f, Volume = 0.9f }, Projectile.Center);
-
-            // 消散特效
-            AwakeningNetherHelper.CreateVoidVortex(Projectile.Center, 50f, 0.5f, 15);
-
-            for (int i = 0; i < 20; i++) {
-                var d = Dust.NewDustPerfect(Projectile.Center, DustID.Shadowflame);
+            if (Main.dedServ)
+                return;
+            SoundEngine.PlaySound(SoundID.Item10 with { Pitch = 0.4f, Volume = 0.7f }, Projectile.Center);
+            for (int i = 0; i < 12; i++) {
+                var d = Dust.NewDustPerfect(Projectile.Center, Main.rand.NextBool(3) ? DustID.CursedTorch : DustID.Shadowflame);
                 d.noGravity = true;
-                d.scale = 1.5f;
-                d.velocity = Main.rand.NextVector2Circular(8, 8);
+                d.scale = 1.4f;
+                d.velocity = Main.rand.NextVector2Circular(6f, 6f);
                 d.alpha = 50;
             }
         }
     }
 
     /// <summary>
-    /// 觉醒幽冥龙 - 灵魂弹
-    /// 环形扩散的灵魂弹幕
+    /// 觉醒幽冥龙 - 灵魂弹 (V3)
+    /// 环形一次性爆发的灵魂弹幕。出膛 wind-up 30f (40%→100%), 配色收敛为紫壳鬼绿芯。
+    /// ai[0]: 0=直线 1=螺旋。
     /// </summary>
     public class AwakeningNetherSoulOrb : ModProjectile
     {
         public override string Texture => AwakeningNetherHelper.Path + "VoidCore";
 
-        private float pulsePhase = 0f;
-        private float spiralAngle = 0f;
-        private Color orbColor;
+        private float pulsePhase;
+        private float spiralAngle;
+        private int age;
 
-        // 扩散模式：0=直线，1=螺旋
         private int SpreadMode => (int)Projectile.ai[0];
-        // 颜色索引
-        private int ColorIndex => (int)Projectile.ai[1];
 
         public override void SetStaticDefaults() {
-            ProjectileID.Sets.TrailCacheLength[Projectile.type] = 12;
+            ProjectileID.Sets.TrailCacheLength[Projectile.type] = 10;
             ProjectileID.Sets.TrailingMode[Projectile.type] = 2;
         }
 
         public override void SetDefaults() {
-            Projectile.width = 24;
-            Projectile.height = 24;
+            Projectile.width = 22;
+            Projectile.height = 22;
             Projectile.hostile = true;
             Projectile.friendly = false;
             Projectile.tileCollide = false;
@@ -282,84 +188,64 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         public override void AI() {
-            // 初始化颜色
-            if (pulsePhase == 0f) {
-                Color[] colors = [
-                    AwakeningNetherHelper.AwakeningPurple,
-                    AwakeningNetherHelper.NetherCyan,
-                    AwakeningNetherHelper.SoulPink
-                ];
-                orbColor = colors[ColorIndex % colors.Length];
-            }
-
+            age++;
             pulsePhase += 0.12f;
             spiralAngle += 0.05f;
 
-            // 螺旋模式
+            // 出膛 wind-up (公平阀门): 风暴爆发瞬间必然可逃
+            float windup = MathHelper.Lerp(0.4f, 1f, MathHelper.Clamp(age / 30f, 0f, 1f));
+
             if (SpreadMode == 1) {
                 Vector2 perpendicular = Projectile.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
-                float spiral = MathF.Sin(spiralAngle) * 3f;
-                Projectile.position += perpendicular * spiral;
+                Projectile.position += perpendicular * MathF.Sin(spiralAngle) * 3f * windup;
             }
 
-            // 旋转
             Projectile.rotation = Projectile.velocity.ToRotation();
 
-            // 加速
-            if (Projectile.velocity.Length() < 14f) {
-                Projectile.velocity *= 1.015f;
-            }
+            float speed = Projectile.velocity.Length();
+            float targetSpeed = 13f * windup;
+            Projectile.velocity = Projectile.velocity.SafeNormalize(Vector2.UnitY)
+                * MathHelper.Lerp(speed, targetSpeed, 0.05f);
 
-            // 粒子效果
-            if (Main.rand.NextBool(2)) {
-                var d = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(10, 10), DustID.SpectreStaff);
+            if (!Main.dedServ && Main.rand.NextBool(3)) {
+                var d = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(8f, 8f), DustID.CursedTorch);
                 d.noGravity = true;
                 d.scale = 0.9f;
                 d.velocity = -Projectile.velocity * 0.1f;
-                d.color = orbColor;
             }
 
-            // 能量环绕
-            if (Main.rand.NextBool(4)) {
-                float angle = Main.rand.NextFloat(MathHelper.TwoPi);
-                Vector2 offset = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 15f;
-                var d = Dust.NewDustPerfect(Projectile.Center + offset, DustID.PurpleTorch);
-                d.noGravity = true;
-                d.scale = 0.6f;
-                d.velocity = offset.RotatedBy(MathHelper.PiOver2) * 0.3f;
-            }
-
-            Lighting.AddLight(Projectile.Center, orbColor.ToVector3() * 0.4f);
+            Lighting.AddLight(Projectile.Center, AwakeningNetherHelper.AwakeningPurple.ToVector3() * 0.4f);
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
             SpriteBatch sb = Main.spriteBatch;
-            var tex = BAWImpermanences.BAWHelper.DustTexture;
-            if (tex == null) return false;
+            Texture2D glow = ACMAsset.SoftGlow;
+            if (glow == null)
+                return false;
+            Vector2 origin = glow.Size() / 2f;
 
-            Vector2 origin = tex.Size() / 2f;
-
-            // 拖尾
-            for (int i = Projectile.oldPos.Length - 1; i >= 0; i--) {
-                if (Projectile.oldPos[i] == Vector2.Zero) continue;
-
+            for (int i = Projectile.oldPos.Length - 1; i >= 0; i -= 2) {
+                if (Projectile.oldPos[i] == Vector2.Zero)
+                    continue;
                 float progress = 1f - (float)i / Projectile.oldPos.Length;
-                float trailAlpha = progress * 0.5f;
-                float trailScale = 0.5f + progress * 0.8f;
-
-                Color trailColor = orbColor * trailAlpha;
-                trailColor.A = 0;
-
-                Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
-
-                sb.Draw(tex, drawPos, null, trailColor, Projectile.oldRot[i], origin, trailScale, SpriteEffects.None, 0);
+                Color tc = AwakeningNetherHelper.AwakeningPurple * (progress * 0.35f);
+                tc.A = 0;
+                sb.Draw(glow, Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition, null, tc,
+                    0f, origin, 0.4f + progress * 0.5f, SpriteEffects.None, 0);
             }
 
-            // 核心
             float pulse = 1f + MathF.Sin(pulsePhase) * 0.2f;
-            AwakeningNetherHelper.DrawVoidCore(sb, Projectile.Center, orbColor,
-                Color.Lerp(orbColor, Color.White, 0.3f), pulse, pulsePhase);
-
+            sb.Draw(glow, Projectile.Center - Main.screenPosition, null,
+                AwakeningNetherHelper.AwakeningPurple with { A = 0 } * 0.8f,
+                0f, origin, 1.1f * pulse, SpriteEffects.None, 0);
+            sb.Draw(glow, Projectile.Center - Main.screenPosition, null,
+                TelegraphColors.GhostGreen with { A = 0 } * 0.7f,
+                0f, origin, 0.62f * pulse, SpriteEffects.None, 0);
+            sb.Draw(glow, Projectile.Center - Main.screenPosition, null,
+                Color.White with { A = 0 } * 0.45f,
+                0f, origin, 0.3f * pulse, SpriteEffects.None, 0);
             return false;
         }
 
@@ -369,14 +255,14 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         public override void OnKill(int timeLeft) {
+            if (Main.dedServ)
+                return;
             SoundEngine.PlaySound(SoundID.Item10, Projectile.Center);
-
-            for (int i = 0; i < 15; i++) {
-                var d = Dust.NewDustPerfect(Projectile.Center, DustID.SpectreStaff);
+            for (int i = 0; i < 10; i++) {
+                var d = Dust.NewDustPerfect(Projectile.Center, DustID.CursedTorch);
                 d.noGravity = true;
-                d.scale = 1.2f;
-                d.velocity = Main.rand.NextVector2Circular(6, 6);
-                d.color = orbColor;
+                d.scale = 1.1f;
+                d.velocity = Main.rand.NextVector2Circular(5f, 5f);
             }
         }
     }

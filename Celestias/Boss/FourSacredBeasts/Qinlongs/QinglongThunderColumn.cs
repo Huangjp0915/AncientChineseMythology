@@ -7,13 +7,14 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
 {
     /// <summary>
-    /// 青龙·天罚雷柱 (V2) — 自带「预告→落雷」子状态的纵向雷柱。
+    /// 青龙·天罚雷柱 (V3) — 自带「预告→落雷」子状态的纵向雷柱。
     /// Telegraphed vertical thunder column: a fixed-position lethal strike that warns the player with a
     /// growing **red** column (TelegraphColors.Lethal, §6.1 红=致命) for <c>ai[0]</c> ticks, then snaps to a
     /// short azure damaging beam. 替代旧版「满屏 QinglongThunderBolt 无预告下落」的不可读弹幕。
     ///
-    /// 演出经硬化 ACMShaders.DrawBeam (BeamGrad) 绘制; 服务端零绘制; 仅释放窗口 hostile=true。
-    /// ai[0] = 预告 tick (由施放者按威胁等级传入, §6.1 时间编码)。
+    /// V3: 释放帧叠加 QinglongLightning 分叉闪电 decal (经 QinglongVFX 每帧通道预算防齐射叠爆)
+    /// + 触发 QinglongSky 天幕白闪钩子。演出经硬化 ACMShaders.DrawBeam (BeamGrad) 绘制;
+    /// 服务端零绘制; 仅释放窗口 hostile=true。ai[0] = 预告 tick (按威胁等级传入, §6.1 时间编码)。
     /// </summary>
     public class QinglongThunderColumn : ModProjectile
     {
@@ -45,6 +46,9 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
             if (Age == Telegraph) {
                 SoundEngine.PlaySound(SoundID.Thunder with { Volume = 0.7f, Pitch = Main.rand.NextFloat(-0.2f, 0.2f) }, Projectile.Center);
                 ACMUtils.AddScreenShake(5f);
+                // 落雷瞬间: 天幕白闪钩子 (多柱齐落取 max 自然融合)
+                if (!Main.dedServ)
+                    QinglongSky.FlashLightning(0.55f);
             }
 
             if (!Main.dedServ) {
@@ -91,6 +95,12 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                 Color core = new Color(210, 240, 255);
                 Color edge = TelegraphColors.AzureDragon * 0.7f;
                 ACMShaders.DrawBeam(top, bottom, width, core, edge, 0.6f + 0.4f * fade, flowSpeed: 3.2f, flowScale: 2.0f, coreGlow: 1.4f);
+
+                // 释放前 10 帧叠加分叉闪电 decal (通道预算内; 预算耗尽自动退化为纯光束, 画面不缺失)
+                if (Age - Telegraph < 10) {
+                    QinglongVFX.DrawLightningDecal(top, Projectile.Center + new Vector2(0, ColumnHeight * 0.32f),
+                        fade, Projectile.whoAmI * 0.617f + 1.3f, new Color(185, 230, 255), branch: 0.9f, thickness: 0.006f);
+                }
             }
 
             return false;

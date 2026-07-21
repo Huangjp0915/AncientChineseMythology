@@ -83,7 +83,18 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 d.noGravity = true;
                 d.velocity = (NPC.Center - p).SafeNormalize(Vector2.Zero) * 1.5f;
             }
-            Lighting.AddLight(NPC.Center, 0.6f, 0.5f, 0.15f);
+
+            // 伤害叙事: 血量越低, 金箔剥落越急 (镀金正在被打穿的持续读法)
+            float hurt = 1f - MathHelper.Clamp(NPC.life / (float)NPC.lifeMax, 0f, 1f);
+            if (Main.netMode != NetmodeID.Server && hurt > 0.15f && Main.rand.NextFloat() < hurt * 0.5f) {
+                Vector2 p = NPC.Center + Main.rand.NextVector2Circular(110, 140);
+                Dust flake = Dust.NewDustPerfect(p, DustID.GoldCoin,
+                    new Vector2(Main.rand.NextFloat(-1f, 1f), Main.rand.NextFloat(1f, 3f)), 60, default, 0.9f + hurt * 0.6f);
+                flake.noGravity = false;
+            }
+
+            float dim = 1f - hurt * 0.45f;
+            Lighting.AddLight(NPC.Center, 0.6f * dim, 0.5f * dim, 0.15f * dim);
         }
 
         public override void OnKill() {
@@ -130,10 +141,17 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             // 镜像翻转, 强化"虚影/镜像"的辨识感
             SpriteEffects fx = SpriteEffects.FlipHorizontally;
 
+            // 伤害叙事: 金色随血量变哑 (亮金 → 哑铜), 快破时高频颤抖
+            float hurt = 1f - MathHelper.Clamp(NPC.life / (float)NPC.lifeMax, 0f, 1f);
+            Vector2 tremor = hurt > 0.6f
+                ? new Vector2(MathF.Sin(glowPhase * 17f), MathF.Cos(glowPhase * 13f)) * (hurt - 0.6f) * 8f
+                : Vector2.Zero;
+            drawPos += tremor;
+
             // 金色幽影底光
-            Color outer = new Color(255, 200, 60, 0) * (0.5f * alpha);
+            Color outer = (Color.Lerp(new Color(255, 200, 60), new Color(150, 100, 45), hurt) with { A = 0 }) * (0.5f * alpha);
             spriteBatch.Draw(tex, drawPos, frame, outer, 0f, origin, NPC.scale * 1.04f * p, fx, 0f);
-            Color body = new Color(255, 225, 120, 0) * (0.75f * alpha);
+            Color body = (Color.Lerp(new Color(255, 225, 120), new Color(190, 140, 70), hurt) with { A = 0 }) * (0.75f * alpha);
             spriteBatch.Draw(tex, drawPos, frame, body, 0f, origin, NPC.scale, fx, 0f);
 
             return false;

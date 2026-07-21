@@ -13,12 +13,13 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
 {
     /// <summary>
     /// 冥岩爆魂雷 - 由冥岩制成、能引爆灵魂的雷弹，投掷炸弹类武器
-    /// 肉后中期，投掷后延时爆炸，产生大范围冥火和灵魂碎片
+    /// 肉后中期，投掷后延时爆炸; 场上已有己方雷时再次使用改为**遥引立即引爆**。
+    /// 爆炸对业力 ≥4 的目标按层数放大伤害 (爆魂结算), 并在爆点留下灼魂的幽火场。
     /// </summary>
     public class NetherRockSoulbomb : ModItem
     {
         public override void SetDefaults() {
-            Item.damage = 78;
+            Item.damage = 74;
             Item.crit = 4;
             Item.DamageType = DamageClass.Ranged;
             Item.width = 28;
@@ -38,6 +39,22 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
         }
 
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
+            //遥引: 场上已有己方雷时, 本次使用不投新雷, 改为立即引爆全部在场雷
+            //(把引信 Timer 置满 → 各端下帧 AI 走既有 Explode 路径; owner 改自身弹幕字段 + netUpdate 联机安全)
+            if (player.ownedProjectileCounts[type] > 0) {
+                for (int i = 0; i < Main.maxProjectiles; i++) {
+                    Projectile p = Main.projectile[i];
+                    if (p.active && p.type == type && p.owner == player.whoAmI && p.ai[0] < NetherRockSoulbombProj.FuseTime) {
+                        p.ai[0] = NetherRockSoulbombProj.FuseTime;
+                        p.netUpdate = true;
+                    }
+                }
+                SoundEngine.PlaySound(SoundID.Item92 with { Pitch = -0.3f }, player.Center);
+                return false;
+            }
+
+            //投掷手感: 出手一记很小的反冲
+            player.velocity -= velocity.SafeNormalize(Vector2.Zero) * 0.8f;
             Projectile.NewProjectile(source, position, velocity, type, damage, knockback, player.whoAmI);
             return false;
         }
@@ -53,10 +70,11 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
     }
 
     /// <summary>
-    /// 冥岩爆魂雷弹幕 - 抛物线飞行的冥岩雷弹，接触敌人或延时后爆炸
+    /// 冥岩爆魂雷弹幕 - 抛物线飞行的冥岩雷弹，接触敌人、延时或遥引后爆炸
     /// 表现重做: 引信期 <see cref="WeaponVFX.DrawRadialBloom"/> 渐亮警示 (越近爆炸越烈); 爆炸触发
     /// 专属 <see cref="NetherRockBlastFX"/> 用 <see cref="ACMShaders.GenericWarp"/> 全屏冲击扭曲 + 双色冲击环,
     /// 并叠 <see cref="ACMWeaponBurst"/> 致命红/青黄魂火双演出 + <see cref="WeaponVFX.AddScreenShake"/>。
+    /// 机制: 爆炸命中 +2 业; 业力 ≥4 的目标受层数加成伤害; 爆点留下 <see cref="NetherfireField"/> 幽火场。
     /// </summary>
     public class NetherRockSoulbombProj : ModProjectile
     {
@@ -64,7 +82,11 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
 
         private ref float Timer => ref Projectile.ai[0];
         private ref float HasBounced => ref Projectile.ai[1];
-        private const int FuseTime = 90;
+        /// <summary>引信帧数 (物品遥引时把 Timer 置满借用此值)。</summary>
+        public const int FuseTime = 90;
+
+        /// <summary>已爆标志: Damage() AoE 命中会再次进 OnHitNPC, 防递归引爆。</summary>
+        private bool hasExploded;
 
         public override void SetDefaults() {
             Projectile.width = 22;
@@ -119,9 +141,20 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
             }
         }
 
+        public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers) {
+            //爆魂结算: 业力将满 (≥4) 的目标按层数放大爆炸伤害 (+8%/层)
+            int karma = target.GetGlobalNPC<RevenantKarmaGlobalNPC>().Karma;
+            if (karma >= 4)
+                modifiers.FinalDamage *= 1f + 0.08f * karma;
+        }
+
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
-            //接触敌人立即爆炸
-            Explode();
+            //爆炸命中积业 (接触引爆命中与 AoE 命中同享)
+            RevenantKarma.AddKarma(Projectile, target, 2);
+
+            //接触敌人立即爆炸 (已爆时 Damage() 的 AoE 命中会重进本回调, 用已爆标志防递归)
+            if (!hasExploded)
+                Explode();
         }
 
         public override bool OnTileCollide(Vector2 oldVelocity) {
@@ -140,7 +173,8 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
         }
 
         private void Explode() {
-            if (Projectile.timeLeft <= 0) return;
+            if (hasExploded || Projectile.timeLeft <= 0) return;
+            hasExploded = true;
 
             //设置爆炸范围伤害
             Projectile.tileCollide = false;
@@ -208,6 +242,10 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 ACMWeaponBurst.SoulFire, scale: 1.3f, owner: Projectile.owner);
             WeaponVFX.AddScreenShake(explosionCenter, 6f);
 
+            //幽火场: 爆点贴地留场 (owner 侧生成, 同屏 ≤2 片)
+            if (Main.myPlayer == Projectile.owner)
+                SpawnNetherfireField(explosionCenter);
+
             //附近敌人附加减益
             for (int i = 0; i < Main.maxNPCs; i++) {
                 NPC npc = Main.npc[i];
@@ -219,6 +257,41 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
             }
 
             Projectile.Kill();
+        }
+
+        /// <summary>生成幽火场: 先执行同屏 ≤2 淘汰 (杀最旧), 再向下探地贴到地面 (找不到就原地)。仅 owner 调用。</summary>
+        private void SpawnNetherfireField(Vector2 explosionCenter) {
+            int fieldType = ModContent.ProjectileType<NetherfireField>();
+
+            int count = 0, oldestIndex = -1, oldestLife = int.MaxValue;
+            for (int i = 0; i < Main.maxProjectiles; i++) {
+                Projectile p = Main.projectile[i];
+                if (!p.active || p.type != fieldType || p.owner != Projectile.owner) continue;
+                count++;
+                if (p.timeLeft < oldestLife) {
+                    oldestLife = p.timeLeft;
+                    oldestIndex = i;
+                }
+            }
+            if (count >= 2 && oldestIndex >= 0)
+                Main.projectile[oldestIndex].Kill();
+
+            Vector2 spawnCenter = explosionCenter;
+            int tileX = (int)(explosionCenter.X / 16f);
+            int tileY = (int)(explosionCenter.Y / 16f);
+            for (int dy = 0; dy < 14; dy++) {
+                int y = tileY + dy;
+                if (!WorldGen.InWorld(tileX, y, 10))
+                    break;
+                if (WorldGen.SolidTile(tileX, y)) {
+                    //贴地: 火毯底边压在实心物块顶面
+                    spawnCenter = new Vector2(explosionCenter.X, y * 16f - NetherfireField.FieldHeight * 0.5f);
+                    break;
+                }
+            }
+
+            Projectile.NewProjectile(Projectile.GetSource_Death(), spawnCenter, Vector2.Zero,
+                fieldType, (int)(Projectile.damage * 0.22f), 0f, Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
@@ -260,6 +333,117 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 sparkColor.A = 0;
                 float sparkScale = 0.2f + sparkIntensity * 0.1f;
                 Main.EntitySpriteDraw(sparkle, Projectile.Center - Main.screenPosition, null, sparkColor, Timer * 0.1f, sparkleOrigin, sparkScale, SpriteEffects.None, 0);
+            }
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 幽火场 - 冥岩爆魂雷爆炸后留在地面的青黄魂火火毯 (200×60, 寿命 240f, 同屏 ≤2 片)。
+    /// 约每 20f 一跳 (localNPCHitCooldown), 命中 +1 业 + 暗影焰; 视觉为 3-4 根正弦摆动/明灭错相的
+    /// <see cref="ACMShaders.DrawBeam"/> 竖直短光柱 + 底部柔光, 不占全屏后处理名额 (名额留给宣判)。
+    /// </summary>
+    public class NetherfireField : ModProjectile
+    {
+        public override string Texture => "Terraria/Images/Projectile_1";
+
+        public const int FieldWidth = 200;
+        public const int FieldHeight = 60;
+        public const int FieldLife = 240;
+        private const float FadeInTime = 12f;
+        private const float FadeOutTime = 30f;
+
+        /// <summary>淡入淡出包络 (0~1)。</summary>
+        private float FadeEnvelope {
+            get {
+                float age = FieldLife - Projectile.timeLeft;
+                return Math.Min(Math.Min(age / FadeInTime, Projectile.timeLeft / FadeOutTime), 1f);
+            }
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = FieldWidth;
+            Projectile.height = FieldHeight;
+            Projectile.friendly = true;
+            Projectile.hostile = false;
+            Projectile.DamageType = DamageClass.Ranged;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = FieldLife;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 20;
+            Projectile.alpha = 255;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+
+        public override void AI() {
+            Projectile.velocity = Vector2.Zero;
+
+            float fade = FadeEnvelope;
+            Lighting.AddLight(Projectile.Center, 0.22f * fade, 0.45f * fade, 0.34f * fade);
+
+            //魂火上升粒子 (预算 ≤1/2 帧)
+            if (Main.rand.NextBool(2)) {
+                Vector2 pos = new Vector2(
+                    Projectile.position.X + Main.rand.NextFloat(FieldWidth),
+                    Projectile.position.Y + FieldHeight - Main.rand.NextFloat(14f));
+                Color flame = Main.rand.NextBool()
+                    ? new Color(140, 245, 200)
+                    : new Color(255, 220, 120);
+                Dust d = Dust.NewDustPerfect(pos, DustID.RainbowMk2,
+                    new Vector2(Main.rand.NextFloat(-0.3f, 0.3f), Main.rand.NextFloat(-2.2f, -1.1f)),
+                    120, flame, Main.rand.NextFloat(0.9f, 1.3f) * (0.5f + fade * 0.5f));
+                d.noGravity = true;
+                d.fadeIn = 0.3f;
+            }
+        }
+
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            RevenantKarma.AddKarma(Projectile, target, 1);
+            target.AddBuff(BuffID.ShadowFlame, 120);
+
+            //灼魂小反馈 (每跳一撮, 不出大演出)
+            for (int i = 0; i < 3; i++) {
+                Dust d = Dust.NewDustPerfect(target.Bottom, DustID.RainbowMk2,
+                    new Vector2(Main.rand.NextFloat(-1f, 1f), Main.rand.NextFloat(-2.5f, -1f)),
+                    120, new Color(140, 245, 200), 1.1f);
+                d.noGravity = true;
+            }
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+
+            float fade = FadeEnvelope;
+            if (fade <= 0.02f)
+                return false;
+
+            float t = (float)Main.GlobalTimeWrappedHourly;
+            float bottomY = Projectile.Center.Y + FieldHeight * 0.5f;
+
+            //底部柔光地衬 (廉价, 不占名额)
+            WeaponVFX.DrawGlowBurst(new Vector2(Projectile.Center.X, bottomY - 8f), 1.6f,
+                new Color(120, 235, 180) * (0.45f * fade));
+
+            //4 根竖直魂火光柱: 沿宽度错相摆动/明灭 (SoulFire 青黄)
+            for (int i = 0; i < 4; i++) {
+                float phase = i * 1.7f;
+                float x = Projectile.Center.X - FieldWidth * 0.5f + FieldWidth * (0.125f + 0.25f * i);
+                float sway = MathF.Sin(t * 1.8f + phase) * 6f;
+                float height = 38f + 8f * MathF.Sin(t * 2.2f + phase * 1.4f);
+                float halfWidth = 12f + 2f * MathF.Sin(t * 1.6f + phase * 0.9f);
+                float flicker = 0.55f + 0.25f * MathF.Sin(t * 3.1f + phase * 2.1f);
+
+                ACMShaders.DrawBeam(
+                    new Vector2(x, bottomY),
+                    new Vector2(x + sway, bottomY - height),
+                    halfWidth,
+                    core: new Color(140, 245, 200), edge: new Color(30, 110, 90),
+                    intensity: flicker * fade, flowSpeed: 2.0f, flowScale: 1.8f, coreSharp: 2.2f);
             }
 
             return false;

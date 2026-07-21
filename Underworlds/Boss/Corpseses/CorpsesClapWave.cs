@@ -9,113 +9,106 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.Corpseses
 {
     /// <summary>
-    /// 拍掌冲击波弹幕 - 双手合击产生的环形射弹
+    /// 冥掌冲击波 —— 合掌夹击 / 旋冢收口 / 魂祭镇压的环形扩散波 (V3 重做)。
+    /// 公平阀门: 出膛 14 帧速度 35%→100% 渐升 (防 telefrag), 无追踪;
+    /// 从爆心向外扩散 → 爆心即安全芯。
     /// </summary>
     public class CorpsesClapWave : ModProjectile
     {
-        // 使用原版纹理
         public override string Texture => "Terraria/Images/Projectile_" + ProjectileID.ShadowFlame;
 
+        private ref float Timer => ref Projectile.ai[0];
+        // localAI[0]: 出膛全速 (由初速反推, 各端自初速同步值计算, 一致)
+        private ref float BaseSpeed => ref Projectile.localAI[0];
+
         public override void SetStaticDefaults() {
-            ProjectileID.Sets.TrailCacheLength[Projectile.type] = 10;
+            ProjectileID.Sets.TrailCacheLength[Projectile.type] = 8;
             ProjectileID.Sets.TrailingMode[Projectile.type] = 2;
         }
 
         public override void SetDefaults() {
-            Projectile.width = 24;
-            Projectile.height = 24;
+            Projectile.width = 22;
+            Projectile.height = 22;
             Projectile.hostile = true;
             Projectile.friendly = false;
             Projectile.penetrate = 1;
-            Projectile.timeLeft = 300;
+            Projectile.timeLeft = 240;
             Projectile.tileCollide = true;
             Projectile.ignoreWater = true;
             Projectile.alpha = 50;
         }
 
         public override void AI() {
-            // 初始加速
-            if (Projectile.ai[0] < 30f) {
-                Projectile.velocity *= 1.02f;
-                Projectile.ai[0]++;
+            if (BaseSpeed == 0f)
+                BaseSpeed = Projectile.velocity.Length();
+
+            Timer++;
+
+            // wind-up: 35% → 100% 渐升 (14f), 之后缓慢衰减拉开波环间距
+            if (Timer <= 14f) {
+                float ramp = MathHelper.Lerp(0.35f, 1f, Timer / 14f);
+                Projectile.velocity = Projectile.velocity.SafeNormalize(Vector2.Zero) * BaseSpeed * ramp;
+            }
+            else {
+                Projectile.velocity *= 0.995f;
             }
 
-            // 旋转
-            Projectile.rotation += 0.3f;
+            Projectile.rotation = Projectile.velocity.ToRotation();
 
-            // 紫色能量粒子
-            if (Main.rand.NextBool(3)) {
-                int dust = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height,
-                    DustID.PurpleTorch, 0, 0, 150, default, 1.5f);
-                Main.dust[dust].noGravity = true;
-                Main.dust[dust].velocity = -Projectile.velocity * 0.2f;
+            if (!Main.dedServ && Main.rand.NextBool(4)) {
+                var d = Dust.NewDustPerfect(Projectile.Center, DustID.PurpleTorch);
+                d.noGravity = true;
+                d.scale = 1.3f;
+                d.velocity = -Projectile.velocity * 0.2f;
             }
 
-            // 发光效果
-            Lighting.AddLight(Projectile.Center, 0.5f, 0.2f, 0.8f);
-
-            // 追踪效果（轻微）
-            if (Projectile.ai[1] == 1f && Projectile.ai[0] > 30f) {
-                Player target = Main.player[Player.FindClosest(Projectile.position, Projectile.width, Projectile.height)];
-                if (target.active && !target.dead) {
-                    Vector2 toTarget = target.Center - Projectile.Center;
-                    toTarget.Normalize();
-                    Projectile.velocity = Vector2.Lerp(Projectile.velocity, toTarget * Projectile.velocity.Length(), 0.03f);
-                }
-            }
+            Lighting.AddLight(Projectile.Center, 0.4f, 0.2f, 0.7f);
         }
 
         public override void OnHitPlayer(Player target, Player.HurtInfo info) {
-            // 地府身份层: 拍掌冲击波命中叠魂蚀
+            // 地府身份层: 冥掌冲击命中叠魂蚀
             UnderworldField.AddSoulErosion(target, 1);
         }
 
         public override void OnKill(int timeLeft) {
-            SoundEngine.PlaySound(SoundID.NPCHit54, Projectile.position);
-
-            // 爆发效果
-            for (int i = 0; i < 15; i++) {
-                int dust = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height,
-                    DustID.PurpleTorch, 0, 0, 100, default, 2f);
-                Main.dust[dust].velocity = Main.rand.NextVector2Circular(5, 5);
-                Main.dust[dust].noGravity = true;
+            SoundEngine.PlaySound(SoundID.NPCHit54 with { Volume = 0.6f }, Projectile.position);
+            if (!Main.dedServ) {
+                for (int i = 0; i < 10; i++) {
+                    var d = Dust.NewDustPerfect(Projectile.Center, DustID.PurpleTorch, Main.rand.NextVector2Circular(4f, 4f));
+                    d.noGravity = true;
+                    d.scale = 1.6f;
+                }
             }
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            // 直接使用已经指定的Texture
+            if (Main.dedServ)
+                return false;
             Texture2D texture = TextureAssets.Projectile[Projectile.type].Value;
             Vector2 origin = texture.Size() / 2f;
 
-            // 绘制发光层
-            for (int i = 0; i < 3; i++) {
-                Vector2 offset = new Vector2(MathF.Cos(Main.GlobalTimeWrappedHourly * 3f + i * MathHelper.TwoPi / 3f),
-                                            MathF.Sin(Main.GlobalTimeWrappedHourly * 3f + i * MathHelper.TwoPi / 3f)) * 4f;
-                Color glowColor = new Color(150, 50, 200, 0) * 0.5f;
-                Main.EntitySpriteDraw(texture, Projectile.Center + offset - Main.screenPosition, null,
-                    glowColor, Projectile.rotation, origin, Projectile.scale * 1.2f, SpriteEffects.None);
-            }
-
-            // 绘制拖尾
+            // 双层拖尾: 外宽幽紫 + 内窄骨白
             for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                float progress = 1f - (i / (float)Projectile.oldPos.Length);
+                float progress = 1f - i / (float)Projectile.oldPos.Length;
                 Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                Color trailColor = new Color(100, 50, 150) * progress * 0.6f;
-
-                Main.EntitySpriteDraw(texture, drawPos, null, trailColor,
-                    Projectile.oldRot[i], origin, Projectile.scale * 0.8f, SpriteEffects.None);
+                Color outer = (TelegraphColors.NetherViolet with { A = 0 }) * (progress * 0.5f);
+                Main.EntitySpriteDraw(texture, drawPos, null, outer,
+                    Projectile.oldRot[i], origin, Projectile.scale * (0.9f * progress + 0.2f), SpriteEffects.None);
             }
 
-            // 绘制主体
-            Color mainColor = new Color(180, 80, 255);
+            // 波体: 鬼绿光晕 + 骨白核 (沿速度方向拉伸成掌波)
+            Vector2 stretch = new(1.35f, 0.85f);
+            Color glowC = TelegraphColors.GhostGreen with { A = 0 };
             Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null,
-                mainColor, Projectile.rotation, origin, Projectile.scale, SpriteEffects.None);
+                glowC * 0.55f, Projectile.rotation, origin, Projectile.scale * stretch * 1.25f, SpriteEffects.None);
+            Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, null,
+                new Color(222, 240, 220, 160), Projectile.rotation, origin, Projectile.scale * stretch, SpriteEffects.None);
 
             return false;
         }
 
         public override Color? GetAlpha(Color lightColor) {
-            return new Color(200, 100, 255, 200);
+            return new Color(200, 240, 210, 180);
         }
     }
 }

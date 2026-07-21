@@ -1,29 +1,26 @@
-using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
-using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Underworlds.Boss.Corpseses
 {
     /// <summary>
-    /// 城门闭合阶段的"预告落地骨雨"地标 (替换原暗影球乱射)。
-    /// 先在地面亮起红色致命落点 (telegraph, §6.1 红=致命)，渐强后从上方降下骨雨。
-    /// 纯地标本体不造成伤害；伤害由降下的 <see cref="CorpsesBoneShower"/> 与一次落地冲击承载。
+    /// 骨雨审判地标 (V3 视觉升级)。
+    /// 诚实落点预警: 渐强红色光柱 (CorpsesBoneRing uMode0) → 骨雨降下 + 一次落地冲击 (uMode1 冲击环)。
+    /// 预告期完全无伤害; 仅落地窗口造成伤害 (telegraph 契约)。
     /// </summary>
     public class CorpsesBoneRainMarker : ModProjectile
     {
-        // 复用既有占位纹理 (与同目录弹幕一致, 确保 autoload 安全)
         public override string Texture => "InnoVault/Assets/placeholder";
 
-        private const int TelegraphTime = 50; // 渐强预告 (~0.83s, 中等威胁)
-        private const int ImpactWindow = 16;  // 落地命中窗口
+        private const int TelegraphTime = 50; // ≥ TelegraphColors.TelegraphTicks(Medium)
+        private const int ImpactWindow = 16;
 
         private ref float Timer => ref Projectile.ai[0];
 
         public override void SetDefaults() {
-            Projectile.width = 70;
+            Projectile.width = 80;
             Projectile.height = 24;
             Projectile.hostile = true;
             Projectile.friendly = false;
@@ -38,42 +35,46 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
             Timer++;
             Projectile.velocity = Vector2.Zero;
 
-            // 预告阶段: 渐强红色落点尘 (可读)
+            // ai0 可负起步 (波次错拍): 负值期完全蛰伏
+            if (Timer < 0f) {
+                Projectile.timeLeft++;
+                return;
+            }
+
             if (Timer < TelegraphTime) {
-                if (!Main.dedServ) {
+                // 预告: 落点骨尘上扬渐强 (光柱由 PreDraw 绘制)
+                if (!Main.dedServ && Main.rand.NextBool(2)) {
                     float t = Timer / TelegraphTime;
-                    if (Main.rand.NextBool(2)) {
-                        Vector2 off = new Vector2(Main.rand.NextFloat(-1f, 1f) * Projectile.width * 0.5f, 0f);
-                        var d = Dust.NewDustPerfect(Projectile.Center + off, DustID.Torch);
-                        d.noGravity = true;
-                        d.scale = 0.8f + t * 1.2f;
-                        d.velocity = new Vector2(0, -2f - t * 3f);
-                    }
+                    Vector2 off = new(Main.rand.NextFloat(-1f, 1f) * Projectile.width * 0.5f, 0f);
+                    var d = Dust.NewDustPerfect(Projectile.Center + off, DustID.Torch);
+                    d.noGravity = true;
+                    d.scale = 0.8f + t * 1.2f;
+                    d.velocity = new Vector2(0f, -2f - t * 3f);
                 }
             }
-            // 落地: 降下骨雨 + 一次落地冲击
             else if (Timer == TelegraphTime) {
+                // 落地: 骨雨降下 + 一次冲击
                 SoundEngine.PlaySound(SoundID.Item62 with { Pitch = -0.3f }, Projectile.Center);
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
                     for (int i = 0; i < 4; i++) {
-                        Vector2 spawn = Projectile.Center + new Vector2(Main.rand.NextFloat(-40f, 40f), -420f);
-                        Vector2 vel = new Vector2(Main.rand.NextFloat(-1.5f, 1.5f), 9f);
+                        Vector2 spawn = Projectile.Center + new Vector2(Main.rand.NextFloat(-40f, 40f), -430f);
+                        Vector2 vel = new(Main.rand.NextFloat(-1.5f, 1.5f), 9f);
                         Projectile.NewProjectile(Projectile.GetSource_FromThis(), spawn, vel,
-                            ModContent.ProjectileType<CorpsesBoneShower>(), Projectile.damage, 2f);
+                            ModContent.ProjectileType<CorpsesBoneShower>(), Projectile.damage, 2f, Main.myPlayer, 0f, 1f);
                     }
                 }
                 if (!Main.dedServ) {
                     for (int i = 0; i < 18; i++) {
-                        int di = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height,
-                            DustID.Bone, 0, 0, 100, default, 1.6f);
-                        Main.dust[di].velocity = new Vector2(Main.rand.NextFloat(-4f, 4f), Main.rand.NextFloat(-6f, -1f));
+                        var d = Dust.NewDustPerfect(Projectile.Center + new Vector2(Main.rand.NextFloat(-40f, 40f), 0f), DustID.Bone,
+                            new Vector2(Main.rand.NextFloat(-4f, 4f), Main.rand.NextFloat(-6f, -1f)));
+                        d.scale = 1.6f;
                     }
                 }
                 ACMUtils.AddScreenShake(4f);
             }
         }
 
-        // 仅落地瞬间窗口造成伤害, 预告期完全无害 (telegraph 契约)
+        // 仅落地窗口造成伤害 (telegraph 契约)
         public override bool CanHitPlayer(Player target) {
             return Timer >= TelegraphTime && Timer < TelegraphTime + ImpactWindow;
         }
@@ -83,22 +84,20 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            if (Main.dedServ)
+            if (Main.dedServ || Timer < 0f)
                 return false;
 
-            Texture2D pixel = TextureAssets.MagicPixel.Value;
-            float t = MathHelper.Clamp(Timer / TelegraphTime, 0f, 1f);
-            float flash = Timer < TelegraphTime ? t : MathHelper.Clamp(1f - (Timer - TelegraphTime) / (float)ImpactWindow, 0f, 1f);
-
-            // 地面红色致命落点 (扁平条, 多层叠出柔边)
-            Color warn = TelegraphColors.Lethal * (0.25f + 0.55f * flash);
-            warn.A = 0;
-            Vector2 pos = Projectile.Center - Main.screenPosition;
-            float w = Projectile.width * (0.6f + 0.4f * t);
-            for (int i = 0; i < 3; i++) {
-                float ring = 1f - i * 0.28f;
-                Main.EntitySpriteDraw(pixel, pos, new Rectangle(0, 0, 1, 1), warn * (0.35f + 0.2f * i),
-                    0f, new Vector2(0.5f, 0.5f), new Vector2(w * ring, 7f * ring), SpriteEffects.None, 0);
+            if (Timer < TelegraphTime) {
+                // 渐强红色落点光柱 (§6.1 红=致命)
+                float prog = MathHelper.Clamp(Timer / TelegraphTime, 0f, 1f);
+                Corpses.DrawBoneRingDecal(Main.spriteBatch, 0, Projectile.Center, 44f, 0.9f, prog,
+                    Vector2.UnitX, 0f, TelegraphColors.Lethal, TelegraphColors.NetherViolet);
+            }
+            else {
+                // 落地冲击环
+                float p = MathHelper.Clamp((Timer - TelegraphTime) / (float)ImpactWindow, 0f, 1f);
+                Corpses.DrawBoneRingDecal(Main.spriteBatch, 1, Projectile.Center, 210f, 1f, p,
+                    Vector2.UnitX, 0f, new Color(225, 240, 220), TelegraphColors.GhostGreen);
             }
             return false;
         }

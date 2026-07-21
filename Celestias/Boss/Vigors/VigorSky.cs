@@ -51,6 +51,8 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
         private float bossHealthPercent = 1f;
         private bool isPhase2;
         private bool isPhase3;
+        private float deathDim;    // 死亡「阖卷」压暗 (读自 Vigor.DeathDimForSky)
+        private float deathFlash;  // 终爆白金闪 (读自 Vigor.DeathFlashForSky)
 
         // 颜色定义 — 断罪刃: 铁灰 / 暗金 / 白金
         private static readonly Color IronGray = new(18, 16, 22);
@@ -99,6 +101,8 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
             bossHealthPercent = 1f;
             isPhase2 = false;
             isPhase3 = false;
+            deathDim = 0f;
+            deathFlash = 0f;
 
             for (int i = 0; i < RuneCloudCount; i++) runeClouds[i].Reset();
             for (int i = 0; i < RuneGlyphCount; i++) runeGlyphs[i].Reset();
@@ -122,10 +126,18 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
                 isPhase2 = bossHealthPercent < Vigor.Phase2Threshold;
                 isPhase3 = bossHealthPercent < Vigor.Phase3Threshold;
 
+                // 死亡「阖卷」联动: 天幕熄灭 → 终爆白金闪
+                if (boss.ModNPC is Vigor vigor) {
+                    deathDim = MathHelper.Lerp(deathDim, vigor.DeathDimForSky, 0.15f);
+                    deathFlash = vigor.DeathFlashForSky;
+                }
+
                 float target = isPhase3 ? MaxIntensity * 1.3f : isPhase2 ? MaxIntensity * 1.15f : MaxIntensity;
                 intensity = MathHelper.Lerp(intensity, target, FadeInSpeed);
             }
             else {
+                deathDim = MathHelper.Lerp(deathDim, 0f, 0.04f);
+                deathFlash = MathHelper.Lerp(deathFlash, 0f, 0.1f);
                 intensity -= FadeOutSpeed;
                 if (intensity <= 0f) { intensity = 0f; if (active) Deactivate(); }
             }
@@ -155,6 +167,24 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
                 DrawSwordWaves(spriteBatch);
                 DrawGoldSparks(spriteBatch);
                 DrawVignette(spriteBatch);
+                DrawDeathVeil(spriteBatch);
+            }
+        }
+
+        // 死亡「阖卷」: 天幕压暗渐熄 + 终爆整幕白金闪
+        private void DrawDeathVeil(SpriteBatch sb) {
+            if (deathDim <= 0.01f && deathFlash <= 0.01f)
+                return;
+            Texture2D pixel = VaultAsset.placeholder2.Value;
+            Rectangle screen = new(0, 0, Main.screenWidth, Main.screenHeight);
+
+            if (deathDim > 0.01f)
+                sb.Draw(pixel, screen, Color.Black * (deathDim * 0.72f * intensity));
+
+            if (deathFlash > 0.01f) {
+                Color flash = WhiteGold * (deathFlash * 0.85f);
+                flash.A = 0;
+                sb.Draw(pixel, screen, flash);
             }
         }
 

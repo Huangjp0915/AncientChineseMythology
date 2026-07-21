@@ -1,11 +1,18 @@
 ﻿using System.Collections.Generic;
 using Terraria;
+using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Items.Weapons.SoulBanners
 {
+    /// <summary>
+    /// 万魂幡 —— 系统级成长武器。
+    /// 左键: 祭幡直刺 + 引魂漩涡 (手持弹幕)。
+    /// 右键: 悬浮幡不在场 → 召唤; 在场且灵魂 ≥ 80 → 下达大招「万魂齐哭」
+    /// (消耗当前灵魂 40%, 悬浮幡聚魂 → 静默 → 亡魂军团爆发)。
+    /// </summary>
     public class SoulBanner : ModItem
     {
         public override string Texture => "AncientChineseMythology/Items/Weapons/SoulBanners/SoulBanner";
@@ -43,8 +50,15 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
                 Item.mana = 30;
 
                 int minionType = ModContent.ProjectileType<SoulBannerMinion>();
-                if (player.ownedProjectileCounts[minionType] >= 1)
-                    return false;
+                if (player.ownedProjectileCounts[minionType] >= 1) {
+                    // 悬浮幡在场 → 右键转为大招指令, 需要灵魂足够且幡不在大招流程中
+                    var sbPlayer = player.GetModPlayer<SoulBannerPlayer>();
+                    if (!sbPlayer.UltReady)
+                        return false;
+                    Projectile minion = FindOwnMinion(player);
+                    if (minion == null || ((SoulBannerMinion)minion.ModProjectile).IsBusyWithUlt)
+                        return false;
+                }
             }
             else {
                 Item.useTime = 30;
@@ -69,10 +83,23 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
 
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
             if (player.altFunctionUse == 2) {
-                player.AddBuff(ModContent.BuffType<SoulBannerMinionBuff>(), 2);
-                var proj = Projectile.NewProjectileDirect(source, player.Center, Vector2.Zero,
-                    ModContent.ProjectileType<SoulBannerMinion>(), damage, knockback, player.whoAmI);
-                proj.originalDamage = Item.damage;
+                Projectile minion = FindOwnMinion(player);
+                if (minion == null) {
+                    // 召唤悬浮幡 (原语义)
+                    player.AddBuff(ModContent.BuffType<SoulBannerMinionBuff>(), 2);
+                    var proj = Projectile.NewProjectileDirect(source, player.Center, Vector2.Zero,
+                        ModContent.ProjectileType<SoulBannerMinion>(), damage, knockback, player.whoAmI);
+                    proj.originalDamage = Item.damage;
+                }
+                else {
+                    // 下达大招「万魂齐哭」: 扣魂 (owner 端), 把消耗量写入 ai[2] 同步
+                    var sbPlayer = player.GetModPlayer<SoulBannerPlayer>();
+                    int spent = sbPlayer.TrySpendUltSouls();
+                    if (spent > 0) {
+                        ((SoulBannerMinion)minion.ModProjectile).CommandUlt(spent);
+                        SoundEngine.PlaySound(SoundID.Item29 with { Volume = 0.8f, Pitch = -0.6f }, player.Center);
+                    }
+                }
             }
             else {
                 Projectile.NewProjectile(source, position, velocity,
@@ -82,7 +109,19 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
             return false;
         }
 
-        /// <summary>成长系统：动态 Tooltip 显示灵魂数量和成长加成</summary>
+        private static Projectile FindOwnMinion(Player player) {
+            int minionType = ModContent.ProjectileType<SoulBannerMinion>();
+            if (player.ownedProjectileCounts[minionType] <= 0)
+                return null;
+            for (int i = 0; i < Main.maxProjectiles; i++) {
+                Projectile p = Main.projectile[i];
+                if (p.active && p.owner == player.whoAmI && p.type == minionType)
+                    return p;
+            }
+            return null;
+        }
+
+        /// <summary>成长系统：动态 Tooltip 显示灵魂数量、成长加成与大招状态</summary>
         public override void ModifyTooltips(List<TooltipLine> tooltips) {
             Player player = Main.LocalPlayer;
             var sbPlayer = player.GetModPlayer<SoulBannerPlayer>();
@@ -100,6 +139,12 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
                     string bonusLine = $"[c/9B59B6:伤害+{dmgPct}%  吸魂范围+{radiusPct}%  回复+{healPct}%]";
                     tooltips.Add(new TooltipLine(Mod, "SoulBonus", bonusLine));
                 }
+
+                // 大招状态
+                string ultLine = sbPlayer.UltReady
+                    ? "[c/FFD250:◈ 万魂齐哭·就绪 —— 悬浮幡在场时右键引爆 (耗魂40%)]"
+                    : $"[c/777788:◈ 万魂齐哭·蓄魂中 ({sbPlayer.soulCount}/{SoulBannerPlayer.UltMinSouls})]";
+                tooltips.Add(new TooltipLine(Mod, "SoulUlt", ultLine));
             }
             else {
                 tooltips.Add(new TooltipLine(Mod, "SoulHint", "[c/666666:击败更强大的妖魔以唤醒幡中亡魂]"));

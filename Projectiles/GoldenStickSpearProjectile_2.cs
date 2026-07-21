@@ -2,163 +2,144 @@
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using Terraria;
+using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
-using Color = Microsoft.Xna.Framework.Color;
-using Rectangle = Microsoft.Xna.Framework.Rectangle;
 
 namespace AncientChineseMythology.Projectiles
 {
+    /// <summary>
+    /// 金棍右键"掷棍如意": 旋转掷出 → 在目标点悬停化金光柱 30 帧 (持续判定 0.6x) → 自动回旋归手。
+    /// "离手仍如臂使指"; 替换旧版瞬移玩家。掷出期间物品不可再用 (棍不在手)。
+    /// ai[0] = 目标飞行距离 (owner 端 Shoot 时算好, 随生成包同步)。
+    /// </summary>
     internal class GoldenStickSpearProjectile_2 : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/GoldenStickSpearProjectile";
-        private bool isReturning = false;//是否正在返回
+
+        private const int HoverFrames = 30;
+        private const float FlySpeed = 22f;
+
+        private enum ThrowState { Fly, Hover, Return }
+
+        private ThrowState State {
+            get => (ThrowState)Projectile.ai[2];
+            set {
+                Projectile.ai[2] = (float)value;
+                Projectile.netUpdate = true;
+            }
+        }
+
+        private ref float TargetDist => ref Projectile.ai[0];
+        private float _traveled;
+        private float _hoverTimer;
+        private Player Owner => Main.player[Projectile.owner];
 
         public override void SetStaticDefaults() {
-            ProjectileID.Sets.TrailCacheLength[Type] = 14;
+            ProjectileID.Sets.TrailCacheLength[Type] = 10;
             ProjectileID.Sets.TrailingMode[Type] = 0;
         }
 
         public override void SetDefaults() {
-            Projectile.width = 142;
-            Projectile.height = 142;
-            Projectile.aiStyle = -1;
-            Projectile.penetrate = -1;
-            Projectile.timeLeft = 13;
-            Projectile.scale = 1.2f;
-            Projectile.alpha = 0;
-            Projectile.ownerHitCheck = true;
-            Projectile.hide = true;
-            Projectile.DamageType = DamageClass.Melee;
-            Projectile.tileCollide = false;
+            Projectile.width = 34;
+            Projectile.height = 34;
             Projectile.friendly = true;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = 360;
+            Projectile.tileCollide = false;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 14;
+            Projectile.DamageType = DamageClass.Melee;
         }
 
         public override void OnSpawn(IEntitySource source) {
-            Projectile.damage = Projectile.damage / 2;
-            Projectile.knockBack *= 0.2f;
-        }
-
-        private void MoveToTarget(Vector2 target)//移动到目标位置
-        {
-            Vector2 move = target - Projectile.Center;
-            float distance = move.Length();
-            move.Normalize();
-            move *= distance / 20f + 16f;
-            Projectile.velocity = move;
+            Projectile.velocity = Projectile.velocity.SafeNormalize(Vector2.UnitX) * FlySpeed;
+            SoundEngine.PlaySound(SoundID.Item1 with { Volume = 0.9f, Pitch = -0.2f }, Projectile.Center);
         }
 
         public override void AI() {
-            Player player = Main.player[Projectile.owner];
-
-            Projectile.direction = player.direction;
-            player.heldProj = Projectile.whoAmI;//玩家持有弹道
-
-            if (isReturning) {
-                Projectile.timeLeft = 13;
-                //回到玩家身边销毁
-                MoveToTarget(player.Center); //移动到鼠标位置
-                if (Projectile.Distance(player.Center) < 10f) {
-                    Projectile.Kill(); //销毁弹道
-                }
+            Player owner = Owner;
+            if (!owner.active || owner.dead) {
+                Projectile.Kill();
+                return;
             }
-            if (Main.mouseRight) {
-                Projectile.timeLeft = 13;
-                if (Main.mouseLeft)
-                    isReturning = true;
-                if (!isReturning) {
-                    MoveToTarget(Main.MouseWorld); //移动到鼠标位置
 
-                    if (Projectile.Distance(Main.MouseWorld) < 10f && Main.mouseRight) {
-                        //停止移动以便旋转
+            // 自旋 (飞行/悬停快转, 归手减速)
+            float spin = State == ThrowState.Hover ? 0.55f : 0.4f;
+            Projectile.rotation += spin * (Projectile.velocity.X >= 0f || State == ThrowState.Hover ? 1f : -1f);
+
+            Lighting.AddLight(Projectile.Center, new Vector3(0.55f, 0.45f, 0.12f));
+
+            switch (State) {
+                case ThrowState.Fly:
+                    _traveled += Projectile.velocity.Length();
+                    if (_traveled >= MathF.Max(TargetDist, 60f)) {
+                        State = ThrowState.Hover;
                         Projectile.velocity = Vector2.Zero;
-                        Projectile.Center = Main.MouseWorld;
+                        SoundEngine.PlaySound(SoundID.Item25 with { Volume = 0.8f, Pitch = 0.2f }, Projectile.Center);
                     }
-                }
-            }
-            else if (!isReturning) {
-                player.immune = true;//玩家无敌
-                player.immuneTime = 30; //确保无敌时间短于冲刺持续时间
+                    break;
 
-                //瞬移玩家到弹幕位置
-                player.Teleport(Projectile.Center, 12);
-                for (int i = 0; i < 60; i++) //创建50个粒子
-                {
-                    //使用 Main.dust 来创建粒子
-                    Dust dust = Dust.NewDustPerfect(player.Center, DustID.GoldFlame, Main.rand.NextVector2Unit() * 12f, 1, default, 1f);
-                    dust.noGravity = true; //使粒子无重力，保持在空中
-                    dust.noLight = true; //无光照
-                    dust.scale = 2f; //设置粒子大小
-                }
-                Projectile.Kill(); //销毁弹幕
-            }
-            if (player.direction == 1)//玩家朝向右侧
-            {
-                Projectile.rotation += 0.4f; //左右旋转
-            }
-            else {
-                Projectile.rotation -= 0.4f; //左右旋转
-            }
-            //计算右上角位置并生成粒子
-            Vector2 dustOffset = new Vector2(60, -60);
-            Vector2 rotatedDustOffset = dustOffset.RotatedBy(Projectile.rotation);
-            Vector2 dustPosition = Projectile.Center + rotatedDustOffset - new Vector2(8, 5);
+                case ThrowState.Hover:
+                    _hoverTimer++;
+                    // 金光柱状态广播: 密度随剩余时间衰减
+                    if (Main.rand.NextBool(2)) {
+                        Dust d = Dust.NewDustPerfect(Projectile.Center + new Vector2(Main.rand.NextFloat(-14f, 14f), Main.rand.NextFloat(-40f, 40f)),
+                            DustID.GoldFlame, new Vector2(0f, Main.rand.NextFloat(-2.5f, -0.8f)), 100, default, Main.rand.NextFloat(1f, 1.6f));
+                        d.noGravity = true;
+                    }
+                    if (_hoverTimer >= HoverFrames)
+                        State = ThrowState.Return;
+                    break;
 
-            int dust_1 = Dust.NewDust(dustPosition, 10, 10, DustID.GoldFlame, 0, 0, 1, default, 1f);
-            Main.dust[dust_1].noGravity = true;
-            Main.dust[dust_1].velocity *= 0.2f;
-            Main.dust[dust_1].scale = 1.2f;
-            Main.dust[dust_1].alpha = 100;
+                case ThrowState.Return:
+                    Vector2 toOwner = owner.MountedCenter - Projectile.Center;
+                    float dist = toOwner.Length();
+                    if (dist < 28f) {
+                        SoundEngine.PlaySound(SoundID.Grab with { Volume = 0.8f, Pitch = 0.1f }, owner.Center);
+                        WeaponVFX.AddScreenShake(owner.Center, 1f);
+                        Projectile.Kill();
+                        return;
+                    }
+                    Projectile.velocity = toOwner.SafeNormalize(Vector2.Zero) * (dist / 12f + 14f);
+                    break;
+            }
+        }
 
-            Vector2 dustOffset_2 = new Vector2(-60, 60);
-            Vector2 rotatedDustOffset_2 = dustOffset_2.RotatedBy(Projectile.rotation);
-            Vector2 dustPosition_2 = Projectile.Center + rotatedDustOffset_2 - new Vector2(8, 5);
-
-            int dust_2 = Dust.NewDust(dustPosition_2, 10, 10, DustID.GoldFlame, 0, 0, 1, default, 1f);
-            Main.dust[dust_2].noGravity = true;
-            Main.dust[dust_2].velocity *= 0.2f;
-            Main.dust[dust_2].scale = 1.2f;
-            Main.dust[dust_2].alpha = 100;
+        public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers) {
+            modifiers.HitDirectionOverride = target.position.X > Projectile.Center.X ? 1 : -1;
+            modifiers.FinalDamage *= State switch {
+                ThrowState.Hover => 0.6f,
+                ThrowState.Return => 0.8f,
+                _ => 1f,
+            };
         }
 
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
-            //金辉命中演出
             ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
-                ACMWeaponBurst.Gold, scale: 1f, owner: Projectile.owner);
+                ACMWeaponBurst.Gold, State == ThrowState.Hover ? 0.7f : 1f, Projectile.owner);
+            WeaponVFX.AddScreenShake(target.Center, 1.5f);
         }
 
-        [Obsolete]
-        public override void OnKill(int timeLeft) {
-            Player player = Main.player[Projectile.owner];
-            player.velocity *= 0.8f;
-        }
-        public override bool PreDraw(ref Microsoft.Xna.Framework.Color lightColor) {
-            //冲刺/瞬移金辉拖尾 (统一长矛线主题色)
-            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 9f,
-                outerColor: new Color(160, 110, 30, 150), innerColor: new Color(255, 230, 150, 205),
-                uvScroll: -Main.GlobalTimeWrappedHourly * 1.6f);
+        public override bool PreDraw(ref Color lightColor) {
+            // 金辉拖尾 (飞行/归手时)
+            if (State != ThrowState.Hover)
+                WeaponVFX.DrawProjectileTrail(Projectile, 9f,
+                    new Color(160, 110, 30, 150), new Color(255, 230, 150, 205),
+                    uvScroll: -Main.GlobalTimeWrappedHourly * 1.6f);
 
-            Texture2D texture = TextureAssets.Projectile[Type].Value;
-            Rectangle rectangle = new Rectangle(
-                0,
-                texture.Height / Main.projFrames[Type] * Projectile.frame,
-                texture.Width,
-                texture.Height / Main.projFrames[Type]
-            );
+            // 悬停金光柱: 双层柔光脉冲
+            if (State == ThrowState.Hover) {
+                float pulse = 0.75f + 0.25f * MathF.Sin(_hoverTimer * 0.5f);
+                WeaponVFX.DrawGlowBurst(Projectile.Center, 1.6f * pulse, new Color(255, 215, 110) * 0.85f);
+                WeaponVFX.DrawGlowBurst(Projectile.Center, 0.7f, new Color(255, 245, 200));
+            }
 
-            Vector2 origin = new Vector2(texture.Width / 2, texture.Height / Main.projFrames[Type] / 2); //设置原点为中心
-            Main.EntitySpriteDraw(
-                texture, //第一个参数是材质
-                Projectile.Center - Main.screenPosition,
-                rectangle, //第三个参数是帧图选框
-                Color.White, //第四个参数是颜色
-                Projectile.rotation, //第五个参数是贴图旋转方向
-                origin,
-                Projectile.scale * 1.2f, //第七个参数是缩放
-                SpriteEffects.None,
-                0);
+            Texture2D tex = TextureAssets.Projectile[Type].Value;
+            Main.EntitySpriteDraw(tex, Projectile.Center - Main.screenPosition, null, lightColor * Projectile.Opacity,
+                Projectile.rotation, tex.Size() * 0.5f, Projectile.scale * 1.1f, SpriteEffects.None, 0);
             return false;
         }
     }

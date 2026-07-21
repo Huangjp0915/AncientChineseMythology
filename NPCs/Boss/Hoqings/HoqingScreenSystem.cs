@@ -1,22 +1,26 @@
 using Microsoft.Xna.Framework.Graphics;
+using ReLogic.Content;
 using Terraria;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.NPCs.Boss.Hoqings
 {
     /// <summary>
-    /// 后卿 V2「万鬼夜行」演出标量中枢 + 非 screenTarget 全屏 overlay 绘制 (着色器工具箱 §A.6)。
+    /// 后卿 V3「万鬼夜行」演出标量中枢 + 非 screenTarget 全屏 overlay 绘制。
     ///
-    /// 由 <see cref="Hoqing.AI"/> 每帧 <see cref="Publish"/> 一组 0~1 标量驱动幕三高潮:
-    ///   ● <b>ArenaRunic</b> ×4 —— 四祭坛地纹法阵, 随幕三推进**累积**为成型鬼域阵 (疫源场地化)。
-    ///   ● <b>BeamGrad (DrawBeam)</b> —— 祭坛之间相连的「疫气经络」尸火光带 (全场记忆点)。
-    ///   ● <b>RadialBloom</b> —— 当前蓄力祭坛的加性辉光 (扇=赤橙致命 / 360=鬼绿)。
+    /// 由 <see cref="Hoqing"/> 每帧发布两组 0~1 标量：
+    ///   ● <see cref="Publish"/> —— 幕三祭坛体系:
+    ///     ArenaRunic ×4 四祭坛地纹（随幕三推进累积成鬼域阵）、
+    ///     BeamGrad 祭坛间「疫气经络」尸火光带、
+    ///     RadialBloom 当前蓄力祭坛辉光（扇=赤橙致命 / 360=鬼绿）。
+    ///   ● <see cref="PublishGate"/> —— 鬼门（专属着色器 HoqingGhostGate）:
+    ///     入场门缝 / 幕三大招「鬼门开」/ 死亡演出「鬼门收葬」共用一层 decal，
+    ///     uOpen 控开度、uFlash 死亡白闪。
     ///
-    /// 昂贵的全屏 screenTarget 雾扭曲 (GenericWarp · fog) 不在本系统, 由 <see cref="Hoqing.PostDraw"/>
-    /// 单独申请本帧唯一全屏名额绘制 (§C.4#2 性能契约)。本系统三层 overlay 都<b>不读 screenTarget</b>,
-    /// 不占全屏名额, 作廉价第二层。
+    /// 昂贵的全屏 screenTarget 雾扭曲 (GenericWarp · fog) 不在本系统, 由 Hoqing.PostDraw
+    /// 单独申请本帧唯一全屏名额绘制。本系统各层 overlay 都不读 screenTarget, 不占全屏名额。
     ///
-    /// 绘制位于 <see cref="PostDrawTiles"/> (实体之下), 危险弹幕在其上层 → 不遮挡需躲避信息 (§6.6)。
+    /// 绘制位于 <see cref="PostDrawTiles"/> (实体之下), 危险弹幕在其上层 → 不遮挡需躲避信息。
     /// 纯本地视觉, 服务端零绘制, 受 MythologyConfig 降级。
     /// </summary>
     public class HoqingScreenSystem : ModSystem
@@ -30,9 +34,28 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
         private static float _time;
         private static ulong _lastPublishFrame;
 
+        private static Vector2 _gateCenter;     // 鬼门世界坐标
+        private static float _gateHalfH;        // 鬼门世界半高(px)
+        private static float _gateOpen;         // 0~1 开度
+        private static float _gateFlash;        // 0~1 死亡白闪
+        private static ulong _lastGateFrame;
+
         private const float AltarDecalRadius = 230f; // 单个祭坛地纹的世界半径
 
-        /// <summary>由 Hoqing 每帧 (幕三) 调用, 发布演出标量 (纯本地视觉, 各端各算)。</summary>
+        //专属着色器: 静态缓存 (不注册 ACMShaders)
+        private static Asset<Effect> gateFxRef;
+        private static Effect GateFX {
+            get {
+                if (Main.dedServ) {
+                    return null;
+                }
+                gateFxRef ??= ModContent.Request<Effect>(
+                    "AncientChineseMythology/Effects/HoqingGhostGate", AssetRequestMode.ImmediateLoad);
+                return gateFxRef?.Value;
+            }
+        }
+
+        /// <summary>由 Hoqing 每帧 (幕三) 调用, 发布祭坛演出标量 (纯本地视觉, 各端各算)。</summary>
         public static void Publish(Vector2 arenaCenter, float altarRing, float plagueAccum,
             int activeAltar, float channelGlow, bool channelLethal, float time) {
             _arenaCenter = arenaCenter;
@@ -45,9 +68,20 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
             _lastPublishFrame = Main.GameUpdateCount;
         }
 
+        /// <summary>由 Hoqing 每帧调用, 发布鬼门标量 (入场缝隙 / 大招 / 死亡演出)。</summary>
+        public static void PublishGate(Vector2 gateCenter, float gateHalfHeight, float open, float flash) {
+            _gateCenter = gateCenter;
+            _gateHalfH = gateHalfHeight;
+            _gateOpen = open;
+            _gateFlash = flash;
+            _lastGateFrame = Main.GameUpdateCount;
+        }
+
         public override void OnWorldUnload() {
             _plagueAccum = 0f;
             _channelGlow = 0f;
+            _gateOpen = 0f;
+            _gateFlash = 0f;
         }
 
         private static Vector2 AltarPos(int index) =>
@@ -64,13 +98,20 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
                 _plagueAccum = MathHelper.Lerp(_plagueAccum, 0f, 0.12f);
                 _channelGlow = MathHelper.Lerp(_channelGlow, 0f, 0.15f);
             }
+            if (Main.GameUpdateCount - _lastGateFrame > 2) {
+                _gateOpen = MathHelper.Lerp(_gateOpen, 0f, 0.12f);
+                _gateFlash = 0f;
+            }
 
-            if (_plagueAccum <= 0.01f && _channelGlow <= 0.01f)
-                return;
+            if (_plagueAccum > 0.01f || _channelGlow > 0.01f) {
+                DrawAltarDecals();
+                DrawLeyLines();
+                DrawChannelBloom();
+            }
 
-            DrawAltarDecals();
-            DrawLeyLines();
-            DrawChannelBloom();
+            if (_gateOpen > 0.015f || _gateFlash > 0.02f) {
+                DrawGhostGate();
+            }
         }
 
         // ===== ArenaRunic ×4: 四祭坛地纹, 幕三累积成鬼域阵 =====
@@ -129,6 +170,13 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
                 ACMShaders.DrawBeam(a, b, halfWidth, core, edge, ley,
                     flowSpeed: 1.1f, flowScale: 2.4f, coreSharp: 2.0f);
             }
+            //大招撕门期: 四经络额外汇入门心 (gateOpen 驱动)
+            if (_gateOpen > 0.05f && Main.GameUpdateCount - _lastGateFrame <= 2) {
+                for (int i = 0; i < 4; i++) {
+                    ACMShaders.DrawBeam(AltarPos(i), _gateCenter, 8f + 8f * _gateOpen, core, edge,
+                        ley * _gateOpen * 0.8f, flowSpeed: 1.8f, flowScale: 2.0f, coreSharp: 2.2f);
+                }
+            }
             sb.End(); // 收掉最后一次 DrawBeam 的 RestoreDefaultBatch
         }
 
@@ -155,6 +203,32 @@ namespace AncientChineseMythology.NPCs.Boss.Hoqings
             fx.Parameters["uFalloff"]?.SetValue(2.6f);
 
             ACMShaders.DrawFullscreenOverlay(fx, BlendState.Additive);
+        }
+
+        // ===== HoqingGhostGate: 鬼门 decal (专属着色器, 满屏噪声载体) =====
+        private static void DrawGhostGate() {
+            Effect fx = GateFX;
+            Texture2D noise = ACMShaders.NoiseTexture;
+            if (fx == null || noise == null)
+                return;
+
+            ACMShaders.WorldDecalParams(_gateCenter, _gateHalfH, out Vector2 uv, out float halfHFrac, out float aspect);
+
+            fx.Parameters["uTime"]?.SetValue(_time);
+            fx.Parameters["uCenter"]?.SetValue(uv);
+            fx.Parameters["uAspect"]?.SetValue(aspect);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(MathHelper.Max(_gateOpen * 1.4f, _gateFlash), 0f, 1f));
+            fx.Parameters["uOpen"]?.SetValue(MathHelper.Clamp(_gateOpen, 0f, 1f));
+            fx.Parameters["uHalfHeight"]?.SetValue(halfHFrac);
+            fx.Parameters["uColorEdge"]?.SetValue(TelegraphColors.GhostGreen.ToVector4());
+            fx.Parameters["uColorDeep"]?.SetValue(TelegraphColors.NetherViolet.ToVector4());
+            fx.Parameters["uFlash"]?.SetValue(MathHelper.Clamp(_gateFlash, 0f, 1f));
+
+            SpriteBatch sb = Main.spriteBatch;
+            sb.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.LinearWrap,
+                DepthStencilState.None, RasterizerState.CullNone, fx, Matrix.Identity);
+            sb.Draw(noise, new Rectangle(0, 0, Main.screenWidth, Main.screenHeight), Color.White);
+            sb.End();
         }
     }
 }

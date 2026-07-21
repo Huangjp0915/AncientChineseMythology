@@ -5,11 +5,12 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 {
     /// <summary>
-    /// 敖顺 V2 风暴屏幕氛围系统（对位 <see cref="Aokins.AokinHeatScreenSystem"/> / <see cref="Aoyuans.AoyuanFrostScreenSystem"/>）。
+    /// 敖顺 V3 风暴屏幕氛围系统（对位 <see cref="Aokins.AokinHeatScreenSystem"/> / <see cref="Aoyuans.AoyuanFrostScreenSystem"/>）。
     /// 由 <see cref="Aoshun"/> 每帧 <see cref="Publish"/> 一组 0~1 标量驱动, 集中绘制三类**非 screenTarget** overlay 后处理:
     ///   ● <b>ElementalScreenTint</b> —— 风暴压暗底色(= StormCharge 电量, 上墨蓝下深渊紫; 满电"雷暴临界"加深暗角)。
-    ///   ● <b>ArenaRunic</b>(法阵环) —— 风暴之眼缩小安全区的边界环(安全/致命双色提示)。
-    ///   ● <b>RadialBloom</b> —— 深渊伏击爆出 / 相变 / 满电临界 / 连环冲的加性雷击泛光。
+    ///   ● <b>ArenaRunic</b>(法阵环) —— 风暴之眼(P3 常驻竞技场)的边界环(安全/致命双色提示)。
+    ///   ● <b>RadialBloom</b> —— 破土/巨雷/相变/满电临界的加性雷击泛光。
+    /// 另: <see cref="CurrentBloom"/> 供全屏 StormWarp 复用为雷闪白强度（同一次雷击, 屏幕系统与雨幕一起亮）。
     ///
     /// 绘制位于 <see cref="PostDrawTiles"/>(无活动批): 氛围/泛光/地纹位于实体之下, 危险弹幕在其上层 → 不遮挡躲避信息(§6.6)。
     /// 全部为占位像素 overlay, 不占 RequestFullscreenSlot 名额(不读 screenTarget); 纯本地视觉, 服务端零绘制, 受 MythologyConfig 降级。
@@ -29,12 +30,16 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
         private static float _time;
         private static ulong _lastPublishFrame;
 
+        /// <summary>当前雷击泛光强度（全屏 StormWarp 的雷闪白复用）。</summary>
+        public static float CurrentBloom => _bloom;
+
         /// <summary>由 Aoshun 每帧调用, 发布当前风暴氛围标量（纯本地视觉）。</summary>
         public static void Publish(Vector2 center, float tint, float bloom, bool critical,
             bool eyeActive, Vector2 eyeCenter, float eyeRadius, float time) {
             _center = center;
             _tint = tint;
-            _bloom = bloom;
+            if (bloom > _bloom)
+                _bloom = bloom;
             _critical = critical;
             _eyeActive = eyeActive;
             _eyeCenter = eyeCenter;
@@ -52,11 +57,20 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
         public override void OnWorldUnload() {
             _tint = _bloom = 0f;
             _eyeActive = false;
+            AoshunWindField.Clear();
         }
 
         public override void PostDrawTiles() {
             if (Main.dedServ || Main.gameMenu)
                 return;
+
+            // 风场粒子池: 实体层之下的"风的可见化"（不依赖全屏着色器开关, 自身受 TrailQuality 降级）
+            AoshunWindField.Update();
+            AoshunWindField.Draw();
+
+            // 泛光逐帧统一衰减（Publish/PulseBloom 取 max 续命; 与是否实际绘制解耦, 防配置关闭时滞留）
+            _bloom = MathHelper.Lerp(_bloom, 0f, 0.12f);
+
             if (!MythologyConfig.FullscreenShadersEnabled)
                 return;
 
@@ -142,9 +156,6 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
             fx.Parameters["uFalloff"]?.SetValue(2.4f);
 
             ACMShaders.DrawFullscreenOverlay(fx, BlendState.Additive);
-
-            // 逐帧衰减(由 PulseBloom 取 max 续命)
-            _bloom = MathHelper.Lerp(_bloom, 0f, 0.12f);
         }
     }
 }

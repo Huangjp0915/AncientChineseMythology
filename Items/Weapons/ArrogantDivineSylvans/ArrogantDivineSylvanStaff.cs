@@ -6,18 +6,16 @@ using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
-using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Items.Weapons.ArrogantDivineSylvans;
 
 /// <summary>
-/// 傲世神木·万藤杖 - 神木灵杖的终极形态
-/// 释放一道巨型藤蔓链鞭，比原版更长更粗壮
-/// 藤蔓具有更强的追踪能力，命中时释放8片追踪叶爆
-/// 藤蔓末端到达最远距离后触发「藤蔓新星」：环形16道爆炸
-/// 沿链身每3节产生分支藤蔓触手，独立造成伤害
+/// 傲世神木·万藤杖 - 真·藤蔓链鞭
+/// 按住引导「驱鞭」: 鞭头持续追随鼠标方向; 鞭身 (金边翠芯 ribbon) 本体具线段伤害
+/// 鞭至最大链长或松手 → 「咬合」: 鞭口弹性张开 → 猛然咬合 → 藤蔓新星 + **引爆**范围年轮烙印
+/// 鞭身/鞭头命中刻烙印并弹出追踪叶爆; 引导期链身分生藤蔓触手
 /// </summary>
 public class ArrogantDivineSylvanStaff : ModItem
 {
@@ -39,14 +37,18 @@ public class ArrogantDivineSylvanStaff : ModItem
         Item.shoot = ModContent.ProjectileType<ArrogantSylvanVineWhipHead>();
         Item.shootSpeed = 24f;
         Item.mana = 18;
-        Item.channel = true;
+        Item.channel = true; // channel 真正生效: 按住驱鞭
         Item.staff[Type] = true;
+    }
+
+    public override bool CanUseItem(Player player) {
+        return player.ownedProjectileCounts[ModContent.ProjectileType<ArrogantSylvanVineWhipHead>()] < 1;
     }
 
     public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source,
         Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
         Projectile.NewProjectile(source, position, velocity, type, damage, knockback, player.whoAmI);
-        SoundEngine.PlaySound(SoundID.Grass with { Volume = 0.9f, Pitch = 0.1f }, player.Center);
+        SoundEngine.PlaySound(SoundID.Grass with { Volume = 0.9f, Pitch = 0.1f + Main.rand.NextFloat(-0.1f, 0.1f) }, player.Center);
         return false;
     }
 
@@ -60,23 +62,35 @@ public class ArrogantDivineSylvanStaff : ModItem
 }
 
 /// <summary>
-/// 傲世藤蔓链鞭头部 - 巨型链鞭前端
-/// 更强追踪 + 更高穿透 + 命中时8叶爆发
-/// 末端触发藤蔓新星：16道SlashBurst扩散爆炸
-/// 链式绘制带金翠双色发光节点
+/// 傲世藤蔓链鞭头部 - 三相: 驱鞭(channel 追鼠标) → 咬合(elastic 张口 10 帧 → snap 引爆) → 回收
+/// 鞭身 = BuildRibbonStrip 金边翠芯 ribbon + 命中/咬合注入的行波 (弹簧衰减 ×0.88/f)
+/// 鞭身线段本体具伤害; 触发时机 = 鞭到最远点, 完全可读
 /// </summary>
 public class ArrogantSylvanVineWhipHead : ModProjectile
 {
     public override string Texture
         => "AncientChineseMythology/Textures/Masking/SoftGlow";
 
+    private const float MaxChainLength = 560f;
+    private const int BiteOpenFrames = 10;
+    private const int ChainSamples = 14;      // 链身采样点数 (绘制/判定共用)
+
+    // Phase: 0=驱鞭(Extend/Steer) 1=咬合(Bite) 2=回收(Return)
+    private ref float Timer => ref Projectile.ai[0];
+    private ref float Phase => ref Projectile.ai[1];
+    private ref float PhaseTimer => ref Projectile.ai[2];
+
+    private float _wavePulse;      // 行波能量 (命中/咬合注入, ×0.88/f 衰减; 纯视觉)
+    private float _wavePhase;      // 行波相位
+    private bool IsExtending => Phase == 0f;
+    private bool IsBiting => Phase == 1f;
+
+    private Player Owner => Main.player[Projectile.owner];
+
     public override void SetStaticDefaults() {
         ProjectileID.Sets.TrailingMode[Type] = 2;
         ProjectileID.Sets.TrailCacheLength[Type] = 28;
     }
-
-    private ref float Timer => ref Projectile.ai[0];
-    private ref float NovaTriggered => ref Projectile.ai[1];
 
     public override void SetDefaults() {
         Projectile.width = 24;
@@ -84,44 +98,99 @@ public class ArrogantSylvanVineWhipHead : ModProjectile
         Projectile.friendly = true;
         Projectile.DamageType = DamageClass.Magic;
         Projectile.penetrate = -1;
-        Projectile.timeLeft = 160;
+        Projectile.timeLeft = 480;
         Projectile.tileCollide = false;
         Projectile.ignoreWater = true;
         Projectile.usesLocalNPCImmunity = true;
-        Projectile.localNPCHitCooldown = 5;
+        Projectile.localNPCHitCooldown = 12;
     }
 
     public override void AI() {
         Timer++;
-        Player owner = Main.player[Projectile.owner];
+        PhaseTimer++;
+        Player owner = Owner;
         if (!owner.active || owner.dead) { Projectile.Kill(); return; }
 
+        if (_wavePulse > 0.01f) _wavePulse *= 0.88f;
+        _wavePhase += 0.5f;
+
         Projectile.rotation = Projectile.velocity.ToRotation();
-        Projectile.velocity *= 0.955f;
+        float distToOwner = Vector2.Distance(owner.MountedCenter, Projectile.Center);
 
-        // 更强追踪
-        float closestDist = 500f;
-        int targetIdx = -1;
-        for (int i = 0; i < Main.maxNPCs; i++) {
-            NPC npc = Main.npc[i];
-            if (!npc.CanBeChasedBy()) continue;
-            float d = Vector2.Distance(Projectile.Center, npc.Center);
-            if (d < closestDist) { closestDist = d; targetIdx = i; }
-        }
-        if (targetIdx >= 0) {
-            Vector2 dir = Projectile.DirectionTo(Main.npc[targetIdx].Center);
-            float speed = Projectile.velocity.Length();
-            Projectile.velocity = Vector2.Lerp(Projectile.velocity, dir * speed, 0.07f);
-        }
+        switch ((int)Phase) {
+            case 0: { // === 驱鞭: channel 追鼠标方向 ===
+                if (owner.channel) {
+                    owner.itemAnimation = 2;
+                    owner.itemTime = 2;
+                    if (Projectile.owner == Main.myPlayer) {
+                        Vector2 steer = Projectile.SafeDirectionTo(Main.MouseWorld);
+                        float speed = MathF.Max(Projectile.velocity.Length(), 14f);
+                        Projectile.velocity = Vector2.Lerp(Projectile.velocity, steer * speed, 0.10f);
+                        if (Timer % 8 == 0)
+                            Projectile.netUpdate = true;
+                    }
+                    Projectile.velocity *= 0.99f;
+                }
+                else {
+                    Projectile.velocity *= 0.96f;
+                }
 
-        // 速度过低时触发藤蔓新星
-        if (Projectile.velocity.Length() < 2f && NovaTriggered == 0) {
-            TriggerVineNova();
-            NovaTriggered = 1;
+                // 引导期链身分生触手 (节流: 每 24 帧最多 2 根, 交替两侧)
+                if (owner.channel && Timer % 24 == 0 && Timer > 10 && distToOwner > 120f
+                    && Projectile.owner == Main.myPlayer) {
+                    Vector2 dirBody = (Projectile.Center - owner.MountedCenter).SafeNormalize(Vector2.UnitX);
+                    Vector2 perpDir = new(-dirBody.Y, dirBody.X);
+                    for (int t = 0; t < 2; t++) {
+                        float p = 0.35f + 0.3f * t;
+                        Vector2 spawnPos = owner.MountedCenter + dirBody * (distToOwner * p);
+                        float side = (Timer / 24 + t) % 2 == 0 ? 1f : -1f;
+                        Projectile.NewProjectile(Projectile.GetSource_FromThis(), spawnPos,
+                            perpDir * side * 10f + dirBody * 3f,
+                            ModContent.ProjectileType<ArrogantSylvanTendril>(),
+                            Projectile.damage / 4, 2f, Projectile.owner);
+                    }
+                }
+
+                // 到达最大链长或松手且已伸出 → 咬合
+                bool reachedMax = distToOwner >= MaxChainLength;
+                bool released = !owner.channel && Timer > 12;
+                if (reachedMax || released) {
+                    Phase = 1f;
+                    PhaseTimer = 0f;
+                    Projectile.netUpdate = true;
+                    SoundEngine.PlaySound(SoundID.Item17 with { Volume = 0.9f, Pitch = -0.1f }, Projectile.Center);
+                }
+                break;
+            }
+
+            case 1: { // === 咬合: elastic 张口 → snap ===
+                owner.itemAnimation = 2;
+                owner.itemTime = 2;
+                Projectile.velocity *= 0.80f; // 咬合前"憋住"
+
+                if (PhaseTimer >= BiteOpenFrames) {
+                    // SNAP — 大招时刻: 新星 + 范围引爆烙印
+                    SnapBite(owner);
+                    Phase = 2f;
+                    PhaseTimer = 0f;
+                    Projectile.netUpdate = true;
+                }
+                break;
+            }
+
+            default: { // === 回收 ===
+                Vector2 back = owner.MountedCenter - Projectile.Center;
+                Vector2 dir = back.SafeNormalize(Vector2.Zero);
+                Projectile.velocity = Vector2.Lerp(Projectile.velocity, dir * 46f, 0.20f);
+                if (back.Length() < 44f)
+                    Projectile.Kill();
+                break;
+            }
         }
 
         // 尖端粒子 - 双色
-        for (int i = 0; i < 2; i++) {
+        int dustN = IsBiting ? 3 : 2;
+        for (int i = 0; i < dustN; i++) {
             int dustType = i == 0 ? DustID.JungleTorch : DustID.GoldFlame;
             Dust d = Dust.NewDustPerfect(
                 Projectile.Center + Main.rand.NextVector2Circular(10, 10),
@@ -129,68 +198,92 @@ public class ArrogantSylvanVineWhipHead : ModProjectile
             d.noGravity = true;
         }
 
-        // 沿链身每间隔段生成分支触手弹幕
-        if (Timer % 16 == 0 && Timer > 10 && Timer < 100 && Projectile.owner == Main.myPlayer) {
-            Vector2 diff = Projectile.Center - owner.MountedCenter;
-            float totalDist = diff.Length();
-            if (totalDist > 80f) {
-                Vector2 direction = diff.SafeNormalize(Vector2.Zero);
-                int tendrils = Math.Min(4, (int)(totalDist / 100f));
-                for (int t = 0; t < tendrils; t++) {
-                    float p = (t + 1f) / (tendrils + 1f);
-                    Vector2 spawnPos = owner.MountedCenter + direction * (totalDist * p);
-                    Vector2 perpDir = new(-direction.Y, direction.X);
-                    float side = t % 2 == 0 ? 1f : -1f;
-                    Vector2 tendrilVel = perpDir * side * 10f + direction * 3f;
-                    Projectile.NewProjectile(Projectile.GetSource_FromThis(), spawnPos, tendrilVel,
-                        ModContent.ProjectileType<ArrogantSylvanTendril>(),
-                        Projectile.damage / 4, 2f, Projectile.owner);
-                }
-            }
-        }
-
         Lighting.AddLight(Projectile.Center, 0.35f, 0.9f, 0.3f);
     }
 
-    private void TriggerVineNova() {
-        SoundEngine.PlaySound(SoundID.Item17 with { Volume = 1.2f, Pitch = 0.2f }, Projectile.Center);
+    /// <summary>咬合 snap: 藤蔓新星 + 范围引爆烙印 + 行波回传 + 震屏。</summary>
+    private void SnapBite(Player owner) {
+        _wavePulse = 1f; // 行波自鞭头注入, 沿链传回
+
+        SoundEngine.PlaySound(SoundID.Item17 with { Volume = 1.2f, Pitch = 0.2f + Main.rand.NextFloat(-0.1f, 0.1f) }, Projectile.Center);
+        SoundEngine.PlaySound(SoundID.Item71 with { Volume = 0.9f, Pitch = -0.3f }, Projectile.Center);
         ACMWeaponBurst.Spawn(Projectile.GetSource_FromThis(), Projectile.Center,
             ACMWeaponBurst.ArrogantSylvan, scale: 1.4f, owner: Projectile.owner);
-        WeaponVFX.AddScreenShake(Projectile.Center, 10f);
+        WeaponVFX.AddScreenShake(Projectile.Center, 5f);
 
         if (Projectile.owner == Main.myPlayer) {
-            // 16道藤蔓新星爆发
+            // 藤蔓新星 (环形爆发)
             Projectile.NewProjectile(Projectile.GetSource_FromThis(), Projectile.Center, Vector2.Zero,
                 ModContent.ProjectileType<ArrogantSylvanVineNova>(),
                 Projectile.damage, Projectile.knockBack, Projectile.owner);
 
-            // 释放12片追踪叶刃
-            for (int i = 0; i < 12; i++) {
+            // === 系列引爆动作: 咬合波及范围内全部年轮烙印 ===
+            ArrogantSylvanBloom.DetonateArea(Projectile.GetSource_FromThis(), Projectile.Center,
+                280f, Projectile.damage, 3f, Projectile.owner);
+
+            // 6 片追踪叶爆
+            for (int i = 0; i < 6; i++) {
                 Vector2 leafVel = Main.rand.NextVector2CircularEdge(9f, 9f);
                 Projectile.NewProjectile(Projectile.GetSource_FromThis(), Projectile.Center,
                     leafVel, ModContent.ProjectileType<ArrogantSylvanVineBurstLeaf>(),
                     Projectile.damage / 3, 2f, Projectile.owner);
             }
         }
+    }
 
-        if (Main.player[Projectile.owner].whoAmI == Main.myPlayer)
-            Main.player[Projectile.owner].GetModPlayer<ScreenShakePlayer>().ShakeScreen(10, 14);
+    /// <summary>链身采样点 (绘制与线段判定共用): 基础波 + 行波脉冲。</summary>
+    private void BuildChainPoints(Vector2[] points) {
+        Vector2 start = Owner.MountedCenter;
+        Vector2 end = Projectile.Center;
+        Vector2 diff = end - start;
+        float totalDist = diff.Length();
+        Vector2 direction = diff.SafeNormalize(Vector2.UnitX);
+        Vector2 perp = new(-direction.Y, direction.X);
+
+        for (int i = 0; i < points.Length; i++) {
+            float p = i / (float)(points.Length - 1);
+            // 基础起伏 (根部大尾部小) + 行波 (命中/咬合注入, 从鞭头向手传播)
+            float wave = MathF.Sin(p * MathF.PI * 2.5f + Timer * 0.15f) * 14f * (1f - p) * MathF.Min(totalDist / 300f, 1f);
+            float pulseWave = _wavePulse * 24f * MathF.Sin(p * MathF.PI * 3f + _wavePhase);
+            points[i] = start + direction * (totalDist * p) + perp * (wave + pulseWave);
+        }
+    }
+
+    private readonly Vector2[] _chainPoints = new Vector2[ChainSamples];
+
+    public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
+        // 鞭头自身矩形
+        if (projHitbox.Intersects(targetHitbox))
+            return true;
+        // 鞭身线段判定 (与 ribbon 视觉同一条曲线)
+        BuildChainPoints(_chainPoints);
+        float col = 0f;
+        for (int i = 0; i < _chainPoints.Length - 1; i++) {
+            if (Collision.CheckAABBvLineCollision(targetHitbox.TopLeft(), targetHitbox.Size(),
+                    _chainPoints[i], _chainPoints[i + 1], 16f, ref col))
+                return true;
+        }
+        return false;
     }
 
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
         target.AddBuff(BuffID.Poisoned, 600);
         target.AddBuff(BuffID.Venom, 300);
 
-        for (int i = 0; i < 12; i++) {
+        // 浇灌: 刻下年轮烙印; 行波回传卖"鞭子抽中了"
+        ArrogantSylvanBrandNPC.AddStack(target);
+        _wavePulse = MathF.Max(_wavePulse, 0.7f);
+
+        for (int i = 0; i < 8; i++) {
             int dustType = i % 2 == 0 ? DustID.JungleTorch : DustID.GoldFlame;
             Dust d = Dust.NewDustPerfect(target.Center, dustType,
-                Main.rand.NextVector2Circular(7f, 7f), 30, default, 2.2f);
+                Main.rand.NextVector2Circular(7f, 7f), 30, default, 2f);
             d.noGravity = true;
         }
 
-        // 命中释放8片追踪叶子
+        // 命中弹出 4 片追踪叶
         if (Projectile.owner == Main.myPlayer) {
-            for (int i = 0; i < 8; i++) {
+            for (int i = 0; i < 4; i++) {
                 Vector2 leafVel = Main.rand.NextVector2CircularEdge(7f, 7f);
                 Projectile.NewProjectile(Projectile.GetSource_FromThis(), target.Center,
                     leafVel, ModContent.ProjectileType<ArrogantSylvanVineBurstLeaf>(),
@@ -198,13 +291,13 @@ public class ArrogantSylvanVineWhipHead : ModProjectile
             }
         }
 
-        SoundEngine.PlaySound(SoundID.Grass with { Volume = 0.6f, Pitch = 0.4f }, target.Center);
-        ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
-            ACMWeaponBurst.ArrogantSylvan, scale: 1f, owner: Projectile.owner);
+        SoundEngine.PlaySound(SoundID.Grass with { Volume = 0.6f, Pitch = 0.4f + Main.rand.NextFloat(-0.15f, 0.15f) }, target.Center);
+        WeaponVFX.AddScreenShake(target.Center, 1.5f);
+        ArrogantSylvanFX.HitBurstThrottled(Projectile.GetSource_OnHit(target), target.Center, 1f, Projectile.owner);
     }
 
     public override void OnKill(int timeLeft) {
-        for (int i = 0; i < 16; i++) {
+        for (int i = 0; i < 12; i++) {
             Dust d = Dust.NewDustPerfect(Projectile.Center, DustID.GrassBlades,
                 Main.rand.NextVector2Circular(5f, 5f), 60, default, 2f);
             d.noGravity = true;
@@ -213,36 +306,18 @@ public class ArrogantSylvanVineWhipHead : ModProjectile
 
     public override bool PreDraw(ref Color lightColor) {
         SpriteBatch sb = Main.spriteBatch;
-        Player owner = Main.player[Projectile.owner];
 
-        // 头部金翠双层 ribbon 拖尾 (§B.1)
-        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 16f,
-            outerColor: new Color(200, 150, 40, 150), innerColor: new Color(190, 255, 150, 200),
+        // === 鞭身: 金边翠芯双层 ribbon (替换原版铁链贴图) ===
+        BuildChainPoints(_chainPoints);
+        WeaponVFX.DrawRibbonTrail(_chainPoints, baseWidth: 13f,
+            outerColor: ArrogantSylvanPalette.TrailOuter, innerColor: ArrogantSylvanPalette.TrailInner,
+            uvScroll: -(float)Main.timeForVisualEffects * 0.06f, subdivisions: 3);
+
+        // 鞭头短拖尾 ribbon
+        WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 14f,
+            outerColor: ArrogantSylvanPalette.TrailOuter, innerColor: ArrogantSylvanPalette.TrailInner,
             uvScroll: -(float)Main.timeForVisualEffects * 0.04f);
 
-        // === 链式藤蔓绘制 ===
-        Texture2D vineTex = TextureAssets.Chains[13].Value;
-        Vector2 start = owner.MountedCenter;
-        Vector2 end = Projectile.Center;
-        Vector2 diff = end - start;
-        float totalDist = diff.Length();
-        Vector2 direction = diff.SafeNormalize(Vector2.Zero);
-        float segmentLen = vineTex.Height / 2;
-        int segmentCount = (int)(totalDist / segmentLen);
-        float chainRot = direction.ToRotation() + MathHelper.PiOver2;
-
-        for (int i = 0; i < segmentCount; i++) {
-            float progress = (float)i / Math.Max(segmentCount, 1);
-            Vector2 segPos = start + direction * (i * segmentLen);
-            float wave = MathF.Sin(progress * MathF.PI * 2.5f + Timer * 0.15f) * 16f * (1f - progress);
-            Vector2 perp = new(-direction.Y, direction.X);
-            Vector2 drawPos = segPos + perp * wave - Main.screenPosition;
-            Color segColor = Color.Lerp(new Color(80, 200, 80), new Color(220, 255, 100), progress * 0.5f);
-            sb.Draw(vineTex, drawPos, null, segColor * 0.92f, chainRot, vineTex.Size() * 0.5f,
-                1.2f, SpriteEffects.None, 0);
-        }
-
-        // === 头部特效 ===
         sb.End();
         sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
             DepthStencilState.None, RasterizerState.CullNone, null,
@@ -250,32 +325,48 @@ public class ArrogantSylvanVineWhipHead : ModProjectile
 
         Texture2D sg = ACMAsset.SoftGlow;
         Texture2D sparkle = ACMAsset.Sparkle;
-
+        Texture2D wave = ACMAsset.GlaciateWave;
         float pulse = 0.7f + 0.25f * MathF.Sin(Timer * 0.22f);
 
+        // 鞭口"咬合"双颚: elastic 张开 (overshoot 1.3×) → snap 闭合
+        if (IsBiting) {
+            float openT = MathF.Min(PhaseTimer / BiteOpenFrames, 1f);
+            float jaw = ACMUtils.ElasticOut(openT) * 0.85f; // 弧度: 双颚张角
+            Vector2 dir = Projectile.velocity.SafeNormalize(Vector2.UnitX);
+            float baseRot = dir.ToRotation();
+            for (int s = -1; s <= 1; s += 2) {
+                float jawRot = baseRot + s * jaw;
+                sb.Draw(wave, Projectile.Center - Main.screenPosition, null,
+                    ArrogantSylvanPalette.GoldBright * 0.8f, jawRot,
+                    new Vector2(wave.Width * 0.15f, wave.Height * 0.5f),
+                    new Vector2(0.55f, 0.18f), SpriteEffects.None, 0);
+                sb.Draw(wave, Projectile.Center - Main.screenPosition, null,
+                    ArrogantSylvanPalette.JadeBright * 0.55f, jawRot,
+                    new Vector2(wave.Width * 0.15f, wave.Height * 0.5f),
+                    new Vector2(0.38f, 0.11f), SpriteEffects.None, 0);
+            }
+        }
+
+        // 鞭头辉光
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
             new Color(220, 255, 100) * (0.70f * pulse), 0f,
-            sg.Size() * 0.5f, 0.70f, SpriteEffects.None, 0);
+            sg.Size() * 0.5f, IsBiting ? 0.85f : 0.70f, SpriteEffects.None, 0);
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-            new Color(255, 255, 220) * (0.40f * pulse), 0f,
+            ArrogantSylvanPalette.WhiteHot * (0.40f * pulse), 0f,
             sg.Size() * 0.5f, 0.35f, SpriteEffects.None, 0);
-
         sb.Draw(sparkle, Projectile.Center - Main.screenPosition, null,
             new Color(200, 255, 120) * (0.50f * pulse),
             Timer * 0.08f,
             sparkle.Size() * 0.5f, 0.30f, SpriteEffects.None, 0);
 
-        // 沿链身金翠发光节点
-        for (int i = 0; i < segmentCount; i += 2) {
-            float progress = (float)i / Math.Max(segmentCount, 1);
-            Vector2 segPos = start + direction * (i * segmentLen);
-            float wave = MathF.Sin(progress * MathF.PI * 2.5f + Timer * 0.15f) * 16f * (1f - progress);
-            Vector2 perp = new(-direction.Y, direction.X);
-            Vector2 glowPos = segPos + perp * wave - Main.screenPosition;
-            Color glowCol = i % 4 == 0 ? new Color(220, 255, 100) : new Color(40, 200, 60);
-            sb.Draw(sg, glowPos, null,
-                glowCol * (0.25f * pulse), 0f,
-                sg.Size() * 0.5f, 0.22f, SpriteEffects.None, 0);
+        // 沿链身金翠发光节点 (行波经过处更亮)
+        for (int i = 1; i < _chainPoints.Length - 1; i += 2) {
+            float p = i / (float)(_chainPoints.Length - 1);
+            float waveBoost = _wavePulse * MathF.Max(0f, MathF.Sin(p * MathF.PI * 3f + _wavePhase));
+            Color glowCol = i % 4 == 1 ? new Color(220, 255, 100) : new Color(40, 200, 60);
+            sb.Draw(sg, _chainPoints[i] - Main.screenPosition, null,
+                glowCol * ((0.22f + 0.35f * waveBoost) * pulse), 0f,
+                sg.Size() * 0.5f, 0.20f + 0.12f * waveBoost, SpriteEffects.None, 0);
         }
 
         sb.End();
@@ -287,8 +378,7 @@ public class ArrogantSylvanVineWhipHead : ModProjectile
 }
 
 /// <summary>
-/// 傲世分支触手 - 链身分支的小型藤蔓弹幕
-/// 追踪附近敌人，命中后消失
+/// 傲世分支触手 - 链身分生的小型藤蔓弹幕 (共享节流索敌, 命中刻烙印)
 /// </summary>
 public class ArrogantSylvanTendril : ModProjectile
 {
@@ -296,6 +386,8 @@ public class ArrogantSylvanTendril : ModProjectile
         => "AncientChineseMythology/Textures/Masking/LightShot";
 
     private float _timer;
+    private ref float TargetCache => ref Projectile.localAI[0];
+    private ref float RescanTimer => ref Projectile.localAI[1];
 
     public override void SetStaticDefaults() {
         ProjectileID.Sets.TrailingMode[Type] = 2;
@@ -318,18 +410,8 @@ public class ArrogantSylvanTendril : ModProjectile
         Projectile.rotation = Projectile.velocity.ToRotation();
 
         if (_timer > 10) {
-            float closestDist = 400f;
-            int targetIdx = -1;
-            for (int i = 0; i < Main.maxNPCs; i++) {
-                NPC npc = Main.npc[i];
-                if (!npc.CanBeChasedBy()) continue;
-                float d = Vector2.Distance(Projectile.Center, npc.Center);
-                if (d < closestDist) { closestDist = d; targetIdx = i; }
-            }
-            if (targetIdx >= 0) {
-                Vector2 dir = Projectile.DirectionTo(Main.npc[targetIdx].Center);
-                Projectile.velocity = Vector2.Lerp(Projectile.velocity, dir * 16f, 0.10f);
-            }
+            NPC target = ArrogantSylvanTargeting.UpdateTarget(Projectile, ref TargetCache, ref RescanTimer, 400f);
+            ArrogantSylvanTargeting.SteerTowards(Projectile, target, 16f, 0.10f);
         }
         else {
             Projectile.velocity *= 0.96f;
@@ -343,6 +425,7 @@ public class ArrogantSylvanTendril : ModProjectile
 
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
         target.AddBuff(BuffID.Poisoned, 300);
+        ArrogantSylvanBrandNPC.AddStack(target);
     }
 
     public override bool PreDraw(ref Color lightColor) {
@@ -350,7 +433,7 @@ public class ArrogantSylvanTendril : ModProjectile
 
         // 分支触手金翠双层 ribbon (§B.1)
         WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 9f,
-            outerColor: new Color(200, 150, 40, 150), innerColor: new Color(190, 255, 150, 200),
+            outerColor: ArrogantSylvanPalette.TrailOuter, innerColor: ArrogantSylvanPalette.TrailInner,
             uvScroll: -(float)Main.timeForVisualEffects * 0.05f);
 
         sb.End();
@@ -364,7 +447,7 @@ public class ArrogantSylvanTendril : ModProjectile
             float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.45f;
             sb.Draw(lsh,
                 Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition,
-                null, new Color(40, 200, 60) * a, Projectile.oldRot[i],
+                null, ArrogantSylvanPalette.JadeDeep * a, Projectile.oldRot[i],
                 lsh.Size() * 0.5f,
                 new Vector2(0.30f, 0.06f), SpriteEffects.None, 0);
         }
@@ -383,13 +466,14 @@ public class ArrogantSylvanTendril : ModProjectile
 }
 
 /// <summary>
-/// 傲世藤蔓新星 - 链鞭到达最远端时释放的环形爆炸
-/// 16道SlashBurst + 扩散伤害场
+/// 傲世藤蔓新星 - 鞭咬 snap 释放的环形爆炸 (半径判定与冲击环视觉对齐)
 /// </summary>
 public class ArrogantSylvanVineNova : ModProjectile
 {
     public override string Texture
         => "AncientChineseMythology/Textures/Masking/SoftGlow";
+
+    private const float MaxRadius = 320f;
 
     public override void SetDefaults() {
         Projectile.width = 10;
@@ -406,11 +490,16 @@ public class ArrogantSylvanVineNova : ModProjectile
 
     public override bool ShouldUpdatePosition() => false;
 
+    private float CurrentRadius() {
+        float prog = Projectile.ai[0] / 60f;
+        return MathHelper.SmoothStep(10f, MaxRadius, ACMUtils.QuadOut(MathHelper.Clamp(prog * 1.5f, 0f, 1f)));
+    }
+
     public override void AI() {
         Projectile.ai[0]++;
-        float radius = Projectile.ai[0] * 18f;
+        float radius = CurrentRadius();
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 8; i++) {
             float angle = Main.rand.NextFloat(MathHelper.TwoPi);
             Vector2 pos = Projectile.Center + angle.ToRotationVector2() * Main.rand.NextFloat(radius * 0.4f, radius);
             int dustType = i % 3 == 0 ? DustID.GoldFlame : DustID.JungleTorch;
@@ -426,20 +515,20 @@ public class ArrogantSylvanVineNova : ModProjectile
         target.AddBuff(BuffID.Venom, 300);
     }
 
-    public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
-        float radius = Projectile.ai[0] * 18f;
-        return VaultUtils.CircleIntersectsRectangle(Projectile.Center, radius, targetHitbox);
-    }
+    public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox)
+        => VaultUtils.CircleIntersectsRectangle(Projectile.Center, CurrentRadius(), targetHitbox);
 
     public override bool PreDraw(ref Color lightColor) {
         float prog = 1f - Projectile.timeLeft / 60f;
         float alpha = ACMUtils.QuadOut(1f - prog) * 0.92f;
         float scale = MathHelper.SmoothStep(0f, 20f, ACMUtils.QuadOut(prog));
 
-        // 藤蔓新星金翠双环冲击波 (§B.8)
-        float ringR = MathHelper.SmoothStep(10f, 320f, ACMUtils.QuadOut(prog));
+        // 年轮新星: GrowthRing 专属着色器 + 金翠双环冲击波 (§B.8)
+        ArrogantSylvanFX.DrawGrowthRing(Projectile.Center, MaxRadius,
+            ACMUtils.QuadOut(MathHelper.Clamp(prog * 1.5f, 0f, 1f)), alpha * 0.7f, ringFreq: 9f);
+        float ringR = CurrentRadius();
         WeaponVFX.DrawShockwaveRing(Projectile.Center, ringR, 16f, alpha,
-            new Color(190, 255, 150), new Color(200, 150, 40));
+            ArrogantSylvanPalette.JadeBright, ArrogantSylvanPalette.GoldDark);
         WeaponVFX.DrawShockwaveRing(Projectile.Center, ringR * 0.62f, 10f, alpha * 0.8f,
             new Color(230, 240, 150), new Color(80, 200, 90));
 
@@ -453,15 +542,15 @@ public class ArrogantSylvanVineNova : ModProjectile
         Texture2D sg = ACMAsset.SoftGlow;
         Texture2D sparkle = ACMAsset.Sparkle;
 
-        // 16道放射藤蔓新星
+        // 16 道放射藤蔓新星
         for (int k = 0; k < 16; k++) {
             float bAngle = k * MathF.PI / 8f + Projectile.ai[0] * 0.03f;
             float bLen = k % 2 == 0 ? scale * 0.65f : scale * 0.42f;
             Color bColor = k % 3 == 0
-                ? new Color(220, 255, 100)
+                ? ArrogantSylvanPalette.GoldBright
                 : k % 3 == 1
-                    ? new Color(40, 200, 60)
-                    : new Color(255, 255, 220);
+                    ? ArrogantSylvanPalette.JadeDeep
+                    : ArrogantSylvanPalette.WhiteHot;
             sb.Draw(burst, Projectile.Center - Main.screenPosition, null,
                 bColor * (alpha * 0.75f), bAngle,
                 new Vector2(burst.Width * 0.5f, burst.Height),
@@ -469,12 +558,12 @@ public class ArrogantSylvanVineNova : ModProjectile
         }
 
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-            new Color(220, 255, 100) * (alpha * 0.55f), 0f,
+            ArrogantSylvanPalette.JadeBright * (alpha * 0.55f), 0f,
             sg.Size() * 0.5f, scale * 0.55f, SpriteEffects.None, 0);
 
         float flashAlpha = MathHelper.SmoothStep(1f, 0f, prog * 1.3f);
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-            new Color(255, 255, 230) * (alpha * flashAlpha), 0f,
+            ArrogantSylvanPalette.WhiteHot * (alpha * flashAlpha), 0f,
             sg.Size() * 0.5f, scale * 0.22f, SpriteEffects.None, 0);
 
         sb.Draw(sparkle, Projectile.Center - Main.screenPosition, null,
@@ -491,14 +580,15 @@ public class ArrogantSylvanVineNova : ModProjectile
 }
 
 /// <summary>
-/// 傲世藤蔓叶爆 - 链鞭命中后释放的追踪叶片
-/// 使用Leaf纹理，更强追踪 + 更长存活
+/// 傲世藤蔓叶爆 - 鞭击命中/咬合释放的追踪叶片 (共享节流索敌, 命中刻烙印)
 /// </summary>
 public class ArrogantSylvanVineBurstLeaf : ModProjectile
 {
     public override string Texture => "Terraria/Images/Projectile_" + ProjectileID.Leaf;
 
     private float _timer;
+    private ref float TargetCache => ref Projectile.localAI[0];
+    private ref float RescanTimer => ref Projectile.localAI[1];
 
     public override void SetStaticDefaults() {
         Main.projFrames[Type] = 5;
@@ -525,18 +615,8 @@ public class ArrogantSylvanVineBurstLeaf : ModProjectile
         }
 
         if (_timer > 12) {
-            float closestDist = 600f;
-            int targetIdx = -1;
-            for (int i = 0; i < Main.maxNPCs; i++) {
-                NPC npc = Main.npc[i];
-                if (!npc.CanBeChasedBy()) continue;
-                float d = Vector2.Distance(Projectile.Center, npc.Center);
-                if (d < closestDist) { closestDist = d; targetIdx = i; }
-            }
-            if (targetIdx >= 0) {
-                Vector2 dir = Projectile.DirectionTo(Main.npc[targetIdx].Center);
-                Projectile.velocity = Vector2.Lerp(Projectile.velocity, dir * 18f, 0.10f);
-            }
+            NPC target = ArrogantSylvanTargeting.UpdateTarget(Projectile, ref TargetCache, ref RescanTimer, 600f);
+            ArrogantSylvanTargeting.SteerTowards(Projectile, target, 18f, 0.10f);
         }
         else {
             Projectile.velocity *= 0.93f;
@@ -553,7 +633,8 @@ public class ArrogantSylvanVineBurstLeaf : ModProjectile
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
         target.AddBuff(BuffID.Poisoned, 300);
         target.AddBuff(BuffID.Venom, 120);
-        for (int i = 0; i < 5; i++) {
+        ArrogantSylvanBrandNPC.AddStack(target);
+        for (int i = 0; i < 4; i++) {
             Dust d = Dust.NewDustPerfect(target.Center, DustID.JungleTorch,
                 Main.rand.NextVector2Circular(4f, 4f), 50, default, 1.5f);
             d.noGravity = true;
@@ -561,7 +642,7 @@ public class ArrogantSylvanVineBurstLeaf : ModProjectile
     }
 
     public override bool PreDraw(ref Color lightColor) {
-        Texture2D tex = TextureAssets.Projectile[Type].Value;
+        Texture2D tex = Terraria.GameContent.TextureAssets.Projectile[Type].Value;
         int fh = tex.Height / Main.projFrames[Type];
         Rectangle src = new(0, Projectile.frame * fh, tex.Width, fh);
         Vector2 origin = new(tex.Width / 2f, fh / 2f);

@@ -1,4 +1,5 @@
-﻿using AncientChineseMythology.Systems;
+﻿using AncientChineseMythology.Helpers;
+using AncientChineseMythology.Systems;
 using AncientChineseMythology.Underworlds.Boss.YinEmperors.Items;
 using AncientChineseMythology.Underworlds.Items.Materials;
 using Microsoft.Xna.Framework.Graphics;
@@ -16,14 +17,17 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 {
     /// <summary>
-    /// 阴天子 - 冥府终局 Boss（T52 · G7 准圣门控）。
+    /// 阴天子（酆都大帝） - 冥府终局 Boss（T52 · G7 准圣门控）。
     ///
-    /// 重做定位（见 docs/BOSS_REDO_PLAN.md §6.4）：这是一场**审判**而非弹幕战。
-    /// 不再是随机 5 状态池，而是**三幕脚本化结构**，每一幕改“规则”而非“数值”：
-    ///   · 幕一 酆都仪典 (100-66%)：悬浮→龙气横扫→冥谕(列阵) 固定轮替；引入“冥律标记/定魂”。
-    ///   · 幕二 镇魂狱 (66-33%)：镇魂封印成为强制阶段——冥眼收缩，必须击破“鬼门关钥”弱点逃脱；冥谕换 2/3 阵型。
-    ///   · 幕三 帝裁 (33-0%)：固定循环 帝怒→酆帝诏书(阴阳半场)→终诏(十字激光+弹·一次性 4s 预告)。
-    /// G7 联动：~10% 召唤阴帝印幻象，装备酆都套的玩家可在 ≤18% 时处决。
+    /// V3 重做（见 Docs/BossRedo/YinEmperor.md）：主题是"帝王的审判"——威仪而非狂暴。
+    ///   · 帝王以诏令统治法庭：冥诏点名（标记→宣判倒计时→执行，离开执行圈即安全）、
+    ///     鬼门开阖召阴兵、酆都法庭结界（YinEmperorCourtBarrier + 六杆冥幡围场）。
+    ///   · 亲自出手只有两式：帝袖横扫（极长蓄势换 9 帧毁灭直线）与玉玺压顶（幕三天坠强击），
+    ///     接触伤害窗口与视觉爆发严格对齐（CanHitPlayer 门控）。
+    ///   · 三幕骨架保留：幕一酆都仪典 / 幕二镇魂狱（鬼门关钥弱点强制阶段）/ 幕三帝裁
+    ///     （阴阳诏书 + 终诏），G7 阴帝印幻象与酆都套处决保留。
+    ///   · 三大演出：仪式入场（幡旗仪仗→鬼门显形→镇尺落界）、幕过场规则预览、
+    ///     CheckDead 拦截的 ~5.5s 死亡弧线（幡旗逐杆熄灭→法环崩解→静默→终爆）。
     /// </summary>
     [AutoloadBossHead]
     public class YinEmperor : ModNPC
@@ -32,12 +36,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
         private const int MaxFrames = 3;
         private const int FrameSpeed = 8;
-        private const int IntroRiseDuration = 180;
-        private const int IntroPauseDuration = 60;
-        private const int IntroRoarDuration = 40;
-        private const int IntroLightningCount = 6;
-        private const float IntroRiseDistance = 900f;
-        private const float HoverHeight = 280f;
+        private const float HoverHeight = 300f;
 
         // 幕（HP 门）阈值
         private const float Phase2Threshold = 0.66f;
@@ -48,6 +47,15 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
         /// <summary>镇魂封印收缩总时长（鬼门关钥与冥眼共用，确保同步）</summary>
         public const int SealContractTime = 360;
+
+        /// <summary>酆都法庭基础半径（世界像素）</summary>
+        public const float CourtBaseRadius = 1250f;
+        private const int BannerCount = 6;
+
+        // 入场时间轴（帧）
+        private const int IntroTotal = 345;
+        // 死亡弧线时间轴（帧）
+        private const int DeathTotal = 330;
 
         #endregion
 
@@ -75,11 +83,13 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         private enum AIState
         {
             Intro,
+            /// <summary>换手势连接节拍（24 帧段落感，queuedState 指定下一招）</summary>
+            Connector,
 
-            // 幕一 酆都仪典
-            Act1_Hover,
-            Act1_DragonSweep,
-            Act1_NetherDecree,
+            // 幕一 酆都仪典（DecreeCall / GhostGates 为跨幕共用招，强度随幕递进）
+            Act1_SleeveSweep,
+            Act1_DecreeCall,
+            Act1_GhostGates,
 
             ActTransition2,
 
@@ -90,12 +100,15 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             ActTransition3,
 
             // 幕三 帝裁
-            Act3_ImperialWrath,
+            Act3_SealSlam,
             Act3_YinYangEdict,
             Act3_FinalDecree,
 
             // G7 处决
-            ExecutionPhantom
+            ExecutionPhantom,
+
+            // 死亡弧线（CheckDead 拦截）
+            DeathCinematic
         }
 
         private AIState CurrentState {
@@ -105,13 +118,38 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
         private ref float PhaseTimer => ref NPC.ai[1];
         private ref float AttackTimer => ref NPC.ai[2];
+        /// <summary>当前幕内循环表索引</summary>
         private ref float ActStep => ref NPC.ai[3];
 
+        // 手写循环表（PACING §2：攻击序列本身就是编排——压制与呼吸交替）
+        private static readonly AIState[] Act1Cycle = {
+            AIState.Act1_SleeveSweep, AIState.Act1_DecreeCall,
+            AIState.Act1_SleeveSweep, AIState.Act1_GhostGates
+        };
+        private static readonly AIState[] Act2Cycle = {
+            AIState.Act2_SoulSeal, AIState.Act2_NetherDecree,
+            AIState.Act1_DecreeCall, AIState.Act1_GhostGates, AIState.Act2_NetherDecree
+        };
+        private static readonly AIState[] Act3Cycle = {
+            AIState.Act3_SealSlam, AIState.Act3_YinYangEdict,
+            AIState.Act1_DecreeCall, AIState.Act3_SealSlam, AIState.Act3_FinalDecree
+        };
+
         // 需要同步的逻辑状态（ai[] 之外）
+        private int seed;
         private bool didAct2;
         private bool didAct3;
         private bool didExecution;
         private int decreeFormation;
+        private int queuedState;
+        private bool dying;
+        private int sweepIndex;
+        private Vector2 dashTarget;
+        private float slamY;
+        private bool courtSpawned;
+
+        /// <summary>酆都法庭中心（召唤时锁定，幡旗/结界/鬼门以此为锚）</summary>
+        public Vector2 ArenaCenter;
 
         /// <summary>镇魂封印中心（固定）</summary>
         public Vector2 SealCenter;
@@ -119,51 +157,69 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         public int SealState;
         private bool sealWeakSpawned;
         private int sealResolveDelay;
+        /// <summary>上一帧封印状态（各端本地，用于捕捉破封翻转帧播放失仪演出）</summary>
+        private int prevSealState;
+        private int yinYangBaseSide;
 
         private float LifeRatio => NPC.lifeMax <= 0 ? 1f : (float)NPC.life / NPC.lifeMax;
 
         #endregion
 
-        #region 状态变量
+        #region 法庭结界状态（供 YinEmperorCourtBarrier 读取）
 
-        private int seed = -1;
-        private Random random;
+        /// <summary>结界当前目标半径（幕递进收窄：审判逐步收拢）</summary>
+        public float CourtRadius => didAct3 ? 1050f : didAct2 ? 1150f : CourtBaseRadius;
+        /// <summary>结界整体强度（入场落界前 0，死亡终爆后归 0）</summary>
+        public float CourtIntensity { get; private set; }
+        /// <summary>结界收缩压迫 0..1（镇魂狱收缩期转赤）</summary>
+        public float CourtCollapse { get; private set; }
+        /// <summary>结界大节拍闪光（逐帧衰减）</summary>
+        public float CourtFlash { get; private set; }
+        /// <summary>死亡弧线进度 0..1（Sky 读取做骤暗）</summary>
+        public float DeathDarken { get; private set; }
+
+        #endregion
+
+        #region 状态变量（纯本地视觉）
+
         private int frameCounter;
         private int currentFrame;
 
-        // 出场演出
-        private float introProgress;
-        private bool introRoarDone;
-        private bool introLightningDone;
-        private float introPillarAlpha;
-        private float introShakeIntensity;
+        // 接触伤害窗口（每帧由招式显式开启；CanHitPlayer 门控 → 伤害与视觉严格对齐）
+        private bool contactWindow;
+
+        // 入场演出
+        private float introGateOpen;
+        private float bodyMaterialize;   // 0=未显形 1=完全显形
+
+        // 死亡演出
+        private float deathDissolve;     // 0=完好 1=完全崩解
+
+        // 冥幡（六杆，世界固定位，客户端演出标量）
+        private readonly float[] bannerRaise = new float[BannerCount];
+        private readonly float[] bannerBurn = new float[BannerCount];
+        private float bannerWave = 1f;
 
         // 视觉效果
         private float pulsePhase;
         private float auraRotation;
         private float auraIntensity;
         private float hoverOffset;
-        private float[] energyWaveRadius = new float[3];
-        private float[] energyWaveAlpha = new float[3];
-
-        // 战斗参数
-        private int dashCount;
-        private Vector2 dashTarget;
-        private int sweepDirection;
-        private int yinYangBaseSide;
+        private readonly float[] energyWaveRadius = new float[3];
+        private readonly float[] energyWaveAlpha = new float[3];
 
         // 法环
         private float ringRotation;
+        private float ringSpin = 0.008f;
         private float ringScale;
         private float ringAlpha;
         private float phantomSealScale;
 
-        // V2 演出层（纯本地视觉）
+        // V2 演出层
         /// <summary>阴阳分屏 PaletteLUT 的平滑强度（PostDraw 消费唯一全屏名额）。</summary>
         private float yinYangVisual;
-        /// <summary>大节拍泛光脉冲 0..1（出场吼/过场/终诏/处决/死亡触发，逐帧衰减）。</summary>
+        /// <summary>大节拍泛光脉冲 0..1（逐帧衰减）。</summary>
         private float bloomPulse;
-        /// <summary>当前泛光色（RGB）。</summary>
         private Vector3 bloomColorV = Vector3.One;
 
         #endregion
@@ -235,19 +291,27 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
         public override bool CheckActive() => false;
 
+        /// <summary>接触伤害门控：只在帝袖横扫爆发窗口与玉玺下砸窗口造成接触伤害。</summary>
+        public override bool CanHitPlayer(Player target, ref int cooldownSlot) => contactWindow;
+
         public override void OnSpawn(IEntitySource source) {
             seed = Main.rand.Next(0, 10000);
-            random = new Random(seed);
             CurrentState = AIState.Intro;
             PhaseTimer = 0;
             AttackTimer = 0;
             ActStep = 0;
-            introProgress = 0f;
-            introRoarDone = false;
-            introLightningDone = false;
-            introPillarAlpha = 0f;
-            auraIntensity = 0f;
             yinYangBaseSide = Main.rand.Next(2);
+            dying = false;
+            courtSpawned = false;
+
+            // 法庭中心锁定在召唤者位置（结界/幡旗/鬼门以此为锚）
+            int closest = Player.FindClosest(NPC.position, NPC.width, NPC.height);
+            if (closest >= 0)
+                ArenaCenter = Main.player[closest].Center;
+            else
+                ArenaCenter = NPC.Center;
+            NPC.Center = ArenaCenter + new Vector2(0, -260f);
+            NPC.alpha = 255;
 
             ResetGlobalState();
 
@@ -266,13 +330,19 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
         public override void SendExtraAI(BinaryWriter writer) {
             writer.Write(seed);
-            writer.Write(introProgress);
-            writer.Write(pulsePhase);
-            writer.Write(dashCount);
             writer.Write(didAct2);
             writer.Write(didAct3);
             writer.Write(didExecution);
             writer.Write(decreeFormation);
+            writer.Write(queuedState);
+            writer.Write(dying);
+            writer.Write(sweepIndex);
+            writer.Write(dashTarget.X);
+            writer.Write(dashTarget.Y);
+            writer.Write(slamY);
+            writer.Write(courtSpawned);
+            writer.Write(ArenaCenter.X);
+            writer.Write(ArenaCenter.Y);
             writer.Write(SealState);
             writer.Write(sealWeakSpawned);
             writer.Write(SealCenter.X);
@@ -282,19 +352,24 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
         public override void ReceiveExtraAI(BinaryReader reader) {
             seed = reader.ReadInt32();
-            introProgress = reader.ReadSingle();
-            pulsePhase = reader.ReadSingle();
-            dashCount = reader.ReadInt32();
             didAct2 = reader.ReadBoolean();
             didAct3 = reader.ReadBoolean();
             didExecution = reader.ReadBoolean();
             decreeFormation = reader.ReadInt32();
+            queuedState = reader.ReadInt32();
+            dying = reader.ReadBoolean();
+            sweepIndex = reader.ReadInt32();
+            dashTarget.X = reader.ReadSingle();
+            dashTarget.Y = reader.ReadSingle();
+            slamY = reader.ReadSingle();
+            courtSpawned = reader.ReadBoolean();
+            ArenaCenter.X = reader.ReadSingle();
+            ArenaCenter.Y = reader.ReadSingle();
             SealState = reader.ReadInt32();
             sealWeakSpawned = reader.ReadBoolean();
             SealCenter.X = reader.ReadSingle();
             SealCenter.Y = reader.ReadSingle();
             yinYangBaseSide = reader.ReadInt32();
-            random ??= new Random(seed);
         }
 
         #region 帧动画
@@ -316,14 +391,15 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
         public override void AI() {
             UnderworldPlayer.UnderworldEffect = true;
-            random ??= new Random(seed);
 
             // 视觉效果更新
             pulsePhase += 0.06f;
             auraRotation += 0.015f;
-            ringRotation += 0.008f;
+            ringSpin = MathHelper.Lerp(ringSpin, 0.008f, 0.04f);
+            ringRotation += ringSpin;
             hoverOffset = MathF.Sin(pulsePhase * 0.4f) * 8f;
             UpdateEnergyWaves();
+            contactWindow = false;
 
             if (CurrentState != AIState.Intro) {
                 ringScale = MathHelper.Lerp(ringScale, 2.5f, 0.01f);
@@ -333,7 +409,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             // 目标验证
             NPC.TargetClosest();
             Player target = Target;
-            if (!target.active || target.dead) {
+            if ((!target.active || target.dead) && CurrentState != AIState.DeathCinematic) {
                 ResetGlobalState();
                 NPC.velocity.Y -= 0.5f;
                 NPC.alpha += 3;
@@ -350,8 +426,9 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             PhaseTimer++;
             AttackTimer++;
 
-            // 幕（HP 门）切换检测：改“规则”，并加入过场无敌节拍
-            CheckActTransitions(target);
+            // 幕（HP 门）切换检测
+            if (!dying)
+                CheckActTransitions(target);
 
             // 每帧默认清掉只在特定阶段生效的全局状态（各 Run 内会重新置位）
             if (CurrentState != AIState.Act3_YinYangEdict) {
@@ -363,10 +440,11 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
             switch (CurrentState) {
                 case AIState.Intro: RunIntro(target); break;
+                case AIState.Connector: RunConnector(target); break;
 
-                case AIState.Act1_Hover: RunHover(target); break;
-                case AIState.Act1_DragonSweep: RunDragonSweep(target); break;
-                case AIState.Act1_NetherDecree: RunNetherDecree(target); break;
+                case AIState.Act1_SleeveSweep: RunSleeveSweep(target); break;
+                case AIState.Act1_DecreeCall: RunDecreeCall(target); break;
+                case AIState.Act1_GhostGates: RunGhostGates(target); break;
 
                 case AIState.ActTransition2: RunActTransition(target, 2); break;
 
@@ -375,18 +453,102 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
                 case AIState.ActTransition3: RunActTransition(target, 3); break;
 
-                case AIState.Act3_ImperialWrath: RunImperialWrath(target); break;
+                case AIState.Act3_SealSlam: RunSealSlam(target); break;
                 case AIState.Act3_YinYangEdict: RunYinYangEdict(target); break;
                 case AIState.Act3_FinalDecree: RunFinalDecree(target); break;
 
                 case AIState.ExecutionPhantom: RunExecutionPhantom(target); break;
+                case AIState.DeathCinematic: RunDeathCinematic(target); break;
             }
 
-            if (CurrentState != AIState.Intro) {
+            // 距离栓绳：任何状态都不允许飘出法庭太远（失败模式：Boss 飞出屏幕绕圈）
+            if (CurrentState != AIState.Intro && CurrentState != AIState.DeathCinematic) {
+                float maxDist = CourtRadius * 1.05f;
+                Vector2 fromCenter = NPC.Center - ArenaCenter;
+                if (fromCenter.Length() > maxDist) {
+                    NPC.Center = ArenaCenter + fromCenter.SafeNormalize(Vector2.Zero) * maxDist;
+                    if (Vector2.Dot(NPC.velocity, fromCenter) > 0)
+                        NPC.velocity *= 0.5f;
+                }
+            }
+
+            if (CurrentState != AIState.Intro && CurrentState != AIState.DeathCinematic) {
                 CreateAmbientParticles();
             }
 
+            UpdateBanners();
+            UpdateCourtScalars();
             UpdateV2Presentation();
+        }
+
+        /// <summary>法庭内的悬浮锚点：跟随玩家但被限制在结界内侧。</summary>
+        private Vector2 CourtAnchor(Player target, float height = HoverHeight) {
+            Vector2 desired = target.Center + new Vector2(0, -height + hoverOffset);
+            Vector2 fromCenter = desired - ArenaCenter;
+            float maxR = CourtRadius * 0.78f;
+            if (fromCenter.Length() > maxR)
+                desired = ArenaCenter + fromCenter.SafeNormalize(Vector2.Zero) * maxR;
+            return desired;
+        }
+
+        #endregion
+
+        #region 法庭/幡旗/演出标量
+
+        /// <summary>结界标量每帧推进（Flash 衰减、Collapse 平滑、Intensity 状态机）。</summary>
+        private void UpdateCourtScalars() {
+            CourtFlash = MathHelper.Lerp(CourtFlash, 0f, 0.08f);
+            if (CourtFlash < 0.01f) CourtFlash = 0f;
+
+            float collapseTarget = 0f;
+            if (CurrentState == AIState.Act2_SoulSeal && SealState == 0 && PhaseTimer >= 60f)
+                collapseTarget = MathHelper.Clamp((PhaseTimer - 60f) / SealContractTime, 0f, 1f);
+            CourtCollapse = MathHelper.Lerp(CourtCollapse, collapseTarget, 0.05f);
+
+            float intensityTarget = courtSpawned ? 1f : 0f;
+            if (dying && PhaseTimer > 225f)
+                intensityTarget = 0f;
+            CourtIntensity = MathHelper.Lerp(CourtIntensity, intensityTarget, 0.03f);
+        }
+
+        /// <summary>幡旗演出标量（客户端确定性时间轴，全端一致）。</summary>
+        private void UpdateBanners() {
+            // 升起：入场 30~150 帧依次；再战精简版已在 RunIntro 中直接置满
+            if (CurrentState == AIState.Intro) {
+                for (int i = 0; i < BannerCount; i++) {
+                    float t = (PhaseTimer - 30f - i * 20f) / 40f;
+                    bannerRaise[i] = Math.Max(bannerRaise[i], ACMUtils.SineInOut(MathHelper.Clamp(t, 0f, 1f)));
+                }
+            }
+            else if (!dying) {
+                for (int i = 0; i < BannerCount; i++)
+                    bannerRaise[i] = MathHelper.Lerp(bannerRaise[i], 1f, 0.02f);
+            }
+
+            // 熄灭：死亡弧线 40~160 帧逐杆
+            if (dying) {
+                for (int i = 0; i < BannerCount; i++) {
+                    float t = (PhaseTimer - 40f - i * 20f) / 30f;
+                    bannerBurn[i] = Math.Max(bannerBurn[i], MathHelper.Clamp(t, 0f, 1f));
+                }
+            }
+
+            // 风力随战斗烈度
+            float waveTarget = CurrentState switch {
+                AIState.Act3_FinalDecree => 1.8f,
+                AIState.ExecutionPhantom => 1.7f,
+                AIState.DeathCinematic => 0.5f,
+                _ => 1f + (didAct3 ? 0.4f : didAct2 ? 0.2f : 0f)
+            };
+            bannerWave = MathHelper.Lerp(bannerWave, waveTarget, 0.02f);
+        }
+
+        /// <summary>第 i 杆冥幡的布幔顶端挂点（世界坐标）。</summary>
+        private Vector2 BannerTop(int i) {
+            float angle = -MathHelper.PiOver2 + MathHelper.TwoPi * i / BannerCount;
+            Vector2 basePoint = ArenaCenter + angle.ToRotationVector2() * CourtRadius * 0.97f;
+            // 未升起时藏在下方，升起时滑到位
+            return basePoint + new Vector2(0, (1f - bannerRaise[i]) * 260f - 150f);
         }
 
         #endregion
@@ -407,7 +569,6 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             if (bloomPulse < 0.01f)
                 bloomPulse = 0f;
 
-            // 阴阳分屏强度：站错半场预警时加深
             float yyTarget = 0f;
             if (YinYangActive) {
                 yyTarget = 0.42f + (YinYangWarning ? 0.16f : 0f);
@@ -417,17 +578,18 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             if (Main.dedServ)
                 return;
 
-            // decree-vignette 强度（帝裁/处决渐强；其余幕无）
+            // decree-vignette 强度（帝裁/处决/死亡渐强）
             float vig = CurrentState switch {
-                AIState.Act3_ImperialWrath => 0.22f,
+                AIState.Act3_SealSlam => 0.22f,
                 AIState.Act3_YinYangEdict => 0.16f,
                 AIState.Act3_FinalDecree => 0.25f + 0.45f * MathHelper.Clamp(FinalDecreeCharge, 0f, 1f),
                 AIState.ExecutionPhantom => 0.5f,
                 AIState.Act2_SoulSeal => SealState == 0 ? 0.3f : 0.15f,
+                AIState.DeathCinematic => 0.4f,
                 _ => 0f
             };
             if (ExecutionWindowOpen)
-                vig = System.Math.Max(vig, 0.32f);
+                vig = Math.Max(vig, 0.32f);
 
             // prison-overlay（镇魂狱收缩牢笼）+ 鬼门关钥弱点高亮
             float prison = 0f;
@@ -465,7 +627,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
         private void CheckActTransitions(Player target) {
             bool midCinematic = CurrentState is AIState.Intro or AIState.ActTransition2
-                or AIState.ActTransition3 or AIState.ExecutionPhantom;
+                or AIState.ActTransition3 or AIState.ExecutionPhantom or AIState.DeathCinematic;
             if (midCinematic)
                 return;
 
@@ -490,45 +652,20 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             CurrentState = newState;
             PhaseTimer = 0;
             AttackTimer = 0;
-            dashCount = 0;
+            sweepIndex = 0;
             NPC.dontTakeDamage = false;
             NPC.netUpdate = true;
         }
 
-        // 幕一 固定轮替：悬浮 -> 龙气横扫 -> 冥谕(列阵)
-        private void NextAct1() {
-            ActStep = (int)ActStep % 3 + 1;
-            switch ((int)ActStep % 3) {
-                case 1: TransitionTo(AIState.Act1_DragonSweep); break;
-                case 2: decreeFormation = 0; TransitionTo(AIState.Act1_NetherDecree); break;
-                default: TransitionTo(AIState.Act1_Hover); break;
-            }
-        }
-
-        // 幕二 固定轮替：镇魂封印(强制) -> 冥谕(环形) -> 镇魂封印 -> 冥谕(十字)
-        private void NextAct2() {
+        /// <summary>推进幕内手写循环：先进 24 帧 connector，再进入表中下一招。</summary>
+        private void AdvanceCycle() {
+            AIState[] table = !didAct2 ? Act1Cycle : !didAct3 ? Act2Cycle : Act3Cycle;
             ActStep++;
-            switch ((int)ActStep % 4) {
-                case 1: decreeFormation = 1; TransitionTo(AIState.Act2_NetherDecree); break;
-                case 3: decreeFormation = 2; TransitionTo(AIState.Act2_NetherDecree); break;
-                default: TransitionTo(AIState.Act2_SoulSeal); break;
-            }
-        }
-
-        // 幕三 固定循环：帝怒 -> 酆帝诏书 -> 终诏
-        private void NextAct3() {
-            ActStep = (int)ActStep % 3 + 1;
-            switch ((int)ActStep % 3) {
-                case 1: TransitionTo(AIState.Act3_YinYangEdict); break;
-                case 2: TransitionTo(AIState.Act3_FinalDecree); break;
-                default: TransitionTo(AIState.Act3_ImperialWrath); break;
-            }
-        }
-
-        private void AdvanceCurrentAct() {
-            if (!didAct2) NextAct1();
-            else if (!didAct3) NextAct2();
-            else NextAct3();
+            AIState next = table[(int)ActStep % table.Length];
+            if (next == AIState.Act2_NetherDecree)
+                decreeFormation = (decreeFormation + 1) % 3;
+            queuedState = (int)next;
+            TransitionTo(AIState.Connector);
         }
 
         private static void Speak(string key, Color color) {
@@ -542,8 +679,12 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             int edge = ModContent.ProjectileType<ArenaEdge>();
             int bolt = ModContent.ProjectileType<YinEmperorBolt>();
             int laser = ModContent.ProjectileType<YinEmperorLaser>();
+            int seal = ModContent.ProjectileType<YinEmperorDecreeSeal>();
+            int column = ModContent.ProjectileType<YinEmperorJudgmentColumn>();
+            int gate = ModContent.ProjectileType<YinEmperorGhostGate>();
             foreach (var p in Main.projectile) {
-                if (p.active && (p.type == edge || p.type == bolt || p.type == laser))
+                if (p.active && (p.type == edge || p.type == bolt || p.type == laser
+                    || p.type == seal || p.type == column || p.type == gate))
                     p.Kill();
             }
             int lockType = ModContent.NPCType<GhostGateLock>();
@@ -566,152 +707,137 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
         #endregion
 
-        #region 出场演出
+        #region 出场演出（仪式入场：幡旗仪仗 → 鬼门显形 → 静止凝视 → 镇尺落界）
 
         private void RunIntro(Player target) {
-            int totalIntroDuration = IntroRiseDuration + IntroPauseDuration + IntroRoarDuration;
+            NPC.dontTakeDamage = true;
+            NPC.velocity *= 0.8f;
+            NPC.Center = Vector2.Lerp(NPC.Center, ArenaCenter + new Vector2(0, -260f), 0.2f);
 
-            if (PhaseTimer == 1)
+            float t = PhaseTimer;
+
+            // 再战精简版：跳过仪仗前半（尊重玩家时间）
+            if (t == 2 && DownedBossSystem.downedYinEmperor) {
+                PhaseTimer = 145;
+                for (int i = 0; i < BannerCount; i++)
+                    bannerRaise[i] = 1f;
+                return;
+            }
+
+            if (t == 1) {
                 Speak("Mods.AncientChineseMythology.NPCs.YinEmperor.Dialog.Intro", YinEmperorHelper.ImperialGold);
-
-            if (PhaseTimer <= IntroRiseDuration) {
-                float riseT = MathHelper.Clamp(PhaseTimer / IntroRiseDuration, 0f, 1f);
-                introProgress = ACMUtils.SineInOut(riseT);
-
-                Vector2 startPos = target.Center + new Vector2(0, IntroRiseDistance);
-                Vector2 endPos = target.Center + new Vector2(0, -HoverHeight);
-                Vector2 desired = Vector2.Lerp(startPos, endPos, introProgress);
-
-                NPC.Center += (desired - NPC.Center) * 0.08f;
-                NPC.velocity *= 0.85f;
-                NPC.alpha = (int)(255 * (1f - introProgress * 0.8f));
-                introPillarAlpha = introProgress * 0.8f;
-
-                if (Main.netMode != NetmodeID.Server && PhaseTimer % 4 == 0) {
-                    YinEmperorHelper.CreateImperialTrail(NPC.Center, NPC.velocity, 1.5f);
-                }
-
-                if (Main.netMode != NetmodeID.Server && PhaseTimer % 8 == 0) {
-                    for (int i = 0; i < 2; i++) {
-                        float angle = Main.rand.NextFloat(MathHelper.TwoPi);
-                        float dist = 80f + Main.rand.NextFloat(40f);
-                        Vector2 dustPos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * dist;
-                        int dustType = Main.rand.NextBool() ? DustID.GoldFlame : DustID.Shadowflame;
-                        var d = Dust.NewDustPerfect(dustPos, dustType);
-                        d.noGravity = true;
-                        d.scale = 1.5f + introProgress;
-                        d.velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 3f;
-                        d.alpha = 80;
-                    }
-                }
-
-                if (!introLightningDone && PhaseTimer > 40 && PhaseTimer % 25 == 0 && Main.netMode != NetmodeID.Server) {
-                    float lightningX = NPC.Center.X + Main.rand.NextFloat(-400f, 400f);
-                    Vector2 lightningTop = new Vector2(lightningX, NPC.Center.Y - 600f);
-                    Vector2 lightningBottom = new Vector2(lightningX + Main.rand.NextFloat(-60, 60), NPC.Center.Y + 200f);
-                    YinEmperorHelper.CreateNetherLightningPillar(lightningTop, lightningBottom, 0.8f);
-                    SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.6f, Volume = 0.8f }, new Vector2(lightningX, NPC.Center.Y));
-                }
-
-                if (PhaseTimer == IntroRiseDuration)
-                    introLightningDone = true;
-
-                auraIntensity = MathHelper.Lerp(auraIntensity, introProgress * 0.6f, 0.02f);
+                SoundEngine.PlaySound(SoundID.Item117 with { Pitch = -0.9f, Volume = 1.2f }, ArenaCenter);
             }
-            else if (PhaseTimer <= IntroRiseDuration + IntroPauseDuration) {
-                float pauseT = (PhaseTimer - IntroRiseDuration) / IntroPauseDuration;
 
-                Vector2 hoverPos = target.Center + new Vector2(0, -HoverHeight);
-                NPC.Center += (hoverPos - NPC.Center) * 0.05f;
-                NPC.velocity *= 0.9f;
-                NPC.alpha = (int)(255 * 0.2f * (1f - pauseT));
+            // 法庭法阵预告
+            if (t == 10 && !Main.dedServ)
+                YinEmperorScreenSystem.AddTelegraph(ArenaCenter, CourtBaseRadius * 0.5f, 130, TelegraphColors.NetherViolet);
 
-                if (Main.netMode != NetmodeID.Server) {
-                    float chargeRadius = 200f * (1f - pauseT);
-                    int chargeCount = (int)(6 * pauseT) + 2;
-                    for (int i = 0; i < chargeCount; i++) {
-                        float angle = Main.rand.NextFloat(MathHelper.TwoPi);
-                        Vector2 dustPos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * chargeRadius;
-                        Vector2 dustVel = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * (6f + pauseT * 8f);
-                        int dustType = Main.rand.NextBool(3) ? DustID.GoldFlame : DustID.Shadowflame;
-                        var d = Dust.NewDustPerfect(dustPos, dustType);
-                        d.noGravity = true;
-                        d.scale = 1.8f + pauseT;
-                        d.velocity = dustVel;
-                    }
-                }
-
-                introPillarAlpha = 0.8f + pauseT * 0.2f;
-                auraIntensity = MathHelper.Lerp(auraIntensity, 0.8f, 0.03f);
-
-                if (PhaseTimer == IntroRiseDuration + 1)
-                    SoundEngine.PlaySound(SoundID.Item117 with { Pitch = -0.8f, Volume = 0.6f }, NPC.Center);
-            }
-            else if (PhaseTimer <= totalIntroDuration) {
-                float roarT = (PhaseTimer - IntroRiseDuration - IntroPauseDuration) / (float)IntroRoarDuration;
-                NPC.alpha = 0;
-
-                Vector2 hoverPos = target.Center + new Vector2(0, -HoverHeight);
-                NPC.Center += (hoverPos - NPC.Center) * 0.03f;
-                NPC.velocity *= 0.95f;
-
-                if (!introRoarDone) {
-                    introRoarDone = true;
-                    SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.7f, Volume = 1.8f }, NPC.Center);
-                    YinEmperorHelper.CreateImperialVortex(NPC.Center, 250f, 2f, 80);
-                    YinEmperorHelper.CreateDragonBurst(NPC.Center, 200f, 5, 24);
-                    YinEmperorHelper.CreateTalismanBurst(NPC.Center, 300f, 40);
-                    for (int i = 0; i < 3; i++) TriggerEnergyWave();
-                    ACMScreenShakeSystem.Add(16f);
-                    TriggerBloom(0.95f, YinEmperorHelper.DragonVeinGold);
-                    YinEmperorHelper.CreateScreenFlash(NPC.Center, YinEmperorHelper.DragonVeinGold, 1.2f);
-
+            // 幡旗升起音阶（升起本体在 UpdateBanners 中推进）
+            for (int i = 0; i < BannerCount; i++) {
+                if ((int)t == 30 + i * 20) {
+                    SoundEngine.PlaySound(SoundID.Item117 with { Pitch = -0.5f + i * 0.12f, Volume = 0.8f },
+                        BannerTop(i));
                     if (Main.netMode != NetmodeID.Server) {
-                        for (int i = 0; i < IntroLightningCount; i++) {
-                            float angle = MathHelper.TwoPi * i / IntroLightningCount;
-                            float dist = 300f + Main.rand.NextFloat(100f);
-                            Vector2 strikePos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * dist;
-                            Vector2 lightningTop = strikePos - new Vector2(0, 800f);
-                            YinEmperorHelper.CreateNetherLightningPillar(lightningTop, strikePos, 1.2f);
+                        for (int j = 0; j < 10; j++) {
+                            var d = Dust.NewDustPerfect(BannerTop(i) + new Vector2(Main.rand.NextFloat(-40f, 40f), 120f), DustID.GoldFlame);
+                            d.noGravity = true;
+                            d.scale = 1.5f;
+                            d.velocity = new Vector2(0, -Main.rand.NextFloat(3f, 7f));
                         }
                     }
                 }
+            }
 
-                introShakeIntensity = (1f - roarT) * 8f;
-                if (introShakeIntensity > 0.5f)
-                    ACMScreenShakeSystem.Add(introShakeIntensity);
+            // 帝钟第二响
+            if (t == 140)
+                SoundEngine.PlaySound(SoundID.Item117 with { Pitch = -0.7f, Volume = 1.3f }, ArenaCenter);
 
-                introPillarAlpha = 1f - roarT * 0.8f;
-                auraIntensity = MathHelper.Lerp(auraIntensity, 1f, 0.05f);
+            // 鬼门开阖：140 开 → 235 起阖
+            introGateOpen = t < 140 ? 0f
+                : t <= 200 ? ACMUtils.SineInOut((t - 140f) / 60f)
+                : t <= 235 ? 1f
+                : MathHelper.Clamp(1f - (t - 235f) / 30f, 0f, 1f);
 
-                if (Main.netMode != NetmodeID.Server) {
-                    for (int i = 0; i < (int)(8 * (1f - roarT)); i++) {
-                        Vector2 vel = Main.rand.NextVector2CircularEdge(18f, 18f) * (1f - roarT * 0.5f);
-                        int dustType = Main.rand.NextBool() ? DustID.GoldFlame : DustID.Shadowflame;
-                        var d = Dust.NewDustPerfect(NPC.Center, dustType);
-                        d.noGravity = true;
-                        d.scale = 2.5f * (1f - roarT * 0.5f);
-                        d.velocity = vel;
-                    }
+            // 显形：200~255 溶解显形（DissolveBurn 由 PreDraw 消费 bodyMaterialize）
+            if (t >= 200) {
+                bodyMaterialize = MathHelper.Clamp((t - 200f) / 55f, 0f, 1f);
+                NPC.alpha = 0;
+                if (t == 200) {
+                    SoundEngine.PlaySound(SoundID.Item100 with { Pitch = -0.6f, Volume = 1.2f }, NPC.Center);
+                    YinEmperorHelper.CreateImperialVortex(NPC.Center, 220f, 1.6f, 60);
+                }
+                auraIntensity = MathHelper.Lerp(auraIntensity, bodyMaterialize, 0.05f);
+            }
+
+            // 静止凝视期的低鸣与法环缓现
+            if (t > 265 && t < 330) {
+                ringScale = MathHelper.Lerp(ringScale, 2.5f, 0.03f);
+                ringAlpha = MathHelper.Lerp(ringAlpha, 0.7f, 0.03f);
+                if (t == 310)
+                    Speak("Mods.AncientChineseMythology.NPCs.YinEmperor.Dialog.ActI", YinEmperorHelper.ImperialGold);
+            }
+
+            // 镇尺拍案：落界
+            if (t == 330) {
+                SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.8f, Volume = 1.6f }, NPC.Center);
+                SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.7f, Volume = 1.4f }, NPC.Center);
+                ACMScreenShakeSystem.Add(14f);
+                TriggerBloom(0.95f, YinEmperorHelper.DragonVeinGold);
+                CourtFlash = 1f;
+                for (int i = 0; i < 3; i++) TriggerEnergyWave();
+                YinEmperorHelper.CreateTalismanBurst(NPC.Center, 320f, 40);
+                YinEmperorHelper.CreateScreenFlash(NPC.Center, YinEmperorHelper.DragonVeinGold, 1.2f);
+
+                if (Main.netMode != NetmodeID.MultiplayerClient && !courtSpawned) {
+                    courtSpawned = true;
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), ArenaCenter, Vector2.Zero,
+                        ModContent.ProjectileType<YinEmperorCourtBarrier>(), 0, 0f, Main.myPlayer, ai0: NPC.whoAmI);
+                    NPC.netUpdate = true;
                 }
             }
-            else {
-                introPillarAlpha = 0f;
+
+            if (t >= IntroTotal) {
+                bodyMaterialize = 1f;
+                NPC.alpha = 0;
                 auraIntensity = 1f;
-                ActStep = 0;
-                Speak("Mods.AncientChineseMythology.NPCs.YinEmperor.Dialog.ActI", YinEmperorHelper.ImperialGold);
-                TransitionTo(AIState.Act1_Hover);
+                ActStep = -1;
+                AdvanceCycle();
             }
         }
 
         #endregion
 
-        #region 幕过场（i-frame 节拍 + 规则切换）
+        #region 连接节拍（换手势）
+
+        /// <summary>招式间 24 帧"换手势"：法环短暂提速 + 一声木磬，屏幕得到段落感。</summary>
+        private void RunConnector(Player target) {
+            Vector2 anchor = CourtAnchor(target);
+            NPC.velocity = Vector2.Lerp(NPC.velocity, (anchor - NPC.Center) * 0.05f, 0.08f);
+
+            if (PhaseTimer == 1) {
+                ringSpin = 0.05f;
+                SoundEngine.PlaySound(SoundID.Item117 with { Pitch = 0.3f, Volume = 0.45f }, NPC.Center);
+            }
+
+            if (PhaseTimer >= 24) {
+                // 容错：队列状态非法（如异常同步）时直接重新调度，绝不回退到 Intro
+                var next = (AIState)queuedState;
+                if (next is AIState.Intro or AIState.Connector or AIState.DeathCinematic)
+                    AdvanceCycle();
+                else
+                    TransitionTo(next);
+            }
+        }
+
+        #endregion
+
+        #region 幕过场（i-frame 节拍 + 规则预览）
 
         private void RunActTransition(Player target, int act) {
             NPC.dontTakeDamage = true;
 
-            Vector2 hoverPos = target.Center + new Vector2(0, -HoverHeight);
+            Vector2 hoverPos = CourtAnchor(target);
             NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.06f, 0.1f);
 
             if (PhaseTimer == 1) {
@@ -721,6 +847,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 for (int i = 0; i < 3; i++) TriggerEnergyWave();
                 ACMScreenShakeSystem.Add(12f);
                 TriggerBloom(0.85f, YinEmperorHelper.NetherBloodRed);
+                CourtFlash = 1f;
                 YinEmperorHelper.CreateScreenFlash(NPC.Center, YinEmperorHelper.DragonVeinGold, 1f);
                 ClearHostileProjectiles();
                 GrantBreatherIFrames();
@@ -732,6 +859,23 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                     YinEmperorHelper.NetherBloodRed);
             }
 
+            // 规则预览：幕二 = 牢笼收缩预告；幕三 = 阴阳对转一周
+            if (act == 2) {
+                CourtCollapse = MathHelper.Lerp(CourtCollapse, PhaseTimer < 70 ? 0.5f : 0f, 0.08f);
+            }
+            else if (PhaseTimer is > 20 and < 90 && Main.netMode != NetmodeID.Server && PhaseTimer % 6 == 0) {
+                // 结界环上的阴阳双点对转（金/紫粒子沿环相向而行）
+                float a = (PhaseTimer - 20f) / 70f * MathHelper.TwoPi;
+                for (int s = 0; s < 2; s++) {
+                    float angle = a * (s == 0 ? 1f : -1f) + s * MathHelper.Pi;
+                    Vector2 pos = ArenaCenter + angle.ToRotationVector2() * CourtRadius * 0.97f;
+                    var d = Dust.NewDustPerfect(pos, s == 0 ? DustID.GoldFlame : DustID.PurpleTorch);
+                    d.noGravity = true;
+                    d.scale = 2.2f;
+                    d.velocity = angle.ToRotationVector2().RotatedBy(MathHelper.PiOver2) * 4f * (s == 0 ? 1f : -1f);
+                }
+            }
+
             auraIntensity = MathHelper.Lerp(auraIntensity, 1.6f, 0.04f);
 
             if (Main.netMode != NetmodeID.Server && PhaseTimer % 5 == 0) {
@@ -741,89 +885,202 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             if (PhaseTimer >= 110) {
                 NPC.dontTakeDamage = false;
                 auraIntensity = 1f;
-                ActStep = 0;
-                if (act == 2)
-                    TransitionTo(AIState.Act2_SoulSeal);
-                else
-                    TransitionTo(AIState.Act3_ImperialWrath);
+                ActStep = -1;
+                AdvanceCycle();
             }
         }
 
         #endregion
 
-        #region 幕一 行为
+        #region 帝袖横扫（长蓄势 → 9 帧毁灭直线 → 硬刹）
 
-        /// <summary>帝冥悬浮（已削弱常驻喷射）：缓慢悬浮 + 少量可读弹幕 + 一次地面符文预告。</summary>
-        private void RunHover(Player target) {
-            float swayX = MathF.Sin(PhaseTimer * 0.02f) * 180f;
-            Vector2 hoverPos = target.Center + new Vector2(swayX, -HoverHeight + hoverOffset);
-            NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.05f, 0.06f);
+        private void RunSleeveSweep(Player target) {
+            int anticipation = sweepIndex == 0 ? 50 : 38;
+            float t = AttackTimer;
 
-            // 削弱后的帝冥弹（仅作压制走位，非 DPS 主力）
-            if (AttackTimer % 110 == 60) {
-                ShootImperialBolts(target, 3);
-            }
-
-            // 一次地面符文（telegraph）
-            if (PhaseTimer == 130) {
-                ShootGroundSeals(target);
-            }
-
-            if (PhaseTimer > 230) {
-                NextAct1();
-            }
-        }
-
-        private void RunDragonSweep(Player target) {
-            if (PhaseTimer <= 40) {
+            if (t < anticipation) {
+                // 前摇：减速悬停，末 20 帧 pow8 反向吸气（late-snap reel-back）
                 NPC.velocity *= 0.9f;
-                if (PhaseTimer == 20) {
-                    dashTarget = target.Center + target.velocity * 20f;
-                    sweepDirection = target.Center.X > NPC.Center.X ? 1 : -1;
-                    SoundEngine.PlaySound(SoundID.Item8 with { Pitch = -0.3f, Volume = 1.3f }, NPC.Center);
-                    YinEmperorHelper.CreateImperialVortex(NPC.Center, 80f, 0.8f, 25);
+                float reelT = MathHelper.Clamp((t - (anticipation - 20)) / 20f, 0f, 1f);
+                if (reelT > 0f) {
+                    Vector2 away = (NPC.Center - target.Center).SafeNormalize(-Vector2.UnitY);
+                    NPC.velocity += away * MathF.Pow(reelT, 8f) * 13f;
                 }
-                if (PhaseTimer > 20 && Main.netMode != NetmodeID.Server) {
-                    float chargeT = (PhaseTimer - 20) / 20f;
-                    for (int i = 0; i < 3; i++) {
-                        float radius = 120f * (1f - chargeT);
-                        Vector2 dustPos = NPC.Center + Main.rand.NextVector2Circular(radius, radius);
-                        Vector2 dustVel = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * (4f + chargeT * 6f);
-                        var d = Dust.NewDustPerfect(dustPos, DustID.GoldFlame);
-                        d.noGravity = true;
-                        d.scale = 1.5f + chargeT;
-                        d.velocity = dustVel;
+
+                // 固定 36 帧预警钟音（威胁级别常数，玩家可内化）
+                if (t == anticipation - 36)
+                    SoundEngine.PlaySound(SoundID.Item117 with { Pitch = -0.2f, Volume = 1.1f }, NPC.Center);
+
+                // 锁定预测拦截点
+                if (t == anticipation - 8) {
+                    dashTarget = target.Center + target.velocity * 14f;
+                    NPC.netUpdate = true;
+                }
+
+                // 蓄力粒子向袖口收敛
+                if (Main.netMode != NetmodeID.Server && reelT > 0f && t % 2 == 0) {
+                    float radius = 130f * (1f - reelT);
+                    Vector2 dustPos = NPC.Center + Main.rand.NextVector2Circular(radius + 30f, radius + 30f);
+                    var d = Dust.NewDustPerfect(dustPos, DustID.GoldFlame);
+                    d.noGravity = true;
+                    d.scale = 1.4f + reelT;
+                    d.velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * (4f + reelT * 8f);
+                }
+            }
+            else if (t == anticipation) {
+                // 爆发：一帧 set，直线无转向
+                Vector2 dir = (dashTarget - NPC.Center).SafeNormalize(Vector2.UnitX);
+                NPC.velocity = dir * 118f;
+                SoundEngine.PlaySound(SoundID.DD2_WyvernDiveDown with { Pitch = -0.5f, Volume = 1.5f }, NPC.Center);
+                SoundEngine.PlaySound(SoundID.Item71 with { Pitch = -0.4f, Volume = 1f }, NPC.Center);
+                ACMScreenShakeSystem.Add(6f);
+                TriggerEnergyWave();
+                YinEmperorHelper.CreateDragonBurst(NPC.Center, 70f, 2, 12);
+
+                // 帝袖罡风：垂直于冲线的两道可躲弧波
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    Vector2 perp = dir.RotatedBy(MathHelper.PiOver2);
+                    int dmg = YinEmperorHelper.GetScaledDamage(75);
+                    for (int s = -1; s <= 1; s += 2) {
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, perp * s * 6.5f,
+                            ModContent.ProjectileType<YinEmperorBolt>(), dmg, 1f, Main.myPlayer, ai0: 1f, ai1: s * 2f);
                     }
                 }
             }
-            else if (PhaseTimer == 41) {
-                Vector2 direction = (dashTarget - NPC.Center).SafeNormalize(Vector2.UnitY);
-                NPC.velocity = direction * 35f;
-                dashCount++;
-                SoundEngine.PlaySound(SoundID.DD2_WyvernDiveDown with { Pitch = -0.4f, Volume = 1.4f }, NPC.Center);
-                TriggerEnergyWave();
-                YinEmperorHelper.CreateDragonBurst(NPC.Center, 60f, 2, 10);
+            else if (t <= anticipation + 9) {
+                // 冲刺中：接触伤害仅此窗口
+                contactWindow = true;
+                YinEmperorHelper.CreateImperialTrail(NPC.Center, NPC.velocity, 2.2f);
+                // 冲过法庭边缘则提前进入刹车（距离栓绳）
+                if (Vector2.Distance(NPC.Center, ArenaCenter) > CourtRadius * 0.92f)
+                    AttackTimer = anticipation + 10;
             }
-            else if (PhaseTimer <= 65) {
-                YinEmperorHelper.CreateImperialTrail(NPC.Center, NPC.velocity, 2f);
-                if (PhaseTimer > 55) NPC.velocity *= 0.92f;
+            else if (t <= anticipation + 23) {
+                // 硬刹：×0.68/f 的"砸进位置"读感
+                NPC.velocity *= 0.68f;
+                if (t == anticipation + 11)
+                    ACMScreenShakeSystem.Add(5f);
+            }
+            else if (t <= anticipation + 46) {
+                NPC.velocity *= 0.9f;
+                NPC.spriteDirection = target.Center.X > NPC.Center.X ? 1 : -1;
             }
             else {
-                NPC.velocity *= 0.9f;
-                if (dashCount < 3 && PhaseTimer == 80) {
-                    PhaseTimer = 0;
+                sweepIndex++;
+                int maxReps = LifeRatio < 0.8f ? 3 : 2;
+                if (sweepIndex < maxReps) {
                     AttackTimer = 0;
                 }
-                else if (PhaseTimer > 90) {
-                    dashCount = 0;
-                    NextAct1();
+                else {
+                    sweepIndex = 0;
+                    AdvanceCycle();
                 }
             }
         }
 
-        /// <summary>冥谕降罚 - 冥眼激光阵列；formation 由各幕指定（幕一只用 0）。</summary>
+        #endregion
+
+        #region 冥诏点名（标记 → 宣判倒计时 → 执行；幕二双印 / 幕三三印）
+
+        private void RunDecreeCall(Player target) {
+            int salvos = didAct3 ? 3 : didAct2 ? 2 : 1;
+            Vector2 anchor = CourtAnchor(target, 360f);
+            NPC.velocity = Vector2.Lerp(NPC.velocity, (anchor - NPC.Center) * 0.04f, 0.06f);
+
+            if (PhaseTimer == 1) {
+                Speak("Mods.AncientChineseMythology.NPCs.YinEmperor.Dialog.Judgment", YinEmperorHelper.ImperialGold);
+                SoundEngine.PlaySound(SoundID.Item117 with { Pitch = -0.5f, Volume = 1.1f }, NPC.Center);
+            }
+
+            // 抬手蓄力：金光向袖口汇聚
+            if (PhaseTimer < 30 && Main.netMode != NetmodeID.Server && PhaseTimer % 2 == 0) {
+                Vector2 hand = NPC.Center + new Vector2(NPC.spriteDirection * 40f, -50f);
+                Vector2 dustPos = hand + Main.rand.NextVector2Circular(120f, 120f);
+                var d = Dust.NewDustPerfect(dustPos, DustID.GoldFlame);
+                d.noGravity = true;
+                d.scale = 1.5f;
+                d.velocity = (hand - dustPos).SafeNormalize(Vector2.Zero) * 5f;
+            }
+
+            // 落印（每波对每名存活玩家当时位置各一印）
+            bool isSalvoFrame = PhaseTimer == 30 || (salvos >= 2 && PhaseTimer == 75) || (salvos >= 3 && PhaseTimer == 120);
+            if (isSalvoFrame) {
+                SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.5f, Volume = 1f }, NPC.Center);
+                CourtFlash = Math.Max(CourtFlash, 0.4f);
+                TriggerEnergyWave();
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    foreach (var p in Main.player) {
+                        if (p != null && p.active && !p.dead && p.Distance(NPC.Center) < 3200f) {
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(), p.Center, Vector2.Zero,
+                                ModContent.ProjectileType<YinEmperorDecreeSeal>(), 0, 0f, Main.myPlayer,
+                                ai0: 0f, ai1: 140f);
+                        }
+                    }
+                }
+            }
+
+            int total = 30 + (salvos - 1) * 45 + 170;
+            if (PhaseTimer > total)
+                AdvanceCycle();
+        }
+
+        #endregion
+
+        #region 鬼门开阖（召阴兵；幕二起三门）
+
+        private void RunGhostGates(Player target) {
+            bool triple = didAct2;
+            Vector2 anchor = CourtAnchor(target, 380f);
+            NPC.velocity = Vector2.Lerp(NPC.velocity, (anchor - NPC.Center) * 0.04f, 0.06f);
+
+            if (PhaseTimer == 1) {
+                Speak("Mods.AncientChineseMythology.NPCs.YinEmperor.Dialog.GhostGate", YinEmperorHelper.AbyssPurple);
+                SoundEngine.PlaySound(SoundID.Item8 with { Pitch = -0.6f, Volume = 1.1f }, NPC.Center);
+            }
+
+            // 挥袖：侧身摆动
+            if (PhaseTimer < 30) {
+                NPC.velocity.X += MathF.Sin(PhaseTimer * 0.4f) * 0.6f;
+                if (Main.netMode != NetmodeID.Server && PhaseTimer % 3 == 0) {
+                    var d = Dust.NewDustPerfect(NPC.Center + new Vector2(NPC.spriteDirection * 60f, 0f), DustID.PurpleTorch);
+                    d.noGravity = true;
+                    d.scale = 1.6f;
+                    d.velocity = new Vector2(NPC.spriteDirection * 4f, Main.rand.NextFloat(-2f, 2f));
+                }
+            }
+
+            if (PhaseTimer == 30 && Main.netMode != NetmodeID.MultiplayerClient) {
+                float maxOff = CourtRadius - 260f;
+                Vector2 basePos = target.Center;
+                int gateType = ModContent.ProjectileType<YinEmperorGhostGate>();
+
+                // 两侧门（出弹朝内），位置钳制在法庭内
+                for (int s = -1; s <= 1; s += 2) {
+                    Vector2 pos = basePos + new Vector2(s * 760f, -60f);
+                    pos.X = MathHelper.Clamp(pos.X, ArenaCenter.X - maxOff, ArenaCenter.X + maxOff);
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), pos, Vector2.Zero, gateType,
+                        0, 0f, Main.myPlayer, ai0: -s, ai1: Main.rand.NextFloat(1f));
+                }
+                // 幕二起：头顶门（壁帘下压）
+                if (triple) {
+                    Vector2 top = basePos + new Vector2(0f, -520f);
+                    top.Y = Math.Max(top.Y, ArenaCenter.Y - maxOff);
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), top, Vector2.Zero, gateType,
+                        0, 0f, Main.myPlayer, ai0: 0f, ai1: Main.rand.NextFloat(1f));
+                }
+            }
+
+            if (PhaseTimer > 30 + 230 + 20)
+                AdvanceCycle();
+        }
+
+        #endregion
+
+        #region 幕二 冥谕列阵（冥眼阵列，保留强化）
+
+        /// <summary>冥谕降罚 - 冥眼激光阵列；decreeFormation 由调度轮转（0=列阵 1=环形 2=十字）。</summary>
         private void RunNetherDecree(Player target) {
-            Vector2 hoverPos = target.Center + new Vector2(0, -400f + hoverOffset);
+            Vector2 hoverPos = CourtAnchor(target, 400f);
             NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.04f, 0.06f);
 
             if (PhaseTimer < 60) {
@@ -858,20 +1115,18 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                     YinEmperorScreenSystem.AddTelegraph(target.Center + new Vector2(400f, 0f), 260f, 110, TelegraphColors.NetherViolet);
             }
 
-            if (PhaseTimer >= 60 && PhaseTimer <= 200 && PhaseTimer % 35 == 0 && Main.netMode != NetmodeID.Server) {
+            if (PhaseTimer >= 60 && PhaseTimer <= 200 && PhaseTimer % 45 == 0 && Main.netMode != NetmodeID.Server) {
                 float lightningX = target.Center.X + Main.rand.NextFloat(-300f, 300f);
                 Vector2 top = new Vector2(lightningX, target.Center.Y - 600f);
                 Vector2 bottom = new Vector2(lightningX, target.Center.Y + 100f);
                 YinEmperorHelper.CreateNetherLightningPillar(top, bottom, 0.8f);
-                SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.4f, Volume = 0.8f }, new Vector2(lightningX, target.Center.Y));
+                SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.4f, Volume = 0.7f }, new Vector2(lightningX, target.Center.Y));
             }
 
             auraIntensity = MathHelper.Lerp(auraIntensity, 1f, 0.01f);
 
-            if (PhaseTimer > 280) {
-                if (CurrentState == AIState.Act1_NetherDecree) NextAct1();
-                else NextAct2();
-            }
+            if (PhaseTimer > 280)
+                AdvanceCycle();
         }
 
         #endregion
@@ -894,11 +1149,11 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                     float sealRadius = 30f + PhaseTimer * 3f;
                     for (int i = 0; i < sealPoints; i++) {
                         float angle = MathHelper.TwoPi * i / sealPoints + PhaseTimer * 0.05f;
-                        Vector2 pos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * sealRadius;
+                        Vector2 pos = NPC.Center + angle.ToRotationVector2() * sealRadius;
                         var d = Dust.NewDustPerfect(pos, DustID.GoldFlame);
                         d.noGravity = true;
                         d.scale = 1.5f;
-                        d.velocity = new Vector2(-MathF.Sin(angle), MathF.Cos(angle)) * 2f;
+                        d.velocity = angle.ToRotationVector2().RotatedBy(MathHelper.PiOver2) * 2f;
                     }
                 }
                 if (PhaseTimer == 30) {
@@ -920,90 +1175,180 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
                 YinEmperorHelper.CreateDragonBurst(NPC.Center, 120f, 3, 20);
                 TriggerEnergyWave();
+                CourtFlash = 0.6f;
                 SoundEngine.PlaySound(SoundID.Item71 with { Pitch = -0.2f, Volume = 1.3f }, target.Center);
             }
             // 收缩期间：检测弱点是否被击破
             else if (PhaseTimer > 70 && SealState == 0) {
                 if (Main.netMode != NetmodeID.MultiplayerClient && sealWeakSpawned
                     && !NPC.AnyNPCs(ModContent.NPCType<GhostGateLock>())) {
-                    // 鬼门关钥被击破 -> 封印瓦解，开输出窗口
+                    // 鬼门关钥被击破 -> 封印瓦解，帝王失仪 + 长输出窗口
                     SealState = 1;
-                    sealResolveDelay = 70;
+                    sealResolveDelay = 130;
                     NPC.netUpdate = true;
                 }
                 else if (PhaseTimer - 60 >= SealContractTime) {
-                    // 超时合拢 -> 处决性合击（由冥眼执行），玩家承受重击
+                    // 超时合拢 -> 处决性合击（由冥眼执行）
                     SealState = 2;
                     sealResolveDelay = 70;
                     NPC.netUpdate = true;
                 }
             }
 
-            // 破封反馈
-            if (SealState == 1 && PhaseTimer % 60 == 0 && Main.netMode != NetmodeID.Server) {
-                YinEmperorHelper.CreateTalismanBurst(SealCenter, 200f, 30);
+            // 破封反馈：帝王失仪（被震退半跪，加大输出窗口）。触发帧凭 SealState 翻转在各端各自播放。
+            if (SealState == 1) {
+                if (prevSealState == 0) {
+                    NPC.velocity = (NPC.Center - SealCenter).SafeNormalize(-Vector2.UnitY) * 9f;
+                    ACMScreenShakeSystem.Add(9f);
+                    TriggerBloom(0.7f, YinEmperorHelper.SoulLanternCyan);
+                    CourtFlash = 1f;
+                    Speak("Mods.AncientChineseMythology.NPCs.YinEmperor.Dialog.SealBroken", YinEmperorHelper.SoulLanternCyan);
+                    SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.6f, Volume = 1.3f }, NPC.Center);
+                }
+                // 失仪期：跌落到低位（近身输出奖励）
+                Vector2 lure = target.Center + new Vector2(0, -150f);
+                NPC.velocity = Vector2.Lerp(NPC.velocity, (lure - NPC.Center) * 0.05f, 0.07f);
+                if (PhaseTimer % 50 == 0 && Main.netMode != NetmodeID.Server)
+                    YinEmperorHelper.CreateTalismanBurst(SealCenter, 200f, 24);
             }
+            prevSealState = SealState;
 
             if (SealState != 0) {
                 NPC.dontTakeDamage = false;
-                if (SealState == 1) {
-                    // 破封：阴天子短暂破绽（更靠近玩家便于输出）
-                    Vector2 lure = target.Center + new Vector2(0, -220f);
-                    NPC.velocity = Vector2.Lerp(NPC.velocity, (lure - NPC.Center) * 0.06f, 0.08f);
-                }
-                sealResolveDelay--;
-                if (sealResolveDelay <= 0) {
-                    if (SealState == 1)
-                        Speak("Mods.AncientChineseMythology.NPCs.YinEmperor.Dialog.SealBroken", YinEmperorHelper.SoulLanternCyan);
-                    SealState = 0;
-                    NextAct2();
+                // 倒计时只在服务器推进，状态经 netUpdate 下发，避免客户端各自提前收招
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    sealResolveDelay--;
+                    if (sealResolveDelay <= 0) {
+                        SealState = 0;
+                        AdvanceCycle();
+                    }
                 }
             }
         }
 
         #endregion
 
-        #region 幕三 帝裁
+        #region 幕三 玉玺压顶（升天 → 悬印 → 一帧下砸 → 半跪窗口）
 
-        /// <summary>帝怒 - 守卫冥眼 + 削弱后的追踪弹（高潮收束，非常驻喷射）。</summary>
-        private void RunImperialWrath(Player target) {
-            Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
-            NPC.velocity = Vector2.Lerp(NPC.velocity, toPlayer * 7f, 0.1f);
-            YinEmperorHelper.CreateImperialTrail(NPC.Center, NPC.velocity, 1.5f);
+        private void RunSealSlam(Player target) {
+            float t = PhaseTimer;
 
-            if (PhaseTimer == 1 && Main.netMode != NetmodeID.MultiplayerClient) {
-                SpawnGuardianEyes(4);
+            if (t == 1) {
+                Speak("Mods.AncientChineseMythology.NPCs.YinEmperor.Dialog.SealSlam", YinEmperorHelper.NetherBloodRed);
+                SoundEngine.PlaySound(SoundID.Item8 with { Pitch = -0.7f, Volume = 1.2f }, NPC.Center);
             }
 
-            if (AttackTimer % 60 == 0) {
-                ShootImperialBolts(target, 3);
+            if (t < 22) {
+                // 升天：一帧 set 冲出视野上沿
+                if (t == 2)
+                    NPC.velocity = new Vector2(0, -26f);
+                YinEmperorHelper.CreateImperialTrail(NPC.Center, NPC.velocity, 1.8f);
             }
-
-            if (AttackTimer % 110 == 55 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int count = 6;
-                int damage = YinEmperorHelper.GetScaledDamage(70);
-                for (int i = 0; i < count; i++) {
-                    float angle = MathHelper.TwoPi * i / count + PhaseTimer * 0.01f;
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, angle.ToRotationVector2() * 9f,
-                        ModContent.ProjectileType<YinEmperorBolt>(), damage, 1f, Main.myPlayer);
+            else if (t == 22) {
+                // 顶点显形于玩家上方
+                NPC.velocity = Vector2.Zero;
+                NPC.Center = target.Center + new Vector2(0, -380f);
+                NPC.netUpdate = true;
+                SoundEngine.PlaySound(SoundID.Item100 with { Pitch = -0.4f, Volume = 1f }, NPC.Center);
+                YinEmperorHelper.CreateImperialVortex(NPC.Center, 160f, 1.4f, 40);
+            }
+            else if (t < 53) {
+                // 软跟踪玩家 X（给走位博弈），Y 锁定
+                float targetX = target.Center.X;
+                NPC.velocity.X = MathHelper.Lerp(NPC.velocity.X, (targetX - NPC.Center.X) * 0.06f, 0.15f);
+                NPC.velocity.Y = (target.Center.Y - 380f - NPC.Center.Y) * 0.05f;
+            }
+            else if (t == 53) {
+                // 锁定落点 + 预警投影（预警形状 = 伤害路径）
+                NPC.velocity = Vector2.Zero;
+                slamY = MathHelper.Clamp(target.Bottom.Y, ArenaCenter.Y - CourtRadius + 200f, ArenaCenter.Y + CourtRadius - 100f);
+                NPC.netUpdate = true;
+                SoundEngine.PlaySound(SoundID.Item117 with { Pitch = 0.2f, Volume = 1.2f }, NPC.Center);
+                if (!Main.dedServ)
+                    YinEmperorScreenSystem.AddTelegraph(new Vector2(NPC.Center.X, slamY), 300f, 55, TelegraphColors.Lethal);
+            }
+            else if (t < 98) {
+                // 悬印蓄势：pow8 上抬吸气 + 汇聚粒子（末段收声 = 爆发前的静默）
+                float riseT = MathHelper.Clamp((t - 53f) / 45f, 0f, 1f);
+                NPC.velocity = new Vector2(0, -MathF.Pow(riseT, 8f) * 10f);
+                if (Main.netMode != NetmodeID.Server && riseT < 0.72f && t % 2 == 0) {
+                    Vector2 below = NPC.Center + new Vector2(Main.rand.NextFloat(-140f, 140f), 160f);
+                    var d = Dust.NewDustPerfect(below, DustID.GoldFlame);
+                    d.noGravity = true;
+                    d.scale = 1.6f;
+                    d.velocity = (NPC.Center - below).SafeNormalize(Vector2.Zero) * 7f;
                 }
-                TriggerEnergyWave();
-                SoundEngine.PlaySound(SoundID.Item71 with { Pitch = 0.1f, Volume = 1.1f }, NPC.Center);
             }
-
-            if (Main.rand.NextBool(3) && Main.netMode != NetmodeID.Server) {
-                var d = Dust.NewDustPerfect(NPC.Center + Main.rand.NextVector2Circular(50f, 50f), DustID.GoldFlame);
-                d.noGravity = true;
-                d.scale = 1.8f;
-                d.velocity = Main.rand.NextVector2Circular(3, 3);
+            else if (t == 98) {
+                // 一帧下砸
+                NPC.velocity = new Vector2(0, 78f);
+                SoundEngine.PlaySound(SoundID.DD2_WyvernDiveDown with { Pitch = -0.8f, Volume = 1.6f }, NPC.Center);
             }
-
-            if (PhaseTimer > 300) {
-                NextAct3();
+            else if (t < 199) {
+                // 坠落中：接触伤害窗口；服务器权威检测触地，跳表到 199 → 全端在 200 播触地演出
+                contactWindow = NPC.velocity.Y > 20f;
+                YinEmperorHelper.CreateImperialTrail(NPC.Center, NPC.velocity, 2.4f);
+                bool hitGround = NPC.Center.Y >= slamY - 30f;
+                bool bailout = t > 98 + 80;
+                if ((hitGround || bailout) && Main.netMode != NetmodeID.MultiplayerClient) {
+                    PhaseTimer = 199;
+                    NPC.velocity = Vector2.Zero;
+                    NPC.netUpdate = true;
+                }
+            }
+            else if (t == 200) {
+                // 触地帧（服务器与所有客户端凭同步后的计时各自播放）
+                NPC.velocity = Vector2.Zero;
+                SlamImpact(target);
+            }
+            else if (t < 245) {
+                // 半跪：唯一近身输出窗口（fairness reward）
+                NPC.velocity *= 0.8f;
+                auraIntensity = MathHelper.Lerp(auraIntensity, 0.55f, 0.06f);
+            }
+            else if (t == 245) {
+                SoundEngine.PlaySound(SoundID.Item8 with { Pitch = -0.3f, Volume = 0.9f }, NPC.Center);
+            }
+            else if (t > 265) {
+                auraIntensity = 1f;
+                AdvanceCycle();
             }
         }
 
-        /// <summary>酆帝诏书 - 阴阳半场：站错半场持续灼魂 DoT；安全半场定期切换（预告）。</summary>
+        /// <summary>玉玺触地：震屏 + 左右地面冲击波 + 金尘喷泉（服务器触发，特效各端由音效/弹幕承载）。</summary>
+        private void SlamImpact(Player target) {
+            ACMScreenShakeSystem.Add(10f);
+            CourtFlash = 0.8f;
+            TriggerBloom(0.7f, YinEmperorHelper.DragonVeinGold);
+            TriggerEnergyWave();
+            SoundEngine.PlaySound(SoundID.Item14 with { Pitch = -0.7f, Volume = 1.4f }, NPC.Center);
+
+            if (Main.netMode != NetmodeID.MultiplayerClient) {
+                int dmg = YinEmperorHelper.GetScaledDamage(85);
+                for (int s = -1; s <= 1; s += 2) {
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(),
+                        new Vector2(NPC.Center.X + s * 60f, slamY - 26f), new Vector2(s * 13f, 0f),
+                        ModContent.ProjectileType<YinEmperorBolt>(), dmg, 1f, Main.myPlayer, ai0: 1f, ai1: s * 3f);
+                }
+            }
+
+            if (Main.netMode != NetmodeID.Server) {
+                for (int i = 0; i < 40; i++) {
+                    Vector2 vel = new Vector2(Main.rand.NextFloat(-9f, 9f), Main.rand.NextFloat(-13f, -4f));
+                    var d = Dust.NewDustPerfect(new Vector2(NPC.Center.X + Main.rand.NextFloat(-100f, 100f), slamY - 10f),
+                        Main.rand.NextBool(3) ? DustID.Shadowflame : DustID.GoldFlame);
+                    d.noGravity = true;
+                    d.scale = 1.8f + Main.rand.NextFloat(0.8f);
+                    d.velocity = vel;
+                }
+            }
+        }
+
+        #endregion
+
+        #region 幕三 酆帝诏书（阴阳半场）
+
+        /// <summary>酆帝诏书 - 阴阳半场：站错半场持续灼魂 DoT；危险半场金符雨压力。</summary>
         private void RunYinYangEdict(Player target) {
             Vector2 hoverPos = new Vector2(YinYangCenterX, target.Center.Y - 360f + hoverOffset);
             if (PhaseTimer <= 1) hoverPos = new Vector2(target.Center.X, target.Center.Y - 360f);
@@ -1025,28 +1370,40 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             float intoCycle = PhaseTimer % cycle;
             YinYangWarning = (cycle - intoCycle) < 50f && PhaseTimer > 30;
 
-            // 切换瞬间反馈
+            // 切换瞬间反馈（翻页）
             if ((int)PhaseTimer % cycle == 0 && PhaseTimer > 1) {
                 SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.2f, Volume = 1f }, NPC.Center);
+                CourtFlash = Math.Max(CourtFlash, 0.5f);
                 if (Main.netMode != NetmodeID.Server)
                     YinEmperorHelper.CreateTalismanBurst(NPC.Center, 200f, 24);
             }
 
-            // 适度施压，逼迫走位（非 DPS 主力）
-            if (AttackTimer % 75 == 0) {
-                ShootImperialBolts(target, 2);
+            // 危险半场金符雨（视觉压力为主，低伤）
+            if (AttackTimer % 50 == 0 && PhaseTimer > 30 && Main.netMode != NetmodeID.MultiplayerClient) {
+                int dangerSign = YinYangSafeSide == 0 ? 1 : -1;
+                int dmg = YinEmperorHelper.GetScaledDamage(60);
+                for (int i = 0; i < 3; i++) {
+                    float x = YinYangCenterX + dangerSign * Main.rand.NextFloat(140f, CourtRadius * 0.75f);
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(),
+                        new Vector2(x, target.Center.Y - 720f), new Vector2(0, 2.5f),
+                        ModContent.ProjectileType<YinEmperorBolt>(), dmg, 0.5f, Main.myPlayer,
+                        ai0: 2f, ai1: Main.rand.NextFloat(6f));
+                }
             }
 
             if (PhaseTimer > totalDuration) {
                 YinYangActive = false;
                 YinYangWarning = false;
-                NextAct3();
+                AdvanceCycle();
             }
         }
 
-        /// <summary>终诏 - 十字激光 + 弹幕，一次性，~4s 预告。终结“无限悬浮喷弹”。</summary>
+        #endregion
+
+        #region 幕三 终诏（一次性 4s 预告十字激光）
+
         private void RunFinalDecree(Player target) {
-            Vector2 hoverPos = target.Center + new Vector2(0, -360f + hoverOffset);
+            Vector2 hoverPos = CourtAnchor(target, 360f);
             NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.05f, 0.06f);
 
             const int telegraph = 240;
@@ -1061,7 +1418,8 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             if (PhaseTimer <= telegraph) {
                 FinalDecreeCharge = PhaseTimer / (float)telegraph;
                 auraIntensity = MathHelper.Lerp(auraIntensity, 1.4f, 0.02f);
-                if (Main.netMode != NetmodeID.Server && PhaseTimer % 4 == 0) {
+                // 汇聚粒子：72% 后收声（爆发前的静默）
+                if (Main.netMode != NetmodeID.Server && FinalDecreeCharge < 0.72f && PhaseTimer % 4 == 0) {
                     float r = 220f * (1f - FinalDecreeCharge);
                     Vector2 dp = NPC.Center + Main.rand.NextVector2Circular(r, r);
                     var d = Dust.NewDustPerfect(dp, Main.rand.NextBool() ? DustID.GoldFlame : DustID.Shadowflame);
@@ -1076,14 +1434,12 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 FinalDecreeCharge = 1f;
                 if (Main.netMode != NetmodeID.MultiplayerClient) {
                     int laserDmg = YinEmperorHelper.GetScaledDamage(120);
-                    // 十字 + X 八向激光，一次性
                     for (int i = 0; i < 8; i++) {
                         float angle = MathHelper.PiOver4 * i;
                         Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
                             ModContent.ProjectileType<YinEmperorLaser>(), laserDmg, 2f, Main.myPlayer,
                             ai0: angle, ai1: 75);
                     }
-                    // 一次弹幕环
                     int boltDmg = YinEmperorHelper.GetScaledDamage(70);
                     for (int i = 0; i < 12; i++) {
                         float a = MathHelper.TwoPi * i / 12 + MathHelper.Pi / 12;
@@ -1094,11 +1450,12 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 SoundEngine.PlaySound(SoundID.Item33 with { Pitch = -0.6f, Volume = 1.5f }, NPC.Center);
                 TriggerEnergyWave();
                 ACMScreenShakeSystem.Add(12f);
+                CourtFlash = 1f;
                 TriggerBloom(0.85f, YinEmperorHelper.DragonVeinGold);
             }
             else if (PhaseTimer > telegraph + 110) {
                 FinalDecreeCharge = 0f;
-                NextAct3();
+                AdvanceCycle();
             }
         }
 
@@ -1115,7 +1472,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         private void RunExecutionPhantom(Player target) {
             NPC.dontTakeDamage = true;
 
-            Vector2 hoverPos = target.Center + new Vector2(0, -HoverHeight);
+            Vector2 hoverPos = CourtAnchor(target);
             NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.05f, 0.08f);
 
             if (PhaseTimer == 1) {
@@ -1125,6 +1482,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 for (int i = 0; i < 4; i++) TriggerEnergyWave();
                 ACMScreenShakeSystem.Add(16f);
                 TriggerBloom(0.9f, YinEmperorHelper.AbyssPurple);
+                CourtFlash = 1f;
                 GrantBreatherIFrames();
             }
 
@@ -1133,7 +1491,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
             if (Main.netMode != NetmodeID.Server && PhaseTimer % 4 == 0) {
                 float a = Main.rand.NextFloat(MathHelper.TwoPi);
-                Vector2 pos = NPC.Center + a.ToRotationVector2() * (260f);
+                Vector2 pos = NPC.Center + a.ToRotationVector2() * 260f;
                 var d = Dust.NewDustPerfect(pos, Main.rand.NextBool() ? DustID.GoldFlame : DustID.PurpleTorch);
                 d.noGravity = true;
                 d.scale = 2f;
@@ -1154,9 +1512,8 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             if (PhaseTimer >= 170) {
                 NPC.dontTakeDamage = false;
                 phantomSealScale = MathHelper.Lerp(phantomSealScale, 3.5f, 0.1f);
-                ActStep = 0;
-                // 处决窗口常驻；未处决则正常以帝裁循环收尾
-                TransitionTo(AIState.Act3_ImperialWrath);
+                ActStep = -1;
+                AdvanceCycle();
             }
         }
 
@@ -1172,6 +1529,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         }
 
         private void TryExecute(Player player) {
+            if (dying) return;
             if (!ExecutionWindowOpen) return;
             if (NPC.life > NPC.lifeMax * FengduExecuteThreshold) return;
             if (player == null || !player.active || player.dead) return;
@@ -1192,54 +1550,6 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         }
 
         #endregion
-
-        #region 攻击方法
-
-        private void ShootImperialBolts(Player target, int count) {
-            if (Main.netMode == NetmodeID.MultiplayerClient)
-                return;
-
-            int damage = YinEmperorHelper.GetScaledDamage(85);
-            Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
-            float spread = 0.2f;
-
-            for (int i = 0; i < count; i++) {
-                float angle = (i - (count - 1) / 2f) * spread;
-                Vector2 direction = toPlayer.RotatedBy(angle);
-                float speed = 13f + Main.rand.NextFloat(-1.5f, 1.5f);
-                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center + direction * 60f, direction * speed,
-                    ModContent.ProjectileType<YinEmperorBolt>(), damage, 1f, Main.myPlayer);
-            }
-
-            SoundEngine.PlaySound(SoundID.Item8 with { Pitch = 0.2f, Volume = 1f }, NPC.Center);
-            YinEmperorHelper.CreateDragonBurst(NPC.Center, 40f, 1, 6);
-        }
-
-        private void ShootGroundSeals(Player target) {
-            if (Main.netMode == NetmodeID.MultiplayerClient)
-                return;
-
-            int damage = YinEmperorHelper.GetScaledDamage(70);
-            int count = 3;
-            for (int i = 0; i < count; i++) {
-                Vector2 sealPos = target.Center + new Vector2((i - 1) * 200f + Main.rand.NextFloat(-40f, 40f), 50f);
-                if (!Main.dedServ)
-                    YinEmperorScreenSystem.AddTelegraph(sealPos, 95f, 36, YinEmperorHelper.DragonVeinGold);
-                if (Main.netMode != NetmodeID.Server) {
-                    for (int j = 0; j < 8; j++) {
-                        float angle = MathHelper.TwoPi * j / 8;
-                        Vector2 dustPos = sealPos + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 40f;
-                        var d = Dust.NewDustPerfect(dustPos, DustID.GoldFlame);
-                        d.noGravity = true;
-                        d.scale = 1.2f;
-                        d.velocity = new Vector2(0, -2f);
-                    }
-                }
-                Projectile.NewProjectile(NPC.GetSource_FromAI(), sealPos + new Vector2(0, 300f), new Vector2(0, -12f),
-                    ModContent.ProjectileType<YinEmperorBolt>(), damage, 1f, Main.myPlayer);
-            }
-            SoundEngine.PlaySound(SoundID.Item117 with { Pitch = -0.2f, Volume = 0.9f }, target.Center);
-        }
 
         #region 冥眼召唤方法
 
@@ -1280,17 +1590,6 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, idx);
         }
 
-        private void SpawnGuardianEyes(int count) {
-            int damage = YinEmperorHelper.GetScaledDamage(60);
-            for (int i = 0; i < count; i++) {
-                float angle = MathHelper.TwoPi * i / count;
-                Vector2 spawnPos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 130f;
-                Projectile.NewProjectile(NPC.GetSource_FromAI(), spawnPos, Vector2.Zero,
-                    ModContent.ProjectileType<ArenaEdge>(), damage, 1f, Main.myPlayer, ai0: 2, ai1: angle);
-            }
-            SoundEngine.PlaySound(SoundID.Item8 with { Pitch = 0.4f, Volume = 0.9f }, NPC.Center);
-        }
-
         private void SpawnRingLaserFormation(Player target, int count) {
             int damage = YinEmperorHelper.GetScaledDamage(100);
             for (int i = 0; i < count; i++) {
@@ -1322,6 +1621,110 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
         #endregion
 
+        #region 死亡弧线（CheckDead 拦截 → 幡旗熄灭 → 崩解 → 静默 → 终爆）
+
+        public override bool CheckDead() {
+            // 弧线播完才允许真正死亡；期间任何再致死都被拦截回 1 HP
+            if (dying && PhaseTimer >= DeathTotal)
+                return true;
+            if (!dying) {
+                dying = true;
+                TransitionTo(AIState.DeathCinematic);
+                if (Main.netMode != NetmodeID.MultiplayerClient)
+                    ClearHostileProjectiles();
+                ResetGlobalState();
+            }
+            NPC.life = 1;
+            NPC.dontTakeDamage = true;
+            return false;
+        }
+
+        private void RunDeathCinematic(Player target) {
+            NPC.dontTakeDamage = true;
+            NPC.velocity *= 0.9f;
+            float t = PhaseTimer;
+
+            if (t == 1) {
+                SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.9f, Volume = 1.5f }, NPC.Center);
+                Speak("Mods.AncientChineseMythology.NPCs.YinEmperor.Dialog.Death", YinEmperorHelper.AbyssPurple);
+            }
+
+            // 幡旗逐杆熄灭音阶（熄灭本体在 UpdateBanners 推进）
+            for (int i = 0; i < BannerCount; i++) {
+                if ((int)t == 40 + i * 20)
+                    SoundEngine.PlaySound(SoundID.Item117 with { Pitch = 0.4f - i * 0.16f, Volume = 0.9f }, BannerTop(i));
+            }
+
+            // 40~225：本体边缘剥落 + 金屑逆升
+            if (t is > 40 and <= 225) {
+                deathDissolve = MathHelper.Clamp((t - 40f) / 185f, 0f, 1f) * 0.55f;
+                if (Main.netMode != NetmodeID.Server && t % 3 == 0) {
+                    Vector2 pos = NPC.Center + Main.rand.NextVector2Circular(70f, 90f);
+                    var d = Dust.NewDustPerfect(pos, DustID.GoldFlame);
+                    d.noGravity = true;
+                    d.scale = 1.4f;
+                    d.velocity = new Vector2(Main.rand.NextFloat(-0.5f, 0.5f), -Main.rand.NextFloat(2f, 5f));
+                }
+            }
+
+            // 160~225：法环崩解（转速失控 + 忽明忽暗），本体收缩增亮（pre-collapse）
+            if (t is > 160 and <= 225) {
+                ringSpin = MathHelper.Lerp(ringSpin, 0.11f, 0.05f);
+                ringAlpha = 0.7f * (0.6f + 0.4f * MathF.Sin(t * 0.7f));
+                NPC.scale = MathHelper.Lerp(NPC.scale, 0.88f, 0.02f);
+                auraIntensity = MathHelper.Lerp(auraIntensity, 1.9f, 0.03f);
+                if ((int)t % 22 == 0)
+                    SoundEngine.PlaySound(SoundID.NPCHit4 with { Pitch = -0.4f, Volume = 0.8f }, NPC.Center);
+            }
+
+            // 225~250：静默（一切收声，天穹骤暗）
+            if (t is > 225 and < 250) {
+                ringAlpha = MathHelper.Lerp(ringAlpha, 0f, 0.2f);
+                auraIntensity = MathHelper.Lerp(auraIntensity, 0.2f, 0.15f);
+                DeathDarken = MathHelper.Clamp((t - 225f) / 20f, 0f, 1f);
+            }
+
+            // 250：终爆（全场唯一一次顶格演出）
+            if (t == 250) {
+                ACMScreenShakeSystem.Add(16f);
+                TriggerBloom(1f, YinEmperorHelper.DragonVeinGold);
+                CourtFlash = 1f;
+                YinEmperorHelper.CreateImperialVortex(NPC.Center, 380f, 2.8f, 120);
+                YinEmperorHelper.CreateTalismanBurst(NPC.Center, 420f, 60);
+                YinEmperorHelper.CreateScreenFlash(NPC.Center, YinEmperorHelper.DragonVeinGold, 2f);
+                SoundEngine.PlaySound(SoundID.NPCDeath14 with { Pitch = -0.6f, Volume = 2f }, NPC.Center);
+                SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.9f, Volume = 1.5f }, NPC.Center);
+                if (!Main.dedServ)
+                    YinEmperorScreenSystem.AddTelegraph(NPC.Center, 420f, 70, TelegraphColors.Holy);
+                if (Main.netMode != NetmodeID.Server) {
+                    for (int i = 0; i < 8; i++) {
+                        float angle = MathHelper.TwoPi * i / 8;
+                        Vector2 strikePos = NPC.Center + angle.ToRotationVector2() * 250f;
+                        YinEmperorHelper.CreateNetherLightningPillar(strikePos - new Vector2(0, 600), strikePos, 1.5f);
+                    }
+                }
+            }
+
+            // 250~330：余烬（魂灯青雨）+ 本体加速崩解
+            if (t > 250) {
+                deathDissolve = MathHelper.Clamp(0.55f + (t - 250f) / 80f * 0.45f, 0f, 1f);
+                DeathDarken = MathHelper.Lerp(DeathDarken, 0.4f, 0.05f);
+                if (Main.netMode != NetmodeID.Server && t % 2 == 0) {
+                    Vector2 pos = NPC.Center + new Vector2(Main.rand.NextFloat(-320f, 320f), -Main.rand.NextFloat(200f, 380f));
+                    var d = Dust.NewDustPerfect(pos, DustID.IceTorch);
+                    d.noGravity = true;
+                    d.scale = 1.3f;
+                    d.velocity = new Vector2(0, Main.rand.NextFloat(1.5f, 3.5f));
+                }
+            }
+
+            if (t >= DeathTotal) {
+                NPC.life = 0;
+                NPC.HitEffect();
+                NPC.checkDead();
+            }
+        }
+
         #endregion
 
         #region 视觉效果
@@ -1351,12 +1754,12 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             if (Main.rand.NextBool(2)) {
                 float angle = Main.rand.NextFloat(MathHelper.TwoPi);
                 float dist = 70f + Main.rand.NextFloat(30f);
-                Vector2 pos = NPC.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * dist;
+                Vector2 pos = NPC.Center + angle.ToRotationVector2() * dist;
                 int dustType = Main.rand.NextBool(3) ? DustID.GoldFlame : DustID.Shadowflame;
                 var d = Dust.NewDustPerfect(pos, dustType);
                 d.noGravity = true;
                 d.scale = 1.3f * auraIntensity;
-                d.velocity = new Vector2(-MathF.Sin(angle), MathF.Cos(angle)) * 2f;
+                d.velocity = angle.ToRotationVector2().RotatedBy(MathHelper.PiOver2) * 2f;
                 d.alpha = 80;
             }
         }
@@ -1371,17 +1774,21 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             Rectangle sourceRect = new Rectangle(0, currentFrame * frameHeight, tex.Width, frameHeight);
             Vector2 origin = new Vector2(tex.Width / 2f, frameHeight / 2f);
 
+            // 六杆冥幡（法庭仪仗，位于本体之下）
+            DrawBanners(spriteBatch);
+
+            // 入场鬼门
+            if (introGateOpen > 0.01f && CurrentState == AIState.Intro) {
+                YinEmperorHelper.DrawGate(spriteBatch, ArenaCenter + new Vector2(0, -250f),
+                    new Vector2(340f, 560f), introGateOpen, 1f, 0.37f);
+            }
+
             DrawEnergyWaves(spriteBatch, screenPos);
 
             // 阴帝印幻象（处决阶段）— 巨大法环
             if (CurrentState == AIState.ExecutionPhantom && phantomSealScale > 0.1f) {
                 YinEmperorHelper.DrawImperialRing(spriteBatch, NPC.Center, phantomSealScale,
                     ringRotation * 2f, pulsePhase, 0.85f);
-            }
-
-            if (introPillarAlpha > 0.01f) {
-                YinEmperorHelper.DrawDragonPillar(spriteBatch, NPC.Center + new Vector2(0, frameHeight * 0.4f),
-                    800f, 60f, pulsePhase, introPillarAlpha);
             }
 
             if (ringAlpha > 0.01f) {
@@ -1399,6 +1806,19 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
             Color imperialColor = Color.Lerp(drawColor, YinEmperorHelper.ImperialGold, 0.3f);
             imperialColor = Color.Lerp(imperialColor, YinEmperorHelper.AbyssPurple, 0.15f);
 
+            // 溶解绘制路径：入场显形 / 死亡崩解
+            float dissolveThreshold = Math.Max(1f - bodyMaterialize, deathDissolve);
+            if (dissolveThreshold > 0.002f) {
+                if (bodyMaterialize > 0.02f || deathDissolve > 0f) {
+                    Color edge = deathDissolve > 0f ? YinEmperorHelper.SoulLanternCyan : YinEmperorHelper.DragonVeinGold;
+                    edge.A = 220;
+                    WeaponVFX.ApplyDissolveBurn(tex, NPC.Center, sourceRect, imperialColor,
+                        NPC.rotation, origin, NPC.scale, dissolveThreshold, 1f,
+                        edge, 0.1f, 2.4f);
+                }
+                return false;
+            }
+
             DrawTrail(spriteBatch, screenPos, tex, sourceRect, origin, imperialColor);
 
             Color glowColor = YinEmperorHelper.ImperialGold;
@@ -1414,6 +1834,31 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 NPC.rotation, origin, NPC.scale * pulse, SpriteEffects.None, 0);
 
             return false;
+        }
+
+        private YinEmperorHelper.BannerDraw[] bannerDrawCache;
+
+        private void DrawBanners(SpriteBatch sb) {
+            if (Main.dedServ || CourtIntensity <= 0.01f && CurrentState != AIState.Intro)
+                return;
+
+            bannerDrawCache ??= new YinEmperorHelper.BannerDraw[BannerCount];
+            int count = 0;
+            for (int i = 0; i < BannerCount; i++) {
+                if (bannerRaise[i] <= 0.01f || bannerBurn[i] >= 0.999f)
+                    continue;
+                bannerDrawCache[count++] = new YinEmperorHelper.BannerDraw {
+                    Top = BannerTop(i),
+                    Width = 116f,
+                    Height = 340f,
+                    Wave = bannerWave,
+                    Burn = bannerBurn[i],
+                    Intensity = bannerRaise[i],
+                    Seed = seed * 0.01f + i * 1.7f
+                };
+            }
+            if (count > 0)
+                YinEmperorHelper.DrawBannerSet(sb, bannerDrawCache, count);
         }
 
         private void DrawEnergyWaves(SpriteBatch sb, Vector2 screenPos) {
@@ -1444,8 +1889,7 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
         /// <summary>
         /// 全屏后处理：酆帝诏书阴阳分屏 (PaletteLUT yin-yang-split) + 大节拍泛光 (RadialBloom)。
-        /// 二者共抢本帧唯一全屏名额 (§A.7 / 性能契约 ≤1)：阴阳分屏优先消费，泛光在名额空闲时补位。
-        /// 危险方向 (站错半场) 被明显染为赤红，随既有安全侧切换而翻转。
+        /// 二者共抢本帧唯一全屏名额 (性能契约 ≤1)：阴阳分屏优先消费，泛光在名额空闲时补位。
         /// </summary>
         public override void PostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
             if (Main.dedServ || !MythologyConfig.FullscreenShadersEnabled)
@@ -1456,17 +1900,15 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 Effect fx = ACMShaders.PaletteLUT;
                 if (fx != null) {
                     float aspect = (float)Main.screenWidth / Main.screenHeight;
-                    // 竖直分界线（法线 = 屏幕 X 轴），中线落在 YinYangCenterX 的屏幕投影 (§A.7 split-math)
                     float cxUV = (YinYangCenterX - Main.screenPosition.X) / Main.screenWidth;
-                    float proj = cxUV * aspect;                      // dir = UnitX → proj = uv.x * aspect
+                    float proj = cxUV * aspect;
                     float splitPos = proj / ((1f + aspect) * 0.5f);
 
-                    // 危险侧染赤红、安全侧维持阴冷/阳暖；随 YinYangSafeSide 翻转
-                    Color yinCalm = TelegraphColors.NetherViolet;   // 阴(左)安全：幽蓝紫
-                    Color yangCalm = YinEmperorHelper.ImperialGold;  // 阳(右)安全：帝冥金
-                    Color danger = TelegraphColors.Execution;        // 错侧：赤红定罪
-                    Color leftTint = YinYangSafeSide == 0 ? yinCalm : danger;   // shadowTint → 阴(左)
-                    Color rightTint = YinYangSafeSide == 1 ? yangCalm : danger; // highlightTint → 阳(右)
+                    Color yinCalm = TelegraphColors.NetherViolet;
+                    Color yangCalm = YinEmperorHelper.ImperialGold;
+                    Color danger = TelegraphColors.Execution;
+                    Color leftTint = YinYangSafeSide == 0 ? yinCalm : danger;
+                    Color rightTint = YinYangSafeSide == 1 ? yangCalm : danger;
 
                     fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
                     fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(yinYangVisual, 0f, 1f));
@@ -1497,32 +1939,18 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         public override void OnKill() {
             ResetGlobalState();
 
-            YinEmperorHelper.CreateImperialVortex(NPC.Center, 350f, 2.5f, 120);
-            YinEmperorHelper.CreateDragonBurst(NPC.Center, 300f, 6, 30);
-            YinEmperorHelper.CreateTalismanBurst(NPC.Center, 400f, 60);
-
-            for (int i = 0; i < 5; i++) TriggerEnergyWave();
-
-            for (int i = 0; i < 8; i++) {
-                float angle = MathHelper.TwoPi * i / 8;
-                Vector2 dir = new Vector2(MathF.Cos(angle), MathF.Sin(angle));
-                Vector2 strikePos = NPC.Center + dir * 250f;
-                YinEmperorHelper.CreateNetherLightningPillar(strikePos - new Vector2(0, 600), strikePos, 1.5f);
+            // 终爆已在死亡弧线 250 帧处播放，这里只留落幕余韵
+            YinEmperorHelper.CreateTalismanBurst(NPC.Center, 300f, 40);
+            for (int i = 0; i < 3; i++) TriggerEnergyWave();
+            if (Main.netMode != NetmodeID.Server) {
+                for (int i = 0; i < 60; i++) {
+                    Vector2 vel = Main.rand.NextVector2CircularEdge(16f, 16f);
+                    var d = Dust.NewDustPerfect(NPC.Center, Main.rand.NextBool() ? DustID.GoldFlame : DustID.IceTorch);
+                    d.noGravity = true;
+                    d.scale = 2.2f;
+                    d.velocity = vel;
+                }
             }
-
-            for (int i = 0; i < 250; i++) {
-                Vector2 vel = Main.rand.NextVector2CircularEdge(28f, 28f);
-                int dustType = Main.rand.NextBool() ? DustID.GoldFlame : DustID.Shadowflame;
-                var d = Dust.NewDustPerfect(NPC.Center, dustType);
-                d.noGravity = true;
-                d.scale = 3.5f;
-                d.velocity = vel;
-            }
-
-            YinEmperorHelper.CreateScreenFlash(NPC.Center, YinEmperorHelper.DragonVeinGold, 2f);
-            ACMScreenShakeSystem.Add(16f);
-            TriggerBloom(1f, YinEmperorHelper.DragonVeinGold);
-            SoundEngine.PlaySound(SoundID.NPCDeath14 with { Pitch = -0.6f, Volume = 2f }, NPC.Center);
 
             if (Main.netMode != NetmodeID.MultiplayerClient) {
                 DownedBossSystem.downedYinEmperor = true;

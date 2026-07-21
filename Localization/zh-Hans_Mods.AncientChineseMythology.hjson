@@ -5,6 +5,7 @@ Items: {
 			'''
 			传说中的如意金箍棒
 			有了它，你似乎会吸引某些人的注意
+			东海镇海之宝，重一万三千五百斤
 			'''
 	}
 
@@ -14,17 +15,26 @@ Items: {
 			'''
 			唐僧赠送的武器
 			据说是由某个猴子让他交给有缘人的
+			左键两段连击，右键"如意戳"——棍会随心伸长刺出
 			'''
 	}
 
 	GemStick: {
 		DisplayName: 宝石棍
-		Tooltip: 被它敲到的人身价得暴涨了
+		Tooltip:
+			'''
+			被它敲到的人身价得暴涨了
+			命中绽出棱光碎片，右键"棱光回旋"甩出七彩流光
+			'''
 	}
 
 	GoldenStick: {
 		DisplayName: 金棍
-		Tooltip: 这根棍子现在看起来更贵重了？
+		Tooltip:
+			'''
+			这根棍子现在看起来更贵重了？
+			每四挥引出"金光三连突"；右键掷棍——离手仍如臂使指
+			'''
 	}
 
 	IronStick: {
@@ -33,6 +43,7 @@ Items: {
 			'''
 			这根铁棍很重，
 			你得学会控制它
+			三段连击收于一记重抡；右键拄棍撑地借力跃起
 			'''
 	}
 
@@ -42,6 +53,8 @@ Items: {
 			'''
 			这根棍子……
 			仿佛看到了某位故人
+			每五挥棍身如意巨大化、击落敌弹
+			按住右键蓄力"定海神针"，松开时天降巨针砸落
 			'''
 	}
 
@@ -50,6 +63,7 @@ Items: {
 			'''
 			这根棍子……
 			好大的猴骚味
+			双头回环两端皆可伤敌；定海神针蓄力更快、落地分出侧针
 			'''
 		DisplayName: 真·如意棍
 	}
@@ -109,42 +123,80 @@ Items: {
 
 	DogCharm: {
 		DisplayName: 狗符咒
-		Tooltip: 传说中的物品
+		Tooltip:
+			'''
+			掷出犬符，灵犬扑咬敌人后咬定不放，持续撕咬
+			全场至多三头犬灵
+			"义犬既出，死咬不松口"
+			'''
 	}
 
 	ChickenCharm: {
 		DisplayName: 鸡符咒
-		Tooltip: 传说中的物品
+		Tooltip:
+			'''
+			掷出鸡符，金鸡昂首三声啼鸣，扩散三圈破晓冲击环
+			"雄鸡一唱天下白"
+			'''
 	}
 
 	HorseCharm: {
 		DisplayName: 马符咒
-		Tooltip: 传说中的物品
+		Tooltip:
+			'''
+			掷出马符，落点扬起三波九骑奔雷马灵，横贯战场
+			"万马奔腾，势不可挡"
+			'''
 	}
 
 	CowCharm: {
 		DisplayName: 牛符咒
-		Tooltip: 传说中的物品
+		Tooltip:
+			'''
+			掷出牛符，蛮牛刨地蓄势后贯穿冲撞，重击退一路碾过
+			"九牛之力，聚于一冲"
+			'''
 	}
 
 	SnakeCharm: {
 		DisplayName: 蛇符咒
-		Tooltip: 传说中的物品
+		Tooltip:
+			'''
+			掷出蛇符，灵蛇蜿蜒追踪；对同一敌人的第三口注入蛇缠剧毒
+			右键蛇蜕：短暂匿踪，其间掷出的蛇灵首口为伏击重创
+			"打草惊蛇者，反为蛇噬"
+			'''
 	}
 
 	RabbitCharm: {
 		DisplayName: 兔符咒
-		Tooltip: 传说中的物品
+		Tooltip:
+			'''
+			掷出兔符，玉兔灵瞬步三连击，第三击捣月下砸
+			"月宫捣药杵，落地碎千钧"
+			'''
 	}
 
 	DragonCharm: {
 		DisplayName: 龙符咒
-		Tooltip: 传说中的物品
+		Tooltip:
+			'''
+			以血为引(消耗12点生命)掷出龙符，血绘雷龙蜿蜒扑向落点，雷印起爆
+			每第四张符将召来雷龙劫：巨龙贯穿天地，劫雷偿还鲜血
+			生命高于60时才能画符
+			"朱砂调血，一笔成龙"
+			'''
+		JieReady: 下一张符将召来雷龙劫！
 	}
 
 	PigCharm: {
 		DisplayName: 猪符咒
-		Tooltip: 传说中的物品
+		Tooltip:
+			'''
+			引导贪食洪流，喂得越久猪灵越贪，伤害与束宽随之上涨
+			吃饱后松手，在洪流尽头打一个毁灭性的饱嗝
+			"能吃是福"
+			'''
 	}
 
 	StrangeStone: {
@@ -163,22 +215,34 @@ Items: {
 	}
 
 	BlackBearStaff: {
-		DisplayName: 金皇冠
+		DisplayName: 黑熊法杖
 		Tooltip:
 			'''
-			“看起来很合适，戴上试试？”
-			召唤金皇冠来为你战斗
+			召唤一只黑熊幼灵为你作战
+			幼灵蓄势后以黑风猛扑, 落掌震击四方
+			每第四掌为金冠怒击
+			“黑风山的小家伙, 头顶的金冠看起来很合适”
 			'''
 	}
 
 	BlackBearSword: {
 		DisplayName: 勇士金剑
-		Tooltip: “仅献给能够拔起它的人……”
+		Tooltip:
+			'''
+			命中将敌人蜜渍, 使其受到的伤害提高
+			每第三挥, 从身后黑风中扑出一道黑风熊掌
+			“仅献给能够拔起它的人……”
+			'''
 	}
 
 	BlackBearBow: {
 		DisplayName: 金金弓
-		Tooltip: “金光闪闪？”
+		Tooltip:
+			'''
+			黑风驱矢：射出的箭化为黑风箭
+			每第五箭为蜂蜜重矢，迟缓敌人并迸溅蜜滴
+			“金光闪闪？”
+			'''
 	}
 
 	BronzeSword: {
@@ -186,7 +250,8 @@ Items: {
 		Tooltip:
 			'''
 			“剑身闪烁着瘆人的绿芒……”
-			击中敌人使敌人中毒，有极小概率秒杀敌人。
+			击中敌人使敌人中毒
+			断金: 处决生命低于 12% 的普通敌人, 对残血首领增伤 15%
 			'''
 	}
 
@@ -196,7 +261,8 @@ Items: {
 			'''
 			“火焰包裹着剑身……”
 			左键攻击点燃敌人
-			右键蓄力发射火焰剑气
+			按住右键入炉蓄力, 松手挥出重斩 —— 蓄满一/二/三级各有白热闪提示
+			二级以上出炉附带熔火溅珠
 			'''
 	}
 
@@ -287,7 +353,12 @@ Items: {
 
 	Pufferfish: {
 		DisplayName: 河豚鱼
-		Tooltip: ""
+		Tooltip:
+			'''
+			按住不放：河豚喷出高压水柱，越喷越鼓
+			鼓到极限会打出一个毁灭性的喷嚏
+			“可爱，但危险”
+			'''
 	}
 
 	Starflower: {
@@ -307,7 +378,11 @@ Items: {
 
 	RatCharm: {
 		DisplayName: 鼠符咒
-		Tooltip: 可以让一些东西动起来
+		Tooltip:
+			'''
+			掷出鼠符，五只鼠灵乱窜啃咬，窃走点点金屑
+			也可以让一些东西动起来
+			'''
 	}
 
 	IronArmorFlower: {
@@ -342,7 +417,12 @@ Items: {
 
 	MingCrowStaff: {
 		DisplayName: 冥鸦法杖
-		Tooltip: 召唤一只冥鸦
+		Tooltip:
+			'''
+			召唤阴间鸦群为你作战
+			鸦群环伺目标, 此起彼伏地俯冲穿透
+			每第三次为缠绕俯冲, 羽爆四散
+			'''
 	}
 
 	PoJingDan: {
@@ -408,7 +488,12 @@ Items: {
 
 	ChengYingReins: {
 		DisplayName: 承影剑
-		Tooltip: 能承载万物
+		Tooltip:
+			'''
+			御剑而行, 速度即锋芒
+			全速冲撞可触发破影一闪
+			“将旦昧爽之交, 淡淡焉若有物存, 莫识其状”
+			'''
 	}
 
 	YuChangSword: {
@@ -417,6 +502,9 @@ Items: {
 			'''
 			三寸寒锋，薄如蝉翼
 			出鞘无声，生死已判
+			每第四刺为透骨刺: 伤害提高并放出鱼影飞刃, 顺势向光标滑步
+			右键穿心·背刺 (8 秒冷却): 瞬身至目标背侧三段连刺
+			残血普通敌人将被背刺处决; 无目标时化为幽影突进
 			'''
 	}
 
@@ -432,7 +520,15 @@ Items: {
 
 	GanJiangSword: {
 		DisplayName: 干将剑
-		Tooltip: ""
+		Tooltip:
+			'''
+			干将莫邪, 雌雄双剑
+			左键三连段: 正斩→逆斩→双剑十字旋斩, 每段有莫邪虚剑影随补斩
+			双剑任意命中积攒剑鸣 (上限 10)
+			右键: 满鸣时施展合鸣·雌雄合璧 —— 赤金×青蓝交叉巨剑气, 展开阴阳双鱼盘
+			未满鸣时遣出莫邪虚剑寻敌斩
+			“雌雄相合, 剑气冲天”
+			'''
 	}
 
 	AureateVoidrender: {
@@ -621,7 +717,12 @@ Items: {
 
 	XuanTieSword: {
 		DisplayName: 玄铁剑
-		Tooltip: 被这把剑击中的敌人会持续流血
+		Tooltip:
+			'''
+			重剑无锋, 大巧不工
+			三段重挥: 横斩→回斩→过顶崩地斩, 崩地斩落点掀起地裂
+			被击中的敌人会持续流血
+			'''
 	}
 
 	BaGuaZhenpan: {
@@ -629,6 +730,7 @@ Items: {
 		Tooltip:
 			'''
 			一面似透明非透明的黑白太极八卦盘
+			左键开坛施阵, 展开八卦法阵; 右键布阵
 			一乾 二兑 三离 四震 五巽 六坎 七艮 八坤
 			'''
 	}
@@ -675,27 +777,52 @@ Items: {
 
 	HanbaBook: {
 		DisplayName: 旱日
-		Tooltip: ""
+		Tooltip:
+			'''
+			在光标处降下灼日之炷，点燃脚下焦土
+			每第四次施法引坠小焦日，落地掀起双向燎原火波
+			"所居不雨，赤地千里"
+			'''
 	}
 
 	HoqingFireSummon: {
 		DisplayName: 劫骇
-		Tooltip: ""
+		Tooltip:
+			'''
+			召唤仪仗幽灯环绕自身，向敌喷吐魂焰
+			右键在光标处开启小鬼门，幽灯列队倾泻万鬼之火
+			"万鬼夜行，皆执灯随行"
+			'''
 	}
 
 	JiangcenHammerItem: {
 		DisplayName: 雷鸣锤
-		Tooltip: ""
+		Tooltip:
+			'''
+			掷出听令回旋的雷鸣锤，锤至顶点与命中处引落天雷
+			每第五掷为点将令，虚影锤依次轰落
+			"将军点兵，天雷为鼓"
+			'''
 	}
 
 	YingouKnife: {
 		DisplayName: 鬼牙
-		Tooltip: ""
+		Tooltip:
+			'''
+			三段连斩，第三斩挥出鬼牙刀气
+			右键布下冥刃斩线，双冥刃对冲并于交点处决
+			每第三条斩线展开米字刀阵
+			"黄泉之刃，先画线，后索命"
+			'''
 	}
 
 	CoffinNail: {
 		DisplayName: 棺材钉
-		Tooltip: ""
+		Tooltip:
+			'''
+			将镇尸钉钉入敌身，持续镇魂
+			同一敌人钉满七根触发七星封棺，封印起爆
+			'''
 	}
 
 	SoulBanner: {
@@ -703,9 +830,11 @@ Items: {
 		Tooltip:
 			'''
 			以幡旗收束万千亡魂之力
-			左键祭幡引魂，吸取敌人灵魂造成魔法伤害
+			左键祭幡引魂，幡尖张开吸魂漩涡造成魔法伤害
 			右键释放万魂幡悬浮于头顶，对周围敌人持续吸魂
+			悬浮幡在场时再次右键，引爆「万魂齐哭」：耗魂40%放出亡魂军团
 			击杀敌人可吸收灵魂使幡旗成长，击败强敌解锁更高上限
+			手持时按住 Shift 查看魂录
 			'''
 	}
 
@@ -839,42 +968,78 @@ Items: {
 
 	AxeofXingTian: {
 		DisplayName: 刑天之斧
-		Tooltip: ""
+		Tooltip:
+			'''
+			三段重挥；命中积攒怨气，攒满后下一挥化为"无首怒斩"
+			怒斩释放前行的怨气撕裂波
+			刑天不屈：生命低于半数时伤害提升、挥速加快
+			"断首犹操干戚舞"
+			'''
 	}
 
 	BloodfiendGreatsword: {
 		DisplayName: 血魔剑
-		Tooltip: ""
+		Tooltip:
+			'''
+			三段连击：斩、斩、重斩——重斩放大加深并释放短程血浪
+			命中伤害的 5% 化为生命（暴击双倍），血丝回流可见
+			'''
 	}
 
 	BrushofJudgment: {
 		DisplayName: 判官笔
-		Tooltip: ""
+		Tooltip:
+			'''
+			挥毫射出三道朱批笔画，命中在敌人头顶落下批痕
+			同一敌人集满四道朱批即遭"定罪"——判决竖笔劈落，造成双倍伤害
+			"朱笔一勾，生死已定"
+			'''
 	}
 
 	NetherboneBow: {
 		DisplayName: 冥骨弓
-		Tooltip: ""
+		Tooltip:
+			'''
+			每第四射为引魂齐射：三支无重力、循魂追敌的魂骨箭
+			骨磬之音逐发走高，齐射将至时可闻
+			'''
 	}
 
 	SoulDevourerSpear: {
 		DisplayName: 噬魂枪
-		Tooltip: ""
+		Tooltip:
+			'''
+			突刺命中喂养枪中魂灵（至多四缕，环绕枪杆可见）
+			满魂后下一刺化为吞魂突刺：刺程大增并吞魂回血
+			'''
 	}
 
 	SoulLanternStaff: {
 		DisplayName: 魂灯杖
-		Tooltip: ""
+		Tooltip:
+			'''
+			召唤引魂幽灯环绕护主，向敌喷吐魂火
+			每第六发凝作引魂大火，命中裂为三簇循魂小火
+			'''
 	}
 
 	SoulseekerDaggers: {
 		DisplayName: 索魂匕
-		Tooltip: ""
+		Tooltip:
+			'''
+			左右开弓交替掷出双匕，每第三投双匕交叉锁魂
+			濒死的凡俗之敌有几率被当场索命
+			'''
 	}
 
 	YamasGavel: {
 		DisplayName: 阎罗锤
-		Tooltip: ""
+		Tooltip:
+			'''
+			掷出的法槌在命中或至远点时高举而后拍落——惊堂一拍
+			拍案降下金色判决脉冲，震慑四周敌人
+			"肃静！"
+			'''
 	}
 
 	NetherBar: {
@@ -929,17 +1094,17 @@ Items: {
 
 	ArchosaurBow: {
 		DisplayName: 祖龙残弓
-		Tooltip: ""
+		Tooltip: 由祖龙之息凝成的星尘神弓，箭矢追猎魂魄的踪迹\n蓄满龙息后，星海将倾泻一场龙魂箭雨
 	}
 
 	ArchosaurFerrara: {
 		DisplayName: 祖龙残刃
-		Tooltip: ""
+		Tooltip: 上古龙魂凝铸的残剑，挥舞时星辉自刃口剥离\n连击积攒龙息，满溢时释放祖龙吐息
 	}
 
 	ArchosaurStaff: {
 		DisplayName: 祖龙残杖
-		Tooltip: ""
+		Tooltip: 杖首封存着一缕祖龙残念，于所指之处铺开龙魂法阵\n十次施法后，祖龙虚影将自星海俯冲而落
 	}
 
 	CelestialEdictScepter: {
@@ -1067,6 +1232,8 @@ Items: {
 		Tooltip:
 			'''
 			记载众生死期与因果的冥府秘典
+			亡魂武器命中会为敌记名积业，业满七层时天降阎罗判决
+			每第四次施法翻至朱批页，追加一发链电邻敌的朱批敕令
 			翻开它，你将看到他们的结局
 			（也许还有你的。）
 			'''
@@ -1076,8 +1243,9 @@ Items: {
 		DisplayName: 判官勾魂枪
 		Tooltip:
 			'''
-			判官裁决，勾魂摄魄
-			击中敌人时有几率赋予“灵魂剥离”效果
+			判官裁决，三段连刺——刺、疾刺、勾魂上挑
+			第三段将罪魂勾向你并施以“灵魂剥离”
+			命中勾取灵魂恢复生命，勾中将受审之魂时大量吸魂
 			'''
 	}
 
@@ -1086,13 +1254,20 @@ Items: {
 		Tooltip:
 			'''
 			如同孽镜台般映照罪孽，去而复返
+			飞行命中把罪业蓄入镜中
+			镜影蓄满后掷出业镜断罪投：两道折影随行，罪孽尽数奉还
 			你的敌人将在镜中看到自己最深重的罪
 			'''
 	}
 
 	NetherfireBlunderbuss: {
 		DisplayName: 冥府幽火铳
-		Tooltip: 发射冥府幽火，不仅灼烧肉体，更焚烧灵魂
+		Tooltip:
+			'''
+			发射冥府幽火，不仅灼烧肉体，更焚烧灵魂
+			固定五发扇形幽火弹，是最快为敌积业的判前火刑
+			每第四次射击蓄压双管，喷出八发宽扇重击
+			'''
 	}
 
 	NetherRockSoulbomb: {
@@ -1100,7 +1275,8 @@ Items: {
 		Tooltip:
 			'''
 			由冥岩制成，能引爆灵魂的雷弹
-			爆炸后留下持续燃烧的幽火场
+			场上有雷时再次使用可遥引立即引爆
+			爆炸后留下持续灼魂的幽火场，对业力深重者伤害更烈
 			'''
 	}
 
@@ -1109,7 +1285,8 @@ Items: {
 		Tooltip:
 			'''
 			凝聚黄泉幽冥之力的法杖
-			召唤一个能够吸取敌人生命的幽冥旋涡
+			川流蛇行的能量球在命中处化作幽冥漩涡
+			漩涡向心卷魂、持续灼烧，并吸取生命归还持杖者
 			'''
 	}
 
@@ -1118,7 +1295,8 @@ Items: {
 		Tooltip:
 			'''
 			引渡灵魂前往黄泉的弓
-			箭矢会追踪附近的灵魂
+			箭矢会强力追踪已被记名（业力在身）的魂
+			每第四箭必出双箭；已记名者伏诛时渡出追魂之魄
 			'''
 	}
 
@@ -1127,8 +1305,10 @@ Items: {
 		Tooltip:
 			'''
 			阎王用以裁断众生业报的巨刀
+			左键三段连斩，过顶大劈释放断业剑气
+			右键勾决居合：瞬身斩过之处，业力深重者受断业判决
+			已记名的残喘之徒将被当场勾决（仅对非Boss怪有效）
 			它不需要刀鞘，因为业报从不休息
-			右键使用可释放一击必杀（仅对非Boss怪有效）
 			'''
 	}
 
@@ -1137,8 +1317,9 @@ Items: {
 		Tooltip:
 			'''
 			不仅裁断业报，更能屠戮神魔的终极巨刃
-			三道屠神斩击同时释放，暴击触发神魔审判
-			非Boss敌人血量低于15%时直接斩杀
+			手持三连段——竖劈、回撩、大回环，每段掷出断业刃气
+			非Boss敌人血量低于15%时直接处决，撕开弑神裂隙
+			业劫觉醒的首刀化为"阎罗一刀"：蓄力斩出全屏横贯刃气
 			诸天万界，一刀断之
 			'''
 	}
@@ -1148,8 +1329,9 @@ Items: {
 		Tooltip:
 			'''
 			引渡遭受万劫不复之苦的灵魂
-			每次射出五支追踪万劫箭，概率额外射出三支灵魂箭
-			暴击时触发灵魂连锁爆发，牵引附近敌人的灵魂
+			每次射出三支追踪引魂箭，命中同一目标叠加引魂印
+			集满六层引魂印，黄泉引渡柱自天而降贯穿其魂
+			业劫觉醒时箭矢命中分裂出追魂小箭
 			黄泉路上，无魂可逃
 			'''
 	}
@@ -1159,8 +1341,9 @@ Items: {
 		Tooltip:
 			'''
 			能吞噬灵魂的重型冥府火器
-			散射10到15发噬魂弹，命中后灵魂爆裂
-			击杀敌人后吸收灵魂回复生命
+			散射十二发噬魂弹，命中与击杀吸魂充填魂膛
+			右键消耗全部魂膛，轰出魂爆聚束炮
+			业劫觉醒时散布收窄、吸魂效率翻倍
 			炮火所至，灵魂尽灭
 			'''
 	}
@@ -1170,9 +1353,10 @@ Items: {
 		Tooltip:
 			'''
 			如同无间地狱般永无止境轮回的利刃
-			三刃齐发，镜像反射加深伤害
-			暴击时触发无间镜像反伤，敌人的罪孽加倍奉还
-			轮回不止，因果不灭
+			业刃在敌群间无间弹射，每次弹射业焰愈炽
+			徒手接刃积攒业刃印，集满三印掷出无间劫刃展开业焰轮
+			业劫觉醒时三刃齐出，弹射轮回不休
+			命中积攒业障，满溢时触发八秒业劫觉醒
 			'''
 	}
 
@@ -1192,8 +1376,9 @@ Items: {
 		Tooltip:
 			'''
 			记载万魔因果、掌控生死轮回的终极秘典
-			每次释放五枚追踪万魔符文
-			暴击时触发全范围链式雷击，连锁五个敌人
+			释放重万魔符文，每第五次施法唤出魔首大符
+			魔首命中必展开万魔法阵，链雷贯穿五名敌人
+			业劫觉醒时施法有魔影符自背后袭出
 			万魔臣服，因果轮转
 			'''
 	}
@@ -1203,8 +1388,9 @@ Items: {
 		Tooltip:
 			'''
 			凝聚黄泉寂灭之力、显化冥府罗网的法杖
-			同时发射三枚寂灭冥球，命中后展开冥府罗网
-			罗网区域内所有敌人受到减速和暗影焰侵蚀
+			寂灭主球携双侍球齐出，主球命中展开冥府罗网
+			罗网束缚减速并持续魂蚀，三秒后月蚀坍缩再爆
+			业劫觉醒时罗网更广、魂蚀更急
 			罗网天下，无处遁逃
 			'''
 	}
@@ -1214,8 +1400,9 @@ Items: {
 		Tooltip:
 			'''
 			能粉碎灵魂、开启黄泉之门的冥岩重雷
-			爆炸后分裂为三枚子雷，每枚拥有巨大爆炸范围
+			主雷炸裂处撕开黄泉之门，三枚子雷自门中喷向前方
 			黄泉之门一旦打开，灵魂无处可藏
+			业劫觉醒时门中喷出五枚子雷
 			碎魂裂魄，天崩地陷
 			'''
 	}
@@ -1225,8 +1412,9 @@ Items: {
 		Tooltip:
 			'''
 			阴天子亲铸的万劫寂灭之刃，斩尽六道一切轮回
-			三连击循环：前两击释放五道黑帝斩，第三击引爆虚空万劫柱
-			暴击时对600范围内所有敌人造成连锁审判
+			按住持续三连击：劈、撩各出三道黑帝斩气
+			第三击"万劫寂灭诏"甩出大刀气，并在光标处降诏撕开虚空漩涡
+			第三击暴击时对600范围内所有敌人连锁审判
 			非Boss敌人血量低于25%时直接寂灭
 			万劫不复，诸天归寂
 			'''
@@ -1237,8 +1425,9 @@ Items: {
 		Tooltip:
 			'''
 			以混元之力凝聚的弑神弓，无需凡俗箭矢
-			射出混元弑神箭，命中后开启万羽坠神域
-			坠神域持续3秒，不断降下追踪羽箭雨
+			按住拉弦三档蓄力，身后凝聚万羽阵列（至多十四支）
+			松弦射出弑神主箭，万羽逐支尾随齐射
+			满弦主箭命中撕开混元之门，降下堕天羽箭雨
 			天穹破碎，万羽坠落，诸神殒命
 			'''
 	}
@@ -1248,8 +1437,9 @@ Items: {
 		Tooltip:
 			'''
 			封印地狱冥龙吐息之力的终极火炮，无需凡俗弹药
-			发射不断膨胀的龙息冲击波，越远越强
-			命中敌人施加寂灭龙印，2秒后引爆造成双倍伤害
+			按住"纳"聚冥魂三档蓄力，松开"吐"出膨胀的冥焰龙息
+			蓄力越深龙息越巨，满纳波头凝出冥龙魂首
+			命中施加寂灭龙印，2秒后引爆（满纳龙息印记×2.5）
 			龙吟震天，寂灭万物
 			'''
 	}
@@ -1259,8 +1449,9 @@ Items: {
 		Tooltip:
 			'''
 			凝聚九幽极寒之力的判官审判之轮
-			投掷后自动环绕持有者运转，主动追击附近敌人
-			每第5次命中触发「绝对零度审判」，冻结范围内所有敌人
+			投掷后环绕持有者运转，自动突袭附近敌人
+			轮在场时再次投掷＝敕令冲刺：轮蓄势后向光标方向瞬发突袭
+			每第5次命中触发「九幽判决」：驻停撕开虚空裂口，冻结范围内所有敌人
 			命中施加冰焰、冰冻与碎甲
 			极寒渊薮，九幽判官，万物凝冰
 			'''
@@ -1271,9 +1462,10 @@ Items: {
 		Tooltip:
 			'''
 			贯穿虚空与永劫的断罪之矛
-			超远距离突刺，突刺路径留下持续2秒的虚空裂隙
-			命中无视敌人防御，每次命中回复生命
-			击杀敌人触发虚空爆发并大量回血
+			按住持续连刺，每第4刺化为"永劫穿心"：蓄势更长、刺程更远
+			永劫穿心沿突刺线撕开虚空裂隙，脉冲牵引线上敌人
+			命中无视敌人防御并回复生命，大刺回血翻倍
+			击杀敌人魂飞魄散，虚空连锁爆发
 			虚空断罪，永劫穿心，万物归无
 			'''
 	}
@@ -1283,9 +1475,9 @@ Items: {
 		Tooltip:
 			'''
 			记载万古噩梦与无尽诅咒的葬神秘典
-			在光标位置召唤罗生门，持续4秒
-			罗生门吸引并持续伤害周围敌人
-			每秒释放三条噩梦触手追踪猎杀
+			在光标位置召唤罗生门（同屏唯一），持续5秒
+			门吸引敌人并放出噩梦触手，触手命中叠加咒层（至多8层）
+			门在场时再次施法＝收门清算：按咒层引爆所有被诅咒者
 			罗生门开，万咒齐发，诸神入葬
 			'''
 	}
@@ -1295,9 +1487,9 @@ Items: {
 		Tooltip:
 			'''
 			冥府至尊判官执掌司命的权杖
-			每次释放五枚命运法令灵球追踪敌人
-			命中敌人施加命运烙印，3秒后引爆
-			引爆伤害 = 累积伤害 × 1.5，并对范围内敌人造成溅射
+			左键双螺旋朱笔灵球，命中叠加命运烙印（至多6层，记录期间伤害）
+			右键「司命判决」：帝诏降下，以累积伤害×(1.2+0.15×层数)勾决全部烙印
+			无人判决的烙印3秒后自动引爆（累积×1.5）
 			命运已定，万物伏诛
 			'''
 	}
@@ -1307,8 +1499,8 @@ Items: {
 		Tooltip:
 			'''
 			凝聚虚空奇点之力的终极湮灭炸弹
-			落地后展开引力场持续吸引敌人1秒
-			随后引发毁灭性内爆，覆盖巨大范围
+			落地展开引力阱吸引敌人1秒，随后毁灭性内爆
+			引力阱蓄力中再次使用＝提前引爆（威力按蓄力60%~100%）
 			被击杀的敌人产生连锁奇点，引发次级爆炸
 			奇点坍缩，万物湮灭，归于虚无
 			'''
@@ -1318,7 +1510,9 @@ Items: {
 		DisplayName: 林地巨剑
 		Tooltip:
 			'''
-			以林地枝木与藤蔓编织的巨剑
+			以林地枝木与藤蔓编织的活木巨剑，三段连斩
+			第三段重斩砸地，沿地面爆出荆根
+			命中积累生机，蓄满后重斩化为"万木生"根须环爆
 			命中敌人有概率施加中毒
 			'''
 	}
@@ -1328,7 +1522,8 @@ Items: {
 		Tooltip:
 			'''
 			弯曲的树根制成的回力镖
-			投掷后自动返回，可穿透多个敌人
+			返回时接住可叠加"研磨"，提升伤害与出手速度
+			单轮命中两名敌人后返程更为锋利
 			'''
 	}
 
@@ -1337,7 +1532,8 @@ Items: {
 		Tooltip:
 			'''
 			以活藤编织的猎弓
-			箭矢命中有概率施加中毒
+			每第四支箭化为藤矢，命中种下藤蔓标记
+			再次命中带标记的目标，藤鞭将破土收割
 			'''
 	}
 
@@ -1345,8 +1541,9 @@ Items: {
 		DisplayName: 枯木火铳
 		Tooltip:
 			'''
-			以枯木制成的简易火铳
-			发射橡子弹丸，不消耗弹药
+			三发弹仓的枯木火铳，不消耗弹药
+			第三发为霰爆装填，喷出四颗小橡子并伴随强烈后坐
+			橡子碎裂为木壳弹片
 			'''
 	}
 
@@ -1355,7 +1552,8 @@ Items: {
 		Tooltip:
 			'''
 			嵌有翡翠的树枝法杖
-			释放翠绿色的魔法弹丸
+			命中将翡翠碎片嵌入目标，至多三枚
+			嵌满后再次命中引发共鸣爆裂
 			'''
 	}
 
@@ -1363,8 +1561,9 @@ Items: {
 		DisplayName: 自然秘典
 		Tooltip:
 			'''
-			记载自然之力的古老典籍
-			翻页释放三片螺旋叶刃
+			记载自然之力的古老典籍，施法即翻页
+			第五页绽放"荣枯页"：生命之环叶刃绽开又收拢
+			环心留下繁茂领域，缓缓治愈站立其中的玩家
 			命中有概率施加中毒
 			'''
 	}
@@ -1374,8 +1573,8 @@ Items: {
 		Tooltip:
 			'''
 			包裹着发光苔藓的爆裂弹
-			投掷后爆炸释放绿色蘑菇云
-			对范围内敌人造成伤害并施加中毒
+			撞地会弹起并点燃短引信，直接砸中敌人立即爆炸
+			爆炸释放毒蘑菇云，并弹出孢子芽形成小片毒雾
 			'''
 	}
 
@@ -1383,8 +1582,10 @@ Items: {
 		DisplayName: 神木种子弹
 		Tooltip:
 			'''
-			蕴含神木之力的爆裂种子
-			抛出后碰撞爆炸，释放追踪藤蔓碎片
+			会生长的爆裂种子
+			砸中地面扎根，唤出三波根须尖刺，末波引爆生根
+			砸中敌人则寄生膨胀，开花时植入三层生根并引爆
+			空中超时原地绽放，释放追踪藤蔓碎片
 			'''
 	}
 
@@ -1392,8 +1593,9 @@ Items: {
 		DisplayName: 神木巨刃
 		Tooltip:
 			'''
-			以万年神木凝聚的巨型阔刀
-			挥砍时释放藤蔓剑气，暴击释放自然绽放
+			以万年神木凝聚的巨型阔刀，翠脉流光在刀身中奔涌
+			三连段挥砍：前两段播种生根，第三段年轮重斩引爆生根并释放刀波
+			右键蓄力施展"建木擎天"：面前依次拔起三根建木巨柱（冷却9秒）
 			'''
 	}
 
@@ -1402,9 +1604,9 @@ Items: {
 		Tooltip:
 			'''
 			以神木叶片凝聚的旋转飞刃
-			向光标方向掷出，减速后自动高速返回
-			回程伤害×1.5，命中释放旋风叶片
-			每5次命中触发自然裁决，释放花瓣弹幕环
+			掷出后按住左键，化作年轮锯驻场锯击，持续播种生根
+			松开后高速回程：伤害×1.5，并引爆沿途生根
+			每5次命中触发自然裁决，绽放花瓣弹幕环
 			'''
 	}
 
@@ -1412,8 +1614,9 @@ Items: {
 		DisplayName: 神木长弓
 		Tooltip:
 			'''
-			以活木与灵藤编织的长弓
-			将箭矢转化为叶刃箭，附带螺旋叶片护卫
+			以活木与灵藤编织的蓄力长弓
+			浅蓄快射叶矢，半蓄三箭齐射并放出螺旋叶护卫，皆播种生根
+			满蓄射出贯林矢：巨箭穿透一切，引爆每个命中者的生根
 			'''
 	}
 
@@ -1421,9 +1624,9 @@ Items: {
 		DisplayName: 神木火铳
 		Tooltip:
 			'''
-			以神木机关驱动的连射火器
-			将弹药转化为荆棘针刺三连发
-			每三轮连射发射一枚种子迫击炮弹
+			以神木机关驱动的三连发火铳
+			每次点射三发荆棘针，命中播种生根
+			每第九发装填种子迫击炮：落地唤出一排根须尖刺收割生根
 			'''
 	}
 
@@ -1432,8 +1635,8 @@ Items: {
 		Tooltip:
 			'''
 			以古神木之心雕琢的灵杖
-			释放一道藤蔓链鞭抽击敌人
-			命中后释放追踪叶片，施加中毒与毒液
+			甩出藤蔓长鞭抽击：鞭梢播种两层生根，鞭身一层
+			每第四鞭为重鞭：伤害提升，鞭梢引爆生根并在落点留下荆棘地
 			'''
 	}
 
@@ -1442,8 +1645,8 @@ Items: {
 		Tooltip:
 			'''
 			记载万木灵韵的上古典籍
-			释放大量叶片扇形散射，螺旋飞行后追踪敌人
-			叶片命中时有概率释放次生花瓣
+			三连诵：前两诵放出叶刃扇播种，第三诵华盖倾泻并射出穿透莲华引爆生根
+			右键催花（冷却5秒）：在光标处张开年轮法阵，引爆域内所有生根敌人
 			'''
 	}
 
@@ -1472,8 +1675,9 @@ Items: {
 			'''
 			以万古神木之精华铸就的终极巨刃
 			三连击循环：横斩→上挑→天崩下劈
-			横斩释放贯穿藤蔓波，上挑扇形三道裂波
-			天崩下劈引发大地震荡，万木臣服
+			横斩与上挑在敌人体表刻下年轮烙印
+			天崩下劈引发大地震荡，引爆范围内全部烙印
+			层层年轮，一斩绽放
 			'''
 	}
 
@@ -1482,8 +1686,9 @@ Items: {
 		Tooltip:
 			'''
 			蕴含世界树之种的终极爆裂种子
-			飞行中分裂为五枚子种子，各自独立爆炸
-			每次爆炸释放大量追踪藤蛇弹幕
+			快甩铺场，或按住蓄力掷出母树种
+			飞行中分裂五枚子种，藤蛇命中刻下年轮烙印
+			母树种主爆引爆范围内全部烙印
 			万花齐放，天地为之变色
 			'''
 	}
@@ -1494,8 +1699,9 @@ Items: {
 			'''
 			以世界树主干弯制的终极长弓
 			将箭矢转化为无限穿透的藤蔓长枪
-			每箭附带四道DNA螺旋追踪叶刃
-			每第四箭释放世界树之箭，万木穿林
+			每箭伴四道DNA双螺旋叶刃，命中刻下年轮烙印
+			每第四箭凝聚世界树之矢：聚能、静默、爆发
+			世界树之矢命中即引爆烙印
 			'''
 	}
 
@@ -1504,12 +1710,11 @@ Items: {
 		Tooltip:
 			'''
 			以上古神木叶脉凝聚的终极旋刃
-			掷出后在落点展开极速扩展螺旋风暴
-			按住攻击键维持风暴，松开后内爆坍缩
-			坍缩释放十道旋风叶片爆发 + 屏幕震动
-			回程伤害×2，接住时再次屏幕震动
-			每三次命中触发万木裁决：十六道花瓣爆发
-			范围藤蔓缠绕，万木肃杀
+			掷出后在落点展开螺旋风暴
+			杀伤区为旋转的金翠藤叶环带，风暴眼是安全区
+			按住维持风暴，环带定期脉冲甩出旋风叶片
+			松开触发内爆坍缩：引爆范围内全部年轮烙印
+			回程伤害×2，接住时冲击反馈
 			'''
 	}
 
@@ -1518,9 +1723,10 @@ Items: {
 		Tooltip:
 			'''
 			以世界树机关黄金荆棘驱动的终极连射火器
-			五连发金翠荆棘针刺，命中后连锁弹射
-			每五轮连射发射三枚分裂种子迫击炮弹
-			荆棘成林，天地震荡
+			真·五连发金翠荆棘针，每发后坐
+			命中刻下年轮烙印并连锁弹射
+			每第二十五发射出三枚分裂种子迫击炮，炮爆引爆范围烙印
+			一次引爆三层以上烙印触发万棘狂涌：绽出八枚追踪荆棘
 			'''
 	}
 
@@ -1529,10 +1735,9 @@ Items: {
 		Tooltip:
 			'''
 			以万年神木之心雕琢的终极灵杖
-			释放巨型藤蔓链鞭抽击敌人
-			链身分生追踪触手独立造成伤害
-			命中后释放八片追踪叶爆
-			末端触发藤蔓新星：十六道环形爆炸
+			按住引导藤蔓链鞭追随光标抽击，鞭身本体皆可伤敌
+			鞭击命中刻下年轮烙印，链身分生追踪触手
+			鞭至最远处猛然咬合：藤蔓新星引爆范围内全部烙印
 			'''
 	}
 
@@ -1541,10 +1746,10 @@ Items: {
 		Tooltip:
 			'''
 			记载天地万木灵韵的上古至宝
-			释放20~28片金翠叶刃扇形散射
-			叶片螺旋飞行后强力追踪敌人
-			命中50%概率释放双花瓣次生弹幕
-			每三次使用凝聚叶暴漩涡，引力吸拢万物
+			释放七片金翠大叶刃扇形散射，螺旋飞行后追踪敌人
+			叶刃命中刻下年轮烙印
+			每第六次使用凝聚叶暴漩涡：引力吸拢，周期脉冲引爆烙印
+			烙印绽放时环舞花瓣
 			'''
 	}
 
@@ -1597,9 +1802,9 @@ Items: {
 		Tooltip:
 			'''
 			由亵渎血肉凝聚而成的恐怖巨剑
-			三段连击：横斩→上挑→下劈
-			挥斩沿途释放暗红血肉波
-			下劈威力提升30%并震撼地面
+			三段连击：横斩→上挑→下劈，挥出蠕动血肉波
+			刀身命中叠加剖检印，下劈双倍并震撼大地
+			叠满五层剖检印触发摘取：凝视巨眼爆裂处决并治疗自身
 			'''
 	}
 
@@ -1608,8 +1813,8 @@ Items: {
 		Tooltip:
 			'''
 			被活物血肉包裹的回旋利器
-			返回时伤害提升80%
-			命中敌人吸取少量生命值
+			返回时伤害提升80%，命中吸取生命并叠加剖检印
+			单程命中三次后接住可进入"饱食"：镖体膨胀、更痛更贪
 			每累积4次命中释放追踪血肉触手
 			'''
 	}
@@ -1618,10 +1823,10 @@ Items: {
 		DisplayName: 搐筋弓
 		Tooltip:
 			'''
-			由跳动筋腱编织的诡异长弓
-			发射穿透脊椎箭矢，附带旋转碎片
-			每三发凝聚一颗追踪畸变眼球
-			眼球碰撞后爆裂为追踪血肉触手
+			以跳动筋腱为弦的诡异长弓，按住拉弦蓄力
+			满弦"痉挛"射出高穿透脊椎箭与双螺旋飞刃
+			痉挛箭命中肋骨爆裂并叠加剖检印
+			每第三次满弦凝聚追踪畸变眼球
 			'''
 	}
 
@@ -1631,8 +1836,8 @@ Items: {
 			'''
 			蠕动的血肉枪管喷射高速血弹
 			五连发高速穿透血液弹丸
-			每25发凝聚一颗巨型脏器弹
-			脏器弹爆炸释放追踪血肉触手
+			每25发蓄压喷出巨型脏器弹——最后五发心跳加速预告
+			脏器弹直击叠加剖检印，爆裂为追踪血肉触手
 			'''
 	}
 
@@ -1640,10 +1845,10 @@ Items: {
 		DisplayName: 爆裂肉瘤
 		Tooltip:
 			'''
-			充满压力的肿胀肉瘤投掷物
-			弧线飞行并可弹跳一次
-			爆炸释放8道追踪血肉碎片
-			造成大范围血液爆破伤害
+			充满压力的肿胀肉瘤，按住攻击令其"孕育"膨胀
+			孕育越久：伤害、碎片与爆炸范围越大
+			弧线飞行并可弹跳一次，直击叠加剖检印
+			爆炸释放追踪血肉碎片
 			'''
 	}
 
@@ -1652,9 +1857,9 @@ Items: {
 		Tooltip:
 			'''
 			以血肉封印的禁忌魔法书
-			扇形散射10道血液弹幕
-			每四次施法释放追踪巨型凝视眼球
-			眼球爆裂释放8道追踪触手
+			扇形散射7道血液弹幕
+			每四次施法睁开凝视巨眼：追踪、锁定、爆裂为触手
+			巨眼直击叠加双层剖检印
 			'''
 	}
 
@@ -1663,15 +1868,15 @@ Items: {
 		Tooltip:
 			'''
 			由无数畸变眼球凝聚的诡异法杖
-			连续释放追踪血肉触手
-			每6次释放追踪畸变眼球弹
+			持续引导令其苏醒：触手更多、更快、更密集
+			每6次释放追踪畸变眼球，直击叠加双层剖检印
 			眼球爆裂释放环形血液弹幕
 			'''
 	}
 
 	Livinglog: {
-		// DisplayName: Livinglog
-		// Tooltip: ""
+		DisplayName: 活木
+		Tooltip: 仍在缓慢生长的树精躯干残段，年轮间流动着翠绿的灵液
 	}
 
 	XuanTieHelmet: {
@@ -1756,7 +1961,13 @@ Items: {
 
 	FourSymbolsTablet: {
 		DisplayName: 四象碑
-		Tooltip: （占位）四圣兽召唤待实装 · 四海龙王后合成 · 见设计书 §5.4
+		Tooltip:
+			'''
+			举碑启动「四象归位」仪式
+			青龙(东)→朱雀(南)→白虎(西)→玄武(北)依次降临
+			前一圣兽陨落后，下一方位方才苏醒
+			任一圣兽在场时无法使用
+			'''
 	}
 
 	PhoenixFlameStaff: {
@@ -1900,49 +2111,57 @@ Items: {
 
 	NetherChainBlade: {
 		DisplayName: 冥链刃
-		Tooltip: 掷出链刃后自动回收
-		Tooltip2: 可勾连两名敌人，链间周期性造成冥火伤害
+		Tooltip:
+			'''
+			掷出锁魂链刃：先锁一个，再链两个
+			魂链间周期性脉冲冥火伤害
+			回打链上敌人触发锁魂对撞，链爆重创两端
+			'''
 	}
 
 	SoulHookWhip: {
 		DisplayName: 勾魂索
-		Tooltip: 冥府勾魂鞭，命中时将敌人拽向自身
-		Tooltip2: 施加灵魂侵蚀：持续冥火伤害，并维持勾魂牵引
+		Tooltip:
+			'''
+			每鞭刻下一道魂痕（召唤 tag +4），三痕封顶
+			对满痕敌人挥鞭收魂：重击拽拉
+			收得的魂魄归身，短暂强化召唤伤害
+			'''
 	}
 
 	CupriteDeadwoodMusket: {
 		DisplayName: 赤铜枯木火铳
-		Tooltip: 林地火铳赤铜升级 · 肉后前期远程过渡
+		Tooltip: 林地火铳赤铜升级 · 三发弹仓与燃爆装填 · 命中已点燃的目标迸出火星
 	}
 
 	CupriteEmeraldTwigStaff: {
 		DisplayName: 赤铜翠枝法杖
-		Tooltip: 林地法杖赤铜升级 · 肉后前期魔法过渡
+		Tooltip: 林地法杖赤铜升级 · 翡翠共鸣化为熔爆 · 命中已点燃的目标迸出火星
 	}
 
 	CupriteMossBomb: {
 		DisplayName: 赤铜苔藓炸弹
-		Tooltip: 林地炸弹赤铜升级 · 肉后前期投掷过渡
+		Tooltip: 林地爆弹赤铜升级 · 孢子芽化为火孢 · 爆炸点燃敌人
 	}
 
 	CupriteNatureGrimoire: {
 		DisplayName: 赤铜自然秘典
-		Tooltip: 林地秘典赤铜升级 · 肉后前期召唤过渡
+		Tooltip: 林地秘典赤铜升级 · 第五页绽放燎原页与余烬领域 · 命中已点燃的目标迸出火星
 	}
 
 	CupriteWoodlandGreatsword: {
 		DisplayName: 赤铜林地巨剑
-		Tooltip: 林地巨剑赤铜升级 · 42 伤害 · 1/3 概率中毒
+		Tooltip: 林地巨剑赤铜升级 · 荆根化为焦铜火根 · 万木生化为燎原 · 命中已点燃的目标迸出火星
 	}
 
 	XuanTieHunterBow: {
 		DisplayName: 玄铁猎弓
-		Tooltip: 藤弓玄铁升级 · 38 远程伤害 · 与玄铁流血套装协同
+		Tooltip: 藤弓玄铁升级 · 血钩矢种下血标记，收割化为血刺爆发 · 与玄铁流血套装协同
 	}
 
 	XuanTieRootBoomerang: {
 		DisplayName: 玄铁根回旋镖
-		Tooltip: 根回旋镖玄铁升级 · 肉后前期回旋过渡
+		Tooltip: 根镖玄铁升级 · 命中叠加流血 · 单轮命中三次触发血怒返航
 	}
 
 	WraithLantern: {
@@ -2028,7 +2247,16 @@ NPCs: {
 	Angry_gargoyle.DisplayName: 愤怒的石像鬼
 	angry_gargoyle.DisplayName: angry_gargoyle
 	BlackBear.DisplayName: 黑熊金
-	Dazheng.DisplayName: 大椿
+	Dazheng: {
+		DisplayName: 大椿
+		SeasonSpring: 春 · 万木生
+		SeasonSummer: 夏 · 烈叶焚
+		SeasonAutumn: 秋 · 金身惑
+		SeasonWinter: 冬 · 凛冬藏
+		SeasonsDisorder: 四季失序
+		ForestRequiem: 山林俱寂
+	}
+
 	DazhengSeasonAnchor.DisplayName: 季节锚点
 	DazhengDecoyTree.DisplayName: 黄金幻影·诱饵树
 	TaiShangLaoJunNPC.DisplayName: 太上老君
@@ -2039,9 +2267,9 @@ NPCs: {
 	LaoDieNPC.DisplayName: 老爹
 	YangJianNPC.DisplayName: 杨戬
 	TribulationCloud.DisplayName: 劫云
-	TribulationCloudBlack.DisplayName: 劫云
-	TribulationCloudPurple.DisplayName: 劫云
-	TribulationCloudRed.DisplayName: 劫云
+	TribulationCloudBlack.DisplayName: 玄雷劫云
+	TribulationCloudPurple.DisplayName: 紫霄劫云
+	TribulationCloudRed.DisplayName: 赤雷劫云
 	MengPoNPC.DisplayName: 孟婆
 	TuDiNPC.DisplayName: 土地
 	DaShengNPC.DisplayName: 齐天大圣
@@ -2064,35 +2292,62 @@ NPCs: {
 	GhostFire.DisplayName: 鬼火
 	Yingou.DisplayName: 赢勾
 	YingouHand.DisplayName: 赢勾之手
-	Jiangcen.DisplayName: 将臣
+	Jiangcen: {
+		DisplayName: 将臣
+		ThunderPrison: 雷狱·降临
+		SealOrder: 将令·雷印
+		RollCall: 万雷点将
+	}
+
 	JiangcenHammer.DisplayName: 将臣之锤
 	MaMian.DisplayName: 马面
 	NiuTou.DisplayName: 牛头
 	NetherDragonBody.DisplayName: 幽冥龙
 	NetherDragonHead.DisplayName: 幽冥龙
 	NetherDragonTail.DisplayName: 幽冥龙
-	NetherScaleOrb.DisplayName: 怨念龙鳞
+	NetherScaleOrb.DisplayName: 幽冥逆鳞
 	Corpses.DisplayName: 尸骸
 	CorpsesHand.DisplayName: 尸骸之手
 	KyuubiKitsune.DisplayName: 九尾妖狐
 	NetherKitsune.DisplayName: 幽冥妖狐
-	BlackImpermanence.DisplayName: 黑无常
-	WhiteImpermanence.DisplayName: 白无常
+	BlackImpermanence: {
+		DisplayName: 黑无常
+		YinYangSwap: 阴阳易位
+		YinYangHook: 阴阳勾魂
+		ChainLock: 勾魂锁命
+		SoulRevive: 引魂续命
+		SoloRage: 孤使怒·无救
+	}
+
+	WhiteImpermanence: {
+		DisplayName: 白无常
+		SoulRevive: 引魂续命
+		SoloRage: 孤使怒·必安
+		TetherBreak: 挣断!
+	}
 	AwakeningNetherBody.DisplayName: 觉醒-冥府尽头-幽冥龙
 	AwakeningNetherHead.DisplayName: 觉醒-冥府尽头-幽冥龙
 	AwakeningNetherTail.DisplayName: 觉醒-冥府尽头-幽冥龙
-	Spectre.DisplayName: 幽灵
-	SpectreMinion.DisplayName: 幽灵随从
+	Spectre.DisplayName: 怨灵
+	SpectreMinion.DisplayName: 提灯冤魂
 	CelestialOverseer.DisplayName: 天庭观察者
+	CelestialOverseer.Arrival: 天庭监察，尽收眼底
+	CelestialOverseer.HeavensNet: 天网恢恢，疏而不漏
+	CelestialOverseer.JudgmentMark: 审判标记·无所遁形
 	CelestialEyeMinion.DisplayName: 天庭观察者仆从
 	OverseerScryingEye.DisplayName: 窥视之眼
 	HeavenlyJuror.DisplayName: 天庭陪审
 	AncestralDragonSoulBody.DisplayName: 祖龙残魂
 	AncestralDragonSoulHead.DisplayName: 祖龙残魂
 	AncestralDragonSoulTail.DisplayName: 祖龙残魂
-	AncestralDaoFragment.DisplayName: 刀魂碎片
+	AncestralDaoFragment.DisplayName: 道之碎片
 	CelestialDragonsBody.DisplayName: 天御金龙
 	CelestialDragonsHead.DisplayName: 天御金龙
+	CelestialDragonsHead.Pronounce: 宣敕
+	CelestialDragonsHead.ActEdict: 天规·敕令
+	CelestialDragonsHead.ActWrath: 天规·天罚
+	CelestialDragonsHead.Judgment: 天罚·万剑归宗
+	CelestialDragonsHead.EdictBroken: 敕令已破
 	CelestialDragonsTail.DisplayName: 天御金龙
 	Vaisravana.DisplayName: 多闻天王
 	YakshaMinion.DisplayName: 夜叉仆从
@@ -2114,9 +2369,9 @@ NPCs: {
 	SoulHarvester.DisplayName: Soul Harvester
 	ThebonesinTheTomb.DisplayName: Thebonesin The Tomb
 	TheDeceasedPerson.DisplayName: The Deceased Person
-	AzureDragonBody.DisplayName: Azure Dragon Body
-	AzureDragonHead.DisplayName: Azure Dragon Head
-	AzureDragonTail.DisplayName: Azure Dragon Tail
+	AzureDragonBody.DisplayName: 苍龙之躯
+	AzureDragonHead.DisplayName: 苍龙真身
+	AzureDragonTail.DisplayName: 苍龙之尾
 
 	YinEmperor: {
 		DisplayName: Yin Emperor
@@ -2133,51 +2388,81 @@ NPCs: {
 			Phantom: 汝竟至此。且观——阴帝印现。
 			ExecutePrompt: 酆都帝器共鸣——此刻出手，执行裁决！
 			Executed: 不可能……这裁决……竟反噬于吾……
+			Judgment: 冥诏点名——受判者，就位。
+			GhostGate: 鬼门既开，阴兵借道。
+			SealSlam: 玉玺既落，天地为狱。
+			Death: 法庭……退堂……幡熄……灯灭……
 		}
 	}
 
 	GhostGateLock.DisplayName: 鬼门关钥
-	Aokin.DisplayName: Aokin
-	Aoyuan.DisplayName: Aoyuan
-	AoyuanBody.DisplayName: Aoyuan Body
-	Aoshun.DisplayName: Aoshun
-	AoshunBody.DisplayName: Aoshun Body
-	AoshunArms.DisplayName: Aoshun Arms
-	AoshunTail.DisplayName: Aoshun Tail
+	Aokin.DisplayName: 南海龙王敖钦
+	Aoyuan.DisplayName: 西海龙王敖闰
+	AoyuanBody.DisplayName: 敖闰龙躯
+	Aoshun.DisplayName: 北海龙王敖顺
+	AoshunBody.DisplayName: 敖顺龙躯
+	AoshunArms.DisplayName: 敖顺龙爪
+	AoshunTail.DisplayName: 敖顺龙尾
 	Vigor.DisplayName: 神威·断罪刃
 	Argus.DisplayName: 天目·追魂弧
-	// Dryads.DisplayName: Dryads
+
+	Dryads: {
+		DisplayName: 树精
+		Overgrown: 蔓生
+		Frenzy: 疯长
+		VinePrison: 万藤缠狱
+		Exhausted: 力竭
+	}
+
+	DryadsSiphonBud: {
+		DisplayName: 汲魂灵芽
+		Severed: 汲取中断!
+	}
 }
 
 Projectiles: {
 	StabbingProjectile.DisplayName: 突刺
-	BlackBear_Proj1.DisplayName: 黑熊金
-	BlackBear_Proj2.DisplayName: 黑熊金
-	BlackBear_Proj3.DisplayName: 黑熊金
-	BlackBear_Proj4.DisplayName: 黑熊金
-	BlackBearHoneyDrip.DisplayName: 蜂蜜滴落
+	BlackBear_Proj1.DisplayName: 裂地波
+	BlackBear_Proj2.DisplayName: 蜜蜡弹
+	BlackBear_Proj3.DisplayName: 金冠光环
+	BlackBear_Proj4.DisplayName: 黑风爪痕
+	BlackBearHoneyDrip.DisplayName: 蜜雨
 	BlackBearGroundShock.DisplayName: 地面冲击波
+	BlackBearHoneyPool.DisplayName: 蜜潭
 	GoldenStickSpearProjectile.DisplayName: 金箍棒
 	IronStickSpearProjectile.DisplayName: 铁棒
 	WoodenStickSpearProjectile.DisplayName: 木棒
 	GemStickSpearProjectile.DisplayName: 宝石棒
-	DragonCharmExplosion.DisplayName: 龙符咒爆破
-	DragonCharmLaser.DisplayName: 龙符咒射线
-	PigCharmLaser.DisplayName: 猪符咒射线
+	DragonCharmExplosion.DisplayName: 雷龙劫
+	DragonCharmLaser.DisplayName: 雷龙灵
+	PigCharmLaser.DisplayName: 贪食洪流
+	CharmPaperProj.DisplayName: 生肖符纸
+	CharmSealFX.DisplayName: 朱印
+	CharmNovaProj.DisplayName: 符爆
+	RatSpiritProj.DisplayName: 鼠灵
+	OxSpiritProj.DisplayName: 牛灵
+	RabbitSpiritProj.DisplayName: 玉兔灵
+	SnakeSpiritProj.DisplayName: 蛇灵
+	HorseSpiritProj.DisplayName: 奔雷马灵
+	RoosterSpiritProj.DisplayName: 金鸡灵
+	DogSpiritProj.DisplayName: 灵犬
+	DragonJieBolt.DisplayName: 劫雷柱
 	WoodenStickSpearProjectile_2.DisplayName: 木棒
 	IronStickSpearProjectile_2.DisplayName: 铁棒
 	IronStickSpearProjectile_3.DisplayName: 铁棒
 	GoldenStickSpearProjectile_2.DisplayName: 金箍棒
 	GemStickSpearProjectile_2.DisplayName: 宝石棒
-	BlackBearStaffProj1.DisplayName: 黑熊禅杖
-	BlackBearStaffProj2.DisplayName: 黑熊禅杖
-	BlackBearSwordProj1.DisplayName: 黑熊剑气
-	BlackBearBowProj1.DisplayName: 黑熊箭
+	BlackBearStaffProj1.DisplayName: 黑熊幼灵
+	BlackBearStaffProj2.DisplayName: 熊掌震击
+	BlackBearSwordProj1.DisplayName: 黑风熊掌
+	BlackBearBowProj1.DisplayName: 黑风箭
+	BlackBearHoneySplat.DisplayName: 蜜滴
 	BlankProjectile.DisplayName: 空白弹幕
-	CrimsonbronzeSwordProj1.DisplayName: 赤铜剑气
-	CrimsonbronzeSwordProj2.DisplayName: 赤铜剑气
+	CrimsonbronzeSwordProj1.DisplayName: 赤铜·入炉重斩
+	CrimsonbronzeSwordProj2.DisplayName: 熔火溅珠
 	Demon_Proj.DisplayName: 噩梦梦魇
-	PufferfishProj1.DisplayName: 河豚水弹
+	PufferfishProj1.DisplayName: 河豚高压水柱
+	PufferfishSpine.DisplayName: 河豚水刺
 	MingCrowMinion.DisplayName: 冥鸦随从
 	TribulationLightning.DisplayName: 劫雷
 	EvilIntentionProj2.DisplayName: 恶意
@@ -2187,12 +2472,17 @@ Projectiles: {
 	TribulationLightningStrike.DisplayName: 劫雷
 	TribulationSweep.DisplayName: 紫霄雷幕
 	ChengYingHitbox.DisplayName: 承影剑
-	YuChangSkillProjectile.DisplayName: 鱼肠剑技
-	YuChangSwordBeanProjectile.DisplayName: 鱼肠剑气
+	ChengYingSummonGlint.DisplayName: 承影显形
+	YuChangSkillProjectile.DisplayName: 穿心·背刺
+	YuChangSwordBeanProjectile.DisplayName: 鱼影飞刃
 	YuChangSwordProjectile.DisplayName: 鱼肠剑
 	ShenxianGuanglunPet.DisplayName: 神仙光轮
 	GanJiangSwordProj.DisplayName: 干将剑
-	GanJiangSwordProj_2.DisplayName: 干将莫邪
+	GanJiangSwordProj_2.DisplayName: 莫邪虚剑
+	GanJiangUnityRite.DisplayName: 合鸣·雌雄合璧
+	GanJiangUnityBlade.DisplayName: 合鸣剑气
+	XuanTieHeldSlash.DisplayName: 玄铁重斩
+	XuanTieQuake.DisplayName: 玄铁崩地
 	AurelianCataclysmSmasherProj.DisplayName: 万劫狂金锤
 	ArgentPulseBullet.DisplayName: 银脉冲弹
 	WhiteTigerClawsSwing.DisplayName: 白虎爪
@@ -2260,7 +2550,12 @@ Projectiles: {
 	LocustSet.DisplayName: 蝗灾群
 	HanbaFireBall.DisplayName: 旱魃火球
 	HanbaLaser.DisplayName: 旱魃尸火射线
-	HanbaBigLaser.DisplayName: 旱魃强力射线
+	HanbaBigLaser.DisplayName: 烈日灼柱
+	HanbaScorchTrail.DisplayName: 赤地焦痕
+	HanbaCrackRing.DisplayName: 干裂之环
+	HanbaSunOrb.DisplayName: 焚天坠日
+	HanbaFireWave.DisplayName: 燎原火波
+	HanbaMirage.DisplayName: 旱魃蜃景
 	Shockwave.DisplayName: 冲击波
 	GhostFireProj.DisplayName: 鬼火
 	HoqingShadow.DisplayName: 后卿幻影
@@ -2269,8 +2564,12 @@ Projectiles: {
 	HoqingRingFire.DisplayName: 后卿抗拒火环
 	CorpsePit.DisplayName: 尸坑
 	SputumPool.DisplayName: 脓潭
+	HoqingSputumGlob.DisplayName: 脓雨坠球
+	HoqingSoulPillar.DisplayName: 魂焰柱
+	HoqingSoulLantern.DisplayName: 引路魂灯
 	AzureBolt.DisplayName: 苍龙雷弹
 	AzureThunderRod.DisplayName: 雷霆落雷柱
+	AzureStormOrb.DisplayName: 苍龙风暴雷珠
 	HoqingCorpseChain.DisplayName: 尸链
 	SaberHell.DisplayName: 地狱刀气
 	YingouFireBall.DisplayName: 赢勾尸火
@@ -2287,17 +2586,37 @@ Projectiles: {
 	JiangcenHammerGhost.DisplayName: 镜像锤魂
 	JiangcenLightningStrike.DisplayName: 雷狱落雷
 	JiangcenChainArc.DisplayName: 链式闪电
-	SaberHellFriendly.DisplayName: 地狱刀气
+	JiangcenSealMark.DisplayName: 将令雷印
+	SaberHellFriendly.DisplayName: 冥刃斩线
+	YingouKnifePhantomBlade.DisplayName: 冥刃
+	YingouKnifeBladeWave.DisplayName: 鬼牙刀气
+	HanbaBookScorchBrand.DisplayName: 焦土阴燃
+	HanbaBookFallingSun.DisplayName: 坠日
+	HanbaBookFireWave.DisplayName: 燎原火波
+	HoqingFireSummonBolt.DisplayName: 魂焰弹
+	HoqingFireSummonGate.DisplayName: 小鬼门
+	JiangcenHammerSkyBolt.DisplayName: 天罚落雷
+	JiangcenHammerEchoStrike.DisplayName: 点将虚影锤
 	CoffinNailProjectile.DisplayName: 镇魂棺材钉
-	ChainProj.DisplayName: 锁链
-	DarkGreenBoomProj.DisplayName: 幽绿爆炸
-	DarkGreenProj.DisplayName: 幽绿弹幕
-	EyeProj.DisplayName: 鬼眼
-	Proj_756_Adjust.DisplayName: 调整弹幕
-	SpoawnProj.DisplayName: 生成弹幕
+	CoffinSealRite.DisplayName: 七星封棺
+	NetherSoulLink.DisplayName: 锁魂冥链
+	SoulHookWisp.DisplayName: 收魂魂魄
+	NetherChainBladeProjectile.DisplayName: 冥链刃
+	SoulHookWhipProjectile.DisplayName: 勾魂索
+	ChainProj.DisplayName: 拘魂锁链
+	DarkGreenBoomProj.DisplayName: 爆裂魂核
+	DarkGreenProj.DisplayName: 魂火弹
+	EyeProj.DisplayName: 凝魂之眼
+	Proj_756_Adjust.DisplayName: 血焰刻痕
+	SpoawnProj.DisplayName: 鬼门开
+	NiuMaChainMace.DisplayName: 燃角链锤
+	NiuMaGroundFlame.DisplayName: 贴地魂火波
+	NiuMaWritProj.DisplayName: 拘魂令符
+	NiuMaLinkChain.DisplayName: 勾魂锁命链
+	NiuMaTideField.DisplayName: 忘川水域
 	NetherFlameProjectile.DisplayName: 幽冥鬼火
-	NetherLaserBeam.DisplayName: 幽冥射线
-	NetherPortal.DisplayName: 幽冥传送门
+	NetherLaserBeam.DisplayName: 幽冥魂束
+	NetherPortal.DisplayName: 冥界之门
 	NetherFlameTrail.DisplayName: 幽冥火痕
 	CorpsesBoneShower.DisplayName: 尸骸骨雨
 	CorpsesClapWave.DisplayName: 尸骸拍击波
@@ -2317,10 +2636,15 @@ Projectiles: {
 	KyuubiBookTailController.DisplayName: 九尾尾部控制
 	KyuubiFoxFire.DisplayName: 狐火弹
 	KyuubiMandalaEdge.DisplayName: 狐火曼陀罗
+	KyuubiTailLance.DisplayName: 天狐贯刺
+	KyuubiFoxfirePearl.DisplayName: 狐火明珠
+	KyuubiWindCrescent.DisplayName: 金风狐刃
 	NetherBookTail.DisplayName: 幽冥书卷尾
 	NetherBookTailController.DisplayName: 幽冥尾部控制
 	NetherSoulBolt.DisplayName: 幽冥灵弹
 	NetherFoxfireSoul.DisplayName: 幽冥狐火魂弹
+	NetherGhostflamePatch.DisplayName: 怨火地灾
+	NetherTailStrike.DisplayName: 幽冥尾击
 	DakkiBookController.DisplayName: 妲己书卷控制
 	DakkiBookTail.DisplayName: 妲己书卷尾
 	DakkiCharmRing.DisplayName: 妲己魅惑环
@@ -2350,15 +2674,16 @@ Projectiles: {
 	AwakeningNetherMiasma.DisplayName: 虚空魂雾
 	AwakeningNetherSegmentLaser.DisplayName: 幽冥体节激光
 	AwakeningNetherSoulSatellite.DisplayName: 噬魂卫星
+	AwakeningNetherSoulWisp.DisplayName: 魂火余烬
 	AbyssalRiftSlash.DisplayName: 深渊裂隙斩
 	AbyssalSpineSlash.DisplayName: 深渊脊刺斩
 	PhantomBreathArrow.DisplayName: 幻影吐息箭
 	PhantomDevastation.DisplayName: 幻影毁灭
 	PhantomSplitGhost.DisplayName: 幻影分身
 	SoulErosionCircle.DisplayName: 灵魂侵蚀环
-	SpectreSoulChain.DisplayName: 幽灵勾魂链
-	SpectreSoulOrb.DisplayName: 幽灵魂球
-	SpectreWailingWave.DisplayName: 幽灵哀嚎波
+	SpectreSoulChain.DisplayName: 怨灵勾魂链
+	SpectreSoulOrb.DisplayName: 怨灵魂球
+	SpectreWailingWave.DisplayName: 怨灵哀嚎波
 	SpectreWraithBolt.DisplayName: 怨灵弹
 	SpectreLanternAnchor.DisplayName: 鬼火灯笼锚
 	SpectrePhantomRush.DisplayName: 冤魂幻袭
@@ -2378,6 +2703,8 @@ Projectiles: {
 	SweepingLaserBolt.DisplayName: 扫射激光
 	JudgmentBeam.DisplayName: 审判射线
 	OverseerGroundTelegraph.DisplayName: 预兆
+	OverseerLockCone.DisplayName: 锁定扫描锥
+	OverseerNetBeam.DisplayName: 天网律束
 	AllSeeingBeam.DisplayName: 全视光束
 	AllSeeingEyeProjectile.DisplayName: 全视之眼
 	CelestialChakramProjectile.DisplayName: 乾坤圈
@@ -2420,6 +2747,7 @@ Projectiles: {
 	ArchosaurNestOrb.DisplayName: 雷巢球
 	ArchosaurNestLink.DisplayName: 雷巢链电
 	ArchosaurReverseBolt.DisplayName: 逆向雷
+	ArchosaurPierceMark.DisplayName: 贯天雷标
 	BossDragonAuthorityCircle.DisplayName: 龙威法阵
 	DragonCircleWarning.DisplayName: 龙环预警
 	ForkedCelestialLightning.DisplayName: 叉状神雷
@@ -2427,6 +2755,8 @@ Projectiles: {
 	MandateZone.DisplayName: 天命赐福区
 	EdictBeacon.DisplayName: 敕令法标
 	CelestialScale.DisplayName: 天龙逆鳞
+	CelestialDragonPearlOrb.DisplayName: 天龙宝珠
+	CelestialSkyPillar.DisplayName: 天光柱
 	CelestialEdictSeal.DisplayName: 天道敕令封印
 	CelestialLightningBolt.DisplayName: 天道雷霆
 	DragonAuraSlash.DisplayName: 龙气斩
@@ -2449,6 +2779,8 @@ Projectiles: {
 	TreasurySealRing.DisplayName: 库藏封印金环
 	YakshaMirrorBolt.DisplayName: 夜叉镜弹
 	TreasurySealRune.DisplayName: 库藏封印符
+	VajraSpear.DisplayName: 金刚破军矛
+	VaisravanaLightPillar.DisplayName: 镇压天光柱
 	DragonBreathBeam.DisplayName: 龙息光束
 	DragonMinion.DisplayName: 神龙随从
 	DragonWaterBolt.DisplayName: 神龙水弹
@@ -2465,6 +2797,8 @@ Projectiles: {
 	FallingWaterSpear.DisplayName: 堕天水矛
 	TsunamiWall.DisplayName: 海啸墙
 	WaterSpike.DisplayName: 水刺
+	AoGuangWaterspout.DisplayName: 行走水龙卷
+	AoGuangSkyDeluge.DisplayName: 终潮天倾
 	AbyssalDragonbladeSlash.DisplayName: 深渊龙刃斩
 	ChakramWaterBurst.DisplayName: 轮刃水爆
 	DragonSoaringThrust.DisplayName: 飞龙在天
@@ -2480,26 +2814,40 @@ Projectiles: {
 	CelestialFragment.DisplayName: 天界碎片
 	ChainLightning.DisplayName: 连锁闪电
 	CloudpiercerArrow.DisplayName: 穿云箭
-	DivineRune.DisplayName: 神圣符文
+	PiercingSunArrow.DisplayName: 贯云神矢
+	DivineRune.DisplayName: 天律令符
 	FirmamentSlash.DisplayName: 苍穹斩
-	HalberdShockwave.DisplayName: 战戟冲击波
+	FirmamentSwing.DisplayName: 昊天巨阙
+	FirmamentSkyRift.DisplayName: 苍穹裂隙
+	HalberdShockwave.DisplayName: 贯阵冲击波
 	HalberdThrust.DisplayName: 战戟突刺
 	JadeArmillaryProjectile.DisplayName: 玉璇玑
-	OverseerOrb.DisplayName: 监视者法球
-	RuneCircle.DisplayName: 符文环
+	ArmillarySphereField.DisplayName: 张衡浑天阵
+	OverseerOrb.DisplayName: 监天光球
+	RuneCircle.DisplayName: 天律审判页
 	ThunderclapBlast.DisplayName: 霹雳爆破
+	ThunderboltShell.DisplayName: 轰天雷
+	HeavenJudgmentBolt.DisplayName: 天罚落雷
 	BoneSpike.DisplayName: Bone Spike
 	GhostOrbProjectile.DisplayName: Ghost Orb Projectile
 	SoulSickle.DisplayName: Soul Sickle
 	YakshaFireball.DisplayName: Yaksha Fireball
-	FateRuneProjectile.DisplayName: Fate Rune Projectile
-	JudgesSoulhookProjectile.DisplayName: Judges Soulhook Projectile
-	KarmasMirrorBladeProj.DisplayName: Karmas Mirror Blade Proj
-	NetherfireBullet.DisplayName: Netherfire Bullet
-	NetherflowOrb.DisplayName: Netherflow Orb
-	NetherRockSoulbombProj.DisplayName: Nether Rock Soulbomb Proj
-	SoulguideArrow.DisplayName: Soulguide Arrow
-	YamasSeveranceSlash.DisplayName: Yamas Severance Slash
+	FateRuneProjectile.DisplayName: 命运符文
+	JudgesSoulhookProjectile.DisplayName: 判官勾魂枪
+	KarmasMirrorBladeProj.DisplayName: 孽镜回旋刃
+	NetherfireBullet.DisplayName: 幽火弹丸
+	NetherflowOrb.DisplayName: 川流能量球
+	NetherRockSoulbombProj.DisplayName: 冥岩爆魂雷
+	SoulguideArrow.DisplayName: 引魂箭
+	YamasSeveranceSlash.DisplayName: 断业剑气
+	KarmicVerdict.DisplayName: 阎罗判决印
+	VermilionRebuke.DisplayName: 朱批敕令
+	YamasSeveranceSwing.DisplayName: 断业挥斩
+	YamasVerdictIai.DisplayName: 勾决居合
+	KarmaMirrorImage.DisplayName: 业镜折影
+	NetherfireField.DisplayName: 幽火场
+	SoulFerryWisp.DisplayName: 渡魂魄
+	NetherflowVortex.DisplayName: 幽冥漩涡
 	YamasDeicideSlash.DisplayName: 屠神斩击
 	DamnedSoulguideArrow.DisplayName: 万劫引魂箭
 	SoulEatingBullet.DisplayName: 噬魂弹
@@ -2509,40 +2857,80 @@ Projectiles: {
 	NetherEclipseOrb.DisplayName: 寂灭冥球
 	SoulShatteringBombProj.DisplayName: 碎魂黄泉雷
 	SoulShatteringSubBomb.DisplayName: 碎魂子雷
+	YamasDeicideHeld.DisplayName: 阎摩屠神巨刃
+	YamaGreatSlashWave.DisplayName: 阎罗一刀
+	DeicideRiftFX.DisplayName: 弑神裂隙
+	KarmaAwakenFX.DisplayName: 业劫觉醒
+	KarmaWheelBlade.DisplayName: 无间劫刃
+	OblivionSoulWave.DisplayName: 勾魂魂波
+	MyriadDemonLord.DisplayName: 魔首大符
+	YomiPillarStrike.DisplayName: 黄泉引渡柱
+	YomiGate.DisplayName: 黄泉之门
+	SoulMawBlast.DisplayName: 魂爆聚束炮
+	NetherNetField.DisplayName: 冥府罗网
 	ImperatorSlash.DisplayName: 黑帝斩
 	ImperatorVoidEruption.DisplayName: 虚空万劫爆
+	ImperatorBladeHeld.DisplayName: 万劫寂灭黑帝刀
+	ImperatorJudgmentFlash.DisplayName: 黑帝审判
 	ChaosDeicideArrow.DisplayName: 混元弑神箭
 	ChaosRainZone.DisplayName: 万羽坠神域
 	ChaosRainArrow.DisplayName: 坠神羽箭
+	DeicideBowHeld.DisplayName: 混元吞天万羽坠神弓
 	DragonBreathWave.DisplayName: 冥龙吐息
 	DragonAnnihilationMark.DisplayName: 寂灭龙印
+	DragonDetonationFlash.DisplayName: 冥龙引爆
+	HellwyrmCannonHeld.DisplayName: 地狱冥龙吐纳寂灭炮
 	FrostJudgmentChakramProj.DisplayName: 九幽判官轮刃
+	FrostJudgmentFlash.DisplayName: 九幽判决
 	VoidSoulpiercerProjectile.DisplayName: 虚空穿心矛
 	VoidRiftLine.DisplayName: 虚空裂隙
+	VoidSoulShatter.DisplayName: 虚空魂碎
 	RashomonGateProj.DisplayName: 罗生门
 	NightmareTendril.DisplayName: 噩梦触手
-	FateDecreeOrb.DisplayName: 命运法令灵球
+	RashomonCurseMark.DisplayName: 万咒咒印
+	FateDecreeOrb.DisplayName: 朱笔勾魂灵球
 	FateMarkProj.DisplayName: 命运烙印
+	FateVerdictFlash.DisplayName: 司命判决
 	SingularityBombProj.DisplayName: 奇点炸弹
 	SingularityEcho.DisplayName: 奇点回响
-	ArenaEdge.DisplayName: Arena Edge
-	YinEmperorBolt.DisplayName: Yin Emperor Bolt
-	YinEmperorLaser.DisplayName: Yin Emperor Laser
-	AokinFireball.DisplayName: Aokin Fireball
-	AokinFlameVortex.DisplayName: Aokin Flame Vortex
-	AokinMeteor.DisplayName: Aokin Meteor
-	AokinBarrierTornado.DisplayName: Aokin Barrier Tornado
+	SingularityImplosionFlash.DisplayName: 奇点内爆
+	FengduNightmareFlash.DisplayName: 酆都噩梦
+	ArenaEdge.DisplayName: 冥眼
+	YinEmperorBolt.DisplayName: 帝冥弹
+	YinEmperorLaser.DisplayName: 帝冥激光
+	YinEmperorDecreeSeal.DisplayName: 冥诏印记
+	YinEmperorJudgmentColumn.DisplayName: 审判柱
+	YinEmperorGhostGate.DisplayName: 鬼门
+	YinEmperorCourtBarrier.DisplayName: 酆都法庭结界
+	AokinFireball.DisplayName: 敖钦龙焰火球
+	AokinFlameVortex.DisplayName: 烈焰旋涡
+	AokinMeteor.DisplayName: 敖钦焰陨
+	AokinBarrierTornado.DisplayName: 封路火龙卷
 	AokinEmberPillar.DisplayName: 劫火印记·火柱
 	AokinLavaFissure.DisplayName: 焚海劫·熔潮裂隙
 	AokinInfernoRing.DisplayName: 炼狱茧·泄压火环
-	AoyuanFrostVortex.DisplayName: Aoyuan Frost Vortex
-	AoyuanIceball.DisplayName: Aoyuan Iceball
-	AoyuanIcicle.DisplayName: Aoyuan Icicle
-	AoyuanFrostBeam.DisplayName: Aoyuan Frost Beam
-	AoyuanPermafrostTrail.DisplayName: 永冻地痕
+	AokinBreathFlame.DisplayName: 赤炎龙息
+	AokinMoltenGlob.DisplayName: 熔金雨·熔滴
+	AokinFlamePool.DisplayName: 熔金雨·熔池
+	AokinSteamOrb.DisplayName: 蒸汽龙炮·熔核
+	AokinSteamShard.DisplayName: 沸海蒸汽弹
+	AokinShockwave.DisplayName: 沸海蒸腾冲击
+	AokinScaldGeyser.DisplayName: 沸海间歇泉
+	AokinFireTornadoProj.DisplayName: 炎龙卷舞
+	AokinFlameFlood.DisplayName: 龙焰洪流
+	AoyuanFrostVortex.DisplayName: 冰霜旋涡
+	AoyuanIceball.DisplayName: 冰晶飞棱
+	AoyuanIcicle.DisplayName: 坠冰
+	AoyuanFrostBeam.DisplayName: 折光冰束
+	AoyuanPermafrostTrail.DisplayName: 冰封航迹
 	AoyuanPillarTelegraph.DisplayName: 冰晶棋局落点
 	AoyuanBlizzardWall.DisplayName: 暴雪帷幕
 	AoyuanAbsoluteZeroBurst.DisplayName: 绝对零度
+	AoyuanIceMirror.DisplayName: 西海冰镜
+	AoyuanColdField.DisplayName: 寒潮冻土
+	AoyuanFrostRidge.DisplayName: 寒潮冰脊
+	AoyuanIceSpike.DisplayName: 冰晶尖刺
+	AoyuanFreezeTrap.DisplayName: 冰封困龙局
 	AoshunLightningNode.DisplayName: 闪电节点
 	AoshunDragonScale.DisplayName: 带电龙鳞
 	AoshunTornado.DisplayName: 龙卷风
@@ -2550,9 +2938,12 @@ Projectiles: {
 	AoshunShockwave.DisplayName: 冲击波
 	AoshunStormEye.DisplayName: 风暴之眼
 	AoshunElectricTrail.DisplayName: 电弧痕迹
+	AoshunWindBlade.DisplayName: 风刃
+	AoshunSkyBolt.DisplayName: 天雷柱
+	AoshunBreachCrack.DisplayName: 地裂预兆
 	DivineWoodFlowerWave.DisplayName: Divine Wood Flower Wave
 	DivineWoodGiantSeed.DisplayName: Divine Wood Giant Seed
-	DivineWoodGyratingLeafProj.DisplayName: Divine Wood Gyrating Leaf Proj
+	DivineWoodGyratingLeafProj.DisplayName: 神木旋叶
 	DivineWoodLeafArrow.DisplayName: Divine Wood Leaf Arrow
 	DivineWoodLeafBurst.DisplayName: Divine Wood Leaf Burst
 	DivineWoodNatureBloom.DisplayName: Divine Wood Nature Bloom
@@ -2567,19 +2958,28 @@ Projectiles: {
 	DivineWoodThornShrapnel.DisplayName: Divine Wood Thorn Shrapnel
 	DivineWoodTreeSpiritMinion.DisplayName: Divine Wood Tree Spirit Minion
 	DivineWoodVineEntangle.DisplayName: Divine Wood Vine Entangle
-	DivineWoodBloomExplosion.DisplayName: Divine Wood Bloom Explosion
-	DivineWoodGreatbladeSwing.DisplayName: Divine Wood Greatblade Swing
-	DivineWoodLeafBolt.DisplayName: Divine Wood Leaf Bolt
+	DivineWoodBloomExplosion.DisplayName: 自然绽放
+	DivineWoodGreatbladeSwing.DisplayName: 神木巨刃
+	DivineWoodLeafBolt.DisplayName: 神木叶矢
 	DivineWoodNatureBolt.DisplayName: Divine Wood Nature Bolt
 	DivineWoodPetalOrb.DisplayName: Divine Wood Petal Orb
-	DivineWoodSeedGrenade.DisplayName: Divine Wood Seed Grenade
-	DivineWoodSeedMortar.DisplayName: Divine Wood Seed Mortar
-	DivineWoodSpiralLeaf.DisplayName: Divine Wood Spiral Leaf
-	DivineWoodThornFieldExplosion.DisplayName: Divine Wood Thorn Field Explosion
-	DivineWoodThornNeedle.DisplayName: Divine Wood Thorn Needle
-	DivineWoodVineShard.DisplayName: Divine Wood Vine Shard
+	DivineWoodSeedGrenade.DisplayName: 神木种子
+	DivineWoodSeedMortar.DisplayName: 种子迫击弹
+	DivineWoodSpiralLeaf.DisplayName: 螺旋叶刃
+	DivineWoodThornFieldExplosion.DisplayName: 荆棘领域
+	DivineWoodThornNeedle.DisplayName: 荆棘针
+	DivineWoodVineShard.DisplayName: 藤蔓碎片
 	DivineWoodVineVortex.DisplayName: Divine Wood Vine Vortex
-	DivineWoodVineWave.DisplayName: Divine Wood Vine Wave
+	DivineWoodVineWave.DisplayName: 自然刀波
+	DivineWoodBloomBurst.DisplayName: 年轮绽放
+	DivineWoodRootSpike.DisplayName: 根须尖刺
+	DivineWoodPillarRite.DisplayName: 建木擎天
+	DivineWoodPillar.DisplayName: 建木巨柱
+	DivineWoodLotus.DisplayName: 神木莲华
+	DivineWoodBloomCall.DisplayName: 催花法阵
+	DivineWoodThornPatch.DisplayName: 荆棘地
+	DivineWoodBowHeld.DisplayName: 神木长弓
+	DivineWoodPierceArrow.DisplayName: 贯林矢
 	RootBoomerangProj.DisplayName: 树根回力镖
 	DeadwoodAcornProj.DisplayName: 橡子弹丸
 	EmeraldTwigBolt.DisplayName: 翡翠树枝弹
@@ -2616,6 +3016,8 @@ Projectiles: {
 	ArrogantSylvanTomeLeaf.DisplayName: 傲世叶刃
 	ArrogantSylvanTomePetal.DisplayName: 傲世花瓣
 	ArrogantSylvanLeafVortex.DisplayName: 傲世叶暴漩涡
+	ArrogantSylvanSeedHold.DisplayName: 傲世母树种蓄力
+	ArrogantSylvanBloomBurst.DisplayName: 傲世年轮绽放
 	ProfaneDismembererSwing.DisplayName: 亵渎肢解刃挥斩
 	ProfaneFleshWave.DisplayName: 亵渎血肉波
 	GluttonousFleshrangProj.DisplayName: 贪噬肉旋
@@ -2633,17 +3035,20 @@ Projectiles: {
 	GrimoireGazingEye.DisplayName: 凝视之眼
 	AberrantEyeballProj.DisplayName: 畸变眼球
 	AberrantBloodBurst.DisplayName: 血液爆射
+	ProfaneHarvestBurst.DisplayName: 剖检摘取
+	TumorBombHolder.DisplayName: 孕育中的肉瘤
+	TendonBowHeld.DisplayName: 搐筋弓
 	RunicCleaveWaves.DisplayName: 符文横扫光刃
 	RunicEnergyOrbs.DisplayName: 符文能量球
-	StarSightArrows.DisplayName: 星芒追踪箭
-	SpinningGalacticOrbs.DisplayName: 旋转星系球
-	AetherealWingblades.DisplayName: 羽翼光刃
-	// BaihuMetalShard.DisplayName: Baihu Metal Shard
-	// BaihuSonicRoar.DisplayName: Baihu Sonic Roar
+	StarSightArrows.DisplayName: 星芒追魂箭
+	SpinningGalacticOrbs.DisplayName: 旋转星轨球
+	AetherealWingblades.DisplayName: 星瞳哨兵
+	BaihuMetalShard.DisplayName: 白虎·金属碎片
+	BaihuSonicRoar.DisplayName: 白虎·音啸
 	BaihuRendBeam.DisplayName: 银爪裂脉
 	BaihuEchoDecoy.DisplayName: 金属回响
-	// QinglongThunderBolt.DisplayName: Qinglong Thunder Bolt
-	// QinglongWindBlade.DisplayName: Qinglong Wind Blade
+	QinglongThunderBolt.DisplayName: 青龙雷矢
+	QinglongWindBlade.DisplayName: 青龙风刃
 	QinglongThunderColumn.DisplayName: 青龙天罚雷柱
 	QinglongWindDomain.DisplayName: 青龙风域
 	// SuzakuFireball.DisplayName: Suzaku Fireball
@@ -2654,16 +3059,19 @@ Projectiles: {
 	SuzakuSolarBeam.DisplayName: 朱雀赤日审判光束
 	// XuanwuIceShard.DisplayName: Xuanwu Ice Shard
 	// XuanwuVenomFang.DisplayName: Xuanwu Venom Fang
-	// SoulBannerHeldProj.DisplayName: Soul Banner Held Proj
-	// SoulBannerMinion.DisplayName: Soul Banner Minion
+	SoulBannerHeldProj.DisplayName: 万魂幡
+	SoulBannerMinion.DisplayName: 万魂幡·悬浮幡
+	SoulWailSpirit.DisplayName: 哭嚎亡魂
+	SoulWispVFX.DisplayName: 灵魂归幡
 	DazhengVine.DisplayName: 大椿藤蔓
 	DazhengLeaf.DisplayName: 大椿落叶
 	DazhengGoldenPhantom.DisplayName: 黄金幻象
 	DazhengHealThread.DisplayName: 生命汲取·治疗线
 	DazhengRootField.DisplayName: 根须内蚀
-	// Acanthosphere.DisplayName: Acanthosphere
-	// DryadsLeaf.DisplayName: Dryads Leaf
-	// DryadsVine.DisplayName: Dryads Vine
+	DazhengRootSpear.DisplayName: 大椿根刺
+	Acanthosphere.DisplayName: 荆棘刺球
+	DryadsLeaf.DisplayName: 灵叶
+	DryadsVine.DisplayName: 缠身藤蔓
 	DryadsSporeZone.DisplayName: 毒孢蔓生
 	// DazhengArenaBarrier.DisplayName: Dazheng Arena Barrier
 	// XuanwuIcePillar.DisplayName: Xuanwu Ice Pillar
@@ -2726,8 +3134,8 @@ Projectiles: {
 	// CupriteNatureLeaf.DisplayName: Cuprite Nature Leaf
 	// XuanTieArrow.DisplayName: Xuan Tie Arrow
 	// XuanTieBoomerangProj.DisplayName: Xuan Tie Boomerang Proj
-	// NiuMaRevivalCircle.DisplayName: Niu Ma Revival Circle
-	// SoulOrbProj.DisplayName: Soul Orb Proj
+	NiuMaRevivalCircle.DisplayName: 复生反制圈
+	SoulOrbProj.DisplayName: 黄泉慢魂球
 	// CorpsesBoneRainMarker.DisplayName: Corpses Bone Rain Marker
 	// NetherSoulExplosion.DisplayName: Nether Soul Explosion
 	// NetherSoulSpark.DisplayName: Nether Soul Spark
@@ -2804,6 +3212,26 @@ Tiles: {
 }
 
 Buffs: {
+	KarmaAwakenBuff: {
+		DisplayName: 业劫觉醒
+		Description: 业障满溢——亡魂EX武器显露真形
+	}
+
+	DivineWoodRootedBuff: {
+		DisplayName: 生根
+		Description: 神木根须缠体——生命持续流逝；小心收割者引爆年轮绽放
+	}
+
+	HoqingFireSummonBuff: {
+		DisplayName: 幽火仪仗
+		Description: 仪仗幽灯为你而战
+	}
+
+	GluttonousSatietyBuff: {
+		DisplayName: 饱食
+		Description: 肉旋吃饱了：膨胀、更痛、更贪
+	}
+
 	AoyuanChill: {
 		DisplayName: 永冻
 		Description: 寒冰地痕使你减速；叠满三层将被彻底冻结
@@ -2879,6 +3307,11 @@ Buffs: {
 		Description: 你处于隐身状态
 	}
 
+	SnakeAmbushBuff: {
+		DisplayName: 蛇蜕
+		Description: 敌人几乎注意不到你，其间掷出的蛇灵将从伏击中出手
+	}
+
 	DogCharmBuff: {
 		DisplayName: 狗符咒
 		Description: 每秒回复50点生命和魔力
@@ -2905,23 +3338,28 @@ Buffs: {
 	}
 
 	BuffsBlackBearStaff: {
-		DisplayName: 金皇冠
-		Description: 金皇冠将为你而战！
+		DisplayName: 黑熊幼灵
+		Description: 黑风山的小家伙将为你而战！
 	}
 
 	MingCrowMinionBuff: {
 		DisplayName: 召唤冥鸦
-		Description: 有一只无畜无害的冥鸦为你战斗
+		Description: 阴间鸦群为你而战 (右键解散)
 	}
 
 	SoulBannerMinionBuff: {
 		DisplayName: 万魂幡
-		Description: 万魂幡悬浮于头顶，持续吸取周围敌人的灵魂
+		Description: 万魂幡悬浮于头顶，持续吸取周围敌人的灵魂；灵魂充足时右键引爆「万魂齐哭」
 	}
 
 	SoulHookWhipDebuff: {
-		DisplayName: 灵魂侵蚀
-		Description: 灵魂被勾魂索锁定，遭受冥火侵蚀并被持续牵引
+		DisplayName: 魂痕
+		Description: 魂魄被勾魂索刻下抓痕，召唤物对其造成额外伤害
+	}
+
+	SoulCaptureBuff: {
+		DisplayName: 拘魂
+		Description: 收魂归身，召唤伤害提升 8%
 	}
 
 	ChengYingBuff: {
@@ -2940,8 +3378,13 @@ Buffs: {
 	}
 
 	XuanTieBleed: {
-		DisplayName: Xuan Tie Bleed
+		DisplayName: 玄铁流血
 		Description: Mods.AncientChineseMythology.Buffs.XuanTieBleed.Description
+	}
+
+	BlackBearHoneyGlazed: {
+		DisplayName: 蜜渍
+		Description: 被蜂蜜蜜渍, 受到的伤害提高
 	}
 
 	BaGuaBuff: {
@@ -2950,23 +3393,23 @@ Buffs: {
 	}
 
 	ChainProj_Buff_1: {
-		DisplayName: Chain Proj_ Buff_1
-		Description: Mods.AncientChineseMythology.Buffs.ChainProj_Buff_1.Description
+		DisplayName: 锁链牵引
+		Description: 被拘魂锁链缚住，正被拽向牛头
 	}
 
 	DeclineSpeedBuff_1: {
-		DisplayName: Decline Speed Buff_1
-		Description: Mods.AncientChineseMythology.Buffs.DeclineSpeedBuff_1.Description
+		DisplayName: 忘川浸身
+		Description: 忘川水域拖曳着你的行动
 	}
 
 	DeclineSpeedBuff_2: {
-		DisplayName: Decline Speed Buff_2
-		Description: Mods.AncientChineseMythology.Buffs.DeclineSpeedBuff_2.Description
+		DisplayName: 忘川怒潮
+		Description: 狂怒的忘川水域死死拖住你的魂魄
 	}
 
 	EyeProj_Buff_1: {
-		DisplayName: Eye Proj_ Buff_1
-		Description: Mods.AncientChineseMythology.Buffs.EyeProj_Buff_1.Description
+		DisplayName: 魂目侵蚀
+		Description: 凝魂之眼看穿了你的魂魄，防御降低
 	}
 
 	SoulHookBuff: {
@@ -3061,6 +3504,23 @@ Corpses: {
 	RitualBreak: 生门已破！
 	RitualComplete: 魂祭已成
 	CityGate: 枉死城门闭合
+	Awaken: 枉死万骸，起
+	Collapse: 万骸归寂
+}
+
+Misc: {
+	FourSymbolsRite: {
+		Begin: 四象碑轰鸣——四象归位之仪，启！
+		RiseEast: 东方七宿亮起，苍龙腾于云海！
+		RiseSouth: 南方七宿燃起，朱雀浴于天火！
+		RiseWest: 西方七宿凛冽，白虎啸裂长空！
+		RiseNorth: 北方七宿沉凝，玄武镇于渊底！
+		FallEast: 东方已定，苍龙化雨升天。
+		FallSouth: 南方已定，凤火尽而星沉。
+		FallWest: 西方已定，虎啸断于金风。
+		Complete: 玄武归渊，四象归位——天地重归于衡。
+		Broken: 圣兽离场，四象之仪中断。
+	}
 }
 
 Configs: {

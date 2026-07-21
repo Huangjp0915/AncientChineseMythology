@@ -12,11 +12,10 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Items.Weapons.ArrogantDivineSylvans;
 
 /// <summary>
-/// 傲世神木·落叶风暴 - 暴力螺旋风暴型终极回旋镖
-/// 掷出后在落点展开极速扩展螺旋风暴，卷碎一切
-/// 按住攻击键维持风暴，松开后内爆坍缩→高速回收
-/// 回程伤害×2，接住时屏幕震动 + 叶片冲击波
-/// 每3次命中触发万木裁决：16花瓣爆发 + 范围藤蔓缠绕
+/// 傲世神木·落叶风暴 (系列次旗舰) - 螺旋风暴回旋镖
+/// 掷出→落点展开螺旋风暴 (杀伤区=**环带**, 用 Vortex 着色器画出的藤叶风暴环即判定区)
+/// 按住维持风暴 (每 45 帧环带脉冲甩出叶片), 松开→内爆坍缩→**范围引爆年轮烙印**→高速回收
+/// 回程伤害×2, 接住时冲击反馈; 风暴/回程命中刻下烙印
 /// </summary>
 public class ArrogantDivineSylvanChakram : ModItem
 {
@@ -55,9 +54,8 @@ public class ArrogantDivineSylvanChakram : ModItem
 }
 
 /// <summary>
-/// 傲世旋叶弹幕 - 暴力螺旋风暴回旋镖
-/// 投射→螺旋风暴(扩展)→内爆坍缩→高速回收
-/// 全程高速运动，力量感拉满
+/// 傲世旋叶弹幕 - 投射(反拍前摇+爆发)→螺旋风暴(环带判定)→内爆坍缩(引爆烙印)→高速回收
+/// 判定与视觉严格对齐: 风暴期杀伤区=环带(±75px), 由 ArrogantSylvanVortex 着色器可视化
 /// </summary>
 public class ArrogantSylvanChakramProj : ModProjectile
 {
@@ -67,33 +65,37 @@ public class ArrogantSylvanChakramProj : ModProjectile
     // Phase: 0 = Launching, 1 = Spiraling, 2 = Imploding, 3 = Recalling
     private ref float Phase => ref Projectile.ai[0];
     private ref float Timer => ref Projectile.ai[1];
-    private ref float HitCounter => ref Projectile.localAI[0];
     private ref float SpiralAngle => ref Projectile.localAI[1];
 
-    // ---- 投射 ----
-    private const int LaunchDuration = 20;
+    // ---- 投射 (反拍→爆发: 出手先泄力 6 帧再猛然弹射, 速度对比卖"快") ----
+    private const int ReelFrames = 6;
+    private const int LaunchDuration = 22;
+    private const float LaunchSpeed = 38f;
 
     // ---- 螺旋风暴 ----
-    private const float SpiralStartRadius = 40f;     // 起始半径
-    private const float SpiralMaxRadius = 260f;      // 最大扩展半径
-    private const float SpiralExpandRate = 3.5f;     // 每帧半径增长
-    private const float SpiralAngularSpeed = 0.28f;  // 每帧角速度（极快旋转）
-    private const int MaxSpiralDuration = 240;       // 最大风暴持续帧（4秒）
+    private const float SpiralStartRadius = 40f;
+    private const float SpiralMaxRadius = 260f;
+    private const float SpiralExpandRate = 3.5f;
+    private const float SpiralAngularSpeed = 0.28f;
+    private const int MaxSpiralDuration = 240;
+    private const float BandHalfWidth = 75f;     // 环带半宽 = 伤害判定半宽 (与 Vortex 视觉一致)
+    private const int PulseInterval = 45;        // 环带脉冲节奏 (万木裁决改造为节奏阀)
 
     // ---- 内爆坍缩 ----
-    private const float ImplodeContractRate = 12f;   // 内爆收缩速率
-    private const float ImplodeAngularSpeed = 0.50f; // 内爆旋转加速
+    private const float ImplodeContractRate = 12f;
+    private const float ImplodeAngularSpeed = 0.50f;
 
     // ---- 回收 ----
     private const float RecallAccel = 3.0f;
     private const float MaxRecallSpeed = 50f;
     private const float CatchRadius = 50f;
 
-    private Vector2 _stormCenter;    // 风暴中心点
-    private float _spiralRadius;     // 当前螺旋半径
+    private Vector2 _stormCenter;
+    private float _spiralRadius;
     private int _spiralTimer;
     private bool _caughtBurst;
-    private int _collapseFlash;      // 内爆坍缩径向泛光计时 (纯视觉, 客户端本地)
+    private int _collapseFlash;   // 内爆坍缩径向泛光计时 (纯视觉)
+    private float _pulseFlash;    // 环带脉冲增亮包络 (纯视觉)
 
     private bool IsSpiraling => Phase >= 1f && Phase < 2f;
     private bool IsImploding => Phase >= 2f && Phase < 3f;
@@ -123,8 +125,9 @@ public class ArrogantSylvanChakramProj : ModProjectile
 
         Timer++;
         if (_collapseFlash > 0) _collapseFlash--;
+        if (_pulseFlash > 0.01f) _pulseFlash *= 0.90f;
 
-        // 旋转速度：风暴阶段极速，回收阶段猛烈
+        // 旋转速度: 风暴阶段极速, 回收阶段猛烈
         float rotSpeed = IsSpiraling ? 0.55f : (IsImploding ? 0.75f : (IsRecalling ? 0.70f : 0.40f));
         Projectile.rotation += rotSpeed;
 
@@ -135,7 +138,7 @@ public class ArrogantSylvanChakramProj : ModProjectile
             default: HandleRecalling(owner); break;
         }
 
-        // 粒子：风暴阶段密集，其余正常
+        // 粒子: 风暴阶段密集, 其余正常
         int dustCount = IsSpiraling ? 3 : (IsImploding ? 4 : 2);
         for (int i = 0; i < dustCount; i++) {
             Dust d = Dust.NewDustPerfect(
@@ -147,17 +150,19 @@ public class ArrogantSylvanChakramProj : ModProjectile
             d.noGravity = true;
         }
 
-        // 风暴时在风暴中心产生旋转粒子环
+        // 环带内旋转粒子 (只在环带里撒 — 粒子提示与判定同域)
         if (IsSpiraling && Timer % 3 == 0) {
-            float pAngle = SpiralAngle + MathHelper.Pi; // 对侧
-            Vector2 pOff = new Vector2(MathF.Cos(pAngle), MathF.Sin(pAngle)) * _spiralRadius * 0.6f;
-            Dust rd = Dust.NewDustPerfect(_stormCenter + pOff,
-                DustID.GrassBlades, pOff.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2) * 3f,
-                60, default, 2.2f);
+            float pAngle = Main.rand.NextFloat(MathHelper.TwoPi);
+            float pr = _spiralRadius + Main.rand.NextFloat(-BandHalfWidth, BandHalfWidth) * 0.8f;
+            Vector2 pPos = _stormCenter + pAngle.ToRotationVector2() * MathF.Max(pr, 10f);
+            Dust rd = Dust.NewDustPerfect(pPos,
+                Main.rand.NextBool(3) ? DustID.GoldFlame : DustID.GrassBlades,
+                pAngle.ToRotationVector2().RotatedBy(MathHelper.PiOver2) * 4f,
+                60, default, 2f);
             rd.noGravity = true;
         }
 
-        // 内爆时在中心产生向内收缩的粒子
+        // 内爆时向心收缩粒子 (向心流 = 坍缩前摇语法)
         if (IsImploding && Timer % 2 == 0) {
             float randAngle = Main.rand.NextFloat(MathHelper.TwoPi);
             Vector2 spawnPos = _stormCenter + randAngle.ToRotationVector2() * (_spiralRadius + 40f);
@@ -167,8 +172,6 @@ public class ArrogantSylvanChakramProj : ModProjectile
         }
 
         Lighting.AddLight(Projectile.Center, 0.40f, 0.95f, 0.35f);
-
-        // 风暴中心也发光
         if (IsSpiraling || IsImploding)
             Lighting.AddLight(_stormCenter, 0.3f, 0.8f, 0.25f);
     }
@@ -177,17 +180,30 @@ public class ArrogantSylvanChakramProj : ModProjectile
         if (owner.channel)
             owner.itemAnimation = 2;
 
-        // 高速飞行，轻微减速
-        Projectile.velocity *= 0.97f;
+        // 反拍前摇: 出手先急泄力 (旋镖"绷住"), 第 6 帧猛然弹射 — 速度是对比出来的
+        if (Timer <= ReelFrames) {
+            Projectile.velocity *= 0.80f;
+            if (Timer == ReelFrames) {
+                Projectile.velocity = Projectile.velocity.SafeNormalize(Vector2.UnitX) * LaunchSpeed;
+                SoundEngine.PlaySound(SoundID.Item71 with {
+                    Volume = 1.1f, Pitch = 0.15f + Main.rand.NextFloat(-0.1f, 0.1f)
+                }, Projectile.Center);
+                Projectile.netUpdate = true;
+            }
+        }
+        else {
+            Projectile.velocity *= 0.955f;
+        }
 
-        if (Timer >= LaunchDuration || Projectile.velocity.Length() < 4f) {
-            // 无论是否按住，都进入螺旋。按住 = 维持风暴，松手 = 风暴后自动回收
+        if (Timer >= ReelFrames + LaunchDuration || (Timer > ReelFrames && Projectile.velocity.Length() < 5f)) {
+            // 无论是否按住, 都进入螺旋。按住 = 维持风暴, 松手 = 风暴后自动回收
             Phase = 1f;
             Timer = 0;
             _spiralTimer = 0;
             _stormCenter = Projectile.Center;
             _spiralRadius = SpiralStartRadius;
             SpiralAngle = Projectile.velocity.ToRotation();
+            Projectile.netUpdate = true;
             SoundEngine.PlaySound(SoundID.Item66 with { Volume = 0.9f, Pitch = 0.2f }, Projectile.Center);
         }
     }
@@ -203,25 +219,34 @@ public class ArrogantSylvanChakramProj : ModProjectile
         if (_spiralRadius < SpiralMaxRadius)
             _spiralRadius += SpiralExpandRate;
 
-        // 计算螺旋位置
         Vector2 newPos = _stormCenter + new Vector2(MathF.Cos(SpiralAngle), MathF.Sin(SpiralAngle)) * _spiralRadius;
         Projectile.velocity = newPos - Projectile.Center;
         Projectile.Center = newPos;
 
-        // 每15帧释放旋风叶片（从旋叶位置向外飞散）
-        if (_spiralTimer % 15 == 0 && Projectile.owner == Main.myPlayer) {
-            Vector2 outDir = (Projectile.Center - _stormCenter).SafeNormalize(Vector2.UnitX);
-            Vector2 leafVel = outDir * Main.rand.NextFloat(6f, 10f) +
-                              outDir.RotatedBy(MathHelper.PiOver2) * Main.rand.NextFloat(-3f, 3f);
-            Projectile.NewProjectile(Projectile.GetSource_FromThis(), Projectile.Center,
-                leafVel, ModContent.ProjectileType<ArrogantSylvanWhirlLeaf>(),
-                Projectile.damage / 4, 1.5f, Projectile.owner);
+        // 环带脉冲 (每 45 帧): 8 片叶沿切向甩出 + 环带增亮 + 分层音 — 稳定的节奏阀
+        if (_spiralTimer % PulseInterval == 0) {
+            _pulseFlash = 1f;
+            SoundEngine.PlaySound(SoundID.Item17 with {
+                Volume = 0.9f, Pitch = 0.25f + Main.rand.NextFloat(-0.1f, 0.1f)
+            }, _stormCenter);
+            if (Projectile.owner == Main.myPlayer) {
+                for (int i = 0; i < 8; i++) {
+                    float ang = MathHelper.TwoPi * i / 8f + SpiralAngle;
+                    Vector2 basePos = _stormCenter + ang.ToRotationVector2() * _spiralRadius;
+                    Vector2 leafVel = ang.ToRotationVector2().RotatedBy(MathHelper.PiOver2) * Main.rand.NextFloat(7f, 10f)
+                                      + ang.ToRotationVector2() * 2.5f;
+                    Projectile.NewProjectile(Projectile.GetSource_FromThis(), basePos,
+                        leafVel, ModContent.ProjectileType<ArrogantSylvanWhirlLeaf>(),
+                        Projectile.damage / 4, 1.5f, Projectile.owner);
+                }
+            }
         }
 
         // 松手或超时 → 内爆坍缩
         if (!owner.channel || _spiralTimer >= MaxSpiralDuration) {
             Phase = 2f;
             Timer = 0;
+            Projectile.netUpdate = true;
             SoundEngine.PlaySound(SoundID.Item14 with { Volume = 0.8f, Pitch = 0.6f }, _stormCenter);
         }
     }
@@ -232,31 +257,41 @@ public class ArrogantSylvanChakramProj : ModProjectile
         _spiralRadius -= ImplodeContractRate;
 
         if (_spiralRadius <= 0f) {
-            // 坍缩完成 → 中心爆发 + 进入回收
+            // 坍缩完成 → 大招时刻: 中心爆发 + 范围引爆全部年轮烙印 + 进入回收
             _spiralRadius = 0f;
             Phase = 3f;
             Timer = 0;
-            _collapseFlash = 20; // 触发内爆径向泛光 set-piece
+            _collapseFlash = 20;
+            Projectile.netUpdate = true;
 
-            SoundEngine.PlaySound(SoundID.Item71 with { Volume = 1.2f, Pitch = -0.3f }, _stormCenter);
+            SoundEngine.PlaySound(SoundID.Item71 with { Volume = 1.2f, Pitch = -0.3f + Main.rand.NextFloat(-0.08f, 0.08f) }, _stormCenter);
+            SoundEngine.PlaySound(SoundID.Grass with { Volume = 1f, Pitch = 0.4f }, _stormCenter);
 
-            // 内爆冲击波：8道旋风叶片从中心炸开
             if (Projectile.owner == Main.myPlayer) {
-                for (int i = 0; i < 10; i++) {
-                    float angle = MathHelper.TwoPi * i / 10;
+                // 范围引爆烙印 (整个风暴曾覆盖的区域)
+                ArrogantSylvanBloom.DetonateArea(Projectile.GetSource_FromThis(), _stormCenter,
+                    SpiralMaxRadius + BandHalfWidth + 60f, Projectile.damage, 3f, Projectile.owner);
+
+                // 内爆冲击波: 8 叶 + 6 裁决花瓣自中心炸开
+                for (int i = 0; i < 8; i++) {
+                    float angle = MathHelper.TwoPi * i / 8;
                     Vector2 leafVel = angle.ToRotationVector2() * Main.rand.NextFloat(8f, 13f);
                     Projectile.NewProjectile(Projectile.GetSource_FromThis(), _stormCenter,
                         leafVel, ModContent.ProjectileType<ArrogantSylvanWhirlLeaf>(),
                         Projectile.damage / 3, 2.5f, Projectile.owner);
                 }
-
-                ScreenShakePlayer shaker = owner.GetModPlayer<ScreenShakePlayer>();
-                shaker.ShakeScreen(6f, 8);
+                for (int i = 0; i < 6; i++) {
+                    float angle = MathHelper.TwoPi * i / 6 + 0.3f;
+                    Vector2 petalVel = angle.ToRotationVector2() * Main.rand.NextFloat(6f, 10f);
+                    Projectile.NewProjectile(Projectile.GetSource_FromThis(), _stormCenter,
+                        petalVel, ModContent.ProjectileType<ArrogantSylvanVerdictPetal>(),
+                        Projectile.damage / 3, 3f, Projectile.owner);
+                }
             }
+            WeaponVFX.AddScreenShake(_stormCenter, 6f);
 
-            // 爆发粒子
-            for (int i = 0; i < 30; i++) {
-                Dust d = Dust.NewDustPerfect(_stormCenter, DustID.JungleTorch,
+            for (int i = 0; i < 24; i++) {
+                Dust d = Dust.NewDustPerfect(_stormCenter, i % 3 == 0 ? DustID.GoldFlame : DustID.JungleTorch,
                     Main.rand.NextVector2Circular(12f, 12f), 20, default, 2.8f);
                 d.noGravity = true;
             }
@@ -287,21 +322,17 @@ public class ArrogantSylvanChakramProj : ModProjectile
             if (!_caughtBurst) {
                 _caughtBurst = true;
 
-                if (Projectile.owner == Main.myPlayer) {
-                    ScreenShakePlayer shaker = owner.GetModPlayer<ScreenShakePlayer>();
-                    shaker.ShakeScreen(10f, 14);
-                }
-
-                // 接住命中演出 (金翠) + 重击震屏
+                // 接住命中演出 (金翠) + 震屏 (预算内单入口)
                 ACMWeaponBurst.Spawn(Projectile.GetSource_FromThis(), owner.Center,
                     ACMWeaponBurst.ArrogantSylvan, scale: 1.6f, owner: Projectile.owner);
-                WeaponVFX.AddScreenShake(owner.Center, 8f);
+                WeaponVFX.AddScreenShake(owner.Center, 4f);
 
-                SoundEngine.PlaySound(SoundID.Item4 with { Volume = 1.3f, Pitch = 0.5f }, owner.Center);
+                SoundEngine.PlaySound(SoundID.Item4 with { Volume = 1.2f, Pitch = 0.5f + Main.rand.NextFloat(-0.1f, 0.1f) }, owner.Center);
+                SoundEngine.PlaySound(SoundID.Item1 with { Volume = 0.7f, Pitch = -0.2f }, owner.Center);
 
-                for (int i = 0; i < 30; i++) {
-                    Dust d = Dust.NewDustPerfect(owner.Center, DustID.JungleTorch,
-                        Main.rand.NextVector2Circular(11f, 11f), 20, default, 2.8f);
+                for (int i = 0; i < 20; i++) {
+                    Dust d = Dust.NewDustPerfect(owner.Center, i % 2 == 0 ? DustID.GoldFlame : DustID.JungleTorch,
+                        Main.rand.NextVector2Circular(11f, 11f), 20, default, 2.6f);
                     d.noGravity = true;
                 }
             }
@@ -311,15 +342,25 @@ public class ArrogantSylvanChakramProj : ModProjectile
     }
 
     public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
-        // 螺旋风暴时：整个风暴范围都是杀伤区
+        // 螺旋风暴/内爆时: 杀伤区 = 环带 (与 Vortex 着色器画出的藤叶风暴环严格对齐)
         if (IsSpiraling || IsImploding) {
-            float radius = _spiralRadius + 30f; // 略大于当前螺旋半径
-            Vector2 center = _stormCenter;
-            float closestX = MathHelper.Clamp(center.X, targetHitbox.Left, targetHitbox.Right);
-            float closestY = MathHelper.Clamp(center.Y, targetHitbox.Top, targetHitbox.Bottom);
-            float dx = center.X - closestX;
-            float dy = center.Y - closestY;
-            return (dx * dx + dy * dy) <= (radius * radius);
+            float inner = MathF.Max(_spiralRadius - BandHalfWidth, 0f);
+            float outer = _spiralRadius + BandHalfWidth;
+            Vector2 c = _stormCenter;
+
+            float closestX = MathHelper.Clamp(c.X, targetHitbox.Left, targetHitbox.Right);
+            float closestY = MathHelper.Clamp(c.Y, targetHitbox.Top, targetHitbox.Bottom);
+            float dMin2 = (c.X - closestX) * (c.X - closestX) + (c.Y - closestY) * (c.Y - closestY);
+            if (dMin2 > outer * outer)
+                return false; // 整个 hitbox 在环外
+
+            float farX = MathF.Max(MathF.Abs(c.X - targetHitbox.Left), MathF.Abs(c.X - targetHitbox.Right));
+            float farY = MathF.Max(MathF.Abs(c.Y - targetHitbox.Top), MathF.Abs(c.Y - targetHitbox.Bottom));
+            float dMax2 = farX * farX + farY * farY;
+            if (dMax2 < inner * inner)
+                return false; // 整个 hitbox 在环孔内 (风暴眼是安全区 — 判定诚实)
+
+            return true;
         }
         return null;
     }
@@ -332,42 +373,21 @@ public class ArrogantSylvanChakramProj : ModProjectile
     }
 
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
-        HitCounter++;
         target.AddBuff(BuffID.Poisoned, 600);
         target.AddBuff(BuffID.Venom, 300);
 
-        int dustAmt = IsRecalling ? 22 : (IsImploding ? 18 : 14);
+        // 风暴/回程命中 = 浇灌 (刻下年轮烙印), 等待内爆收割
+        ArrogantSylvanBrandNPC.AddStack(target);
+
+        int dustAmt = IsRecalling ? 14 : 10;
         for (int i = 0; i < dustAmt; i++) {
-            Dust burst = Dust.NewDustPerfect(target.Center, DustID.JungleTorch,
-                Main.rand.NextVector2Circular(8f, 8f), 40, default, 2.5f);
+            Dust burst = Dust.NewDustPerfect(target.Center, i % 3 == 0 ? DustID.GoldFlame : DustID.JungleTorch,
+                Main.rand.NextVector2Circular(8f, 8f), 40, default, 2.4f);
             burst.noGravity = true;
         }
-
-        // 每3次命中触发万木裁决
-        if (HitCounter % 3 == 0) {
-            SoundEngine.PlaySound(SoundID.Item17 with { Volume = 1.2f, Pitch = 0.3f }, target.Center);
-            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
-                ACMWeaponBurst.ArrogantSylvan, scale: 1.2f, owner: Projectile.owner);
-
-            if (Projectile.owner == Main.myPlayer) {
-                for (int i = 0; i < 16; i++) {
-                    float angle = MathHelper.TwoPi * i / 16;
-                    Vector2 vel = angle.ToRotationVector2() * Main.rand.NextFloat(7f, 12f);
-                    Projectile.NewProjectile(Projectile.GetSource_FromThis(), target.Center,
-                        vel, ModContent.ProjectileType<ArrogantSylvanVerdictPetal>(),
-                        damageDone / 2, 3f, Projectile.owner);
-                }
-            }
-
-            for (int i = 0; i < Main.maxNPCs; i++) {
-                NPC nearby = Main.npc[i];
-                if (!nearby.CanBeChasedBy()) continue;
-                if (Vector2.Distance(target.Center, nearby.Center) < 600f) {
-                    nearby.AddBuff(BuffID.Poisoned, 600);
-                    nearby.AddBuff(BuffID.Venom, 300);
-                }
-            }
-        }
+        WeaponVFX.AddScreenShake(target.Center, IsRecalling ? 2f : 1.2f);
+        ArrogantSylvanFX.HitBurstThrottled(Projectile.GetSource_OnHit(target), target.Center,
+            IsRecalling ? 1.2f : 0.9f, Projectile.owner);
     }
 
     public override bool PreDraw(ref Color lightColor) {
@@ -377,13 +397,23 @@ public class ArrogantSylvanChakramProj : ModProjectile
 
         // 金翠双层 ribbon 主拖尾 (§B.1)
         WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: IsSpiraling ? 18f : 14f,
-            outerColor: new Color(200, 150, 40, 150), innerColor: new Color(190, 255, 150, 200),
+            outerColor: ArrogantSylvanPalette.TrailOuter, innerColor: ArrogantSylvanPalette.TrailInner,
             uvScroll: -(float)Main.timeForVisualEffects * 0.04f);
+
+        // === 风暴环带 (系列专属 Vortex 着色器 — 环带即判定区可视化) ===
+        if (IsSpiraling || IsImploding) {
+            float bandIntensity = IsImploding
+                ? MathHelper.Clamp(_spiralRadius / SpiralMaxRadius + 0.35f, 0f, 1f)
+                : MathHelper.Clamp(_spiralTimer / 30f, 0f, 0.85f);
+            float spin = IsImploding ? 1.6f : 0.9f;
+            ArrogantSylvanFX.DrawVortexBand(_stormCenter, MathF.Max(_spiralRadius, 20f), BandHalfWidth,
+                spin, _pulseFlash, bandIntensity);
+        }
 
         // 内爆坍缩 set-piece: 向心径向泛光 (占全屏名额, 名额满自动退化柔光)
         if (_collapseFlash > 0) {
             float f = _collapseFlash / 20f;                 // 1→0
-            float bell = (float)System.Math.Sin(f * System.Math.PI);
+            float bell = MathF.Sin(f * MathF.PI);
             WeaponVFX.DrawRadialBloom(_stormCenter, 0.05f + 0.13f * f, bell * 0.85f,
                 new Color(220, 235, 120), 10f);
         }
@@ -401,18 +431,18 @@ public class ArrogantSylvanChakramProj : ModProjectile
                 float ang = MathHelper.TwoPi * s / 8f + Timer * 0.1f;
                 Vector2 p = _stormCenter + ang.ToRotationVector2() * (140f * f);
                 sb.Draw(spk, p - Main.screenPosition, null,
-                    new Color(200, 255, 150) * (f * 0.6f), ang,
+                    ArrogantSylvanPalette.JadeBright * (f * 0.6f), ang,
                     spk.Size() * 0.5f, 0.45f * f, SpriteEffects.None, 0);
             }
         }
 
-        // 拖尾 - 风暴阶段更粗更亮
+        // 镖体拖尾 - 风暴阶段更粗更亮
         for (int i = 0; i < Projectile.oldPos.Length; i++) {
             if (Projectile.oldPos[i] == Vector2.Zero) continue;
             float progress = 1f - (float)i / Projectile.oldPos.Length;
             Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
             float alpha = IsSpiraling ? 0.55f : (IsImploding ? 0.65f : (IsRecalling ? 0.60f : 0.50f));
-            Color trailColor = Color.Lerp(new Color(220, 255, 100), new Color(40, 200, 60), progress)
+            Color trailColor = Color.Lerp(ArrogantSylvanPalette.GoldBright, ArrogantSylvanPalette.JadeDeep, progress)
                 * progress * alpha;
             trailColor.A = 0;
             float trailScale = Projectile.scale * progress * (IsSpiraling ? 0.95f : 0.90f);
@@ -424,50 +454,29 @@ public class ArrogantSylvanChakramProj : ModProjectile
         if (IsRecalling && Projectile.velocity.Length() > 12f) {
             Texture2D wave = ACMAsset.GlaciateWave;
             sb.Draw(wave, Projectile.Center - Main.screenPosition, null,
-                new Color(220, 255, 100) * 0.70f,
+                ArrogantSylvanPalette.GoldBright * 0.70f,
                 Projectile.velocity.ToRotation(), wave.Size() * 0.5f,
                 new Vector2(0.75f, 0.30f), SpriteEffects.None, 0);
         }
 
-        // 风暴中心涡旋光圈
+        // 风暴眼中心光核 (安全区提示: 环带才是杀伤区)
         if (IsSpiraling || IsImploding) {
             Texture2D sg2 = ACMAsset.SoftGlow;
-            // 外圈：表示风暴范围
-            float stormPulse = 0.15f + 0.06f * MathF.Sin(_spiralTimer * 0.15f);
-            float stormGlowScale = (_spiralRadius + 30f) / (sg2.Width * 0.5f);
             sb.Draw(sg2, _stormCenter - Main.screenPosition, null,
-                new Color(100, 255, 80) * stormPulse, 0f,
-                sg2.Size() * 0.5f,
-                stormGlowScale, SpriteEffects.None, 0);
-            // 内核：中心亮点
-            sb.Draw(sg2, _stormCenter - Main.screenPosition, null,
-                new Color(220, 255, 150) * 0.30f, 0f,
+                ArrogantSylvanPalette.WhiteHot * 0.30f, 0f,
                 sg2.Size() * 0.5f,
                 0.35f, SpriteEffects.None, 0);
-        }
-
-        // 内爆时中心闪烁冲击波
-        if (IsImploding) {
-            Texture2D wave2 = ACMAsset.GlaciateWave;
-            float implodeFlash = MathHelper.Clamp(1f - _spiralRadius / SpiralMaxRadius, 0f, 1f);
-            for (int a = 0; a < 4; a++) {
-                float angle = MathHelper.PiOver2 * a + SpiralAngle * 0.5f;
-                sb.Draw(wave2, _stormCenter - Main.screenPosition, null,
-                    new Color(200, 255, 80) * implodeFlash * 0.4f,
-                    angle, wave2.Size() * 0.5f,
-                    new Vector2(0.4f, 0.15f), SpriteEffects.None, 0);
-            }
         }
 
         Texture2D sg = ACMAsset.SoftGlow;
         float pulse = 0.40f + 0.15f * MathF.Sin(Timer * 0.14f);
         float glowScale = IsSpiraling ? 0.80f : (IsRecalling ? 0.95f : 0.70f);
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-            new Color(200, 255, 100) * pulse, 0f,
+            ArrogantSylvanPalette.JadeBright * pulse, 0f,
             sg.Size() * 0.5f,
             glowScale, SpriteEffects.None, 0);
 
-        Color glowColor = new Color(220, 255, 100) * 0.32f;
+        Color glowColor = ArrogantSylvanPalette.GoldBright * 0.32f;
         glowColor.A = 0;
         sb.Draw(tex, Projectile.Center - Main.screenPosition, null,
             glowColor, Projectile.rotation, origin, Projectile.scale * 1.25f, SpriteEffects.None, 0);
@@ -477,7 +486,7 @@ public class ArrogantSylvanChakramProj : ModProjectile
             DepthStencilState.None, RasterizerState.CullNone, null,
             Main.GameViewMatrix.TransformationMatrix);
 
-        // 残影绘制 - 在AlphaBlend模式下绘制半透明完整精灵副本，高速阶段更浓烈
+        // 残影 - 高速阶段更浓烈 (速度门控)
         float phaseAfterAlphaBase = IsSpiraling ? 0.55f : (IsImploding ? 0.60f : (IsRecalling ? 0.50f : 0.35f));
         for (int i = 1; i < Projectile.oldPos.Length; i += 2) {
             if (Projectile.oldPos[i] == Vector2.Zero) continue;
@@ -497,22 +506,24 @@ public class ArrogantSylvanChakramProj : ModProjectile
     }
 
     public override void OnKill(int timeLeft) {
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 16; i++) {
             Dust d = Dust.NewDustPerfect(Projectile.Center, DustID.JungleTorch,
-                Main.rand.NextVector2Circular(7f, 7f), 40, default, 2.5f);
+                Main.rand.NextVector2Circular(7f, 7f), 40, default, 2.4f);
             d.noGravity = true;
         }
     }
 }
 
 /// <summary>
-/// 傲世旋风叶片 - 冲刺释放的叶片弹幕
+/// 傲世旋风叶片 - 环带脉冲/坍缩甩出的叶片弹幕 (共享节流索敌, 命中刻烙印)
 /// </summary>
 public class ArrogantSylvanWhirlLeaf : ModProjectile
 {
     public override string Texture => "Terraria/Images/Projectile_" + ProjectileID.Leaf;
 
     private float _timer;
+    private ref float TargetCache => ref Projectile.localAI[0];
+    private ref float RescanTimer => ref Projectile.localAI[1];
 
     public override void SetStaticDefaults() {
         Main.projFrames[Type] = 5;
@@ -539,18 +550,8 @@ public class ArrogantSylvanWhirlLeaf : ModProjectile
         }
 
         if (_timer > 25) {
-            float closestDist = 600f;
-            int targetIdx = -1;
-            for (int i = 0; i < Main.maxNPCs; i++) {
-                NPC npc = Main.npc[i];
-                if (!npc.CanBeChasedBy()) continue;
-                float d = Vector2.Distance(Projectile.Center, npc.Center);
-                if (d < closestDist) { closestDist = d; targetIdx = i; }
-            }
-            if (targetIdx >= 0) {
-                Vector2 dir = Projectile.DirectionTo(Main.npc[targetIdx].Center);
-                Projectile.velocity = Vector2.Lerp(Projectile.velocity, dir * 20f, 0.12f);
-            }
+            NPC target = ArrogantSylvanTargeting.UpdateTarget(Projectile, ref TargetCache, ref RescanTimer, 600f);
+            ArrogantSylvanTargeting.SteerTowards(Projectile, target, 20f, 0.12f);
         }
         else {
             Projectile.velocity *= 0.95f;
@@ -564,6 +565,7 @@ public class ArrogantSylvanWhirlLeaf : ModProjectile
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
         target.AddBuff(BuffID.Poisoned, 300);
         target.AddBuff(BuffID.Venom, 120);
+        ArrogantSylvanBrandNPC.AddStack(target);
     }
 
     public override bool PreDraw(ref Color lightColor) {
@@ -579,13 +581,15 @@ public class ArrogantSylvanWhirlLeaf : ModProjectile
 }
 
 /// <summary>
-/// 傲世裁决花瓣 - 万木裁决时释放的强力花瓣弹幕
+/// 傲世裁决花瓣 - 内爆坍缩时释放的强力花瓣弹幕 (共享节流索敌, 命中刻烙印)
 /// </summary>
 public class ArrogantSylvanVerdictPetal : ModProjectile
 {
     public override string Texture => "Terraria/Images/Projectile_" + ProjectileID.FlowerPetal;
 
     private float _timer;
+    private ref float TargetCache => ref Projectile.localAI[0];
+    private ref float RescanTimer => ref Projectile.localAI[1];
 
     public override void SetStaticDefaults() {
         Main.projFrames[Type] = 3;
@@ -617,21 +621,11 @@ public class ArrogantSylvanVerdictPetal : ModProjectile
             Projectile.velocity *= 0.94f;
         }
         else {
-            float closestDist = 800f;
-            int targetIdx = -1;
-            for (int i = 0; i < Main.maxNPCs; i++) {
-                NPC npc = Main.npc[i];
-                if (!npc.CanBeChasedBy()) continue;
-                float d = Vector2.Distance(Projectile.Center, npc.Center);
-                if (d < closestDist) { closestDist = d; targetIdx = i; }
-            }
-            if (targetIdx >= 0) {
-                Vector2 dir = Projectile.DirectionTo(Main.npc[targetIdx].Center);
-                Projectile.velocity = Vector2.Lerp(Projectile.velocity, dir * 22f, 0.10f);
-            }
-            else {
+            NPC target = ArrogantSylvanTargeting.UpdateTarget(Projectile, ref TargetCache, ref RescanTimer, 800f);
+            if (target != null)
+                ArrogantSylvanTargeting.SteerTowards(Projectile, target, 22f, 0.10f);
+            else
                 Projectile.velocity *= 1.02f;
-            }
         }
 
         if (Main.rand.NextBool(3)) {
@@ -644,7 +638,8 @@ public class ArrogantSylvanVerdictPetal : ModProjectile
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
         target.AddBuff(BuffID.Poisoned, 600);
         target.AddBuff(BuffID.Venom, 300);
-        for (int i = 0; i < 7; i++) {
+        ArrogantSylvanBrandNPC.AddStack(target);
+        for (int i = 0; i < 6; i++) {
             Dust d = Dust.NewDustPerfect(target.Center, DustID.JungleTorch,
                 Main.rand.NextVector2Circular(5f, 5f), 40, default, 2f);
             d.noGravity = true;

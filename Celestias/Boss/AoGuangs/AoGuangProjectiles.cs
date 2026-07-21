@@ -39,8 +39,12 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
         public override void AI() {
             waterPhase += 0.12f;
 
-            // 轻微追踪
-            if (Projectile.timeLeft > 220) {
+            // 初速渐升 (转场缓速公平阀门: 出膛慢, 60f 内升到全速)
+            if (Projectile.velocity.Length() < 16f)
+                Projectile.velocity *= 1.016f;
+
+            // 轻微追踪 (仅前 60f, 之后直线可读)
+            if (Projectile.timeLeft > 240) {
                 Player target = Main.player[Player.FindClosest(Projectile.position, Projectile.width, Projectile.height)];
                 if (target.active && !target.dead) {
                     Vector2 toTarget = target.Center - Projectile.Center;
@@ -306,9 +310,9 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             Projectile.rotation = Projectile.velocity.ToRotation() + MathHelper.PiOver4;
             tridentRot += 0.05f;
 
-            // 加速
-            if (Projectile.velocity.Length() < 18f) {
-                Projectile.velocity *= 1.02f;
+            // 加速: 出膛 8 → 巡航 19 (慢出快到, 潮矢的"涌"感 + 转场缓速阀门)
+            if (Projectile.velocity.Length() < 19f) {
+                Projectile.velocity *= 1.024f;
             }
 
             // 粒子

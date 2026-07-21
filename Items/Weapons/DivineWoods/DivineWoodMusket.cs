@@ -11,8 +11,8 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Items.Weapons.DivineWoods;
 
 /// <summary>
-/// 神木火铳 - 三连发荆棘弹，每第三连发替换为一颗弧线种子迫击炮
-/// 荆棘弹使用LightShot高速穿透，种子弹落地后爆炸生成短暂荆棘领域
+/// 神木火铳 - 真·三连发点射枪: 每次按压三发荆棘针 (音高阶梯上升 + 逐发后坐), 随后 14 帧强制喘息;
+/// 每第 9 发装填一颗种子迫击炮弹 —— 落地爆出一排根须尖刺 (前刺播种, 末刺引爆生根)。
 /// </summary>
 public class DivineWoodMusket : ModItem
 {
@@ -24,19 +24,19 @@ public class DivineWoodMusket : ModItem
         Item.DamageType = DamageClass.Ranged;
         Item.width = 52;
         Item.height = 26;
-        Item.useTime = 3;
-        Item.useAnimation = 18;
+        Item.useTime = 8;
+        Item.useAnimation = 24;
+        Item.reuseDelay = 14;
         Item.knockBack = 5f;
         Item.useStyle = ItemUseStyleID.Shoot;
         Item.value = Item.buyPrice(gold: 50);
         Item.rare = ItemRarityID.Purple;
-        Item.UseSound = SoundID.Item40;
+        Item.UseSound = null;
         Item.autoReuse = true;
         Item.noMelee = true;
         Item.shoot = ModContent.ProjectileType<DivineWoodThornNeedle>();
         Item.shootSpeed = 18f;
         Item.useAmmo = AmmoID.Bullet;
-        Item.crit = 10;
     }
 
     public override Vector2? HoldoutOffset() {
@@ -49,28 +49,39 @@ public class DivineWoodMusket : ModItem
 
     public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
         burstCounter++;
+        int burstIndex = (burstCounter - 1) % 3;   // 0/1/2 = 本轮三连第几发
         Vector2 muzzleDir = velocity.SafeNormalize(Vector2.UnitX);
         Vector2 muzzlePos = position + muzzleDir * 40f;
 
         if (burstCounter % 9 == 0) {
-            // 每第9发(第3次三连最后一发)射出弧线种子弹
+            // 每第 9 发: 种子迫击炮 (重装填感: 低音 + 大后坐 + 震屏)
             Vector2 mortarVel = velocity * 0.7f + new Vector2(0, -4f);
             Projectile.NewProjectile(source, muzzlePos, mortarVel,
                 ModContent.ProjectileType<DivineWoodSeedMortar>(),
                 damage * 3, knockback * 2f, player.whoAmI);
-            SoundEngine.PlaySound(SoundID.Item14 with { Pitch = 0.5f, Volume = 0.8f }, position);
+            SoundEngine.PlaySound(SoundID.Item61 with { Volume = 0.95f, Pitch = -0.2f }, position);
+            SoundEngine.PlaySound(SoundID.Item14 with { Volume = 0.5f, Pitch = 0.4f }, position);
+            player.velocity -= muzzleDir * 2.2f;
+            WeaponVFX.AddScreenShake(player.Center, 2.5f);
         }
         else {
-            Vector2 perturbedVel = velocity.RotatedByRandom(MathHelper.ToRadians(4));
+            Vector2 perturbedVel = velocity.RotatedByRandom(MathHelper.ToRadians(3));
             Projectile.NewProjectile(source, muzzlePos, perturbedVel, type, damage, knockback, player.whoAmI);
+            // 三连发音高阶梯 + 高频荆棘质感层
+            SoundEngine.PlaySound(SoundID.Item40 with { Volume = 0.9f, Pitch = -0.08f + burstIndex * 0.10f }, position);
+            SoundEngine.PlaySound(SoundID.Item17 with { Volume = 0.25f, Pitch = 0.5f + burstIndex * 0.08f }, position);
+            // 逐发后坐 (枪口上跳 + 身体微推)
+            player.velocity -= muzzleDir * 0.55f;
+            WeaponVFX.AddScreenShake(player.Center, 0.9f);
         }
 
         // 枪口粒子
-        for (int i = 0; i < 4; i++) {
-            Vector2 dustVel = -muzzleDir.RotatedByRandom(0.3f) * Main.rand.NextFloat(2f, 4f);
-            Dust d = Dust.NewDustPerfect(muzzlePos, DustID.JungleTorch, dustVel, 80, default, 1.2f);
+        for (int i = 0; i < 5; i++) {
+            Vector2 dustVel = muzzleDir.RotatedByRandom(0.35f) * Main.rand.NextFloat(3f, 7f);
+            Dust d = Dust.NewDustPerfect(muzzlePos, DustID.JungleTorch, dustVel, 70, default, 1.3f);
             d.noGravity = true;
         }
+        Lighting.AddLight(muzzlePos, 0.4f, 0.9f, 0.4f);
 
         return false;
     }
@@ -84,7 +95,7 @@ public class DivineWoodMusket : ModItem
 }
 
 /// <summary>
-/// 荆棘针弹 - 高速穿透弹丸，使用LightShot渲染
+/// 荆棘针弹 - 高速穿透弹丸 (命中播种 1 层生根)。
 /// </summary>
 public class DivineWoodThornNeedle : ModProjectile
 {
@@ -114,7 +125,7 @@ public class DivineWoodThornNeedle : ModProjectile
     }
 
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
-        target.AddBuff(BuffID.Poisoned, 180);
+        DivineWoodRoot.AddStack(target, 1);
         for (int i = 0; i < 6; i++) {
             Dust d = Dust.NewDustPerfect(target.Center, DustID.JungleTorch,
                 Main.rand.NextVector2Circular(4f, 4f), 60, default, 1.5f);
@@ -147,16 +158,14 @@ public class DivineWoodThornNeedle : ModProjectile
             0.25f, SpriteEffects.None, 0);
 
         sb.End();
-        sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
-            DepthStencilState.None, RasterizerState.CullNone, null,
-            Main.GameViewMatrix.TransformationMatrix);
+        ACMShaders.RestoreDefaultBatch(sb);
         return false;
     }
 }
 
 /// <summary>
-/// 种子迫击弹 - 弧线飞行，落地爆炸生成荆棘领域
-/// 使用SoftGlow + SlashBurst渲染爆炸
+/// 种子迫击弹 - 弧线飞行, 落地起爆: 荆棘领域闪放 + 沿地面依次窜出一排根须尖刺
+/// (前四刺播种生根, 末刺引爆) 。
 /// </summary>
 public class DivineWoodSeedMortar : ModProjectile
 {
@@ -185,17 +194,28 @@ public class DivineWoodSeedMortar : ModProjectile
     }
 
     public override void OnKill(int timeLeft) {
-        Explode();
-    }
-
-    private void Explode() {
-        SoundEngine.PlaySound(SoundID.Item14 with { Volume = 0.8f, Pitch = 0.3f }, Projectile.Center);
+        SoundEngine.PlaySound(SoundID.Item14 with { Volume = 0.85f, Pitch = 0.25f }, Projectile.Center);
+        SoundEngine.PlaySound(SoundID.Item17 with { Volume = 0.7f, Pitch = -0.15f }, Projectile.Center);
 
         if (Main.myPlayer == Projectile.owner) {
+            // 落点闪放 (领域爆炸)
             Projectile.NewProjectile(
                 Projectile.GetSource_Death(), Projectile.Center, Vector2.Zero,
                 ModContent.ProjectileType<DivineWoodThornFieldExplosion>(),
                 Projectile.damage, Projectile.knockBack, Projectile.owner);
+
+            // 一排根须尖刺: 以落点为心向两侧展开, 依次窜出; 末端双刺为收割刺
+            Vector2 ground = DivineWoodRoot.FindGroundBelow(Projectile.Center, 20);
+            for (int i = 0; i < 5; i++) {
+                float xOff = (i - 2) * 62f + Main.rand.NextFloat(-8f, 8f);
+                Vector2 spikeBase = DivineWoodRoot.FindGroundBelow(ground + new Vector2(xOff, -40f), 14);
+                int order = Math.Abs(i - 2);            // 内→外依次窜出
+                bool bloom = order == 2;                // 最外侧引爆
+                Projectile.NewProjectile(Projectile.GetSource_Death(), spikeBase, Vector2.Zero,
+                    ModContent.ProjectileType<DivineWoodRootSpike>(),
+                    (int)(Projectile.damage * 0.45f), 3f, Projectile.owner,
+                    order * 6f, bloom ? 1f : 0f);
+            }
         }
 
         for (int i = 0; i < 25; i++) {
@@ -205,7 +225,6 @@ public class DivineWoodSeedMortar : ModProjectile
             boom.noGravity = true;
         }
 
-        // 落地荆棘领域绽放演出 (DrawShockwaveRing + 径向辉光由演出弹幕承载) + 轻度震屏
         ACMWeaponBurst.Spawn(Projectile.GetSource_Death(), Projectile.Center,
             ACMWeaponBurst.DivineWood, scale: 1.5f, owner: Projectile.owner);
         WeaponVFX.AddScreenShake(Projectile.Center, 4f);
@@ -231,16 +250,13 @@ public class DivineWoodSeedMortar : ModProjectile
             pulse * 0.5f, SpriteEffects.None, 0);
 
         sb.End();
-        sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
-            DepthStencilState.None, RasterizerState.CullNone, null,
-            Main.GameViewMatrix.TransformationMatrix);
+        ACMShaders.RestoreDefaultBatch(sb);
         return false;
     }
 }
 
 /// <summary>
-/// 荆棘领域爆炸 - 种子落地后产生的扩散伤害区域
-/// 使用SlashBurst + SoftGlow做自然爆炸光效
+/// 荆棘领域爆炸 - 迫击炮落点的扩散闪放 (命中播种 1 层生根)。
 /// </summary>
 public class DivineWoodThornFieldExplosion : ModProjectile
 {
@@ -278,8 +294,7 @@ public class DivineWoodThornFieldExplosion : ModProjectile
     }
 
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
-        target.AddBuff(BuffID.Poisoned, 480);
-        target.AddBuff(BuffID.Venom, 240);
+        DivineWoodRoot.AddStack(target, 1);
     }
 
     public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
@@ -292,10 +307,8 @@ public class DivineWoodThornFieldExplosion : ModProjectile
         float alpha = ACMUtils.QuadOut(1f - prog) * 0.88f;
         float scale = MathHelper.SmoothStep(0f, 12f, ACMUtils.QuadOut(prog));
 
-        // 荆棘领域扩张冲击环 (绿)
-        float ringR = Projectile.ai[0] * 10f;
-        WeaponVFX.DrawShockwaveRing(Projectile.Center, ringR, 12f, alpha * 0.8f,
-            new Color(170, 255, 150), new Color(20, 110, 55));
+        // 落点小年轮闪现 (预算内, 满则退化冲击环)
+        DivineWoodFX.DrawGrowthRing(Projectile.Center, 130f, ACMUtils.QuadOut(Math.Min(prog * 2f, 1f)), alpha * 0.7f);
 
         SpriteBatch sb = Main.spriteBatch;
         sb.End();
@@ -339,9 +352,7 @@ public class DivineWoodThornFieldExplosion : ModProjectile
             scale * 0.20f, SpriteEffects.None, 0);
 
         sb.End();
-        sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
-            DepthStencilState.None, RasterizerState.CullNone, null,
-            Main.GameViewMatrix.TransformationMatrix);
+        ACMShaders.RestoreDefaultBatch(sb);
         return false;
     }
 }

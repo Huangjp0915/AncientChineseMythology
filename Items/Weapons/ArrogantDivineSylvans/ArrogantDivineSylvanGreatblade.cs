@@ -3,6 +3,7 @@ using AncientChineseMythology.Helpers;
 using AncientChineseMythology.Items.Weapons.DivineWoods;
 using Microsoft.Xna.Framework.Graphics;
 using System;
+using System.Collections.Generic;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -12,24 +13,22 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Items.Weapons.ArrogantDivineSylvans;
 
 /// <summary>
-/// 傲世神木·斩天巨刃 - 神木巨刃的终极形态
-/// 三连斩循环：横斩→上挑→下劈
-/// 横斩释放巨型藤蔓弧光，上挑射出三道扇形刀波
-/// 下劈触发大地震裂 + 藤蔓旋风场
-/// 所有攻击附带「古藤缠绕」持续伤害
+/// 傲世神木·斩天巨刃 (系列旗舰) - 三连斩循环: 横斩→上挑→天崩下劈
+/// 手感重锻: 回拉前摇 (30%) → poly(12) 爆发斩 (30%, 角行程集中在前几帧) → 过冲收招 (40%)
+/// 横斩/上挑命中刻下「年轮烙印」; 天崩下劈命中/落点范围**引爆**烙印 (金翠年轮绽放)
 /// </summary>
 public class ArrogantDivineSylvanGreatblade : ModItem
 {
     private int attackType;
 
     public override void SetDefaults() {
-        Item.damage = 1700;
+        Item.damage = 2300;
         Item.crit = 32;
         Item.DamageType = DamageClass.Melee;
         Item.width = 80;
         Item.height = 80;
-        Item.useTime = 18;
-        Item.useAnimation = 18;
+        Item.useTime = 26;
+        Item.useAnimation = 26;
         Item.useStyle = ItemUseStyleID.Shoot;
         Item.knockBack = 14f;
         Item.value = Item.buyPrice(gold: 500);
@@ -57,8 +56,9 @@ public class ArrogantDivineSylvanGreatblade : ModItem
 }
 
 /// <summary>
-/// 傲世斩天挥砍 - 三段式循环连击
-/// 0=横斩(释放巨弧) 1=上挑(三道扇形刀波) 2=下劈(地裂+藤蔓旋风)
+/// 傲世斩天挥砍 - 三段式循环连击 (0=横斩 1=上挑 2=天崩下劈)
+/// 波形解剖: Prepare 回拉 -18% 行程 (读得懂的蓄势) → Execute poly(12) ease-out
+/// (几乎全部角行程在前 2-3 帧, 斩击是"一记", 不是"一波") → Unwind 过冲 5% 后回正
 /// </summary>
 public class ArrogantSylvanGreatbladeSwing : ModProjectile
 {
@@ -66,8 +66,9 @@ public class ArrogantSylvanGreatbladeSwing : ModProjectile
         => "AncientChineseMythology/Items/Weapons/ArrogantDivineSylvans/ArrogantDivineSylvanGreatblade";
 
     private const float SWING_RANGE = MathF.PI * 1.65f;
-    private const float PREP_FRAC = 0.18f;
-    private const float EXEC_FRAC = 0.55f;
+    private const float BACKSWING = 0.18f;   // 回拉行程占比
+    private const float PREP_FRAC = 0.30f;
+    private const float EXEC_FRAC = 0.30f;
 
     private enum Stage { Prepare, Execute, Unwind }
 
@@ -132,30 +133,55 @@ public class ArrogantSylvanGreatbladeSwing : ModProjectile
         int dir = Projectile.spriteDirection * SwingDir;
 
         switch (CurrentStage) {
-            case Stage.Prepare:
-                RawProgress = 0f;
+            case Stage.Prepare: {
+                // 回拉蓄势: quad in-out 到 -18% 行程 (力量住在前摇里)
+                float t = Math.Min(Timer / prepEnd, 1f);
+                RawProgress = -BACKSWING * SWING_RANGE * ACMUtils.QuadInOut(t);
+
+                // 汇聚金尘: 从刀尖外侧被吸向刀尖 (蓄力语法: 向心流)
+                if (Main.rand.NextBool(2)) {
+                    Vector2 tip = Projectile.Center + Projectile.rotation.ToRotationVector2()
+                                  * Projectile.Size.Length() * Projectile.scale * 0.7f;
+                    Vector2 from = tip + Main.rand.NextVector2CircularEdge(70f, 70f);
+                    Dust d = Dust.NewDustPerfect(from, DustID.GoldFlame, (tip - from) * 0.14f, 60, default, 1.4f);
+                    d.noGravity = true;
+                }
+
                 if (Timer >= prepEnd) {
-                    SoundEngine.PlaySound(SoundID.Item71 with { Pitch = -0.3f, Volume = 1.2f }, Owner.position);
+                    // 爆发帧: 分层音 (低频重击 + 高频破空), pitch 随机
+                    SoundEngine.PlaySound(SoundID.Item71 with {
+                        Pitch = -0.35f + Main.rand.NextFloat(-0.1f, 0.1f), Volume = 1.15f
+                    }, Owner.position);
+                    SoundEngine.PlaySound(SoundID.Item1 with {
+                        Pitch = 0.25f + Main.rand.NextFloat(-0.12f, 0.12f), Volume = 0.9f
+                    }, Owner.position);
                     CurrentStage = Stage.Execute;
                 }
                 break;
+            }
 
-            case Stage.Execute:
-                RawProgress = MathHelper.SmoothStep(0f, SWING_RANGE, Math.Min(Timer / execDur, 1f));
+            case Stage.Execute: {
+                // poly(12) ease-out: 角行程几乎全部在前 2-3 帧 — "一记斩击"
+                float t = Math.Min(Timer / execDur, 1f);
+                float snap = 1f - MathF.Pow(1f - t, 12f);
+                RawProgress = MathHelper.Lerp(-BACKSWING * SWING_RANGE, SWING_RANGE, snap);
 
-                if (!_waveFired && Timer >= execDur * 0.35f) {
+                if (!_waveFired && Timer >= execDur * 0.10f) {
                     _waveFired = true;
                     FireAttackProjectiles();
                 }
 
                 if (Timer >= execDur) CurrentStage = Stage.Unwind;
                 break;
+            }
 
-            case Stage.Unwind:
-                RawProgress = MathHelper.Lerp(SWING_RANGE, SWING_RANGE * 1.04f,
-                    Math.Min(Timer / unwindDur, 1f));
+            case Stage.Unwind: {
+                // 过冲 5% 后回正 (0→1→0 bump), 让身体"收得住"
+                float t = Math.Min(Timer / unwindDur, 1f);
+                RawProgress = SWING_RANGE * (1f + 0.05f * MathF.Sin(t * MathF.PI));
                 if (Timer >= unwindDur) Projectile.Kill();
                 break;
+            }
         }
 
         Projectile.rotation = InitAngle + dir * RawProgress;
@@ -169,13 +195,14 @@ public class ArrogantSylvanGreatbladeSwing : ModProjectile
         Owner.heldProj = Projectile.whoAmI;
         Timer++;
 
-        // 挥砍时持续粒子
+        // 爆发斩持续粒子 (只在 Execute — 速度门控的"外衣")
         if (CurrentStage == Stage.Execute) {
             Vector2 tip = Projectile.Center + Projectile.rotation.ToRotationVector2()
                           * Projectile.Size.Length() * Projectile.scale * 0.7f;
             for (int i = 0; i < 3; i++) {
                 Dust d = Dust.NewDustPerfect(tip + Main.rand.NextVector2Circular(10, 10),
-                    DustID.JungleTorch, Main.rand.NextVector2Circular(4f, 4f), 40, default, 2.5f);
+                    i == 0 ? DustID.GoldFlame : DustID.JungleTorch,
+                    Main.rand.NextVector2Circular(4f, 4f), 40, default, 2.2f);
                 d.noGravity = true;
             }
         }
@@ -183,7 +210,7 @@ public class ArrogantSylvanGreatbladeSwing : ModProjectile
 
     private void FireAttackProjectiles() {
         if (Projectile.owner != Main.myPlayer) return;
-        Vector2 wd = Owner.DirectionTo(Main.MouseWorld);
+        Vector2 wd = Owner.SafeDirectionTo(Main.MouseWorld);
 
         switch (AttackType) {
             case 0: // 横斩 → 巨型藤蔓弧光
@@ -192,7 +219,7 @@ public class ArrogantSylvanGreatbladeSwing : ModProjectile
                     ModContent.ProjectileType<ArrogantSylvanVineWave>(),
                     (int)(Projectile.damage * 1.5f),
                     Projectile.knockBack * 0.8f, Owner.whoAmI);
-                SoundEngine.PlaySound(SoundID.Item85 with { Pitch = 0.2f, Volume = 1.3f }, Owner.position);
+                SoundEngine.PlaySound(SoundID.Item85 with { Pitch = 0.2f + Main.rand.NextFloat(-0.1f, 0.1f), Volume = 1.2f }, Owner.position);
                 break;
 
             case 1: // 上挑 → 三道扇形刀波
@@ -204,22 +231,21 @@ public class ArrogantSylvanGreatbladeSwing : ModProjectile
                         (int)(Projectile.damage * 1.0f),
                         Projectile.knockBack * 0.5f, Owner.whoAmI);
                 }
-                SoundEngine.PlaySound(SoundID.Item85 with { Pitch = 0.6f, Volume = 1.4f }, Owner.position);
+                SoundEngine.PlaySound(SoundID.Item85 with { Pitch = 0.6f + Main.rand.NextFloat(-0.1f, 0.1f), Volume = 1.3f }, Owner.position);
                 break;
 
-            case 2: // 下劈 → 地裂震爆
+            case 2: // 天崩下劈 → 地裂震爆 (系列大招: 落点范围引爆全部年轮烙印)
                 Projectile.NewProjectile(Owner.GetSource_ItemUse(Owner.HeldItem),
                     Owner.Center + wd * 60, Vector2.Zero,
                     ModContent.ProjectileType<ArrogantSylvanEarthquake>(),
                     (int)(Projectile.damage * 2.0f),
                     Projectile.knockBack * 1.5f, Owner.whoAmI);
-                SoundEngine.PlaySound(SoundID.Item14 with { Pitch = -0.5f, Volume = 1.5f }, Owner.position);
-                if (Owner.whoAmI == Main.myPlayer)
-                    Owner.GetModPlayer<ScreenShakePlayer>().ShakeScreen(12, 18);
-                // 下劈地裂 set-piece 命中演出 + 金翠重击震屏
+                SoundEngine.PlaySound(SoundID.Item14 with { Pitch = -0.5f + Main.rand.NextFloat(-0.08f, 0.08f), Volume = 1.4f }, Owner.position);
+                SoundEngine.PlaySound(SoundID.Item70 with { Pitch = -0.2f, Volume = 0.8f }, Owner.position);
+                // 下劈地裂 set-piece 命中演出 + 单入口震屏 (爆炸预算 6)
                 ACMWeaponBurst.Spawn(Owner.GetSource_ItemUse(Owner.HeldItem), Owner.Center + wd * 60,
                     ACMWeaponBurst.ArrogantSylvan, scale: 2f, owner: Owner.whoAmI);
-                WeaponVFX.AddScreenShake(Owner.Center + wd * 60, 10f);
+                WeaponVFX.AddScreenShake(Owner.Center + wd * 60, 6f);
                 break;
         }
     }
@@ -243,13 +269,24 @@ public class ArrogantSylvanGreatbladeSwing : ModProjectile
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
         target.AddBuff(BuffID.Poisoned, 900);
         target.AddBuff(BuffID.Venom, 600);
-        for (int i = 0; i < 20; i++) {
-            Dust d = Dust.NewDustPerfect(target.Center, DustID.JungleTorch,
-                Main.rand.NextVector2Circular(10f, 10f), 40, default, 3f);
+        for (int i = 0; i < 14; i++) {
+            Dust d = Dust.NewDustPerfect(target.Center, i % 2 == 0 ? DustID.JungleTorch : DustID.GoldFlame,
+                Main.rand.NextVector2Circular(9f, 9f), 40, default, 2.6f);
             d.noGravity = true;
         }
-        ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
-            ACMWeaponBurst.ArrogantSylvan, scale: 1f, owner: Projectile.owner);
+        WeaponVFX.AddScreenShake(target.Center, 2f);
+
+        if (AttackType == 2) {
+            // 天崩下劈本体命中 = 直接引爆该目标烙印
+            ArrogantSylvanBloom.Detonate(Projectile.GetSource_OnHit(target), target,
+                Projectile.damage, 4f, Projectile.owner);
+        }
+        else {
+            // 横斩/上挑 = 浇灌 (刻下年轮)
+            ArrogantSylvanBrandNPC.AddStack(target);
+        }
+        ArrogantSylvanFX.HitBurstThrottled(Projectile.GetSource_OnHit(target), target.Center,
+            AttackType == 2 ? 1.4f : 1f, Projectile.owner);
     }
 
     public override bool PreDraw(ref Color lightColor) {
@@ -257,11 +294,11 @@ public class ArrogantSylvanGreatbladeSwing : ModProjectile
         int dir = Projectile.spriteDirection * SwingDir;
         float rotOff = dir > 0 ? MathHelper.PiOver4 : MathHelper.PiOver4 + MathHelper.Pi;
 
-        // 金翠双色刀尖弧光 ribbon (沿挥砍历史角扫出, §B.1 外宽暗金 + 内窄亮翠)
+        // 金翠双色刀尖弧光 ribbon — 仅爆发斩期间 (速度门控, 残影是"快"的外衣不是常亮噪声)
         if (CurrentStage == Stage.Execute) {
             int cache = ProjectileID.Sets.TrailCacheLength[Type];
             float tipLen = Projectile.Size.Length() * Projectile.scale * 0.85f;
-            var arcPts = new System.Collections.Generic.List<Microsoft.Xna.Framework.Vector2>(cache);
+            var arcPts = new List<Vector2>(cache);
             for (int i = 0; i < cache; i++) {
                 float r = Projectile.oldRot[i];
                 if (r == 0f && i > 0) continue;
@@ -269,7 +306,7 @@ public class ArrogantSylvanGreatbladeSwing : ModProjectile
             }
             if (arcPts.Count >= 2)
                 WeaponVFX.DrawRibbonTrail(arcPts.ToArray(), baseWidth: 26f,
-                    outerColor: new Color(200, 150, 40, 150), innerColor: new Color(190, 255, 150, 200),
+                    outerColor: ArrogantSylvanPalette.TrailOuter, innerColor: ArrogantSylvanPalette.TrailInner,
                     uvScroll: -(float)Main.timeForVisualEffects * 0.02f);
         }
 
@@ -278,21 +315,32 @@ public class ArrogantSylvanGreatbladeSwing : ModProjectile
             DepthStencilState.None, RasterizerState.CullNone, null,
             Main.GameViewMatrix.TransformationMatrix);
 
+        // 回拉蓄势的刀尖蓄能光点 (小而聚: 与爆发的大开大合形成对比)
+        if (CurrentStage == Stage.Prepare) {
+            float t = Math.Min(Timer / MathF.Max(Owner.itemAnimationMax * PREP_FRAC, 1f), 1f);
+            Vector2 tip = Projectile.Center + Projectile.rotation.ToRotationVector2()
+                          * Projectile.Size.Length() * Projectile.scale * 0.7f;
+            Texture2D sgPrep = ACMAsset.SoftGlow;
+            sb.Draw(sgPrep, tip - Main.screenPosition, null,
+                ArrogantSylvanPalette.GoldBright * (0.35f + 0.45f * t * t), 0f,
+                sgPrep.Size() * 0.5f, 0.28f + 0.20f * t, SpriteEffects.None, 0);
+        }
+
         if (CurrentStage == Stage.Execute) {
             Texture2D wave = ACMAsset.GlaciateWave;
             for (int i = 1; i < 16 && i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
                 float a = (1f - i / 16f) * 0.75f;
                 float rot = Projectile.oldRot[i] + rotOff;
                 sb.Draw(wave, Projectile.Center - Main.screenPosition, null,
-                    new Color(220, 255, 100) * a, rot,
+                    ArrogantSylvanPalette.GoldDark * a, rot,
                     wave.Size() * 0.5f,
                     Projectile.scale * 0.65f, SpriteEffects.None, 0);
                 sb.Draw(wave, Projectile.Center - Main.screenPosition, null,
-                    new Color(40, 200, 60) * (a * 0.55f), rot + 0.08f,
+                    ArrogantSylvanPalette.JadeBright * (a * 0.55f), rot + 0.08f,
                     wave.Size() * 0.5f,
                     Projectile.scale * 0.42f, SpriteEffects.None, 0);
                 sb.Draw(wave, Projectile.Center - Main.screenPosition, null,
-                    new Color(255, 255, 220) * (a * 0.25f), rot + 0.04f,
+                    ArrogantSylvanPalette.WhiteHot * (a * 0.25f), rot + 0.04f,
                     wave.Size() * 0.5f,
                     Projectile.scale * 0.28f, SpriteEffects.None, 0);
             }
@@ -300,7 +348,7 @@ public class ArrogantSylvanGreatbladeSwing : ModProjectile
             float pulse = 0.85f + 0.25f * MathF.Sin((float)Main.timeForVisualEffects * 0.25f);
             Texture2D sg = ACMAsset.SoftGlow;
             sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-                new Color(200, 255, 80) * 0.65f * pulse, Projectile.rotation + rotOff,
+                ArrogantSylvanPalette.JadeBright * 0.5f * pulse, Projectile.rotation + rotOff,
                 sg.Size() * 0.5f,
                 Projectile.scale * 2.8f, SpriteEffects.None, 0);
 
@@ -308,7 +356,7 @@ public class ArrogantSylvanGreatbladeSwing : ModProjectile
                           * Projectile.Size.Length() * Projectile.scale * 0.65f;
             Texture2D sparkle = ACMAsset.Sparkle;
             sb.Draw(sparkle, tip - Main.screenPosition, null,
-                new Color(255, 255, 180) * 0.70f,
+                ArrogantSylvanPalette.GoldBright * 0.70f,
                 (float)Main.timeForVisualEffects * 0.08f,
                 sparkle.Size() * 0.5f,
                 Projectile.scale * 0.80f, SpriteEffects.None, 0);
@@ -316,7 +364,7 @@ public class ArrogantSylvanGreatbladeSwing : ModProjectile
             if (AttackType == 2) {
                 Texture2D star = ACMAsset.BlankStar;
                 sb.Draw(star, Projectile.Center - Main.screenPosition, null,
-                    new Color(255, 240, 120) * 0.40f * pulse,
+                    ArrogantSylvanPalette.GoldBright * 0.40f * pulse,
                     (float)Main.timeForVisualEffects * 0.03f,
                     star.Size() * 0.5f,
                     Projectile.scale * 1.2f, SpriteEffects.None, 0);
@@ -340,8 +388,8 @@ public class ArrogantSylvanGreatbladeSwing : ModProjectile
 }
 
 /// <summary>
-/// 傲世藤蔓弧波 - 巨型金绿色能量斩波
-/// 体积更大、持续更久、穿透无限、减速更强
+/// 傲世藤蔓弧波 - 巨型金绿色能量斩波 (横斩/上挑派生)
+/// 命中刻下年轮烙印 (系列"浇灌"动作)
 /// </summary>
 public class ArrogantSylvanVineWave : ModProjectile
 {
@@ -372,10 +420,10 @@ public class ArrogantSylvanVineWave : ModProjectile
         float life = 1f - Projectile.timeLeft / 65f;
         Lighting.AddLight(Projectile.Center, 0.6f * (1f - life), 1.5f * (1f - life), 0.4f * (1f - life));
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 2; i++) {
             Dust d = Dust.NewDustPerfect(
                 Projectile.Center + Main.rand.NextVector2Circular(30, 30),
-                DustID.JungleTorch, -Projectile.velocity * 0.2f, 40, default, 2.5f);
+                DustID.JungleTorch, -Projectile.velocity * 0.2f, 40, default, 2.4f);
             d.noGravity = true;
         }
     }
@@ -385,13 +433,13 @@ public class ArrogantSylvanVineWave : ModProjectile
         target.AddBuff(BuffID.Venom, 600);
         target.velocity *= 0.3f;
 
-        for (int i = 0; i < 25; i++) {
-            Dust d = Dust.NewDustPerfect(target.Center, DustID.JungleTorch,
-                Main.rand.NextVector2Circular(10f, 10f), 30, default, 3f);
+        ArrogantSylvanBrandNPC.AddStack(target);
+        for (int i = 0; i < 16; i++) {
+            Dust d = Dust.NewDustPerfect(target.Center, i % 2 == 0 ? DustID.JungleTorch : DustID.GoldFlame,
+                Main.rand.NextVector2Circular(9f, 9f), 30, default, 2.6f);
             d.noGravity = true;
         }
-        ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
-            ACMWeaponBurst.ArrogantSylvan, scale: 1f, owner: Projectile.owner);
+        ArrogantSylvanFX.HitBurstThrottled(Projectile.GetSource_OnHit(target), target.Center, 1f, Projectile.owner);
     }
 
     public override bool PreDraw(ref Color lightColor) {
@@ -407,7 +455,7 @@ public class ArrogantSylvanVineWave : ModProjectile
 
         // 金翠双层弧波拖尾 (§B.1)
         WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 22f,
-            outerColor: new Color(200, 150, 40, 150), innerColor: new Color(190, 255, 150, 200),
+            outerColor: ArrogantSylvanPalette.TrailOuter, innerColor: ArrogantSylvanPalette.TrailInner,
             uvScroll: -(float)Main.timeForVisualEffects * 0.03f);
 
         sb.End();
@@ -420,27 +468,27 @@ public class ArrogantSylvanVineWave : ModProjectile
             float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.6f * alpha;
             sb.Draw(lsh,
                 Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition,
-                null, new Color(220, 255, 100) * a, Projectile.oldRot[i],
+                null, ArrogantSylvanPalette.GoldDark * a, Projectile.oldRot[i],
                 lsh.Size() * 0.5f,
                 new Vector2(0.55f + i * 0.015f, 0.22f), SpriteEffects.None, 0);
         }
 
         sb.Draw(tex, Projectile.Center - Main.screenPosition, null,
-            new Color(220, 255, 100) * alpha, Projectile.rotation,
+            ArrogantSylvanPalette.GoldDark * alpha, Projectile.rotation,
             tex.Size() * 0.5f,
             new Vector2(scaleX, scaleY), SpriteEffects.None, 0);
         sb.Draw(tex, Projectile.Center - Main.screenPosition, null,
-            new Color(40, 210, 60) * (alpha * 0.55f), Projectile.rotation + 0.04f,
+            ArrogantSylvanPalette.JadeBright * (alpha * 0.6f), Projectile.rotation + 0.04f,
             tex.Size() * 0.5f,
             new Vector2(scaleX * 0.8f, scaleY * 0.75f), SpriteEffects.None, 0);
         sb.Draw(tex, Projectile.Center - Main.screenPosition, null,
-            new Color(255, 255, 220) * (alpha * 0.30f), Projectile.rotation,
+            ArrogantSylvanPalette.WhiteHot * (alpha * 0.30f), Projectile.rotation,
             tex.Size() * 0.5f,
             new Vector2(scaleX * 0.5f, scaleY * 0.45f), SpriteEffects.None, 0);
 
         Vector2 front = Projectile.Center + Projectile.velocity.SafeNormalize(Vector2.Zero) * 60f;
         sb.Draw(sg, front - Main.screenPosition, null,
-            new Color(255, 255, 200) * alpha * 0.80f, 0f,
+            ArrogantSylvanPalette.WhiteHot * alpha * 0.80f, 0f,
             sg.Size() * 0.5f,
             scaleY * 2.5f, SpriteEffects.None, 0);
 
@@ -453,13 +501,15 @@ public class ArrogantSylvanVineWave : ModProjectile
 }
 
 /// <summary>
-/// 傲世地震裂爆 - 下劈第三击的大地震爆
-/// 圆形扩散伤害 + 12道藤蔓柱爆发
+/// 傲世地震裂爆 - 天崩下劈的大地震爆 (系列大招载体)
+/// 半径封顶 380px (伤害判定与视觉对齐); 落点范围引爆全部年轮烙印
 /// </summary>
 public class ArrogantSylvanEarthquake : ModProjectile
 {
     public override string Texture
         => "AncientChineseMythology/Textures/Masking/SoftGlow";
+
+    private const float MaxRadius = 380f;
 
     private ref float Timer => ref Projectile.ai[0];
 
@@ -478,20 +528,28 @@ public class ArrogantSylvanEarthquake : ModProjectile
 
     public override bool ShouldUpdatePosition() => false;
 
+    private float CurrentRadius() => Math.Min(Timer * 18f, MaxRadius);
+
     public override void AI() {
         Timer++;
-        float radius = Timer * 18f;
 
-        for (int i = 0; i < 10; i++) {
+        // 第 2 帧引爆落点范围内全部烙印 (等地裂视觉先出现一瞬, 因果可读)
+        if (Timer == 2f && Projectile.owner == Main.myPlayer) {
+            ArrogantSylvanBloom.DetonateArea(Projectile.GetSource_FromThis(), Projectile.Center,
+                MaxRadius, Projectile.damage, 4f, Projectile.owner);
+        }
+
+        float radius = CurrentRadius();
+        for (int i = 0; i < 8; i++) {
             float angle = Main.rand.NextFloat(MathHelper.TwoPi);
             Vector2 pos = Projectile.Center + angle.ToRotationVector2() * Main.rand.NextFloat(radius * 0.3f, radius);
-            Dust d = Dust.NewDustPerfect(pos, DustID.JungleTorch,
-                Main.rand.NextVector2Circular(2f, 2f), 40, default, 2.5f);
+            Dust d = Dust.NewDustPerfect(pos, i % 3 == 0 ? DustID.GoldFlame : DustID.JungleTorch,
+                Main.rand.NextVector2Circular(2f, 2f), 40, default, 2.4f);
             d.noGravity = true;
         }
 
         if (Timer < 20) {
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < 5; i++) {
                 float angle = Main.rand.NextFloat(MathHelper.TwoPi);
                 Vector2 vel = angle.ToRotationVector2() * Main.rand.NextFloat(8f, 18f);
                 vel.Y -= 5f;
@@ -509,10 +567,8 @@ public class ArrogantSylvanEarthquake : ModProjectile
         target.velocity *= 0.2f;
     }
 
-    public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
-        float radius = Timer * 18f;
-        return VaultUtils.CircleIntersectsRectangle(Projectile.Center, radius, targetHitbox);
-    }
+    public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox)
+        => VaultUtils.CircleIntersectsRectangle(Projectile.Center, CurrentRadius(), targetHitbox);
 
     /// <summary>下劈地裂签名 set-piece: ArenaRunic 屏幕空间根纹法阵 (金翠双色, 自起爆点扩张)。</summary>
     private void DrawRootRuneDecal(float prog) {
@@ -523,12 +579,12 @@ public class ArrogantSylvanEarthquake : ModProjectile
             return;
 
         // 钟形包络: 起爆快现 → 收尾淡出
-        float env = MathHelper.Clamp((float)MathF.Sin(prog * MathF.PI), 0f, 1f);
+        float env = MathHelper.Clamp(MathF.Sin(prog * MathF.PI), 0f, 1f);
         float intensity = env * 0.9f;
         if (intensity <= 0.01f)
             return;
 
-        float worldRadius = MathHelper.Lerp(70f, 330f, ACMUtils.QuadOut(prog));
+        float worldRadius = MathHelper.Lerp(70f, MaxRadius * 0.9f, ACMUtils.QuadOut(prog));
         ACMShaders.WorldDecalParams(Projectile.Center, worldRadius, out Vector2 uv, out float radiusFrac, out float aspect);
 
         fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
@@ -567,7 +623,7 @@ public class ArrogantSylvanEarthquake : ModProjectile
         for (int k = 0; k < 12; k++) {
             float bAngle = k * MathF.PI / 6f + Timer * 0.025f;
             bool major = (k % 3 == 0);
-            Color bColor = major ? new Color(220, 255, 100) : new Color(40, 200, 60);
+            Color bColor = major ? ArrogantSylvanPalette.GoldBright : ArrogantSylvanPalette.JadeDeep;
             float bLen = major ? scale * 0.75f : scale * 0.45f;
             sb.Draw(burst, Projectile.Center - Main.screenPosition, null,
                 bColor * (alpha * 0.80f), bAngle,
@@ -576,23 +632,23 @@ public class ArrogantSylvanEarthquake : ModProjectile
         }
 
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-            new Color(200, 255, 80) * (alpha * 0.50f), 0f,
+            ArrogantSylvanPalette.JadeBright * (alpha * 0.50f), 0f,
             sg.Size() * 0.5f,
             scale * 0.60f, SpriteEffects.None, 0);
 
         float flashAlpha = MathHelper.SmoothStep(1.2f, 0f, prog * 1.4f);
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-            new Color(255, 255, 230) * (alpha * flashAlpha), 0f,
+            ArrogantSylvanPalette.WhiteHot * (alpha * flashAlpha), 0f,
             sg.Size() * 0.5f,
             scale * 0.25f, SpriteEffects.None, 0);
 
         sb.Draw(star, Projectile.Center - Main.screenPosition, null,
-            new Color(255, 255, 180) * (alpha * 0.55f),
+            ArrogantSylvanPalette.GoldBright * (alpha * 0.55f),
             Timer * 0.10f,
             star.Size() * 0.5f,
             scale * 0.18f, SpriteEffects.None, 0);
         sb.Draw(sparkle, Projectile.Center - Main.screenPosition, null,
-            new Color(200, 255, 120) * (alpha * 0.45f),
+            ArrogantSylvanPalette.JadeBright * (alpha * 0.45f),
             -Timer * 0.06f,
             sparkle.Size() * 0.5f,
             scale * 0.22f, SpriteEffects.None, 0);

@@ -28,12 +28,13 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
         private static float _bloomRadius;   // 处决泛光半径(屏幕高度比例)
         private static float _bloom;         // 处决泛光强度 0~1
         private static float _time;          // 着色器时间(秒)
+        private static float _deathDim;      // 死亡「阖卷」压暗 0~1 (金幕熄灭 + 暗角收拢)
         private static ulong _lastPublishFrame;
 
         /// <summary>由 Vigor 每帧调用，发布当前断罪演出标量（纯本地视觉）。</summary>
         public static void Publish(int phaseTier, float counterTell,
             Vector2 sealCenter, float sealRadius, float sealRunic,
-            Vector2 bloomCenter, float bloomRadius, float bloom, float time) {
+            Vector2 bloomCenter, float bloomRadius, float bloom, float time, float deathDim = 0f) {
             _phaseTier = phaseTier;
             _counterTell = counterTell;
             _sealCenter = sealCenter;
@@ -43,11 +44,12 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
             _bloomRadius = bloomRadius;
             _bloom = bloom;
             _time = time;
+            _deathDim = deathDim;
             _lastPublishFrame = Main.GameUpdateCount;
         }
 
         public override void OnWorldUnload() {
-            _counterTell = _sealRunic = _bloom = 0f;
+            _counterTell = _sealRunic = _bloom = _deathDim = 0f;
         }
 
         /// <summary>罪名色：试炼=素金 / 裁决=金蓝 / 天刑=赤金(暖琥珀，非纯红，遵守红=致命专用)。</summary>
@@ -68,6 +70,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
                 _counterTell = MathHelper.Lerp(_counterTell, 0f, 0.12f);
                 _sealRunic = MathHelper.Lerp(_sealRunic, 0f, 0.15f);
                 _bloom = MathHelper.Lerp(_bloom, 0f, 0.18f);
+                _deathDim = MathHelper.Lerp(_deathDim, 0f, 0.05f);
             }
 
             DrawSealRunic();
@@ -102,23 +105,25 @@ namespace AncientChineseMythology.Celestias.Boss.Vigors
         // —— 罪名色金幕 + 格挡暗角脉冲(ElementalScreenTint) ——
         private static void DrawVerdictTint() {
             float baseAccent = _phaseTier == 2 ? 0.15f : _phaseTier == 1 ? 0.11f : 0.07f;
-            float intensity = MathHelper.Clamp(baseAccent + _counterTell * 0.55f + _bloom * 0.3f, 0f, 1f);
+            // 死亡「阖卷」: 金幕熄灭, 暗角收拢 — 世界随刑官一同沉入静默
+            baseAccent *= 1f - _deathDim * 0.8f;
+            float intensity = MathHelper.Clamp(baseAccent + _counterTell * 0.55f + _bloom * 0.3f + _deathDim * 0.30f, 0f, 1f);
             if (intensity <= 0.01f)
                 return;
             Effect fx = ACMShaders.ElementalScreenTint;
             if (fx == null)
                 return;
 
-            Color tint = VerdictColor();
+            Color tint = Color.Lerp(VerdictColor(), new Color(14, 12, 18), _deathDim);
             float aspect = (float)Main.screenWidth / Main.screenHeight;
-            float coverage = 0.08f + _counterTell * 0.20f + _bloom * 0.10f;
+            float coverage = 0.08f + _counterTell * 0.20f + _bloom * 0.10f + _deathDim * 0.22f;
             fx.Parameters["uTime"]?.SetValue(_time);
             fx.Parameters["uIntensity"]?.SetValue(intensity);
             fx.Parameters["uAspect"]?.SetValue(aspect);
             fx.Parameters["uTint"]?.SetValue(new Vector4(tint.ToVector3(), coverage));
             fx.Parameters["uTint2"]?.SetValue(new Vector4(new Color(40, 30, 12).ToVector3(), 0f));
-            // 格挡架势时暗角收紧 = "现在别打"屏幕级信号
-            fx.Parameters["uVignette"]?.SetValue(0.32f + _counterTell * 0.42f);
+            // 格挡架势/死亡时暗角收紧 = 屏幕级信号
+            fx.Parameters["uVignette"]?.SetValue(0.32f + _counterTell * 0.42f + _deathDim * 0.30f);
             fx.Parameters["uFogScale"]?.SetValue(2.4f);
 
             ACMShaders.DrawFullscreenOverlay(fx, BlendState.AlphaBlend);

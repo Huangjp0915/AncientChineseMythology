@@ -1,36 +1,66 @@
 Items: {
 	RuyiJinguBang: {
-		DisplayName: RuyiJinguBang
-		Tooltip: ""
+		DisplayName: Ruyi Jingu Bang
+		Tooltip:
+			'''
+			The legendary Ruyi Jingu Bang, anchor of the Eastern Sea
+			Four-hit combo ending in a colossal slam; hits build Ruyi Power
+			At full power, right-click calls down the Sea-Calming Pillar
+			'''
 	}
 
 	WoodenStick: {
 		DisplayName: Wooden Stick
-		Tooltip: ""
+		Tooltip:
+			'''
+			A gift from Tang Seng, meant for the destined one
+			Two-hit combo; right-click thrusts as the stick extends at will
+			'''
 	}
 
 	GemStick: {
 		DisplayName: Gem Stick
-		Tooltip: ""
+		Tooltip:
+			'''
+			Anyone struck by it looks a lot more valuable
+			Hits scatter prismatic shards; right-click spins a radiant whirl
+			'''
 	}
 
 	GoldenStick: {
 		DisplayName: Golden Stick
-		Tooltip: ""
+		Tooltip:
+			'''
+			This stick looks a lot more precious now
+			Every 4th swing unleashes a triple golden thrust; right-click hurls the stick, which fights and returns
+			'''
 	}
 
 	IronStick: {
 		DisplayName: Iron Stick
-		Tooltip: ""
+		Tooltip:
+			'''
+			Heavy iron - learn to control its weight
+			Three-hit combo ending in a heavy smash; right-click vaults you off the ground
+			'''
 	}
 
 	RuyiStick: {
 		DisplayName: Ruyi Stick
-		Tooltip: ""
+		Tooltip:
+			'''
+			This stick... reminds you of an old friend
+			Every 5th swing grows colossal and swats hostile projectiles
+			Hold right-click to charge the Sea-Calming Pillar, release to slam it down
+			'''
 	}
 
 	TrueRuyiStick: {
-		Tooltip: ""
+		Tooltip:
+			'''
+			This stick... reeks of monkey
+			Double-ended sweeps strike on both sides; its pillar charges faster and splits on impact
+			'''
 		DisplayName: True Ruyi Stick
 	}
 
@@ -81,42 +111,80 @@ Items: {
 
 	DogCharm: {
 		DisplayName: Dog Charm
-		Tooltip: ""
+		Tooltip:
+			'''
+			Throws a hound talisman; the spirit hound latches onto an enemy and keeps mauling it
+			Up to three hounds may hunt at once
+			"Once loosed, the loyal hound never lets go"
+			'''
 	}
 
 	ChickenCharm: {
 		DisplayName: Chicken Charm
-		Tooltip: ""
+		Tooltip:
+			'''
+			Throws a rooster talisman; the golden rooster crows thrice, each crow releasing a dawn shockwave ring
+			"One crow, and the world turns white"
+			'''
 	}
 
 	HorseCharm: {
 		DisplayName: Horse Charm
-		Tooltip: ""
+		Tooltip:
+			'''
+			Throws a horse talisman; three waves of three thunder-steeds stampede across the battlefield
+			"Ten thousand horses, unstoppable"
+			'''
 	}
 
 	CowCharm: {
 		DisplayName: Cow Charm
-		Tooltip: ""
+		Tooltip:
+			'''
+			Throws an ox talisman; the great ox paws the earth, then rams through everything in its path
+			"The strength of nine oxen, spent in one charge"
+			'''
 	}
 
 	SnakeCharm: {
 		DisplayName: Snake Charm
-		Tooltip: ""
+		Tooltip:
+			'''
+			Throws a serpent talisman; the serpent spirit weaves toward foes — its third bite on the same enemy constricts with venom
+			Right click to molt: briefly slip attention, and serpents thrown meanwhile ambush with a vicious first bite
+			"Startle the snake in the grass, and be bitten for it"
+			'''
 	}
 
 	RabbitCharm: {
 		DisplayName: Rabbit Charm
-		Tooltip: ""
+		Tooltip:
+			'''
+			Throws a rabbit talisman; the moon rabbit blinks between foes with a three-strike combo, ending in a moon-pounding slam
+			"The jade pestle falls, and mountains crack"
+			'''
 	}
 
 	DragonCharm: {
 		DisplayName: Dragon Charm
-		Tooltip: ""
+		Tooltip:
+			'''
+			Draws a talisman in blood (costs 12 life); a blood-inked thunder dragon pounces on the target and detonates its seal
+			Every fourth talisman calls down the Dragon Tribulation: a colossal dragon splits the sky, and its bolts repay your blood
+			Requires more than 60 life to use
+			"Blood in the cinnabar; one stroke births the dragon"
+			'''
+		JieReady: The next talisman calls down the Dragon Tribulation!
 	}
 
 	PigCharm: {
 		DisplayName: Pig Charm
-		Tooltip: ""
+		Tooltip:
+			'''
+			Channels a gluttonous torrent; the longer the pig spirit feeds, the greedier it grows — damage and beam width swell
+			Release when full to end the feast with a devastating burp
+			"To eat well is a blessing"
+			'''
 	}
 
 	StrangeStone: {
@@ -136,7 +204,13 @@ Items: {
 
 	BlackBearStaff: {
 		DisplayName: Black Bear Staff
-		Tooltip: ""
+		Tooltip:
+			'''
+			Summons a black bear cub spirit to fight for you
+			The cub rears up, pounces with dark wind and slams its paw down
+			Every fourth slam is a Golden Crown fury strike
+			"The little one from Black Wind Mountain; the crown suits it well"
+			'''
 	}
 
 	BlackBearSword: {
@@ -146,17 +220,33 @@ Items: {
 
 	BlackBearBow: {
 		DisplayName: Black Bear Bow
-		Tooltip: ""
+		Tooltip:
+			'''
+			Dark wind nocks your arrows: every shot becomes a dark-wind arrow
+			Every fifth shot is a heavy honey bolt that slows foes and splatters honey
+			"Shiny?"
+			'''
 	}
 
 	BronzeSword: {
 		DisplayName: Bronze Sword
-		Tooltip: ""
+		Tooltip:
+			'''
+			"The blade glints with an eerie green..."
+			Strikes poison enemies
+			Metal-Sunder: executes common enemies below 12% life, +15% damage to weakened bosses
+			'''
 	}
 
 	CrimsonbronzeSword: {
 		DisplayName: Crimsonbronze Sword
-		Tooltip: ""
+		Tooltip:
+			'''
+			"Flames wreathe the blade..."
+			Left click ignites enemies
+			Hold right click to charge in the forge, release to unleash a heavy slash - white-hot flashes mark tiers one through three
+			Tier two and above scatter molten pearls
+			'''
 	}
 
 	CupriteOre: {
@@ -246,7 +336,12 @@ Items: {
 
 	Pufferfish: {
 		DisplayName: Pufferfish
-		Tooltip: ""
+		Tooltip:
+			'''
+			Hold to spray a high-pressure water jet; the puffer inflates as it sprays
+			At full puff it unleashes a devastating sneeze of spines
+			"Cute, but dangerous"
+			'''
 	}
 
 	Starflower: {
@@ -266,7 +361,11 @@ Items: {
 
 	RatCharm: {
 		DisplayName: Rat Charm
-		Tooltip: ""
+		Tooltip:
+			'''
+			Throws a rat talisman; five rat spirits scurry and gnaw, pilfering flecks of gold
+			It can also make certain things move
+			'''
 	}
 
 	IronArmorFlower: {
@@ -301,7 +400,12 @@ Items: {
 
 	MingCrowStaff: {
 		DisplayName: Ming Crow Staff
-		Tooltip: ""
+		Tooltip:
+			'''
+			Summons netherworld crows to fight for you
+			The flock circles its prey and dives in staggered waves
+			Every third dive becomes a coiling dive that bursts into feathers
+			'''
 	}
 
 	PoJingDan: {
@@ -367,12 +471,24 @@ Items: {
 
 	ChengYingReins: {
 		DisplayName: Cheng Ying Reins
-		Tooltip: ""
+		Tooltip:
+			'''
+			Ride the shadow sword; speed is its edge
+			Ramming at full speed triggers a shadow-breaking flash
+			"Between dusk and dawn, faintly, as if something were there"
+			'''
 	}
 
 	YuChangSword: {
 		DisplayName: Yu Chang Sword
-		Tooltip: ""
+		Tooltip:
+			'''
+			Three inches of cold steel, thin as a cicada's wing
+			Drawn without a sound; life and death already decided
+			Every fourth thrust pierces bone: bonus damage, a fish-shadow blade, and a slide toward the cursor
+			Right click for Heartpiercer Backstab (8s cooldown): blink behind the target for a three-hit flurry
+			Executes weakened common enemies; with no target, becomes a phantom lunge
+			'''
 	}
 
 	ShenxianGuanglunItem: {
@@ -387,7 +503,15 @@ Items: {
 
 	GanJiangSword: {
 		DisplayName: Gan Jiang Sword
-		Tooltip: ""
+		Tooltip:
+			'''
+			Gan Jiang and Mo Ye, the paired blades
+			Left click for a three-step combo: slash, reverse slash, then a twin-blade cross spin, each echoed by the phantom Mo Ye
+			Any hit from either blade builds Sword Resonance (up to 10)
+			Right click at full resonance: Unity of the Paired Blades - crossing crimson-gold and azure greatblade waves with a yin-yang disc
+			Below full resonance, sends the phantom Mo Ye to hunt the cursor's target
+			"When male and female blades unite, their cry splits the heavens"
+			'''
 	}
 
 	AureateVoidrender: {
@@ -576,17 +700,31 @@ Items: {
 
 	XuanTieSword: {
 		DisplayName: Xuan Tie Sword
-		Tooltip: ""
+		Tooltip:
+			'''
+			The heavy sword has no edge; great skill needs no polish
+			Three heavy swings: cross slash, return slash, then an overhead quake slash that cracks the ground
+			Struck enemies bleed continuously
+			'''
 	}
 
 	BaGuaZhenpan: {
 		DisplayName: Ba Gua Zhenpan
-		Tooltip: ""
+		Tooltip:
+			'''
+			A translucent black-and-white taiji bagua disc
+			Left click to unfold the Eight Trigrams array; right click to arrange formations
+			Qian, Dui, Li, Zhen, Xun, Kan, Gen, Kun
+			'''
 	}
 
 	BoneSword: {
 		DisplayName: Bone Sword
-		Tooltip: ""
+		Tooltip:
+			'''
+			An ancient bone blade with blinding swing speed
+			Every eighth strike shatters bone: double damage in a burst of splinters
+			'''
 	}
 
 	Bone: {
@@ -625,28 +763,53 @@ Items: {
 	}
 
 	HanbaBook: {
-		DisplayName: Hanba Book
-		Tooltip: ""
+		DisplayName: Drought Sun
+		Tooltip:
+			'''
+			Calls down a scorching sun pillar at the cursor, igniting the ground below
+			Every fourth cast drops a miniature scorch sun that unleashes blazing waves in both directions
+			"Where she dwells, no rain falls; a thousand miles turn scorched red"
+			'''
 	}
 
 	HoqingFireSummon: {
-		DisplayName: Hoqing Fire Summon
-		Tooltip: ""
+		DisplayName: Calamity Herald
+		Tooltip:
+			'''
+			Summons funeral lanterns that circle you and spit soul flames at foes
+			Right click opens a lesser ghost gate at the cursor; lanterns line up and pour ghostfire through it
+			"When ten thousand ghosts march, every one carries a lantern"
+			'''
 	}
 
 	JiangcenHammerItem: {
-		DisplayName: Jiangcen Hammer Item
-		Tooltip: ""
+		DisplayName: Thunderclap Hammer
+		Tooltip:
+			'''
+			Hurls a hammer that heeds command, calling thunderbolts at its apex and on hit
+			Every fifth throw is a Marshal's Decree: echo hammers crash down in sequence
+			"The general musters his troops, with heaven's thunder for a drum"
+			'''
 	}
 
 	YingouKnife: {
-		DisplayName: Yingou Knife
-		Tooltip: ""
+		DisplayName: Ghost Fang
+		Tooltip:
+			'''
+			Three-hit combo; the third slash releases a ghost fang wave
+			Right click draws a nether slash line: twin blades converge and execute at the crossing
+			Every third line unfolds into a blade matrix
+			"The blade of the Yellow Springs draws the line first, then claims the life"
+			'''
 	}
 
 	CoffinNail: {
 		DisplayName: Coffin Nail
-		Tooltip: ""
+		Tooltip:
+			'''
+			Drives corpse-sealing nails into enemies, suppressing their soul over time
+			Seven nails in one enemy trigger the Seven-Star Coffin Seal and detonate
+			'''
 	}
 
 	SoulBanner: {
@@ -654,9 +817,11 @@ Items: {
 		Tooltip:
 			'''
 			Harness the power of countless lost souls through this banner
-			Left click thrusts the banner forward, channeling a soul vortex
+			Left click thrusts the banner forward, opening a soul-drinking vortex at its tip
 			Right click deploys the banner above your head for continuous soul absorption
+			Right click again while deployed to unleash Wail of Ten Thousand Souls: spend 40% souls for a spirit legion
 			Killing enemies absorbs souls to strengthen the banner; defeat bosses to raise the limit
+			Hold Shift while wielding to view the Soul Ledger
 			'''
 	}
 
@@ -789,43 +954,79 @@ Items: {
 	}
 
 	AxeofXingTian: {
-		DisplayName: Axeof Xing Tian
-		Tooltip: ""
+		DisplayName: Axe of Xing Tian
+		Tooltip:
+			'''
+			Heavy three-act swings; hits build Wrath, and at full Wrath the next swing becomes the Headless Fury
+			The fury releases an advancing wave of rending grudge
+			Indomitable: below half health, damage and swing speed increase
+			"Headless, he still dances with axe and shield"
+			'''
 	}
 
 	BloodfiendGreatsword: {
 		DisplayName: Bloodfiend Greatsword
-		Tooltip: ""
+		Tooltip:
+			'''
+			Three-hit combo: slash, slash, heavy cleave - the cleave grows larger and releases a short crimson wave
+			5% of damage dealt returns as life (doubled on crits), drawn back as visible blood threads
+			'''
 	}
 
 	BrushofJudgment: {
-		DisplayName: Brushof Judgment
-		Tooltip: ""
+		DisplayName: Brush of Judgment
+		Tooltip:
+			'''
+			Flicks three vermilion brushstrokes that stamp ink marks above struck enemies
+			Four marks on one enemy invoke the Verdict - a judgment stroke falls for double damage
+			"One stroke of the crimson brush decides life and death"
+			'''
 	}
 
 	NetherboneBow: {
 		DisplayName: Netherbone Bow
-		Tooltip: ""
+		Tooltip:
+			'''
+			Every fourth shot is a soul-guided volley: three weightless, hard-homing soulbone arrows
+			The bone-chime pitch climbs shot by shot - you can hear the volley coming
+			'''
 	}
 
 	SoulDevourerSpear: {
 		DisplayName: Soul Devourer Spear
-		Tooltip: ""
+		Tooltip:
+			'''
+			Thrust hits feed souls into the spear (up to four, seen orbiting the shaft)
+			At full souls the next thrust becomes a devouring lunge: far greater reach, and it drains life
+			'''
 	}
 
 	SoulLanternStaff: {
 		DisplayName: Soul Lantern Staff
-		Tooltip: ""
+		Tooltip:
+			'''
+			Summons a guiding soul lantern that circles you and spits soulfire at foes
+			Every sixth bolt condenses into a great flame that splits into three seeking wisps
+			'''
 	}
 
 	SoulseekerDaggers: {
 		DisplayName: Soulseeker Daggers
-		Tooltip: ""
+		Tooltip:
+			'''
+			Throws daggers from alternating hands; every third throw crosses two blades in an X
+			Mortal foes on the brink of death may be claimed outright
+			'''
 	}
 
 	YamasGavel: {
-		DisplayName: Yamas Gavel
-		Tooltip: ""
+		DisplayName: Yama's Gavel
+		Tooltip:
+			'''
+			The thrown gavel rises and slams down upon striking a foe or reaching full range - order in the court!
+			The slam delivers a golden verdict pulse that confounds nearby enemies
+			"Silence!"
+			'''
 	}
 
 	NetherBar: {
@@ -880,17 +1081,17 @@ Items: {
 
 	ArchosaurBow: {
 		DisplayName: Archosaur Bow
-		Tooltip: ""
+		Tooltip: A stardust bow condensed from the Ancestral Dragon's breath; its arrows hunt wandering souls\nAt full draw of dragon breath, the star sea pours down a rain of soul arrows
 	}
 
 	ArchosaurFerrara: {
 		DisplayName: Archosaur Ferrara
-		Tooltip: ""
+		Tooltip: A broken blade cast from an ancient dragon soul; starlight peels off its edge with every swing\nChained strikes build up dragon breath, unleashing the Ancestral Breath when it overflows
 	}
 
 	ArchosaurStaff: {
 		DisplayName: Archosaur Staff
-		Tooltip: ""
+		Tooltip: A lingering thought of the Ancestral Dragon is sealed in its head, unfolding soul circles where it points\nEvery tenth cast, the dragon's phantom dives down from the star sea
 	}
 
 	CelestialEdictScepter: {
@@ -1014,43 +1215,88 @@ Items: {
 	}
 
 	CodexofFate: {
-		DisplayName: Codexof Fate
-		Tooltip: ""
+		DisplayName: Codex of Fate
+		Tooltip:
+			'''
+			A netherworld codex recording the fates and karma of all beings
+			Revenant weapon hits mark foes with karma; at seven stacks, Yama's verdict descends
+			Every fourth cast turns to the vermilion page, adding a rebuke that chains lightning to nearby foes
+			Open it, and you shall see their endings
+			(Perhaps yours as well.)
+			'''
 	}
 
 	JudgesSoulhook: {
-		DisplayName: Judges Soulhook
-		Tooltip: ""
+		DisplayName: Judge's Soulhook
+		Tooltip:
+			'''
+			The judge's sentence, dealt in three thrusts - pierce, lunge, and the soul-hooking rake
+			The third strike drags sinners toward you and rips at their soul
+			Hits siphon life; hooking a soul awaiting verdict feasts deeply
+			'''
 	}
 
 	KarmasMirrorBlade: {
-		DisplayName: Karmas Mirror Blade
-		Tooltip: ""
+		DisplayName: Karma's Mirror Blade
+		Tooltip:
+			'''
+			A blade that mirrors sin like the Karma Mirror, always returning
+			Hits in flight store sin within the mirror
+			When brimming, the next throw becomes a verdict cast: twin reflections follow, and all stored sin is repaid at once
+			Your foes will see their gravest sins within the mirror
+			'''
 	}
 
 	NetherfireBlunderbuss: {
 		DisplayName: Netherfire Blunderbuss
-		Tooltip: ""
+		Tooltip:
+			'''
+			Fires netherfire that burns flesh and soul alike
+			A fixed five-pellet fan - the swiftest way to stack karma before judgment
+			Every fourth shot overcharges both barrels into an eight-pellet blast
+			'''
 	}
 
 	NetherRockSoulbomb: {
 		DisplayName: Nether Rock Soulbomb
-		Tooltip: ""
+		Tooltip:
+			'''
+			A soul-detonating bomb hewn from nether rock
+			Use again while one is deployed to detonate it remotely
+			Explosions leave a soul-scorching field and strike karma-laden foes harder
+			'''
 	}
 
 	StaveofNetherflow: {
-		DisplayName: Staveof Netherflow
-		Tooltip: ""
+		DisplayName: Stave of Netherflow
+		Tooltip:
+			'''
+			A stave channeling the flow of the Yellow Springs
+			Its winding river-orb blooms into a nether vortex where it strikes
+			The vortex drags souls inward, burns them, and returns their life to the wielder
+			'''
 	}
 
 	UnderworldSoulguide: {
 		DisplayName: Underworld Soulguide
-		Tooltip: ""
+		Tooltip:
+			'''
+			A bow that ferries souls to the Yellow Springs
+			Arrows fiercely home in on marked (karma-bearing) souls
+			Every fourth draw looses twin arrows; slain marked souls yield ferrying wisps
+			'''
 	}
 
 	YamasSeverance: {
-		DisplayName: Yamas Severance
-		Tooltip: ""
+		DisplayName: Yama's Severance
+		Tooltip:
+			'''
+			The greatblade with which Yama severs the karma of all beings
+			Left click for a three-hit combo ending in an overhead cleave that releases a severance wave
+			Right click for the Verdict Iai: dash-slash through; karma-laden foes suffer the severance verdict
+			Marked stragglers at death's door are executed outright (non-boss only)
+			It needs no sheath, for karma never rests
+			'''
 	}
 
 	YamasDeicide: {
@@ -1058,8 +1304,9 @@ Items: {
 		Tooltip:
 			'''
 			The ultimate blade that severs karma and slays gods
-			Releases three divine slashes, critical hits trigger Divine Judgment
-			Instantly executes non-boss enemies below 15% health
+			Held three-hit combo - chop, reverse slash, full spin - each hurling a slash wave
+			Executes non-boss enemies below 15% health, tearing open a deicide rift
+			While Karma-Awakened, the first stroke becomes Yama's Single Stroke
 			'''
 	}
 
@@ -1068,8 +1315,9 @@ Items: {
 		Tooltip:
 			'''
 			Guides the souls of those damned to ten thousand calamities
-			Fires 5 homing soul arrows with a chance for 3 bonus shots
-			Critical hits trigger chained soul explosions
+			Fires 3 homing soul arrows; hits stack Soul Marks on the target
+			At 6 marks, a Yellow Springs ferry pillar crashes down upon them
+			Awakened form: arrows split into homing soul shards on hit
 			'''
 	}
 
@@ -1078,8 +1326,9 @@ Items: {
 		Tooltip:
 			'''
 			A heavy nether cannon that devours souls
-			Sprays 10-15 soul-eating bullets, causes soul burst on hit
-			Absorbs souls to restore life on kill
+			Sprays 12 soul-eating bullets; hits and kills feed the Soul Chamber
+			Right click consumes all chambers to unleash a Soul Maw Blast
+			Awakened form: tighter spread and doubled soul intake
 			'''
 	}
 
@@ -1088,8 +1337,10 @@ Items: {
 		Tooltip:
 			'''
 			A blade of endless karmic cycles, like the Avici Hell itself
-			Throws 3 boomerangs simultaneously with mirror-reflection damage
-			Critical hits reflect double damage upon enemies
+			The blade ricochets between enemies, karmic flame growing with each bounce
+			Catch it to gain Karma Edges; at 3, hurl the Avici Wheel Blade
+			Awakened form: throws three blades with extra bounces
+			Hits build Karma; overflow triggers an 8s Karmic Awakening
 			'''
 	}
 
@@ -1098,8 +1349,9 @@ Items: {
 		Tooltip:
 			'''
 			The Judge's spear of ultimate oblivion and death
-			Massive thrust range with heavy life steal on hit
-			Killing enemies triggers Oblivion Burst, devastating nearby foes
+			Three-thrust combo; the third is a Soul-Hook Impale with doubled lifesteal
+			Massive thrust reach; kills trigger an Oblivion Burst
+			Awakened form: 30% faster thrusts that loose soul waves
 			'''
 	}
 
@@ -1108,8 +1360,9 @@ Items: {
 		Tooltip:
 			'''
 			The ultimate codex recording the karma of ten thousand demons
-			Fires 5 homing demon runes per cast
-			Critical hits trigger chained lightning across 5 enemies
+			Casts heavy demon runes; every 5th cast summons a Demon Lord Sigil
+			The Sigil's first hit unfolds the Myriad Demon array, chaining lightning to 5 foes
+			Awakened form: shadow runes strike from behind on every cast
 			'''
 	}
 
@@ -1118,8 +1371,9 @@ Items: {
 		Tooltip:
 			'''
 			A stave channeling the power of Yellow Spring's oblivion
-			Fires 3 eclipse orbs that create binding nether zones on hit
-			Enemies in the zone are slowed and scorched by shadow flames
+			Fires an eclipse orb flanked by two attendants; the orb unfolds a Nether Net
+			The net slows and erodes souls, then collapses in a lunar-eclipse burst
+			Awakened form: wider net, faster erosion
 			'''
 	}
 
@@ -1128,8 +1382,9 @@ Items: {
 		Tooltip:
 			'''
 			A nether-rock bomb that shatters souls and opens the gates of Yellow Spring
-			Splits into 3 cluster bombs after detonation, each with massive blast radius
+			The blast tears open a Gate of Yellow Springs that spews 3 cluster bombs
 			No soul can escape the gate once opened
+			Awakened form: the gate spews 5 clusters
 			'''
 	}
 
@@ -1138,8 +1393,9 @@ Items: {
 		Tooltip:
 			'''
 			The blade of myriad calamities forged by the Yin Emperor, severing all cycles of reincarnation
-			3-hit combo: first two strikes release 5 Imperator Slashes, third triggers Void Eruption
-			Critical hits unleash chained judgment on all enemies within 600 range
+			Hold to chain a 3-hit combo: cleave and uppercut each hurl 3 Imperator Slashes
+			The third strike, "Decree of Myriad Calamity", hurls a great slash and tears a void vortex at the cursor
+			Third-strike crits unleash chained judgment on all enemies within 600 range
 			Instantly obliterates non-boss enemies below 25% health
 			'''
 	}
@@ -1149,8 +1405,9 @@ Items: {
 		Tooltip:
 			'''
 			A deicide bow condensed from primordial chaos energy, requires no mundane arrows
-			Fires a Chaos Deicide Arrow that creates a Feather Rain Zone on impact
-			Rain zone lasts 3 seconds, showering tracking feather arrows from above
+			Hold to draw through 3 charge tiers, condensing a Myriad Feather array behind you (up to 14)
+			Release to loose the deicide arrow; the feather array follows in a rolling volley
+			A fully-drawn arrow tears open a Chaos Gate on impact, raining fallen feathers
 			'''
 	}
 
@@ -1159,8 +1416,9 @@ Items: {
 		Tooltip:
 			'''
 			The ultimate cannon sealed with a hell dragon's breath, requires no ammo
-			Fires an expanding Dragon Breath Wave that grows larger with distance
-			Hit enemies are branded with Annihilation Marks that detonate after 2s for double damage
+			Hold to inhale nether souls through 3 charge tiers, release to exhale an expanding nether-flame breath
+			Deeper charge, mightier breath: a full breath bears the Hellwyrm's soul-head at its crest
+			Hits brand Annihilation Marks that detonate after 2s (full-breath marks deal x2.5)
 			'''
 	}
 
@@ -1169,8 +1427,9 @@ Items: {
 		Tooltip:
 			'''
 			The Judgment Wheel of the Nine Hells, condensed from abyssal frost
-			Orbits the wielder and auto-targets nearby enemies with dash attacks
-			Every 5th hit triggers Absolute Zero Judgment, freezing all enemies in range
+			Orbits the wielder and auto-charges nearby enemies
+			Throw again while deployed to issue a Decree Dash: the wheel rears back, then snaps toward your cursor
+			Every 5th hit triggers Nine-Nether Judgment: the wheel halts, tearing a void rift that freezes all enemies in range
 			Inflicts Frostburn, Frozen, and Broken Armor on hit
 			'''
 	}
@@ -1180,9 +1439,10 @@ Items: {
 		Tooltip:
 			'''
 			The spear of void damnation that pierces through eternal calamity
-			Extreme thrust range, leaves a persistent Void Rift along the thrust path
-			Ignores enemy defense on hit, heals on every strike
-			Killing enemies triggers Void Eruption with massive healing burst
+			Hold to thrust continuously; every 4th thrust becomes Eternal Soulpierce with longer windup and reach
+			Eternal Soulpierce tears a Void Rift along its path, pulsing to drag enemies onto the line
+			Ignores enemy defense and heals on every strike; the great thrust heals double
+			Kills shatter souls into a chained void eruption
 			'''
 	}
 
@@ -1191,9 +1451,9 @@ Items: {
 		Tooltip:
 			'''
 			A forbidden tome recording primordial nightmares and infinite curses
-			Summons a Rashomon Gate at cursor position, lasting 4 seconds
-			Gate pulls enemies in and continuously damages them
-			Spawns 3 Nightmare Tendrils every second to hunt down enemies
+			Summons a single Rashomon Gate at the cursor, lasting 5 seconds
+			The gate pulls enemies in and looses nightmare tendrils that stack curses (up to 8)
+			Cast again while the gate stands to slam it shut, reckoning all cursed foes per stack
 			'''
 	}
 
@@ -1202,9 +1462,9 @@ Items: {
 		Tooltip:
 			'''
 			The scepter of fate wielded by the Supreme Judge of the Netherworld
-			Fires 5 homing Fate Decree Orbs per cast
-			Hit enemies are branded with Fate Marks that detonate after 3 seconds
-			Detonation damage = accumulated damage x 1.5, with AOE splash
+			Left click fires twin helix soul-hook orbs that brand Fate Marks (up to 6 stacks, recording damage dealt)
+			Right click passes the Fate Verdict: imperial decrees descend, striking each mark for accumulated damage x (1.2 + 0.15 per stack)
+			Unjudged marks self-detonate after 3 seconds for accumulated damage x1.5
 			'''
 	}
 
@@ -1213,8 +1473,8 @@ Items: {
 		Tooltip:
 			'''
 			The ultimate annihilation bomb condensed from void singularity
-			Creates a 1-second gravity well that pulls enemies inward on impact
-			Followed by a catastrophic implosion covering a massive area
+			Creates a 1-second gravity well on impact, then implodes catastrophically
+			Use again while a well charges to detonate early (60%~100% power by charge)
 			Killed enemies spawn chain-reaction singularities
 			'''
 	}
@@ -1223,7 +1483,9 @@ Items: {
 		DisplayName: Woodland Greatsword
 		Tooltip:
 			'''
-			A greatsword woven from woodland branches and vines
+			A living greatsword woven from woodland branches and vines, swings in a three-hit combo
+			The third slam erupts root spikes along the ground
+			Hits build Vigor; at full Vigor the slam becomes a "Verdant Burst" root ring
 			Has a chance to inflict Poisoned on hit
 			'''
 	}
@@ -1233,7 +1495,8 @@ Items: {
 		Tooltip:
 			'''
 			A boomerang crafted from twisted tree roots
-			Returns after being thrown, pierces multiple enemies
+			Catch it on return to stack Grind, boosting damage and throw speed
+			Striking two enemies in one flight sharpens its return
 			'''
 	}
 
@@ -1242,7 +1505,8 @@ Items: {
 		Tooltip:
 			'''
 			A bow woven from living vines
-			Arrows have a chance to inflict Poisoned
+			Every fourth arrow becomes a vine arrow that plants a mark
+			Hitting a marked target lashes it with a vine whip from below
 			'''
 	}
 
@@ -1250,8 +1514,9 @@ Items: {
 		DisplayName: Deadwood Musket
 		Tooltip:
 			'''
-			A crude musket made from deadwood
-			Fires acorn projectiles, consumes no ammo
+			A three-round deadwood musket, consumes no ammo
+			The third round is a scatter blast of four acorn pellets with heavy recoil
+			Acorns splinter into wooden shard shrapnel
 			'''
 	}
 
@@ -1260,7 +1525,8 @@ Items: {
 		Tooltip:
 			'''
 			A twig staff inlaid with emeralds
-			Releases emerald magic bolts
+			Hits embed emerald shards into the target, up to three
+			The next hit on a fully studded target triggers a resonance burst
 			'''
 	}
 
@@ -1268,8 +1534,9 @@ Items: {
 		DisplayName: Nature Grimoire
 		Tooltip:
 			'''
-			An ancient grimoire recording nature's power
-			Releases three spiraling leaf blades
+			An ancient grimoire recording nature's power, each cast turns a page
+			The fifth page blooms a ring of leaf blades that unfolds and closes back in
+			The bloom leaves a verdant field that slowly heals players inside
 			Hits have a chance to inflict Poisoned
 			'''
 	}
@@ -1279,19 +1546,30 @@ Items: {
 		Tooltip:
 			'''
 			An explosive wrapped in glowing moss
-			Explodes on impact, releasing a green mushroom cloud
-			Deals area damage and inflicts Poisoned
+			Bounces off the ground onto a short fuse; direct hits detonate instantly
+			The blast releases a poison mushroom cloud and spore buds that linger
 			'''
 	}
 
 	DivineWoodBomb: {
 		DisplayName: Divine Wood Bomb
-		Tooltip: ""
+		Tooltip:
+			'''
+			An explosive seed that grows
+			Hitting the ground plants it, erupting three waves of root spikes; the last wave detonates Rooted
+			Hitting an enemy makes it parasitize and swell, planting 3 Rooted stacks and detonating on bloom
+			Times out mid-air with a blooming burst and homing vine shards
+			'''
 	}
 
 	DivineWoodGreatblade: {
 		DisplayName: Divine Wood Greatblade
-		Tooltip: ""
+		Tooltip:
+			'''
+			A massive blade condensed from millennia-old divine wood, sap-light coursing through it
+			Three-hit combo: the first two swings plant Rooted, the third growth-ring cleave detonates Rooted and releases a wave
+			Right click to channel "Jianmu Rising": three towering pillars erupt ahead (9s cooldown)
+			'''
 	}
 
 	DivineWoodGyratingLeaf: {
@@ -1299,30 +1577,50 @@ Items: {
 		Tooltip:
 			'''
 			A spinning blade condensed from divine wood leaves
-			Thrown toward the cursor, decelerates then returns at high speed
-			Return trip deals 1.5x damage, hits release whirlwind leaves
+			Hold after throwing to anchor it as a growth-ring saw that plants Rooted with each grind
+			Release to recall at high speed: 1.5x damage, detonating Rooted along the way
 			Every 5 hits triggers Nature's Verdict, releasing a petal barrage
 			'''
 	}
 
 	DivineWoodLongbow: {
 		DisplayName: Divine Wood Longbow
-		Tooltip: ""
+		Tooltip:
+			'''
+			A charge longbow woven from living wood and spirit vines
+			Quick shots fire leaf bolts; half charge looses a triple volley with spiral leaf escorts, all planting Rooted
+			Full charge fires the Forest Piercer: a massive arrow that pierces everything and detonates Rooted on each victim
+			'''
 	}
 
 	DivineWoodMusket: {
 		DisplayName: Divine Wood Musket
-		Tooltip: ""
+		Tooltip:
+			'''
+			A three-round burst musket driven by divine wood mechanisms
+			Each trigger pull fires three thorn needles that plant Rooted
+			Every 9th shot loads a seed mortar: on impact a row of root spikes erupts to harvest Rooted
+			'''
 	}
 
 	DivineWoodScepter: {
 		DisplayName: Divine Wood Scepter
-		Tooltip: ""
+		Tooltip:
+			'''
+			A scepter carved from the heart of an ancient divine tree
+			Lashes out a vine whip: the tip plants 2 Rooted stacks, the body plants 1
+			Every 4th lash is a heavy crack: bonus damage, the tip detonates Rooted and leaves a thorn patch
+			'''
 	}
 
 	DivineWoodTome: {
 		DisplayName: Divine Wood Tome
-		Tooltip: ""
+		Tooltip:
+			'''
+			An ancient tome recording the spirit of all trees
+			Triple chant: two leaf fans that plant Rooted, then a canopy volley with a piercing lotus that detonates Rooted
+			Right click (5s cooldown) to unfurl a growth-ring circle at the cursor, detonating Rooted on all enemies within
+			'''
 	}
 
 	TheNaturalAxe: {
@@ -1350,8 +1648,9 @@ Items: {
 			'''
 			The ultimate greatblade forged from the essence of the eternal Divine Sylvan
 			3-hit combo cycle: Sweep → Upswing → Heavenly Slam
-			Sweep releases a piercing vine wave, Upswing fans three rift waves
-			Heavenly Slam triggers a massive earthquake, all nature bows before it
+			Sweep and Upswing carve growth ring brands into enemies
+			Heavenly Slam quakes the earth, detonating all brands in the area
+			Ring upon ring, one slash to bloom them all
 			'''
 	}
 
@@ -1360,8 +1659,9 @@ Items: {
 		Tooltip:
 			'''
 			The ultimate explosive seed containing the essence of the World Tree
-			Splits mid-flight into five child seeds, each exploding independently
-			Each explosion releases swarms of homing vine serpent projectiles
+			Quick-toss to seed the field, or hold to charge a Mother Seed
+			Splits mid-flight into five child seeds; vine serpents brand enemies with growth rings
+			The Mother Seed's blast detonates all brands in the area
 			A myriad of blooms erupt, changing the color of heaven and earth
 			'''
 	}
@@ -1372,8 +1672,9 @@ Items: {
 			'''
 			The ultimate longbow bent from the trunk of the World Tree
 			Converts arrows into infinitely-piercing vine lances
-			Each arrow is accompanied by four DNA-spiral homing leaves
-			Every 4th shot fires a World Tree Arrow of devastating power
+			Each arrow flies with four DNA double-helix leaves; hits carve growth ring brands
+			Every 4th shot condenses a World Tree Arrow: gather, hush, burst
+			The World Tree Arrow detonates brands on hit
 			'''
 	}
 
@@ -1382,12 +1683,11 @@ Items: {
 		Tooltip:
 			'''
 			The ultimate chakram condensed from ancient divine leaf veins
-			Thrown out, then unleashes a rapidly expanding spiral storm at the landing point
-			Hold attack to sustain the storm, release to trigger violent implosion
-			Implosion releases ten whirlwind leaves + screen shake
-			Return trip deals 2x damage, catching triggers another screen shake
-			Every 3 hits triggers Myriad Verdict: sixteen petal burst
-			Area vine entanglement, all nature stands in judgment
+			Unleashes a spiral storm at its landing point
+			The kill zone is the spinning golden-emerald leaf ring; the eye of the storm is safe
+			Hold to sustain the storm; the ring pulses, flinging whirlwind leaves
+			Release to implode, detonating every growth ring brand in the area
+			Return trip deals 2x damage; catching it lands with real impact
 			'''
 	}
 
@@ -1396,9 +1696,10 @@ Items: {
 		Tooltip:
 			'''
 			The ultimate rapid-fire weapon driven by World Tree golden thorn mechanisms
-			Five-burst golden-emerald thorn needles that chain-bounce on hit
-			Every five bursts fires three splitting seed mortars
-			Thorns grow into forests, heaven and earth tremble
+			True five-round bursts with recoil on every shot
+			Hits carve growth ring brands and chain-bounce between enemies
+			Every 25th shot lobs three splitting seed mortars that detonate nearby brands
+			Detonating 3+ ring stacks at once triggers Thorn Fury: eight homing thorns bloom out
 			'''
 	}
 
@@ -1407,10 +1708,9 @@ Items: {
 		Tooltip:
 			'''
 			The ultimate scepter carved from the heart of the ten-thousand-year Divine Sylvan
-			Releases a massive vine chain whip to lash enemies
-			Chain body sprouts homing tendrils that deal independent damage
-			Hits release eight homing leaf bursts
-			Endpoint triggers Vine Nova: sixteen-ray ring explosion
+			Hold to steer the vine chain whip toward your cursor — the whole chain deals damage
+			Whip hits carve growth ring brands; the chain sprouts homing tendrils
+			At full stretch the whip snaps shut: a Vine Nova detonates all brands around it
 			'''
 	}
 
@@ -1419,10 +1719,10 @@ Items: {
 		Tooltip:
 			'''
 			An ancient supreme treasure recording the spiritual essence of all trees
-			Releases 20-28 golden-emerald leaf blades in a fan spread
-			Leaves spiral before powerfully homing on enemies
-			50% chance on hit to release twin petal sub-projectiles
-			Every 3rd use conjures a Leaf Storm Vortex with gravitational pull
+			Releases seven great golden-emerald leaf blades in a fan spread
+			Leaves spiral, then home in; hits carve growth ring brands
+			Every 6th use conjures a Leaf Storm Vortex: gravitational pull, pulsing brand detonations
+			Blooming brands scatter dancing petals
 			'''
 	}
 
@@ -1475,9 +1775,9 @@ Items: {
 		Tooltip:
 			'''
 			A horrific greatsword forged from profane flesh
-			Three-hit combo: horizontal slash, upswing, down-chop
-			Releases dark blood-flesh waves along swing arc
-			Down-chop deals 30% more damage and shakes the ground
+			Three-hit combo: slash, upswing, down-chop, each loosing a writhing flesh wave
+			Blade hits apply Vivisection Marks; the down-chop applies two and shakes the ground
+			At five marks a gazing eye harvests the victim in a lethal burst that heals you
 			'''
 	}
 
@@ -1486,8 +1786,8 @@ Items: {
 		Tooltip:
 			'''
 			A boomerang wrapped in living flesh
-			Return hit deals 80% more damage
-			Leeches a small amount of life on hit
+			Return hit deals 80% more damage, leeches life and applies Vivisection Marks
+			Catch it after 3+ hits in one flight to become Satiated: engorged, hungrier, deadlier
 			Every 4 hits releases homing flesh tendrils
 			'''
 	}
@@ -1496,10 +1796,10 @@ Items: {
 		DisplayName: Twitching Tendon Bow
 		Tooltip:
 			'''
-			An eerie longbow woven from twitching tendons
-			Fires penetrating spine bolts with spiral fragments
-			Every 3rd shot conjures a homing aberrant eyeball
-			Eyeball bursts into homing flesh tendrils on impact
+			An eerie longbow strung with twitching tendons; hold to draw
+			A full-draw spasm looses a piercing spine bolt with twin spiral blades
+			Spasm bolts burst ribs on impact and apply a Vivisection Mark
+			Every third full draw conjures a homing aberrant eyeball
 			'''
 	}
 
@@ -1508,9 +1808,9 @@ Items: {
 		Tooltip:
 			'''
 			A writhing flesh-barrel gun spitting high-speed blood bullets
-			Five-round burst of penetrating blood projectiles
-			Every 25th shot conjures a massive viscera glob
-			Viscera glob explodes into homing flesh tendrils
+			Five-round bursts of penetrating blood projectiles
+			Every 25th shot vomits a massive viscera glob - the last five shots pulse faster in warning
+			Glob impacts apply Vivisection Marks and burst into homing tendrils
 			'''
 	}
 
@@ -1518,10 +1818,10 @@ Items: {
 		DisplayName: Bursting Tumor Bomb
 		Tooltip:
 			'''
-			A pressurized swollen tumor throwable
-			Arcs through the air and bounces once
-			Explodes into 8 homing flesh fragments
-			Deals massive area blood-blast damage
+			A pressurized swollen tumor - hold the attack button to let it gestate
+			The longer it gestates, the greater its damage, fragments and blast radius
+			Arcs through the air and bounces once; direct hits apply Vivisection Marks
+			Explodes into homing flesh fragments
 			'''
 	}
 
@@ -1530,9 +1830,9 @@ Items: {
 		Tooltip:
 			'''
 			A forbidden tome sealed in flesh
-			Fan-sprays 10 blood bolts in a spread
-			Every 4th cast releases a homing gazing eyeball
-			Eyeball bursts into 8 homing tendrils on impact
+			Fan-sprays 7 blood bolts in a spread
+			Every 4th cast opens a gazing eye that tracks, locks on and bursts into tendrils
+			Direct eye hits apply two Vivisection Marks
 			'''
 	}
 
@@ -1541,15 +1841,15 @@ Items: {
 		Tooltip:
 			'''
 			A grotesque staff formed from countless aberrant eyes
-			Continuously releases homing flesh tendrils
-			Every 6th release conjures a homing aberrant eyeball
+			Channeling rouses it: more tendrils, faster and tighter
+			Every 6th release conjures a homing aberrant eyeball applying two Vivisection Marks
 			Eyeball bursts into a ring of blood projectiles
 			'''
 	}
 
 	Livinglog: {
-		DisplayName: Livinglog
-		Tooltip: ""
+		DisplayName: Living Log
+		Tooltip: A still-growing fragment of the Dryads' trunk, verdant sap flowing between its rings
 	}
 
 	XuanTieHelmet: {
@@ -1634,7 +1934,13 @@ Items: {
 
 	FourSymbolsTablet: {
 		DisplayName: Four Symbols Tablet
-		Tooltip: (Placeholder) Sacred beast summon pending · Craft after four dragon kings · See §5.4
+		Tooltip:
+			'''
+			Raise the tablet to begin the Rite of the Four Symbols
+			Azure Dragon (E), Vermilion Bird (S), White Tiger (W) and Black Tortoise (N) descend in turn
+			The next cardinal beast wakes only after the last has fallen
+			Cannot be used while a sacred beast is present
+			'''
 	}
 
 	PhoenixFlameStaff: {
@@ -1778,49 +2084,57 @@ Items: {
 
 	NetherChainBlade: {
 		DisplayName: Nether Chain Blade
-		Tooltip: Throws a chained blade that returns to you
-		Tooltip2: Hooks up to two enemies; the nether chain between them pulses with shadowflame damage
+		Tooltip:
+			'''
+			Throw the soul-shackling blade: mark one foe, then bind two with a nether chain
+			The soul link pulses with shadowflame damage
+			Strike a chained foe again to trigger a soul collision that detonates the link
+			'''
 	}
 
 	SoulHookWhip: {
 		DisplayName: Soul Hook Whip
-		Tooltip: A nether soul-hook whip that yanks struck foes toward you
-		Tooltip2: Inflicts soul erosion — ongoing shadowflame damage and a lingering soul pull
+		Tooltip:
+			'''
+			Each lash carves a soul scratch (summon tag +4), up to three
+			Lashing a fully scratched foe reaps its soul with a heavy yank
+			The reaped soul returns to you, briefly empowering your summons
+			'''
 	}
 
 	CupriteDeadwoodMusket: {
 		DisplayName: Cuprite Deadwood Musket
-		Tooltip: Cuprite woodland musket upgrade · WoF-era ranged bridge · Base woodland stats + cuprite
+		Tooltip: Cuprite musket upgrade · Scatter blast ignites · Hitting burning targets spits ember sparks
 	}
 
 	CupriteEmeraldTwigStaff: {
 		DisplayName: Cuprite Emerald Twig Staff
-		Tooltip: Cuprite emerald twig staff upgrade · WoF-era magic bridge
+		Tooltip: Cuprite twig staff upgrade · Resonance becomes a molten burst · Hitting burning targets spits ember sparks
 	}
 
 	CupriteMossBomb: {
 		DisplayName: Cuprite Moss Bomb
-		Tooltip: Cuprite moss bomb upgrade · WoF-era thrown weapon bridge
+		Tooltip: Cuprite moss bomb upgrade · Spore buds become fire spores · Blasts ignite enemies
 	}
 
 	CupriteNatureGrimoire: {
 		DisplayName: Cuprite Nature Grimoire
-		Tooltip: Cuprite nature grimoire upgrade · WoF-era summon bridge
+		Tooltip: Cuprite grimoire upgrade · The fifth page blooms a wildfire ring and an ember field · Hitting burning targets spits ember sparks
 	}
 
 	CupriteWoodlandGreatsword: {
 		DisplayName: Cuprite Woodland Greatsword
-		Tooltip: Cuprite woodland greatsword · 42 damage · 1/3 chance to poison on hit
+		Tooltip: Cuprite greatsword upgrade · Root spikes burn · Verdant Burst becomes a wildfire · Hitting burning targets spits ember sparks
 	}
 
 	XuanTieHunterBow: {
 		DisplayName: Xuan Tie Hunter Bow
-		Tooltip: Xuan Tie hunter bow upgrade · 38 ranged damage · Synergizes with Xuan Tie bleed set
+		Tooltip: Xuan Tie bow upgrade · Blood-hook arrows plant a mark harvested as a blood spike burst · Synergizes with the Xuan Tie bleed set
 	}
 
 	XuanTieRootBoomerang: {
 		DisplayName: Xuan Tie Root Boomerang
-		Tooltip: Xuan Tie root boomerang upgrade · WoF-era melee/ranged bridge
+		Tooltip: Xuan Tie boomerang upgrade · Hits stack bleed · Three hits in one flight trigger a blood-rage return
 	}
 
 	WraithLantern: {
@@ -1906,7 +2220,16 @@ NPCs: {
 	Angry_gargoyle.DisplayName: Angry_gargoyle
 	angry_gargoyle.DisplayName: angry_gargoyle
 	BlackBear.DisplayName: Black Bear
-	Dazheng.DisplayName: Dazheng
+	Dazheng: {
+		DisplayName: Dazheng
+		SeasonSpring: Spring - Verdant Growth
+		SeasonSummer: Summer - Blazing Leaves
+		SeasonAutumn: Autumn - Gilded Deception
+		SeasonWinter: Winter - Frozen Hoard
+		SeasonsDisorder: Seasons in Disorder
+		ForestRequiem: The Forest Falls Silent
+	}
+
 	DazhengSeasonAnchor.DisplayName: Season Anchor
 	DazhengDecoyTree.DisplayName: Golden Phantom Tree
 	TaiShangLaoJunNPC.DisplayName: Tai Shang Lao Jun N P C
@@ -1917,9 +2240,9 @@ NPCs: {
 	LaoDieNPC.DisplayName: Lao Die N P C
 	YangJianNPC.DisplayName: Yang Jian N P C
 	TribulationCloud.DisplayName: Tribulation Cloud
-	TribulationCloudBlack.DisplayName: Tribulation Cloud Black
-	TribulationCloudPurple.DisplayName: Tribulation Cloud Purple
-	TribulationCloudRed.DisplayName: Tribulation Cloud Red
+	TribulationCloudBlack.DisplayName: Black Thunder Tribulation Cloud
+	TribulationCloudPurple.DisplayName: Purple Empyrean Tribulation Cloud
+	TribulationCloudRed.DisplayName: Crimson Thunder Tribulation Cloud
 	MengPoNPC.DisplayName: Meng Po N P C
 	TuDiNPC.DisplayName: Tu Di N P C
 	DaShengNPC.DisplayName: Da Sheng N P C
@@ -1942,35 +2265,62 @@ NPCs: {
 	GhostFire.DisplayName: Ghost Fire
 	Yingou.DisplayName: Yingou
 	YingouHand.DisplayName: Yingou Hand
-	Jiangcen.DisplayName: Jiangcen
+	Jiangcen: {
+		DisplayName: Jiangcen
+		ThunderPrison: Thunder Prison Descends
+		SealOrder: Seal of Command
+		RollCall: Ten Thousand Bolts Roll Call
+	}
+
 	JiangcenHammer.DisplayName: Jiangcen Hammer
 	MaMian.DisplayName: Ma Mian
 	NiuTou.DisplayName: Niu Tou
 	NetherDragonBody.DisplayName: Nether Dragon Body
 	NetherDragonHead.DisplayName: Nether Dragon Head
 	NetherDragonTail.DisplayName: Nether Dragon Tail
-	NetherScaleOrb.DisplayName: Grudge Scale Orb
+	NetherScaleOrb.DisplayName: Nether Reverse Scale
 	Corpses.DisplayName: Corpses
 	CorpsesHand.DisplayName: Corpses Hand
 	KyuubiKitsune.DisplayName: Kyuubi Kitsune
 	NetherKitsune.DisplayName: Nether Kitsune
-	BlackImpermanence.DisplayName: Black Impermanence
-	WhiteImpermanence.DisplayName: White Impermanence
+	BlackImpermanence: {
+		DisplayName: Black Impermanence
+		YinYangSwap: Yin-Yang Exchange
+		YinYangHook: Yin-Yang Soul Hook
+		ChainLock: Soul-Chain Lockdown
+		SoulRevive: Soul Reviving
+		SoloRage: Lone Envoy's Wrath: No Mercy
+	}
+
+	WhiteImpermanence: {
+		DisplayName: White Impermanence
+		SoulRevive: Soul Reviving
+		SoloRage: Lone Envoy's Wrath: Serenity
+		TetherBreak: Broken free!
+	}
 	AwakeningNetherBody.DisplayName: Awakening Nether Body
 	AwakeningNetherHead.DisplayName: Awakening Nether Head
 	AwakeningNetherTail.DisplayName: Awakening Nether Tail
 	Spectre.DisplayName: Spectre
-	SpectreMinion.DisplayName: Spectre Minion
+	SpectreMinion.DisplayName: Lantern Wraith
 	CelestialOverseer.DisplayName: Celestial Overseer
+	CelestialOverseer.Arrival: Heaven's Watch Sees All
+	CelestialOverseer.HeavensNet: Heaven's Net Is Vast, Yet Nothing Slips Through
+	CelestialOverseer.JudgmentMark: Marked for Judgment
 	CelestialEyeMinion.DisplayName: Celestial Eye Minion
 	OverseerScryingEye.DisplayName: Scrying Eye
 	HeavenlyJuror.DisplayName: Heavenly Juror
-	AncestralDragonSoulBody.DisplayName: Ancestral Dragon Soul Body
-	AncestralDragonSoulHead.DisplayName: Ancestral Dragon Soul Head
-	AncestralDragonSoulTail.DisplayName: Ancestral Dragon Soul Tail
-	AncestralDaoFragment.DisplayName: Dao Fragment
+	AncestralDragonSoulBody.DisplayName: Ancestral Dragon Soul
+	AncestralDragonSoulHead.DisplayName: Ancestral Dragon Soul
+	AncestralDragonSoulTail.DisplayName: Ancestral Dragon Soul
+	AncestralDaoFragment.DisplayName: Fragment of the Dao
 	CelestialDragonsBody.DisplayName: Celestial Dragons Body
 	CelestialDragonsHead.DisplayName: Celestial Dragons Head
+	CelestialDragonsHead.Pronounce: Edict Pronounced
+	CelestialDragonsHead.ActEdict: "Heaven's Law: Edict"
+	CelestialDragonsHead.ActWrath: "Heaven's Law: Wrath"
+	CelestialDragonsHead.Judgment: "Wrath: Ten Thousand Swords"
+	CelestialDragonsHead.EdictBroken: Edict Broken
 	CelestialDragonsTail.DisplayName: Celestial Dragons Tail
 	Vaisravana.DisplayName: Vaisravana
 	YakshaMinion.DisplayName: Yaksha Minion
@@ -1992,9 +2342,9 @@ NPCs: {
 	SoulHarvester.DisplayName: Soul Harvester
 	ThebonesinTheTomb.DisplayName: Thebonesin The Tomb
 	TheDeceasedPerson.DisplayName: The Deceased Person
-	AzureDragonBody.DisplayName: Azure Dragon Body
-	AzureDragonHead.DisplayName: Azure Dragon Head
-	AzureDragonTail.DisplayName: Azure Dragon Tail
+	AzureDragonBody.DisplayName: Azure Dragon's Coils
+	AzureDragonHead.DisplayName: Azure Dragon, the True Form
+	AzureDragonTail.DisplayName: Azure Dragon's Tail
 
 	YinEmperor: {
 		DisplayName: Yin Emperor
@@ -2011,11 +2361,15 @@ NPCs: {
 			Phantom: So you reach the end. Behold the Seal of the Yin Sovereign.
 			ExecutePrompt: The Fengdu regalia answers — strike now to execute the decree!
 			Executed: Impossible... the verdict... turned upon me...
+			Judgment: The nether decree calls — the judged, take your place.
+			GhostGate: The Ghost Gate opens; the yin legion marches through.
+			SealSlam: The Imperial Seal descends — heaven and earth become your prison.
+			Death: The court... adjourns... banners dark... lanterns out...
 		}
 	}
 
 	GhostGateLock.DisplayName: Ghost Gate Lock
-	Aokin.DisplayName: Aokin
+	Aokin.DisplayName: Aokin, Dragon King of the South Sea
 	Aoyuan.DisplayName: Aoyuan
 	AoyuanBody.DisplayName: Aoyuan Body
 	Aoshun.DisplayName: Aoshun
@@ -2024,38 +2378,64 @@ NPCs: {
 	AoshunTail.DisplayName: Aoshun Tail
 	Vigor.DisplayName: Vigor, the Sin-Severing Blade
 	Argus.DisplayName: Argus, the Soul-Piercing Arc
-	Dryads.DisplayName: Dryads
+
+	Dryads: {
+		DisplayName: Dryads
+		Overgrown: Overgrown
+		Frenzy: Rampant Growth
+		VinePrison: Verdant Prison
+		Exhausted: Exhausted
+	}
+
+	DryadsSiphonBud: {
+		DisplayName: Siphon Bud
+		Severed: Siphon Severed!
+	}
 }
 
 Projectiles: {
 	StabbingProjectile.DisplayName: Stabbing Projectile
-	BlackBear_Proj1.DisplayName: Black Bear_ Proj1
-	BlackBear_Proj2.DisplayName: Black Bear_ Proj2
-	BlackBear_Proj3.DisplayName: Black Bear_ Proj3
-	BlackBear_Proj4.DisplayName: Black Bear_ Proj4
+	BlackBear_Proj1.DisplayName: Ground Rupture
+	BlackBear_Proj2.DisplayName: Honey Glob
+	BlackBear_Proj3.DisplayName: Golden Crown Halo
+	BlackBear_Proj4.DisplayName: Dark Wind Slash
 	BlackBearHoneyDrip.DisplayName: Honey Drip
 	BlackBearGroundShock.DisplayName: Ground Shock
+	BlackBearHoneyPool.DisplayName: Honey Pool
 	GoldenStickSpearProjectile.DisplayName: Golden Stick Spear Projectile
 	IronStickSpearProjectile.DisplayName: Iron Stick Spear Projectile
 	WoodenStickSpearProjectile.DisplayName: Wooden Stick Spear Projectile
 	GemStickSpearProjectile.DisplayName: Gem Stick Spear Projectile
-	DragonCharmExplosion.DisplayName: Dragon Charm Explosion
-	DragonCharmLaser.DisplayName: Dragon Charm Laser
-	PigCharmLaser.DisplayName: Pig Charm Laser
+	DragonCharmExplosion.DisplayName: Dragon Tribulation
+	DragonCharmLaser.DisplayName: Thunder Dragon Spirit
+	PigCharmLaser.DisplayName: Gluttonous Torrent
+	CharmPaperProj.DisplayName: Zodiac Talisman
+	CharmSealFX.DisplayName: Cinnabar Seal
+	CharmNovaProj.DisplayName: Seal Nova
+	RatSpiritProj.DisplayName: Rat Spirit
+	OxSpiritProj.DisplayName: Ox Spirit
+	RabbitSpiritProj.DisplayName: Moon Rabbit Spirit
+	SnakeSpiritProj.DisplayName: Serpent Spirit
+	HorseSpiritProj.DisplayName: Stampede Spirit
+	RoosterSpiritProj.DisplayName: Dawn Rooster Spirit
+	DogSpiritProj.DisplayName: Hound Spirit
+	DragonJieBolt.DisplayName: Dragon Tribulation Bolt
 	WoodenStickSpearProjectile_2.DisplayName: Wooden Stick Spear Projectile_2
 	IronStickSpearProjectile_2.DisplayName: Iron Stick Spear Projectile_2
 	IronStickSpearProjectile_3.DisplayName: Iron Stick Spear Projectile_3
 	GoldenStickSpearProjectile_2.DisplayName: Golden Stick Spear Projectile_2
 	GemStickSpearProjectile_2.DisplayName: Gem Stick Spear Projectile_2
-	BlackBearStaffProj1.DisplayName: Black Bear Staff Proj1
-	BlackBearStaffProj2.DisplayName: Black Bear Staff Proj2
-	BlackBearSwordProj1.DisplayName: Black Bear Sword Proj1
-	BlackBearBowProj1.DisplayName: Black Bear Bow Proj1
+	BlackBearStaffProj1.DisplayName: Black Bear Cub Spirit
+	BlackBearStaffProj2.DisplayName: Bear Paw Slam
+	BlackBearSwordProj1.DisplayName: Dark-Wind Bear Paw
+	BlackBearBowProj1.DisplayName: Dark Wind Arrow
+	BlackBearHoneySplat.DisplayName: Honey Splat
 	BlankProjectile.DisplayName: Blank Projectile
-	CrimsonbronzeSwordProj1.DisplayName: Crimsonbronze Sword Proj1
-	CrimsonbronzeSwordProj2.DisplayName: Crimsonbronze Sword Proj2
+	CrimsonbronzeSwordProj1.DisplayName: Forge-Charged Slash
+	CrimsonbronzeSwordProj2.DisplayName: Molten Pearl
 	Demon_Proj.DisplayName: Demon_ Proj
-	PufferfishProj1.DisplayName: Pufferfish Proj1
+	PufferfishProj1.DisplayName: Puffer Pressure Jet
+	PufferfishSpine.DisplayName: Puffer Spine
 	MingCrowMinion.DisplayName: Ming Crow Minion
 	TribulationLightning.DisplayName: Tribulation Lightning
 	EvilIntentionProj2.DisplayName: Evil Intention Proj2
@@ -2064,13 +2444,18 @@ Projectiles: {
 	TribulationLightningRed.DisplayName: Tribulation Lightning Red
 	TribulationLightningStrike.DisplayName: Tribulation Bolt
 	TribulationSweep.DisplayName: Tribulation Lightning Curtain
-	ChengYingHitbox.DisplayName: Cheng Ying Hitbox
-	YuChangSkillProjectile.DisplayName: Yu Chang Skill Projectile
-	YuChangSwordBeanProjectile.DisplayName: Yu Chang Sword Bean Projectile
+	ChengYingHitbox.DisplayName: Cheng Ying
+	ChengYingSummonGlint.DisplayName: Cheng Ying Glint
+	YuChangSkillProjectile.DisplayName: Heartpiercer Backstab
+	YuChangSwordBeanProjectile.DisplayName: Fish-Shadow Blade
 	YuChangSwordProjectile.DisplayName: Yu Chang Sword Projectile
 	ShenxianGuanglunPet.DisplayName: Shenxian Guanglun Pet
 	GanJiangSwordProj.DisplayName: Gan Jiang Sword Proj
-	GanJiangSwordProj_2.DisplayName: Gan Jiang Sword Proj_2
+	GanJiangSwordProj_2.DisplayName: Phantom Mo Ye
+	GanJiangUnityRite.DisplayName: Unity of the Paired Blades
+	GanJiangUnityBlade.DisplayName: Unity Blade Wave
+	XuanTieHeldSlash.DisplayName: Xuan Tie Heavy Slash
+	XuanTieQuake.DisplayName: Xuan Tie Groundbreak
 	AurelianCataclysmSmasherProj.DisplayName: Aurelian Cataclysm Smasher
 	ArgentPulseBullet.DisplayName: Argent Pulse
 	WhiteTigerClawsSwing.DisplayName: White Tiger Claws
@@ -2138,7 +2523,12 @@ Projectiles: {
 	LocustSet.DisplayName: Locust Set
 	HanbaFireBall.DisplayName: Hanba Fire Ball
 	HanbaLaser.DisplayName: Hanba Laser
-	HanbaBigLaser.DisplayName: Hanba Big Laser
+	HanbaBigLaser.DisplayName: Scorching Sun Lance
+	HanbaScorchTrail.DisplayName: Scorched Trail
+	HanbaCrackRing.DisplayName: Drought Crack Ring
+	HanbaSunOrb.DisplayName: Falling Drought Sun
+	HanbaFireWave.DisplayName: Blazing Fire Wave
+	HanbaMirage.DisplayName: Hanba Mirage
 	Shockwave.DisplayName: Shockwave
 	GhostFireProj.DisplayName: Ghost Fire Proj
 	HoqingShadow.DisplayName: Hoqing Shadow
@@ -2147,8 +2537,12 @@ Projectiles: {
 	HoqingRingFire.DisplayName: Hoqing Ring Fire
 	CorpsePit.DisplayName: Corpse Pit
 	SputumPool.DisplayName: Sputum Pool
+	HoqingSputumGlob.DisplayName: Sputum Glob
+	HoqingSoulPillar.DisplayName: Soulflame Pillar
+	HoqingSoulLantern.DisplayName: Guiding Soul Lantern
 	AzureBolt.DisplayName: Azure Bolt
 	AzureThunderRod.DisplayName: Thunder Rod
+	AzureStormOrb.DisplayName: Azure Storm Orb
 	HoqingCorpseChain.DisplayName: Corpse Chain
 	SaberHell.DisplayName: Saber Hell
 	YingouFireBall.DisplayName: Yingou Fire Ball
@@ -2165,17 +2559,35 @@ Projectiles: {
 	JiangcenHammerGhost.DisplayName: Hammer Ghost
 	JiangcenLightningStrike.DisplayName: Lightning Strike
 	JiangcenChainArc.DisplayName: Chain Lightning
-	SaberHellFriendly.DisplayName: Saber Hell Friendly
-	CoffinNailProjectile.DisplayName: Coffin Nail Projectile
-	ChainProj.DisplayName: Chain Proj
-	DarkGreenBoomProj.DisplayName: Dark Green Boom Proj
-	DarkGreenProj.DisplayName: Dark Green Proj
-	EyeProj.DisplayName: Eye Proj
-	Proj_756_Adjust.DisplayName: Proj_756_ Adjust
-	SpoawnProj.DisplayName: Spoawn Proj
+	JiangcenSealMark.DisplayName: Seal of Command
+	SaberHellFriendly.DisplayName: Nether Slash Line
+	YingouKnifePhantomBlade.DisplayName: Phantom Nether Blade
+	YingouKnifeBladeWave.DisplayName: Ghost Fang Wave
+	HanbaBookScorchBrand.DisplayName: Scorch Brand
+	HanbaBookFallingSun.DisplayName: Falling Scorch Sun
+	HanbaBookFireWave.DisplayName: Blazing Ground Wave
+	HoqingFireSummonBolt.DisplayName: Soul Flame Bolt
+	HoqingFireSummonGate.DisplayName: Lesser Ghost Gate
+	JiangcenHammerSkyBolt.DisplayName: Heaven's Thunderbolt
+	JiangcenHammerEchoStrike.DisplayName: Echo Hammer Strike
+	CoffinNailProjectile.DisplayName: Corpse-Sealing Nail
+	CoffinSealRite.DisplayName: Seven-Star Coffin Seal
+	NetherSoulLink.DisplayName: Nether Soul Link
+	SoulHookWisp.DisplayName: Captured Soul
+	ChainProj.DisplayName: Soul-Binding Chain
+	DarkGreenBoomProj.DisplayName: Bursting Soul Core
+	DarkGreenProj.DisplayName: Soulfire Bolt
+	EyeProj.DisplayName: Soul-Gazing Eye
+	Proj_756_Adjust.DisplayName: Blood Ember Scar
+	SpoawnProj.DisplayName: Netherworld Gate
+	NiuMaChainMace.DisplayName: Burning Horn Chain Mace
+	NiuMaGroundFlame.DisplayName: Creeping Soulfire Wave
+	NiuMaWritProj.DisplayName: Soul-Warrant Talisman
+	NiuMaLinkChain.DisplayName: Soul-Locking Link Chain
+	NiuMaTideField.DisplayName: Wangchuan Tide Field
 	NetherFlameProjectile.DisplayName: Nether Flame Projectile
-	NetherLaserBeam.DisplayName: Nether Laser Beam
-	NetherPortal.DisplayName: Nether Portal
+	NetherLaserBeam.DisplayName: Nether Soul Beam
+	NetherPortal.DisplayName: Nether Gate
 	NetherFlameTrail.DisplayName: Nether Flame Trail
 	CorpsesBoneShower.DisplayName: Corpses Bone Shower
 	CorpsesClapWave.DisplayName: Corpses Clap Wave
@@ -2195,10 +2607,15 @@ Projectiles: {
 	KyuubiBookTailController.DisplayName: Kyuubi Book Tail Controller
 	KyuubiFoxFire.DisplayName: Fox-Fire
 	KyuubiMandalaEdge.DisplayName: Fox-Fire Mandala
+	KyuubiTailLance.DisplayName: Kitsune Tail Lance
+	KyuubiFoxfirePearl.DisplayName: Foxfire Pearl
+	KyuubiWindCrescent.DisplayName: Golden Wind Crescent
 	NetherBookTail.DisplayName: Nether Book Tail
 	NetherBookTailController.DisplayName: Nether Book Tail Controller
 	NetherSoulBolt.DisplayName: Nether Soul Bolt
 	NetherFoxfireSoul.DisplayName: Nether Foxfire Soul
+	NetherGhostflamePatch.DisplayName: Ghostflame Scourge
+	NetherTailStrike.DisplayName: Nether Tail Strike
 	DakkiBookController.DisplayName: Dakki Book Controller
 	DakkiBookTail.DisplayName: Dakki Book Tail
 	DakkiCharmRing.DisplayName: Dakki Charm Ring
@@ -2228,6 +2645,7 @@ Projectiles: {
 	AwakeningNetherMiasma.DisplayName: Void Miasma
 	AwakeningNetherSegmentLaser.DisplayName: Nether Segment Laser
 	AwakeningNetherSoulSatellite.DisplayName: Soul Satellite
+	AwakeningNetherSoulWisp.DisplayName: Soulfire Wisp
 	AbyssalRiftSlash.DisplayName: Abyssal Rift Slash
 	AbyssalSpineSlash.DisplayName: Abyssal Spine Slash
 	PhantomBreathArrow.DisplayName: Phantom Breath Arrow
@@ -2256,6 +2674,8 @@ Projectiles: {
 	SweepingLaserBolt.DisplayName: Sweeping Laser Bolt
 	JudgmentBeam.DisplayName: Judgment Beam
 	OverseerGroundTelegraph.DisplayName: Omen
+	OverseerLockCone.DisplayName: Lock-on Scan Cone
+	OverseerNetBeam.DisplayName: Heaven's Net Beam
 	AllSeeingBeam.DisplayName: All Seeing Beam
 	AllSeeingEyeProjectile.DisplayName: All Seeing Eye Projectile
 	CelestialChakramProjectile.DisplayName: Celestial Chakram Projectile
@@ -2298,6 +2718,7 @@ Projectiles: {
 	ArchosaurNestOrb.DisplayName: Thunder Nest Orb
 	ArchosaurNestLink.DisplayName: Thunder Nest Link
 	ArchosaurReverseBolt.DisplayName: Reverse Lightning
+	ArchosaurPierceMark.DisplayName: Heaven Pierce Mark
 	BossDragonAuthorityCircle.DisplayName: Boss Dragon Authority Circle
 	DragonCircleWarning.DisplayName: Dragon Circle Warning
 	ForkedCelestialLightning.DisplayName: Forked Celestial Lightning
@@ -2305,6 +2726,8 @@ Projectiles: {
 	MandateZone.DisplayName: Mandate Zone
 	EdictBeacon.DisplayName: Edict Beacon
 	CelestialScale.DisplayName: Celestial Scale
+	CelestialDragonPearlOrb.DisplayName: Celestial Dragon Pearl
+	CelestialSkyPillar.DisplayName: Celestial Sky Pillar
 	CelestialEdictSeal.DisplayName: Celestial Edict Seal
 	CelestialLightningBolt.DisplayName: Celestial Lightning Bolt
 	DragonAuraSlash.DisplayName: Dragon Aura Slash
@@ -2327,6 +2750,8 @@ Projectiles: {
 	TreasurySealRing.DisplayName: Treasury Seal Ring
 	YakshaMirrorBolt.DisplayName: Yaksha Mirror Bolt
 	TreasurySealRune.DisplayName: Treasury Seal Rune
+	VajraSpear.DisplayName: Vajra Spear
+	VaisravanaLightPillar.DisplayName: Suppressing Light Pillar
 	DragonBreathBeam.DisplayName: Dragon Breath Beam
 	DragonMinion.DisplayName: Dragon Minion
 	DragonWaterBolt.DisplayName: Dragon Water Bolt
@@ -2343,6 +2768,8 @@ Projectiles: {
 	FallingWaterSpear.DisplayName: Falling Water Spear
 	TsunamiWall.DisplayName: Tsunami Wall
 	WaterSpike.DisplayName: Water Spike
+	AoGuangWaterspout.DisplayName: Roving Waterspout
+	AoGuangSkyDeluge.DisplayName: Skyfall Deluge
 	AbyssalDragonbladeSlash.DisplayName: Abyssal Dragonblade Slash
 	ChakramWaterBurst.DisplayName: Chakram Water Burst
 	DragonSoaringThrust.DisplayName: Dragon Soaring Thrust
@@ -2358,26 +2785,40 @@ Projectiles: {
 	CelestialFragment.DisplayName: Celestial Fragment
 	ChainLightning.DisplayName: Chain Lightning
 	CloudpiercerArrow.DisplayName: Cloudpiercer Arrow
+	PiercingSunArrow.DisplayName: Piercing Sun Arrow
 	DivineRune.DisplayName: Divine Rune
 	FirmamentSlash.DisplayName: Firmament Slash
+	FirmamentSwing.DisplayName: Firmament Cleaver
+	FirmamentSkyRift.DisplayName: Firmament Sky Rift
 	HalberdShockwave.DisplayName: Halberd Shockwave
 	HalberdThrust.DisplayName: Halberd Thrust
 	JadeArmillaryProjectile.DisplayName: Jade Armillary Projectile
+	ArmillarySphereField.DisplayName: Armillary Sphere Field
 	OverseerOrb.DisplayName: Overseer Orb
 	RuneCircle.DisplayName: Rune Circle
 	ThunderclapBlast.DisplayName: Thunderclap Blast
+	ThunderboltShell.DisplayName: Thunderbolt Shell
+	HeavenJudgmentBolt.DisplayName: Heaven Judgment Bolt
 	BoneSpike.DisplayName: Bone Spike
 	GhostOrbProjectile.DisplayName: Ghost Orb Projectile
 	SoulSickle.DisplayName: Soul Sickle
 	YakshaFireball.DisplayName: Yaksha Fireball
-	FateRuneProjectile.DisplayName: Fate Rune Projectile
-	JudgesSoulhookProjectile.DisplayName: Judges Soulhook Projectile
-	KarmasMirrorBladeProj.DisplayName: Karmas Mirror Blade Proj
-	NetherfireBullet.DisplayName: Netherfire Bullet
+	FateRuneProjectile.DisplayName: Fate Rune
+	JudgesSoulhookProjectile.DisplayName: Judge's Soulhook
+	KarmasMirrorBladeProj.DisplayName: Karma's Mirror Blade
+	NetherfireBullet.DisplayName: Netherfire Pellet
 	NetherflowOrb.DisplayName: Netherflow Orb
-	NetherRockSoulbombProj.DisplayName: Nether Rock Soulbomb Proj
+	NetherRockSoulbombProj.DisplayName: Nether Rock Soulbomb
 	SoulguideArrow.DisplayName: Soulguide Arrow
-	YamasSeveranceSlash.DisplayName: Yamas Severance Slash
+	YamasSeveranceSlash.DisplayName: Severance Wave
+	KarmicVerdict.DisplayName: Karmic Verdict
+	VermilionRebuke.DisplayName: Vermilion Rebuke
+	YamasSeveranceSwing.DisplayName: Severance Swing
+	YamasVerdictIai.DisplayName: Verdict Iai
+	KarmaMirrorImage.DisplayName: Karma Mirror Image
+	NetherfireField.DisplayName: Netherfire Field
+	SoulFerryWisp.DisplayName: Soul Ferry Wisp
+	NetherflowVortex.DisplayName: Netherflow Vortex
 	YamasDeicideSlash.DisplayName: Deicide Slash
 	DamnedSoulguideArrow.DisplayName: Damned Soul Arrow
 	SoulEatingBullet.DisplayName: Soul-Eating Bullet
@@ -2387,25 +2828,51 @@ Projectiles: {
 	NetherEclipseOrb.DisplayName: Nether Eclipse Orb
 	SoulShatteringBombProj.DisplayName: Soul-Shattering Bomb
 	SoulShatteringSubBomb.DisplayName: Soul-Shattering Cluster Bomb
+	YamasDeicideHeld.DisplayName: Yama's Deicide
+	YamaGreatSlashWave.DisplayName: Yama's Single Stroke
+	DeicideRiftFX.DisplayName: Deicide Rift
+	KarmaAwakenFX.DisplayName: Karmic Awakening
+	KarmaWheelBlade.DisplayName: Avici Karma Wheel
+	OblivionSoulWave.DisplayName: Oblivion Soul Wave
+	MyriadDemonLord.DisplayName: Demon Lord Sigil
+	YomiPillarStrike.DisplayName: Yellow Springs Ferry Pillar
+	YomiGate.DisplayName: Gate of Yellow Springs
+	SoulMawBlast.DisplayName: Soul Maw Blast
+	NetherNetField.DisplayName: Nether Net Zone
 	ImperatorSlash.DisplayName: Imperator Slash
 	ImperatorVoidEruption.DisplayName: Void Myriad-Calamity Eruption
+	ImperatorBladeHeld.DisplayName: Celestial Imperator Greatblade
+	ImperatorJudgmentFlash.DisplayName: Imperator Judgment
 	ChaosDeicideArrow.DisplayName: Chaos Deicide Arrow
 	ChaosRainZone.DisplayName: Feather Rain Zone
 	ChaosRainArrow.DisplayName: Deicide Feather Arrow
+	DeicideBowHeld.DisplayName: Primordial Chaos Deicide Bow
 	DragonBreathWave.DisplayName: Dragon Breath Wave
 	DragonAnnihilationMark.DisplayName: Annihilation Dragon Mark
+	DragonDetonationFlash.DisplayName: Hellwyrm Detonation
+	HellwyrmCannonHeld.DisplayName: Hellwyrm Annihilation Cannon
 	FrostJudgmentChakramProj.DisplayName: Frost Judgment Chakram
+	FrostJudgmentFlash.DisplayName: Nine-Nether Judgment
 	VoidSoulpiercerProjectile.DisplayName: Void Soulpiercer
 	VoidRiftLine.DisplayName: Void Rift
+	VoidSoulShatter.DisplayName: Void Soul Shatter
 	RashomonGateProj.DisplayName: Rashomon Gate
 	NightmareTendril.DisplayName: Nightmare Tendril
-	FateDecreeOrb.DisplayName: Fate Decree Orb
+	RashomonCurseMark.DisplayName: Myriad Curse Mark
+	FateDecreeOrb.DisplayName: Vermilion Soul-Hook Orb
 	FateMarkProj.DisplayName: Fate Mark
+	FateVerdictFlash.DisplayName: Fate Verdict
 	SingularityBombProj.DisplayName: Singularity Bomb
 	SingularityEcho.DisplayName: Singularity Echo
+	SingularityImplosionFlash.DisplayName: Singularity Implosion
+	FengduNightmareFlash.DisplayName: Fengdu Nightmare
 	ArenaEdge.DisplayName: Arena Edge
 	YinEmperorBolt.DisplayName: Yin Emperor Bolt
 	YinEmperorLaser.DisplayName: Yin Emperor Laser
+	YinEmperorDecreeSeal.DisplayName: Nether Decree Seal
+	YinEmperorJudgmentColumn.DisplayName: Judgment Column
+	YinEmperorGhostGate.DisplayName: Ghost Gate
+	YinEmperorCourtBarrier.DisplayName: Fengdu Court Barrier
 	AokinFireball.DisplayName: Aokin Fireball
 	AokinFlameVortex.DisplayName: Aokin Flame Vortex
 	AokinMeteor.DisplayName: Aokin Meteor
@@ -2413,14 +2880,28 @@ Projectiles: {
 	AokinEmberPillar.DisplayName: Tribulation Ember Pillar
 	AokinLavaFissure.DisplayName: Molten Tide Fissure
 	AokinInfernoRing.DisplayName: Inferno Cocoon Vent
-	AoyuanFrostVortex.DisplayName: Aoyuan Frost Vortex
-	AoyuanIceball.DisplayName: Aoyuan Iceball
-	AoyuanIcicle.DisplayName: Aoyuan Icicle
-	AoyuanFrostBeam.DisplayName: Aoyuan Frost Beam
-	AoyuanPermafrostTrail.DisplayName: Permafrost Trail
+	AokinBreathFlame.DisplayName: Scarlet Dragonbreath
+	AokinMoltenGlob.DisplayName: Molten Gold Glob
+	AokinFlamePool.DisplayName: Molten Pool
+	AokinSteamOrb.DisplayName: Steam Cannon Core
+	AokinSteamShard.DisplayName: Scalding Steam Shard
+	AokinShockwave.DisplayName: Boiling Sea Shockwave
+	AokinScaldGeyser.DisplayName: Scalding Geyser
+	AokinFireTornadoProj.DisplayName: Flame Tornado Dance
+	AokinFlameFlood.DisplayName: Dragonflame Flood
+	AoyuanFrostVortex.DisplayName: Frost Vortex
+	AoyuanIceball.DisplayName: Ice Crystal Shard
+	AoyuanIcicle.DisplayName: Falling Icicle
+	AoyuanFrostBeam.DisplayName: Refracted Frost Lance
+	AoyuanPermafrostTrail.DisplayName: Frozen Wake
 	AoyuanPillarTelegraph.DisplayName: Glacial Pillar Marker
 	AoyuanBlizzardWall.DisplayName: Blizzard Veil
 	AoyuanAbsoluteZeroBurst.DisplayName: Absolute Zero
+	AoyuanIceMirror.DisplayName: West Sea Ice Mirror
+	AoyuanColdField.DisplayName: Cold-Wave Permafrost
+	AoyuanFrostRidge.DisplayName: Frost Ridge
+	AoyuanIceSpike.DisplayName: Ice Crystal Spike
+	AoyuanFreezeTrap.DisplayName: Frozen Snare
 	AoshunLightningNode.DisplayName: Aoshun Lightning Node
 	AoshunDragonScale.DisplayName: Aoshun Dragon Scale
 	AoshunTornado.DisplayName: Aoshun Tornado
@@ -2428,6 +2909,9 @@ Projectiles: {
 	AoshunShockwave.DisplayName: Aoshun Shockwave
 	AoshunStormEye.DisplayName: Aoshun Storm Eye
 	AoshunElectricTrail.DisplayName: Aoshun Electric Trail
+	AoshunWindBlade.DisplayName: Gale Blade
+	AoshunSkyBolt.DisplayName: Sky Thunder Pillar
+	AoshunBreachCrack.DisplayName: Breach Omen
 	DivineWoodFlowerWave.DisplayName: Divine Wood Flower Wave
 	DivineWoodGiantSeed.DisplayName: Divine Wood Giant Seed
 	DivineWoodGyratingLeafProj.DisplayName: Divine Wood Gyrating Leaf Proj
@@ -2458,6 +2942,15 @@ Projectiles: {
 	DivineWoodVineShard.DisplayName: Divine Wood Vine Shard
 	DivineWoodVineVortex.DisplayName: Divine Wood Vine Vortex
 	DivineWoodVineWave.DisplayName: Divine Wood Vine Wave
+	DivineWoodBloomBurst.DisplayName: Growth-Ring Bloom
+	DivineWoodRootSpike.DisplayName: Root Spike
+	DivineWoodPillarRite.DisplayName: Jianmu Rising
+	DivineWoodPillar.DisplayName: Jianmu Pillar
+	DivineWoodLotus.DisplayName: Divine Wood Lotus
+	DivineWoodBloomCall.DisplayName: Bloom Call
+	DivineWoodThornPatch.DisplayName: Thorn Patch
+	DivineWoodBowHeld.DisplayName: Divine Wood Longbow
+	DivineWoodPierceArrow.DisplayName: Forest Piercer
 	RootBoomerangProj.DisplayName: Root Boomerang
 	DeadwoodAcornProj.DisplayName: Deadwood Acorn
 	EmeraldTwigBolt.DisplayName: Emerald Twig Bolt
@@ -2494,6 +2987,8 @@ Projectiles: {
 	ArrogantSylvanTomeLeaf.DisplayName: Arrogant Sylvan Tome Leaf
 	ArrogantSylvanTomePetal.DisplayName: Arrogant Sylvan Tome Petal
 	ArrogantSylvanLeafVortex.DisplayName: Arrogant Sylvan Leaf Vortex
+	ArrogantSylvanSeedHold.DisplayName: Arrogant Sylvan Mother Seed Charge
+	ArrogantSylvanBloomBurst.DisplayName: Arrogant Sylvan Ring Bloom
 	ProfaneDismembererSwing.DisplayName: Profane Dismemberer Swing
 	ProfaneFleshWave.DisplayName: Profane Flesh Wave
 	GluttonousFleshrangProj.DisplayName: Gluttonous Fleshrang
@@ -2515,7 +3010,7 @@ Projectiles: {
 	RunicEnergyOrbs.DisplayName: Runic Energy Orb
 	StarSightArrows.DisplayName: Star-Sight Arrow
 	SpinningGalacticOrbs.DisplayName: Spinning Galactic Orb
-	AetherealWingblades.DisplayName: Aethereal Wingblade
+	AetherealWingblades.DisplayName: Iris Sentinel
 	BaihuMetalShard.DisplayName: Baihu Metal Shard
 	BaihuSonicRoar.DisplayName: Baihu Sonic Roar
 	BaihuRendBeam.DisplayName: Argent Rend
@@ -2532,13 +3027,16 @@ Projectiles: {
 	SuzakuSolarBeam.DisplayName: Suzaku Solar Judgment Beam
 	XuanwuIceShard.DisplayName: Xuanwu Ice Shard
 	XuanwuVenomFang.DisplayName: Xuanwu Venom Fang
-	SoulBannerHeldProj.DisplayName: Soul Banner Held Proj
-	SoulBannerMinion.DisplayName: Soul Banner Minion
+	SoulBannerHeldProj.DisplayName: Soul Banner
+	SoulBannerMinion.DisplayName: Floating Soul Banner
+	SoulWailSpirit.DisplayName: Wailing Spirit
+	SoulWispVFX.DisplayName: Returning Soul
 	DazhengVine.DisplayName: Dazheng Vine
 	DazhengLeaf.DisplayName: Dazheng Leaf
 	DazhengGoldenPhantom.DisplayName: Golden Phantom
 	DazhengHealThread.DisplayName: Life Drain Thread
 	DazhengRootField.DisplayName: Encroaching Roots
+	DazhengRootSpear.DisplayName: Dazheng Root Spear
 	Acanthosphere.DisplayName: Acanthosphere
 	DryadsLeaf.DisplayName: Dryads Leaf
 	DryadsVine.DisplayName: Dryads Vine
@@ -2549,7 +3047,7 @@ Projectiles: {
 	DragonScaleShard.DisplayName: Dragon Scale Shard
 	SoulTetherChain.DisplayName: Soul Tether Chain
 	YinYangBinderOrb.DisplayName: Yin Yang Binder Orb
-	SoulHookWhipProjectile.DisplayName: Soul Hook Whip Projectile
+	SoulHookWhipProjectile.DisplayName: Soul Hook Whip
 	CrimsonStormArrow.DisplayName: Crimson Storm Arrow
 	FlamecoilChakramProjectile.DisplayName: Flamecoil Chakram Projectile
 	InfernoDragonSpearThrust.DisplayName: Inferno Dragon Spear Thrust
@@ -2587,7 +3085,7 @@ Projectiles: {
 	SinSeveringCleave.DisplayName: Sin Severing Cleave
 	VerdictSealShockwave.DisplayName: Verdict Seal Shockwave
 	VerdictSealShockwavePulse.DisplayName: Verdict Seal Shockwave Pulse
-	NetherChainBladeProjectile.DisplayName: Nether Chain Blade Projectile
+	NetherChainBladeProjectile.DisplayName: Nether Chain Blade
 	WraithLanternGhost.DisplayName: Wraith Lantern Ghost
 	WraithLanternTether.DisplayName: Wraith Lantern Tether
 	ArgentPulseRail.DisplayName: Argent Pulse Rail
@@ -2604,8 +3102,8 @@ Projectiles: {
 	CupriteNatureLeaf.DisplayName: Cuprite Nature Leaf
 	XuanTieArrow.DisplayName: Xuan Tie Arrow
 	XuanTieBoomerangProj.DisplayName: Xuan Tie Boomerang Proj
-	NiuMaRevivalCircle.DisplayName: Niu Ma Revival Circle
-	SoulOrbProj.DisplayName: Soul Orb Proj
+	NiuMaRevivalCircle.DisplayName: Revival Counter-Circle
+	SoulOrbProj.DisplayName: Slow Soul Orb
 	CorpsesBoneRainMarker.DisplayName: Corpses Bone Rain Marker
 	NetherSoulExplosion.DisplayName: Nether Soul Explosion
 	NetherSoulSpark.DisplayName: Nether Soul Spark
@@ -2682,6 +3180,21 @@ Tiles: {
 }
 
 Buffs: {
+	KarmaAwakenBuff: {
+		DisplayName: Karmic Awakening
+		Description: Karma overflows - Revenant EX weapons reveal their true forms
+	}
+
+	DivineWoodRootedBuff: {
+		DisplayName: Rooted
+		Description: Divine wood roots coil within — life drains away; harvester strikes will detonate a growth-ring bloom
+	}
+
+	HoqingFireSummonBuff: {
+		DisplayName: Funeral Lantern Procession
+		Description: The funeral lanterns will fight for you
+	}
+
 	AoyuanChill: {
 		DisplayName: Permafrost Chill
 		Description: Frozen ground slows your movement; three stacks freeze you solid
@@ -2757,6 +3270,11 @@ Buffs: {
 		Description: Mods.AncientChineseMythology.Buffs.SnakeInvisibilityBuff.Description
 	}
 
+	SnakeAmbushBuff: {
+		DisplayName: Serpent Molt
+		Description: Enemies barely notice you; serpent spirits thrown now will strike from ambush
+	}
+
 	DogCharmBuff: {
 		DisplayName: Dog Charm Buff
 		Description: Mods.AncientChineseMythology.Buffs.DogCharmBuff.Description
@@ -2783,23 +3301,28 @@ Buffs: {
 	}
 
 	BuffsBlackBearStaff: {
-		DisplayName: Buffs Black Bear Staff
-		Description: Mods.AncientChineseMythology.Buffs.BuffsBlackBearStaff.Description
+		DisplayName: Black Bear Cub Spirit
+		Description: The little one from Black Wind Mountain fights for you!
 	}
 
 	MingCrowMinionBuff: {
-		DisplayName: Ming Crow Minion Buff
-		Description: Mods.AncientChineseMythology.Buffs.MingCrowMinionBuff.Description
+		DisplayName: Ming Crow Flock
+		Description: Netherworld crows fight for you (right click to dismiss)
 	}
 
 	SoulBannerMinionBuff: {
 		DisplayName: Soul Banner
-		Description: The Soul Banner floats above, continuously absorbing enemy souls
+		Description: The Soul Banner floats above, continuously absorbing enemy souls; right click with enough souls to unleash Wail of Ten Thousand Souls
 	}
 
 	SoulHookWhipDebuff: {
-		DisplayName: Soul Erosion
-		Description: Your soul is hooked and eroded by nether flames
+		DisplayName: Soul Scratch
+		Description: Soul carved by the hook whip; summons deal bonus damage
+	}
+
+	SoulCaptureBuff: {
+		DisplayName: Soul Custody
+		Description: A reaped soul empowers you: +8% summon damage
 	}
 
 	ChengYingBuff: {
@@ -2822,29 +3345,34 @@ Buffs: {
 		Description: Mods.AncientChineseMythology.Buffs.XuanTieBleed.Description
 	}
 
+	BlackBearHoneyGlazed: {
+		DisplayName: Honey-Glazed
+		Description: Glazed in honey, taking increased damage
+	}
+
 	BaGuaBuff: {
 		DisplayName: Ba Gua Buff
 		Description: Mods.AncientChineseMythology.Buffs.BaGuaBuff.Description
 	}
 
 	ChainProj_Buff_1: {
-		DisplayName: Chain Proj_ Buff_1
-		Description: Mods.AncientChineseMythology.Buffs.ChainProj_Buff_1.Description
+		DisplayName: Chain Drag
+		Description: Bound by a soul-binding chain, being dragged toward Niu Tou
 	}
 
 	DeclineSpeedBuff_1: {
-		DisplayName: Decline Speed Buff_1
-		Description: Mods.AncientChineseMythology.Buffs.DeclineSpeedBuff_1.Description
+		DisplayName: Wangchuan Soak
+		Description: The Wangchuan tide drags at your every move
 	}
 
 	DeclineSpeedBuff_2: {
-		DisplayName: Decline Speed Buff_2
-		Description: Mods.AncientChineseMythology.Buffs.DeclineSpeedBuff_2.Description
+		DisplayName: Wangchuan Fury
+		Description: The raging Wangchuan tide clings to your soul
 	}
 
 	EyeProj_Buff_1: {
-		DisplayName: Eye Proj_ Buff_1
-		Description: Mods.AncientChineseMythology.Buffs.EyeProj_Buff_1.Description
+		DisplayName: Soul-Gazed
+		Description: The soul-gazing eye has seen through you, reducing defense
 	}
 
 	SoulHookBuff: {
@@ -2939,6 +3467,23 @@ Corpses: {
 	RitualBreak: Gate of Life — Array Broken!
 	RitualComplete: Soul Sacrifice Complete
 	CityGate: The City of the Wrongfully Dead Seals Shut
+	Awaken: Myriad Wronged Bones, Arise
+	Collapse: The Myriad Bones Return to Silence
+}
+
+Misc: {
+	FourSymbolsRite: {
+		Begin: The Four Symbols Tablet resounds — the Rite of the Four Symbols begins!
+		RiseEast: The eastern mansions kindle — the Azure Dragon soars above the clouds!
+		RiseSouth: The southern mansions ignite — the Vermilion Bird bathes in heavenly fire!
+		RiseWest: The western mansions gleam — the White Tiger's roar splits the sky!
+		RiseNorth: The northern mansions deepen — the Black Tortoise rises from the abyss!
+		FallEast: The East is stilled; the Azure Dragon ascends as rain.
+		FallSouth: The South is stilled; the phoenix fire gutters into falling stars.
+		FallWest: The West is stilled; the tiger's roar breaks upon the golden wind.
+		Complete: The Black Tortoise returns to the depths — the Four Symbols are home, and heaven finds its balance.
+		Broken: A sacred beast has left the field; the rite is broken.
+	}
 }
 
 Configs: {

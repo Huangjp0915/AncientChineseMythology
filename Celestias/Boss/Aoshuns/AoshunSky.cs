@@ -57,6 +57,21 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
         private float bossHealthPercent = 1f;
         private bool isPhase2;
 
+        // === V3 演出联动（静态入口: Boss 侧客户端路径写入, 纯视觉） ===
+        // 死亡调光 0~1: 「风暴葬礼」静默拍天空随之熄灭
+        private static float deathDim;
+        // 手动触发的额外闪电次数（入场/相变的定调雷）
+        private static int pendingBolts;
+
+        /// <summary>死亡演出调光（0=正常, 1=天空熄灭）。Boss 死亡态每帧写入, 无 Boss 时自动回落。</summary>
+        public static void SetDeathDim(float dim) => deathDim = MathHelper.Clamp(dim, 0f, 1f);
+
+        /// <summary>手动触发 count 道天空闪电（演出定调雷; 消费在 Update）。</summary>
+        public static void TriggerBolt(int count) => pendingBolts += count;
+
+        /// <summary>当前天空雷闪白强度 0~1（全屏 StormWarp 的雨幕雷闪复用 → 与天空是同一道雷）。</summary>
+        public static float CurrentFlashWhite { get; private set; }
+
         // === 风暴云层 ===
         private const int StormCloudCount = 60;
         private readonly StormCloud[] stormClouds = new StormCloud[StormCloudCount];
@@ -99,6 +114,8 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
             intensity = 0f;
             bossHealthPercent = 1f;
             isPhase2 = false;
+            deathDim = 0f;
+            pendingBolts = 0;
 
             for (int i = 0; i < StormCloudCount; i++) stormClouds[i].Reset();
             for (int i = 0; i < LightningBoltCount; i++) lightningBolts[i].Reset();
@@ -128,22 +145,33 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
                 if (!active) Activate(Vector2.Zero);
 
                 bossHealthPercent = (float)boss.life / boss.lifeMax;
-                isPhase2 = bossHealthPercent < 0.5f;
+                isPhase2 = bossHealthPercent < Aoshun.Phase2Threshold;
 
                 float targetIntensity = MaxIntensity;
-                if (bossHealthPercent < 0.3f)
+                if (bossHealthPercent < Aoshun.Phase3Threshold)
                     targetIntensity = MaxIntensity * 1.2f;   // 末阶段最暴烈
                 else if (isPhase2)
                     targetIntensity = MaxIntensity * 1.1f;   // 二阶段增强
 
-                intensity = MathHelper.Lerp(intensity, targetIntensity, FadeInSpeed);
+                // 「风暴葬礼」死亡调光: 静默拍天空熄灭（比正常收场快一拍）
+                targetIntensity *= 1f - deathDim * 0.85f;
+
+                intensity = MathHelper.Lerp(intensity, targetIntensity, deathDim > 0.01f ? 0.03f : FadeInSpeed);
             }
             else {
+                deathDim = MathHelper.Lerp(deathDim, 0f, 0.05f);
                 intensity -= FadeOutSpeed;
                 if (intensity <= 0f) {
                     intensity = 0f;
                     if (active) Deactivate();
                 }
+            }
+
+            // 演出定调雷: 消费手动触发的闪电（轮询各 bolt 强制起闪）
+            while (pendingBolts > 0) {
+                int slot = pendingBolts % LightningBoltCount;
+                lightningBolts[slot].ForceFlash(pendingBolts);
+                pendingBolts--;
             }
 
             // --- 更新子系统 ---
@@ -157,6 +185,12 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
                 lightningBolts[i].Update(globalTime, isPhase2);
             for (int i = 0; i < SparkCount; i++)
                 sparks[i].Update();
+
+            // 发布雷闪白（取所有 bolt 峰值 × 天空强度）
+            float maxFlash = 0f;
+            for (int i = 0; i < LightningBoltCount; i++)
+                maxFlash = MathF.Max(maxFlash, lightningBolts[i].FlashAlpha);
+            CurrentFlashWhite = maxFlash * MathHelper.Clamp(intensity, 0f, 1f);
         }
 
         private static NPC FindBoss() {
@@ -529,6 +563,14 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
                 ScreenX = Main.screenWidth * (0.1f + index * 0.2f);
                 Scale = 0.7f + index * 0.12f;
                 Flip = index % 2 == 0;
+            }
+
+            /// <summary>演出定调雷: 立即从周期头起闪一道（位置按 salt 确定性错开）</summary>
+            public void ForceFlash(int salt) {
+                timer = 0f;
+                flashing = false;
+                ScreenX = Main.screenWidth * (0.12f + (salt * 37 + index * 13) % 76 / 100f);
+                Flip = (salt + index) % 2 == 0;
             }
 
             public void Update(float globalTime, bool phase2) {

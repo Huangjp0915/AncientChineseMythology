@@ -22,6 +22,8 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
         private float dragonPulse;
         private float lightningTimer;
         private Vector2 bossCenter;
+        /// <summary>死亡弧线静默期的骤暗（读取本体 DeathDarken）</summary>
+        private float deathDarken;
 
         internal static string name;
 
@@ -84,6 +86,12 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                         }
                     }
 
+                    // 死亡弧线：静默期天穹骤暗（终爆前的吸气）
+                    float darkenTarget = boss.ModNPC is YinEmperor emp ? emp.DeathDarken : 0f;
+                    deathDarken = MathHelper.Lerp(deathDarken, darkenTarget, 0.2f);
+                    if (deathDarken > 0.01f)
+                        skyColor = Color.Lerp(skyColor, new Color(2, 2, 5), deathDarken * 0.85f);
+
                     active = true;
                 }
             }
@@ -106,6 +114,9 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                     new Rectangle((int)shake.X, (int)shake.Y, Main.screenWidth, Main.screenHeight),
                     skyColor * intensity
                 );
+
+                // 远景幡旗剪影（酆都仪仗森林，慢视差）
+                DrawBannerSilhouettes(spriteBatch);
 
                 // 龙气脉动层
                 DrawDragonVeinLayer(spriteBatch);
@@ -181,6 +192,39 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
                 sb.Draw(pixel, origin, new Rectangle(0, 0, 1, 1),
                     warn * alpha, angle, new Vector2(0f, 0.5f),
                     new Vector2(len, width), SpriteEffects.None, 0);
+            }
+        }
+
+        /// <summary>
+        /// 远景幡旗剪影 - 酆都仪仗森林（慢视差 + 微摆，纯剪影不抢戏）
+        /// </summary>
+        private void DrawBannerSilhouettes(SpriteBatch sb) {
+            if (intensity < 0.35f) return;
+
+            var pixel = TextureAssets.MagicPixel.Value;
+            float parallax = Main.screenPosition.X * 0.06f;
+            float alpha = intensity * (1f - deathDarken) * 0.5f;
+            Color silhouette = new Color(6, 4, 12) * alpha;
+            Color clothCol = new Color(28, 14, 40) * alpha;
+
+            const int count = 9;
+            for (int i = 0; i < count; i++) {
+                float seedF = i * 269.3f;
+                float x = ((seedF * 7.7f - parallax) % (Main.screenWidth + 240f) + Main.screenWidth + 240f)
+                          % (Main.screenWidth + 240f) - 120f;
+                float baseY = Main.screenHeight * (0.28f + (i % 3) * 0.09f);
+                float poleH = Main.screenHeight * (0.5f - (i % 3) * 0.06f);
+                float sway = MathF.Sin(dragonPulse * 0.7f + seedF) * 6f;
+
+                // 幡杆
+                sb.Draw(pixel, new Rectangle((int)x, (int)baseY, 4, (int)poleH), silhouette);
+                // 布幔（微摆的窄条）
+                int clothW = 26 + (i % 3) * 6;
+                int clothH = (int)(poleH * 0.55f);
+                sb.Draw(pixel, new Rectangle((int)(x - clothW + sway), (int)baseY + 8, clothW, clothH), clothCol);
+                // 布幔底部渐灭
+                sb.Draw(pixel, new Rectangle((int)(x - clothW + sway * 1.4f), (int)baseY + 8 + clothH, clothW, 14),
+                    clothCol * 0.5f);
             }
         }
 

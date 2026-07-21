@@ -11,7 +11,8 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
     #region 封路水龙卷
 
     /// <summary>
-    /// 封路水龙卷 - 战场边界，使用原版龙卷纹理
+    /// 封路水龙卷 - 战场左右边界。跟随玩家保持 ±800px, 推开越界者。
+    /// Boss 进入死亡演出或消失时自动消散。
     /// </summary>
     public class BarrierWaterTornado : ModProjectile
     {
@@ -41,9 +42,12 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
         }
 
         public override void AI() {
-            // 检查Boss是否存活
+            // Boss 不在场 / 进入死亡演出 → 淡出消散 (淡出期不再造成伤害)
             NPC owner = Main.npc[(int)OwnerIndex];
-            if (!owner.active || owner.type != ModContent.NPCType<AoGuang>()) {
+            bool ownerValid = owner.active && owner.type == ModContent.NPCType<AoGuang>() &&
+                              owner.ModNPC is AoGuang dragon && dragon.Phase != AoGuang.BossPhase.Death;
+            if (!ownerValid) {
+                Projectile.hostile = false;
                 tornadoAlpha -= 0.02f;
                 if (tornadoAlpha <= 0f) {
                     Projectile.Kill();
@@ -66,9 +70,9 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             tornadoHeight = MathHelper.Lerp(tornadoHeight, MaxHeight, 0.03f);
             tornadoRotation += 0.15f;
 
-            // 龙卷粒子效果
+            // 龙卷粒子 (量减半, 由分段绘制承担主视觉)
             if (Main.netMode != NetmodeID.Server) {
-                for (int i = 0; i < 8; i++) {
+                for (int i = 0; i < 4; i++) {
                     float heightOffset = Main.rand.NextFloat(-tornadoHeight / 2, tornadoHeight / 2);
                     float angle = tornadoRotation + Main.rand.NextFloat(MathHelper.TwoPi);
                     float radius = 40f + MathF.Abs(heightOffset / tornadoHeight) * 60f;
@@ -115,30 +119,25 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             Texture2D tornadoTex = TextureAssets.Projectile[ProjectileID.SandnadoHostile].Value;
             Vector2 origin = new Vector2(tornadoTex.Width / 2f, tornadoTex.Height / 2f);
 
-            // 绘制多层龙卷风
-            int segments = 162;
+            // 分段龙卷 (40 段 ×2 层, 控 overdraw)
+            int segments = 40;
             for (int seg = 0; seg < segments; seg++) {
                 float heightPercent = (float)seg / segments;
                 float yOffset = (heightPercent - 0.5f) * tornadoHeight;
-                float segRadius = 2.6f + MathF.Abs(heightPercent - 0.5f) * 0.8f - seg * 0.01f;
-                float segRot = tornadoRotation + seg * 0.3f;
+                // 上下端略粗的沙漏形 + 分段旋转错相
+                float segRadius = 2.4f + MathF.Abs(heightPercent - 0.5f) * 1.1f;
+                float segRot = tornadoRotation + seg * 1.05f;
+                float wobble = MathF.Sin(tornadoRotation * 1.7f + seg * 0.55f) * 14f;
 
-                Vector2 segPos = screenPos + new Vector2(0, yOffset);
+                Vector2 segPos = screenPos + new Vector2(wobble, yOffset);
 
-                // 外层 - 青蓝色
-                Color outerColor = AoGuangHelper.OceanTeal * tornadoAlpha * 0.4f;
+                Color outerColor = AoGuangHelper.OceanTeal * tornadoAlpha * 0.42f;
                 outerColor.A = 0;
-                sb.Draw(tornadoTex, segPos, null, outerColor, segRot, origin, segRadius * 1.3f, SpriteEffects.None, 0f);
+                sb.Draw(tornadoTex, segPos, null, outerColor, segRot, origin, segRadius * 1.25f, SpriteEffects.None, 0f);
 
-                // 中层 - 龙王蓝
-                Color midColor = AoGuangHelper.DragonBlue * tornadoAlpha * 0.6f;
+                Color midColor = AoGuangHelper.DragonBlue * tornadoAlpha * 0.55f;
                 midColor.A = 0;
-                sb.Draw(tornadoTex, segPos, null, midColor, segRot * 1.2f, origin, segRadius, SpriteEffects.None, 0f);
-
-                // 内层 - 水光
-                Color innerColor = AoGuangHelper.WaterGlow * tornadoAlpha * 0.3f;
-                innerColor.A = 0;
-                sb.Draw(tornadoTex, segPos, null, innerColor, segRot * 1.5f, origin, segRadius * 0.7f, SpriteEffects.None, 0f);
+                sb.Draw(tornadoTex, segPos, null, midColor, -segRot * 1.2f, origin, segRadius * 0.85f, SpriteEffects.None, 0f);
             }
 
             return false;
@@ -248,15 +247,23 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
     #region 水柱攻击
 
     /// <summary>
-    /// 水柱尖刺 - 从地面喷发的水柱
+    /// 潮涌立柱 - 从地面喷发的水柱。ai0 = 开场延时 (帧), 供整排立柱依次喷发。
+    /// 节拍: 延时 → 36f 红色警戒柱 (可读) → 20f 喷发 (QuadOut 弹起) → 26f 保持 → 20f 收束。
     /// </summary>
     public class WaterSpike : ModProjectile
     {
         public override string Texture => "InnoVault/Assets/placeholder";
 
+        private ref float StartDelay => ref Projectile.ai[0];
+        private ref float Timer => ref Projectile.ai[1];
+
         private float spikeHeight = 0f;
         private float spikeAlpha = 0f;
-        private const float MaxHeight = 400f;
+        private const float MaxHeight = 460f;
+        private const int TelegraphTime = 36;
+        private const int RiseTime = 20;
+        private const int HoldTime = 26;
+        private const int FadeTime = 20;
         private bool hasErupted = false;
 
         public override void SetStaticDefaults() {
@@ -271,57 +278,72 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             Projectile.penetrate = -1;
             Projectile.tileCollide = false;
             Projectile.ignoreWater = true;
-            Projectile.timeLeft = 120;
+            Projectile.timeLeft = 300;
         }
 
         public override void AI() {
-            // 预警阶段
-            if (Projectile.timeLeft > 90) {
-                spikeAlpha = MathHelper.Lerp(spikeAlpha, 0.5f, 0.1f);
+            Timer++;
+            float t = Timer - StartDelay;
 
-                // 致命喷发预警 (红=致命, 喷发前可读)
-                if (Main.netMode != NetmodeID.Server && Projectile.timeLeft % 3 == 0) {
-                    int dust = Dust.NewDust(Projectile.Center, 0, 0, DustID.RedTorch, 0, -3f, 150,
-                        TelegraphColors.Lethal, 1.5f);
-                    Main.dust[dust].noGravity = true;
+            // 延时静默期: 只有地面泡沫微涌
+            if (t < 0) {
+                if (Main.netMode != NetmodeID.Server && Timer % 6 == 0) {
+                    Dust d = Dust.NewDustDirect(Projectile.Center + new Vector2(Main.rand.NextFloat(-16f, 16f), 0), 0, 0,
+                        DustID.Wet, 0, -1f, 180, default, 1.1f);
+                    d.noGravity = true;
+                }
+                return;
+            }
+
+            if (t < TelegraphTime) {
+                // 红色警戒柱期
+                spikeAlpha = MathHelper.Lerp(spikeAlpha, 0.55f, 0.12f);
+                if (Main.netMode != NetmodeID.Server && (int)t % 3 == 0) {
+                    float h = Main.rand.NextFloat(0f, MaxHeight * 0.8f);
+                    Dust d = Dust.NewDustDirect(Projectile.Center + new Vector2(Main.rand.NextFloat(-8f, 8f), -h), 0, 0,
+                        DustID.RedTorch, 0, -2f, 150, TelegraphColors.Lethal, 1.4f);
+                    d.noGravity = true;
                 }
             }
-            // 喷发阶段
-            else if (Projectile.timeLeft > 40) {
+            else if (t < TelegraphTime + RiseTime + HoldTime) {
+                // 喷发 + 保持
                 if (!hasErupted) {
                     hasErupted = true;
                     SoundEngine.PlaySound(SoundID.Item21 with { Pitch = -0.2f, Volume = 1f }, Projectile.Center);
+                    SoundEngine.PlaySound(SoundID.Splash with { Pitch = -0.4f, Volume = 1f }, Projectile.Center);
                     ACMUtils.AddScreenShake(5f);
                 }
 
-                float progress = 1f - (Projectile.timeLeft - 40) / 50f;
-                spikeHeight = MaxHeight * ACMUtils.QuadOut(progress);
+                float rise = MathHelper.Clamp((t - TelegraphTime) / RiseTime, 0f, 1f);
+                spikeHeight = MaxHeight * ACMUtils.QuadOut(rise);
                 spikeAlpha = 1f;
 
-                // 喷发粒子
                 if (Main.netMode != NetmodeID.Server) {
-                    for (int i = 0; i < 4; i++) {
+                    for (int i = 0; i < 3; i++) {
                         Vector2 dustPos = Projectile.Center + new Vector2(Main.rand.NextFloat(-20, 20), -spikeHeight * Main.rand.NextFloat(0.2f, 1f));
                         int dustType = Main.rand.NextBool() ? DustID.Water : DustID.BlueTorch;
-                        int dust = Dust.NewDust(dustPos, 0, 0, dustType, Main.rand.NextFloat(-2, 2), -5f, 120, default, 2f);
-                        Main.dust[dust].noGravity = true;
+                        Dust d = Dust.NewDustDirect(dustPos, 0, 0, dustType, Main.rand.NextFloat(-2, 2), -5f, 120, default, 2f);
+                        d.noGravity = true;
                     }
                 }
             }
-            // 消散阶段
             else {
-                spikeAlpha = Projectile.timeLeft / 40f;
+                // 收束
+                float fade = 1f - MathHelper.Clamp((t - TelegraphTime - RiseTime - HoldTime) / FadeTime, 0f, 1f);
+                spikeAlpha = fade;
+                spikeHeight = MaxHeight * (0.6f + fade * 0.4f);
+                if (fade <= 0f)
+                    Projectile.Kill();
             }
 
             Lighting.AddLight(Projectile.Center + new Vector2(0, -spikeHeight / 2), AoGuangHelper.DragonBlue.ToVector3() * spikeAlpha);
         }
 
         public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
-            if (!hasErupted) return false;
+            // 伤害窗口与视觉严格对齐: 只有真正喷起的水柱才有伤害
+            if (!hasErupted || spikeAlpha < 0.8f) return false;
 
-            // 柱形碰撞
-            float targetX = targetHitbox.Center.X;
-            float distance = MathF.Abs(targetX - Projectile.Center.X);
+            float distance = MathF.Abs(targetHitbox.Center.X - Projectile.Center.X);
             float targetY = targetHitbox.Center.Y;
             bool inHeight = targetY < Projectile.Center.Y && targetY > Projectile.Center.Y - spikeHeight;
             return distance < 30f && inHeight;
@@ -332,25 +354,45 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
 
             Texture2D tex = ACMAsset.GlaciateWave;
             Vector2 screenPos = Projectile.Center - Main.screenPosition;
-
-            // 绘制水柱 - 从下往上，旋转90度
             Vector2 origin = new Vector2(0, tex.Height / 2f);
 
-            for (int layer = 2; layer >= 0; layer--) {
-                float layerWidth = (0.15f + layer * 0.08f) * spikeAlpha;
-                float layerAlpha = 0.8f - layer * 0.2f;
+            float t = Timer - StartDelay;
 
-                Color layerColor = layer switch {
-                    0 => AoGuangHelper.WaterGlow,
-                    1 => AoGuangHelper.DragonBlue,
-                    _ => AoGuangHelper.OceanTeal
-                };
-                layerColor *= layerAlpha * spikeAlpha;
-                layerColor.A = 0;
+            // 警戒期: 画一根 Lethal 细线柱 (形状+颜色+渐强三要素)
+            if (t >= 0 && !hasErupted) {
+                float warnT = MathHelper.Clamp(t / TelegraphTime, 0f, 1f);
+                Color warn = TelegraphColors.Lethal * (0.25f + warnT * 0.5f);
+                warn.A = 0;
+                Vector2 warnScale = new Vector2(MaxHeight / tex.Width, 0.05f + warnT * 0.04f);
+                Main.spriteBatch.Draw(tex, screenPos, null, warn, -MathHelper.PiOver2, origin, warnScale, SpriteEffects.None, 0f);
+            }
 
-                // 旋转-90度使其朝上
-                Vector2 scale = new Vector2(spikeHeight / tex.Width, layerWidth);
-                Main.spriteBatch.Draw(tex, screenPos, null, layerColor, -MathHelper.PiOver2, origin, scale, SpriteEffects.None, 0f);
+            if (spikeHeight > 4f) {
+                // 波动水柱本体: 三层 + 宽度呼吸
+                float sway = 1f + MathF.Sin(Timer * 0.3f) * 0.08f;
+                for (int layer = 2; layer >= 0; layer--) {
+                    float layerWidth = (0.16f + layer * 0.09f) * spikeAlpha * sway;
+                    float layerAlpha = 0.8f - layer * 0.2f;
+
+                    Color layerColor = layer switch {
+                        0 => AoGuangHelper.WaterGlow,
+                        1 => AoGuangHelper.DragonBlue,
+                        _ => AoGuangHelper.OceanTeal
+                    };
+                    layerColor *= layerAlpha * spikeAlpha;
+                    layerColor.A = 0;
+
+                    Vector2 scale = new Vector2(spikeHeight / tex.Width, layerWidth);
+                    Main.spriteBatch.Draw(tex, screenPos, null, layerColor, -MathHelper.PiOver2, origin, scale, SpriteEffects.None, 0f);
+                }
+
+                // 柱顶冠花
+                if (ACMAsset.LightShot != null && hasErupted) {
+                    Color crown = AoGuangHelper.FoamWhite * spikeAlpha * 0.7f;
+                    crown.A = 0;
+                    Main.spriteBatch.Draw(ACMAsset.LightShot, screenPos + new Vector2(0, -spikeHeight), null, crown,
+                        -MathHelper.PiOver2, ACMAsset.LightShot.Size() / 2f, 0.55f * spikeAlpha, SpriteEffects.None, 0f);
+                }
             }
 
             return false;
@@ -362,89 +404,111 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
     #region 海啸墙
 
     /// <summary>
-    /// 海啸墙 - 横向移动的水墙
+    /// 海啸墙 (V3) - 一发 = 一面贯穿全场的整面浪墙, 带一个可穿越缺口。
+    /// ai0 = 缺口中心世界 Y, ai1 = 缺口半宽 (px)。浪体由 AoGuangTidalWall 屏幕空间 decal 绘制:
+    /// 前沿 Lethal 亮线 + 缺口 Safe 翠玉描边。成型 26f 内无伤害 (公平阀门)。
     /// </summary>
     public class TsunamiWall : ModProjectile
     {
         public override string Texture => "InnoVault/Assets/placeholder";
 
-        private ref float WaveOffset => ref Projectile.ai[0];
-        private float wallHeight = 200f;
-        private float wavePhase;
+        private ref float GapCenterY => ref Projectile.ai[0];
+        private ref float GapHalf => ref Projectile.ai[1];
+
+        private const float HalfHeight = 1000f; // 墙面半高 (覆盖全屏)
+        private const float HalfThick = 78f;    // 浪体半厚
+        private const int FormTime = 26;        // 成型时间 (无伤害)
+        private const int LifeTime = 340;
+
+        private float formProgress;
 
         public override void SetStaticDefaults() {
-            ProjectileID.Sets.DrawScreenCheckFluff[Type] = 1500;
+            ProjectileID.Sets.DrawScreenCheckFluff[Type] = 2400;
         }
 
         public override void SetDefaults() {
-            Projectile.width = 60;
+            Projectile.width = 120;
             Projectile.height = 200;
             Projectile.friendly = false;
             Projectile.hostile = true;
             Projectile.penetrate = -1;
             Projectile.tileCollide = false;
             Projectile.ignoreWater = true;
-            Projectile.timeLeft = 180;
+            Projectile.timeLeft = LifeTime;
         }
 
         public override void AI() {
-            wavePhase += 0.15f + WaveOffset;
+            formProgress = MathHelper.Clamp((LifeTime - Projectile.timeLeft) / (float)FormTime, 0f, 1f);
 
-            // 波浪起伏
-            Projectile.position.Y += MathF.Sin(wavePhase) * 2f;
+            // 末段消散
+            if (Projectile.timeLeft < 30)
+                formProgress = Projectile.timeLeft / 30f;
 
-            // 水墙粒子
-            if (Main.netMode != NetmodeID.Server && Main.rand.NextBool(2)) {
-                Vector2 dustPos = Projectile.Center + new Vector2(Main.rand.NextFloat(-20, 20), Main.rand.NextFloat(-wallHeight / 2, wallHeight / 2));
-                int dustType = Main.rand.NextBool() ? DustID.Water : DustID.BlueTorch;
-                int dust = Dust.NewDust(dustPos, 0, 0, dustType, Projectile.velocity.X * 0.5f, 0, 150, default, 2f);
-                Main.dust[dust].noGravity = true;
+            // 浪头飞沫: 沿前沿随机溅出 (数量 ∝ 速度)
+            if (Main.netMode != NetmodeID.Server && formProgress > 0.5f) {
+                float dir = Projectile.velocity.X >= 0 ? 1f : -1f;
+                for (int i = 0; i < 3; i++) {
+                    float y = Projectile.Center.Y + Main.rand.NextFloat(-HalfHeight, HalfHeight);
+                    if (MathF.Abs(y - GapCenterY) < GapHalf) continue; // 缺口处不溅
+                    Vector2 dustPos = new Vector2(Projectile.Center.X + dir * HalfThick, y);
+                    Dust d = Dust.NewDustDirect(dustPos, 0, 0,
+                        Main.rand.NextBool() ? DustID.Water : DustID.Wet,
+                        Projectile.velocity.X * 0.6f, Main.rand.NextFloat(-2f, 2f), 130, default, 1.8f);
+                    d.noGravity = true;
+                }
             }
 
-            Lighting.AddLight(Projectile.Center, AoGuangHelper.DragonBlue.ToVector3() * 0.6f);
+            // 浪墙轰鸣 (低频循环)
+            if (Projectile.timeLeft % 40 == 0 && formProgress >= 1f)
+                SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.7f, Volume = 0.5f }, Projectile.Center);
+
+            Lighting.AddLight(Projectile.Center, AoGuangHelper.DragonBlue.ToVector3() * formProgress);
+            Lighting.AddLight(new Vector2(Projectile.Center.X, GapCenterY), TelegraphColors.Safe.ToVector3() * 0.8f * formProgress);
         }
 
         public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
-            // 墙形碰撞
-            float targetX = targetHitbox.Center.X;
-            float distance = MathF.Abs(targetX - Projectile.Center.X);
-            float targetY = targetHitbox.Center.Y;
-            float heightDiff = MathF.Abs(targetY - Projectile.Center.Y);
-            return distance < 40f && heightDiff < wallHeight / 2;
+            // 成型前无伤害; 缺口内安全 (伤害区与视觉严格一致)
+            if (formProgress < 1f)
+                return false;
+            float dx = MathF.Abs(targetHitbox.Center.X - Projectile.Center.X);
+            if (dx > HalfThick * 0.85f)
+                return false;
+            float dy = MathF.Abs(targetHitbox.Center.Y - Projectile.Center.Y);
+            if (dy > HalfHeight)
+                return false;
+            // 缺口豁免 (留 0.8 容差, 视觉缺口略大于安全区 → 宁松勿冤)
+            if (MathF.Abs(targetHitbox.Center.Y - GapCenterY) < GapHalf * 0.8f)
+                return false;
+            return true;
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            if (ACMAsset.GlaciateWave == null) return false;
+            // 整面浪墙: 专属屏幕空间 decal (着色器缺失时回退为旧式贴图墙)
+            if (AoGuangHelper.TidalWallEffect != null && MythologyConfig.FullscreenShadersEnabled) {
+                Vector2 dir = Projectile.velocity.SafeNormalize(Vector2.UnitX);
+                AoGuangHelper.DrawTidalWallDecal(Main.spriteBatch,
+                    Projectile.Center, dir, HalfThick,
+                    new Vector2(Projectile.Center.X, GapCenterY), GapHalf,
+                    formProgress);
+                return false;
+            }
 
+            // —— CPU 回退绘制 ——
+            if (ACMAsset.GlaciateWave == null) return false;
             Texture2D tex = ACMAsset.GlaciateWave;
             Vector2 screenPos = Projectile.Center - Main.screenPosition;
             Vector2 origin = new Vector2(0, tex.Height / 2f);
-
-            // 绘制垂直水墙
             for (int layer = 2; layer >= 0; layer--) {
-                float layerWidth = (0.2f + layer * 0.1f);
-
                 Color layerColor = layer switch {
                     0 => AoGuangHelper.WaterGlow,
                     1 => AoGuangHelper.DragonBlue,
                     _ => AoGuangHelper.OceanTeal
                 };
-                layerColor *= 0.7f - layer * 0.15f;
+                layerColor *= (0.7f - layer * 0.15f) * formProgress;
                 layerColor.A = 0;
-
-                Vector2 scale = new Vector2(wallHeight / tex.Width, layerWidth);
-                // 旋转90度使其垂直
+                Vector2 scale = new Vector2(HalfHeight * 2f / tex.Width, 0.2f + layer * 0.1f);
                 Main.spriteBatch.Draw(tex, screenPos, null, layerColor, -MathHelper.PiOver2, origin, scale, SpriteEffects.None, 0f);
             }
-
-            // 致命前沿描边 (红=致命, 明示水墙横扫方向)
-            float dir = Projectile.velocity.X >= 0 ? 1f : -1f;
-            Vector2 edgePos = screenPos + new Vector2(dir * 28f, 0f);
-            Color edge = TelegraphColors.Lethal;
-            edge.A = 0;
-            Vector2 edgeScale = new Vector2(wallHeight / tex.Width, 0.07f);
-            Main.spriteBatch.Draw(tex, edgePos, null, edge * 0.8f, -MathHelper.PiOver2, origin, edgeScale, SpriteEffects.None, 0f);
-
             return false;
         }
     }

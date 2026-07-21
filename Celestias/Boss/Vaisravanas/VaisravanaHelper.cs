@@ -274,6 +274,103 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             return 1 + c3 * MathF.Pow(t - 1, 3) + c1 * MathF.Pow(t - 1, 2);
         }
 
+        /// <summary>高次幂末端急吸缓动 — 天王步沉腰: 前段几乎不动, 末几帧猛然后坐。</summary>
+        public static float LateSnap(float t, float power = 8f) => MathF.Pow(MathHelper.Clamp(t, 0f, 1f), power);
+
+        #endregion
+
+        #region V3 专属着色器缓存与绘制助手
+
+        // 参照 Xuanwu 写法: 静态 Asset 惰性 ImmediateLoad, 不注册进 ACMShaders
+        private static Asset<Effect> _mandalaFx;
+        private static Asset<Effect> _goldBodyFx;
+        private static Asset<Effect> _pillarFx;
+
+        /// <summary>佛纹坛城法阵 (屏幕空间 decal, s0=共享噪声)。</summary>
+        public static Effect MandalaShader => GetFx(ref _mandalaFx, "VaisravanaMandala");
+
+        /// <summary>金身法相 (本体贴图 pass, s0=本体, s1=噪声)。</summary>
+        public static Effect GoldBodyShader => GetFx(ref _goldBodyFx, "VaisravanaGoldBody");
+
+        /// <summary>镇压天光柱 (世界矩形 quad, s0=噪声)。</summary>
+        public static Effect PillarShader => GetFx(ref _pillarFx, "VaisravanaPillarBrand");
+
+        private static Effect GetFx(ref Asset<Effect> slot, string name) {
+            if (Main.dedServ)
+                return null;
+            slot ??= ModContent.Request<Effect>("AncientChineseMythology/Effects/" + name,
+                AssetRequestMode.ImmediateLoad);
+            return slot?.Value;
+        }
+
+        /// <summary>设置坛城法阵 uniform（uCenter/uRadius 经缩放感知换算）。</summary>
+        public static bool SetMandalaParams(Vector2 worldCenter, float worldRadius, float intensity,
+            float reveal, float spin, Color? primary = null, Color? secondary = null) {
+            Effect fx = MandalaShader;
+            if (fx == null || intensity <= 0.01f)
+                return false;
+
+            ACMShaders.WorldDecalParams(worldCenter, worldRadius, out Vector2 uv, out float radiusFrac, out float aspect);
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uCenter"]?.SetValue(uv);
+            fx.Parameters["uRadius"]?.SetValue(MathHelper.Clamp(radiusFrac, 0.02f, 1.2f));
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(intensity, 0f, 1f));
+            fx.Parameters["uAspect"]?.SetValue(aspect);
+            fx.Parameters["uColorPrimary"]?.SetValue((primary ?? TelegraphColors.Gold).ToVector4());
+            fx.Parameters["uColorSecondary"]?.SetValue((secondary ?? TowerGold).ToVector4());
+            fx.Parameters["uReveal"]?.SetValue(MathHelper.Clamp(reveal, 0f, 1f));
+            fx.Parameters["uSpin"]?.SetValue(spin);
+            return true;
+        }
+
+        /// <summary>在**已有活动批**阶段(NPC/弹幕 PreDraw)绘制坛城法阵, 结束后恢复默认批。</summary>
+        public static void DrawMandalaInBatch(Vector2 worldCenter, float worldRadius, float intensity,
+            float reveal, float spin, Color? primary = null, Color? secondary = null) {
+            if (!SetMandalaParams(worldCenter, worldRadius, intensity, reveal, spin, primary, secondary))
+                return;
+            ACMShaders.DrawScreenSpaceDecal(Main.spriteBatch, MandalaShader, BlendState.AlphaBlend);
+        }
+
+        /// <summary>在**无活动批**阶段(PostDrawTiles)绘制坛城法阵。</summary>
+        public static void DrawMandalaStandalone(Vector2 worldCenter, float worldRadius, float intensity,
+            float reveal, float spin, Color? primary = null, Color? secondary = null) {
+            if (!SetMandalaParams(worldCenter, worldRadius, intensity, reveal, spin, primary, secondary))
+                return;
+            ACMShaders.DrawScreenSpaceDecalStandalone(MandalaShader, BlendState.AlphaBlend);
+        }
+
+        /// <summary>
+        /// 绘制一根镇压天光柱（世界坐标竖直矩形, 顶→底）。须在已有活动批阶段调用, 绘完恢复默认批。
+        /// telegraph: 1=细线预告态, 0=全宽爆发, 中间平滑过渡。
+        /// </summary>
+        public static void DrawPillarBrand(Vector2 topWorld, float length, float width, float intensity,
+            float telegraph, float seed, Color? core = null, Color? edge = null, float flowSpeed = 1.1f) {
+            Effect fx = PillarShader;
+            Texture2D noise = ACMShaders.NoiseTexture;
+            if (fx == null || noise == null || intensity <= 0.01f || length < 8f || width < 2f)
+                return;
+
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(intensity, 0f, 1f));
+            fx.Parameters["uColorCore"]?.SetValue((core ?? TelegraphColors.Holy).ToVector4());
+            fx.Parameters["uColorEdge"]?.SetValue((edge ?? TelegraphColors.Gold).ToVector4());
+            fx.Parameters["uTelegraph"]?.SetValue(MathHelper.Clamp(telegraph, 0f, 1f));
+            fx.Parameters["uFlowSpeed"]?.SetValue(flowSpeed);
+            fx.Parameters["uSeed"]?.SetValue(seed);
+
+            SpriteBatch sb = Main.spriteBatch;
+            sb.End();
+            sb.Begin(SpriteSortMode.Immediate, BlendState.Additive, SamplerState.LinearWrap,
+                DepthStencilState.None, RasterizerState.CullNone, fx, Main.GameViewMatrix.TransformationMatrix);
+
+            Vector2 screenTop = topWorld - Main.screenPosition;
+            Rectangle dest = new((int)(screenTop.X - width * 0.5f), (int)screenTop.Y, (int)width, (int)length);
+            sb.Draw(noise, dest, null, Color.White);
+
+            sb.End();
+            ACMShaders.RestoreDefaultBatch(sb);
+        }
+
         #endregion
     }
 

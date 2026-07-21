@@ -8,9 +8,10 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
 {
     /// <summary>
-    /// 虚空魂雾 — 由体节释放、或吐息扫过的地面残留区域。
+    /// 虚空魂雾 — 由体节渗出、或吐息扫过的地面残留区域。
     /// 站在其中持续叠加 魂蚀 (Soul Erosion)，是觉醒冥龙的签名地府 DoT 机制。
     /// 本身只造成极低接触伤害，威胁来自魂蚀叠层。
+    /// V3: 视觉走 Soulflame 专属着色器 (径向魂雾场形态, 批量队列, 常数批次开销)。
     /// </summary>
     public class AwakeningNetherMiasma : ModProjectile
     {
@@ -72,15 +73,24 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 }
             }
 
-            if (Main.netMode != NetmodeID.Server && Main.rand.NextBool(2)) {
-                float ang = Main.rand.NextFloat(MathHelper.TwoPi);
-                float dist = Main.rand.NextFloat(Projectile.width * 0.45f);
-                Vector2 pos = Projectile.Center + ang.ToRotationVector2() * dist;
-                var d = Dust.NewDustPerfect(pos, Main.rand.NextBool() ? DustID.Shadowflame : DustID.PurpleTorch);
-                d.noGravity = true;
-                d.scale = 1.1f * fade;
-                d.velocity = ang.ToRotationVector2().RotatedBy(MathHelper.PiOver2) * 0.6f;
-                d.alpha = 120;
+            // 魂雾场 decal: 鬼绿芯 + 紫缘旋涌 (§6.1 地府 DoT=鬼绿, 单张即含双色阶)
+            if (!Main.dedServ) {
+                float size = Projectile.width * 2.1f;
+                AwakeningNetherScreenSystem.RequestSoulflame(Projectile.Center,
+                    swirl.ToRotationVector2(), size, 0.6f * fade,
+                    Projectile.whoAmI * 0.31f, 1f,
+                    TelegraphColors.GhostGreen, AwakeningNetherHelper.VoidDarkPurple);
+
+                if (Main.rand.NextBool(4)) {
+                    float ang = Main.rand.NextFloat(MathHelper.TwoPi);
+                    float dist = Main.rand.NextFloat(Projectile.width * 0.45f);
+                    Vector2 pos = Projectile.Center + ang.ToRotationVector2() * dist;
+                    var d = Dust.NewDustPerfect(pos, Main.rand.NextBool() ? DustID.CursedTorch : DustID.Shadowflame);
+                    d.noGravity = true;
+                    d.scale = 1.1f * fade;
+                    d.velocity = ang.ToRotationVector2().RotatedBy(MathHelper.PiOver2) * 0.6f;
+                    d.alpha = 120;
+                }
             }
 
             Lighting.AddLight(Projectile.Center, AwakeningNetherHelper.VoidDarkPurple.ToVector3() * 0.5f * fade);
@@ -90,42 +100,105 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
             target.GetModPlayer<AwakeningNetherPlayer>().AddSoulErosion(2);
         }
 
-        public override bool PreDraw(ref Color lightColor) {
-            SpriteBatch sb = Main.spriteBatch;
-            var tex = BAWImpermanences.BAWHelper.DustTexture;
-            if (tex == null)
-                return false;
+        // 视觉全部由 Soulflame decal 队列承担
+        public override bool PreDraw(ref Color lightColor) => false;
+    }
 
-            Vector2 origin = tex.Size() / 2f;
-            float baseScale = Projectile.width / (float)tex.Width;
+    /// <summary>
+    /// 魂火余烬 (V3 新增) — 脊波尾鞭 / 衔尾困杀的慢速压场弹。
+    /// 低速漂移 + 轻微摇曳, 纯走位可解; 出膛 18f 淡入期无伤害 (公平阀门)。
+    /// </summary>
+    public class AwakeningNetherSoulWisp : ModProjectile
+    {
+        public override string Texture => AwakeningNetherHelper.Path + "VoidCore";
 
-            // 多层旋转的魂雾团
-            int blobs = 10;
-            for (int i = 0; i < blobs; i++) {
-                float ang = swirl + MathHelper.TwoPi * i / blobs;
-                float dist = Projectile.width * 0.3f * (0.5f + 0.5f * MathF.Sin(swirl * 1.3f + i));
-                Vector2 pos = Projectile.Center + ang.ToRotationVector2() * dist - Main.screenPosition;
-                Color c = Color.Lerp(AwakeningNetherHelper.VoidDarkPurple, AwakeningNetherHelper.AwakeningPurple, (float)i / blobs);
-                c.A = 0;
-                sb.Draw(tex, pos, null, c * 0.35f * fade, ang, origin, baseScale * 1.6f, SpriteEffects.None, 0f);
+        private const int FadeInTime = 18;
+
+        private float pulsePhase;
+        private int age;
+
+        public override void SetDefaults() {
+            Projectile.width = 20;
+            Projectile.height = 20;
+            Projectile.hostile = true;
+            Projectile.friendly = false;
+            Projectile.tileCollide = false;
+            Projectile.penetrate = 1;
+            Projectile.timeLeft = 240;
+            Projectile.alpha = 255;
+        }
+
+        public override void AI() {
+            age++;
+            pulsePhase += 0.13f;
+
+            // 淡入
+            Projectile.alpha = (int)MathHelper.Lerp(255f, 0f, MathHelper.Clamp(age / (float)FadeInTime, 0f, 1f));
+
+            // 轻微摇曳漂移 (慢即公平, 密度受 Head 端上限约束)
+            Vector2 perp = Projectile.velocity.SafeNormalize(Vector2.UnitY).RotatedBy(MathHelper.PiOver2);
+            Projectile.position += perp * MathF.Sin(pulsePhase * 0.7f + Projectile.whoAmI) * 0.9f;
+            Projectile.velocity *= 0.999f;
+
+            if (!Main.dedServ && Main.rand.NextBool(4)) {
+                var d = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(8f, 8f), DustID.CursedTorch);
+                d.noGravity = true;
+                d.scale = 0.8f;
+                d.velocity = -Projectile.velocity * 0.15f;
+                d.alpha = 100;
             }
 
-            // 中心深渊
-            Color core = AwakeningNetherHelper.VoidDarkPurple;
-            core.A = 0;
-            sb.Draw(tex, Projectile.Center - Main.screenPosition, null, core * 0.5f * fade, swirl, origin, baseScale * 2.2f, SpriteEffects.None, 0f);
+            Lighting.AddLight(Projectile.Center, TelegraphColors.GhostGreen.ToVector3() * 0.35f);
+        }
 
-            // 鬼绿内核 — 标示这是魂蚀 DoT 场(非致命, §6.1 地府 DoT=鬼绿), 与"红=致命"区分
-            Color dot = TelegraphColors.GhostGreen;
-            dot.A = 0;
-            float dotPulse = 0.18f + 0.10f * MathF.Sin(swirl * 1.7f);
-            sb.Draw(tex, Projectile.Center - Main.screenPosition, null, dot * dotPulse * fade, -swirl * 0.6f, origin, baseScale * 1.3f, SpriteEffects.None, 0f);
+        // 淡入期无伤害 — 伤害窗口与视觉对齐
+        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
+            if (age < FadeInTime)
+                return false;
+            return null;
+        }
+
+        public override void OnHitPlayer(Player target, Player.HurtInfo info) {
+            target.GetModPlayer<AwakeningNetherPlayer>().AddSoulErosion(2);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+            Texture2D glow = ACMAsset.SoftGlow;
+            if (glow == null)
+                return false;
+            SpriteBatch sb = Main.spriteBatch;
+            Vector2 origin = glow.Size() / 2f;
+            float a = 1f - Projectile.alpha / 255f;
+            float pulse = 1f + MathF.Sin(pulsePhase) * 0.18f;
+
+            sb.Draw(glow, Projectile.Center - Main.screenPosition, null,
+                AwakeningNetherHelper.VoidDarkPurple with { A = 0 } * (0.6f * a),
+                0f, origin, 1.15f * pulse, SpriteEffects.None, 0);
+            sb.Draw(glow, Projectile.Center - Main.screenPosition, null,
+                TelegraphColors.GhostGreen with { A = 0 } * (0.8f * a),
+                0f, origin, 0.66f * pulse, SpriteEffects.None, 0);
+            sb.Draw(glow, Projectile.Center - Main.screenPosition, null,
+                Color.White with { A = 0 } * (0.4f * a),
+                0f, origin, 0.28f * pulse, SpriteEffects.None, 0);
             return false;
+        }
+
+        public override void OnKill(int timeLeft) {
+            if (Main.dedServ)
+                return;
+            for (int i = 0; i < 8; i++) {
+                var d = Dust.NewDustPerfect(Projectile.Center, DustID.CursedTorch);
+                d.noGravity = true;
+                d.scale = 1f;
+                d.velocity = Main.rand.NextVector2Circular(3.5f, 3.5f);
+            }
         }
     }
 
     /// <summary>
-    /// 幽冥体节激光 — 由蠕虫体节同步发射的预告型激光。
+    /// 幽冥体节激光 — 觉醒终末的体节同步激光帘幕。
     /// 前 40 帧为细线预告 (无伤)，之后 40 帧为粗激光 (实伤)。
     /// 让被动跟随的体节成为真正的机制威胁。
     /// </summary>
@@ -169,12 +242,12 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
             if (Timer == TelegraphTime - 1)
                 SoundEngine.PlaySound(SoundID.Item72 with { Pitch = 0.4f, Volume = 0.7f }, Projectile.Center);
 
-            if (IsActive) {
+            if (IsActive && !Main.dedServ) {
                 Vector2 step = Dir;
-                for (int i = 0; i < 18; i++) {
-                    if (!Main.rand.NextBool(2))
+                for (int i = 0; i < 14; i++) {
+                    if (!Main.rand.NextBool(3))
                         continue;
-                    Vector2 pos = Projectile.Center + step * (i * 50f + Main.rand.NextFloat(50f));
+                    Vector2 pos = Projectile.Center + step * (i * 64f + Main.rand.NextFloat(64f));
                     var d = Dust.NewDustPerfect(pos, DustID.Shadowflame);
                     d.noGravity = true;
                     d.scale = 1.3f;
@@ -184,7 +257,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
             }
         }
 
-        public override bool? Colliding(Microsoft.Xna.Framework.Rectangle projHitbox, Microsoft.Xna.Framework.Rectangle targetHitbox) {
+        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
             if (!IsActive)
                 return false;
             float collisionPoint = 0f;
@@ -199,40 +272,26 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            SpriteBatch sb = Main.spriteBatch;
+            if (Main.dedServ)
+                return false;
             Vector2 start = Projectile.Center;
             Vector2 end = start + Dir * BeamLength;
-
-            // BeamGrad 缺失(加载失败)时回退到旧的 dust 光束, 保证激光帘幕始终可读。
-            bool hasBeam = ACMShaders.BeamGrad != null && ACMShaders.NoiseTexture != null;
 
             if (!IsActive) {
                 // 细线预告 — 幽蓝紫(非致命色)渐强 (§6.1 红只留给实伤)
                 float t = Timer / (float)TelegraphTime;
                 Color edge = Color.Lerp(TelegraphColors.NetherViolet, AwakeningNetherHelper.AwakeningPurple, t);
-                if (hasBeam) {
-                    ACMShaders.DrawBeam(start, end, 2f + t * 4f, Color.Lerp(edge, Color.White, 0.35f), edge,
-                        0.25f + 0.45f * t, flowSpeed: 2.0f, flowScale: 2.4f);
-                }
-                else {
-                    AwakeningNetherHelper.DrawEnergyBeam(sb, start, end, edge * (0.3f + 0.4f * t), 4f + t * 4f, Timer);
-                }
+                ACMShaders.DrawBeam(start, end, 2f + t * 4f, Color.Lerp(edge, Color.White, 0.35f), edge,
+                    0.25f + 0.45f * t, flowSpeed: 2.0f, flowScale: 2.4f);
             }
             else {
                 // 实体激光帘幕 — 致命(红芯紫边), BeamGrad 流动 + 过曝芯
                 float at = (Timer - TelegraphTime) / (float)ActiveTime;
                 float widthMod = MathF.Sin(at * MathF.PI) * 0.7f + 0.4f;
-                if (hasBeam) {
-                    ACMShaders.DrawBeam(start, end, 26f * widthMod, TelegraphColors.Lethal, AwakeningNetherHelper.AwakeningPurple,
-                        1f, flowSpeed: 2.6f, flowScale: 2.0f, coreGlow: 1.4f);
-                    ACMShaders.DrawBeam(start, end, 10f * widthMod, Color.White, TelegraphColors.Lethal,
-                        1f, flowSpeed: 2.6f, flowScale: 2.0f, coreGlow: 1.8f);
-                }
-                else {
-                    Color beam = AwakeningNetherHelper.AwakeningPurple;
-                    AwakeningNetherHelper.DrawEnergyBeam(sb, start, end, beam, 22f * widthMod, Timer, true);
-                    AwakeningNetherHelper.DrawEnergyBeam(sb, start, end, Color.Lerp(beam, Color.White, 0.5f), 8f * widthMod, Timer, true);
-                }
+                ACMShaders.DrawBeam(start, end, 26f * widthMod, TelegraphColors.Lethal, AwakeningNetherHelper.AwakeningPurple,
+                    1f, flowSpeed: 2.6f, flowScale: 2.0f, coreGlow: 1.4f);
+                ACMShaders.DrawBeam(start, end, 10f * widthMod, Color.White, TelegraphColors.Lethal,
+                    1f, flowSpeed: 2.6f, flowScale: 2.0f, coreGlow: 1.8f);
             }
             return false;
         }
@@ -298,7 +357,7 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
                 Projectile.velocity *= 0.85f;
                 launchDir = (target.Center - Projectile.Center).SafeNormalize(Vector2.UnitY);
                 if (timer == OrbitTime + 1)
-                    SoundEngine.PlaySound(SoundID.Item8 with { Pitch = 0.3f }, Projectile.Center);
+                    SoundEngine.PlaySound(SoundID.Item103 with { Pitch = 0.3f }, Projectile.Center);
             }
             else if (!launched) {
                 launched = true;
@@ -342,6 +401,8 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         private const int FormTime = 28;
 
         public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
             SpriteBatch sb = Main.spriteBatch;
 
             // —— 形成期: DissolveBurn 由 1→0 重凝 (魂→实体), 复用 BAW 首发助手 ——
@@ -384,6 +445,8 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
         }
 
         public override void OnKill(int timeLeft) {
+            if (Main.dedServ)
+                return;
             SoundEngine.PlaySound(SoundID.Item10, Projectile.Center);
             for (int i = 0; i < 12; i++) {
                 var d = Dust.NewDustPerfect(Projectile.Center, DustID.SpectreStaff);

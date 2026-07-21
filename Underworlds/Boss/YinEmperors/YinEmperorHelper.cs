@@ -24,6 +24,157 @@ namespace AncientChineseMythology.Underworlds.Boss.YinEmperors
 
         #endregion
 
+        #region 专属着色器（V3 · 静态缓存，参考 Xuanwu 写法，不注册 ACMShaders）
+
+        private static Asset<Effect> _bannerFx;
+        private static Asset<Effect> _gateFx;
+        private static Asset<Effect> _courtFx;
+
+        /// <summary>冥幡布幔着色器（入场仪仗 / 常驻围场 / 死亡逐杆熄灭）。</summary>
+        public static Effect BannerEffect {
+            get {
+                if (Main.dedServ) return null;
+                _bannerFx ??= ModContent.Request<Effect>(
+                    "AncientChineseMythology/Effects/YinEmperorBanner", AssetRequestMode.ImmediateLoad);
+                return _bannerFx?.Value;
+            }
+        }
+
+        /// <summary>鬼门着色器（门洞深渊 + 开阖动画）。</summary>
+        public static Effect GateEffect {
+            get {
+                if (Main.dedServ) return null;
+                _gateFx ??= ModContent.Request<Effect>(
+                    "AncientChineseMythology/Effects/YinEmperorGate", AssetRequestMode.ImmediateLoad);
+                return _gateFx?.Value;
+            }
+        }
+
+        /// <summary>酆都法庭结界着色器（屏幕空间 SDF，参数约定同 ArenaRunic）。</summary>
+        public static Effect CourtEffect {
+            get {
+                if (Main.dedServ) return null;
+                _courtFx ??= ModContent.Request<Effect>(
+                    "AncientChineseMythology/Effects/YinEmperorCourt", AssetRequestMode.ImmediateLoad);
+                return _courtFx?.Value;
+            }
+        }
+
+        /// <summary>单杆冥幡的绘制描述（世界坐标顶端挂点 + 布幔尺寸 + 演出标量）。</summary>
+        public struct BannerDraw
+        {
+            public Vector2 Top;
+            public float Width;
+            public float Height;
+            public float Wave;
+            public float Burn;
+            public float Intensity;
+            public float Seed;
+        }
+
+        /// <summary>
+        /// 批量绘制冥幡（一次开合批画全部，PreDraw 等已有活动批的阶段调用）。
+        /// 幡杆用像素线绘制在当前批内完成后再切着色器批画布幔。
+        /// </summary>
+        public static void DrawBannerSet(SpriteBatch sb, BannerDraw[] banners, int count) {
+            if (Main.dedServ || banners == null || count <= 0)
+                return;
+
+            Texture2D pixel = Terraria.GameContent.TextureAssets.MagicPixel.Value;
+
+            // 幡杆 + 杆顶横梁（当前批，普通像素绘制）
+            for (int i = 0; i < count; i++) {
+                ref BannerDraw b = ref banners[i];
+                if (b.Intensity <= 0.01f) continue;
+                float lit = 1f - b.Burn;
+                Vector2 topScreen = b.Top - Main.screenPosition;
+                Color pole = Color.Lerp(ShadowBlack, ImperialGold, 0.35f * lit) * (0.85f * b.Intensity);
+                // 杆体：从布幔顶再向下延伸至底部基座
+                sb.Draw(pixel, topScreen + new Vector2(-2f, -14f), new Rectangle(0, 0, 1, 1), pole, 0f,
+                    Vector2.Zero, new Vector2(4f, b.Height + 60f), SpriteEffects.None, 0f);
+                // 横梁
+                sb.Draw(pixel, topScreen + new Vector2(-b.Width * 0.5f - 8f, -12f), new Rectangle(0, 0, 1, 1), pole, 0f,
+                    Vector2.Zero, new Vector2(b.Width + 16f, 5f), SpriteEffects.None, 0f);
+                // 杆顶金饰
+                Color finial = ImperialGold * (0.8f * lit * b.Intensity);
+                finial.A = 0;
+                sb.Draw(pixel, topScreen + new Vector2(-4f, -22f), new Rectangle(0, 0, 1, 1), finial, 0f,
+                    Vector2.Zero, new Vector2(8f, 10f), SpriteEffects.None, 0f);
+            }
+
+            Effect fx = BannerEffect;
+            Texture2D noise = ACMShaders.NoiseTexture;
+            if (fx == null || noise == null)
+                return;
+
+            sb.End();
+            sb.Begin(SpriteSortMode.Immediate, BlendState.NonPremultiplied, SamplerState.LinearWrap,
+                DepthStencilState.None, RasterizerState.CullNone, fx, Matrix.Identity);
+
+            float zoom = Main.GameViewMatrix.Zoom.X;
+            Vector2 halfScreen = new(Main.screenWidth * 0.5f, Main.screenHeight * 0.5f);
+
+            for (int i = 0; i < count; i++) {
+                ref BannerDraw b = ref banners[i];
+                if (b.Intensity <= 0.01f || b.Burn >= 0.999f) continue;
+
+                fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+                fx.Parameters["uIntensity"]?.SetValue(b.Intensity);
+                fx.Parameters["uWave"]?.SetValue(b.Wave);
+                fx.Parameters["uBurn"]?.SetValue(b.Burn);
+                fx.Parameters["uColorPrimary"]?.SetValue(new Vector4(new Vector3(0.10f, 0.06f, 0.16f), 1f));
+                fx.Parameters["uColorSecondary"]?.SetValue(new Vector4(ImperialGold.ToVector3(), 1f));
+                fx.Parameters["uSeed"]?.SetValue(b.Seed);
+                fx.CurrentTechnique.Passes[0].Apply();
+
+                // 世界 → 屏幕（含缩放），布幔以顶端挂点为锚
+                Vector2 screenTop = (b.Top - Main.screenPosition - halfScreen) * zoom + halfScreen;
+                Vector2 size = new Vector2(b.Width, b.Height) * zoom;
+                sb.Draw(noise, new Rectangle((int)(screenTop.X - size.X * 0.5f), (int)screenTop.Y,
+                    (int)size.X, (int)size.Y), Color.White);
+            }
+
+            sb.End();
+            ACMShaders.RestoreDefaultBatch(sb);
+        }
+
+        /// <summary>
+        /// 绘制一扇鬼门（弹幕 PreDraw 内调用，自动开合批）。size = 门体全宽高（世界像素）。
+        /// </summary>
+        public static void DrawGate(SpriteBatch sb, Vector2 worldCenter, Vector2 size,
+            float open, float intensity, float seed) {
+            if (Main.dedServ || intensity <= 0.01f)
+                return;
+            Effect fx = GateEffect;
+            Texture2D noise = ACMShaders.NoiseTexture;
+            if (fx == null || noise == null)
+                return;
+
+            sb.End();
+            sb.Begin(SpriteSortMode.Immediate, BlendState.NonPremultiplied, SamplerState.LinearWrap,
+                DepthStencilState.None, RasterizerState.CullNone, fx, Matrix.Identity);
+
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uOpen"]?.SetValue(MathHelper.Clamp(open, 0f, 1f));
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(intensity, 0f, 1f));
+            fx.Parameters["uColorPrimary"]?.SetValue(new Vector4(new Vector3(0.16f, 0.05f, 0.28f), 1f));
+            fx.Parameters["uColorSecondary"]?.SetValue(new Vector4(DragonVeinGold.ToVector3(), 1f));
+            fx.Parameters["uSeed"]?.SetValue(seed);
+            fx.CurrentTechnique.Passes[0].Apply();
+
+            float zoom = Main.GameViewMatrix.Zoom.X;
+            Vector2 halfScreen = new(Main.screenWidth * 0.5f, Main.screenHeight * 0.5f);
+            Vector2 screenC = (worldCenter - Main.screenPosition - halfScreen) * zoom + halfScreen;
+            Vector2 half = size * zoom * 0.5f;
+            sb.Draw(noise, new Rectangle((int)(screenC.X - half.X), (int)(screenC.Y - half.Y),
+                (int)(half.X * 2f), (int)(half.Y * 2f)), Color.White);
+
+            sb.End();
+            ACMShaders.RestoreDefaultBatch(sb);
+        }
+
+        #endregion
+
         #region 帝冥配色方案
 
         /// <summary>帝冥金 - 腐朽皇权</summary>

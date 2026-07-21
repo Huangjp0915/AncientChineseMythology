@@ -8,540 +8,356 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
 {
     internal partial class AoGuang
     {
-        #region 三阶段攻击
+        #region 深渊漩涡 (P3 签名 set-piece)
 
         /// <summary>
-        /// 狂怒冲刺 - 更快更多次的冲刺
+        /// 深渊漩涡 — 定点巨涡 (吸力 4s 渐强, 峰值 0.35, 红环即碰撞边界) +
+        /// 龙王沿切向连续穿刺, 穿刺路径穿过绕涡走位的玩家轨道。
+        /// 全屏向心折射把"被吸向中心"做成可读压力。
         /// </summary>
-        private void RunPhase3FuryCharge(Player target) {
+        private void RunAbyssalMaw(Player target) {
             switch ((int)SubState) {
-                case 0: // 初始化
-                    chargeCount = 0;
-                    // V2 抛光: 降低连冲次数(原 6/5), 配合每次冲刺后的恢复拍, 减弱 spam 感
-                    maxChargeCount = Main.expertMode ? 4 : 3;
-                    SubState = 1;
-                    AttackTimer = 0;
-                    break;
-
-                case 1: // 蓄力 (致命冲刺线预警, 略延长可读)
-                    NPC.velocity *= 0.8f;
-
-                    // 致命冲刺线预警 (红=致命, 渐强)
-                    if (!VaultUtils.isServer) {
-                        Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero);
-                        int count = 6 + (int)(AttackTimer / 5f);
-                        for (int i = 0; i < count; i++) {
-                            Vector2 dustPos = NPC.Center + toPlayer * (40 + i * 40);
-                            int dust = Dust.NewDust(dustPos, 0, 0, DustID.RedTorch, 0, 0, 100,
-                                TelegraphColors.Lethal, 1.5f);
-                            Main.dust[dust].noGravity = true;
-                            Main.dust[dust].velocity = Vector2.Zero;
-                        }
-                    }
-
-                    if (AttackTimer >= 24) {
-                        chargeTarget = target.Center + target.velocity * 8f;
-                        Vector2 toTarget = (chargeTarget - NPC.Center).SafeNormalize(Vector2.UnitY);
-                        float chargeSpeed = Main.expertMode ? 42f : 35f;
-                        NPC.velocity = toTarget * chargeSpeed;
-
-                        SubState = 2;
-                        AttackTimer = 0;
-
-                        SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.7f, Volume = 1f }, NPC.Center);
-                        ACMUtils.AddScreenShake(11f);
-                    }
-                    break;
-
-                case 2: // 冲刺
-                    // 更密集的水花拖尾
-                    if (!VaultUtils.isServer) {
-                        for (int i = 0; i < 8; i++) {
-                            Vector2 dustPos = NPC.Center - NPC.velocity.SafeNormalize(Vector2.Zero) * 50f;
-                            dustPos += Main.rand.NextVector2Circular(40, 40);
-                            int dustType = Main.rand.Next(3) switch {
-                                0 => DustID.Water,
-                                1 => DustID.BlueTorch,
-                                _ => DustID.Wet
-                            };
-                            int dust = Dust.NewDust(dustPos, 0, 0, dustType, 0, 0, 80, default, 3f);
-                            Main.dust[dust].noGravity = true;
-                            Main.dust[dust].velocity = -NPC.velocity * 0.2f;
-                        }
-                    }
-
-                    // 冲刺发射更多水弹
-                    if (AttackTimer % 3 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                        Vector2 perpendicular = NPC.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
-                        for (int side = -1; side <= 1; side += 2) {
-                            Projectile.NewProjectile(
-                                NPC.GetSource_FromAI(),
-                                NPC.Center,
-                                perpendicular * side * 6f + Main.rand.NextVector2Circular(2, 2),
-                                ModContent.ProjectileType<DragonWaterBolt>(),
-                                NPC.damage / 4,
-                                1f
-                            );
-                        }
-                    }
-
-                    if (AttackTimer >= 22) {
-                        chargeCount++;
-                        if (chargeCount >= maxChargeCount) {
-                            TransitionTo(GetRandomPhase3Attack());
-                        }
-                        else {
-                            SubState = 3; // V2: 冲刺后短恢复拍, 给玩家可读窗口
+                case 0: // 升空入位 40f (到位提前退出)
+                    {
+                        Vector2 anchor = target.Center + new Vector2(0, -500f);
+                        SerpentineGlide(anchor, 0.08f, 0.12f, 2.5f);
+                        if (AttackTimer >= 40 || (AttackTimer > 12 && NPC.Distance(anchor) < 110f)) {
+                            SubState = 1;
                             AttackTimer = 0;
                         }
                     }
                     break;
 
-                case 3: // 恢复 (冲刺间窗口, 缓速漂移)
-                    NPC.velocity *= 0.9f;
-                    if (AttackTimer >= 16) {
-                        SubState = 1;
-                        AttackTimer = 0;
-                    }
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// 三叉戟风暴 - 全屏三叉戟弹幕
-        /// </summary>
-        private void RunPhase3TridentStorm(Player target) {
-            NPC.velocity *= 0.93f;
-
-            // 悬停
-            Vector2 hoverPos = target.Center + new Vector2(0, -380);
-            NPC.velocity += (hoverPos - NPC.Center) * 0.003f;
-
-            // 发射三叉戟弹幕
-            int fireInterval = Main.expertMode ? 6 : 8;
-            if (AttackTimer % fireInterval == 0 && AttackTimer > 20 && Main.netMode != NetmodeID.MultiplayerClient) {
-                int count = 8;
-                float baseAngle = AttackTimer * 0.1f;
-                for (int i = 0; i < count; i++) {
-                    float angle = baseAngle + MathHelper.TwoPi * i / count;
-                    Vector2 vel = angle.ToRotationVector2() * 12f;
-                    Projectile.NewProjectile(
-                        NPC.GetSource_FromAI(),
-                        NPC.Center,
-                        vel,
-                        ModContent.ProjectileType<TridentProjectile>(),
-                        NPC.damage / 3,
-                        1f
-                    );
-                }
-
-                SoundEngine.PlaySound(SoundID.Item71 with { Pitch = 0.2f, Volume = 0.7f }, NPC.Center);
-            }
-
-            // 风暴粒子
-            if (!VaultUtils.isServer) {
-                for (int i = 0; i < 4; i++) {
-                    float angle = Main.rand.NextFloat(MathHelper.TwoPi);
-                    Vector2 dustPos = NPC.Center + angle.ToRotationVector2() * Main.rand.NextFloat(80, 150);
-                    int dust = Dust.NewDust(dustPos, 0, 0, DustID.BlueTorch, 0, 0, 150, default, 2f);
-                    Main.dust[dust].noGravity = true;
-                    Main.dust[dust].velocity = (angle + MathHelper.PiOver2).ToRotationVector2() * 5f;
-                }
-            }
-
-            if (AttackTimer > 150) {
-                TransitionTo(GetRandomPhase3Attack());
-            }
-        }
-
-        /// <summary>
-        /// 潮汐光束 - 强力追踪水柱激光
-        /// </summary>
-        private void RunPhase3TidalBeam(Player target) {
-            switch ((int)SubState) {
-                case 0: // 蓄力
-                    NPC.velocity *= 0.85f;
-
+                case 1: // 落涡 + 成型 60f
                     if (AttackTimer == 1) {
-                        breathAngle = (target.Center - NPC.Center).ToRotation();
-                        SoundEngine.PlaySound(SoundID.Item15 with { Pitch = -0.2f, Volume = 1.5f }, NPC.Center);
-                    }
-
-                    // 更强的蓄力效果
-                    if (!VaultUtils.isServer) {
-                        for (int i = 0; i < 12; i++) {
-                            Vector2 dustPos = NPC.Center + Main.rand.NextVector2CircularEdge(180, 180);
-                            int dustType = Main.rand.NextBool() ? DustID.BlueTorch : DustID.Water;
-                            int dust = Dust.NewDust(dustPos, 0, 0, dustType, 0, 0, 80, default, 2.5f);
-                            Main.dust[dust].noGravity = true;
-                            Main.dust[dust].velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 15f;
-                        }
-
-                        // 致命激光路径预警 (红=致命, 处决级渐强)
-                        if (AttackTimer > 12) {
-                            Vector2 beamDir = breathAngle.ToRotationVector2();
-                            for (int i = 0; i < 16; i++) {
-                                Vector2 lp = NPC.Center + beamDir * (70 + i * 160);
-                                int d = Dust.NewDust(lp, 0, 0, DustID.RedTorch, 0, 0, 110, TelegraphColors.Lethal, 1.5f);
-                                Main.dust[d].noGravity = true;
-                                Main.dust[d].velocity = beamDir * 2f;
-                            }
-                        }
-                    }
-
-                    // 震动增强 (取 max 不累加)
-                    if (AttackTimer % 8 == 0) {
-                        ACMUtils.AddScreenShake(MathHelper.Clamp(AttackTimer / 8f, 0f, 12f));
-                    }
-
-                    if (AttackTimer >= 50) {
-                        SubState = 1;
-                        AttackTimer = 0;
-
-                        // 发射强力激光
                         if (Main.netMode != NetmodeID.MultiplayerClient) {
-                            Projectile.NewProjectile(
-                                NPC.GetSource_FromAI(),
-                                NPC.Center,
-                                Vector2.Zero,
-                                ModContent.ProjectileType<TidalBeam>(),
-                                NPC.damage,
-                                0f,
-                                ai0: NPC.whoAmI,
-                                ai1: breathAngle
-                            );
+                            chargeTarget = target.Center + new Vector2(0, 40f); // 漩涡定点 (不追踪)
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(), chargeTarget, Vector2.Zero,
+                                ModContent.ProjectileType<AbyssalVortex>(), NPC.damage / 3, 0f,
+                                ai0: NPC.whoAmI);
+                            NPC.netUpdate = true;
                         }
-
-                        SoundEngine.PlaySound(SoundID.Zombie104 with { Pitch = 0.3f, Volume = 1.8f }, NPC.Center);
-                        ACMUtils.AddScreenShake(12f);
-                        waterBloom = 1f; // 潮汐激光释放·水爆泛光
-                    }
-                    break;
-
-                case 1: // 激光扫射
-                    NPC.velocity *= 0.9f;
-
-                    // 更快的追踪
-                    float targetAngle = (target.Center - NPC.Center).ToRotation();
-                    breathAngle = MathHelper.Lerp(breathAngle, targetAngle, 0.025f);
-
-                    if (AttackTimer > 100) {
-                        TransitionTo(GetRandomPhase3Attack());
-                    }
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// 龙王盘绕 - 环绕玩家收缩攻击
-        /// </summary>
-        private void RunPhase3DragonCoil(Player target) {
-            switch ((int)SubState) {
-                case 0: // 初始化
-                    vortexAngle = (NPC.Center - target.Center).ToRotation();
-                    vortexRadius = 400f;
-                    SubState = 1;
-                    AttackTimer = 0;
-                    break;
-
-                case 1: // 盘旋收缩
-                    float coilSpeed = 0.06f + AttackTimer * 0.0003f;
-                    vortexAngle += coilSpeed;
-
-                    float targetRadius = 400f - AttackTimer * 2f;
-                    if (targetRadius < 120f) targetRadius = 120f;
-                    vortexRadius = MathHelper.Lerp(vortexRadius, targetRadius, 0.1f);
-
-                    Vector2 coilTarget = target.Center + vortexAngle.ToRotationVector2() * vortexRadius;
-                    Vector2 toCoil = coilTarget - NPC.Center;
-                    NPC.velocity = toCoil * 0.15f;
-
-                    // 盘绕粒子
-                    if (!VaultUtils.isServer) {
-                        for (int i = 0; i < 3; i++) {
-                            Vector2 dustPos = NPC.Center + Main.rand.NextVector2Circular(40, 40);
-                            int dustType = Main.rand.NextBool() ? DustID.Water : DustID.BlueTorch;
-                            int dust = Dust.NewDust(dustPos, 0, 0, dustType, 0, 0, 150, default, 2f);
-                            Main.dust[dust].noGravity = true;
-                            Main.dust[dust].velocity = (vortexAngle + MathHelper.PiOver2).ToRotationVector2() * 4f;
-                        }
-                    }
-
-                    // 发射追踪水弹
-                    if (AttackTimer % 15 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                        Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.Zero);
-                        Projectile.NewProjectile(
-                            NPC.GetSource_FromAI(),
-                            NPC.Center,
-                            toPlayer * 8f,
-                            ModContent.ProjectileType<HomingWaterOrb>(),
-                            NPC.damage / 4,
-                            1f
-                        );
-                    }
-
-                    if (AttackTimer > 150 || vortexRadius <= 120f) {
-                        SubState = 2;
-                        AttackTimer = 0;
-                    }
-                    break;
-
-                case 2: // 爆发冲刺
-                    if (AttackTimer == 1) {
-                        Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
-                        NPC.velocity = toPlayer * 35f;
-                        SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.4f }, NPC.Center);
+                        SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.55f, Volume = 1.5f }, target.Center);
                         ACMUtils.AddScreenShake(11f);
+                        waterBloom = 1f;
+                    }
+                    SerpentineGlide(chargeTarget + new Vector2(0, -560f), 0.05f, 0.08f, 2.5f);
+                    if (AttackTimer >= 60) { SubState = 2; AttackTimer = 0; chargeCount = 0; }
+                    break;
 
-                        // 爆发水花
-                        if (!VaultUtils.isServer) {
-                            for (int i = 0; i < 40; i++) {
-                                float angle = MathHelper.TwoPi * i / 40;
-                                Vector2 vel = angle.ToRotationVector2() * 8f;
-                                int dust = Dust.NewDust(NPC.Center, 0, 0, DustID.Water, vel.X, vel.Y, 100, default, 3f);
-                                Main.dust[dust].noGravity = true;
+                case 2: // 切向穿刺循环 ×3: 锁线 22f → 刺 12f → 刹 22f
+                    {
+                        float cycle = 56f;
+                        float inCycle = AttackTimer % cycle;
+
+                        if (inCycle < 22f) { // 锁线: 瞄准漩涡另一侧的切向路径
+                            NPC.velocity *= 0.88f;
+                            if (inCycle == 1 && Main.netMode != NetmodeID.MultiplayerClient) {
+                                // 穿刺线 = 过漩涡边缘的切线弦 (逼玩家离开绕涡轨道); 角度经 breathAngle 同步
+                                float chordAng = (target.Center - chargeTarget).ToRotation()
+                                    + Main.rand.NextFloat(-0.5f, 0.5f);
+                                Vector2 chordPt = chargeTarget + chordAng.ToRotationVector2() * 190f;
+                                breathAngle = (chordPt - NPC.Center).SafeNormalize(Vector2.UnitY).ToRotation();
+                                NPC.netUpdate = true;
+                            }
+                            float aim = breathAngle;
+                            poseRotOverride = aim;
+                            NPC.spriteDirection = MathF.Cos(aim) >= 0 ? 1 : -1;
+
+                            if (inCycle == 2)
+                                SoundEngine.PlaySound(SoundID.Zombie20 with { Pitch = 0.5f, Volume = 0.8f }, NPC.Center);
+
+                            if (!VaultUtils.isServer) {
+                                Vector2 aimDir = aim.ToRotationVector2();
+                                int count = 4 + (int)(inCycle / 4f);
+                                for (int i = 0; i < count; i++) {
+                                    Dust d = Dust.NewDustDirect(NPC.Center + aimDir * (70 + i * 55), 0, 0,
+                                        DustID.RedTorch, 0, 0, 110, TelegraphColors.Lethal, 1.4f);
+                                    d.noGravity = true;
+                                    d.velocity = Vector2.Zero;
+                                }
+                            }
+                            // 末 6f 反吸
+                            if (inCycle >= 16f)
+                                NPC.velocity = -aim.ToRotationVector2() * MathF.Pow((inCycle - 16f) / 6f, 3f) * 13f;
+                        }
+                        else if (inCycle < 34f) { // 穿刺 12f
+                            if (inCycle == 22f) {
+                                NPC.velocity = breathAngle.ToRotationVector2() * 48f;
+                                SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.6f, Volume = 0.9f }, NPC.Center);
+                                ACMUtils.AddScreenShake(8f);
+                            }
+                            contactDamageActive = true;
+                            if (!VaultUtils.isServer) {
+                                for (int i = 0; i < 4; i++) {
+                                    Dust d = Dust.NewDustDirect(
+                                        NPC.Center - NPC.velocity.SafeNormalize(Vector2.Zero) * (30 + i * 26)
+                                        + Main.rand.NextVector2Circular(22, 22), 0, 0,
+                                        Main.rand.NextBool() ? DustID.Water : DustID.BlueTorch, 0, 0, 90, default, 2.5f);
+                                    d.noGravity = true;
+                                    d.velocity = -NPC.velocity * 0.1f;
+                                }
                             }
                         }
+                        else { // 硬刹恢复
+                            NPC.velocity *= 0.75f;
+                        }
+
+                        if (inCycle >= cycle - 1f) {
+                            chargeCount++;
+                            if (chargeCount >= 3) { SubState = 3; AttackTimer = 0; }
+                        }
                     }
+                    break;
 
-                    NPC.velocity *= 0.97f;
-
-                    if (AttackTimer > 35) {
-                        TransitionTo(GetRandomPhase3Attack());
+                case 3: // 漩涡崩解收尾 (等待漩涡自灭)
+                    SerpentineGlide(target.Center + new Vector2(0, -380f), 0.05f, 0.08f, 2.5f);
+                    if (AttackTimer >= 70) {
+                        waterBloom = MathF.Max(waterBloom, 0.6f);
+                        TransitionTo(BossPhase.Cruise);
                     }
                     break;
             }
         }
 
+        #endregion
+
+        #region 终潮天倾 (P3 终极, 30% 以下才见)
+
         /// <summary>
-        /// 终极海啸 - 多波次全方位攻击
+        /// 终潮天倾 — 压箱底招: 升天 → 半场 Lethal 幕布预警 60f (加速读秒) → 半场天倾巨浪砸落 →
+        /// 反向再一次 → 龙王贯场穿刺收尾。被扣到 30% 以下才解锁的"未来承诺"。
         /// </summary>
-        private void RunPhase3FinalTsunami(Player target) {
+        private void RunSkyfallTide(Player target) {
             switch ((int)SubState) {
-                case 0: // 第一波：环形水弹爆发
-                    NPC.velocity *= 0.88f;
-
+                case 0: // 升空 50f: 龙王冲天而起
                     if (AttackTimer == 1) {
-                        SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.2f, Volume = 1.5f }, NPC.Center);
+                        SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.2f, Volume = 1.4f }, NPC.Center);
+                        NPC.velocity = new Vector2(0, -26f);
                     }
+                    NPC.velocity = Vector2.Lerp(NPC.velocity, new Vector2(0, -20f), 0.08f);
 
-                    if (AttackTimer % 12 == 0 && AttackTimer <= 72 && Main.netMode != NetmodeID.MultiplayerClient) {
-                        int count = 12;
-                        float baseAngle = AttackTimer * 0.12f;
-                        for (int i = 0; i < count; i++) {
-                            float angle = baseAngle + MathHelper.TwoPi * i / count;
-                            Vector2 vel = angle.ToRotationVector2() * 10f;
-                            Projectile.NewProjectile(
-                                NPC.GetSource_FromAI(),
-                                NPC.Center,
-                                vel,
-                                ModContent.ProjectileType<DragonWaterBolt>(),
-                                NPC.damage / 4,
-                                1f
-                            );
-                        }
-                        SoundEngine.PlaySound(SoundID.Item21 with { Pitch = 0.3f, Volume = 0.6f }, NPC.Center);
-                    }
-
-                    if (AttackTimer > 80) {
-                        SubState = 1;
-                        AttackTimer = 0;
-                    }
-                    break;
-
-                case 1: // 第二波：多方向冲刺
-                    chargeCount = 0;
-                    maxChargeCount = 4;
-                    SubState = 2;
-                    AttackTimer = 0;
-                    break;
-
-                case 2: // 冲刺蓄力
-                    NPC.velocity *= 0.8f;
-
-                    if (AttackTimer >= 15) {
-                        Vector2 toPlayer = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitY);
-                        NPC.velocity = toPlayer * 38f;
-                        SubState = 3;
-                        AttackTimer = 0;
-                        SoundEngine.PlaySound(SoundID.Item122 with { Pitch = 0.6f }, NPC.Center);
-                    }
-                    break;
-
-                case 3: // 冲刺中
                     if (!VaultUtils.isServer) {
-                        for (int i = 0; i < 4; i++) {
-                            Vector2 dustPos = NPC.Center - NPC.velocity.SafeNormalize(Vector2.Zero) * 40f;
-                            int dust = Dust.NewDust(dustPos + Main.rand.NextVector2Circular(30, 30), 0, 0, DustID.Water, 0, 0, 100, default, 3f);
-                            Main.dust[dust].noGravity = true;
-                            Main.dust[dust].velocity = -NPC.velocity * 0.15f;
-                        }
+                        Dust d = Dust.NewDustDirect(NPC.Center + Main.rand.NextVector2Circular(60, 80), 0, 0,
+                            DustID.Water, 0, 5f, 100, default, 2.2f);
+                        d.noGravity = false;
                     }
 
-                    if (AttackTimer >= 18) {
-                        chargeCount++;
-                        if (chargeCount >= maxChargeCount) {
-                            SubState = 4;
-                            AttackTimer = 0;
+                    if (AttackTimer >= 50) { SubState = 1; AttackTimer = 0; }
+                    break;
+
+                case 1: // 第一次半场标记 60f → 天倾
+                case 2: // 第二次 (反向)
+                    {
+                        bool first = (int)SubState == 1;
+                        if (AttackTimer == 1 && Main.netMode != NetmodeID.MultiplayerClient) {
+                            // 危险半场 = 玩家所在半场 (以标记瞬间玩家为准, 逼迫换场)
+                            wallDir = first
+                                ? (target.Center.X >= NPC.Center.X ? 1f : -1f)
+                                : -wallDir;
+                            chargeTarget = new Vector2(NPC.Center.X, target.Center.Y); // 分界线 X 锚点
+                            NPC.netUpdate = true;
+
+                            // 天倾浪体自带 60f 预警幕布 + 坠落 (分界线 = 生成点 X)
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(),
+                                new Vector2(chargeTarget.X, target.Center.Y - 1100f), Vector2.Zero,
+                                ModContent.ProjectileType<AoGuangSkyDeluge>(), NPC.damage / 2, 2f,
+                                ai0: wallDir, ai1: target.Center.Y);
+                        }
+
+                        // 龙王悬于分界线上空压场
+                        Vector2 anchor = new Vector2(chargeTarget.X, target.Center.Y - 620f);
+                        SerpentineGlide(anchor, 0.06f, 0.09f, 3f);
+
+                        // 标记期 60f: 加速读秒鼓点 (间隔递减)
+                        if (AttackTimer == 6 || AttackTimer == 26 || AttackTimer == 41 ||
+                            AttackTimer == 51 || AttackTimer == 57) {
+                            float pitch = -0.2f + AttackTimer / 57f * 0.6f;
+                            SoundEngine.PlaySound(SoundID.Item35 with { Pitch = pitch, Volume = 1f }, target.Center);
+                        }
+
+                        // 坠落瞬间的世界反馈
+                        if (AttackTimer == 61) {
+                            ACMUtils.AddScreenShake(13f);
+                            waterBloom = 1f;
+                        }
+
+                        // 落浪后 40f 换场窗口
+                        if (AttackTimer >= 100) {
+                            if (first) { SubState = 2; AttackTimer = 0; }
+                            else { SubState = 3; AttackTimer = 0; }
+                        }
+                    }
+                    break;
+
+                case 3: // 贯场穿刺收尾: 锁线 30f → 全场横贯
+                    {
+                        if (AttackTimer < 30) {
+                            float sideX = NPC.Center.X > target.Center.X ? 1f : -1f;
+                            Vector2 anchor = new Vector2(target.Center.X + sideX * 900f, target.Center.Y);
+                            SerpentineGlide(anchor, 0.09f, 0.13f, 2f);
+
+                            if (AttackTimer == 6)
+                                SoundEngine.PlaySound(SoundID.Zombie20 with { Pitch = 0.5f, Volume = 1f }, NPC.Center);
+
+                            if (AttackTimer <= 22) {
+                                chargeTarget = target.Center + target.velocity * 10f;
+                                if (AttackTimer == 22 && Main.netMode != NetmodeID.MultiplayerClient)
+                                    NPC.netUpdate = true;
+                            }
+
+                            Vector2 aimDir = (chargeTarget - NPC.Center).SafeNormalize(Vector2.UnitX);
+                            if (AttackTimer > 14) {
+                                poseRotOverride = aimDir.ToRotation();
+                                NPC.spriteDirection = aimDir.X >= 0 ? 1 : -1;
+                            }
+
+                            if (!VaultUtils.isServer && AttackTimer > 10) {
+                                for (int i = 0; i < 10; i++) {
+                                    Dust d = Dust.NewDustDirect(NPC.Center + aimDir * (80 + i * 90), 0, 0,
+                                        DustID.RedTorch, 0, 0, 110, TelegraphColors.Lethal, 1.6f);
+                                    d.noGravity = true;
+                                }
+                            }
+                        }
+                        else if (AttackTimer == 30) {
+                            NPC.velocity = (chargeTarget - NPC.Center).SafeNormalize(Vector2.UnitX) * 54f;
+                            SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.7f, Volume = 1.1f }, NPC.Center);
+                            ACMUtils.AddScreenShake(10f);
+                        }
+                        else if (AttackTimer <= 46) {
+                            contactDamageActive = true;
+                            if (!VaultUtils.isServer) {
+                                for (int i = 0; i < 6; i++) {
+                                    Dust d = Dust.NewDustDirect(
+                                        NPC.Center - NPC.velocity.SafeNormalize(Vector2.Zero) * (26 + i * 24)
+                                        + Main.rand.NextVector2Circular(26, 26), 0, 0,
+                                        Main.rand.NextBool() ? DustID.Water : DustID.BlueTorch, 0, 0, 80, default, 2.8f);
+                                    d.noGravity = true;
+                                    d.velocity = -NPC.velocity * 0.12f;
+                                }
+                            }
                         }
                         else {
-                            SubState = 2;
+                            NPC.velocity *= 0.78f;
+                        }
+
+                        if (AttackTimer >= 74) TransitionTo(BossPhase.Cruise);
+                    }
+                    break;
+            }
+        }
+
+        #endregion
+
+        #region 狂龙连刺 (P3)
+
+        /// <summary>
+        /// 狂龙连刺 — 三连极速穿刺 (52px/f, 锁线 22f + 反吸 10f + 刺 9f), 第三刺终点浪爆:
+        /// 环形潮矢 (初速渐升) + 冲击环。刺间 26f 恢复拍。
+        /// </summary>
+        private void RunFuryPierce(Player target) {
+            switch ((int)SubState) {
+                case 0: // 锁线 22f
+                    {
+                        NPC.velocity *= 0.86f;
+                        // 各端确定性追预测点, 锁定帧服务器纠偏
+                        if (AttackTimer <= 13) {
+                            chargeTarget = target.Center + target.velocity * 9f;
+                            if (AttackTimer == 13 && Main.netMode != NetmodeID.MultiplayerClient)
+                                NPC.netUpdate = true;
+                        }
+                        Vector2 aimDir = (chargeTarget - NPC.Center).SafeNormalize(Vector2.UnitX);
+                        float t = AttackTimer / 22f;
+                        NPC.rotation = NPC.rotation.AngleLerp(aimDir.ToRotation(), MathHelper.Lerp(0.45f, 0.1f, t));
+                        NPC.spriteDirection = aimDir.X >= 0 ? 1 : -1;
+                        poseRotOverride = NPC.rotation;
+
+                        if (AttackTimer == 1)
+                            SoundEngine.PlaySound(SoundID.Zombie20 with { Pitch = 0.6f, Volume = 0.85f }, NPC.Center);
+
+                        if (!VaultUtils.isServer) {
+                            int count = 6 + (int)(AttackTimer / 3f);
+                            for (int i = 0; i < count; i++) {
+                                Dust d = Dust.NewDustDirect(NPC.Center + aimDir * (60 + i * 46), 0, 0,
+                                    DustID.RedTorch, 0, 0, 100, TelegraphColors.Lethal, 1.6f);
+                                d.noGravity = true;
+                                d.velocity = Vector2.Zero;
+                            }
+                        }
+
+                        // 末 10f 反吸
+                        if (AttackTimer >= 12)
+                            NPC.velocity = -aimDir * MathF.Pow((AttackTimer - 12f) / 10f, 3f) * 16f;
+
+                        if (AttackTimer >= 22) {
+                            SubState = 1;
+                            AttackTimer = 0;
+                            NPC.velocity = aimDir * 52f;
+                            SoundEngine.PlaySound(SoundID.Roar with { Pitch = 0.7f, Volume = 1f }, NPC.Center);
+                            ACMUtils.AddScreenShake(9f);
+                            NPC.netUpdate = true;
+                        }
+                    }
+                    break;
+
+                case 1: // 穿刺 9f
+                    contactDamageActive = true;
+                    if (!VaultUtils.isServer) {
+                        for (int i = 0; i < 7; i++) {
+                            Dust d = Dust.NewDustDirect(
+                                NPC.Center - NPC.velocity.SafeNormalize(Vector2.Zero) * (26 + i * 22)
+                                + Main.rand.NextVector2Circular(28, 28), 0, 0,
+                                Main.rand.Next(3) switch {
+                                    0 => DustID.Water,
+                                    1 => DustID.BlueTorch,
+                                    _ => DustID.Wet
+                                }, 0, 0, 80, default, 2.8f);
+                            d.noGravity = true;
+                            d.velocity = -NPC.velocity * 0.14f;
+                        }
+                    }
+
+                    if (AttackTimer >= 9) {
+                        chargeCount++;
+                        SubState = 2;
+                        AttackTimer = 0;
+
+                        // 第三刺终点浪爆
+                        if (chargeCount >= 3) {
+                            if (Main.netMode != NetmodeID.MultiplayerClient) {
+                                int count = Main.expertMode ? 12 : 10;
+                                for (int i = 0; i < count; i++) {
+                                    float ang = MathHelper.TwoPi * i / count;
+                                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center,
+                                        ang.ToRotationVector2() * 7.5f,
+                                        ModContent.ProjectileType<DragonWaterBolt>(), NPC.damage / 4, 1f);
+                                }
+                                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
+                                    ModContent.ProjectileType<TidalWave>(), NPC.damage / 3, 1f);
+                            }
+                            SoundEngine.PlaySound(SoundID.Item122 with { Pitch = 0.1f, Volume = 1.4f }, NPC.Center);
+                            ACMUtils.AddScreenShake(11f);
+                            waterBloom = 1f;
+                            tidalRingVisual = 1f;
+                        }
+                    }
+                    break;
+
+                case 2: // 硬刹 + 刺间恢复 26f
+                    if (AttackTimer <= 9)
+                        NPC.velocity *= 0.72f;
+                    else
+                        NPC.velocity *= 0.95f;
+
+                    if (AttackTimer >= 26) {
+                        if (chargeCount >= 3) {
+                            TransitionTo(BossPhase.Cruise);
+                        }
+                        else {
+                            SubState = 0;
                             AttackTimer = 0;
                         }
-                    }
-                    break;
-
-                case 4: // 第三波：巨型海啸
-                    NPC.velocity *= 0.85f;
-
-                    if (AttackTimer == 25 && Main.netMode != NetmodeID.MultiplayerClient) {
-                        // 多方向潮汐波
-                        for (int i = 0; i < 4; i++) {
-                            float angle = MathHelper.PiOver2 * i;
-                            Projectile.NewProjectile(
-                                NPC.GetSource_FromAI(),
-                                NPC.Center,
-                                angle.ToRotationVector2() * 2f,
-                                ModContent.ProjectileType<TidalWave>(),
-                                NPC.damage / 3,
-                                0f
-                            );
-                        }
-                        SoundEngine.PlaySound(SoundID.Item122 with { Pitch = 0f, Volume = 2f }, NPC.Center);
-                        ACMUtils.AddScreenShake(12f);
-                        waterBloom = 1f; // 终极海啸·水爆泛光
-                    }
-
-                    if (AttackTimer > 120) {
-                        TransitionTo(GetRandomPhase3Attack());
-                    }
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// 海龙狂舞 - 高速S形蛇行移动并发射弹幕
-        /// </summary>
-        private void RunPhase3SeaDragonDance(Player target) {
-            // S形蛇行移动
-            float baseAngle = (target.Center - NPC.Center).ToRotation();
-            float waveOffset = MathF.Sin(AttackTimer * 0.1f) * 0.8f;
-            float currentAngle = baseAngle + waveOffset;
-
-            float speed = 25f;
-            Vector2 targetVelocity = currentAngle.ToRotationVector2() * speed;
-            NPC.velocity = Vector2.Lerp(NPC.velocity, targetVelocity, 0.15f);
-
-            // 蛇行粒子拖尾
-            if (!VaultUtils.isServer) {
-                for (int i = 0; i < 6; i++) {
-                    Vector2 dustPos = NPC.Center - NPC.velocity.SafeNormalize(Vector2.Zero) * (20 + i * 15);
-                    dustPos += Main.rand.NextVector2Circular(20, 20);
-                    int dustType = Main.rand.Next(3) switch {
-                        0 => DustID.Water,
-                        1 => DustID.BlueTorch,
-                        _ => DustID.Wet
-                    };
-                    int dust = Dust.NewDust(dustPos, 0, 0, dustType, 0, 0, 120, default, 2.5f);
-                    Main.dust[dust].noGravity = true;
-                    Main.dust[dust].velocity = -NPC.velocity * 0.1f;
-                }
-            }
-
-            // 发射水弹
-            if (AttackTimer % 6 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                // 向两侧发射
-                Vector2 perpendicular = NPC.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
-                for (int side = -1; side <= 1; side += 2) {
-                    Projectile.NewProjectile(
-                        NPC.GetSource_FromAI(),
-                        NPC.Center,
-                        perpendicular * side * 8f,
-                        ModContent.ProjectileType<DragonWaterBolt>(),
-                        NPC.damage / 4,
-                        1f
-                    );
-                }
-            }
-
-            // 每隔一段时间发射追踪水球
-            if (AttackTimer % 30 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                Projectile.NewProjectile(
-                    NPC.GetSource_FromAI(),
-                    NPC.Center,
-                    Vector2.Zero,
-                    ModContent.ProjectileType<HomingWaterOrb>(),
-                    NPC.damage / 4,
-                    1f
-                );
-            }
-
-            if (AttackTimer > 180) {
-                TransitionTo(GetRandomPhase3Attack());
-            }
-        }
-
-        /// <summary>
-        /// 深渊漩涡 - 在场地中央生成巨大漩涡并召唤水柱
-        /// </summary>
-        private void RunPhase3AbyssalVortex(Player target) {
-            switch ((int)SubState) {
-                case 0: // 飞到上方
-                    Vector2 risePos = target.Center + new Vector2(0, -500);
-                    NPC.velocity = Vector2.Lerp(NPC.velocity, (risePos - NPC.Center) * 0.06f, 0.12f);
-
-                    if (AttackTimer >= 40 || Vector2.Distance(NPC.Center, risePos) < 80f) {
-                        SubState = 1;
-                        AttackTimer = 0;
-                    }
-                    break;
-
-                case 1: // 召唤深渊漩涡
-                    NPC.velocity *= 0.9f;
-
-                    if (AttackTimer == 1 && Main.netMode != NetmodeID.MultiplayerClient) {
-                        Projectile.NewProjectile(
-                            NPC.GetSource_FromAI(),
-                            target.Center,
-                            Vector2.Zero,
-                            ModContent.ProjectileType<AbyssalVortex>(),
-                            NPC.damage / 3,
-                            0f,
-                            ai0: NPC.whoAmI
-                        );
-
-                        SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.5f, Volume = 1.5f }, target.Center);
-                        ACMUtils.AddScreenShake(12f);
-                        waterBloom = 1f; // 深渊漩涡降临·水爆泛光
-                    }
-
-                    // 从上方发射水柱
-                    if (AttackTimer > 30 && AttackTimer % 15 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                        Vector2 spikePos = target.Center + new Vector2(Main.rand.NextFloat(-400, 400), -600);
-                        Projectile.NewProjectile(
-                            NPC.GetSource_FromAI(),
-                            spikePos,
-                            new Vector2(0, 15f),
-                            ModContent.ProjectileType<FallingWaterSpear>(),
-                            NPC.damage / 3,
-                            1f
-                        );
-                    }
-
-                    // 深渊粒子
-                    if (!VaultUtils.isServer) {
-                        for (int i = 0; i < 5; i++) {
-                            float angle = Main.rand.NextFloat(MathHelper.TwoPi);
-                            float radius = Main.rand.NextFloat(150, 300);
-                            Vector2 dustPos = NPC.Center + angle.ToRotationVector2() * radius;
-                            int dust = Dust.NewDust(dustPos, 0, 0, DustID.BlueTorch, 0, 0, 180, default, 2f);
-                            Main.dust[dust].noGravity = true;
-                            Main.dust[dust].velocity = (angle + MathHelper.PiOver2).ToRotationVector2() * 6f;
-                        }
-                    }
-
-                    if (AttackTimer > 180) {
-                        TransitionTo(GetRandomPhase3Attack());
                     }
                     break;
             }

@@ -10,15 +10,16 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.Boss.Aoyuans
 {
     /// <summary>
-    /// 西海龙王敖闰 - 月后初期Boss（第3条龙王脊柱，西海珠门控，敖钦之后）
-    /// 冰霜/寒水属性蠕虫龙王主题
+    /// 西海龙王敖闰 - 月后初期Boss（第3条龙王脊柱, 敖钦之后）
     ///
-    /// ==========  重做设计理念（移植敖顺 FSM 架构）  ==========
-    /// ● AI架构：正规状态机（出场→巡逻→预攻击→攻击→冷却→阶段转换），替代原 0-400 计时器循环
-    /// ● 签名机制：永冻立场（Permafrost Field）——巡游时留下寒冰地痕，玩家站在地痕上叠加冰冻层（减速→3层冻结约1秒）
-    /// ● 攻击体系：6个带预告的命名攻击（冰晶棋局/暴雪帷幕/寒霜吐息/冰柱雨/冰霜环 + 二阶段·绝对零度大招）
-    /// ● 阶段转换：50% “浮空破境”——脱离贴地钻行，二阶段地痕令地面打滑，解锁空中俯冲攻击（改规则而非加弹）
-    /// ● 蠕虫身体：绝对零度蓄力时身体段暴露冰晶弱点，玩家击破弱点可打断/削弱全屏冻结
+    /// ==========  V3 重做: "西海静渊 · 刹那冰锋"  ==========
+    /// ● 幻想内核: 四海中最冷静克制的剑客龙——长时间盘蜷静滞蓄势(寒气凝结、时间仿佛冻结)
+    ///   → 刹那冰封突刺(9~12帧贯穿), 剑过之处留一线冰封航迹, 慢半拍凝晶成伤害墙。
+    /// ● 与玄武差异化: 玄武=厚重巨兽守势(盾/覆盖), 敖闰=凌厉剑客攻势(线/定格/折射)。
+    /// ● 招式池洗牌袋: P1{突刺/冰镜阵/寒潮/困龙局/回旋连斩} + P2{绝对零度/镜界瞬狱}。
+    /// ● 伤害窗口与视觉对齐: 接触伤害仅突刺帧满额, 静滞/巡逻降至 45%。
+    /// ● 三大演出: 破镜现身入场 / 时滞破境(50%) / 晶化升天死亡(CheckDead 接管)。
+    /// ● 专属着色器: AoyuanCrystalline(棱镜后处理) / AoyuanFrostGround(冻土·陷阱) / AoyuanMirror(冰镜)。
     /// </summary>
     [AutoloadBossHead]
     internal partial class Aoyuan : ModNPC
@@ -27,6 +28,8 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
 
         /// <summary>二阶段血量百分比阈值</summary>
         public const float Phase2Threshold = 0.50f;
+        /// <summary>低血狂澜阈值（巡逻减半、突刺三连）</summary>
+        public const float DesperationThreshold = 0.25f;
 
         /// <summary>蠕虫身体段帧序列（对应AoyuanBody纹理5帧中的帧号）</summary>
         public static readonly int[] BodyFrameSequence = [1, 2, 0, 1, 2, 1, 2, 0, 1, 2, 1, 2, 0, 1, 2, 3, 4];
@@ -34,20 +37,12 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
         /// <summary>头部纹理帧数</summary>
         private const int HeadFrameCount = 3;
 
-        /// <summary>一阶段巡游速度</summary>
-        private const float PatrolSpeed = 12f;
-        /// <summary>二阶段巡游速度</summary>
-        private const float PatrolSpeedPhase2 = 15f;
+        /// <summary>巡逻时长范围（帧）— 远比旧版短, 攻击间只留呼吸拍</summary>
+        private const int PatrolMin = 46, PatrolMax = 80;
+        private const int PatrolMinP2 = 30, PatrolMaxP2 = 60;
 
-        /// <summary>巡逻切换攻击的最小间隔（帧）</summary>
-        private const int MinPatrolDuration = 150;
-        /// <summary>巡逻切换攻击的最大间隔（帧）</summary>
-        private const int MaxPatrolDuration = 300;
-
-        /// <summary>预攻击（蓄力电报）帧数</summary>
-        private const int PreAttackDuration = 45;
-        /// <summary>攻击后冷却帧数</summary>
-        private const int CooldownDuration = 55;
+        /// <summary>收剑连接拍时长</summary>
+        private const int SheathDuration = 25;
 
         #endregion
 
@@ -56,96 +51,128 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
         /// <summary>AI主状态机</summary>
         public enum AoyuanState
         {
-            Intro,           // 出场
-            Patrol,          // 蠕虫巡游追踪，铺设永冻地痕
-            PreAttack,       // 攻击前的蓄力电报
+            Intro,           // 破镜现身入场演出
+            Patrol,          // 收剑巡游（绕玩家盘旋）
+            Sheath,          // 收剑连接拍（攻击后的段落句号）
             Attacking,       // 执行攻击
-            Cooldown,        // 攻击后冷却
-            PhaseTransition  // 50% 浮空破境
+            PhaseTransition, // 50% 时滞破境
+            DeathAnim        // 晶化升天死亡演出
         }
 
         /// <summary>攻击类型</summary>
         public enum AoyuanAttackType
         {
             // --- 一阶段 ---
-            GlacialPillarChess, // 冰晶棋局：预告 3x3 幽灵冰柱，仅部分落下
-            BlizzardVeil,       // 暴雪帷幕：推进的雪墙，留一道移动缺口
-            FrostBreath,        // 寒霜吐息：张嘴蓄力 → 锥形冰锥吐息（专用张嘴动画）
-            IcicleRainCombo,    // 冰柱雨：多波次天降冰柱
-            FrostRingCombo,     // 冰霜环：环形冰弹 + 冰柱穿插
+            InstantThrust,   // 刹那·冰封突刺（签名: 盘蜷→锁线→贯穿→冰封航迹）
+            MirrorArray,     // 冰镜·折光阵（弧列冰镜依序射折光冰束）
+            ColdWave,        // 寒潮·冻土席卷（俯冲触地→地面结霜蔓延+冰脊波+尖刺）
+            FreezeTrap,      // 冰封·困龙局（倒计时冻结区+放牧压制）
+            FrostBlades,     // 霜刃·回旋连斩（V/X 形短突刺连击）
             // --- 二阶段追加 ---
-            AbsoluteZero        // 绝对零度：锚定 + 3秒吸气蓄力 → 全屏放射冻结（可破弱点）
+            AbsoluteZero,    // 绝对零度（吸气蓄力→放射冻结, 弱点可打断）
+            MirrorRealm      // 镜界·瞬狱连突（入镜隐没→出口镜白亮→爆出贯穿 ×3）
         }
-
-        /// <summary>一阶段攻击数量</summary>
-        private const int Phase1AttackCount = 5;
-        /// <summary>二阶段攻击数量</summary>
-        private const int Phase2AttackCount = 6;
 
         #endregion
 
         #region 状态字段
 
         // NPC.ai[0]: 蠕虫是否已初始化（0=未初始化，1=已初始化）
-        // NPC.ai[1]: 通用计时器（保留）
+        // NPC.ai[1]: 状态计时器（同步）
         // NPC.ai[2]: 当前攻击类型（AoyuanAttackType）
         // NPC.ai[3]: 脱战计时器
 
         /// <summary>是否处于二阶段</summary>
         public bool IsPhase2 => NPC.life < NPC.lifeMax * Phase2Threshold;
+        /// <summary>低血狂澜</summary>
+        public bool IsDesperation => NPC.life < NPC.lifeMax * DesperationThreshold;
 
         // 阶段状态（用internalAI网络同步）
         public float[] internalAI = new float[4];
         // internalAI[0]: 当前主状态（AoyuanState）
-        // internalAI[1]: 攻击进度（保留）
-        // internalAI[2]: 是否已浮空破境（0/1）
-        // internalAI[3]: 下次巡逻时长
+        // internalAI[1]: 招式参数A（突刺角度/出口镜索引等）
+        // internalAI[2]: 是否已破境（0/1）
+        // internalAI[3]: 招式参数B（循环/波次计数）
 
-        private AoyuanState CurrentState {
+        public AoyuanState CurrentState {
             get => (AoyuanState)(int)internalAI[0];
-            set => internalAI[0] = (float)value;
+            private set => internalAI[0] = (float)value;
         }
+
+        /// <summary>状态计时器（NPC.ai[1] 同步别名）</summary>
+        private ref float StateTimer => ref NPC.ai[1];
+
+        /// <summary>招式参数A: 突刺方向角/镜索引（同步）</summary>
+        private ref float ParamA => ref internalAI[1];
+        /// <summary>招式参数B: 内部循环计数（同步）</summary>
+        private ref float ParamB => ref internalAI[3];
 
         // 私有运行时状态
         private bool despawn;
-        private bool didPhase2Transition;
+        private bool DidPhase2Transition => internalAI[2] == 1f;
 
-        // 张嘴动画（寒霜吐息/大招）
+        // 张嘴动画（吸气/咆哮）
         private bool fireAttack;
         private int attackFrame;
         private int attackCounter;
 
-        // 通用攻击计时
-        private int attackTimer;
-        private int patrolTimer;
-        private int patrolDuration;
+        // 巡逻
+        private int patrolDuration = PatrolMax;
+        private float orbitAngle;
+        private int orbitDir = 1;
 
-        // 永冻地痕节流
-        private int trailTimer;
+        // 盘蜷运动学（纯位置修饰, 各端本地积分, 状态切换时经 netUpdate 校正）
+        private float coilAngle;
 
-        // 暴雪帷幕计数
-        private int veilCount;
-        // 冰柱雨/冰霜环波次
-        private int waveCount;
+        // 突刺
+        private Vector2 lastWakePos;
+        /// <summary>突刺伤害窗（速度门控 + 状态门控, 供头/身伤害与残影读取）</summary>
+        public bool BladeActive { get; private set; }
+        private int contactDamageBase;
+        /// <summary>基准接触伤害（不受伤害窗口逐帧调制影响, 供生成器定弹幕伤害）</summary>
+        public int ContactDamageBase => contactDamageBase;
+
+        // 洗牌袋（服务器权威）
+        private readonly System.Collections.Generic.List<AoyuanAttackType> attackBag = [];
+        private AoyuanAttackType lastAttack = (AoyuanAttackType)(-1);
 
         // 绝对零度弱点机制（公开供身体段读取）
         /// <summary>绝对零度蓄力中：身体段暴露冰晶弱点</summary>
         public bool WeakPointsExposed;
         /// <summary>蓄力期间身体段累计承受的伤害（用于判断是否打断）</summary>
         public int WeakPointDamageTaken;
+        /// <summary>弱点被击破后的踉跄易伤窗</summary>
+        private int staggerTimer;
+
+        // 隐身（入场未现身 / 镜界瞬狱入镜）— 身体段同步隐藏
+        /// <summary>头与身体段是否处于隐没状态（入场前 / 入镜中）</summary>
+        public bool BodyHidden { get; private set; }
+
+        // 死亡演出
+        private bool reallyDead;
+        /// <summary>死亡演出: 已晶化的身体段数（从尾部数）, 身体段据此白化</summary>
+        public int CrystallizedSegments { get; private set; }
 
         // 视觉效果
         private float globalTime;
         private float glowIntensity = 1f;
 
-        // V2 霜冻屏幕演出标量（纯本地视觉, 0~1, 由 UpdateFrostScreenFx 平滑驱动）
-        private float frostTint;    // ElementalScreenTint 二阶段氛围底色
-        private float frostWarp;    // GenericWarp(frost) 全屏扭曲（仅大招/破境的签名时刻）
-        private float freezeBloom;  // 绝对零度释放冻爆泛光（释放瞬间置 1, 逐帧衰减）
-        private float arenaRunic;   // 蓄力期向心收口霜冻法阵地纹
+        // 屏幕演出标量（纯本地视觉, 由 UpdateScreenFx 平滑驱动）
+        private float frostTint;      // ElementalScreenTint 氛围底色
+        private float freezeBloom;    // 冻爆泛光（释放瞬间置 1, 逐帧衰减）
+        private float arenaRunic;     // 绝对零度蓄力法阵地纹
+        private float crystalFx;      // AoyuanCrystalline 棱面折射强度
+        private float stillFx;        // 时滞去饱和（破境/死亡）
+        private float flashFx;        // 冲击帧（死亡碎裂唯一一次）
+        private float frostEdge;      // 屏幕边缘结霜
 
-        // 攻击历史（避免连续相同攻击）
-        private AoyuanAttackType lastAttack = (AoyuanAttackType)(-1);
+        // 预警线视觉（客户端）
+        private float telegraphAlpha;   // 突刺预警线强度
+        private float telegraphLock;    // 预警线锁定白闪
+        private float slashFlash;       // 出剑爆闪（SlashBurst）
+
+        /// <summary>时滞标量（供 AoyuanSky 压暗天幕, 纯视觉）</summary>
+        public float StillFxFactor => stillFx;
 
         #endregion
 
@@ -157,6 +184,8 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
             NPCID.Sets.ShouldBeCountedAsBoss[Type] = true;
             NPCID.Sets.BossBestiaryPriority.Add(Type);
             NPCID.Sets.MPAllowedEnemies[Type] = true;
+            NPCID.Sets.TrailingMode[Type] = 1;
+            NPCID.Sets.TrailCacheLength[Type] = 10;
         }
 
         public override void SetDefaults() {
@@ -186,6 +215,8 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
                 NPC.damage = (int)(NPC.damage * 1.35f);
             }
 
+            contactDamageBase = NPC.damage;
+
             Music = MusicID.Boss2;
         }
 
@@ -213,6 +244,9 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
                 writer.Write(internalAI[1]);
                 writer.Write(internalAI[2]);
                 writer.Write(internalAI[3]);
+                writer.Write(WeakPointsExposed);
+                writer.Write(BodyHidden);
+                writer.Write((byte)System.Math.Clamp(CrystallizedSegments, 0, 255));
             }
         }
 
@@ -223,6 +257,9 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
                 internalAI[1] = reader.ReadSingle();
                 internalAI[2] = reader.ReadSingle();
                 internalAI[3] = reader.ReadSingle();
+                WeakPointsExposed = reader.ReadBoolean();
+                BodyHidden = reader.ReadBoolean();
+                CrystallizedSegments = reader.ReadByte();
             }
         }
 
@@ -233,12 +270,32 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
 
         public override bool CheckActive() => false;
 
+        /// <summary>
+        /// 死亡演出接管: 首次"致死"只进入 DeathAnim 状态锁血 1, 演出末尾由状态机真正击杀。
+        /// </summary>
+        public override bool CheckDead() {
+            if (reallyDead)
+                return true;
+            if (CurrentState != AoyuanState.DeathAnim) {
+                BeginDeathAnim();
+            }
+            NPC.life = 1;
+            NPC.dontTakeDamage = true;
+            return false;
+        }
+
         public override void OnKill() {
             Systems.DownedBossSystem.downedAoyuan = true;
 
             if (Main.netMode != NetmodeID.Server) {
                 AoyuanHelper.CreateIceBurst(NPC.Center, 200f, 4, 20);
             }
+        }
+
+        /// <summary>绝对零度被打断后的踉跄易伤窗（×1.3 承伤）</summary>
+        public override void ModifyIncomingHit(ref NPC.HitModifiers modifiers) {
+            if (staggerTimer > 0)
+                modifiers.FinalDamage *= 1.3f;
         }
 
         public override void HitEffect(NPC.HitInfo hit) {
@@ -265,4 +322,3 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
         #endregion
     }
 }
-

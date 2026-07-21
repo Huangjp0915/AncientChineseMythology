@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework.Graphics;
+using ReLogic.Content;
 using System.Collections.Generic;
 using Terraria;
 using Terraria.Audio;
@@ -8,22 +9,26 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.Boss.Dryades
 {
     /// <summary>
-    /// 毒孢区 — 树精 P2「蔓生 Overgrown」签名机制 (真·新机制, 非 P1 更快)。
-    /// 每次潜地在**旧锚点**留下一片贴地毒孢区 ~10s:
-    ///  - 站入持续中毒 (Poisoned), 是贴地危险——**跳过即可避开**。
-    ///  - 火把/火系武器投射物可**烧除** (curated fire 集): 给火系流派额外清场手段。
-    /// 视觉走 ArenaRunic 地纹圈 (毒绿)。server-zero-draw。
+    /// 毒孢区 — 树精 P2「蔓生 Overgrown」签名机制 (V3)。
+    /// 每次潜地在**旧锚点**留下一片贴地毒孢区 ~11s:
+    ///  - 站入持续中毒 (Poisoned), 贴地危险——**跳过即可避开**;
+    ///  - 前 4s 缓慢扩张 (150→210px 世界半径), 边界由孢膜辉光明确读出;
+    ///  - 火把/火系武器投射物可**烧除** (curated fire 集): 火系流派的清场手段。
+    /// 视觉走专属 DryadsSporeField.fx (漂浮孢子点场 + 孢膜 + 烧除焦蚀), server-zero-draw。
+    /// 同屏数量上限由 Dryads 生成侧控制 (≤3)。
     /// </summary>
     public class DryadsSporeZone : ModProjectile
     {
-        // 复用同目录已有贴图, 满足贴图自动加载 (本体不绘制实贴, 走地纹)。
+        // 复用同目录已有贴图, 满足贴图自动加载 (本体不绘制实贴, 走着色器地纹)。
         public override string Texture => "AncientChineseMythology/Celestias/Boss/Dryades/Acanthosphere";
 
-        private const int LifeTime = 600;       // ~10s
-        private const float WorldRadius = 150f; // 地纹/判定半径 (贴地)
+        private const int LifeTime = 660;        // ~11s
+        private const int ExpandTime = 240;      // 前 4s 扩张期
+        private const float RadiusStart = 150f;  // 起始世界半径
+        private const float RadiusEnd = 210f;    // 扩张后世界半径
 
         private static readonly Color PoisonGreen = new(120, 200, 60);
-        private static readonly Color PoisonDark = new(40, 90, 25);
+        private static readonly Color PoisonDark = new(30, 70, 22);
 
         // 可烧除的火系玩家投射物 (curated; 火把/火系流派触发快速烧除)
         private static readonly HashSet<int> FireProjectiles = new() {
@@ -34,7 +39,26 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
             ProjectileID.DD2FlameBurstTowerT3Shot,
         };
 
-        private ref float Burn => ref Projectile.localAI[0]; // 0~1 烧除进度 (纯本地视觉/本地判定亦可)
+        private ref float Burn => ref Projectile.localAI[0]; // 0~1 烧除进度
+
+        private static Asset<Effect> sporeFieldRef;
+        private static Effect SporeFieldEffect {
+            get {
+                if (Main.dedServ) return null;
+                sporeFieldRef ??= ModContent.Request<Effect>(
+                    "AncientChineseMythology/Effects/DryadsSporeField", AssetRequestMode.ImmediateLoad);
+                return sporeFieldRef?.Value;
+            }
+        }
+
+        /// <summary>当前世界半径 (扩张期缓涨)。</summary>
+        private float CurrentRadius {
+            get {
+                float age = LifeTime - Projectile.timeLeft;
+                float t = MathHelper.Clamp(age / ExpandTime, 0f, 1f);
+                return MathHelper.Lerp(RadiusStart, RadiusEnd, t * t * (3f - 2f * t));
+            }
+        }
 
         public override void SetDefaults() {
             Projectile.width = 280;
@@ -49,6 +73,14 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
         }
 
         public override void AI() {
+            // 判定盒随扩张同步变宽 (保持中心)
+            int wantWidth = (int)(CurrentRadius * 2f * 0.93f);
+            if (Projectile.width != wantWidth) {
+                Vector2 c = Projectile.Center;
+                Projectile.width = wantWidth;
+                Projectile.Center = c;
+            }
+
             // 烧除检测: 火系玩家投射物重叠 → 加速烧除 (server 权威 Kill)
             Rectangle zone = Projectile.Hitbox;
             for (int i = 0; i < Main.maxProjectiles; i++) {
@@ -72,13 +104,11 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
                 return;
             }
 
-            // 贴地毒孢粒子 (随剩余时间/烧除衰减)
+            // 贴地毒孢粒子 (着色器点场之上的少量实体尘, 随烧除衰减)
             if (Main.netMode != NetmodeID.Server) {
                 float life = Projectile.timeLeft / (float)LifeTime;
                 float density = (1f - Burn) * (0.4f + 0.6f * life);
-                int count = Main.rand.NextBool() ? 2 : 1;
-                for (int i = 0; i < count; i++) {
-                    if (!Main.rand.NextBool(2)) continue;
+                if (Main.rand.NextBool(3)) {
                     Vector2 p = Projectile.Center + new Vector2(
                         Main.rand.NextFloat(-Projectile.width / 2f, Projectile.width / 2f),
                         Main.rand.NextFloat(-Projectile.height / 2f, Projectile.height / 4f));
@@ -115,18 +145,18 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
             if (Main.dedServ)
                 return false;
 
-            Effect fx = ACMShaders.ArenaRunic;
+            Effect fx = SporeFieldEffect;
             if (fx == null)
                 return false;
 
             float life = Projectile.timeLeft / (float)LifeTime;
             // 出现淡入 + 消失淡出 + 烧除衰减
             float fade = MathHelper.Clamp(life * 6f, 0f, 1f) * MathHelper.Clamp((1f - life) * 6f + 0.4f, 0f, 1f);
-            float intensity = fade * (1f - Burn) * 0.85f;
+            float intensity = fade * (1f - Burn * 0.5f) * 0.95f;
             if (intensity <= 0.01f)
                 return false;
 
-            ACMShaders.WorldDecalParams(Projectile.Center, WorldRadius, out Vector2 uv, out float radUV, out float aspect);
+            ACMShaders.WorldDecalParams(Projectile.Center, CurrentRadius, out Vector2 uv, out float radUV, out float aspect);
 
             fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
             fx.Parameters["uCenter"]?.SetValue(uv);
@@ -135,9 +165,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
             fx.Parameters["uAspect"]?.SetValue(aspect);
             fx.Parameters["uColorPrimary"]?.SetValue(PoisonGreen.ToVector4());
             fx.Parameters["uColorSecondary"]?.SetValue(PoisonDark.ToVector4());
-            fx.Parameters["uRuneFreq"]?.SetValue(12f);
-            fx.Parameters["uMode"]?.SetValue(0f);
-            fx.Parameters["uShape"]?.SetValue(0f);
+            fx.Parameters["uBurn"]?.SetValue(MathHelper.Clamp(Burn, 0f, 1f));
+            fx.Parameters["uFlatten"]?.SetValue(0.38f); // 贴地扁椭圆
 
             ACMShaders.DrawScreenSpaceDecal(Main.spriteBatch, fx, BlendState.NonPremultiplied);
             return false;

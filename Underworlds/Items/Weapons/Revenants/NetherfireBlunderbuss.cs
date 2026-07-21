@@ -10,13 +10,17 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
 {
     /// <summary>
-    /// 冥府幽火铳 - 发射冥府幽火的火器，远程火铳类武器
-    /// 肉后中期，发射散射幽火弹丸，命中产生冥烟爆裂
+    /// 冥府幽火铳 - 蓄压双管魂火铳，远程火铳类武器
+    /// 固定 5 发扇形幽火弹; 每第 4 次射击为蓄压发 (8 发宽扇 ×1.15 + 重后坐 + 大枪口闪)。
+    /// 弹丸命中 +1 业 —— 亡魂系列最快的业秤堆层器 (业满宣判见 <see cref="RevenantKarma"/>)。
     /// </summary>
     public class NetherfireBlunderbuss : ModItem
     {
+        /// <summary>射击计数 (owner 侧, 每第 4 发为蓄压发)。</summary>
+        private int shotCounter;
+
         public override void SetDefaults() {
-            Item.damage = 42;
+            Item.damage = 36;
             Item.crit = 6;
             Item.DamageType = DamageClass.Ranged;
             Item.width = 54;
@@ -31,28 +35,53 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
             Item.autoReuse = true;
             Item.noMelee = true;
             Item.shoot = ModContent.ProjectileType<NetherfireBullet>();
-            Item.shootSpeed = 10f;
+            Item.shootSpeed = 14f;
             Item.useAmmo = AmmoID.Bullet;
-            Item.staff[Type] = true;
         }
 
         public override Vector2? HoldoutOffset() {
             return new Vector2(-8, 2);
         }
 
+        public override void HoldItem(Player player) {
+            //下一发为蓄压发: 枪身魂火脉动预告 (决策点可读, ≤1/3 帧)
+            if (shotCounter == 3 && !Main.dedServ && Main.rand.NextBool(3)) {
+                Vector2 pos = player.MountedCenter + new Vector2(
+                    player.direction * Main.rand.NextFloat(6f, 26f), Main.rand.NextFloat(-8f, 6f));
+                Dust d = Dust.NewDustPerfect(pos, DustID.RainbowMk2, new Vector2(0f, -1.1f), 120,
+                    Main.rand.NextBool() ? new Color(120, 240, 210) : new Color(255, 220, 120), 1.0f);
+                d.noGravity = true;
+                d.fadeIn = 0.4f;
+            }
+        }
+
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
             int netherfireBullet = ModContent.ProjectileType<NetherfireBullet>();
 
-            //散射3-5发幽火弹丸
-            int count = Main.rand.Next(3, 6);
+            shotCounter++;
+            bool charged = shotCounter >= 4;
+            if (charged)
+                shotCounter = 0;
+
+            //固定扇形 (中线=velocity): 普通 5 发 ±9°, 蓄压 8 发 ±14°; 每发 ±1.2° 微抖 + 0.95~1.05 速差
+            int count = charged ? 8 : 5;
+            float halfArc = charged ? 14f : 9f;
+            int shotDamage = charged ? (int)(damage * 1.15f) : damage;
             for (int i = 0; i < count; i++) {
-                Vector2 perturbedSpeed = velocity.RotatedByRandom(MathHelper.ToRadians(12));
-                perturbedSpeed *= Main.rand.NextFloat(0.8f, 1.2f);
-                Projectile.NewProjectile(source, position, perturbedSpeed, netherfireBullet, damage, knockback, player.whoAmI);
+                float angle = MathHelper.Lerp(-halfArc, halfArc, i / (count - 1f)) + Main.rand.NextFloat(-1.2f, 1.2f);
+                Vector2 shotVel = velocity.RotatedBy(MathHelper.ToRadians(angle)) * Main.rand.NextFloat(0.95f, 1.05f);
+                Projectile.NewProjectile(source, position, shotVel, netherfireBullet,
+                    shotDamage, knockback, player.whoAmI, 0f, charged ? 1f : 0f);
             }
 
-            //枪口冥烟特效
+            //后坐 (蓄压更狠); 站地时只取水平分量×0.7, 防止被弹上天
             Vector2 muzzleDir = velocity.SafeNormalize(Vector2.UnitX);
+            Vector2 recoil = muzzleDir * (charged ? 5.2f : 3.5f);
+            if (player.velocity.Y == 0f)
+                recoil = new Vector2(recoil.X * 0.7f, 0f);
+            player.velocity -= recoil;
+
+            //枪口冥烟特效
             Vector2 muzzlePos = position + muzzleDir * 30f;
             for (int i = 0; i < 15; i++) {
                 Vector2 smokeVel = muzzleDir.RotatedByRandom(MathHelper.ToRadians(35)) * Main.rand.NextFloat(2f, 6f);
@@ -74,8 +103,14 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 spark.noGravity = true;
             }
 
-            //枪口径向辉光闪 (青黄魂火, 走专属一次性枪口闪弹, 更新阶段安全)
-            NetherfireMuzzleFlash.Spawn(source, muzzlePos, muzzleDir, player.whoAmI);
+            //蓄压发: 重喷反馈 (震屏 + 低音叠响)
+            if (charged) {
+                WeaponVFX.AddScreenShake(player.Center, 3f);
+                SoundEngine.PlaySound(SoundID.Item38 with { Volume = 0.8f, Pitch = -0.4f }, position);
+            }
+
+            //枪口径向辉光闪 (青黄魂火, 走专属一次性枪口闪弹, 更新阶段安全; 蓄压发放大)
+            NetherfireMuzzleFlash.Spawn(source, muzzlePos, muzzleDir, player.whoAmI, charged ? 1.6f : 1f);
 
             return false;
         }
@@ -96,13 +131,16 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
     }
 
     /// <summary>
-    /// 幽火弹丸弹幕 - 带有冥火拖尾的散射弹丸，命中时产生冥烟爆裂
-    /// 表现重做: 双层短拖尾 (<see cref="WeaponVFX.DrawProjectileTrail"/>) + LightShot 光弹核;
+    /// 幽火弹丸弹幕 - 快速火舌弹丸 (命中 +1 业; ai[1]=1 为蓄压弹: 灼烧翻倍/拖尾更亮/演出更大)。
+    /// 表现: 双层短拖尾 (<see cref="WeaponVFX.DrawProjectileTrail"/>) + LightShot 光弹核;
     /// 命中走 <see cref="ACMWeaponBurst"/> 青黄魂火演出。
     /// </summary>
     public class NetherfireBullet : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Underworlds/Items/Weapons/Revenants/NetherfireBlunderbuss";
+
+        /// <summary>蓄压弹标记 (由铳的蓄压发经 ai[1] 传入)。</summary>
+        private bool Charged => Projectile.ai[1] == 1f;
 
         public override void SetStaticDefaults() {
             ProjectileID.Sets.TrailCacheLength[Projectile.type] = 8;
@@ -116,10 +154,10 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
             Projectile.hostile = false;
             Projectile.DamageType = DamageClass.Ranged;
             Projectile.penetrate = 1;
-            Projectile.timeLeft = 60;
+            Projectile.timeLeft = 40;
             Projectile.ignoreWater = false;
             Projectile.tileCollide = true;
-            Projectile.extraUpdates = 1;
+            Projectile.extraUpdates = 2;
         }
 
         public override void AI() {
@@ -131,8 +169,8 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
             //冥紫色光照
             Lighting.AddLight(Projectile.Center, 0.4f, 0.15f, 0.5f);
 
-            //幽火拖尾
-            if (Main.rand.NextBool(2)) {
+            //幽火拖尾 (extraUpdates=2 → 每帧 3 次更新, 降低单次概率维持粒子预算)
+            if (Main.rand.NextBool(3)) {
                 Dust flame = Dust.NewDustDirect(
                     Projectile.Center - Projectile.velocity,
                     4, 4, DustID.PurpleTorch,
@@ -143,7 +181,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
             }
 
             //暗烟拖尾
-            if (Main.rand.NextBool(3)) {
+            if (Main.rand.NextBool(5)) {
                 Dust smoke = Dust.NewDustDirect(
                     Projectile.Center, 4, 4, DustID.Smoke,
                     -Projectile.velocity.X * 0.1f, -Projectile.velocity.Y * 0.1f,
@@ -154,9 +192,12 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
         }
 
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
-            //冥火灼烧
-            target.AddBuff(BuffID.ShadowFlame, 120);
+            //冥火灼烧 (蓄压弹时长翻倍)
+            target.AddBuff(BuffID.ShadowFlame, Charged ? 240 : 120);
             target.AddBuff(BuffID.OnFire3, 90);
+
+            //记业: 霰弹多发齐中 = 全系列最快堆层器 (业满宣判见 RevenantKarma)
+            RevenantKarma.AddKarma(Projectile, target, 1);
 
             //命中冥烟爆裂
             for (int i = 0; i < 6; i++) {
@@ -178,15 +219,16 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 smoke.noGravity = true;
             }
 
-            //命中演出: 青黄魂火径向辉光 + 冲击环 (走 ACMWeaponBurst, 更新阶段安全)
+            //命中演出: 青黄魂火径向辉光 + 冲击环 (走 ACMWeaponBurst, 更新阶段安全; 蓄压弹放大)
             ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
-                ACMWeaponBurst.SoulFire, scale: 0.7f, owner: Projectile.owner);
+                ACMWeaponBurst.SoulFire, scale: Charged ? 0.9f : 0.7f, owner: Projectile.owner);
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            //双层短拖尾 (外宽暗冥紫 + 内窄亮幽火)
+            //双层短拖尾 (外宽暗冥紫 + 内窄亮; 蓄压弹内层转金亮)
+            Color trailInner = Charged ? new Color(255, 235, 160, 190) : new Color(200, 110, 240, 190);
             WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 7f,
-                outerColor: new Color(70, 30, 110, 140), innerColor: new Color(200, 110, 240, 190),
+                outerColor: new Color(70, 30, 110, 140), innerColor: trailInner,
                 uvScroll: -Main.GlobalTimeWrappedHourly * 1.6f);
 
             //使用LightShot灰度图绘制幽火光弹核心
@@ -212,7 +254,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
             SoundEngine.PlaySound(SoundID.Item10 with { Volume = 0.4f, Pitch = 0.3f }, Projectile.Center);
 
             //消亡冥火碎片
-            for (int i = 0; i < 8; i++) {
+            for (int i = 0; i < 6; i++) {
                 Dust death = Dust.NewDustDirect(
                     Projectile.position, Projectile.width, Projectile.height,
                     DustID.PurpleTorch,
@@ -223,7 +265,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
             }
 
             //冥烟
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < 3; i++) {
                 Dust smoke = Dust.NewDustDirect(
                     Projectile.position, Projectile.width, Projectile.height,
                     DustID.Smoke, 0f, -1f,
@@ -237,7 +279,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
     /// <summary>
     /// 幽火铳·枪口闪弹 (纯视觉, damage=0): 开火瞬间在枪口跑一道青黄魂火
     /// <see cref="WeaponVFX.DrawRadialBloom"/> 闪光 + <see cref="ACMShaders.DrawBeam"/> 短热浪锥。
-    /// 绘制只在 PreDraw, 开火阶段仅 <see cref="Spawn"/> 触发 (仅 owner 客户端)。
+    /// 绘制只在 PreDraw, 开火阶段仅 <see cref="Spawn"/> 触发 (仅 owner 客户端); ai[2] 为规模倍率 (蓄压发放大)。
     /// </summary>
     public class NetherfireMuzzleFlash : ModProjectile
     {
@@ -246,12 +288,14 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
 
         private ref float DirX => ref Projectile.ai[0];
         private ref float DirY => ref Projectile.ai[1];
+        /// <summary>演出规模倍率 (ai[2], ≤0 视为 1)。</summary>
+        private float FlashScale => Projectile.ai[2] <= 0f ? 1f : Projectile.ai[2];
 
-        public static void Spawn(IEntitySource source, Vector2 worldPos, Vector2 dir, int owner) {
+        public static void Spawn(IEntitySource source, Vector2 worldPos, Vector2 dir, int owner, float scale = 1f) {
             if (Main.dedServ || Main.myPlayer != owner)
                 return;
             Projectile.NewProjectile(source, worldPos, Vector2.Zero,
-                ModContent.ProjectileType<NetherfireMuzzleFlash>(), 0, 0f, owner, dir.X, dir.Y);
+                ModContent.ProjectileType<NetherfireMuzzleFlash>(), 0, 0f, owner, dir.X, dir.Y, scale);
         }
 
         public override void SetDefaults() {
@@ -279,6 +323,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
 
             float life = 1f - Projectile.timeLeft / (float)Life; // 0→1
             float fade = MathHelper.Clamp(1f - life, 0f, 1f);     // 开火最亮, 快速衰减
+            float s = FlashScale;
 
             Vector2 dir = new Vector2(DirX, DirY);
             if (dir == Vector2.Zero)
@@ -286,12 +331,12 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
             dir.Normalize();
 
             //短热浪锥 (BeamGrad), 沿枪口方向
-            ACMShaders.DrawBeam(Projectile.Center - dir * 6f, Projectile.Center + dir * (28f + fade * 18f),
-                halfWidth: 9f * fade + 2f, core: new Color(255, 230, 150), edge: new Color(120, 220, 200),
+            ACMShaders.DrawBeam(Projectile.Center - dir * 6f * s, Projectile.Center + dir * (28f + fade * 18f) * s,
+                halfWidth: (9f * fade + 2f) * s, core: new Color(255, 230, 150), edge: new Color(120, 220, 200),
                 intensity: fade * 0.9f, flowSpeed: 3.5f, flowScale: 2.6f, coreSharp: 2.4f);
 
             //枪口径向辉光 (青黄魂火, 走全屏名额, 名额满退化为柔光)
-            WeaponVFX.DrawRadialBloom(Projectile.Center, radiusFrac: 0.025f + fade * 0.02f,
+            WeaponVFX.DrawRadialBloom(Projectile.Center, radiusFrac: (0.025f + fade * 0.02f) * s,
                 intensity: fade * 0.55f, color: new Color(255, 225, 140), rayCount: 6f);
 
             return false;

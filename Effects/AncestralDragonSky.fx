@@ -15,6 +15,9 @@ float2 uResolution;     // 屏幕分辨率(像素)
 float2 uBossUV;         // Boss中心屏幕归一化坐标 0~1
 float  uPulse;          // Boss心跳脉冲相位(外部递增)
 float  uFlash;          // 分裂/双魂回拢/解锁的一次性亮拍 0~1.5 (以Boss为中心的太初辉爆)
+float  uConverge;       // 入场「星海凝形」: 全天星流向Boss汇聚强度 0~1
+float  uSwim;           // 分裂后背景星座龙巡游强度 0~1 (纯氛围, 无判定)
+float  uDeathDim;       // 死亡「归墟」熄灭 0~1: 云海压暗+星辰散逸
 
 // 阶段色板
 static const float3 SkyTop_A   = float3(0.04, 0.06, 0.14); // 一阶段顶端: 深玄青
@@ -231,9 +234,19 @@ float4 SkyPS(float4 color : COLOR0, float2 uv : TEXCOORD0) : COLOR0
     float haloStrength = (halo * 0.8 + ring * 0.5) * uIntensity * (0.5 + phase * 1.0);
 
     // ==========================================
+    //  归墟熄灭: 云海压暗, 星辰随死亡进度散逸
+    // ==========================================
+    float dim = saturate(uDeathDim);
+    stars *= 1.0 - dim * 0.85;
+    bgCloud *= 1.0 - dim * 0.6;
+    midCloud *= 1.0 - dim * 0.7;
+    fgCloud *= 1.0 - dim * 0.8;
+    haloStrength *= 1.0 - dim * 0.5;
+
+    // ==========================================
     //  合成颜色
     // ==========================================
-    float3 col = skyCol;
+    float3 col = skyCol * (1.0 - dim * 0.55);
     col += stars * float3(0.95, 0.98, 1.05) * 0.9;
     col = lerp(col, bgCloudCol, bgCloud * 0.55);
     col = lerp(col, midCloudCol, midCloud * 0.75);
@@ -241,11 +254,50 @@ float4 SkyPS(float4 color : COLOR0, float2 uv : TEXCOORD0) : COLOR0
     col += dragonAura * haloStrength;
 
     // ==========================================
+    //  入场「星海凝形」: 全天星流向Boss汇聚
+    //  沿 boss->像素 方向拉伸的流线 + 越近越亮的吸积辉
+    // ==========================================
+    if (uConverge > 0.001)
+    {
+        float2 toBoss = rel; // 已含 aspect 校正
+        float convDist = max(dist, 0.02);
+        float convAng = atan2(toBoss.y, toBoss.x);
+        // 流线: 角向 hash 条纹沿径向内滚 (负向=向Boss流动)
+        float streakSeed = hash21(float2(floor(convAng * 28.0), 7.31));
+        float streakMask = step(0.55, streakSeed);
+        float flowPhase = frac(convDist * 2.6 - uTime * (0.55 + streakSeed * 0.5) * uConverge);
+        float streak = pow(1.0 - flowPhase, 6.0) * streakMask;
+        streak *= smoothstep(1.6, 0.15, convDist);          // 太远不可见
+        streak *= smoothstep(0.03, 0.22, convDist);         // 中心处交给吸积辉
+        // 吸积辉: Boss 周围的汇聚光核
+        float accrete = exp(-convDist * 5.0) * (0.7 + 0.3 * sin(uTime * 7.0));
+        col += (CloudLight * 0.8 + DragonCyan * 0.4) * (streak * 0.9 + accrete * 1.3) * uConverge;
+    }
+
+    // ==========================================
+    //  背景星座龙巡游 (分裂后): 一条由星点组成的正弦长蛇
+    //  横贯天幕缓慢游动, 纯氛围层
+    // ==========================================
+    if (uSwim > 0.001)
+    {
+        // 龙脊: x 随时间平移, y=正弦蜿蜒
+        float swimX = frac(aspectUV.x * 0.42 - uTime * 0.016);
+        float spineY = 0.30 + 0.10 * sin(aspectUV.x * 5.1 + uTime * 0.55)
+                            + 0.04 * sin(aspectUV.x * 11.7 - uTime * 0.9);
+        float dSpine = abs(uv.y - spineY);
+        // 沿脊局部星粒 (高频噪声珠串) + 头亮尾淡
+        float beads = pow(valueNoise(float2(aspectUV.x * 26.0 - uTime * 0.4, spineY * 40.0)), 3.0);
+        float bodyFade = smoothstep(0.0, 0.35, swimX) * smoothstep(1.0, 0.62, swimX);
+        float serpent = exp(-dSpine * dSpine * 900.0) * (0.35 + beads * 1.4) * bodyFade;
+        col += lerp(DragonCyan, CloudLight, 0.5) * serpent * uSwim * 0.8;
+    }
+
+    // ==========================================
     //  顶部残留光辉(天门)
     // ==========================================
     float gate = smoothstep(0.35, 0.0, uv.y);
     gate *= 0.5 + 0.5 * sin(t * 0.5);
-    col += SampleAccent(phase) * gate * 0.15 * uIntensity;
+    col += SampleAccent(phase) * gate * 0.15 * uIntensity * (1.0 - dim);
 
     // ==========================================
     //  大节拍亮拍 — 以Boss为中心的太初辉爆 (分裂/回拢/解锁)

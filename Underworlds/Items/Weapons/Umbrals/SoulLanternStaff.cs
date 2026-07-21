@@ -82,17 +82,21 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
 
     /// <summary>
     /// 幽灯 minion - 环绕玩家盘旋, 点名/就近自动向敌人喷射魂火弹 <see cref="SoulLanternBolt"/>。
-    /// 灯体程序化绘制 (SpectreHelper 青黄魂火核 + RadialBloom), 不依赖新 PNG。
+    /// 重做"引魂大火"：每第 6 发变为引魂大火（1.5 倍体积更亮, 命中裂为 3 枚寻敌小魂火）;
+    /// 大火前灯芯渐盈可读, 开火带 3px 反冲（质量感）。灯体程序化绘制, 不依赖新 PNG。
     /// </summary>
     public class SoulLanternMinion : ModProjectile
     {
         public override string Texture => "Terraria/Images/Projectile_1";
 
         private ref float AttackCooldown => ref Projectile.localAI[0];
+        /// <summary>已喷射发数（每第 6 发引魂大火）。localAI 各端独立推进, 大火标记随弹幕 ai 同步。</summary>
+        private ref float ShotCounter => ref Projectile.localAI[1];
         private float pulsePhase;
 
         private const float FireRange = 760f;
         private const int FireRate = 38;
+        private const int GreatFlameEvery = 6;
 
         public override void SetStaticDefaults() {
             Main.projPet[Type] = true;
@@ -161,17 +165,37 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
                 Projectile.velocity *= 0.85f;
             }
 
-            //喷射魂火弹
+            //喷射魂火弹 (每第 GreatFlameEvery 发 → 引魂大火)
             if (target != null && AttackCooldown <= 0) {
                 AttackCooldown = FireRate;
+                ShotCounter++;
+                bool great = ShotCounter >= GreatFlameEvery;
+                if (great)
+                    ShotCounter = 0;
+
+                Vector2 dir = (target.Center - Projectile.Center).SafeNormalize(Vector2.UnitX);
                 if (Projectile.owner == Main.myPlayer) {
-                    Vector2 dir = (target.Center - Projectile.Center).SafeNormalize(Vector2.UnitX);
-                    Vector2 vel = dir * 11f;
+                    Vector2 vel = dir * (great ? 9.5f : 11f);
                     Projectile.NewProjectile(Projectile.GetSource_FromAI(), Projectile.Center, vel,
                         ModContent.ProjectileType<SoulLanternBolt>(), Projectile.damage, Projectile.knockBack,
-                        Projectile.owner);
+                        Projectile.owner, 0f, 0f, great ? 1f : 0f);
                 }
-                SoundEngine.PlaySound(SoundID.Item20 with { Volume = 0.4f, Pitch = 0.3f }, Projectile.Center);
+
+                //开火反冲 (质量感: 灯体被喷口顶回)
+                Projectile.velocity -= dir * (great ? 5f : 3f);
+
+                if (great)
+                    SoundEngine.PlaySound(SoundID.Item45 with { Volume = 0.6f, Pitch = -0.2f }, Projectile.Center);
+                else
+                    SoundEngine.PlaySound(SoundID.Item20 with { Volume = 0.4f, Pitch = 0.25f + ShotCounter * 0.05f }, Projectile.Center);
+            }
+
+            //引魂大火将至: 灯芯渐盈粒子 (充能可读)
+            if (ShotCounter >= GreatFlameEvery - 1 && Main.rand.NextBool(3)) {
+                Dust d = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(14f, 14f),
+                    DustID.GreenTorch, (Projectile.Center - Main.rand.NextVector2Circular(20f, 20f)) * 0.001f, 100, default, 1.1f);
+                d.noGravity = true;
+                d.velocity = (Projectile.Center - d.position) * 0.08f;
             }
 
             Lighting.AddLight(Projectile.Center, 0.35f, 0.55f, 0.45f);
@@ -204,23 +228,33 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
             if (Main.dedServ)
                 return false;
 
+            //引魂大火充能: 灯体渐盈变亮 (第 5 发后)
+            float charged = ShotCounter >= GreatFlameEvery - 1 ? 0.5f + 0.2f * MathF.Sin(pulsePhase * 2.5f) : 0f;
+
             //灯体: 青黄魂火核 (SpectreHelper 青核 + 黄晕)
             SpectreHelper.DrawSpectreCore(Main.spriteBatch, Projectile.Center,
                 SpectreHelper.SpectreCyan, SpectreHelper.SpectreYellow,
-                scale: 0.55f + 0.05f * MathF.Sin(pulsePhase), pulsePhase: pulsePhase);
+                scale: 0.55f + 0.05f * MathF.Sin(pulsePhase) + charged * 0.18f, pulsePhase: pulsePhase);
 
             //核心径向泛光 (走全屏名额, 多灯/同屏时自动退化为柔光)
-            WeaponVFX.DrawRadialBloom(Projectile.Center, 0.04f, 0.45f, SpectreHelper.SpectreCyan, 6f);
+            WeaponVFX.DrawRadialBloom(Projectile.Center, 0.04f + charged * 0.015f, 0.45f + charged * 0.3f,
+                SpectreHelper.SpectreCyan, 6f);
             return false;
         }
     }
 
     /// <summary>
     /// 幽灯魂火弹 - 召唤伤害, 温和追踪敌人, 青黄魂火 ribbon 拖尾 + 核辉光。
+    /// ai[2]=1 为引魂大火（1.5 倍体积更亮, 命中/消亡裂为 3 枚 30% 伤害寻敌小魂火）;
+    /// ai[0]=1 为分裂小魂火（更小, 不再分裂）。
     /// </summary>
     public class SoulLanternBolt : ModProjectile
     {
         public override string Texture => "Terraria/Images/Projectile_1";
+
+        private bool IsGreat => Projectile.ai[2] >= 1f;
+        private bool IsSplitling => Projectile.ai[0] >= 1f;
+        private bool _split; //防命中+消亡双重分裂
 
         public override void SetStaticDefaults() {
             ProjectileID.Sets.TrailCacheLength[Type] = 10;
@@ -245,22 +279,41 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
         public override void AI() {
             Projectile.rotation = Projectile.velocity.ToRotation();
 
-            //温和追踪
+            //体积语言: 大火 1.5x / 小魂火 0.6x
+            Projectile.scale = IsGreat ? 1.5f : (IsSplitling ? 0.6f : 1f);
+
+            //温和追踪 (小魂火追得更急 — "引魂"感)
             NPC target = FindTarget(560f);
             if (target != null) {
                 float speed = Projectile.velocity.Length();
                 if (speed < 1f)
                     speed = 11f;
+                float steer = IsSplitling ? 0.16f : 0.08f;
                 Vector2 toTarget = (target.Center - Projectile.Center).SafeNormalize(Vector2.UnitX);
-                Vector2 dir = Vector2.Lerp(Projectile.velocity.SafeNormalize(Vector2.UnitX), toTarget, 0.08f);
+                Vector2 dir = Vector2.Lerp(Projectile.velocity.SafeNormalize(Vector2.UnitX), toTarget, steer);
                 Projectile.velocity = dir.SafeNormalize(Vector2.UnitX) * speed;
             }
 
-            Lighting.AddLight(Projectile.Center, 0.25f, 0.45f, 0.4f);
-            if (Main.rand.NextBool(4)) {
+            float lightMul = IsGreat ? 1.8f : 1f;
+            Lighting.AddLight(Projectile.Center, 0.25f * lightMul, 0.45f * lightMul, 0.4f * lightMul);
+            if (Main.rand.NextBool(IsGreat ? 2 : 4)) {
                 Dust d = Dust.NewDustPerfect(Projectile.Center, DustID.GreenTorch,
-                    Main.rand.NextVector2Circular(1f, 1f), 150, default, 0.8f);
+                    Main.rand.NextVector2Circular(1f, 1f), 150, default, IsGreat ? 1.2f : 0.8f);
                 d.noGravity = true;
+            }
+        }
+
+        /// <summary>引魂大火命中/消亡: 裂为 3 枚 30% 伤害寻敌小魂火 (owner 端生成, 仅一次)。</summary>
+        private void SplitGreatFlame() {
+            if (!IsGreat || _split || Projectile.owner != Main.myPlayer)
+                return;
+            _split = true;
+            int splitDamage = System.Math.Max(1, (int)(Projectile.damage * 0.3f));
+            for (int i = 0; i < 3; i++) {
+                Vector2 vel = (Projectile.velocity.SafeNormalize(Vector2.UnitX) * 7f)
+                    .RotatedBy(MathHelper.ToRadians(-50f + 50f * i)) ;
+                Projectile.NewProjectile(Projectile.GetSource_FromAI(), Projectile.Center, vel,
+                    Type, splitDamage, Projectile.knockBack * 0.5f, Projectile.owner, 1f);
             }
         }
 
@@ -287,26 +340,36 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
         }
 
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            SplitGreatFlame();
             ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
-                ACMWeaponBurst.SoulFire, scale: 0.65f, owner: Projectile.owner);
-            for (int i = 0; i < 3; i++) {
+                ACMWeaponBurst.SoulFire, scale: IsGreat ? 1.2f : (IsSplitling ? 0.45f : 0.65f), owner: Projectile.owner);
+            for (int i = 0; i < (IsGreat ? 6 : 3); i++) {
                 Dust d = Dust.NewDustPerfect(target.Center, DustID.GreenTorch,
-                    Main.rand.NextVector2Circular(2.5f, 2.5f), 120, default, 1f);
+                    Main.rand.NextVector2Circular(2.5f, 2.5f), 120, default, IsGreat ? 1.4f : 1f);
                 d.noGravity = true;
             }
+        }
+
+        public override void OnKill(int timeLeft) {
+            //撞墙/超时也分裂 (大火价值不因脱靶归零)
+            if (timeLeft > 0)
+                SplitGreatFlame();
         }
 
         public override bool PreDraw(ref Color lightColor) {
             if (Main.dedServ)
                 return false;
 
-            //青黄魂火双层 ribbon 拖尾 (外青 + 内黄)
-            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 9f,
+            //青黄魂火双层 ribbon 拖尾 (外青 + 内黄; 尺寸随体积语言)
+            float widthMul = IsGreat ? 1.7f : (IsSplitling ? 0.55f : 1f);
+            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 9f * widthMul,
                 outerColor: new Color(30, 120, 110, 150), innerColor: new Color(255, 220, 120, 200),
                 uvScroll: -Main.GlobalTimeWrappedHourly * 1.6f);
 
             //核辉光
-            WeaponVFX.DrawGlowBurst(Projectile.Center, 0.6f, SpectreHelper.SpectreCyan);
+            WeaponVFX.DrawGlowBurst(Projectile.Center, 0.6f * widthMul, SpectreHelper.SpectreCyan);
+            if (IsGreat)
+                WeaponVFX.DrawGlowBurst(Projectile.Center, 0.45f, SpectreHelper.SpectreYellow * 0.8f);
             return false;
         }
     }

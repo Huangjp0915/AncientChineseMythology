@@ -131,6 +131,18 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             Color accent = DazhengSeasons.Accent(Season);
             float p = 1f + MathF.Sin(pulse) * 0.12f;
 
+            // 供养根线: 锚点 → 大椿的细能量导管, 把"毁锚点伤树神"的因果画在屏幕上。
+            // 门控期 (树神无敌吸食四季之力) 更亮; 战斗期转暗淡维持读法。
+            if (BossIndex >= 0 && BossIndex < Main.maxNPCs) {
+                NPC boss = Main.npc[BossIndex];
+                if (boss.active && boss.ModNPC is Dazheng dz) {
+                    float feed = dz.GatePassed ? 0.22f : 0.42f;
+                    float fp = 0.8f + 0.2f * MathF.Sin(pulse * 2f + Season);
+                    ACMShaders.DrawBeam(NPC.Center, boss.Center, 4.5f,
+                        accent, tint * 0.5f, feed * fp, flowSpeed: 1.8f, flowScale: 3f, coreSharp: 2.4f);
+                }
+            }
+
             // 血量越低越闪烁(可破提示)
             float lifeFrac = MathHelper.Clamp(NPC.life / (float)NPC.lifeMax, 0f, 1f);
             float urgency = 1f + (1f - lifeFrac) * MathF.Abs(MathF.Sin(pulse * 3f)) * 0.5f;

@@ -1,17 +1,22 @@
 ﻿using AncientChineseMythology.Underworlds;
 using Microsoft.Xna.Framework.Graphics;
 using System;
+using System.IO;
 using Terraria;
 using Terraria.Audio;
-using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
 {
+    /// <summary>
+    /// 玩家侧支援: 轻量演出镜头 (入场专用, 变焦钳制) 与「勾魂」机制载体。
+    /// 勾魂 = 马面标记玩家 3s, 期间攻击牛头即可打断; 到期被拽向马面 (锁命角色分工的反制课题)。
+    /// </summary>
     public class NiuMaPlayer : ModPlayer
     {
+        // ===== 演出镜头 (仅入场/本地) =====
         private Vector2 ScrPos;
         private bool Start_SetScrPos = false;
         private float Timer_SetScrPos = 1;
@@ -20,15 +25,14 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
             Start_SetScrPos = true;
             Timer_SetScrPos = 0;
         }
-        private int ShakeScale = 0, ShakeTime = 0;
         public void SetScreenShake(double _ShakeScale, double _ShakeTime) {
-            ShakeScale = (int)_ShakeScale;
-            ShakeTime = (int)_ShakeTime;
+            ACMScreenShakeSystem.Add((float)_ShakeScale);
         }
         private float OldZoom;
         private float Target_SetZoom = 1, Timer_SetZoom = 1;
         private bool Start_SetZoom = false;
         public void SetZoom(float zoom) {
+            zoom = MathHelper.Clamp(zoom, 0.8f, 1.35f); // 变焦钳制: 演出不夺操作
             Target_SetZoom = MathHelper.Lerp(Target_SetZoom, zoom, .02f);
             Start_SetZoom = true;
             Timer_SetZoom = 0;
@@ -46,21 +50,13 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
                     ScrPos = Vector2.Lerp(ScrPos, Player.Center - Main.ScreenSize.ToVector2() * .5f, Timer_SetScrPos * .1f);
                 }
                 else Start_SetScrPos = false;
-
-            }
-
-            if (ShakeTime > 0) {
-                ShakeTime--;
-                Main.screenPosition += new Vector2(ShakeScale).RotateRandom(8);
             }
 
             if (Start_SetZoom) {
                 Main.GameZoomTarget = Target_SetZoom;
-
                 if (Timer_SetZoom < .9f || Math.Abs(Main.GameZoomTarget - OldZoom) > .08) {
                     Timer_SetZoom = MathHelper.Lerp(Timer_SetZoom, 1, .05f);
                     Target_SetZoom = MathHelper.Lerp(Target_SetZoom, OldZoom, Timer_SetScrPos * .1f);
-
                 }
                 else {
                     Main.GameZoomTarget = OldZoom;
@@ -73,51 +69,8 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
             base.ModifyScreenPosition();
         }
 
-        public override void ModifyHitByNPC(NPC npc, ref Player.HurtModifiers modifiers) {
-            var Niu_B = false;
-            var Ma_B = false;
-            foreach (var n in Main.npc) {
-                if (Niu_B && Ma_B) break;
-                if (n != null)
-                    if (n.active) {
-                        if (n.type == ModContent.NPCType<NiuTou>()) {
-                            if (n.life < n.lifeMax * .5f) Niu_B = true;
-                            continue;
-                        }
-                        else if (n.type == ModContent.NPCType<MaMian>()) {
-                            if (n.life < n.lifeMax * .5f) Ma_B = true;
-                            continue;
-                        }
-                    }
-            }
-            if (Niu_B && Ma_B) modifiers.FinalDamage *= 1.3f;
-            base.ModifyHitByNPC(npc, ref modifiers);
-        }
-        public override void ModifyHitByProjectile(Projectile proj, ref Player.HurtModifiers modifiers) {
-            var Niu_B = false;
-            var Ma_B = false;
-            foreach (var n in Main.npc) {
-                if (Niu_B && Ma_B) break;
-                if (n != null)
-                    if (n.active) {
-                        if (n.type == ModContent.NPCType<NiuTou>()) {
-                            if (n.life < n.lifeMax * .5f) Niu_B = true;
-                            continue;
-                        }
-                        else if (n.type == ModContent.NPCType<MaMian>()) {
-                            if (n.life < n.lifeMax * .5f) Ma_B = true;
-                            continue;
-                        }
-                    }
-            }
-            if (Niu_B && Ma_B) modifiers.FinalDamage *= 1.3f;
-
-            base.ModifyHitByProjectile(proj, ref modifiers);
-        }
-
-        // ================= 勾魂 Soul Hook (马面半血新机制) =================
-        // 马面标记玩家 3s; 期间若玩家未攻击牛头打断 -> 到期被拉向马面 200px。
-        // 标记 = 冥律 (UnderworldField.AddNetherDecree); 到期硬拽 = 轻魂蚀。
+        // ================= 勾魂 Soul Hook =================
+        // 马面标记玩家 3s; 期间若未攻击牛头打断 -> 到期被拉向马面 200px。
         public int SoulHookTimer;        // >0 = 标记倒计时 (180 起)
         public int SoulHookCaster = -1;  // 施放马面 whoAmI
         private int SoulHookPull;        // >0 = 正在被拽
@@ -196,839 +149,1601 @@ namespace AncientChineseMythology.NPCs.Boss.NiutouMamian
             }
         }
     }
-    public class NiuTou : ModNPC
+
+    /// <summary>
+    /// 牛头马面共用状态机骨架 —— 「缠斗者/炮台」岗位轮换双 Boss (PACING §5):
+    /// 同一时刻一吏贴身压迫、一吏远程控场, 每 2 招换岗对穿; 半血结链解锁合体技;
+    /// 双低血「阎罗令」狂怒; 一方阵亡由同伴引魂复生 (尸位反制圈可打断, 断则双亡)。
+    /// 牛头为指挥 (节拍/合体/换岗由其推动), 马面读取镜像。
+    /// ai[0]=状态 ai[1]=状态内计时 ai[2]=子相位 ai[3]=岗位 (两吏同值, 各自反相解读)。
+    /// </summary>
+    public abstract class NiuMaBoss : ModNPC
     {
-        //声音资源引用
-        private static readonly SoundStyle RoarSound = SoundID.Roar with { PitchVariance = .2f };
-        private static readonly SoundStyle ChargeWindupSound = SoundID.ForceRoar with { Volume = .8f, PitchVariance = .3f };
-        private static readonly SoundStyle ChainLaunchSound = SoundID.Item20 with { Volume = .7f };
-        private static readonly SoundStyle EyeBlastSound = SoundID.Item74 with { Volume = 1f };
-        private static readonly SoundStyle ComboDashSound = SoundID.DD2_EtherianPortalDryadTouch with { Volume = .9f };
+        // ===== 状态常量 (两吏共用语义) =====
+        public const int StIntro = 0, StSelect = 1, StSwap = 2, StP2 = 3, StP3 = 4,
+            StReviving = 5, StReborn = 6, StDeath = 7;
+        public const int StLane = 30, StLink = 31;
+
+        public ref float State => ref NPC.ai[0];
+        public ref float Timer => ref NPC.ai[1];
+        public ref float Sub => ref NPC.ai[2];
+        public ref float Duty => ref NPC.ai[3];
+
+        // ===== 同步旗标 (SendExtraAI) =====
+        public bool DidP2;                 // 合体技已解锁
+        public bool DidP3;                 // 阎罗令狂怒
+        public bool HasRespawn;            // 已用过一次复生
+        protected bool deathStarted;
+        protected bool deathFinished;
+        protected int attackAlt;           // 岗位内两招交替指针
+        protected int attacksInDuty;       // 指挥: 本岗已完成招数
+        protected bool comboDue;           // 指挥: 下一节拍是合体技
+        protected int comboAlt;            // 指挥: 合体技交替指针
+
+        // ===== 搭档 =====
+        protected int partnerWho = -1;
+        public abstract int PartnerType { get; }
+        public NPC Partner => NiuMaHelper.FindBoss(PartnerType, ref partnerWho);
+        public NiuMaBoss PartnerBoss => Partner?.ModNPC as NiuMaBoss;
+
+        /// <summary>指挥者 (牛头)。节拍/换岗/合体/全局阶段由指挥推动, 搭档被强制同步。</summary>
+        public abstract bool IsConductor { get; }
+        /// <summary>本吏当前是否缠斗岗 (两吏对同一 Duty 值反相解读)。</summary>
+        public abstract bool IsBrawler { get; }
+        /// <summary>入场/站位偏好侧 (指挥 -1 左, 搭档 +1 右)。</summary>
+        protected int HomeSide => IsConductor ? -1 : 1;
+        protected abstract Color ThemeColor { get; }
+        protected abstract Color ThemeCore { get; }
+        protected abstract SoundStyle RoarSound { get; }
+
+        public float LifeFrac => NPC.life / (float)NPC.lifeMax;
+        public Player Target => Main.player[NPC.target];
+        //protected internal: 兄弟实例经基类型引用互查状态 (纯 protected 会触发 CS1540)
+        protected internal bool InNormalFlow => State == StSelect || State >= 10;
+
+        // ===== 视觉 (纯本地) =====
+        protected float drawAlpha = 1f;
+        protected float flashInten;        // 受击/演出闪白脉冲
+        protected float chargeInten;       // 蓄力增焰
+        protected bool drawTail;
+        private Vector2[][] hangChains;    // 垂坠锁链 (重量感次级运动)
+        protected int hitChainImpulse;     // >0: 垂链受冲击甩尾 (发招/急停时设置)
+
+        public override void SetStaticDefaults() {
+            NPCID.Sets.TrailingMode[Type] = 3;
+            NPCID.Sets.TrailCacheLength[Type] = 10;
+            NPCID.Sets.MPAllowedEnemies[Type] = true;
+            NPCID.Sets.BossBestiaryPriority.Add(Type);
+        }
 
         public override void SetDefaults() {
             NPC.width = 70;
             NPC.height = 70;
-            NPC.lifeMax = 10000;
+            NPC.lifeMax = 14000;
             NPC.aiStyle = -1;
             NPC.knockBackResist = 0;
-            NPC.damage = 10;
+            NPC.damage = 45;
+            NPC.defense = 13;
             NPC.boss = true;
             NPC.lavaImmune = true;
             NPC.noGravity = true;
             NPC.noTileCollide = true;
             NPC.netAlways = true;
-            NPC.defense = 13;
-            NPC.chaseable = false;
             NPC.rarity = 2;
             NPC.scale = 2.4f;
-
-            base.SetDefaults();
+            NPC.value = Item.buyPrice(gold: 6);
+            NPC.npcSlots = 12f;
+            NPC.HitSound = SoundID.NPCHit2;
+            NPC.DeathSound = SoundID.NPCDeath2;
+            Music = MusicID.Boss2;
         }
-        public Player player => Main.player[NPC.target];
-        public NiuMaPlayer ScreenPla => player?.GetModPlayer<NiuMaPlayer>();
-        public int NPC_MaMian_Count = 0;
-        private NPC NPC_MaMian => Main.npc[NPC_MaMian_Count];
 
-        // —— 协同阶段「勾魂锁命连携」: 牛头压线 (车道冲锋), 供马面读取以填充慢球 ——
+        public override void ApplyDifficultyAndPlayerScaling(int numPlayers, float balance, float bossAdjustment) {
+            NPC.lifeMax = (int)(NPC.lifeMax * 0.85f * balance * bossAdjustment);
+        }
+
+        public override void SendExtraAI(BinaryWriter writer) {
+            writer.Write(DidP2);
+            writer.Write(DidP3);
+            writer.Write(HasRespawn);
+            writer.Write(deathStarted);
+            writer.Write(deathFinished);
+            writer.Write((byte)attackAlt);
+            writer.Write((byte)attacksInDuty);
+            writer.Write(comboDue);
+            writer.Write((byte)comboAlt);
+        }
+        public override void ReceiveExtraAI(BinaryReader reader) {
+            DidP2 = reader.ReadBoolean();
+            DidP3 = reader.ReadBoolean();
+            HasRespawn = reader.ReadBoolean();
+            deathStarted = reader.ReadBoolean();
+            deathFinished = reader.ReadBoolean();
+            attackAlt = reader.ReadByte();
+            attacksInDuty = reader.ReadByte();
+            comboDue = reader.ReadBoolean();
+            comboAlt = reader.ReadByte();
+        }
+
+        public override bool CheckActive() => false;
+
+        // ================= 状态切换 =================
+
+        public void SwitchState(int st) {
+            State = st;
+            Timer = 0;
+            Sub = 0;
+            NPC.netUpdate = true;
+        }
+
+        /// <summary>攻击完成 → 连接节拍 (Select)。指挥在此累计岗内招数。</summary>
+        protected void EndAttack() {
+            if (IsConductor)
+                attacksInDuty++;
+            SwitchState(StSelect);
+        }
+
+        /// <summary>指挥: 双吏同帧进入同一状态 (换岗/合体/阶段演出)。</summary>
+        protected void ForceBoth(int st) {
+            SwitchState(st);
+            NPC p = Partner;
+            if (p != null && p.ModNPC is NiuMaBoss pb) {
+                pb.SwitchState(st);
+                p.netUpdate = true;
+            }
+        }
+
+        // ================= AI 主循环 =================
+
+        public override void AI() {
+            // 目标失效 → 重选; 无人可战 → 升天撤离 (死亡演出不弃演, 保证掉落)
+            if (NPC.target < 0 || NPC.target >= 255 || Target.dead || !Target.active)
+                NPC.TargetClosest();
+            if ((Target.dead || !Target.active) && State != StDeath) {
+                NPC.velocity.Y -= 0.4f;
+                NPC.velocity.X *= 0.98f;
+                NPC.EncourageDespawn(30);
+                return;
+            }
+
+            // 地府氛围染屏 (廉价层, 同帧取 max)
+            float tint = 0.2f;
+            if (DidP2) tint += 0.1f;
+            if (DidP3) tint += 0.08f;
+            if (State == StP2 || State == StLink) tint += 0.08f;
+            NiuMaScreenSystem.Publish(NPC.Center, tint);
+            if (DidP3)
+                NiuMaScreenSystem.PublishVignette(State == StP3 ? 0.85f : 0.4f);
+
+            Lighting.AddLight(NPC.Center, ThemeColor.ToVector3() * 0.55f);
+
+            // 接触伤害默认关闭; 只有明确的攻击窗口 (冲撞/闪步) 显式开启 —— 伤害窗口与视觉严格对齐
+            NPC.damage = 0;
+
+            Timer++;
+            switch ((int)State) {
+                case StIntro: RunIntro(); break;
+                case StSelect: RunSelect(); break;
+                case StSwap: RunSwap(); break;
+                case StP2: RunP2Transition(); break;
+                case StP3: RunP3Rage(); break;
+                case StReviving: RunReviving(); break;
+                case StReborn: RunReborn(); break;
+                case StDeath: RunDeathCinematic(); break;
+                default: RunAttack((int)State); break;
+            }
+
+            // 全局节拍检查 (指挥推动; 搭档缺席时各自兜底狂怒)
+            if (IsConductor || Partner == null)
+                CheckGlobalBeats();
+
+            UpdateVisuals();
+        }
+
+        protected abstract void RunAttack(int state);
+        /// <summary>Select 结束时选择下一状态 (指挥在此裁决换岗/合体节拍)。</summary>
+        protected abstract int ChooseNext();
+
+        // ================= 全局节拍 (P2/P3) =================
+
+        private void CheckGlobalBeats() {
+            NPC p = Partner;
+            NiuMaBoss pb = PartnerBoss;
+
+            if (p != null && pb != null && IsConductor) {
+                bool bothNormal = InNormalFlow && pb.InNormalFlow;
+                // P2: 任一 ≤55% → 结链演出, 解锁合体技
+                if (!DidP2 && bothNormal && (LifeFrac <= 0.55f || pb.LifeFrac <= 0.55f)) {
+                    DidP2 = true;
+                    pb.DidP2 = true;
+                    comboDue = false;
+                    NiuMaHelper.ClearHostileProjectiles(); // 换阶段清弹 (公平阀门)
+                    ForceBoth(StP2);
+                }
+                // P3: 双方 ≤28% → 阎罗令狂怒
+                else if (DidP2 && !DidP3 && bothNormal && LifeFrac <= 0.28f && pb.LifeFrac <= 0.28f) {
+                    DidP3 = true;
+                    pb.DidP3 = true;
+                    NiuMaHelper.ClearHostileProjectiles();
+                    ForceBoth(StP3);
+                }
+            }
+            else if (p == null) {
+                // 孤军: 自触发狂怒 (阶段演出压缩版)
+                if (!DidP3 && InNormalFlow && LifeFrac <= 0.25f) {
+                    DidP3 = true;
+                    NiuMaHelper.ClearHostileProjectiles();
+                    SwitchState(StP3);
+                }
+                if (!DidP2 && LifeFrac <= 0.55f)
+                    DidP2 = true; // 孤军无结链演出, 直接吃 P2 数值
+            }
+        }
+
+        // ================= 入场 =================
+
+        private void RunIntro() {
+            NPC.dontTakeDamage = false;
+            if (Timer <= 18) {
+                // 跃出鬼门: 一步到侧翼站位
+                if (Timer == 1) {
+                    Vector2 anchor = Target.Center + new Vector2(HomeSide * 480, -220);
+                    NPC.velocity = (anchor - NPC.Center) / 18f + new Vector2(0, -3.5f);
+                    SoundEngine.PlaySound(SoundID.Item74 with { Volume = 0.6f, Pitch = -0.3f }, NPC.Center);
+                }
+                drawTail = true;
+            }
+            else if (Timer < 92) {
+                // 完全静止对视 —— 威压来自静止
+                NPC.velocity *= 0.82f;
+                NPC.direction = Target.Center.X > NPC.Center.X ? 1 : -1;
+                chargeInten = MathHelper.Lerp(chargeInten, 0.35f, 0.02f);
+            }
+            else if (Timer == 92) {
+                // 同帧齐吼
+                SoundEngine.PlaySound(RoarSound, NPC.Center);
+                if (IsConductor)
+                    ACMScreenShakeSystem.Add(10f);
+                flashInten = 1f;
+                hitChainImpulse = 10;
+                if (!Main.dedServ) {
+                    for (int i = 0; i < 22; i++) {
+                        var d = Dust.NewDustPerfect(NPC.Center, ModContent.DustType<Dust_1>());
+                        d.color = ThemeColor;
+                        d.color.A = 255;
+                        d.scale *= 2.4f;
+                        d.velocity = new Vector2(NiuMaHelper.Rand_Float(3, 9)).RotatedByRandom(8);
+                    }
+                }
+            }
+            else if (Timer < 140) {
+                NPC.velocity = Vector2.Lerp(NPC.velocity, (Target.Center + new Vector2(HomeSide * 430, -180) - NPC.Center) * 0.02f, 0.06f);
+            }
+            else {
+                SwitchState(StSelect);
+            }
+        }
+
+        // ================= 连接节拍 Select =================
+
+        protected Vector2 StanceAnchor() {
+            int side = NPC.Center.X >= Target.Center.X ? 1 : -1;
+            return IsBrawler
+                ? Target.Center + new Vector2(side * 420, -120)
+                : Target.Center + new Vector2(side * 640, -320);
+        }
+
+        private void RunSelect() {
+            HoverTo(StanceAnchor(), 15f, 0.08f);
+            FacePlayer();
+
+            // 距离栓绳: 防"飞屏外绕圈"
+            if (NPC.Distance(Target.Center) > 2600f)
+                NPC.velocity = Vector2.Lerp(NPC.velocity, (Target.Center - NPC.Center).NormalizeVector() * 26f, 0.2f);
+
+            int dur = DidP3 ? 26 : 40;
+            if (Timer >= dur) {
+                int next = ChooseNext();
+                if (next >= 0 && State == StSelect) // ChooseNext 可能已 ForceBoth 切走
+                    SwitchState(next);
+            }
+        }
+
+        // ================= 换岗对穿 =================
+
+        private Vector2 swapTargetPos;
+
+        private void RunSwap() {
+            NPC p = Partner;
+            if (p == null) { SwitchState(StSelect); return; }
+
+            if (Timer == 1)
+                SoundEngine.PlaySound(SoundID.Item8 with { Pitch = -0.2f, Volume = 0.8f }, NPC.Center);
+
+            if (Timer <= 16) {
+                // 蓄势闪耀
+                NPC.velocity *= 0.88f;
+                chargeInten = MathHelper.Lerp(chargeInten, 0.9f, 0.12f);
+                if (Timer == 16) {
+                    swapTargetPos = p.Center;
+                    NPC.velocity = (swapTargetPos - NPC.Center) / 22f;
+                    hitChainImpulse = 8;
+                }
+            }
+            else if (Timer <= 44) {
+                drawTail = true;
+                // 交汇火花 (指挥判定一次)
+                if (IsConductor && Sub == 0 && NPC.Distance(p.Center) < 130f) {
+                    Sub = 1;
+                    ACMScreenShakeSystem.Add(6f);
+                    Vector2 mid = (NPC.Center + p.Center) * 0.5f;
+                    NiuMaScreenSystem.AddGateMark(mid, 150f, 32);
+                    SoundEngine.PlaySound(SoundID.Item27 with { Volume = 0.9f }, mid);
+                    if (!Main.dedServ) {
+                        for (int i = 0; i < 16; i++) {
+                            var d = Dust.NewDustPerfect(mid, DustID.Shadowflame);
+                            d.noGravity = true;
+                            d.velocity = new Vector2(NiuMaHelper.Rand_Float(2, 8)).RotatedByRandom(8);
+                        }
+                    }
+                }
+            }
+            else if (Timer < 72) {
+                NPC.velocity *= 0.82f; // 硬刹落位
+                if (Timer == 59 && IsConductor) {
+                    float newDuty = Duty == 0 ? 1 : 0;
+                    Duty = newDuty;
+                    if (p.ModNPC is NiuMaBoss pb2) {
+                        pb2.Duty = newDuty;
+                        p.netUpdate = true;
+                    }
+                    NPC.netUpdate = true;
+                }
+            }
+            else {
+                SwitchState(StSelect);
+            }
+            FacePlayer();
+        }
+
+        // ================= P2 结链换阶段演出 =================
+
+        private void RunP2Transition() {
+            NPC p = Partner;
+            if (p == null) {
+                // 孤军压缩版: 怒吼即走
+                if (Timer == 1) {
+                    SoundEngine.PlaySound(RoarSound, NPC.Center);
+                    ACMScreenShakeSystem.Add(8f);
+                    flashInten = 1f;
+                }
+                NPC.velocity *= 0.9f;
+                if (Timer >= 60)
+                    SwitchState(StSelect);
+                return;
+            }
+
+            Vector2 shoulder = Target.Center + new Vector2(HomeSide * 620, -260);
+            Vector2 mid = (NPC.Center + p.Center) * 0.5f;
+
+            if (Timer == 1 && IsConductor) {
+                SoundEngine.PlaySound(RoarSound, NPC.Center);
+                ACMScreenShakeSystem.Add(6f);
+            }
+
+            if (Timer <= 35) {
+                HoverTo(shoulder, 20f, 0.12f);
+            }
+            else if (Timer <= 125) {
+                HoverTo(shoulder, 7f, 0.07f);
+                float link = MathHelper.Clamp((Timer - 35) / 60f, 0f, 1f);
+                chargeInten = MathHelper.Lerp(chargeInten, link, 0.1f);
+
+                if (IsConductor) {
+                    // 结链中枢法印 + 渐强轰鸣 (t² 曲线)
+                    NiuMaScreenSystem.PublishGate(mid, 170f, link * 0.8f, link);
+                    ACMScreenShakeSystem.Add(link * link * 3.5f);
+                    // 收束魂火: 密度 ∝ sqrt, 72% 后静默
+                    if (!Main.dedServ && link < 0.72f && Main.rand.NextFloat() < 0.5f * MathF.Sqrt(link + 0.05f)) {
+                        Vector2 pos = mid + Main.rand.NextVector2Circular(300, 200);
+                        var d = Dust.NewDustPerfect(pos, DustID.Shadowflame);
+                        d.noGravity = true;
+                        d.velocity = (mid - pos).NormalizeVector() * 5f;
+                    }
+                }
+
+                if (Timer == 125 && IsConductor) {
+                    // 链桥崩断: 权柄交接完成
+                    ACMScreenShakeSystem.Add(8f);
+                    SoundEngine.PlaySound(SoundID.Item27 with { Pitch = -0.6f, Volume = 1f }, mid);
+                    NiuMaScreenSystem.AddGateMark(mid, 220f, 40);
+                    if (!Main.dedServ) {
+                        for (int i = 0; i < 26; i++) {
+                            var d = Dust.NewDustPerfect(mid, ModContent.DustType<Dust_1>());
+                            d.color = i % 2 == 0 ? NiuMaHelper.EmberRed : NiuMaHelper.GhostViolet;
+                            d.color.A = 255;
+                            d.scale *= 2.2f;
+                            d.velocity = new Vector2(NiuMaHelper.Rand_Float(2, 9)).RotatedByRandom(8);
+                        }
+                    }
+                }
+            }
+            else if (Timer <= 140) {
+                // 双吏同时向玩家逼近一步 (落幅, 无伤)
+                if (Timer == 126) {
+                    NPC.velocity = (Target.Center - NPC.Center).NormalizeVector() * 15f;
+                    flashInten = 0.7f;
+                }
+                NPC.velocity *= 0.9f;
+                drawTail = true;
+            }
+            else if (Timer >= 176) {
+                if (IsConductor) {
+                    comboDue = true;
+                    attacksInDuty = 0;
+                }
+                SwitchState(StSelect);
+            }
+            else {
+                NPC.velocity *= 0.9f;
+            }
+            FacePlayer();
+        }
+
+        // ================= P3 阎罗令狂怒演出 =================
+
+        private void RunP3Rage() {
+            Vector2 anchor = Target.Center + new Vector2(HomeSide * 170, -330);
+
+            if (Timer <= 40) {
+                HoverTo(anchor, 18f, 0.12f);
+                chargeInten = MathHelper.Lerp(chargeInten, Timer / 40f, 0.15f);
+            }
+            else if (Timer < 50) {
+                NPC.velocity *= 0.7f; // 屏息
+            }
+            else if (Timer == 50) {
+                SoundEngine.PlaySound(RoarSound, NPC.Center);
+                if (IsConductor || Partner == null) {
+                    ACMScreenShakeSystem.Add(12f);
+                    SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.5f, Volume = 0.9f }, NPC.Center);
+                }
+                flashInten = 1f;
+                hitChainImpulse = 12;
+                if (!Main.dedServ) {
+                    for (int i = 0; i < 30; i++) {
+                        var d = Dust.NewDustPerfect(NPC.Center, ModContent.DustType<Dust_1>());
+                        d.color = i % 2 == 0 ? ThemeColor : TelegraphColors.Execution;
+                        d.color.A = 255;
+                        d.scale *= 2.6f;
+                        d.velocity = new Vector2(NiuMaHelper.Rand_Float(4, 12)).RotatedByRandom(8);
+                    }
+                }
+            }
+            else if (Timer >= 92) {
+                if (IsConductor) {
+                    attacksInDuty = 0;
+                    comboDue = false;
+                }
+                SwitchState(StSelect);
+            }
+            else {
+                NPC.velocity *= 0.92f;
+            }
+            FacePlayer();
+        }
+
+        // ================= 引魂 (Reviving) / 复生 (Reborn) =================
+
+        private int FindMyRevivalCircle() {
+            foreach (var pr in Main.ActiveProjectiles) {
+                if (pr.type == ModContent.ProjectileType<NiuMaRevivalCircle>() && (int)pr.ai[0] == NPC.whoAmI)
+                    return pr.whoAmI;
+            }
+            return -1;
+        }
+
+        private void RunReviving() {
+            if (Timer == 1)
+                SoundEngine.PlaySound(RoarSound, NPC.Center);
+            // 引魂者: 悬于尸位反制圈上方施法; 圈灭 (250f) = 引魂完成。
+            // 宽限 45f: 多人下圈弹幕到达客户端可能滞后数帧, 避免误判提前退出。
+            int circle = FindMyRevivalCircle();
+            if (circle < 0 && Timer > 45) {
+                NPC.dontTakeDamage = false;
+                SwitchState(StSelect);
+                return;
+            }
+            if (circle >= 0) {
+                Vector2 anchor = Main.projectile[circle].Center + new Vector2(0, -230);
+                HoverTo(anchor, 10f, 0.08f);
+                chargeInten = MathHelper.Lerp(chargeInten, 0.9f, 0.06f);
+                if (!Main.dedServ && Main.rand.NextBool(2)) {
+                    Vector2 pos = Vector2.Lerp(NPC.Center, Main.projectile[circle].Center, Main.rand.NextFloat());
+                    var d = Dust.NewDustPerfect(pos, DustID.GreenTorch);
+                    d.noGravity = true;
+                    d.velocity = (Main.projectile[circle].Center - NPC.Center).NormalizeVector() * 2f;
+                }
+            }
+            // 超时保底出口
+            if (Timer > 300) {
+                NPC.dontTakeDamage = false;
+                SwitchState(StSelect);
+            }
+        }
+
+        private void RunReborn() {
+            NPC.dontTakeDamage = true;
+            NPC.velocity *= 0.85f;
+            drawAlpha = MathHelper.Clamp((Timer - 60) / 170f, 0f, 1f);
+
+            NPC p = Partner;
+            NiuMaBoss pb = PartnerBoss;
+            // 引魂被打断 (引魂者阵亡) → 双亡: 直接进入速朽死亡演出
+            if (p == null || pb == null || (pb.State != StReviving && Timer < 240)) {
+                deathStarted = true;
+                NPC.life = 1;
+                SwitchState(StDeath);
+                Sub = 1; // 速朽变体
+                return;
+            }
+
+            if (Timer >= 250) {
+                drawAlpha = 1f;
+                NPC.dontTakeDamage = false;
+                flashInten = 1f;
+                ACMScreenShakeSystem.Add(5f);
+                SoundEngine.PlaySound(RoarSound, NPC.Center);
+                if (!Main.dedServ) {
+                    for (int i = 0; i < 20; i++) {
+                        var d = Dust.NewDustPerfect(NPC.Center, ModContent.DustType<Dust_1>());
+                        d.color = ThemeColor;
+                        d.color.A = 255;
+                        d.velocity = new Vector2(NiuMaHelper.Rand_Float(2, 8)).RotatedByRandom(8);
+                    }
+                }
+                SwitchState(StSelect);
+            }
+        }
+
+        // ================= 死亡演出 =================
+
+        private void RunDeathCinematic() {
+            NPC.dontTakeDamage = true;
+            bool quick = Sub == 1; // 引魂被断的速朽变体
+            float breakAt = quick ? 16 : 60;
+            float flashAt = quick ? 52 : 132;
+            float dieAt = quick ? 58 : 150;
+
+            // 失控: 缓旋上飘, 魂火外泄 ∝ 进度
+            float prog = MathHelper.Clamp(Timer / dieAt, 0f, 1f);
+            NPC.velocity = Vector2.Lerp(NPC.velocity, new Vector2(0, -1.6f), 0.05f);
+            NPC.rotation += 0.002f + prog * 0.05f * (IsConductor ? 1 : -1);
+            chargeInten = prog;
+
+            if (!Main.dedServ && Main.rand.NextFloat() < 0.25f + prog * 0.5f) {
+                var d = Dust.NewDustPerfect(NPC.Center + Main.rand.NextVector2Circular(60, 60),
+                    Main.rand.NextBool() ? DustID.Smoke : DustID.Shadowflame);
+                d.noGravity = Main.rand.NextBool();
+                d.velocity = new Vector2(0, -NiuMaHelper.Rand_Float(1, 4));
+                d.scale = 1.4f;
+            }
+
+            if (Timer == breakAt) {
+                // 锁链崩断
+                SoundEngine.PlaySound(SoundID.Item27 with { Pitch = -0.7f, Volume = 1f }, NPC.Center);
+                ACMScreenShakeSystem.Add(8f);
+                hitChainImpulse = 14;
+                if (!Main.dedServ) {
+                    for (int i = 0; i < 20; i++) {
+                        var d = Dust.NewDustPerfect(NPC.Center + Main.rand.NextVector2Circular(40, 40), DustID.Iron);
+                        d.velocity = new Vector2(NiuMaHelper.Rand_Float(2, 7)).RotatedByRandom(8);
+                    }
+                }
+            }
+
+            if (Timer == flashAt) {
+                // 本战唯一冲击帧: 魂躯崩解
+                NiuMaScreenSystem.FlashWhite(4, 0.85f);
+                ACMScreenShakeSystem.Add(14f);
+                SoundEngine.PlaySound(SoundID.NPCDeath62 with { Volume = 1f }, NPC.Center);
+                if (!Main.dedServ) {
+                    for (int i = 0; i < 44; i++) {
+                        var d = Dust.NewDustPerfect(NPC.Center, ModContent.DustType<Dust_1>());
+                        d.color = i % 2 == 0 ? ThemeColor : ThemeCore;
+                        d.color.A = 255;
+                        d.scale *= 2.8f;
+                        d.velocity = new Vector2(NiuMaHelper.Rand_Float(3, 14)).RotatedByRandom(8);
+                    }
+                }
+            }
+
+            if (Timer >= flashAt)
+                drawAlpha = MathHelper.Clamp(1f - (Timer - flashAt) / 10f, 0f, 1f);
+
+            if (Timer >= dieAt) {
+                deathFinished = true;
+                if (Main.netMode != NetmodeID.MultiplayerClient)
+                    NPC.StrikeInstantKill();
+            }
+        }
+
+        public override bool CheckDead() {
+            if (deathFinished)
+                return true;
+
+            NPC p = Partner;
+            NiuMaBoss pb = PartnerBoss;
+            bool canRevive = !HasRespawn && p != null && pb != null &&
+                p.life > p.lifeMax * 0.3f &&
+                pb.State != StReviving && pb.State != StReborn && pb.State != StDeath && !pb.deathStarted;
+
+            if (canRevive) {
+                // —— 引魂复生: 同伴化引魂者, 尸位生成反制圈 ——
+                HasRespawn = true;
+                NPC.life = (int)(NPC.lifeMax * 0.5f);
+                NPC.dontTakeDamage = true;
+                NPC.velocity = Vector2.Zero;
+                SwitchState(StReborn);
+
+                p.velocity = Vector2.Zero;
+                p.dontTakeDamage = true; // 圈内站人时由反制圈逐帧解除
+                pb.SwitchState(StReviving);
+                p.netUpdate = true;
+
+                NiuMaHelper.ClearHostileProjectiles(); // 复生节拍清弹
+                SoundEngine.PlaySound(RoarSound, NPC.Center);
+                ACMScreenShakeSystem.Add(7f);
+
+                if (Main.netMode != NetmodeID.MultiplayerClient)
+                    Projectile.NewProjectile(NPC.GetSource_FromThis(), NPC.Center, Vector2.Zero,
+                        ModContent.ProjectileType<NiuMaRevivalCircle>(), 0, 0f, Main.myPlayer, p.whoAmI);
+                return false;
+            }
+
+            if (!deathStarted) {
+                // —— 终幕死亡演出 ——
+                deathStarted = true;
+                NPC.life = 1;
+                NPC.dontTakeDamage = true;
+                SwitchState(StDeath);
+                NiuMaHelper.ClearHostileProjectiles();
+                return false;
+            }
+            NPC.life = Math.Max(NPC.life, 1); // 演出期间任何漏网致死打击不得清零生命
+            return false;
+        }
+
+        public override void HitEffect(NPC.HitInfo hit) {
+            flashInten = Math.Max(flashInten, 0.45f);
+            if (Main.dedServ)
+                return;
+            for (int i = 0; i < 3; i++) {
+                var d = Dust.NewDustDirect(NPC.position, NPC.width, NPC.height, DustID.Shadowflame, hit.HitDirection * 2f, -1f);
+                d.noGravity = true;
+            }
+        }
+
+        // ================= 运动/朝向助手 =================
+
+        protected void HoverTo(Vector2 anchor, float maxSpeed, float lerp) {
+            Vector2 diff = anchor - NPC.Center;
+            float dist = diff.Length();
+            Vector2 want = diff.SafeNormalize(Vector2.Zero) * Math.Min(maxSpeed, dist * 0.05f + 1.5f);
+            NPC.velocity = Vector2.Lerp(NPC.velocity, want, lerp);
+        }
+
+        protected void FacePlayer() {
+            NPC.direction = Target.Center.X > NPC.Center.X ? 1 : -1;
+            NPC.rotation = NPC.rotation.AngleLerp(Math.Clamp(NPC.velocity.X * 0.05f, -0.45f, 0.45f), 0.08f);
+        }
+
+        // ================= 视觉更新与绘制 =================
+
+        private void UpdateVisuals() {
+            flashInten *= 0.88f;
+            if (State != StP2 && State != StReviving && State != StDeath)
+                chargeInten *= 0.93f;
+
+            if (Main.dedServ)
+                return;
+
+            // 垂坠锁链 Verlet (重量感: 冲刺/急停时链条甩尾)
+            hangChains ??= [InitChain(-1), InitChain(1)];
+            for (int c = 0; c < 2; c++) {
+                Vector2[] chain = hangChains[c];
+                chain[0] = NPC.Center + new Vector2((c == 0 ? -1 : 1) * 30f * NPC.scale * 0.5f, 30f * NPC.scale * 0.5f).RotatedBy(NPC.rotation);
+                if (hitChainImpulse > 0)
+                    chain[^1] += Main.rand.NextVector2Circular(6f, 6f);
+                ACMUtils.VerletStep(chain, 0.55f, 14f, 3);
+            }
+            if (hitChainImpulse > 0)
+                hitChainImpulse--;
+        }
+
+        private Vector2[] InitChain(int side) {
+            var arr = new Vector2[5];
+            for (int i = 0; i < arr.Length; i++)
+                arr[i] = NPC.Center + new Vector2(side * 30f, 30f + i * 14f);
+            return arr;
+        }
+
+        public override bool PreDraw(SpriteBatch sb, Vector2 scrPos, Color col) {
+            var tex = TextureAssets.Npc[Type].Value;
+            var rec = NPC.frame;
+            var spe = NPC.direction == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
+
+            DrawStateTelegraphs();
+
+            // 垂坠锁链 (本体之下)
+            if (hangChains != null && drawAlpha > 0.15f) {
+                foreach (var chain in hangChains)
+                    NiuMaHelper.DrawHangChain(sb, chain, scrPos, Color.Lerp(Color.DarkGray, ThemeColor, 0.3f), 0.85f * drawAlpha);
+            }
+
+            // 残影 (速度门控: 只在冲刺态出现)
+            if (drawTail) {
+                var tailCol = ThemeColor * 0.5f;
+                tailCol.A = 0;
+                for (int i = 0; i < NPC.oldPos.Length; i++) {
+                    float fade = 1f - i / (float)NPC.oldPos.Length;
+                    sb.Draw(tex, NPC.oldPos[i] + rec.Size() * .5f * NPC.scale - scrPos, rec, tailCol * drawAlpha * fade,
+                        NPC.rotation, rec.Size() * .5f, NPC.scale * (1f - i / (float)NPC.oldPos.Length * .3f), spe, 0);
+                }
+            }
+
+            // 本体 (SoulFlame 着色: 魂焰描边 + 闪白 + 蓄力增辉)
+            NiuMaHelper.DrawBodySoulFlame(sb, tex, NPC.Center - scrPos, rec, col, NPC.rotation, NPC.scale, spe,
+                ThemeColor, ThemeCore, flashInten, chargeInten, drawAlpha);
+
+            // 外发光
+            var glowCol = ThemeColor;
+            glowCol.A = 0;
+            sb.Draw(tex, NPC.Center - scrPos, rec, glowCol * .35f * drawAlpha, NPC.rotation, rec.Size() * .5f, NPC.scale * 1.07f, spe, 0);
+            return false;
+        }
+
+        /// <summary>状态相关预警绘制 (瞄线/车道/链桥), 由子类补充。</summary>
+        protected virtual void DrawStateTelegraphs() { }
+
+        public override void OnKill() {
+            ACMScreenShakeSystem.Add(10f);
+        }
+
+        public override bool PreAI() {
+            drawTail = false;
+            return base.PreAI();
+        }
+    }
+
+    /// <summary>
+    /// 牛头 —— 力之吏 (指挥)。缠斗岗: 裁决三连撞 / 拘魂锁链扇; 炮台岗: 燃角链锤 / 怒目凝视。
+    /// 负责推动换岗、合体技 (黄泉车道/勾魂锁命) 与 P2/P3 全局节拍。
+    /// </summary>
+    public class NiuTou : NiuMaBoss
+    {
+        private static readonly SoundStyle roarSound = SoundID.Roar with { PitchVariance = .2f };
+        private static readonly SoundStyle chargeWindupSound = SoundID.ForceRoar with { Volume = .8f, PitchVariance = .3f };
+        private static readonly SoundStyle chainLaunchSound = SoundID.Item20 with { Volume = .7f };
+        private static readonly SoundStyle eyeBlastSound = SoundID.Item74 with { Volume = 1f };
+        private static readonly SoundStyle comboDashSound = SoundID.DD2_EtherianPortalDryadTouch with { Volume = .9f };
+
+        public override int PartnerType => ModContent.NPCType<MaMian>();
+        public override bool IsConductor => true;
+        public override bool IsBrawler => Duty == 0;
+        protected override Color ThemeColor => NiuMaHelper.EmberRed;
+        protected override Color ThemeCore => NiuMaHelper.EmberCore;
+        protected override SoundStyle RoarSound => roarSound;
+
+        // 攻击状态
+        private const int AtkTripleRam = 10, AtkChainFan = 11, AtkChainMace = 12, AtkGaze = 13;
+
+        // —— 冲撞 —— (瞄线/爆发向量)
+        private Vector2 aimDir = Vector2.UnitX;
+        private bool telegraphLine;
+        private bool telegraphLethal;
+
+        // —— 合体技: 黄泉车道 (马面读取) ——
         public int SynergyPhase;      // 0=铺垫 1=预告 2=冲锋 3=收招
+        public float LaneY;
         public Vector2 LaneStart, LaneEnd;
-        private int synergyLocal;     // 本轮车道内计时
-        private float synergyLaneY;   // 本轮车道高度 (玩家进入时锁定)
-
-        // —— 冲锋预告 (每招可读) ——
-        private bool chargeTelegraph;
-        private Vector2 chargeAim = Vector2.UnitX;
-
-        public override void SetStaticDefaults() {
-            NPCID.Sets.TrailingMode[Type] = 3;
-            NPCID.Sets.TrailCacheLength[Type] = 10;
-        }
 
         public override void ModifyNPCLoot(NPCLoot npcLoot) {
             NiuMaLoot.AddBossLoot(npcLoot, ModContent.NPCType<MaMian>());
         }
 
-        private float Draw_Alpha = 1;
-        private bool Draw_Tail = false;
-        public override bool PreDraw(SpriteBatch sb, Vector2 scrPos, Color col) {
-            //强化视觉表现: 添加渐隐尾焰与发光
-            var tex = TextureAssets.Npc[Type].Value;
-            var rec = NPC.frame;
-            var spe = NPC.direction == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
-            if (Draw_Tail) {
-                var Tailcol = Color.DarkRed * .5f;
-                Tailcol.A = 0;
-                for (int i = 0; i < NPC.oldPos.Length; i++) {
-                    sb.Draw(tex, NPC.oldPos[i] + rec.Size() * .5f * NPC.scale - scrPos, rec, Tailcol * Draw_Alpha, NPC.rotation, rec.Size() * .5f, NPC.scale * (1f - i / (float)NPC.oldPos.Length * .3f), spe, 0);
-                }
+        protected override int ChooseNext() {
+            NPC p = Partner;
+            if (p == null || PartnerBoss == null || !PartnerBoss.InNormalFlow) {
+                // 孤军: 四招全轮换, 无节拍
+                int[] soloPool = [AtkTripleRam, AtkChainFan, AtkChainMace, AtkGaze];
+                return soloPool[attackAlt++ % soloPool.Length];
             }
-            sb.Draw(tex, NPC.Center - scrPos, rec, col * Draw_Alpha, NPC.rotation, rec.Size() * .5f, NPC.scale, spe, 0);
-            //外发光
-            var glowCol = Color.DarkRed; glowCol.A = 0;
-            sb.Draw(tex, NPC.Center - scrPos, rec, glowCol * .4f * Draw_Alpha, NPC.rotation, rec.Size() * .5f, NPC.scale * 1.08f, spe, 0);
 
-            if (!Main.dedServ)
-                DrawTelegraphs();
-            return false;
+            // 节拍裁决: 每 2 招 → 合体 (若解锁且轮到) 或换岗
+            if (attacksInDuty >= 2) {
+                attacksInDuty = 0;
+                if (DidP2 && comboDue) {
+                    comboDue = false;
+                    int combo = comboAlt++ % 2 == 0 ? StLane : StLink;
+                    NiuMaHelper.ClearHostileProjectiles(); // 合体开场清残留 (无旧账干扰读屏)
+                    ForceBoth(combo);
+                    return -1;
+                }
+                if (DidP2)
+                    comboDue = true;
+                ForceBoth(StSwap);
+                return -1;
+            }
+
+            int[] pool = IsBrawler ? [AtkTripleRam, AtkChainFan] : [AtkChainMace, AtkGaze];
+            return pool[attackAlt++ % 2];
         }
 
-        /// <summary>冲锋/连携车道的硬化 API 预告 (幽紫蓄势 → 命中前转纯红致命)。</summary>
-        private void DrawTelegraphs() {
-            // 普通冲锋瞄准线 (Ai_0 蓄势期)。
-            if (chargeTelegraph) {
-                Vector2 end = NPC.Center + chargeAim * 1600f;
-                ACMShaders.DrawBeam(NPC.Center, end, 14f, TelegraphColors.NetherViolet, new Color(80, 20, 30), 0.55f, 1.4f, 2f, 2.2f);
+        public override bool PreAI() {
+            telegraphLine = false; // 每帧复位: 被节拍强制打断时不残留预警线
+            return base.PreAI();
+        }
+
+        protected override void RunAttack(int state) {
+            switch (state) {
+                case AtkTripleRam: RunTripleRam(); break;
+                case AtkChainFan: RunChainFan(); break;
+                case AtkChainMace: RunChainMace(); break;
+                case AtkGaze: RunGaze(); break;
+                case StLane: RunLaneSweep(); break;
+                case StLink: RunSoulLink(); break;
+                default: SwitchState(StSelect); break;
             }
-            // 连携车道: 预告(幽紫) → 末段/冲锋(致命红) + 冲锋命中泛光。
-            if (SynergyPhase == 1 || SynergyPhase == 2) {
-                bool lethal = SynergyPhase == 2 || synergyLocal >= 92;
+        }
+
+        // ================= 裁决三连撞 (缠斗) =================
+        // 波形: 悬停瞄准 34f → pow8 反向抽身 10f → 瞬发 40px/f 直线 11f (复利加速) → ×0.68 硬刹。
+        // 公平: 预警音固定提前 36f; 红线锁定后 10f 才起跳; 伤害窗口仅速度 >20。
+
+        private void RunTripleRam() {
+            int cycles = DidP3 ? 4 : 3;
+            const int cycleLen = 78;
+            int cycle = (int)Timer / cycleLen;
+            int t = (int)Timer % cycleLen;
+
+            if (cycle >= cycles) {
+                EndAttack();
+                return;
+            }
+
+            int side = NPC.Center.X >= Target.Center.X ? 1 : -1;
+            if (t < 34) {
+                Vector2 anchor = Target.Center + new Vector2(side * 520, -50);
+                HoverTo(anchor, 17f, 0.1f);
+                if (t > 24)
+                    NPC.velocity *= 0.9f; // 慢启动阀门: 蓄势期减速
+                if (t == 8)
+                    SoundEngine.PlaySound(chargeWindupSound, NPC.Center); // 固定 36f 预警节拍
+                if (t >= 6) {
+                    telegraphLine = true;
+                    telegraphLethal = false;
+                    aimDir = (Target.Center + Target.velocity * 10f - NPC.Center).NormalizeVector(Vector2.UnitX);
+                }
+                FacePlayer();
+            }
+            else if (t < 44) {
+                // 反向抽身: pow8 迟滞 → 最后几帧猛然后吸
+                telegraphLine = true;
+                telegraphLethal = true;
+                float k = (t - 34) / 10f;
+                NPC.velocity = -aimDir * MathF.Pow(k, 8f) * 20f;
+                chargeInten = MathHelper.Lerp(chargeInten, 1f, 0.2f);
+                NPC.direction = aimDir.X > 0 ? 1 : -1;
+            }
+            else if (t < 55) {
+                if (t == 44) {
+                    NPC.velocity = aimDir * (DidP3 ? 44f : 40f);
+                    SoundEngine.PlaySound(comboDashSound, NPC.Center);
+                    ACMScreenShakeSystem.Add(5f);
+                    flashInten = 0.6f;
+                    hitChainImpulse = 8;
+                }
+                drawTail = true;
+                NPC.velocity *= 1.03f;
+                NPC.damage = 95;
+                // 沿途血焰刻痕 (服务器)
+                if (t % 3 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                    var p = Projectile.NewProjectileDirect(NPC.GetSource_FromThis(), NPC.Center, aimDir.RotatedBy(NiuMaHelper.Rand_Float(-0.4f, 0.4f)),
+                        ModContent.ProjectileType<Proj_756_Adjust>(), 40, 1f, NPC.target);
+                    p.ai[1] = NiuMaHelper.Rand_Float(0.5f, 1f);
+                    p.netUpdate = true;
+                }
+            }
+            else if (t < 71) {
+                NPC.velocity *= 0.68f; // 硬刹 = 撞停的重量
+                if (NPC.velocity.Length() > 20f)
+                    NPC.damage = 95;
+            }
+            else {
+                NPC.velocity *= 0.9f;
+                FacePlayer();
+            }
+            NPC.rotation = NPC.rotation.AngleLerp(Math.Clamp(NPC.velocity.X * .04f, -.5f, .5f), .1f);
+        }
+
+        // ================= 拘魂锁链扇 (缠斗) =================
+
+        private void RunChainFan() {
+            int side = NPC.Center.X >= Target.Center.X ? 1 : -1;
+            if (Timer < 40) {
+                HoverTo(Target.Center + new Vector2(side * 400, -280), 15f, 0.09f);
+                if (Timer == 10)
+                    SoundEngine.PlaySound(chargeWindupSound, NPC.Center);
+                // 收束聚气 (sqrt 密度, 72% 静默)
+                float c = (float)(Timer / 40f);
+                if (!Main.dedServ && c < 0.72f && Main.rand.NextFloat() < 0.55f * MathF.Sqrt(c + 0.05f)) {
+                    Vector2 pos = NPC.Center + Main.rand.NextVector2Circular(180, 180);
+                    var d = Dust.NewDustPerfect(pos, DustID.CrimsonTorch);
+                    d.noGravity = true;
+                    d.velocity = (NPC.Center - pos).NormalizeVector() * 5f;
+                }
+                FacePlayer();
+            }
+            else if (Timer < 70) {
+                NPC.velocity *= 0.85f;
+                chargeInten = MathHelper.Lerp(chargeInten, 0.9f, 0.12f);
+                telegraphLine = true;
+                if (Timer < 60) {
+                    telegraphLethal = false;
+                    aimDir = (Target.Center - NPC.Center).NormalizeVector(Vector2.UnitX);
+                }
+                else {
+                    telegraphLethal = true; // 锁定后 10f 红线
+                }
+                if (Timer == 69) {
+                    int count = DidP3 ? 5 : (DidP2 ? 4 : 3);
+                    SoundEngine.PlaySound(chainLaunchSound, NPC.Center);
+                    ACMScreenShakeSystem.Add(6f);
+                    NPC.velocity = -aimDir * 7f; // 后坐
+                    hitChainImpulse = 8;
+                    if (Main.netMode != NetmodeID.MultiplayerClient) {
+                        for (int i = 0; i < count; i++) {
+                            float off = (i - (count - 1) * 0.5f) * 0.42f;
+                            var p = Projectile.NewProjectileDirect(NPC.GetSource_FromThis(), NPC.Center, aimDir.RotatedBy(off) * 26f,
+                                ModContent.ProjectileType<ChainProj>(), 45, 1f, NPC.target);
+                            p.ai[2] = NPC.whoAmI;
+                            p.netUpdate = true;
+                        }
+                    }
+                }
+            }
+            else if (Timer >= 116) {
+                EndAttack();
+            }
+            else {
+                NPC.velocity *= 0.93f;
+                FacePlayer();
+            }
+        }
+
+        // ================= 燃角链锤 (炮台) =================
+
+        private void RunChainMace() {
+            int side = NPC.Center.X >= Target.Center.X ? 1 : -1;
+            if (Timer < 46) {
+                HoverTo(Target.Center + new Vector2(side * 560, -420), 15f, 0.09f);
+                chargeInten = MathHelper.Lerp(chargeInten, (float)(Timer / 46f), 0.1f);
+                if (Timer == 20)
+                    SoundEngine.PlaySound(SoundID.Item32 with { Volume = 0.8f, Pitch = -0.4f }, NPC.Center);
+                FacePlayer();
+            }
+            else if (Timer == 46) {
+                SoundEngine.PlaySound(SoundID.Item1 with { Volume = 1f, Pitch = -0.6f }, NPC.Center);
+                Vector2 vel = new(MathHelper.Clamp((Target.Center.X + Target.velocity.X * 24f - NPC.Center.X) / 38f, -16f, 16f), -6.5f);
+                NPC.velocity = -vel * 0.6f; // 掷锤后坐
+                hitChainImpulse = 10;
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    var p = Projectile.NewProjectileDirect(NPC.GetSource_FromThis(), NPC.Center + new Vector2(0, 20), vel,
+                        ModContent.ProjectileType<NiuMaChainMace>(), 50, 1f, NPC.target);
+                    p.ai[2] = NPC.whoAmI;
+                    p.netUpdate = true;
+                }
+            }
+            else if (Timer >= 100) {
+                EndAttack();
+            }
+            else {
+                NPC.velocity *= 0.94f;
+                FacePlayer();
+            }
+        }
+
+        // ================= 怒目凝视 (炮台) =================
+
+        private void RunGaze() {
+            int side = NPC.Center.X >= Target.Center.X ? 1 : -1;
+            Vector2 eyePos = NPC.Center + new Vector2(NPC.direction * 30f, -20f);
+
+            if (Timer < 40) {
+                HoverTo(Target.Center + new Vector2(side * 620, -300), 13f, 0.08f);
+                chargeInten = MathHelper.Lerp(chargeInten, (float)(Timer / 40f), 0.12f);
+                if (Timer == 20)
+                    SoundEngine.PlaySound(chargeWindupSound, NPC.Center);
+                float c = (float)(Timer / 40f);
+                if (!Main.dedServ && c < 0.72f && Main.rand.NextFloat() < 0.6f * MathF.Sqrt(c + 0.05f)) {
+                    Vector2 pos = eyePos + Main.rand.NextVector2Circular(140, 140);
+                    var d = Dust.NewDustPerfect(pos, DustID.Shadowflame);
+                    d.noGravity = true;
+                    d.velocity = (eyePos - pos).NormalizeVector() * 4.5f;
+                }
+                FacePlayer();
+            }
+            else if (Timer == 40) {
+                SoundEngine.PlaySound(eyeBlastSound, NPC.Center);
+                flashInten = 0.7f;
+                ACMScreenShakeSystem.Add(4f);
+                if (Main.netMode != NetmodeID.MultiplayerClient)
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), eyePos, (Target.Center - eyePos).NormalizeVector() * 4f,
+                        ModContent.ProjectileType<EyeProj>(), 42, 1f, NPC.target);
+            }
+            else if (Timer < 96) {
+                NPC.velocity *= 0.92f;
+                // 三波扇形魂火 (44/62/80)
+                if ((Timer == 44 || Timer == 62 || Timer == 80) && Main.netMode != NetmodeID.MultiplayerClient) {
+                    Vector2 aim = (Target.Center - NPC.Center).NormalizeVector(Vector2.UnitX);
+                    int n = DidP3 ? 4 : 3;
+                    for (int i = 0; i < n; i++) {
+                        float off = (i - (n - 1) * 0.5f) * 0.3f;
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, aim.RotatedBy(off) * 7f,
+                            ModContent.ProjectileType<DarkGreenProj>(), 38, 1f, NPC.target);
+                    }
+                }
+                if (Timer == 44 || Timer == 62 || Timer == 80) {
+                    NPC.velocity -= (Target.Center - NPC.Center).NormalizeVector() * 3f; // 逐波后坐
+                    SoundEngine.PlaySound(SoundID.Item73 with { Volume = 0.6f }, NPC.Center);
+                }
+                FacePlayer();
+            }
+            else {
+                EndAttack();
+            }
+        }
+
+        // ================= 合体技 A: 黄泉车道 =================
+        // 牛头压可读水平车道 (铺垫→预告→冲锋→收招 ×2), 马面在空档填慢速魂火帘。
+
+        private void RunLaneSweep() {
+            const int cycleLen = 190;
+            const int cycles = 2;
+            int cycle = (int)Timer / cycleLen;
+            int local = (int)Timer % cycleLen;
+
+            if (cycle >= cycles) {
+                SynergyPhase = 0;
+                if (IsConductor) {
+                    attacksInDuty = 0;
+                    ForceBoth(StSelect);
+                }
+                return;
+            }
+
+            bool fromLeft = cycle % 2 == 0;
+            float laneHalf = 1400f;
+
+            if (local < 45) {
+                SynergyPhase = 0;
+                // Timer 从 1 起跳, 首循环用 Timer==1 兜住车道高度锁定
+                if (local == 0 || Timer == 1) {
+                    LaneY = Target.Center.Y;
+                    SoundEngine.PlaySound(RoarSound, NPC.Center);
+                }
+                LaneStart = new Vector2(Target.Center.X - laneHalf, LaneY);
+                LaneEnd = new Vector2(Target.Center.X + laneHalf, LaneY);
+                Vector2 startPos = fromLeft ? LaneStart : LaneEnd;
+                startPos.X += fromLeft ? -180f : 180f;
+                HoverTo(startPos, 26f, 0.12f);
+                NPC.direction = fromLeft ? 1 : -1;
+            }
+            else if (local < 105) {
+                SynergyPhase = 1;
+                NPC.velocity *= 0.85f;
+                // 末 10f 反向抽身
+                if (local >= 95) {
+                    Vector2 dir = new(fromLeft ? 1 : -1, 0);
+                    float k = (local - 95) / 10f;
+                    NPC.velocity = -dir * MathF.Pow(k, 8f) * 16f;
+                }
+                if (local == 69)
+                    SoundEngine.PlaySound(chargeWindupSound, NPC.Center); // 固定 36f 预警
+                chargeInten = MathHelper.Lerp(chargeInten, 0.9f, 0.1f);
+            }
+            else if (local < 135) {
+                SynergyPhase = 2;
+                NPC.damage = 95;
+                drawTail = true;
+                if (local == 105) {
+                    NPC.velocity = new Vector2(fromLeft ? 40f : -40f, 0);
+                    SoundEngine.PlaySound(comboDashSound, NPC.Center);
+                    ACMScreenShakeSystem.Add(7f);
+                    flashInten = 0.6f;
+                    hitChainImpulse = 8;
+                }
+                if (Math.Abs(NPC.velocity.X) < 46f)
+                    NPC.velocity.X *= 1.02f;
+                NPC.Center = new Vector2(NPC.Center.X, MathHelper.Lerp(NPC.Center.Y, LaneY, 0.3f));
+            }
+            else {
+                SynergyPhase = 3;
+                NPC.velocity *= 0.88f;
+            }
+            NPC.rotation = NPC.rotation.AngleLerp(Math.Clamp(NPC.velocity.X * .06f, -.55f, .55f), .1f);
+        }
+
+        // ================= 合体技 B: 勾魂锁命 =================
+        // 二吏对峙两侧, 结链 → 链绷直致命, 绕中点匀速旋转; 中点 165px 翠玉命门可穿。
+
+        private Vector2 linkCenter;
+
+        private void RunSoulLink() {
+            NPC p = Partner;
+            if (p == null) {
+                SwitchState(StSelect);
+                return;
+            }
+
+            const float startRadius = 700f;
+            const float endRadius = 560f;
+
+            if (Timer < 50) {
+                if (Timer == 1)
+                    SoundEngine.PlaySound(chargeWindupSound, NPC.Center);
+                linkCenter = Target.Center;
+                Vector2 anchor = linkCenter + new Vector2(-startRadius, 0);
+                HoverTo(anchor, 26f, 0.14f);
+                chargeInten = MathHelper.Lerp(chargeInten, 0.7f, 0.08f);
+            }
+            else if (Timer == 50) {
+                SoundEngine.PlaySound(chainLaunchSound, NPC.Center);
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    var link = Projectile.NewProjectileDirect(NPC.GetSource_FromThis(), linkCenter, Vector2.Zero,
+                        ModContent.ProjectileType<NiuMaLinkChain>(), 55, 2f, NPC.target);
+                    link.ai[0] = NPC.whoAmI;
+                    link.ai[1] = p.whoAmI;
+                    link.netUpdate = true;
+                }
+            }
+            else if (Timer < 382) {
+                if (linkCenter == Vector2.Zero)
+                    linkCenter = Target.Center; // 中途入场兜底
+                // 旋转编队: 位置直书 (velocity=位移增量, 保尾迹)
+                float phi = MathF.PI + MathHelper.Clamp(((float)Timer - 110f) * 0.0165f, 0f, 999f);
+                float radius = MathHelper.Lerp(startRadius, endRadius, MathHelper.Clamp(((float)Timer - 110f) / 80f, 0f, 1f));
+                if (Timer < 110)
+                    phi = MathF.PI;
+                Vector2 want = linkCenter + phi.ToRotationVector2() * radius;
+                NPC.velocity = (want - NPC.Center) * 0.2f;
+                if (Timer == 110) {
+                    SoundEngine.PlaySound(SoundID.Item20 with { Pitch = -0.5f, Volume = 1f }, linkCenter);
+                    ACMScreenShakeSystem.Add(6f);
+                }
+                chargeInten = MathHelper.Lerp(chargeInten, 0.55f, 0.05f);
+            }
+            else if (Timer < 410) {
+                if (Timer == 382) {
+                    NPC.velocity = (NPC.Center - linkCenter).NormalizeVector() * 9f; // 断链反冲
+                    ACMScreenShakeSystem.Add(6f);
+                }
+                NPC.velocity *= 0.9f;
+            }
+            else {
+                if (IsConductor) {
+                    attacksInDuty = 0;
+                    ForceBoth(StSelect);
+                }
+            }
+            FacePlayer();
+        }
+
+        // ================= 预警绘制 =================
+
+        protected override void DrawStateTelegraphs() {
+            if (Main.dedServ)
+                return;
+
+            // 冲撞/锁链瞄准线 (锁链扇画整扇预警)
+            if (telegraphLine) {
+                Color core = telegraphLethal ? TelegraphColors.Lethal : TelegraphColors.NetherViolet;
+                float w = telegraphLethal ? 16f : 10f;
+                int fan = State == AtkChainFan ? (DidP3 ? 5 : (DidP2 ? 4 : 3)) : 1;
+                for (int i = 0; i < fan; i++) {
+                    float off = (i - (fan - 1) * 0.5f) * 0.42f;
+                    Vector2 dir = aimDir.RotatedBy(off);
+                    ACMShaders.DrawBeam(NPC.Center, NPC.Center + dir * 1600f, fan > 1 ? w * 0.7f : w, core,
+                        new Color(80, 20, 30), telegraphLethal ? 0.9f : 0.5f, 1.4f, 2f, 2.2f);
+                }
+            }
+
+            // 黄泉车道
+            if (State == StLane && (SynergyPhase == 1 || SynergyPhase == 2)) {
+                bool lethal = SynergyPhase == 2 || Timer % 190 >= 95;
                 Color core = lethal ? TelegraphColors.Lethal : TelegraphColors.NetherViolet;
                 float w = lethal ? 38f : 18f;
                 ACMShaders.DrawBeam(LaneStart, LaneEnd, w, core, new Color(90, 20, 30), lethal ? 1f : 0.6f);
-                if (SynergyPhase == 2)
-                    ACMShaders.DrawRadialBloomAt(NPC.Center, 0.16f, 0.7f, TelegraphColors.Lethal, 8f, 2.6f);
+            }
+
+            // P2 结链光桥 + 权柄魂灯 (指挥绘制)
+            NPC p = Partner;
+            if (State == StP2 && p != null && Timer > 35 && Timer < 126) {
+                float link = MathHelper.Clamp(((float)Timer - 35f) / 60f, 0f, 1f);
+                ACMShaders.DrawBeam(NPC.Center, p.Center, 10f + 6f * link,
+                    Color.Lerp(NiuMaHelper.EmberRed, NiuMaHelper.GhostViolet, 0.5f), new Color(70, 30, 80), link * 0.9f, 1.8f);
+                if (Timer > 95) {
+                    float slide = MathHelper.Clamp(((float)Timer - 95f) / 30f, 0f, 1f);
+                    Vector2 lantern = Vector2.Lerp(NPC.Center, p.Center, slide);
+                    var glow = ACMAsset.SoftGlow;
+                    var lc = NiuMaHelper.EmberCore with { A = 0 };
+                    Main.spriteBatch.Draw(glow, lantern - Main.screenPosition, null, lc, 0, glow.Size() * 0.5f, 1.6f, default, 0);
+                    Main.spriteBatch.Draw(glow, lantern - Main.screenPosition, null, Color.White with { A = 0 } * 0.6f, 0, glow.Size() * 0.5f, 0.7f, default, 0);
+                }
             }
         }
-        public void ReSet() {
-            for (int i = 0; i <= 2; i++) {
-                NPC.ai[i] = 0;
-            }
-        }
-        private float NPCai(int c) {
-            return NPC.ai[c];
-        }
-        public override bool PreAI() {
-            Draw_Tail = false;
-            chargeTelegraph = false;
-            return base.PreAI();
-        }
-        private void Ai_0(float timeLeft, int dam) {
-            //冲锋阶段+抛出血雾
-            NPC.ai[0]++;
-            var Proj_t = ModContent.ProjectileType<Proj_756_Adjust>();
 
-            if (NPCai(0) < 50) {
-                NPC.rotation = 0;
-                if (NPCai(0) == 1) SoundEngine.PlaySound(ChargeWindupSound, NPC.Center);//预备声音
-            }
-            else if (NPCai(0) < 110) {
-                Draw_Alpha = MathHelper.Lerp(Draw_Alpha, 0, .06f);
-            }
-            else if (NPCai(0) < 140) {
-                if (NPCai(0) == 110) {
-                    NPC.direction = NiuMaHelper.Rand_Int(-1, 1, 0);
-                    NPC.Center = player.Center + new Vector2(600, 0) * -NPC.direction;
-                    SoundEngine.PlaySound(RoarSound, NPC.Center);//出现轰鸣
-                    ScreenPla?.SetZoom(1.8f);
-                }
-                Draw_Alpha = MathHelper.Lerp(Draw_Alpha, 1, .1f);
-                // 冲锋瞄准预告 (每招可读): 蓄势期画瞄准线, 末段转红。
-                if (NPCai(0) >= 116) {
-                    chargeTelegraph = true;
-                    chargeAim = (player.Center - NPC.Center).NormalizeVector(Vector2.UnitX);
-                }
-            }
-            else if (NPCai(0) < 175) {
-                Draw_Tail = true;
-                if (NPCai(0) == 140) {
-                    for (int i = 0; i < 5; i++) {
-                        var d = Dust.NewDustPerfect(NPC.Center, ModContent.DustType<Dust_1>());
-                        d.color = Color.DarkRed * .5f;
-                        d.color.A = 255;
-                        d.scale *= 2.6f;
-
-                        d.velocity = new Vector2(NiuMaHelper.Rand_Float(2, 6)).RotatedByRandom(8);
-                    }
-                    NPC.velocity = (player.Center - NPC.Center).NormalizeVector() * 2;
-                    ScreenPla?.SetScreenShake(5, 15);
-                }
-                if (NPCai(0) % 3 == 0 && NPC.velocity.Length() > 9) {
-                    for (int i = 0; i < 3; i++) {
-                        var vel = new Vector2(NPC.direction, -1).RotatedByRandom(1);
-                        var pos = Vector2.Lerp(NPC.oldPos[4] + new Vector2(35) * NPC.scale, NPC.Center, NiuMaHelper.Rand_Float(1));
-                        var p = Projectile.NewProjectileDirect(NPC.GetSource_FromThis(), pos, vel, Proj_t, dam, 1);
-                        p.ai[0] = -timeLeft * 60;
-                        p.ai[1] = NiuMaHelper.Rand_Float(.5f, 1f);
-                        p.friendly = false;
-                        p.hostile = true;
-                    }
-                }
-                if (NPC.velocity.Length() < 26) NPC.velocity *= 1.2f;
-            }
-            else if (NPCai(0) < 256) {
-                if (NPCai(0) % 3 == 0 && NPC.velocity.Length() > 12) {
-                    for (int i = 0; i < 3; i++) {
-                        var vel = new Vector2(NPC.direction, -1).RotatedByRandom(1);
-                        var pos = Vector2.Lerp(NPC.oldPos[4] + new Vector2(35) * NPC.scale, NPC.Center, NiuMaHelper.Rand_Float(1));
-                        var p = Projectile.NewProjectileDirect(NPC.GetSource_FromThis(), pos, vel, Proj_t, dam, 1);
-                        p.ai[0] = -timeLeft * 60;
-                        p.ai[1] = NiuMaHelper.Rand_Float(.5f, 1f);
-                        p.friendly = false;
-                        p.hostile = true;
-                    }
-                }
-                NPC.velocity *= .95f;
-                if (NPCai(0) == 255)
-                    NPC.direction *= -1;
-            }
-            else {
-                ReSet();
-                NPC.ai[3]++;
-            }
-            NPC.rotation = NPC.rotation.AngleLerp(Math.Clamp(NPC.velocity.X * .06f, -.5f, .5f), .07f);
-
-        }
-        private Vector2 Ai1_ToCreatChainProj;
-        private void Ai_1(int next, int ChainNum = 3) {
-            //锁链牵引阶段
-            NPC.ai[0]++;
-            var dis = Vector2.Distance(NPC.Center, player.Center);
-            var ForStep = ((ChainNum - 1) / 2);
-            if (NPCai(0) < 70) {
-                NPC.velocity = Vector2.Lerp(NPC.velocity, (player.Center + new Vector2(-500 * NPC.direction, -100) - NPC.Center).NormalizeVector() * 10 * Math.Clamp(dis * .03f, 0, 1), .07f);
-                if (NPCai(0) == 1) SoundEngine.PlaySound(ChargeWindupSound, NPC.Center);//蓄力提示
-            }
-            else {
-                NPC.velocity *= .0f;
-            }
-            if (NPCai(0) < 60) {
-                Ai1_ToCreatChainProj = (player.Center - NPC.Center).NormalizeVector() * 75;
-
-                for (int j = -ForStep; j <= ForStep; j++) {
-                    for (float i = 0; i < NPCai(0); i++) {
-                        if (j == 0) {
-                            var v = i / NPCai(0);
-                            var pos = NPC.Center + (Ai1_ToCreatChainProj.NormalizeVector()).RotatedBy(j * .5f) * v * Math.Min(Math.Abs(j) * 1800 + (player.Center - NPC.Center).Length(), 1800);
-                            Dust.NewDustPerfect(pos, DustID.CrimsonTorch).noGravity = true;
-                        }
-                        else {
-                            for (float k = 0; k < 1; k += .3f) {
-                                var v = i / NPCai(0);
-                                v += k;
-                                var pos = NPC.Center + (Ai1_ToCreatChainProj.NormalizeVector()).RotatedBy(j * .5f) * v * Math.Min(Math.Abs(j) * 1800 + (player.Center - NPC.Center).Length(), 1800);
-                                Dust.NewDustPerfect(pos, DustID.CrimsonTorch).noGravity = true;
-
-                            }
-                        }
-                    }
-                }
-            }
-            if (NPCai(0) == 70) {
-                var v = Ai1_ToCreatChainProj;
-                for (int i = -ForStep; i <= ForStep; i++) {
-                    var p = Projectile.NewProjectileDirect(NPC.GetSource_FromThis(), NPC.Center, v.RotatedBy(i * .5f), ModContent.ProjectileType<ChainProj>(), 1, 0);
-                    p.ai[2] = NPC.whoAmI;
-                }
-                SoundEngine.PlaySound(ChainLaunchSound, NPC.Center);//发射锁链音效
-                ScreenPla?.SetScreenShake(6, 12);
-            }
-            if (NPCai(0) > 116) {
-                ReSet();
-                NPC.ai[3] = next;
-            }
-
-        }
-        private Vector2 Ai3_ToVector;
-        private void Ai_2() {
-            //高空凝视蓄能阶段
-            var ty = ModContent.DustType<Dust_1>();
-            Ai3_ToVector = player.Center + new Vector2(0, -340);
-            NPC.ai[0]++;
-
-            if (NPCai(0) < 240) {
-                var dis = (NPC.Center - Ai3_ToVector).Length();
-                NPC.velocity = Vector2.Lerp(NPC.velocity, (Ai3_ToVector - NPC.Center).NormalizeVector() * 12 * Math.Clamp(dis * .03f, 0, 1), .07f);
-            }
-            else {
-                ReSet();
-                //若两者均进入半血则进入组合阶段 (牛头为指挥, 同步拉马面进协同)
-                if (NPC.life < NPC.lifeMax * .5f && NPC_MaMian.active && NPC_MaMian.life < NPC_MaMian.lifeMax * .5f) {
-                    NPC.ai[3] = 3;
-                    SynergyPhase = 0;
-                    synergyLocal = 0;
-                    if (NPC_MaMian.ModNPC is MaMian mm) {
-                        mm.ReSet();
-                        NPC_MaMian.ai[3] = 3;
-                    }
-                }
-                else NPC.ai[3] = 0;
-            }
-            if (NPCai(0) <= 155 && NPCai(0) >= 50) {
-                if (NPCai(0) % 35 == 0) {
-
-                    for (int i = 0; i < 20; i++) {
-                        var _CreatPos = NPC.Center + new Vector2(130).RotatedByRandom(8);
-                        var d = Dust.NewDustPerfect(_CreatPos, ty);
-                        d.color = Color.DarkRed * .2f;
-                        d.color.A = 255;
-                        d.scale *= 2.6f;
-
-                        d.velocity = (NPC.Center - d.position).NormalizeVector() * 8;
-
-                    }
-                }
-            }
-            if (NPCai(0) == 190) {
-                for (int i = 0; i < 10; i++) {
-                    var v = new Vector2(NiuMaHelper.Rand_Float(5, 8)).RotatedByRandom(8);
-                    for (int j = 0; j < 4; j++) {
-                        var d = Dust.NewDustPerfect(NPC.Center, ty);
-                        d.color = Color.DarkRed;
-                        d.color.A = 255;
-                        d.scale *= 2;
-                        d.alpha /= 3;
-                        d.velocity = v;
-                    }
-                }
-                SoundEngine.PlaySound(EyeBlastSound, NPC.Center);//眼束释放
-                Projectile.NewProjectileDirect(NPC.GetSource_FromAI(), NPC.Center, new Vector2(6).RotatedByRandom(8), ModContent.ProjectileType<EyeProj>(), 1, 0, player.whoAmI);
-                ScreenPla.SetScreenShake(8, 10);
-            }
-        }
-        private const int SynergyCycle = 200;   // 单条车道的完整周期
-        private const int SynergyCycles = 2;     // 协同阶段重复几次车道
-        private void Ai_3() {
-            //协同阶段「勾魂锁命连携」: 牛头压一条可读车道 (铺垫→预告→冲锋→收招),
-            //马面在收招/铺垫的空档填充缓慢灵魂球 —— 学配合, 而非拼 DPS。
-            NPC.ai[0]++;
-            int total = (int)NPC.ai[0];
-            int cycleIndex = total / SynergyCycle;
-            synergyLocal = total % SynergyCycle;
-
-            if (cycleIndex >= SynergyCycles) {
-                ReSet();
-                NPC.ai[3] = 0;        // 循环回常规 (马面读到牛头离开协同后自行退出)
-                SynergyPhase = 0;
-                NPC.damage = 10;
-                ScreenPla?.SetZoom(1.4f);
+        public override void PostDraw(SpriteBatch sb, Vector2 scrPos, Color col) {
+            if (Main.dedServ)
                 return;
+            // 凝视蓄力 / 死亡收光: 径向泛光 (走全屏名额契约)
+            if (State == AtkGaze && Timer < 42 && chargeInten > 0.15f) {
+                Vector2 eyePos = NPC.Center + new Vector2(NPC.direction * 30f, -20f);
+                ACMShaders.DrawRadialBloomAt(eyePos, 0.06f + chargeInten * 0.08f, chargeInten * 0.7f, NiuMaHelper.EmberRed, 8f, 2.6f);
             }
-
-            bool chargeFromLeft = cycleIndex % 2 == 0;
-
-            if (synergyLocal < 50) {
-                // —— 铺垫: 锁定车道高度, 牛头移动到起点侧 ——
-                SynergyPhase = 0;
-                NPC.damage = 10;
-                if (synergyLocal == 0) {
-                    synergyLaneY = player.Center.Y;
-                    SoundEngine.PlaySound(RoarSound, NPC.Center);
-                    ScreenPla?.SetZoom(2.2f);
-                }
-                float laneHalf = 1500f;
-                LaneStart = new Vector2(player.Center.X - laneHalf, synergyLaneY);
-                LaneEnd = new Vector2(player.Center.X + laneHalf, synergyLaneY);
-                Vector2 startPos = chargeFromLeft ? LaneStart : LaneEnd;
-                startPos.X += chargeFromLeft ? 200f : -200f; // 留一点起跑距离
-                NPC.velocity = Vector2.Lerp(NPC.velocity, (startPos - NPC.Center) * 0.08f, 0.1f);
-                NPC.direction = chargeFromLeft ? 1 : -1;
+            else if (State == StDeath && Timer > 100) {
+                float k = MathHelper.Clamp(((float)Timer - 100f) / 32f, 0f, 1f);
+                ACMShaders.DrawRadialBloomAt(NPC.Center, 0.2f * (1f - k * 0.6f), 0.5f + k * 0.5f, NiuMaHelper.EmberCore, 6f, 2.2f);
             }
-            else if (synergyLocal < 110) {
-                // —— 预告: 牛头蓄势, 车道亮起 (幽紫→末段红, 见 DrawTelegraphs) ——
-                SynergyPhase = 1;
-                NPC.damage = 10;
-                NPC.velocity *= 0.85f;
-                if (synergyLocal == 92)
-                    SoundEngine.PlaySound(ChargeWindupSound, NPC.Center);
-            }
-            else if (synergyLocal < 140) {
-                // —— 冲锋: 沿车道横扫 (致命接触) ——
-                SynergyPhase = 2;
-                NPC.damage = 160;
-                Draw_Tail = true;
-                if (synergyLocal == 110) {
-                    NPC.velocity = new Vector2(chargeFromLeft ? 38f : -38f, 0);
-                    SoundEngine.PlaySound(ComboDashSound, NPC.Center);
-                    ScreenPla?.SetScreenShake(6, 10);
-                    ACMScreenShakeSystem.Add(8f);
-                }
-                if (NPC.velocity.Length() < 42)
-                    NPC.velocity *= 1.04f;
-                NPC.Center = new Vector2(NPC.Center.X, MathHelper.Lerp(NPC.Center.Y, synergyLaneY, 0.3f));
-            }
-            else {
-                // —— 收招: 减速, 给马面填球的空档 ——
-                SynergyPhase = 3;
-                NPC.damage = 10;
-                NPC.velocity *= 0.9f;
-            }
-            NPC.rotation = NPC.rotation.AngleLerp(Math.Clamp(NPC.velocity.X * .08f, -.6f, .6f), .1f);
         }
-        public override void AI() {
-            Lighting.AddLight(NPC.Center, Color.DarkRed.ToVector3());
-
-            // 地府氛围染屏 (ElementalScreenTint, 不占全屏后处理名额): 半血/协同更浓。
-            float tint = 0.22f;
-            if (NPC.life < NPC.lifeMax * .5f) tint += 0.14f;
-            if (NPC.ai[3] == 3) tint += 0.1f;
-            NiuMaScreenSystem.Publish(NPC.Center, tint);
-
-            NPC.damage = 10; // 基线接触伤害; 连携冲锋帧由 Ai_3 临时提升后自动回落。
-
-            if (player == null || NPC.target < 0 || NPC.target == 255 || Main.player[NPC.target].dead || !Main.player[NPC.target].active) {
-                NPC.TargetClosest();
-            }
-            if (NPC.ai[3] < 0) {
-                var scr = Main.LocalPlayer.GetModPlayer<NiuMaPlayer>();
-                if (NPC.ai[3] == -1) {
-                    scr.SetScreenPos(NPC.Center + new Vector2(0, -100));
-                    scr.SetZoom(1.4f);
-                    NPC.ai[0]++;
-                    if (NPC.ai[0] < 60) {
-                        NPC.velocity = new Vector2(0, -2);
-                    }
-                    else {
-                        NPC.velocity *= .9f;
-                        for (int i = 0; i < 7; i++) {
-                            var d = Dust.NewDustDirect(NPC.position, NPC.width, 10, DustID.GemDiamond);
-                            d.noGravity = true;
-                            d.velocity = new Vector2(0, -20).RotatedByRandom(1);
-                        }
-                    }
-                    if (NPC.ai[0] > 240) {
-                        ReSet();
-                        NPC.ai[3] = 0;
-                        NPC.dontTakeDamage = false;
-                    }
-                    Draw_Alpha = MathHelper.Lerp(Draw_Alpha, 1, .09f);
-                }
-                else if (NPC.ai[3] == -2)//复活演出
-                {
-                    NPC.Center = NPC_MaMian.Center + new Vector2(0, -250);
-                    if (NPC_MaMian.ai[0] > 60)
-                        Draw_Alpha = MathHelper.Lerp(Draw_Alpha, 1, .02f);
-                    if (NPC_MaMian.ai[0] > 230) {
-                        ReSet();
-                        NPC.ai[3] = 0;
-                        NPC.dontTakeDamage = false;
-                    }
-
-                }
-                NPC.rotation = NPC.rotation.AngleLerp(0, .08f);
-            }
-            else {
-                if (player != null) {
-                    if (NPC.life > (NPC.lifeMax * .5f)) {
-                        if (NPC.ai[3] == 0) {
-                            Ai_0(5, 200);
-                        }
-                        else if (NPC.ai[3] == 1) {
-                            Ai_1(0);
-                        }
-                    }
-                    else {
-                        // 半血: 不再 500 伤 / 7 链的纯数值升级; 改为新规则 (可读冲锋预告 + 凝视 + 协同连携)。
-                        if (NPC.ai[3] == 0) {
-                            Ai_0(8, 260);
-                        }
-                        else if (NPC.ai[3] == 1) {
-                            Ai_1(2, 3);
-                        }
-                        else if (NPC.ai[3] == 2) {
-                            Ai_2();
-                        }
-                        else if (NPC.ai[3] == 3) {
-                            Ai_3();
-                        }
-                    }
-                }
-                else {
-                    NPC.velocity *= .9f;
-                }
-            }
-            base.AI();
-        }
-        private bool HasRespawn = false;
-        public override bool CheckDead() {
-            if (!HasRespawn && NPC_MaMian.life > NPC_MaMian.lifeMax * .3f) {
-                HasRespawn = true;
-                Draw_Alpha = 0;
-                NPC.dontTakeDamage = true;   // 重生体淡入期无敌 (淡入完成由 ai[3]==-2 解除)
-                NPC.ai[3] = -2;
-                NPC.velocity *= 0;
-
-                // 引魂同伴 (马面) 默认无敌; 仅当玩家站入尸位光圈才可被打断 (反制窗口)。
-                NPC_MaMian.dontTakeDamage = true;
-                NPC_MaMian.velocity *= 0;
-                NPC_MaMian.ai[3] = -1;
-                ReSet();
-                (NPC_MaMian.ModNPC as MaMian).ReSet();
-                NPC.life = (int)(NPC.lifeMax * .5f);
-                SoundEngine.PlaySound(RoarSound, NPC.Center);//复活提示
-
-                // 在阵亡者尸位生成反制光圈 (站圈内 -> 引魂者可被打断)。
-                if (Main.netMode != NetmodeID.MultiplayerClient)
-                    Projectile.NewProjectile(NPC.GetSource_FromThis(), NPC.Center, Vector2.Zero,
-                        ModContent.ProjectileType<NiuMaRevivalCircle>(), 0, 0f, Main.myPlayer, NPC_MaMian.whoAmI);
-                return false;
-            }
-            return base.CheckDead();
-        }
-
     }
-    public class MaMian : ModNPC
+
+    /// <summary>
+    /// 马面 —— 魂之吏。炮台岗: 魂火三连 / 忘川引潮; 缠斗岗: 无常三闪 / 拘魂令环。
+    /// 读取牛头节拍镜像行动; 控场期周期性施放「勾魂」(打牛头可破)。
+    /// </summary>
+    public class MaMian : NiuMaBoss
     {
-        //声音资源
-        private static readonly SoundStyle VolleySound = SoundID.Item73 with { Volume = .8f };
-        private static readonly SoundStyle SoulPullSound = SoundID.DD2_MonkStaffGroundImpact with { Volume = .9f };
-        private static readonly SoundStyle BoomChargeSound = SoundID.Item74 with { Volume = 1f };
+        private static readonly SoundStyle volleySound = SoundID.Item73 with { Volume = .8f };
+        private static readonly SoundStyle soulPullSound = SoundID.DD2_MonkStaffGroundImpact with { Volume = .9f };
+        private static readonly SoundStyle roarSound = SoundID.Roar with { Pitch = 0.35f, Volume = 0.9f };
 
-        public override void SetDefaults() {
-            NPC.width = 70;
-            NPC.height = 70;
-            NPC.lifeMax = 10000;
-            NPC.aiStyle = -1;
-            NPC.knockBackResist = 0;
-            NPC.damage = 10;
-            NPC.boss = true;
-            NPC.lavaImmune = true;
-            NPC.noGravity = true;
-            NPC.noTileCollide = true;
-            NPC.netAlways = true;
-            NPC.defense = 13;
-            NPC.chaseable = false;
-            NPC.rarity = 2;
-            NPC.scale = 2.4f;
-            base.SetDefaults();
-        }
-        private float Draw_Alpha = 1;
-        private bool Draw_Tail = false;
+        public override int PartnerType => ModContent.NPCType<NiuTou>();
+        public override bool IsConductor => false;
+        public override bool IsBrawler => Duty == 1;
+        protected override Color ThemeColor => NiuMaHelper.GhostViolet;
+        protected override Color ThemeCore => NiuMaHelper.GhostCore;
+        protected override SoundStyle RoarSound => roarSound;
 
-        public override bool PreDraw(SpriteBatch sb, Vector2 scrPos, Color col) {
-            //减速领域地纹 (硬化 API ArenaRunic): 持续/站位危险 = 低饱和脉动圈, 非红。
-            if (!Main.dedServ)
-                DrawDomainDecal();
+        private const int AtkTripleVolley = 20, AtkTide = 21, AtkTripleFlash = 22, AtkWritRing = 23;
 
-            //强化视觉表现: 紫色尾焰+发光
-            var tex = TextureAssets.Npc[Type].Value;
-            var rec = NPC.frame;
-            var spe = NPC.direction == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
-            if (Draw_Tail) {
-                var Tailcol = Color.Purple * .5f;
-                Tailcol.A = 0;
-                for (float i = 0; i < NPC.oldPos.Length; i++) {
-                    var a = 1 - i / NPC.oldPos.Length * .4f;
-                    sb.Draw(tex, NPC.oldPos[(int)i] + rec.Size() * .5f * NPC.scale - scrPos, rec, Tailcol * Draw_Alpha * a, NPC.rotation, rec.Size() * .5f, NPC.scale, spe, 0);
-                }
-            }
-            sb.Draw(tex, NPC.Center - scrPos, rec, col * Draw_Alpha, NPC.rotation, rec.Size() * .5f, NPC.scale, spe, 0);
-            var glowCol = Color.Purple; glowCol.A = 0;
-            sb.Draw(tex, NPC.Center - scrPos, rec, glowCol * .45f * Draw_Alpha, NPC.rotation, rec.Size() * .5f, NPC.scale * 1.08f, spe, 0);
-
-            //勾魂牵引索 (硬化 API DrawBeam): 标记中 = 幽紫 → 近到期渐红。
-            if (!Main.dedServ)
-                DrawSoulHookTether();
-            return false;
-        }
-
-        private void DrawDomainDecal() {
-            float inten = (float)NPC.localAI[1];
-            if (inten <= 0.12f)
-                return;
-            Effect fx = ACMShaders.ArenaRunic;
-            if (fx == null)
-                return;
-            float worldR = DomainRadius * inten;
-            ACMShaders.WorldDecalParams(NPC.Center, worldR, out Vector2 uv, out float radiusFrac, out float aspect);
-            Color primary = TelegraphColors.NetherViolet;
-            Color secondary = TelegraphColors.GhostGreen;
-            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
-            fx.Parameters["uCenter"]?.SetValue(uv);
-            fx.Parameters["uRadius"]?.SetValue(radiusFrac);
-            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(inten * 0.55f, 0f, 1f));
-            fx.Parameters["uAspect"]?.SetValue(aspect);
-            fx.Parameters["uColorPrimary"]?.SetValue(primary.ToVector4());
-            fx.Parameters["uColorSecondary"]?.SetValue(secondary.ToVector4());
-            fx.Parameters["uRuneFreq"]?.SetValue(12f);
-            fx.Parameters["uMode"]?.SetValue(0f);
-            fx.Parameters["uShape"]?.SetValue(0f);
-            ACMShaders.DrawScreenSpaceDecal(Main.spriteBatch, fx, BlendState.Additive);
-        }
-
-        private void DrawSoulHookTether() {
-            var p = Main.player[NPC.target];
-            if (p == null || !p.active || p.dead)
-                return;
-            var np = p.GetModPlayer<NiuMaPlayer>();
-            if (np.SoulHookTimer <= 0)
-                return;
-            float frac = 1f - np.SoulHookTimer / 180f; // 越近到期越亮
-            Color core = Color.Lerp(TelegraphColors.NetherViolet, TelegraphColors.Execution, frac * 0.55f);
-            ACMShaders.DrawBeam(NPC.Center, p.Center, 6f, core, new Color(60, 30, 110), 0.45f + 0.5f * frac, 1.6f);
-        }
-        public override void SetStaticDefaults() {
-            NPCID.Sets.TrailingMode[Type] = 3;
-            NPCID.Sets.TrailCacheLength[Type] = 10;
-        }
+        // —— 无常三闪 ——
+        private Vector2 flashAim = Vector2.UnitX;
+        private bool flashLineOn;
+        private bool flashLineLethal;
 
         public override void ModifyNPCLoot(NPCLoot npcLoot) {
             NiuMaLoot.AddBossLoot(npcLoot, ModContent.NPCType<NiuTou>());
         }
 
-        public Player player => Main.player[NPC.target];
-        public int NPC_NiuTou_Count = 0;
-        private NPC NPC_NiuTou => Main.npc[NPC_NiuTou_Count];
-        private float DomainRadius = 600f;   // 当前减速领域半径 (供地纹绘制)
-        private bool HasRespawn = false;
-        public override bool CheckDead() {
-            if (!HasRespawn && NPC_NiuTou.life > NPC_NiuTou.lifeMax * .3f) {
-                HasRespawn = true;
-                Draw_Alpha = 0;
-                NPC.dontTakeDamage = true;   // 重生体淡入期无敌
-                NPC.ai[3] = -2;
-                NPC.velocity *= 0;
-
-                // 引魂同伴 (牛头) 默认无敌; 仅当玩家站入尸位光圈才可被打断 (反制窗口)。
-                NPC_NiuTou.dontTakeDamage = true;
-                NPC_NiuTou.velocity *= 0;
-                NPC_NiuTou.ai[3] = -1;
-                ReSet();
-                (NPC_NiuTou.ModNPC as NiuTou).ReSet();
-                NPC.life = (int)(NPC.lifeMax * .5f);
-                SoundEngine.PlaySound(SoulPullSound, NPC.Center);//复活音效
-
-                if (Main.netMode != NetmodeID.MultiplayerClient)
-                    Projectile.NewProjectile(NPC.GetSource_FromThis(), NPC.Center, Vector2.Zero,
-                        ModContent.ProjectileType<NiuMaRevivalCircle>(), 0, 0f, Main.myPlayer, NPC_NiuTou.whoAmI);
-                return false;
-            }
-            return base.CheckDead();
-        }
-        public void ReSet() {
-            for (int i = 0; i <= 2; i++) {
-                NPC.ai[i] = 0;
-            }
-        }
-        private Vector2 ToVec;
-        private bool StartMove = false;
-        public override void OnSpawn(IEntitySource source) {
-            ToVec = NPC.Center;
-            base.OnSpawn(source);
-        }
-        private void Ai0(int num, int dam, int Diverge = 1, int next = 0) {
-            //多次弹幕齐射阶段
-            NPC.ai[0]++;
-            if (NPC.ai[1] < num) {
-                if (NPC.ai[0] > 40) {
-                    if (NPC.ai[0] % 40 == 0) {
-                        NPC.ai[1]++;
-                        for (int i = 0; i < Diverge; i++) {
-                            var p = Projectile.NewProjectileDirect(NPC.GetSource_FromThis(), NPC.Center, (player.Center - NPC.Center).NormalizeVector().RotatedByRandom(2) * 5, ModContent.ProjectileType<DarkGreenProj>(), dam, 2);
-                            p.ai[2] = NPC.whoAmI;
-                        }
-                        SoundEngine.PlaySound(VolleySound, NPC.Center);//齐射音效
-                    }
-                }
+        protected override int ChooseNext() {
+            int pick;
+            if (Partner == null) {
+                // 孤军: 四招全轮换
+                int[] soloPool = [AtkTripleVolley, AtkTripleFlash, AtkTide, AtkWritRing];
+                pick = soloPool[attackAlt++ % soloPool.Length];
             }
             else {
-                NPC.ai[1]++;
-                if (NPC.ai[1] > 240) {
-                    ReSet();
-                    NPC.ai[3] = next;
-                }
+                // 马面不裁决节拍 (换岗/合体由牛头强制); 只选自己岗位内的招
+                int[] pool = IsBrawler ? [AtkTripleFlash, AtkWritRing] : [AtkTripleVolley, AtkTide];
+                pick = pool[attackAlt++ % 2];
             }
-
+            // 场上已有忘川水域 → 换魂火三连 (避免叠域)
+            if (pick == AtkTide && AnyTideField())
+                pick = AtkTripleVolley;
+            return pick;
         }
-        private void Ai_Const_0(double TimeDis, int timeLength, double R) {
-            //持续领域减速/半血加强
-            DomainRadius = (float)R;
-            if (++NPC.localAI[0] > TimeDis) {
-                NPC.localAI[1] = MathHelper.Lerp(NPC.localAI[1], 1, .05f);
 
-                if (TimeDis > 0)
-                    if (NPC.localAI[0] > TimeDis + timeLength) {
-                        NPC.localAI[0] = 0;
-                    }
-                foreach (var p in Main.player) {
-                    if (p != null)
-                        if (p.active && !p.dead) {
-                            if (p.Distance(NPC.Center) < R * NPC.localAI[1]) {
-                                if (NPC.life > NPC.lifeMax * .5f) {
-                                    p.AddBuff(ModContent.BuffType<DeclineSpeedBuff_1>(), 6);
-                                }
-                                else {
-                                    p.AddBuff(ModContent.BuffType<DeclineSpeedBuff_2>(), 6);
-                                    if (NPC.localAI[1] > .6f && NPC.ai[0] % 30 == 0) SoundEngine.PlaySound(SoulPullSound, NPC.Center);//半血灵魂牵引脉冲
-                                }
-                                // 魂蚀: 久站灵魂领域被缓慢侵蚀 (地府身份层)。
-                                if (NPC.localAI[1] > .5f && NPC.ai[0] % 45 == 0)
-                                    UnderworldField.AddSoulErosion(p, 1);
-                            }
-                        }
-                }
+        private static bool AnyTideField() {
+            foreach (var p in Main.ActiveProjectiles) {
+                if (p.type == ModContent.ProjectileType<NiuMaTideField>())
+                    return true;
             }
-            else {
-                NPC.localAI[1] = MathHelper.Lerp(NPC.localAI[1], 0, .05f);
-            }
-            if (NPC.localAI[1] > .12)
-                for (float j = 0; j < 1; j += 1 / 4f) {
-                    for (float i = 0; i < 1; i += .2f) {
-                        var dust = Dust.NewDustPerfect(NPC.Center + new Vector2(0, (float)R * NPC.localAI[1]).RotatedBy(j * MathHelper.TwoPi + i * .2f + Main.timeForVisualEffects * .09), DustID.CorruptTorch);
-                        dust.noGravity = true;
-                    }
-                }
+            return false;
         }
-        private void Ai2() {
-            //大范围爆裂蓄能
-            NPC.ai[0]++;
-            if (NPC.ai[0] < 120) {
-                var v = NPC.ai[0] / 120f;
-                var p = new Vector2(0, -100).RotatedBy(v * MathHelper.TwoPi * 2) * (1f - v);
-                Dust.NewDustPerfect(p, DustID.DemonTorch).noGravity = true;
-            }
-            if (NPC.ai[0] == 140) {
-                SoundEngine.PlaySound(BoomChargeSound, NPC.Center);//爆裂蓄能音效
-                for (int i = -1; i <= 1; i++)
-                    Projectile.NewProjectile(NPC.GetSource_FromThis(), NPC.Center, new Vector2(0, -5).RotatedBy(i), ModContent.ProjectileType<DarkGreenBoomProj>(), 1500, 2, player.whoAmI);
-            }
-            if (NPC.ai[0] > 200) {
-                ReSet();
-                NPC.ai[3] = 0;
-            }
-        }
-        private void Ai3_Synergy() {
-            //协同阶段「勾魂锁命连携」马面侧: 读牛头车道相位, 在其收招/铺垫空档填充缓慢灵魂球,
-            //牛头压线 (预告/冲锋) 时静默 —— 与牛头交替, 逼玩家学配合 (非拼 DPS)。
-            NPC.ai[0]++;
-            Draw_Tail = true;
 
-            NPC niu = NPC_NiuTou;
-            // 牛头不在场 / 已离开协同 -> 马面同步退出。
-            if (niu == null || !niu.active || niu.ai[3] != 3) {
-                ReSet();
-                NPC.ai[3] = 0;
-                return;
-            }
-            if (NPC.ai[0] == 1)
-                SoundEngine.PlaySound(SoulPullSound, NPC.Center);
-
-            // 悬于上方, 避开牛头横扫车道。
-            NPC.velocity = Vector2.Lerp(NPC.velocity, (player.Center + new Vector2(0, -360) - NPC.Center).NormalizeVector() * 8, .05f);
-
-            int phase = niu.ModNPC is NiuTou nt ? nt.SynergyPhase : 1;
-            // 仅在牛头铺垫(0)/收招(3)空档释放慢球; 牛头压线(1/2)时不抢读屏。
-            if ((phase == 0 || phase == 3) && NPC.ai[0] % 26 == 0) {
-                SoundEngine.PlaySound(VolleySound, NPC.Center);
-                for (int i = -2; i <= 2; i++) {
-                    var dir = (player.Center - NPC.Center).NormalizeVector().RotatedBy(i * 0.22f);
-                    var p = Projectile.NewProjectileDirect(NPC.GetSource_FromThis(), NPC.Center, dir * 3.4f, ModContent.ProjectileType<SoulOrbProj>(), 240, 2);
-                    p.ai[2] = NPC.whoAmI;
-                }
-            }
-        }
         public override void AI() {
-            Lighting.AddLight(NPC.Center, Color.Purple.ToVector3());
-
-            // 地府氛围染屏 (与牛头共用, 取 max): 半血/协同更浓。
-            float tint = 0.22f;
-            if (NPC.life < NPC.lifeMax * .5f) tint += 0.14f;
-            if (NPC.ai[3] == 3) tint += 0.1f;
-            NiuMaScreenSystem.Publish(NPC.Center, tint);
-
-            if (player == null || NPC.target < 0 || NPC.target == 255 || Main.player[NPC.target].dead || !Main.player[NPC.target].active) {
-                NPC.TargetClosest();
-            }
-            if (NPC.ai[3] < 0) {
-                var scr = Main.LocalPlayer.GetModPlayer<NiuMaPlayer>();
-                if (NPC.ai[3] == -1) {
-                    scr.SetScreenPos(NPC.Center + new Vector2(0, -100));
-                    scr.SetZoom(1.4f);
-                    NPC.ai[0]++;
-                    if (NPC.ai[0] < 60) {
-                        NPC.velocity = new Vector2(0, -2);
-                    }
-                    else {
-                        NPC.velocity *= .9f;
-                        for (int i = 0; i < 7; i++) {
-                            var d = Dust.NewDustDirect(NPC.position, NPC.width, 10, DustID.GemDiamond);
-                            d.noGravity = true;
-                            d.velocity = new Vector2(0, -20).RotatedByRandom(1);
-                        }
-                    }
-                    if (NPC.ai[0] > 240) {
-                        ReSet();
-                        NPC.ai[3] = 0;
-                        NPC.dontTakeDamage = false;
-                    }
-                    Draw_Alpha = MathHelper.Lerp(Draw_Alpha, 1, .09f);
-                }
-                else if (NPC.ai[3] == -2)//复活演出
-                {
-                    NPC.Center = NPC_NiuTou.Center + new Vector2(0, -250);
-                    if (NPC_NiuTou.ai[0] > 60)
-                        Draw_Alpha = MathHelper.Lerp(Draw_Alpha, 1, .02f);
-                    if (NPC_NiuTou.ai[0] > 230) {
-                        ReSet();
-                        NPC.ai[3] = 0;
-                        NPC.dontTakeDamage = false;
-                    }
-
-                }
-                NPC.rotation = NPC.rotation.AngleLerp(0, .08f);
-            }
-            else {
-                if (player != null) {
-
-                    if (NPC.life > NPC.lifeMax * .5f) {
-                        if (NPC.ai[3] == 0) {
-                            Ai0(1, 300, 4, 0);
-                        }
-                        Ai_Const_0(15 * 60, 20 * 60, 600);
-
-                    }
-                    else {
-                        Ai_Const_0(-1, 114514, 550);
-
-                        if (NPC.ai[3] == 0) {
-                            //半血: 不再翻倍齐射; 维持单波 + 新机制「勾魂」。
-                            Ai0(1, 300, 4, 2);
-                        }
-                        else if (NPC.ai[3] == 2) {
-                            Ai2();
-                        }
-                        else if (NPC.ai[3] == 3) {
-                            Ai3_Synergy();
-                        }
-
-                        //勾魂 (控制者新机制): 非协同阶段周期性标记玩家; 协同进入由牛头指挥, 此处不再自行触发。
-                        if (NPC.ai[3] != 3) {
-                            NPC.localAI[2] -= 1f;
-                            if (NPC.localAI[2] <= 0f) {
-                                NPC.localAI[2] = 360f;
-                                player?.GetModPlayer<NiuMaPlayer>()?.ApplySoulHook(NPC.whoAmI);
-                                SoundEngine.PlaySound(SoulPullSound, NPC.Center);
-                            }
-                        }
-                    }
-                    if (StartMove) {
-                        NPC.velocity = Vector2.Lerp(NPC.velocity, (ToVec - NPC.Center).NormalizeVector() * 50, 0.02f);
-                        if (NPC.Distance(ToVec) < 100)
-                            StartMove = false;
-                    }
-                    else {
-                        if (player.Distance(NPC.Center) > 900) {
-                            if (!StartMove) {
-                                ToVec = player.Center + new Vector2(0, -NiuMaHelper.Rand_Float(400, 600)).RotatedByRandom(1);
-                                ToVec.X += player.velocity.X * 50;
-                                StartMove = true;
-                            }
-                        }
-                    }
-                    var dis = (NPC.Center - ToVec).Length();
-                    NPC.velocity = Vector2.Lerp(NPC.velocity, (ToVec - NPC.Center).NormalizeVector() * 12 * Math.Clamp(dis * .03f, 0, 1), .07f);
-                    NPC.direction = NPC.velocity.X > 0 ? 1 : -1;
-                    Draw_Tail = true;
-                }
-                else {
-                    NPC.velocity *= .9f;
-                }
-            }
             base.AI();
+
+            // 勾魂: 炮台岗常规流程中周期标记玩家 (打牛头可破) —— 交叉反制课题
+            // 牛头无敌期 (演出/引魂) 不施放: 反制对象必须可被攻击 (公平阀门)
+            if (InNormalFlow && !IsBrawler && Partner != null && !Partner.dontTakeDamage && !Target.dead) {
+                NPC.localAI[2] -= 1f;
+                if (NPC.localAI[2] <= 0f) {
+                    NPC.localAI[2] = DidP3 ? 560f : 780f;
+                    Target?.GetModPlayer<NiuMaPlayer>()?.ApplySoulHook(NPC.whoAmI);
+                    SoundEngine.PlaySound(soulPullSound, NPC.Center);
+                }
+            }
         }
+
         public override bool PreAI() {
-            Draw_Tail = false;
+            flashLineOn = false; // 每帧复位: 被节拍强制打断时不残留锁线
             return base.PreAI();
         }
 
+        protected override void RunAttack(int state) {
+            switch (state) {
+                case AtkTripleVolley: RunTripleVolley(); break;
+                case AtkTide: RunTide(); break;
+                case AtkTripleFlash: RunTripleFlash(); break;
+                case AtkWritRing: RunWritRing(); break;
+                case StLane: RunLaneCurtain(); break;
+                case StLink: RunSoulLinkFollow(); break;
+                default: SwitchState(StSelect); break;
+            }
+        }
+
+        // ================= 魂火三连 (炮台) =================
+
+        private void RunTripleVolley() {
+            int side = NPC.Center.X >= Target.Center.X ? 1 : -1;
+            int waves = DidP3 ? 4 : 3;
+            int lastWave = 26 + (waves - 1) * 24;
+
+            Vector2 anchor = Target.Center + new Vector2(side * 600, -280 + 40f * MathF.Sin((float)Timer * 0.05f));
+            HoverTo(anchor, 12f, 0.08f);
+            FacePlayer();
+
+            if (Timer < 26) {
+                chargeInten = MathHelper.Lerp(chargeInten, (float)(Timer / 26f) * 0.7f, 0.15f);
+                if (!Main.dedServ && Main.rand.NextBool(2)) {
+                    Vector2 muzzle = NPC.Center + new Vector2(NPC.direction * 40, 0);
+                    Vector2 pos = muzzle + Main.rand.NextVector2Circular(90, 90);
+                    var d = Dust.NewDustPerfect(pos, DustID.CorruptTorch);
+                    d.noGravity = true;
+                    d.velocity = (muzzle - pos).NormalizeVector() * 3.5f;
+                }
+            }
+
+            if (Timer >= 26 && Timer <= lastWave && (Timer - 26) % 24 == 0) {
+                Vector2 aim = (Target.Center - NPC.Center).NormalizeVector(Vector2.UnitX);
+                SoundEngine.PlaySound(volleySound, NPC.Center);
+                NPC.velocity -= aim * 6f; // 逐波后坐
+                int n = DidP3 ? 6 : 5;
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    for (int i = 0; i < n; i++) {
+                        float off = (i - (n - 1) * 0.5f) * 0.25f;
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, aim.RotatedBy(off) * 5.5f,
+                            ModContent.ProjectileType<DarkGreenProj>(), 38, 1f, NPC.target);
+                    }
+                    // 狂怒: 末波附赠爆裂魂核 (可读大威胁)
+                    if (DidP3 && Timer == lastWave)
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, aim * 4f,
+                            ModContent.ProjectileType<DarkGreenBoomProj>(), 40, 1f, NPC.target);
+                }
+            }
+
+            if (Timer >= lastWave + 30)
+                EndAttack();
+        }
+
+        // ================= 忘川引潮 (炮台) =================
+
+        private void RunTide() {
+            if (Timer < 34) {
+                HoverTo(Target.Center + new Vector2(0, -380), 14f, 0.09f);
+                chargeInten = MathHelper.Lerp(chargeInten, (float)(Timer / 34f), 0.12f);
+                FacePlayer();
+            }
+            else if (Timer == 34) {
+                SoundEngine.PlaySound(soulPullSound, NPC.Center);
+                NPC.velocity = new Vector2(0, -6f); // 展域后坐上浮
+                flashInten = 0.6f;
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    var p = Projectile.NewProjectileDirect(NPC.GetSource_FromThis(), Target.Center + new Vector2(0, -40), Vector2.Zero,
+                        ModContent.ProjectileType<NiuMaTideField>(), 36, 1f, NPC.target);
+                    p.ai[1] = DidP3 ? 1f : 0f;
+                    p.netUpdate = true;
+                }
+            }
+            else if (Timer >= 60) {
+                EndAttack();
+            }
+            else {
+                NPC.velocity *= 0.93f;
+            }
+        }
+
+        // ================= 无常三闪 (缠斗) =================
+        // 段结构: 22f 锁线 (幽紫→16f 转红) → 6f 46px/f 瞬步对穿 → 14f 硬刹重摆。伤害窗口=爆发帧。
+
+        private void RunTripleFlash() {
+            int segments = DidP3 ? 4 : 3;
+            const int segLen = 48;
+            int seg = (int)Timer / segLen;
+            int t = (int)Timer % segLen;
+
+            if (seg >= segments) {
+                EndAttack();
+                return;
+            }
+
+            if (t < 28) {
+                // 锁线: 缓慢漂移到玩家侧向, 慢启动阀门; 红线定格 10f 后才闪步
+                int side = NPC.Center.X >= Target.Center.X ? 1 : -1;
+                HoverTo(Target.Center + new Vector2(side * 380, -60), 13f, 0.1f);
+                if (t > 16)
+                    NPC.velocity *= 0.88f;
+                flashLineOn = t > 4;
+                if (t <= 18) {
+                    flashLineLethal = false;
+                    flashAim = (Target.Center - NPC.Center).NormalizeVector(Vector2.UnitX);
+                }
+                else {
+                    flashLineLethal = true;
+                }
+                if (t == 6)
+                    SoundEngine.PlaySound(SoundID.Item8 with { Volume = 0.7f, Pitch = -0.1f }, NPC.Center);
+                FacePlayer();
+            }
+            else if (t < 34) {
+                if (t == 28) {
+                    NPC.velocity = flashAim * 46f;
+                    SoundEngine.PlaySound(SoundID.DD2_GhastlyGlaivePierce with { Volume = 1f }, NPC.Center);
+                    ACMScreenShakeSystem.Add(4f);
+                    flashInten = 0.55f;
+                    hitChainImpulse = 8;
+                }
+                drawTail = true;
+                NPC.damage = 80;
+            }
+            else {
+                NPC.velocity *= 0.7f; // 硬刹
+                if (NPC.velocity.Length() > 24f)
+                    NPC.damage = 80;
+                NPC.rotation = NPC.rotation.AngleLerp(0, 0.15f);
+            }
+        }
+
+        // ================= 拘魂令环 (缠斗) =================
+
+        private float orbitAngle;
+
+        private void RunWritRing() {
+            int count = DidP3 ? 7 : 5;
+
+            // 绕玩家弧线巡游
+            if (Timer == 1)
+                orbitAngle = (NPC.Center - Target.Center).ToRotation();
+            orbitAngle += 0.028f;
+            Vector2 want = Target.Center + orbitAngle.ToRotationVector2() * 380f;
+            NPC.velocity = Vector2.Lerp(NPC.velocity, (want - NPC.Center) * 0.15f, 0.2f);
+            FacePlayer();
+
+            // 沿半弧布符 (每 8f 一张, 显形即预告)
+            if (Timer >= 8 && Timer <= 8 * count && Timer % 8 == 0) {
+                int i = (int)Timer / 8 - 1;
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    float arc = orbitAngle + MathHelper.Pi + (i - (count - 1) * 0.5f) * 0.38f;
+                    Vector2 pos = Target.Center + arc.ToRotationVector2() * 380f;
+                    var p = Projectile.NewProjectileDirect(NPC.GetSource_FromThis(), pos, Vector2.Zero,
+                        ModContent.ProjectileType<NiuMaWritProj>(), 42, 1f, NPC.target);
+                    p.ai[1] = 78 - i * 8 + i * 6; // 布符错帧补偿 → 齐读秒, 微错开开火
+                    p.netUpdate = true;
+                }
+                SoundEngine.PlaySound(SoundID.Item8 with { Volume = 0.45f, Pitch = 0.4f }, NPC.Center);
+            }
+
+            if (Timer >= 8 * count + 92)
+                EndAttack();
+        }
+
+        // ================= 合体技镜像: 黄泉车道帘幕 =================
+
+        private void RunLaneCurtain() {
+            NPC niu = Partner;
+            if (niu == null || niu.ModNPC is not NiuTou nt || niu.ai[0] != StLane) {
+                SwitchState(StSelect);
+                return;
+            }
+
+            // 悬于车道上方外侧, 不抢冲锋读屏
+            HoverTo(Target.Center + new Vector2(0, -560), 11f, 0.07f);
+            FacePlayer();
+            drawTail = true;
+
+            int local = (int)niu.ai[1] % 190;
+            // 铺垫/收招空档各布一次双排慢帘 (上排下坠 / 下排上升, 交错留缝)
+            if ((local == 20 || local == 150) && Main.netMode != NetmodeID.MultiplayerClient) {
+                float laneY = nt.LaneY;
+                bool second = local == 150;
+                for (int i = 0; i < 6; i++) {
+                    float x = Target.Center.X - 570f + i * 190f + (second ? 95f : 0f);
+                    var top = Projectile.NewProjectileDirect(NPC.GetSource_FromThis(), new Vector2(x, laneY - 430f), new Vector2(0, 2.2f),
+                        ModContent.ProjectileType<SoulOrbProj>(), 34, 1f, NPC.target);
+                    top.ai[0] = 2.4f;
+                    var bottom = Projectile.NewProjectileDirect(NPC.GetSource_FromThis(), new Vector2(x + 95f, laneY + 430f), new Vector2(0, -2.2f),
+                        ModContent.ProjectileType<SoulOrbProj>(), 34, 1f, NPC.target);
+                    bottom.ai[0] = 2.4f;
+                }
+                SoundEngine.PlaySound(volleySound, NPC.Center);
+            }
+            if (local == 20 || local == 150)
+                chargeInten = 0.8f;
+        }
+
+        // ================= 合体技镜像: 勾魂锁命对位 =================
+
+        private Vector2 linkCenter;
+
+        private void RunSoulLinkFollow() {
+            NPC niu = Partner;
+            if (niu == null || niu.ai[0] != StLink) {
+                SwitchState(StSelect);
+                return;
+            }
+
+            const float startRadius = 700f;
+            const float endRadius = 560f;
+
+            if (Timer < 50) {
+                linkCenter = Target.Center;
+                HoverTo(linkCenter + new Vector2(startRadius, 0), 26f, 0.14f);
+                chargeInten = MathHelper.Lerp(chargeInten, 0.7f, 0.08f);
+            }
+            else if (Timer < 382) {
+                if (linkCenter == Vector2.Zero)
+                    linkCenter = Target.Center; // 中途入场兜底
+                float phi = MathHelper.Clamp(((float)Timer - 110f) * 0.0165f, 0f, 999f);
+                if (Timer < 110)
+                    phi = 0f;
+                float radius = MathHelper.Lerp(startRadius, endRadius, MathHelper.Clamp(((float)Timer - 110f) / 80f, 0f, 1f));
+                Vector2 want = linkCenter + phi.ToRotationVector2() * radius;
+                NPC.velocity = (want - NPC.Center) * 0.2f;
+                chargeInten = MathHelper.Lerp(chargeInten, 0.55f, 0.05f);
+            }
+            else if (Timer < 410) {
+                if (Timer == 382)
+                    NPC.velocity = (NPC.Center - linkCenter).NormalizeVector() * 9f;
+                NPC.velocity *= 0.9f;
+            }
+            // 出口由牛头 ForceBoth(StSelect); 若牛头先亡, 上方 Partner 校验兜底
+            FacePlayer();
+        }
+
+        // ================= 预警绘制 =================
+
+        protected override void DrawStateTelegraphs() {
+            if (Main.dedServ)
+                return;
+            // 无常三闪锁线
+            if (flashLineOn) {
+                Color core = flashLineLethal ? TelegraphColors.Lethal : TelegraphColors.NetherViolet;
+                ACMShaders.DrawBeam(NPC.Center - flashAim * 100f, NPC.Center + flashAim * 1500f,
+                    flashLineLethal ? 10f : 6f, core, new Color(55, 30, 105), flashLineLethal ? 0.9f : 0.45f);
+            }
+            // 勾魂牵引索: 标记中 = 幽紫 → 近到期渐红
+            var tgt = Target;
+            if (tgt != null && tgt.active && !tgt.dead) {
+                var np = tgt.GetModPlayer<NiuMaPlayer>();
+                if (np.SoulHookTimer > 0 && np.SoulHookCaster == NPC.whoAmI) {
+                    float frac = 1f - np.SoulHookTimer / 180f;
+                    Color core = Color.Lerp(TelegraphColors.NetherViolet, TelegraphColors.Execution, frac * 0.55f);
+                    ACMShaders.DrawBeam(NPC.Center, tgt.Center, 6f, core, new Color(60, 30, 110), 0.45f + 0.5f * frac, 1.6f);
+                }
+            }
+        }
+
+        public override void PostDraw(SpriteBatch sb, Vector2 scrPos, Color col) {
+            if (Main.dedServ)
+                return;
+            // 死亡收光 (全屏名额契约)
+            if (State == StDeath && Timer > 100) {
+                float k = MathHelper.Clamp(((float)Timer - 100f) / 32f, 0f, 1f);
+                ACMShaders.DrawRadialBloomAt(NPC.Center, 0.2f * (1f - k * 0.6f), 0.5f + k * 0.5f, NiuMaHelper.GhostCore, 6f, 2.2f);
+            }
+        }
     }
 }

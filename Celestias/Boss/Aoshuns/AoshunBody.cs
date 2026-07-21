@@ -37,6 +37,9 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 
         public override bool CheckActive() => false;
 
+        public override bool CanHitPlayer(Player target, ref int cooldownSlot) =>
+            !AoshunHelper.HeadIsPacified(NPC);
+
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
             Texture2D texture = TextureAssets.Npc[NPC.type].Value;
             // 参考原型: 基于朝向的origin，防止转向时精灵跳动
@@ -44,8 +47,20 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
                 ? new Vector2(texture.Width * 0.5f, texture.Height * 0.5f)
                 : new Vector2(texture.Width, texture.Height);
             SpriteEffects effects = NPC.spriteDirection == -1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
-            spriteBatch.Draw(texture, NPC.Center - Main.screenPosition, null, drawColor,
+
+            // 死亡演出：整链渐隐白热（"风散"逐段熄灭）
+            float deathProgress = AoshunHelper.GetHead(NPC)?.DeathProgress ?? 0f;
+            Color bodyColor = AoshunHelper.ApplyDeathFade(drawColor, deathProgress);
+
+            spriteBatch.Draw(texture, NPC.Center - Main.screenPosition, null, bodyColor,
                 NPC.rotation, origin, NPC.scale, effects, 0);
+
+            if (deathProgress > 0f && ACMAsset.SoftGlow != null) {
+                Color white = AoshunHelper.ElectricWhite * deathProgress * 0.35f;
+                white.A = 0;
+                spriteBatch.Draw(ACMAsset.SoftGlow, NPC.Center - Main.screenPosition, null, white, 0f,
+                    ACMAsset.SoftGlow.Size() / 2f, 0.5f, SpriteEffects.None, 0f);
+            }
             return false;
         }
 

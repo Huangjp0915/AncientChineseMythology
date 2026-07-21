@@ -9,14 +9,23 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
     /// <summary>
     /// 大椿黄金幻象弹幕 — 金色的树神虚影，具有追踪能力
     /// 使用 SoftGlow + GlaciateWave 复合绘制金色幽灵效果
-    /// 先缓慢漂浮，随后加速追踪玩家
+    /// 先缓慢漂浮，随后加速追踪玩家。
+    ///
+    /// V3 公平阀门: 追踪期转向率封顶 (0.045 rad/f, 可绕圈甩掉) + 速度 6→13 渐升;
+    /// 剩余寿命 &lt; 120t 进入「熄火」— 停止追踪、拉直轨迹、金光冷却为暗琥珀并淡出 (可读的威胁解除)。
     /// </summary>
     public class DazhengGoldenPhantom : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/BlankProjectile";
 
+        private const int BurnoutTicks = 120;  // 熄火阶段时长 (寿命尾段)
+        private const float MaxTurnRate = 0.045f;
+
         private float glowPhase;
         private bool activated; // 是否已激活追踪
+
+        /// <summary>熄火进度 0(全力)~1(完全冷却)。</summary>
+        private float Burnout => 1f - MathHelper.Clamp((Projectile.timeLeft - 40) / (float)(BurnoutTicks - 40), 0f, 1f);
 
         public override void SetStaticDefaults() {
             ProjectileID.Sets.TrailCacheLength[Type] = 15;
@@ -43,20 +52,28 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 activated = true;
             }
 
-            if (activated) {
-                // 追踪最近的玩家
+            bool burnedOut = Projectile.timeLeft < BurnoutTicks;
+            // 伤害窗口与视觉对齐: 熄火(冷却变暗)即无害化
+            Projectile.hostile = !burnedOut;
+
+            if (activated && !burnedOut) {
+                // 追踪最近的玩家 — 转向率封顶 (公平阀门: 高速横移/绕圈可甩掉)
                 Player target = Main.player[Player.FindClosest(Projectile.Center, 1, 1)];
                 if (target.active && !target.dead) {
-                    Vector2 toTarget = (target.Center - Projectile.Center).SafeNormalize(Vector2.Zero);
-                    float trackSpeed = 0.35f;
-                    float maxSpeed = 14f;
+                    // 速度渐升 6→13 (激活后 ~90t 达满速, 给逃逸窗口)
+                    float ramp = MathHelper.Clamp((300 - Projectile.timeLeft) / 90f, 0f, 1f);
+                    float speed = MathHelper.Lerp(6f, 13f, ramp);
 
-                    Projectile.velocity = Vector2.Lerp(Projectile.velocity, toTarget * maxSpeed, trackSpeed * (1f / 60f));
-
-                    // 逐渐加速
-                    if (Projectile.velocity.Length() < maxSpeed)
-                        Projectile.velocity *= 1.02f;
+                    float curAngle = Projectile.velocity.ToRotation();
+                    float wantAngle = (target.Center - Projectile.Center).ToRotation();
+                    float newAngle = curAngle + MathHelper.Clamp(
+                        MathHelper.WrapAngle(wantAngle - curAngle), -MaxTurnRate, MaxTurnRate);
+                    Projectile.velocity = newAngle.ToRotationVector2() * speed;
                 }
+            }
+            else if (burnedOut) {
+                // 熄火: 停止追踪, 轨迹拉直并缓慢减速 — 威胁解除的可读信号
+                Projectile.velocity *= 0.985f;
             }
             else {
                 // 缓慢漂浮+脉动
@@ -65,13 +82,13 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 Projectile.velocity += new Vector2(MathF.Cos(driftAngle), MathF.Sin(driftAngle)) * 0.1f;
             }
 
-            // 金色粒子
-            if (Main.rand.NextBool(2)) {
+            // 金色粒子 (熄火后转稀疏暗琥珀)
+            if (Main.rand.NextBool(burnedOut ? 5 : 2)) {
                 Dust d = Dust.NewDustDirect(
                     Projectile.Center + Main.rand.NextVector2Circular(20, 20),
                     0, 0, DustID.GoldFlame,
                     -Projectile.velocity.X * 0.2f, -Projectile.velocity.Y * 0.2f,
-                    100, default, 1.5f);
+                    100, default, burnedOut ? 1f : 1.5f);
                 d.noGravity = true;
                 d.fadeIn = 1.5f;
             }
@@ -86,13 +103,16 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 d.noGravity = false;
             }
 
-            Lighting.AddLight(Projectile.Center, 0.5f, 0.4f, 0.1f);
+            float lightDim = 1f - Burnout * 0.7f;
+            Lighting.AddLight(Projectile.Center, 0.5f * lightDim, 0.4f * lightDim, 0.1f * lightDim);
         }
 
         public override bool PreDraw(ref Color lightColor) {
             SpriteBatch sb = Main.spriteBatch;
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
-            float pulse = 1f + MathF.Sin(glowPhase * 3f) * 0.15f;
+            // 熄火视觉: 金光冷却为暗琥珀 + 整体淡出 (脉动也随之平息)
+            float cool = 1f - Burnout * 0.75f;
+            float pulse = (1f + MathF.Sin(glowPhase * 3f) * 0.15f * cool) * MathHelper.Lerp(1f, 0.7f, Burnout);
 
             // === 1. 残影拖尾 ===
             for (int i = Projectile.oldPos.Length - 1; i > 0; i--) {
@@ -118,18 +138,19 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                     DepthStencilState.None, RasterizerState.CullNone, null,
                     Main.GameViewMatrix.TransformationMatrix);
 
-                // 外层金色大光晕
+                // 外层金色大光晕 (熄火时向暗琥珀冷却)
                 Texture2D glowTex = ACMAsset.SoftGlow;
                 if (glowTex != null) {
                     Vector2 glowOrigin = glowTex.Size() / 2f;
+                    float burnout = Burnout;
 
-                    Color outerGlow = new Color(255, 200, 50, 0) * (0.4f * pulse);
+                    Color outerGlow = (Color.Lerp(new Color(255, 200, 50), new Color(140, 80, 30), burnout) with { A = 0 }) * (0.4f * pulse * cool);
                     sb.Draw(glowTex, drawPos, null, outerGlow, 0f, glowOrigin, 2.0f * pulse, SpriteEffects.None, 0f);
 
-                    Color mainGlow = new Color(255, 220, 100, 0) * (0.6f * pulse);
+                    Color mainGlow = (Color.Lerp(new Color(255, 220, 100), new Color(160, 100, 45), burnout) with { A = 0 }) * (0.6f * pulse * cool);
                     sb.Draw(glowTex, drawPos, null, mainGlow, 0f, glowOrigin, 1.2f * pulse, SpriteEffects.None, 0f);
 
-                    Color coreGlow = new Color(255, 250, 200, 0) * 0.5f;
+                    Color coreGlow = new Color(255, 250, 200, 0) * (0.5f * cool);
                     sb.Draw(glowTex, drawPos, null, coreGlow, 0f, glowOrigin, 0.5f, SpriteEffects.None, 0f);
                 }
 

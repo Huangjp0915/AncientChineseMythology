@@ -5,8 +5,9 @@ using Terraria;
 namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 {
     /// <summary>
-    /// 幽冥青丘狐尾巴 - 幽灵化的尾巴，具有穿透、魂魄拖尾效果
-    /// 与九尾狐不同，这些尾巴更加飘渺、灵动，带有幽蓝色调
+    /// 幽冥妖狐尾巴 —— FABRIK IK + 弹簧物理的幽灵尾。
+    /// V3 动作语言: 僵-爆-僵的鬼怪节奏 —— pow8 后拉蓄力 (几乎不动→末帧猛吸) → 死寂定格 →
+    /// poly12 爆发 (一瞬走完行程) → 指数衰减回摆; 取代旧版全程 EaseOutQuad 软曲线。
     /// </summary>
     public class NetherKitsuneTail
     {
@@ -61,6 +62,18 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         /// <summary>攻击目标位置</summary>
         public Vector2 AttackTargetPos { get; private set; }
 
+        /// <summary>连接拍垂尾系数 0~1 (由 Boss 在 connector 期间抬升, 尾巴下垂喘息)。</summary>
+        public float Droop { get; set; }
+
+        /// <summary>尾尖辉光强度 (供 Boss 收集批量绘制尾尖魂焰)。</summary>
+        public float TipGlow => glowIntensity;
+
+        /// <summary>当前幽灵透明度 (供 Boss 绘制读取)。</summary>
+        public float GhostAlpha => ghostAlpha;
+
+        /// <summary>爆发窗口: 仅此窗口内尾巴具备"实伤级"的观感 (伤害窗=视觉窗对齐辅助)。</summary>
+        public bool InStrikeWindow { get; private set; }
+
         // 物理参数 - 幽冥尾巴更轻盈飘逸
         private float stiffness = 0.10f;
         private float damping = 0.80f;
@@ -80,6 +93,10 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         private float attackProgress;
         private Vector2[] attackKeyframes;
 
+        // 孔雀屏参数
+        private float fanWorldAngle;
+        private float fanExternalGlow = -1f; // ≥0 时由 Boss 外部驱动尾尖辉光 (逐尖点燃/递熄演出)
+
         // 渲染参数
         private float[] segmentWidths;
         private float glowIntensity = 0f;
@@ -91,13 +108,15 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         public enum TailAttackType
         {
             None,
-            GhostStab,          // 幽灵刺击 - 穿透性突刺
+            GhostStab,          // 幽灵刺击 - 僵-爆-僵穿刺
             SoulSweep,          // 魂魄横扫 - 带魂魄伤害的横扫
             PhaseWhip,          // 相位鞭打 - 忽明忽暗的鞭打
             SpiritDrain,        // 灵魂吸取 - 吸取生命
-            NetherCoil,         // 幽冥盘绕 - 束缚敌人
-            PhantomSlam,        // 幻影下砸 - 分裂成多个幻影攻击
-            VoidPierce          // 虚空穿刺 - 超远距离穿刺
+            NetherCoil,         // 幽冥盘绕 - 收拢蓄势
+            PhantomSlam,        // 幻影下砸 - 高举后砸落
+            VoidPierce,         // 虚空穿刺 - 超远距离穿刺
+            PincerStab,         // 双尾钳击 - 侧翼悬停后相向合刺
+            FanDisplay          // 孔雀屏 - 九尾展屏定格 (转场/演出姿态)
         }
 
         /// <summary>是否显示预判线</summary>
@@ -164,12 +183,13 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 
             // 更新相位偏移（幽灵闪烁效果）
             phaseShiftTimer += 0.05f;
-            ghostAlpha = 0.7f + 0.3f * MathF.Sin(phaseShiftTimer + TailIndex * 0.5f);
+            InStrikeWindow = false;
 
             if (IsAttacking) {
                 UpdateAttack(globalTime);
             }
             else {
+                ghostAlpha = 0.7f + 0.3f * MathF.Sin(phaseShiftTimer + TailIndex * 0.5f);
                 UpdateIdleMotion(ownerVelocity, globalTime);
                 targetExtension = 1.0f;
             }
@@ -200,29 +220,33 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         }
 
         /// <summary>
-        /// 空闲状态的幽灵摆动
+        /// 空闲状态的幽灵摆动 (Droop 抬升时尾巴下垂喘息 — connector 段落停顿姿态)
         /// </summary>
         private void UpdateIdleMotion(Vector2 ownerVelocity, float globalTime) {
-            // 幽冥尾巴更加飘逸的摆动
-            float swayOffset = MathF.Sin(globalTime * swaySpeed + swayPhase) * swayAmplitude;
-            float swayOffset2 = MathF.Sin(globalTime * swaySpeed * 0.6f + swayPhase + 2f) * swayAmplitude * 0.7f;
-            float swayOffset3 = MathF.Cos(globalTime * swaySpeed * 0.4f + swayPhase) * swayAmplitude * 0.3f;
+            float droop = MathHelper.Clamp(Droop, 0f, 1f);
+            float swayScale = 1f - droop * 0.75f; // 垂尾时摆动幅度也塌下来
+
+            float swayOffset = MathF.Sin(globalTime * swaySpeed + swayPhase) * swayAmplitude * swayScale;
+            float swayOffset2 = MathF.Sin(globalTime * swaySpeed * 0.6f + swayPhase + 2f) * swayAmplitude * 0.7f * swayScale;
+            float swayOffset3 = MathF.Cos(globalTime * swaySpeed * 0.4f + swayPhase) * swayAmplitude * 0.3f * swayScale;
 
             Vector2 velocityInfluence = -ownerVelocity * 1.0f;
 
-            float targetAngle = BaseAngle + swayOffset * 0.06f + swayOffset2 * 0.04f;
+            // 垂尾: 基准角向下塌
+            float droopAngle = MathHelper.Lerp(BaseAngle, MathHelper.PiOver2 + (TailIndex - 4) * 0.12f, droop * 0.7f);
+            float targetAngle = droopAngle + swayOffset * 0.06f + swayOffset2 * 0.04f;
 
-            // 幽冥尾巴有轻微的上浮倾向
-            Vector2 floatOffset = new Vector2(0, -10f + MathF.Sin(globalTime * 1.5f + TailIndex) * 5f);
+            // 幽冥尾巴有轻微的上浮倾向 (垂尾时消失)
+            Vector2 floatOffset = new Vector2(0, (-10f + MathF.Sin(globalTime * 1.5f + TailIndex) * 5f) * (1f - droop));
 
             TargetPosition = RootPosition +
-                new Vector2(MathF.Cos(targetAngle), MathF.Sin(targetAngle)) * TotalLength * 0.85f +
+                new Vector2(MathF.Cos(targetAngle), MathF.Sin(targetAngle)) * TotalLength * MathHelper.Lerp(0.85f, 0.6f, droop) +
                 velocityInfluence * 3.5f +
                 new Vector2(swayOffset + swayOffset3, swayOffset2) +
                 floatOffset;
 
             // 更新魂魄拖尾强度
-            soulTrailIntensity = MathHelper.Lerp(soulTrailIntensity, 0.3f, 0.05f);
+            soulTrailIntensity = MathHelper.Lerp(soulTrailIntensity, 0.3f * (1f - droop), 0.05f);
         }
 
         /// <summary>
@@ -259,15 +283,21 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                 case TailAttackType.VoidPierce:
                     UpdateVoidPierceAttack();
                     break;
+                case TailAttackType.PincerStab:
+                    UpdatePincerStabAttack();
+                    break;
+                case TailAttackType.FanDisplay:
+                    UpdateFanDisplayAttack();
+                    break;
             }
         }
 
         #region 攻击动作实现
 
         /// <summary>
-        /// 幽灵刺击 - 穿透性突刺
+        /// 幽灵刺击 —— 僵-爆-僵重做: pow8 后拉 → 死寂 → poly12 爆发 → 指数回摆。
         /// </summary>
-        public void StartGhostStabAttack(Vector2 target, float duration = 0.35f) {
+        public void StartGhostStabAttack(Vector2 target, float duration = 0.62f) {
             IsAttacking = true;
             CurrentAttack = TailAttackType.GhostStab;
             AttackTimer = 0f;
@@ -275,36 +305,147 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             AttackTargetPos = target;
             attackStartPos = Joints[JointCount - 1];
 
+            Vector2 toTarget = (target - RootPosition).SafeNormalize(Vector2.UnitY);
             attackKeyframes[0] = attackStartPos;
-            attackKeyframes[1] = RootPosition + (RootPosition - target).SafeNormalize(Vector2.UnitY) * 70f;
-            attackKeyframes[2] = target + (target - RootPosition).SafeNormalize(Vector2.UnitY) * 80f;
-            attackKeyframes[3] = RootPosition + (target - RootPosition).SafeNormalize(Vector2.UnitY) * TotalLength * 0.7f;
+            attackKeyframes[1] = RootPosition - toTarget * TotalLength * 0.45f;                 // 后拉吸气点
+            attackKeyframes[2] = target + toTarget * 90f;                                      // 穿刺过点
+            attackKeyframes[3] = RootPosition + toTarget * TotalLength * 0.7f;                 // 收势
         }
 
         private void UpdateGhostStabAttack() {
             float t = attackProgress;
+            const float windEnd = 0.30f;   // 后拉 (pow8 late-snap)
+            const float stillEnd = 0.44f;  // 死寂定格
+            const float burstEnd = 0.54f;  // poly12 爆发
 
-            if (t < 0.2f) {
-                float localT = EaseOutQuad(t / 0.2f);
+            if (t < windEnd) {
+                // 几乎不动 → 最后几帧猛然吸回 (MOTION §2 late-snap reel-back)
+                float localT = MathF.Pow(t / windEnd, 8f);
                 TargetPosition = Vector2.Lerp(attackKeyframes[0], attackKeyframes[1], localT);
-                stiffness = 0.25f;
-                ghostAlpha = MathHelper.Lerp(1f, 0.5f, localT); // 蓄力时变淡
+                stiffness = MathHelper.Lerp(0.25f, 0.6f, localT);
+                ghostAlpha = MathHelper.Lerp(0.9f, 0.5f, localT);   // 身淡
+                glowIntensity = localT * 0.8f;                       // 尖亮 (预警)
             }
-            else if (t < 0.45f) {
-                float localT = EaseInQuad((t - 0.2f) / 0.25f);
+            else if (t < stillEnd) {
+                // 僵: 完全定格, 只剩尾尖鬼火烧着 — 爆发前的死寂
+                TargetPosition = attackKeyframes[1];
+                stiffness = 0.85f;
+                ghostAlpha = 0.5f;
+                glowIntensity = 1f;
+            }
+            else if (t < burstEnd) {
+                // 爆: poly12 ease-out, 第一帧走完大半行程
+                float x = (t - stillEnd) / (burstEnd - stillEnd);
+                float localT = 1f - MathF.Pow(1f - x, 12f);
                 TargetPosition = Vector2.Lerp(attackKeyframes[1], attackKeyframes[2], localT);
-                stiffness = 0.6f;
-                glowIntensity = localT;
-                ghostAlpha = MathHelper.Lerp(0.5f, 1f, localT); // 刺出时变实
+                stiffness = 0.95f;
+                ghostAlpha = 1f;
+                glowIntensity = 1f;
                 soulTrailIntensity = 1f;
+                InStrikeWindow = true;
             }
             else {
-                float localT = EaseOutQuad((t - 0.45f) / 0.55f);
+                // 僵(收): 指数衰减回摆
+                float localT = EaseOutQuad((t - burstEnd) / (1f - burstEnd));
                 TargetPosition = Vector2.Lerp(attackKeyframes[2], attackKeyframes[3], localT);
-                stiffness = MathHelper.Lerp(0.6f, 0.1f, localT);
+                stiffness = MathHelper.Lerp(0.95f, 0.1f, localT);
                 glowIntensity = 1f - localT;
                 soulTrailIntensity = 1f - localT * 0.7f;
             }
+        }
+
+        /// <summary>
+        /// 双尾钳击 —— 尾尖先飞到玩家侧翼悬停亮尖 (预警), 与对侧尾同帧相向合刺。
+        /// </summary>
+        public void StartPincerStabAttack(Vector2 hoverPos, Vector2 strikeThrough, float duration = 0.9f) {
+            IsAttacking = true;
+            CurrentAttack = TailAttackType.PincerStab;
+            AttackTimer = 0f;
+            attackDuration = duration;
+            AttackTargetPos = strikeThrough;
+            attackStartPos = Joints[JointCount - 1];
+
+            attackKeyframes[0] = attackStartPos;
+            attackKeyframes[1] = hoverPos;                                                     // 侧翼悬停位
+            attackKeyframes[2] = strikeThrough;                                                // 相向穿刺过点
+            attackKeyframes[3] = RootPosition + (strikeThrough - RootPosition).SafeNormalize(Vector2.UnitY) * TotalLength * 0.6f;
+        }
+
+        private void UpdatePincerStabAttack() {
+            float t = attackProgress;
+            const float flyEnd = 0.30f;    // 飞抵侧翼
+            const float holdEnd = 0.58f;   // 悬停亮尖 (钳击预警窗)
+            const float burstEnd = 0.68f;  // poly12 合刺
+
+            // 钳击需要跨过身位 → 拉长延展
+            targetExtension = t < holdEnd ? 2.2f : 2.8f;
+
+            if (t < flyEnd) {
+                float localT = ACMUtils.SineInOut(t / flyEnd);
+                TargetPosition = Vector2.Lerp(attackKeyframes[0], attackKeyframes[1], localT);
+                stiffness = 0.5f;
+                ghostAlpha = 0.8f;
+                glowIntensity = localT * 0.5f;
+            }
+            else if (t < holdEnd) {
+                // 悬停定格: 尖光脉冲渐强 — 玩家读"两侧钳形"的窗口
+                float localT = (t - flyEnd) / (holdEnd - flyEnd);
+                TargetPosition = attackKeyframes[1];
+                stiffness = 0.8f;
+                ghostAlpha = 0.65f;
+                glowIntensity = 0.5f + 0.5f * localT;
+                InStrikeWindow = false;
+            }
+            else if (t < burstEnd) {
+                float x = (t - holdEnd) / (burstEnd - holdEnd);
+                float localT = 1f - MathF.Pow(1f - x, 12f);
+                TargetPosition = Vector2.Lerp(attackKeyframes[1], attackKeyframes[2], localT);
+                stiffness = 0.95f;
+                ghostAlpha = 1f;
+                glowIntensity = 1f;
+                soulTrailIntensity = 1f;
+                InStrikeWindow = true;
+            }
+            else {
+                float localT = EaseOutQuad((t - burstEnd) / (1f - burstEnd));
+                TargetPosition = Vector2.Lerp(attackKeyframes[2], attackKeyframes[3], localT);
+                stiffness = MathHelper.Lerp(0.95f, 0.1f, localT);
+                glowIntensity = 1f - localT;
+                soulTrailIntensity = 1f - localT * 0.8f;
+            }
+        }
+
+        /// <summary>
+        /// 孔雀屏 —— 尾巴甩到指定世界角度展屏定格 (转场2/入场/死亡演出姿态)。
+        /// </summary>
+        public void StartFanDisplay(float worldAngle, float duration = 2.0f) {
+            IsAttacking = true;
+            CurrentAttack = TailAttackType.FanDisplay;
+            AttackTimer = 0f;
+            attackDuration = duration;
+            fanWorldAngle = worldAngle;
+            attackStartPos = Joints[JointCount - 1];
+        }
+
+        private void UpdateFanDisplayAttack() {
+            float t = attackProgress;
+            // 展开: BackOut 微过冲后钉住 (有机的"甩开"感)
+            float openT = ACMUtils.BackOut(MathF.Min(t * 4f, 1f));
+            Vector2 fanDir = fanWorldAngle.ToRotationVector2();
+            Vector2 fanned = RootPosition + fanDir * TotalLength * 0.92f;
+            TargetPosition = Vector2.Lerp(attackStartPos, fanned, openT);
+            stiffness = MathHelper.Lerp(0.2f, 0.75f, openT);
+            ghostAlpha = 1f;
+            // 外部驱动优先 (逐尖点燃/递熄演出); 无驱动时尖光自然呼吸
+            glowIntensity = fanExternalGlow >= 0f
+                ? fanExternalGlow
+                : 0.25f + 0.15f * MathF.Sin(AttackTimer * 6f + TailIndex);
+        }
+
+        /// <summary>展屏期间由 Boss 逐尖点燃/递熄 (演出用, 每帧直接压入辉光)。</summary>
+        public void SetFanIgnite(float glow) {
+            if (CurrentAttack == TailAttackType.FanDisplay)
+                fanExternalGlow = MathHelper.Clamp(glow, 0f, 1f);
         }
 
         /// <summary>
@@ -331,23 +472,27 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         private void UpdateSoulSweepAttack() {
             float t = attackProgress;
 
-            if (t < 0.15f) {
-                float localT = EaseOutQuad(t / 0.15f);
+            if (t < 0.22f) {
+                // 后摆蓄力: pow4 late-snap (横扫也要有吸气)
+                float localT = MathF.Pow(t / 0.22f, 4f);
                 TargetPosition = Vector2.Lerp(attackKeyframes[0], attackKeyframes[1], localT);
-                stiffness = 0.2f;
+                stiffness = MathHelper.Lerp(0.2f, 0.5f, localT);
+                glowIntensity = localT * 0.6f;
             }
-            else if (t < 0.65f) {
-                float localT = (t - 0.15f) / 0.5f;
-                localT = (1f - MathF.Cos(localT * MathF.PI)) * 0.5f;
+            else if (t < 0.6f) {
+                // 扫: poly6 前载 — 前几帧扫完大半弧
+                float x = (t - 0.22f) / 0.38f;
+                float localT = 1f - MathF.Pow(1f - x, 6f);
                 TargetPosition = Vector2.Lerp(attackKeyframes[1], attackKeyframes[2], localT);
-                stiffness = 0.35f;
-                glowIntensity = MathF.Sin(localT * MathF.PI);
-                soulTrailIntensity = 0.8f + 0.2f * MathF.Sin(localT * MathF.PI);
+                stiffness = 0.7f;
+                glowIntensity = 1f;
+                soulTrailIntensity = 1f;
+                InStrikeWindow = x < 0.7f;
             }
             else {
-                float localT = EaseOutQuad((t - 0.65f) / 0.35f);
+                float localT = EaseOutQuad((t - 0.6f) / 0.4f);
                 TargetPosition = Vector2.Lerp(attackKeyframes[2], attackKeyframes[3], localT);
-                stiffness = MathHelper.Lerp(0.35f, 0.1f, localT);
+                stiffness = MathHelper.Lerp(0.7f, 0.1f, localT);
                 glowIntensity = 1f - localT;
             }
         }
@@ -367,7 +512,6 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         private void UpdatePhaseWhipAttack() {
             float t = attackProgress;
             Vector2 toTarget = (AttackTargetPos - RootPosition).SafeNormalize(Vector2.UnitY);
-            float baseAngle = toTarget.ToRotation();
 
             float wavePhase = t * MathF.PI * 3.5f;
             float waveAmplitude = MathF.Sin(t * MathF.PI) * 120f;
@@ -383,6 +527,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             // 相位闪烁效果
             ghostAlpha = 0.4f + 0.6f * MathF.Abs(MathF.Sin(t * MathF.PI * 5f));
             soulTrailIntensity = MathF.Sin(t * MathF.PI);
+            InStrikeWindow = t > 0.3f && t < 0.8f;
         }
 
         /// <summary>
@@ -425,7 +570,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         }
 
         /// <summary>
-        /// 幽冥盘绕
+        /// 幽冥盘绕 (收拢蓄势 — 冲刺/转场前的紧缩姿态)
         /// </summary>
         public void StartNetherCoilAttack(float duration = 1.0f) {
             IsAttacking = true;
@@ -471,25 +616,36 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         private void UpdatePhantomSlamAttack() {
             float t = attackProgress;
 
-            if (t < 0.35f) {
-                float localT = EaseOutQuad(t / 0.35f);
+            if (t < 0.38f) {
+                // 高举: pow5 late-snap — 慢慢抬, 末几帧猛举到顶
+                float localT = MathF.Pow(t / 0.38f, 5f);
                 TargetPosition = Vector2.Lerp(attackKeyframes[0], attackKeyframes[1], localT);
-                stiffness = 0.25f;
-                glowIntensity = localT * 0.4f;
-                ghostAlpha = 1f - localT * 0.3f; // 高举时变淡
+                stiffness = 0.3f;
+                glowIntensity = localT * 0.5f;
+                ghostAlpha = 1f - localT * 0.3f;
             }
-            else if (t < 0.55f) {
-                float localT = EaseInQuad((t - 0.35f) / 0.2f);
+            else if (t < 0.46f) {
+                // 顶点死寂
+                TargetPosition = attackKeyframes[1];
+                stiffness = 0.8f;
+                glowIntensity = 0.7f;
+                ghostAlpha = 0.7f;
+            }
+            else if (t < 0.56f) {
+                // 砸: poly12
+                float x = (t - 0.46f) / 0.10f;
+                float localT = 1f - MathF.Pow(1f - x, 12f);
                 TargetPosition = Vector2.Lerp(attackKeyframes[1], attackKeyframes[2], localT);
-                stiffness = 0.65f;
-                glowIntensity = 0.4f + localT * 0.6f;
-                ghostAlpha = 0.7f + localT * 0.3f; // 下砸时变实
+                stiffness = 0.95f;
+                glowIntensity = 1f;
+                ghostAlpha = 1f;
                 soulTrailIntensity = 1f;
+                InStrikeWindow = true;
             }
             else {
-                float localT = EaseOutBack((t - 0.55f) / 0.45f);
+                float localT = EaseOutBack((t - 0.56f) / 0.44f);
                 TargetPosition = Vector2.Lerp(attackKeyframes[2], attackKeyframes[3], localT);
-                stiffness = MathHelper.Lerp(0.65f, 0.1f, localT);
+                stiffness = MathHelper.Lerp(0.95f, 0.1f, localT);
                 glowIntensity = 1f - localT;
             }
         }
@@ -533,24 +689,34 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                 targetExtension = 1.0f;
                 stiffness = MathHelper.Lerp(0.1f, 0.45f, localT);
                 glowIntensity = localT * 0.7f;
-                ghostAlpha = 0.5f + 0.3f * MathF.Sin(localT * MathF.PI * 6f); // 闪烁预警
+
+                // 末 20%: 死寂 — 闪烁截止, 定格半透 (pre-silence, 爆发的靠山)
+                if (localT > 0.8f) {
+                    ghostAlpha = 0.45f;
+                    stiffness = 0.7f;
+                }
+                else {
+                    ghostAlpha = 0.5f + 0.3f * MathF.Sin(localT * MathF.PI * 6f); // 闪烁预警
+                }
                 ShowTelegraph = true;
             }
             else if (t < phase2End) // 穿刺阶段
             {
                 float localT = (t - phase1End) / (phase2End - phase1End);
 
-                float extensionT = EaseOutQuad(localT);
+                // poly10: 一瞬顶满延展 (旧版 EaseOutQuad 太软)
+                float extensionT = 1f - MathF.Pow(1f - localT, 10f);
                 targetExtension = 1.0f + (MaxExtensionMultiplier - 1.0f) * extensionT;
 
                 float currentMaxLength = JointCount * BaseSegmentLength * targetExtension;
                 TargetPosition = RootPosition + TelegraphDirection * currentMaxLength * 0.95f;
 
-                stiffness = 0.85f;
+                stiffness = 0.9f;
                 glowIntensity = 0.7f + extensionT * 0.3f;
                 ghostAlpha = 1f;
                 soulTrailIntensity = 1f;
                 ShowTelegraph = false;
+                InStrikeWindow = true;
             }
             else // 回收阶段
             {
@@ -569,6 +735,9 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             }
         }
 
+        /// <summary>立即打断当前攻击回到空闲 (换拍/清场)。</summary>
+        public void CancelAttack() => EndAttack();
+
         private void EndAttack() {
             IsAttacking = false;
             CurrentAttack = TailAttackType.None;
@@ -577,6 +746,8 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             glowIntensity = 0f;
             ShowTelegraph = false;
             ghostAlpha = 1f;
+            InStrikeWindow = false;
+            fanExternalGlow = -1f;
         }
 
         #endregion
@@ -679,9 +850,9 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         #region 绘制
 
         /// <summary>
-        /// 绘制尾巴
+        /// 绘制尾巴 (ghostTint: 0=冥蓝 1=鬼绿, 由 Boss 随雾色传入)
         /// </summary>
-        public void Draw(SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor) {
+        public void Draw(SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor, float ghostTint = 0f) {
             Texture2D bodyTex = NetherKitsune.NetherMissesBody;
             Texture2D tipTex = NetherKitsune.NetherMissesTop;
 
@@ -689,29 +860,29 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                 return;
 
             // 先绘制魂魄拖尾
-            DrawSoulTrail(spriteBatch, screenPos);
+            DrawSoulTrail(spriteBatch, screenPos, ghostTint);
 
             // 绘制所有体节
             for (int i = 0; i < JointCount - 1; i++) {
-                DrawSegment(spriteBatch, screenPos, bodyTex, i, lightColor);
+                DrawSegment(spriteBatch, screenPos, bodyTex, i, lightColor, ghostTint);
             }
 
             // 绘制尾尖
-            DrawTip(spriteBatch, screenPos, tipTex, lightColor);
+            DrawTip(spriteBatch, screenPos, tipTex, lightColor, ghostTint);
 
             // 绘制发光效果
             if (glowIntensity > 0) {
                 DrawGlow(spriteBatch, screenPos);
             }
 
-            // V2: 攻击中的尾巴沿尖端拉一道流动光束 (BeamGrad), 强化九尾攻击的打击感与可读边
-            if (IsAttacking && glowIntensity > 0.35f && JointCount >= 3) {
+            // 攻击中的尾巴沿尖端拉一道流动光束 (BeamGrad), 强化打击感与可读边
+            if (IsAttacking && glowIntensity > 0.35f && JointCount >= 3 && CurrentAttack != TailAttackType.FanDisplay) {
                 Vector2 tip = Joints[JointCount - 1];
                 Vector2 from = Joints[JointCount - 3];
                 Vector2 dir = (tip - from).SafeNormalize(Vector2.UnitX);
                 float reach = CurrentAttack == TailAttackType.VoidPierce ? 60f : 24f;
-                Color core = Color.Lerp(new Color(150, 230, 255), Color.White, 0.4f);
-                Color edge = new Color(120, 90, 200);
+                Color core = Color.Lerp(Color.Lerp(new Color(150, 230, 255), new Color(160, 255, 200), ghostTint), Color.White, 0.4f);
+                Color edge = Color.Lerp(new Color(120, 90, 200), new Color(60, 160, 110), ghostTint);
                 ACMShaders.DrawBeam(from, tip + dir * reach,
                     MathHelper.Lerp(5f, 11f, glowIntensity), core, edge, glowIntensity,
                     flowSpeed: 2.4f, flowScale: 2.0f, coreSharp: 2.4f);
@@ -721,7 +892,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
         /// <summary>
         /// 绘制魂魄拖尾
         /// </summary>
-        private void DrawSoulTrail(SpriteBatch spriteBatch, Vector2 screenPos) {
+        private void DrawSoulTrail(SpriteBatch spriteBatch, Vector2 screenPos, float ghostTint) {
             if (soulTrailIntensity <= 0.1f)
                 return;
 
@@ -729,6 +900,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             if (bodyTex == null)
                 return;
 
+            Color trailBase = Color.Lerp(new Color(80, 150, 220), new Color(80, 200, 140), ghostTint);
             for (int i = 1; i < TrailLength; i++) {
                 float progress = 1f - (float)i / TrailLength;
                 float alpha = progress * soulTrailIntensity * ghostAlpha * 0.4f;
@@ -742,8 +914,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
                 float rotation = dir.ToRotation();
                 float length = Vector2.Distance(pos, prevPos);
 
-                // 幽蓝色拖尾
-                Color trailColor = new Color(80, 150, 220) * alpha;
+                Color trailColor = trailBase * alpha;
                 trailColor.A = 0;
 
                 Vector2 scale = new Vector2(length / bodyTex.Width * 1.2f, 0.3f * progress);
@@ -845,7 +1016,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             Lighting.AddLight(endPos, new Vector3(0.2f, 0.5f, 0.8f) * pulse * 0.4f);
         }
 
-        private void DrawSegment(SpriteBatch spriteBatch, Vector2 screenPos, Texture2D texture, int index, Color lightColor) {
+        private void DrawSegment(SpriteBatch spriteBatch, Vector2 screenPos, Texture2D texture, int index, Color lightColor, float ghostTint) {
             if (index >= JointCount - 1)
                 return;
 
@@ -857,9 +1028,11 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 
             float widthScale = segmentWidths[index];
 
-            // 幽蓝色调
-            Color baseColor = Color.Lerp(lightColor, new Color(80, 140, 200), 0.5f);
-            Color drawColor = Color.Lerp(baseColor, new Color(120, 200, 255), glowIntensity * 0.6f);
+            // 冥蓝 <-> 鬼绿 色调
+            Color themeMid = Color.Lerp(new Color(80, 140, 200), new Color(70, 170, 120), ghostTint);
+            Color themeHi = Color.Lerp(new Color(120, 200, 255), new Color(130, 240, 180), ghostTint);
+            Color baseColor = Color.Lerp(lightColor, themeMid, 0.5f);
+            Color drawColor = Color.Lerp(baseColor, themeHi, glowIntensity * 0.6f);
             drawColor *= ghostAlpha;
 
             Vector2 center = (start + end) * 0.5f;
@@ -882,7 +1055,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 
             // 幽冥发光层
             if (glowIntensity > 0 || ghostAlpha < 0.9f) {
-                Color glowColor = new Color(100, 180, 255) * (glowIntensity * 0.5f + (1f - ghostAlpha) * 0.3f);
+                Color glowColor = themeHi * (glowIntensity * 0.5f + (1f - ghostAlpha) * 0.3f);
                 glowColor.A = 0;
                 spriteBatch.Draw(
                     texture,
@@ -898,7 +1071,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             }
         }
 
-        private void DrawTip(SpriteBatch spriteBatch, Vector2 screenPos, Texture2D texture, Color lightColor) {
+        private void DrawTip(SpriteBatch spriteBatch, Vector2 screenPos, Texture2D texture, Color lightColor, float ghostTint) {
             if (JointCount < 2)
                 return;
 
@@ -907,9 +1080,10 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
             Vector2 direction = (lastJoint - prevJoint).SafeNormalize(Vector2.UnitY);
             float rotation = direction.ToRotation();
 
-            // 幽蓝色尾尖
-            Color baseColor = Color.Lerp(lightColor, new Color(100, 180, 255), 0.6f);
-            Color tipColor = Color.Lerp(baseColor, new Color(150, 220, 255), glowIntensity);
+            Color themeHi = Color.Lerp(new Color(100, 180, 255), new Color(120, 235, 170), ghostTint);
+            Color themeTop = Color.Lerp(new Color(150, 220, 255), new Color(170, 255, 210), ghostTint);
+            Color baseColor = Color.Lerp(lightColor, themeHi, 0.6f);
+            Color tipColor = Color.Lerp(baseColor, themeTop, glowIntensity);
             tipColor *= ghostAlpha;
 
             float tipScale = segmentWidths[JointCount - 1] * 1.1f;
@@ -928,7 +1102,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherKitsunes
 
             // 尾尖发光
             if (glowIntensity > 0) {
-                Color glowColor = new Color(120, 200, 255) * glowIntensity * 0.6f;
+                Color glowColor = themeHi * glowIntensity * 0.6f;
                 glowColor.A = 0;
                 spriteBatch.Draw(
                     texture,

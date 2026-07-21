@@ -325,6 +325,36 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
             }
         }
 
+        /// <summary>
+        /// 沿 Verlet 链节点逐段绘制锁链 (发光底层 + 主体)。节点间距不均时按实际间隔拉伸体节。
+        /// </summary>
+        public static void DrawVerletChain(SpriteBatch sb, BAWVerletChain chain, Color chainColor, Color glowColor,
+            float scale = 1f, float alpha = 1f) {
+            if (chain == null) return;
+            var tex = ChainTexture;
+            if (tex == null) return;
+
+            Color glow = glowColor; glow.A = 0;
+            Vector2 origin = new(tex.Width * 0.5f, 0f);
+
+            for (int pass = 0; pass < 2; pass++) {
+                bool glowPass = pass == 0;
+                for (int i = 0; i < chain.Count - 1; i++) {
+                    Vector2 a = chain.Pos[i];
+                    Vector2 b = chain.Pos[i + 1];
+                    Vector2 d = b - a;
+                    float len = d.Length();
+                    if (len < 0.5f) continue;
+
+                    float rot = d.ToRotation() - MathHelper.PiOver2;
+                    // 体节沿链方向拉伸到实际节距, 避免拉断链时露缝
+                    Vector2 segScale = new(scale * (glowPass ? 1.6f : 1f), len / tex.Height);
+                    Color c = glowPass ? glow * (0.35f * alpha) : chainColor * alpha;
+                    sb.Draw(tex, a - Main.screenPosition, null, c, rot, origin, segScale, SpriteEffects.None, 0);
+                }
+            }
+        }
+
         #endregion
 
         #region 缓动函数
@@ -437,6 +467,98 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 dust.active = false;
 
             return false;
+        }
+    }
+
+    /// <summary>
+    /// 真 Verlet 链节物理 (跨帧保留 prev 数组, 有惯性)。
+    /// 与 <see cref="ACMUtils.VerletStep"/> 的区别: 后者每次调用重置速度 (无惯性), 只适合纯约束松弛;
+    /// 本类给锁链弹幕/体表垂饰提供"一帧冲量 → 波沿链传播"的鞭链手感 (MOTION §4)。
+    /// 用法: 实例随宿主一次分配; 每帧 Step(锚点); 可选 PinTail 钉扎链尾 (双端拉直)。
+    /// </summary>
+    public class BAWVerletChain
+    {
+        /// <summary>节点位置 (Pos[0] 为锚点)。</summary>
+        public readonly Vector2[] Pos;
+        private readonly Vector2[] prev;
+
+        /// <summary>节距 (像素)。</summary>
+        public float SegLen;
+        /// <summary>每帧重力加速度 (像素)。</summary>
+        public float Gravity = 0.42f;
+        /// <summary>速度阻尼 (0~1, 越小越黏滞)。</summary>
+        public float Damping = 0.985f;
+
+        public int Count => Pos.Length;
+        /// <summary>链尾 (最后一节) 位置。</summary>
+        public Vector2 Tail => Pos[Pos.Length - 1];
+
+        public BAWVerletChain(int nodes, float segLen, Vector2 start) {
+            nodes = Math.Max(nodes, 2);
+            SegLen = segLen;
+            Pos = new Vector2[nodes];
+            prev = new Vector2[nodes];
+            SetAll(start);
+        }
+
+        /// <summary>把整条链瞬间重置到某点 (瞬移/初始化用, 清空隐式速度)。</summary>
+        public void SetAll(Vector2 p) {
+            for (int i = 0; i < Pos.Length; i++) {
+                Pos[i] = p;
+                prev[i] = p;
+            }
+        }
+
+        /// <summary>对某节注入一帧冲量 (波会沿链传播)。</summary>
+        public void ApplyImpulse(int node, Vector2 force) {
+            if (node <= 0 || node >= Pos.Length) return;
+            prev[node] -= force;
+        }
+
+        /// <summary>
+        /// 推进一步: 锚点钉到 anchor, 其余节点积分 + 距离约束松弛。
+        /// <paramref name="pinTail"/> 提供时链尾也被钉扎 (双端链, 如勾魂链)。
+        /// </summary>
+        public void Step(Vector2 anchor, int iterations = 4, Vector2? pinTail = null) {
+            int n = Pos.Length;
+            Pos[0] = anchor;
+            prev[0] = anchor;
+
+            for (int i = 1; i < n; i++) {
+                Vector2 vel = (Pos[i] - prev[i]) * Damping;
+                prev[i] = Pos[i];
+                Pos[i] += vel;
+                Pos[i].Y += Gravity;
+            }
+
+            if (pinTail.HasValue)
+                Pos[n - 1] = pinTail.Value;
+
+            for (int iter = 0; iter < iterations; iter++) {
+                Pos[0] = anchor;
+                if (pinTail.HasValue)
+                    Pos[n - 1] = pinTail.Value;
+
+                for (int i = 0; i < n - 1; i++) {
+                    Vector2 diff = Pos[i + 1] - Pos[i];
+                    float dist = diff.Length();
+                    if (dist < 0.001f) continue;
+                    float error = (dist - SegLen) / dist;
+                    Vector2 correction = diff * error * 0.5f;
+
+                    bool headPinned = i == 0;
+                    bool tailPinned = pinTail.HasValue && i + 1 == n - 1;
+                    if (headPinned && tailPinned) continue;
+                    if (headPinned)
+                        Pos[i + 1] -= correction * 2f;
+                    else if (tailPinned)
+                        Pos[i] += correction * 2f;
+                    else {
+                        Pos[i] += correction;
+                        Pos[i + 1] -= correction;
+                    }
+                }
+            }
         }
     }
 

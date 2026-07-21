@@ -1,6 +1,7 @@
 ﻿using AncientChineseMythology.Celestias.Boss.Aoshuns.Items;
 using AncientChineseMythology.Items.Materials;
 using Microsoft.Xna.Framework.Graphics;
+using System;
 using System.IO;
 using Terraria;
 using Terraria.GameContent.ItemDropRules;
@@ -10,161 +11,219 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 {
     /// <summary>
-    /// 北海龙王敖顺 - 月后初期Boss
-    /// 雷暴/风暴属性蠕虫龙王
-    /// 
-    /// ==========  设计理念（与敖闰完全差异化）  ==========
-    /// ● AI架构：正规状态机（巡逻→预攻击→攻击→冷却），替代敖闰的0-400计时器循环
-    /// ● 核心机制：风暴蓄电 - 钻地移动积攒电荷，电荷满时身体带电增伤
-    /// ● 攻击体系：8个全新攻击（雷链穿刺/深渊伏击/龙鳞风暴/龙卷缠绕/天雷印/龙王怒啸/风暴之眼/雷霆连环冲）
-    /// ● 移动差异：一阶段以钻地为主，二阶段加入空中盘旋→俯冲交替
+    /// 北海龙王敖顺 — V3 全面重做（设计文档: Docs/BossRedo/Aoshun.md）
+    ///
+    /// ==========  主题: "你不是在打一条龙, 你是在一场活着的风暴里求生"  ==========
+    /// ● 本体 = 风暴的眼壁: 蠕虫链穿行于地下与雨云之间, 露面即攻击
+    /// ● 臂 = 风: 臂段(AoshunArms)以弹簧手势独立编排 — 蓄势后仰挥风刃 / 聚拢压掌造龙卷 / 张臂唤雷
+    /// ● 雨 = 幕布: 二阶段起全屏风暴扭曲 + 斜向雨幕(AoshunStormWarp), 风暴之眼内部无雨无扭曲
+    /// ● 雷 = 标点: 致命预警一律 TelegraphColors.Lethal 红色契约
+    ///
+    /// 阶段: P1 疾风(100~65%) → T2 雷暴降临 → P2 雷霆(65~30%) → T3 坠入眼中 → P3 风暴之眼(30~0)
+    /// 选招: 每阶段洗牌袋 + 防复读 + 重压/控场相间; 攻击间 45f「蜷缩重整」连接拍
+    /// 蓄电: 钻地积攒 StormCharge, 满电下一招过载强化并清空
     /// </summary>
     [AutoloadBossHead]
     internal partial class Aoshun : ModNPC
     {
         #region 常量定义
 
-        /// <summary>二阶段血量百分比阈值</summary>
-        public const float Phase2Threshold = 0.50f;
+        /// <summary>二阶段血量阈值（雷暴降临）</summary>
+        public const float Phase2Threshold = 0.65f;
+        /// <summary>三阶段血量阈值（坠入眼中）</summary>
+        public const float Phase3Threshold = 0.30f;
 
         /// <summary>头部纹理帧数（2帧）</summary>
         private const int HeadFrameCount = 2;
 
-        /// <summary>巡逻状态下基础速度</summary>
-        private const float PatrolSpeed = 16f;
-        /// <summary>二阶段巡逻速度</summary>
-        private const float PatrolSpeedPhase2 = 22f;
-        /// <summary>冲刺速度</summary>
-        private const float ChargeSpeed = 32f;
+        /// <summary>钻地巡逻基础速度</summary>
+        private const float PatrolSpeed = 17f;
+        /// <summary>二阶段后巡逻速度</summary>
+        private const float PatrolSpeedLate = 23f;
 
         /// <summary>风暴蓄电最大值</summary>
-        private const float MaxStormCharge = 100f;
+        public const float MaxStormCharge = 100f;
         /// <summary>每帧钻地蓄电量</summary>
-        private const float ChargePerDigTick = 0.35f;
+        private const float ChargePerDigTick = 0.45f;
 
-        /// <summary>巡逻切换攻击的最小间隔（帧）</summary>
-        private const int MinPatrolDuration = 180;
-        /// <summary>巡逻切换攻击的最大间隔（帧）</summary>
-        private const int MaxPatrolDuration = 360;
+        /// <summary>连接拍「蜷缩重整」时长</summary>
+        private const int RegroupCoilTime = 45;
 
-        /// <summary>攻击后冷却帧数</summary>
-        private const int CooldownDuration = 60;
+        /// <summary>入场演出总时长</summary>
+        private const int IntroDuration = 210;
+        /// <summary>T2 雷暴降临演出时长</summary>
+        private const int Transition2Duration = 240;
+        /// <summary>T3 坠入眼中演出时长</summary>
+        private const int Transition3Duration = 180;
+        /// <summary>死亡「风暴葬礼」演出时长</summary>
+        private const int DeathDuration = 330;
+
+        /// <summary>风暴之眼常驻竞技场初始/最小半径</summary>
+        public const float EyeStartRadius = 700f;
+        public const float EyeHoldRadius = 430f;
 
         #endregion
 
         #region 状态枚举
 
-        /// <summary>AI主状态</summary>
+        /// <summary>AI 主状态</summary>
         public enum AoshunState
         {
-            Intro,          // 出场动画
-            Patrol,         // 蠕虫钻地巡逻，积攒电荷
-            PreAttack,      // 攻击前短暂蓄力/电报
-            Attacking,      // 执行攻击
-            Cooldown,       // 攻击后冷却
-            Submerge,       // 深潜（深渊伏击专用）
-            Emerge,         // 从地下爆出
-            PhaseTransition // 阶段转换
+            Intro,          // 入场演出「破土升天」
+            Regroup,        // 连接拍: 蜷缩重整 + 钻地巡逻蓄电
+            Attacking,      // 执行洗牌袋选出的攻击
+            Transition2,    // 换阶段演出「雷暴降临」
+            Transition3,    // 换阶段演出「坠入眼中」
+            Dying           // 死亡演出「风暴葬礼」
         }
 
-        /// <summary>攻击类型</summary>
+        /// <summary>攻击类型（详见设计文档 §4 编排表）</summary>
         public enum AoshunAttackType
         {
-            // --- 一阶段攻击 ---
-            ChainLightning,     // 雷链穿刺：释放闪电节点，节点间连锁放电
-            AbyssalAmbush,      // 深渊伏击：潜地消失→预警标记→脚下爆出+冲击波
-            DragonScaleStorm,   // 龙鳞风暴：高速移动中身体段抛射带电龙鳞
-            TornadoEnsnare,     // 龙卷缠绕：绕玩家盘旋释放追踪龙卷风
-            ThunderSeal,        // 天雷印：标记玩家位置，延迟天雷轰击
-            // --- 二阶段追加 ---
-            DragonKingRoar,     // 龙王怒啸：全屏减速+降防debuff波
-            EyeOfTheStorm,      // 风暴之眼：制造缩小安全区，区外持续高伤
-            ThunderChainCharge  // 雷霆连环冲：多次快速穿越留持续电痕
+            GaleCleave,     // 风刃连斩: 臂后仰→错相挥出风刃
+            CyclonePalm,    // 龙卷压掌: 双臂内拢→压掌落龙卷
+            ThunderSeal,    // 天雷印: 沿玩家动向扇形铺印, 延迟引爆雷柱
+            AbyssBreach,    // 破渊突袭: 深潜→静默→地裂预警→垂直破土
+            StormNet,       // 雷链电网: 环形节点网 + 迁移安全缺口 (P2+)
+            HeavensCall,    // 张臂唤雷: 蓄力唤落错相雷柱 (P2+)
+            TempestPierce,  // 风暴穿刺: 后拉蓄势→红线预告→高速穿刺 (P2+)
+            KingRoar,       // 龙王怒啸: P3 进场演出化连接招
+            EyePierce,      // 眼弦穿刺: 沿风暴眼弦线穿刺 (P3)
+            WallCyclone,    // 沿壁龙卷: 龙卷贴眼壁巡游 (P3)
+            EyeEdgeCall     // 眼缘落雷: 雷柱落在眼内边缘环带 (P3)
         }
 
-        /// <summary>一阶段攻击数量</summary>
-        private const int Phase1AttackCount = 5;
-        /// <summary>二阶段攻击数量</summary>
-        private const int Phase2AttackCount = 8;
+        /// <summary>臂部手势（臂段读取头部此状态做弹簧编排, 纯视觉）</summary>
+        public enum ArmGestureKind
+        {
+            None,       // 收拢贴体
+            ReelBack,   // 蓄势后仰
+            Slash,      // 骤然挥出
+            FoldIn,     // 双臂内拢(压掌前)
+            SpreadOut,  // 张臂(唤雷/咆哮)
+            Tremor      // 震颤(蓄势/濒死)
+        }
 
         #endregion
 
         #region 状态字段
 
-        // NPC.ai[0]: 蠕虫是否已初始化（0=未初始化，1=已初始化）
-        // NPC.ai[1]: 通用计时器（各状态复用）
-        // NPC.ai[2]: 当前攻击类型（AoshunAttackType）
+        // NPC.ai[0]: 蠕虫身体是否已生成
+        // NPC.ai[1]: 状态计时器（自动同步）
+        // NPC.ai[2]: 当前攻击类型（自动同步）
         // NPC.ai[3]: 脱战计时器
 
-        /// <summary>是否处于二阶段</summary>
-        public bool IsPhase2 => NPC.life < NPC.lifeMax * Phase2Threshold;
-
-        // 使用internalAI做网络同步的额外状态
+        // internalAI[0]: 主状态  [1]: 攻击子状态  [2]: 风暴蓄电  [3]: 本次攻击是否过载
         public float[] internalAI = new float[4];
-        // internalAI[0]: 当前主状态（AoshunState）
-        // internalAI[1]: 攻击子状态/进度
-        // internalAI[2]: 风暴蓄电值
-        // internalAI[3]: 下次巡逻持续时间
 
-        // --- 私有运行时状态 ---
-        private bool despawn;
-        private bool isUnderground;     // 当前是否在地下（碰撞检测）
-        private bool didPhase2Transition;
-
-        // 状态机
         private AoshunState CurrentState {
             get => (AoshunState)(int)internalAI[0];
-            set => internalAI[0] = (float)value;
+            set => internalAI[0] = (int)value;
         }
-        private float AttackProgress {
-            get => internalAI[1];
+        private int SubState {
+            get => (int)internalAI[1];
             set => internalAI[1] = value;
         }
-        private float StormCharge {
+        public float StormCharge {
             get => internalAI[2];
             set => internalAI[2] = value;
+        }
+        /// <summary>本次攻击是否为满电过载强化版</summary>
+        public bool Overloaded {
+            get => internalAI[3] == 1f;
+            set => internalAI[3] = value ? 1f : 0f;
+        }
+
+        private int StateTimer {
+            get => (int)NPC.ai[1];
+            set => NPC.ai[1] = value;
+        }
+        private AoshunAttackType CurrentAttack {
+            get => (AoshunAttackType)(int)NPC.ai[2];
+            set => NPC.ai[2] = (int)value;
         }
 
         /// <summary>风暴蓄电是否已满</summary>
         public bool IsFullyCharged => StormCharge >= MaxStormCharge;
 
-        // 攻击专用
-        private int attackTimer;
-        private int patrolTimer;        // 巡逻计时
-        private int patrolDuration;     // 本次巡逻总时长
+        public float HpFrac => NPC.life / (float)NPC.lifeMax;
+        /// <summary>是否进入二阶段（雷暴）</summary>
+        public bool InPhase2 => HpFrac < Phase2Threshold || didTransition2;
+        /// <summary>是否进入三阶段（风暴之眼）</summary>
+        public bool InPhase3 => HpFrac < Phase3Threshold || didTransition3;
 
-        // 深渊伏击
-        private Vector2 ambushTarget;
-        private int ambushWarningTimer;
+        /// <summary>接触伤害闸门: 演出期间(入场/换阶段/死亡)全链无接触伤害</summary>
+        public bool ContactDamageEnabled =>
+            CurrentState == AoshunState.Regroup || CurrentState == AoshunState.Attacking;
 
-        // 龙卷缠绕
-        private float orbitAngle;
-        private int tornadoCount;
+        /// <summary>是否处于停火演出（身段经 <see cref="AoshunHelper.HeadIsPacified"/> 读取）</summary>
+        public bool IsPacified => !ContactDamageEnabled;
 
-        // 雷霆连环冲
-        private int chainChargeCount;
-        private int maxChainCharges;
-        private Vector2 chargeDirection;
+        /// <summary>死亡演出进度 0~1（身段渐隐白热用）</summary>
+        public float DeathProgress => CurrentState == AoshunState.Dying
+            ? MathHelper.Clamp(StateTimer / (float)DeathDuration, 0f, 1f)
+            : 0f;
 
-        // 龙鳞抛射计数
-        private int scaleBarrageTimer;
+        // --- 同步的演出/瞄准状态（SendExtraAI） ---
+        private Vector2 aimPoint;       // 通用锚点: 伏击落点 / 唤雷中心 / 眼锚点
+        private Vector2 aimVector;      // 通用方向: 穿刺方向 / 眼弦方向
+        private bool didTransition2;
+        private bool didTransition3;
+        private bool deathTriggered;    // CheckDead 已拦截, 正在演出
+        private int attackCounter;      // 已完成攻击数（决定盘旋方向等）
 
-        // 近距离判定
+        // --- 服务器端选招 ---
+        private System.Collections.Generic.List<int> attackBag = [];
+        private int lastBagTail = -1;
+
+        // --- 本地运行时（不同步, 各端从同步状态确定性推导或纯视觉） ---
+        private bool despawn;
+        private bool isUnderground;
+        private float globalTime;
         private bool close;
 
-        // 视觉效果
-        private float globalTime;
-        private float stormAuraAlpha;
+        // 臂部手势（各端由状态机确定性驱动, 纯视觉）
+        private ArmGestureKind gestureKind = ArmGestureKind.None;
+        private int gestureTimer;
+        private int gestureDuration = 1;
+        private float gestureStagger;
 
-        // V2 风暴屏幕演出标量（纯本地视觉，AoshunStormScreenSystem 驱动）
-        private float stormTintFx;          // 风暴压暗强度 0~1（平滑跟随电量/阶段）
-        private bool stormWasFullyCharged;  // 满电"雷暴临界"边沿检测（一次性演出）
-        private bool stormEyeActive;        // 风暴之眼安全区是否生效
-        private Vector2 stormEyeCenter;     // 风暴之眼中心（世界）
-        private float stormEyeRadius;       // 风暴之眼当前半径（世界像素）
+        // 风暴之眼（P3 常驻竞技场, 参数每帧从眼弹幕读取）
+        public bool EyeActive { get; private set; }
+        public Vector2 EyeCenter { get; private set; }
+        public float EyeRadius { get; private set; }
 
-        // 攻击历史（避免连续相同攻击）
-        private AoshunAttackType lastAttack = (AoshunAttackType)(-1);
+        // 屏幕演出标量（纯本地视觉）
+        private float stormTintFx;          // 压暗强度（电量/阶段驱动）
+        private float stormWeatherFx;       // 风雨强度（T2 后常驻, 眼内抠除由着色器做）
+        private bool stormWasFullyCharged;  // 满电边沿检测
+        private float dashVisualHeat;       // 冲刺残影热度（速度门控, 客户端视觉）
+
+        #endregion
+
+        #region 臂部手势 API（臂段读取）
+
+        /// <summary>当前手势</summary>
+        public ArmGestureKind Gesture => gestureKind;
+
+        /// <summary>
+        /// 指定臂段（按链上序号）的手势进度 0~1。段错相 = 序号 × gestureStagger 帧,
+        /// 让挥击沿身体波浪式传递而非整排齐动。
+        /// </summary>
+        public float GestureProgress(int segmentIndex) {
+            float t = (gestureTimer - segmentIndex * gestureStagger) / Math.Max(gestureDuration, 1);
+            return MathHelper.Clamp(t, 0f, 1f);
+        }
+
+        /// <summary>设置臂部手势（重复设置同类手势不重置计时）</summary>
+        private void SetGesture(ArmGestureKind kind, int duration, float staggerPerSegment = 0f) {
+            if (gestureKind != kind) {
+                gestureKind = kind;
+                gestureTimer = 0;
+            }
+            gestureDuration = Math.Max(duration, 1);
+            gestureStagger = staggerPerSegment;
+        }
 
         #endregion
 
@@ -228,22 +287,30 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 
         public override void SendExtraAI(BinaryWriter writer) {
             base.SendExtraAI(writer);
-            if (Main.netMode == NetmodeID.Server || Main.dedServ) {
-                writer.Write(internalAI[0]);
-                writer.Write(internalAI[1]);
-                writer.Write(internalAI[2]);
-                writer.Write(internalAI[3]);
-            }
+            writer.Write(internalAI[0]);
+            writer.Write(internalAI[1]);
+            writer.Write(internalAI[2]);
+            writer.Write(internalAI[3]);
+            writer.WriteVector2(aimPoint);
+            writer.WriteVector2(aimVector);
+            writer.Write(didTransition2);
+            writer.Write(didTransition3);
+            writer.Write(deathTriggered);
+            writer.Write((short)attackCounter);
         }
 
         public override void ReceiveExtraAI(BinaryReader reader) {
             base.ReceiveExtraAI(reader);
-            if (Main.netMode == NetmodeID.MultiplayerClient) {
-                internalAI[0] = reader.ReadSingle();
-                internalAI[1] = reader.ReadSingle();
-                internalAI[2] = reader.ReadSingle();
-                internalAI[3] = reader.ReadSingle();
-            }
+            internalAI[0] = reader.ReadSingle();
+            internalAI[1] = reader.ReadSingle();
+            internalAI[2] = reader.ReadSingle();
+            internalAI[3] = reader.ReadSingle();
+            aimPoint = reader.ReadVector2();
+            aimVector = reader.ReadVector2();
+            didTransition2 = reader.ReadBoolean();
+            didTransition3 = reader.ReadBoolean();
+            deathTriggered = reader.ReadBoolean();
+            attackCounter = reader.ReadInt16();
         }
 
         public override bool? DrawHealthBar(byte hbPosition, ref float scale, ref Vector2 position) {
@@ -253,11 +320,35 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 
         public override bool CheckActive() => false;
 
+        /// <summary>
+        /// 死亡拦截: 血量归零时不立即死亡, 转入「风暴葬礼」演出（清弹/无敌/逐段爆裂）,
+        /// 演出末尾由 AI 主动触发真实死亡。
+        /// </summary>
+        public override bool CheckDead() {
+            if (!deathTriggered) {
+                deathTriggered = true;
+                NPC.life = Math.Max(NPC.life, 1);
+                NPC.dontTakeDamage = true;
+                CurrentState = AoshunState.Dying;
+                StateTimer = 0;
+                SubState = 0;
+                if (Main.netMode != NetmodeID.MultiplayerClient)
+                    AoshunAttacks.ClearHostileProjectiles();
+                NPC.netUpdate = true;
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>演出期间（入场/换阶段/死亡）头部无接触伤害</summary>
+        public override bool CanHitPlayer(Player target, ref int cooldownSlot) => ContactDamageEnabled;
+
         public override void OnKill() {
             Systems.DownedBossSystem.downedAoshun = true;
 
             if (Main.netMode != NetmodeID.Server) {
-                AoshunHelper.CreateThunderBurst(NPC.Center, 200f, 4, 20);
+                AoshunHelper.CreateThunderBurst(NPC.Center, 220f, 4, 20);
+                ACMUtils.AddScreenShake(9f);
             }
         }
 

@@ -65,7 +65,9 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
         // ===== 模式 2: 环刺 (无重力直线向心, 刺球领域) =====
         private void RingAI() {
             Projectile.penetrate = -1;
-            Projectile.timeLeft = 240;
+            // 只做一次性上限压缩 (旧版每帧重置 timeLeft 导致永不超时)
+            if (Projectile.timeLeft > 300)
+                Projectile.timeLeft = 300;
             // 接近中心后自然消亡, 避免在中心堆积
             if (Projectile.velocity.Length() < 0.5f)
                 Projectile.Kill();
@@ -219,6 +221,21 @@ namespace AncientChineseMythology.Celestias.Boss.Dryades
         public override bool PreDraw(ref Color lightColor) {
             Texture2D texture = TextureAssets.Projectile[Type].Value;
             Vector2 origin = texture.Size() / 2f;
+
+            // 辉光核: 加性 SoftGlow 底光 (弹幕在暗色地形背景上可读)
+            Texture2D glow = ACMAsset.SoftGlow;
+            if (glow != null) {
+                SpriteBatch sb = Main.spriteBatch;
+                sb.End();
+                sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
+                    DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+                float corePulse = 0.85f + 0.15f * MathF.Sin((float)Main.GlobalTimeWrappedHourly * 5f + Projectile.whoAmI);
+                sb.Draw(glow, Projectile.Center - Main.screenPosition, null,
+                    new Color(110, 220, 70, 0) * (0.55f * corePulse), 0f, glow.Size() / 2f,
+                    0.5f * Projectile.scale, SpriteEffects.None, 0f);
+                sb.End();
+                ACMShaders.RestoreDefaultBatch(sb);
+            }
 
             // 残影尾迹 (扎地陷阱不画残影)
             if (!planted) {

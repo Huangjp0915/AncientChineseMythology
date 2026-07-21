@@ -51,6 +51,86 @@ namespace AncientChineseMythology.Underworlds.Boss.Spectres
         /// <summary>愤怒红色 - 狂暴时使用</summary>
         public static Color SpectreRage => new Color(255, 100, 80);
 
+        /// <summary>魂火橙 - 贴图鬼火芯的暖色 (内焰/灯芯)</summary>
+        public static Color SpectreEmber => new Color(255, 150, 60);
+
+        /// <summary>鬼焰绿 - 本体贴图的青绿鬼火 (魂缕/凝形)</summary>
+        public static Color SpectreGhostFlame => new Color(120, 235, 140);
+
+        #endregion
+
+        #region 鬼相着色器 SpectreVeil (专属, 静态缓存)
+
+        private static Asset<Effect> _veilRef;
+
+        /// <summary>怨灵鬼相着色器 — 本体/残影/分身统一 sprite pass。惰性 ImmediateLoad 一次。</summary>
+        public static Effect VeilEffect {
+            get {
+                if (Main.dedServ)
+                    return null;
+                _veilRef ??= ModContent.Request<Effect>(
+                    "AncientChineseMythology/Effects/SpectreVeil", AssetRequestMode.ImmediateLoad);
+                return _veilRef?.Value;
+            }
+        }
+
+        /// <summary>
+        /// 开启鬼相绘制批 (Immediate + AlphaBlend, 噪声绑 s1)。返回 false 表示着色器不可用,
+        /// 调用方应走普通 sb.Draw 退化。成功后逐 sprite 调 <see cref="ApplyVeilParams"/> 再 Draw,
+        /// 全部画完必须调 <see cref="EndVeilBatch"/> 恢复默认批。
+        /// </summary>
+        public static bool BeginVeilBatch(SpriteBatch sb) {
+            Effect fx = VeilEffect;
+            Texture2D noise = ACMShaders.NoiseTexture;
+            if (fx == null || noise == null || sb == null)
+                return false;
+
+            sb.End();
+            sb.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.LinearClamp,
+                DepthStencilState.None, RasterizerState.CullNone, fx, Main.GameViewMatrix.TransformationMatrix);
+            GraphicsDevice gd = Main.graphics.GraphicsDevice;
+            gd.Textures[1] = noise;
+            gd.SamplerStates[1] = SamplerState.LinearWrap;
+            return true;
+        }
+
+        /// <summary>逐 sprite 设置鬼相参数并 Apply (Immediate 批内, 每次 Draw 前调用一次)。</summary>
+        /// <param name="veil">虚相度 0=实体 1=鬼相。</param>
+        /// <param name="dissolve">聚散进度 0=成形 1=全散。</param>
+        /// <param name="opacity">主不透明度 (残影逐级递减)。</param>
+        /// <param name="flame">内焰强度 (蓄力时抬, 0~1.5)。</param>
+        /// <param name="dashDir">UV 空间冲刺方向 (拖影)。</param>
+        /// <param name="dashBlur">拖影强度 0~1。</param>
+        /// <param name="tint">主题染色 (rgb)。</param>
+        /// <param name="tintAmount">染色强度 0~1。</param>
+        /// <param name="edge">灼边/轮辉色。</param>
+        /// <param name="edgeAmount">灼边强度 0~1。</param>
+        public static void ApplyVeilParams(float veil, float dissolve, float opacity, float flame,
+            Vector2 dashDir, float dashBlur, Color tint, float tintAmount, Color edge, float edgeAmount,
+            float wisp = 0.6f, float noiseScale = 2.2f) {
+            Effect fx = VeilEffect;
+            if (fx == null)
+                return;
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uVeil"]?.SetValue(MathHelper.Clamp(veil, 0f, 1f));
+            fx.Parameters["uDissolve"]?.SetValue(MathHelper.Clamp(dissolve, 0f, 1f));
+            fx.Parameters["uOpacity"]?.SetValue(MathHelper.Clamp(opacity, 0f, 1f));
+            fx.Parameters["uWisp"]?.SetValue(wisp);
+            fx.Parameters["uNoiseScale"]?.SetValue(noiseScale);
+            fx.Parameters["uFlame"]?.SetValue(flame);
+            fx.Parameters["uDashDir"]?.SetValue(dashDir);
+            fx.Parameters["uDashBlur"]?.SetValue(MathHelper.Clamp(dashBlur, 0f, 1f));
+            fx.Parameters["uTint"]?.SetValue(new Vector4(tint.ToVector3(), MathHelper.Clamp(tintAmount, 0f, 1f)));
+            fx.Parameters["uEdgeColor"]?.SetValue(new Vector4(edge.ToVector3(), MathHelper.Clamp(edgeAmount, 0f, 2f)));
+            fx.CurrentTechnique.Passes[0].Apply();
+        }
+
+        /// <summary>结束鬼相批并恢复项目默认批。</summary>
+        public static void EndVeilBatch(SpriteBatch sb) {
+            sb.End();
+            ACMShaders.RestoreDefaultBatch(sb);
+        }
+
         #endregion
 
         #region 粒子效果

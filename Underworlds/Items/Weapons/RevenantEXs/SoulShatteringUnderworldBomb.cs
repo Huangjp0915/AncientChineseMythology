@@ -9,14 +9,16 @@ using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.ID;
+using Terraria.Localization;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
 {
     /// <summary>
-    /// 冥岩碎魂黄泉雷 - NetherRockSoulbomb的终极升级版
-    /// 能粉碎灵魂、开启黄泉之门的冥岩重雷
-    /// 特殊机制：投掷后分裂为3枚子雷，每枚爆炸范围巨大，击杀后灵魂碎片扩散再爆炸
+    /// 冥岩碎魂黄泉雷 - NetherRockSoulbomb的觉醒升级版
+    /// 主雷爆炸撕开"黄泉之门"(竖立门扉驻留 1.2s): 门柱魂光 + 门内虚空;
+    /// 3 枚子雷从门中依次喷出砸向投掷方向扇形; 门对穿行敌人挂魂火。
+    /// 觉醒形态: 门喷子雷 +2 枚。
     /// </summary>
     public class SoulShatteringUnderworldBomb : ModItem
     {
@@ -41,7 +43,6 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
         }
 
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
-            // 投掷主雷
             Projectile.NewProjectile(source, position, velocity, type, damage, knockback, player.whoAmI, 0f, 0f);
             return false;
         }
@@ -57,6 +58,9 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
         }
     }
 
+    /// <summary>
+    /// 碎魂黄泉雷主弹: 引信 60f (渐亮警示 + 临爆抖动), 爆炸后撕开黄泉之门 (YomiGate)。
+    /// </summary>
     public class SoulShatteringBombProj : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Underworlds/Items/Weapons/RevenantEXs/SoulShatteringUnderworldBomb";
@@ -81,6 +85,9 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
             Projectile.velocity.Y += 0.3f;
             if (Projectile.velocity.Y > 16f) Projectile.velocity.Y = 16f;
             Projectile.rotation += Projectile.velocity.X * 0.05f;
+            // 记录投掷朝向 (门喷子雷的扇形方向)
+            if (MathF.Abs(Projectile.velocity.X) > 0.5f)
+                Projectile.localAI[0] = MathF.Sign(Projectile.velocity.X);
 
             float fuseProgress = Timer / FuseTime;
             float flicker = MathF.Sin(Timer * (0.4f + fuseProgress * 0.6f)) * 0.5f + 0.5f;
@@ -91,31 +98,25 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
                 Dust fuse = Dust.NewDustDirect(
                     Projectile.Center + new Vector2(0, -Projectile.height * 0.4f), 4, 4, DustID.PurpleTorch,
                     Main.rand.NextFloat(-1f, 1f), Main.rand.NextFloat(-3f, -1f),
-                    80, default, Main.rand.NextFloat(1.2f, 2f)
-                );
+                    80, default, Main.rand.NextFloat(1.2f, 2f));
                 fuse.noGravity = true;
             }
-            if (fuseProgress > 0.4f) {
-                Dust smoke = Dust.NewDustDirect(
-                    Projectile.Center, 8, 8, DustID.Smoke,
-                    0f, -1.5f, 180, new Color(100, 40, 160), Main.rand.NextFloat(1.2f, 2f)
-                );
-                smoke.noGravity = true;
-            }
-            // 临近爆炸时震动效果
             if (fuseProgress > 0.7f && Main.rand.NextBool(2)) {
                 Dust warn = Dust.NewDustDirect(
                     Projectile.Center + Main.rand.NextVector2Circular(10, 10), 4, 4, DustID.Shadowflame,
                     Main.rand.NextFloat(-2f, 2f), Main.rand.NextFloat(-2f, 2f),
-                    100, default, Main.rand.NextFloat(1.5f, 2.5f)
-                );
+                    100, default, Main.rand.NextFloat(1.5f, 2.5f));
                 warn.noGravity = true;
             }
 
             if (Timer >= FuseTime) { Explode(); }
         }
 
-        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) { Explode(); }
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            if (Projectile.owner == Main.myPlayer)
+                Main.player[Projectile.owner].GetModPlayer<RevenantEXKarmaPlayer>().AddKarma(6f);
+            Explode();
+        }
 
         public override bool OnTileCollide(Vector2 oldVelocity) {
             if (HasBounced == 0) {
@@ -139,37 +140,26 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
             Projectile.height = 320;
             Projectile.Damage();
 
-            SoundEngine.PlaySound(SoundID.Item14 with { Volume = 1.5f, Pitch = -0.5f }, Projectile.Center);
+            SoundEngine.PlaySound(SoundID.Item14 with { Volume = 1.4f, Pitch = -0.5f }, Projectile.Center);
+            SoundEngine.PlaySound(SoundID.Item122 with { Volume = 0.7f, Pitch = -0.4f }, Projectile.Center);
             Vector2 explosionCenter = Projectile.Center;
 
-            // 巨大爆炸粒子效果
-            for (int i = 0; i < 60; i++) {
-                Vector2 vel = Main.rand.NextVector2Circular(16f, 16f);
-                Dust fire = Dust.NewDustPerfect(explosionCenter, DustID.PurpleTorch, vel, 80, default, Main.rand.NextFloat(2.5f, 4.5f));
+            // 爆炸粒子 (克制版)
+            for (int i = 0; i < 36; i++) {
+                Vector2 vel = Main.rand.NextVector2Circular(15f, 15f);
+                Dust fire = Dust.NewDustPerfect(explosionCenter, DustID.PurpleTorch, vel, 80, default, Main.rand.NextFloat(2.2f, 4f));
                 fire.noGravity = true;
             }
-            for (int i = 0; i < 40; i++) {
-                Vector2 vel = Main.rand.NextVector2CircularEdge(14f, 14f);
+            for (int i = 0; i < 22; i++) {
+                Vector2 vel = Main.rand.NextVector2CircularEdge(13f, 13f);
                 vel.Y -= 3f;
-                Dust soul = Dust.NewDustPerfect(explosionCenter, DustID.Wraith, vel, 80, default, Main.rand.NextFloat(2f, 3.5f));
+                Dust soul = Dust.NewDustPerfect(explosionCenter, DustID.Wraith, vel, 80, default, Main.rand.NextFloat(1.8f, 3f));
                 soul.noGravity = true;
-            }
-            for (int i = 0; i < 30; i++) {
-                Vector2 smokeVel = new Vector2(Main.rand.NextFloat(-5f, 5f), Main.rand.NextFloat(-10f, -3f));
-                Dust smoke = Dust.NewDustPerfect(explosionCenter, DustID.Smoke, smokeVel, 180, new Color(100, 40, 160), Main.rand.NextFloat(3f, 5f));
-                smoke.noGravity = true;
-            }
-            // 碎魂冲击波
-            for (int i = 0; i < 30; i++) {
-                float angle = MathHelper.TwoPi / 30f * i;
-                Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * Main.rand.NextFloat(8f, 16f);
-                Dust ring = Dust.NewDustPerfect(explosionCenter, DustID.Shadowflame, vel, 80, default, Main.rand.NextFloat(2.5f, 4f));
-                ring.noGravity = true;
             }
 
             Lighting.AddLight(explosionCenter, 3f, 1.5f, 4f);
 
-            // 升级演出: 一段大爆 GenericWarp 虚空冲击扭曲 + 层叠冲击环 (仅本机)
+            // 一段大爆演出: GenericWarp 虚空冲击扭曲 + 层叠冲击环 (仅本机)
             SoulShatterBlastFX.Spawn(Projectile.GetSource_FromThis(), explosionCenter, 0, Projectile.owner);
             WeaponVFX.AddScreenShake(explosionCenter, 6f);
 
@@ -184,16 +174,14 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
                 }
             }
 
-            // 分裂为3枚子雷
-            for (int i = 0; i < 3; i++) {
-                float angle = MathHelper.TwoPi / 3f * i + Main.rand.NextFloat(-0.3f, 0.3f);
-                Vector2 subVel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * Main.rand.NextFloat(6f, 10f);
-                subVel.Y -= 4f;
-                Projectile.NewProjectile(
-                    Projectile.GetSource_FromThis(), explosionCenter, subVel,
-                    ModContent.ProjectileType<SoulShatteringSubBomb>(),
-                    Projectile.damage / 2, Projectile.knockBack * 0.5f, Projectile.owner
-                );
+            // —— 撕开黄泉之门: 门驻留并从门中喷出子雷 (owner 侧生成) ——
+            if (Projectile.owner == Main.myPlayer) {
+                var mp = Main.player[Projectile.owner].GetModPlayer<RevenantEXKarmaPlayer>();
+                int subCount = mp.Awakened ? 5 : 3;
+                float facing = Projectile.localAI[0] == 0f ? 1f : Projectile.localAI[0];
+                Projectile.NewProjectile(Projectile.GetSource_FromThis(), explosionCenter, Vector2.Zero,
+                    ModContent.ProjectileType<YomiGate>(), Projectile.damage / 2, Projectile.knockBack * 0.5f,
+                    Projectile.owner, facing, subCount);
             }
 
             Projectile.Kill();
@@ -217,22 +205,146 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
                 glowColor.A = 0;
                 Main.EntitySpriteDraw(softGlow, Projectile.Center - Main.screenPosition, null, glowColor, 0f, glowOrigin, pulse, SpriteEffects.None, 0);
             }
+            return false;
+        }
+    }
 
-            Texture2D sparkle = ACMAsset.Sparkle;
-            if (sparkle != null && fuseProgress > 0.4f) {
-                Vector2 sparkleOrigin = sparkle.Size() / 2f;
-                float sparkIntensity = (fuseProgress - 0.4f) / 0.6f;
-                Color sparkColor = new Color(240, 120, 255) * sparkIntensity * 0.5f;
-                sparkColor.A = 0;
-                float sparkScale = 0.3f + sparkIntensity * 0.15f;
-                Main.EntitySpriteDraw(sparkle, Projectile.Center - Main.screenPosition, null, sparkColor, Timer * 0.12f, sparkleOrigin, sparkScale, SpriteEffects.None, 0);
+    /// <summary>
+    /// 黄泉之门 (主雷爆点驻留 72f): 竖立门扉 — BeamGrad 双门柱 + 门楣 + 门内虚空玄光;
+    /// 每 12f 从门中喷出一枚子雷砸向投掷朝向扇形 (ai[0]=朝向, ai[1]=子雷数);
+    /// 贴门敌人挂魂火。伤害本体为 0 (damage 字段只作子雷面额载体)。
+    /// </summary>
+    public class YomiGate : ModProjectile
+    {
+        public override string Texture => "Terraria/Images/Projectile_1";
+        private ref float Facing => ref Projectile.ai[0];
+        private ref float SubCount => ref Projectile.ai[1];
+        private ref float Timer => ref Projectile.localAI[0];
+        private ref float Spawned => ref Projectile.localAI[1];
+        private const int Life = 72;
+        private const float GateHalfWidth = 55f;
+        private const float GateHeight = 150f;
+
+        public override void SetStaticDefaults() {
+            Language.GetOrRegister("Mods.AncientChineseMythology.Projectiles.YomiGate.DisplayName",
+                () => "Gate of Yellow Springs");
+        }
+
+        public override void SetDefaults() {
+            Projectile.width = 2;
+            Projectile.height = 2;
+            Projectile.friendly = false; // 门本体不结算伤害
+            Projectile.hostile = false;
+            Projectile.penetrate = -1;
+            Projectile.timeLeft = Life;
+            Projectile.tileCollide = false;
+            Projectile.ignoreWater = true;
+            Projectile.alpha = 255;
+        }
+
+        public override bool ShouldUpdatePosition() => false;
+
+        public override void AI() {
+            Timer++;
+            Projectile.velocity = Vector2.Zero;
+            Lighting.AddLight(Projectile.Center, 0.8f, 0.3f, 1.3f);
+
+            // 开门帧
+            if ((int)Timer == 1)
+                SoundEngine.PlaySound(SoundID.Item117 with { Volume = 0.8f, Pitch = -0.5f }, Projectile.Center);
+
+            // —— 每 12f 从门中喷一枚子雷 (从第 10f 起, owner 侧生成) ——
+            if (Timer >= 10f && Spawned < SubCount && (int)(Timer - 10f) % 12 == 0) {
+                Spawned++;
+                if (Projectile.owner == Main.myPlayer) {
+                    // 扇形: 朝投掷方向 15°~65° 仰角
+                    float t = (Spawned - 1f) / MathF.Max(1f, SubCount - 1f);
+                    float angDeg = MathHelper.Lerp(15f, 65f, t) + Main.rand.NextFloat(-6f, 6f);
+                    float rad = MathHelper.ToRadians(angDeg);
+                    Vector2 vel = new Vector2(MathF.Cos(rad) * Facing, -MathF.Sin(rad)) * Main.rand.NextFloat(8.5f, 11.5f);
+                    Projectile.NewProjectile(Projectile.GetSource_FromThis(),
+                        Projectile.Center + new Vector2(0f, -Main.rand.NextFloat(0f, 60f)), vel,
+                        ModContent.ProjectileType<SoulShatteringSubBomb>(),
+                        Projectile.damage, Projectile.knockBack, Projectile.owner);
+                }
+                SoundEngine.PlaySound(SoundID.Item42 with { Volume = 0.7f, Pitch = -0.3f + Spawned * 0.08f }, Projectile.Center);
+                WeaponVFX.AddScreenShake(Projectile.Center, 2f);
+            }
+
+            // 门内涌出的魂气
+            if (Main.rand.NextBool(2)) {
+                Vector2 pos = Projectile.Center + new Vector2(Main.rand.NextFloat(-GateHalfWidth * 0.7f, GateHalfWidth * 0.7f),
+                    Main.rand.NextFloat(-GateHeight * 0.9f, 30f));
+                Dust wisp = Dust.NewDustPerfect(pos, Main.rand.NextBool() ? DustID.Wraith : DustID.PurpleTorch,
+                    new Vector2(Facing * Main.rand.NextFloat(0.5f, 2f), -Main.rand.NextFloat(0.5f, 2f)),
+                    120, default, Main.rand.NextFloat(1.2f, 2f));
+                wisp.noGravity = true;
+            }
+
+            // 贴门敌人挂魂火 (每 15f 一轮)
+            if ((int)Timer % 15 == 0) {
+                for (int i = 0; i < Main.maxNPCs; i++) {
+                    NPC npc = Main.npc[i];
+                    if (!npc.active || npc.friendly) continue;
+                    if (MathF.Abs(npc.Center.X - Projectile.Center.X) < GateHalfWidth + npc.width * 0.5f
+                        && npc.Center.Y > Projectile.Center.Y - GateHeight && npc.Center.Y < Projectile.Center.Y + 60f) {
+                        npc.AddBuff(BuffID.ShadowFlame, 240);
+                        npc.AddBuff(BuffID.Frostburn2, 240);
+                    }
+                }
+            }
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+
+            float life = Timer / Life;
+            // 门扉包络: 8f 升起 → 驻留 → 尾 12f 合拢
+            float open = MathHelper.Clamp(Timer / 8f, 0f, 1f) * MathHelper.Clamp(Projectile.timeLeft / 12f, 0f, 1f);
+            if (open <= 0.02f)
+                return false;
+
+            Vector2 baseP = Projectile.Center + new Vector2(0f, 46f);
+            float h = GateHeight * open;
+
+            // —— 双门柱 (BeamGrad: 酆都黑紫底 + 亮紫芯) ——
+            for (int s = -1; s <= 1; s += 2) {
+                Vector2 bottom = baseP + new Vector2(s * GateHalfWidth, 0f);
+                Vector2 top = bottom - new Vector2(0f, h);
+                ACMShaders.DrawBeam(bottom, top, 16f * open,
+                    new Color(180, 120, 255), new Color(25, 8, 40), open * 0.9f,
+                    flowSpeed: 1.8f, flowScale: 2.2f, coreSharp: 2.2f);
+            }
+            // 门楣 (横梁)
+            Vector2 lintelL = baseP + new Vector2(-GateHalfWidth - 10f, -h);
+            Vector2 lintelR = baseP + new Vector2(GateHalfWidth + 10f, -h);
+            ACMShaders.DrawBeam(lintelL, lintelR, 12f * open,
+                new Color(180, 120, 255), new Color(25, 8, 40), open * 0.9f,
+                flowSpeed: 1.4f, flowScale: 2f, coreSharp: 2.2f);
+
+            // —— 门内虚空玄光 (酆都虚空: 暗紫柔光 + 上升流) ——
+            Texture2D softGlow = ACMAsset.SoftGlow;
+            if (softGlow != null) {
+                Vector2 innerCenter = baseP - new Vector2(0f, h * 0.5f);
+                Color voidCol = new Color(120, 60, 200) * (0.4f * open);
+                voidCol.A = 0;
+                Main.EntitySpriteDraw(softGlow, innerCenter - Main.screenPosition, null, voidCol, 0f,
+                    softGlow.Size() / 2f, new Vector2(GateHalfWidth / 60f, h / 120f) * 1.4f, SpriteEffects.None, 0);
+            }
+
+            // 开门冲击环 (仅前 14f)
+            if (Timer < 14f) {
+                float ring = Timer / 14f;
+                WeaponVFX.DrawShockwaveRing(baseP - new Vector2(0f, h * 0.5f), 16f + ring * 120f, 10f,
+                    (1f - ring) * 0.8f, new Color(190, 130, 255), new Color(50, 15, 90));
             }
             return false;
         }
     }
 
     /// <summary>
-    /// 碎魂黄泉雷的分裂子雷
+    /// 碎魂黄泉雷的分裂子雷 (由黄泉之门喷出): 短引信抛物线, 落地/触敌二段爆。
     /// </summary>
     public class SoulShatteringSubBomb : ModProjectile
     {
@@ -266,14 +378,17 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
                 Dust fuse = Dust.NewDustDirect(
                     Projectile.Center, 4, 4, DustID.PurpleTorch,
                     Main.rand.NextFloat(-0.5f, 0.5f), Main.rand.NextFloat(-2f, -0.5f),
-                    100, default, Main.rand.NextFloat(1f, 1.5f)
-                );
+                    100, default, Main.rand.NextFloat(1f, 1.5f));
                 fuse.noGravity = true;
             }
             if (Timer >= SubFuseTime) { SubExplode(); }
         }
 
-        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) { SubExplode(); }
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            if (Projectile.owner == Main.myPlayer)
+                Main.player[Projectile.owner].GetModPlayer<RevenantEXKarmaPlayer>().AddKarma(2f);
+            SubExplode();
+        }
 
         public override bool OnTileCollide(Vector2 oldVelocity) {
             Projectile.velocity *= 0f;
@@ -292,26 +407,20 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.RevenantEXs
             SoundEngine.PlaySound(SoundID.Item14 with { Volume = 0.8f, Pitch = 0f }, Projectile.Center);
             Vector2 explosionCenter = Projectile.Center;
 
-            for (int i = 0; i < 30; i++) {
+            for (int i = 0; i < 20; i++) {
                 Vector2 vel = Main.rand.NextVector2Circular(10f, 10f);
-                Dust fire = Dust.NewDustPerfect(explosionCenter, DustID.PurpleTorch, vel, 80, default, Main.rand.NextFloat(2f, 3.5f));
+                Dust fire = Dust.NewDustPerfect(explosionCenter, DustID.PurpleTorch, vel, 80, default, Main.rand.NextFloat(1.8f, 3f));
                 fire.noGravity = true;
             }
-            for (int i = 0; i < 20; i++) {
-                Vector2 vel = Main.rand.NextVector2CircularEdge(8f, 8f);
-                Dust soul = Dust.NewDustPerfect(explosionCenter, DustID.Wraith, vel, 80, default, Main.rand.NextFloat(1.8f, 2.8f));
-                soul.noGravity = true;
-            }
             for (int i = 0; i < 12; i++) {
-                float angle = MathHelper.TwoPi / 12f * i;
-                Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * Main.rand.NextFloat(6f, 10f);
-                Dust ring = Dust.NewDustPerfect(explosionCenter, DustID.Shadowflame, vel, 80, default, Main.rand.NextFloat(2f, 3.2f));
-                ring.noGravity = true;
+                Vector2 vel = Main.rand.NextVector2CircularEdge(8f, 8f);
+                Dust soul = Dust.NewDustPerfect(explosionCenter, DustID.Wraith, vel, 80, default, Main.rand.NextFloat(1.6f, 2.6f));
+                soul.noGravity = true;
             }
 
             Lighting.AddLight(explosionCenter, 2f, 1f, 2.5f);
 
-            // 升级演出: 二段子雷 ElementalScreenTint 染屏 + 层叠冲击环 (仅本机)
+            // 二段子雷演出: ElementalScreenTint 染屏 + 层叠冲击环 (仅本机)
             SoulShatterBlastFX.Spawn(Projectile.GetSource_FromThis(), explosionCenter, 1, Projectile.owner);
             WeaponVFX.AddScreenShake(explosionCenter, 4f);
 

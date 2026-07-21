@@ -12,8 +12,9 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         public override void ChangeSummonType() {
             SummonNPCType = ModContent.NPCType<NetherDragonBody>();
 
-            // 最后几节切换到尾巴
-            if (SummonCount > SummonMax - 3)
+            // 末节切换到尾巴 (尾的 SummonCount = SummonMax+1 > SummonMax → 链在尾自然终止,
+            // 避免 V2 提前切尾导致尾继续走 BasicWorm 生成分支)
+            if (SummonCount >= SummonMax)
                 SummonNPCType = ModContent.NPCType<NetherDragonTail>();
         }
 

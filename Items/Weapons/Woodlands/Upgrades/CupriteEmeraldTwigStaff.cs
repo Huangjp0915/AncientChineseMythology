@@ -7,34 +7,22 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Items.Weapons.Woodlands.Upgrades;
 
 /// <summary>
-/// 赤铜翡翠树枝杖 — 发射"灼翠枝弹" <see cref="CupriteEmeraldBolt"/>。
-/// 可见质变: 弹幕由翠绿改为"翠芯橙焰"双层拖尾 (毒+灼混合), 命中点燃 + 赤铜灼烧演出。
+/// 赤铜翡翠树枝杖 — 完整继承翡翠共鸣印记机制身份, 叠赤铜灼烧风味:
+/// 共鸣爆裂变"熔爆" (点燃 AoE) + 命中已点燃目标迸火星 (燃烧链)。
 /// </summary>
-public class CupriteEmeraldTwigStaff : ModItem
+public class CupriteEmeraldTwigStaff : EmeraldTwigStaff
 {
     public override void SetDefaults() {
+        base.SetDefaults();
         Item.damage = 36;
         Item.crit = 6;
-        Item.DamageType = DamageClass.Magic;
-        Item.width = 36;
-        Item.height = 36;
         Item.useTime = 24;
         Item.useAnimation = 24;
-        Item.useStyle = ItemUseStyleID.Shoot;
-        Item.knockBack = 3f;
         Item.value = Item.buyPrice(gold: 2);
         Item.rare = ItemRarityID.Orange;
-        Item.UseSound = SoundID.Item8;
-        Item.autoReuse = true;
-        Item.noMelee = true;
         Item.shoot = ModContent.ProjectileType<CupriteEmeraldBolt>();
         Item.shootSpeed = 11f;
         Item.mana = 7;
-        Item.staff[Type] = true;
-    }
-
-    public override void ModifyShootStats(Player player, ref Vector2 position, ref Vector2 velocity, ref int type, ref int damage, ref float knockback) {
-        velocity = velocity.RotatedByRandom(MathHelper.ToRadians(5));
     }
 
     public override void AddRecipes() {
@@ -48,10 +36,13 @@ public class CupriteEmeraldTwigStaff : ModItem
 }
 
 /// <summary>
-/// 灼翠枝弹 — 继承 <see cref="EmeraldTwigBolt"/> 机制, 重写表现为赤铜灼烧主题。
+/// 灼翠枝弹 — 继承翡翠共鸣机制 (嵌片/熔爆), 表现为"翠芯橙焰"混合 + 燃烧链。
 /// </summary>
 public class CupriteEmeraldBolt : EmeraldTwigBolt
 {
+    protected override int BlastTheme => 1; // 熔爆
+    protected override int HitBurstTheme => ACMWeaponBurst.CupriteBurn;
+
     public override void AI() {
         base.AI();
         if (Main.rand.NextBool(2)) {
@@ -64,10 +55,9 @@ public class CupriteEmeraldBolt : EmeraldTwigBolt
     }
 
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
-        base.OnHitNPC(target, hit, damageDone);
+        base.OnHitNPC(target, hit, damageDone); // 印记/熔爆逻辑
+        CupriteEmberSpark.TryChain(Projectile, target, DamageClass.Magic); // 先链后燃
         target.AddBuff(BuffID.OnFire, 120);
-        ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
-            ACMWeaponBurst.CupriteBurn, scale: 0.8f, owner: Projectile.owner);
     }
 
     public override bool PreDraw(ref Color lightColor) {

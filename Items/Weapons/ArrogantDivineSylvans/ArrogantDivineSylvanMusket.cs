@@ -12,15 +12,14 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Items.Weapons.ArrogantDivineSylvans;
 
 /// <summary>
-/// 傲世神木·连天弩 - 神木火铳的终极形态
-/// 五连发金翠荆棘弹，每第5连发(第25弹)射出三枚弧线分裂种子迫击炮
-/// 荆棘弹击中敌人后连锁弹射至附近1个敌人
-/// 累计命中50次后触发「万棘狂涌」：15枚全追踪荆棘弹风暴
+/// 傲世神木·连天铳 - 神木火铳的终极形态
+/// 真·五连发金翠荆棘针 (每发后坐 + 枪口反馈), 命中刻下「年轮烙印」并连锁弹射
+/// 每第 25 发射出三枚弧线种子迫击炮, 炮爆**引爆**范围烙印
+/// 「万棘狂涌」(修复闭环): 单次炮击引爆 ≥3 层烙印时, 自玩家绽出 8 枚全追踪荆棘
 /// </summary>
 public class ArrogantDivineSylvanMusket : ModItem
 {
     private int burstCounter;
-    private int furyCounter;
 
     public override void SetDefaults() {
         Item.damage = 300;
@@ -29,7 +28,7 @@ public class ArrogantDivineSylvanMusket : ModItem
         Item.width = 56;
         Item.height = 28;
         Item.useTime = 2;
-        Item.useAnimation = 14;
+        Item.useAnimation = 10; // 真·五连发 (10/2=5 发, 30 发/s 与原 7 发/14f 相同)
         Item.knockBack = 8f;
         Item.useStyle = ItemUseStyleID.Shoot;
         Item.value = Item.buyPrice(gold: 500);
@@ -55,7 +54,10 @@ public class ArrogantDivineSylvanMusket : ModItem
         Vector2 muzzleDir = velocity.SafeNormalize(Vector2.UnitX);
         Vector2 muzzlePos = position + muzzleDir * 45f;
 
-        // 每第25发(第5次五连最后一发)射出三枚弧线种子弹
+        // 每发后坐: 打在玩家身上的反作用力 (mass is reaction — 空中尤其明显)
+        player.velocity -= muzzleDir * 0.55f;
+
+        // 每第 25 发 (第 5 轮五连最后一发) 射出三枚弧线种子迫击炮
         if (burstCounter % 25 == 0) {
             for (int k = -1; k <= 1; k++) {
                 Vector2 mortarVel = velocity.RotatedBy(MathHelper.ToRadians(12 * k)) * 0.65f +
@@ -64,34 +66,54 @@ public class ArrogantDivineSylvanMusket : ModItem
                     ModContent.ProjectileType<ArrogantSylvanSeedMortar>(),
                     damage * 4, knockback * 3f, player.whoAmI);
             }
-            SoundEngine.PlaySound(SoundID.Item14 with { Pitch = 0.3f, Volume = 1.2f }, position);
-            Main.player[player.whoAmI].GetModPlayer<ScreenShakePlayer>().ShakeScreen(6, 8);
-            // 连天弩五连发触发技 → 短暂金翠染屏定调 (占全屏唯一名额, 同屏≤1 自动仲裁)
+            SoundEngine.PlaySound(SoundID.Item14 with { Pitch = 0.3f + Main.rand.NextFloat(-0.1f, 0.1f), Volume = 1.1f }, position);
+            SoundEngine.PlaySound(SoundID.Item17 with { Pitch = -0.2f, Volume = 0.8f }, position);
+            player.velocity -= muzzleDir * 2.4f; // 重炮后坐 (∝ 弹重)
+            WeaponVFX.AddScreenShake(position, 4f);
+            // 连天铳炮击触发技 → 短暂金翠染屏定调 (占全屏唯一名额, 同屏≤1 自动仲裁)
             ArrogantSylvanScreenTint.Spawn(source, position, player.whoAmI);
         }
         else {
             Vector2 perturbedVel = velocity.RotatedByRandom(MathHelper.ToRadians(3));
             Projectile.NewProjectile(source, muzzlePos, perturbedVel, type, damage, knockback,
-                player.whoAmI, ai0: furyCounter);
+                player.whoAmI);
         }
 
-        // 枪口粒子 - 金翠双色
-        for (int i = 0; i < 6; i++) {
+        // 枪口粒子 - 金翠双色 + 少量下落弹壳金屑
+        for (int i = 0; i < 5; i++) {
             Vector2 dustVel = -muzzleDir.RotatedByRandom(0.35f) * Main.rand.NextFloat(3f, 7f);
             int dustType = i % 2 == 0 ? DustID.JungleTorch : DustID.GoldFlame;
             Dust d = Dust.NewDustPerfect(muzzlePos, dustType, dustVel, 60, default, 1.5f);
             d.noGravity = true;
         }
+        Dust shell = Dust.NewDustPerfect(position, DustID.GoldCoin,
+            new Vector2(-muzzleDir.X * 1.5f, -2.2f), 100, default, 0.9f);
+        shell.noGravity = false;
 
         return false;
     }
 
-    /// <summary>由荆棘针弹在OnHitNPC中调用,增加狂涌计数</summary>
-    public void IncrementFury() {
-        furyCounter++;
-        if (furyCounter >= 50) {
-            furyCounter = 0;
-            // 触发万棘狂涌标志 - 下次射击由荆棘弹AI检测
+    /// <summary>
+    /// 万棘狂涌 (由迫击炮爆炸的引爆结果回调, owner 端): 引爆总层数 ≥3 时自玩家绽出 8 枚全追踪荆棘。
+    /// </summary>
+    public static void TriggerThornFury(Player player, IEntitySource source, int totalStacks) {
+        if (totalStacks < 3 || player.whoAmI != Main.myPlayer)
+            return;
+
+        SoundEngine.PlaySound(SoundID.Item17 with { Volume = 1.2f, Pitch = 0.4f + Main.rand.NextFloat(-0.1f, 0.1f) }, player.Center);
+        SoundEngine.PlaySound(SoundID.Item14 with { Volume = 0.7f, Pitch = -0.25f }, player.Center);
+        ACMWeaponBurst.Spawn(source, player.Center, ACMWeaponBurst.ArrogantSylvan, 1.4f, player.whoAmI);
+        WeaponVFX.AddScreenShake(player.Center, 4f);
+
+        int dmg = player.HeldItem?.damage > 0
+            ? (int)player.GetTotalDamage(DamageClass.Ranged).ApplyTo(player.HeldItem.damage)
+            : 300;
+        for (int i = 0; i < 8; i++) {
+            float ang = MathHelper.TwoPi * i / 8f;
+            Vector2 vel = ang.ToRotationVector2() * Main.rand.NextFloat(9f, 12f);
+            Projectile.NewProjectile(source, player.Center, vel,
+                ModContent.ProjectileType<ArrogantSylvanMusketSerpent>(),
+                dmg, 2f, player.whoAmI);
         }
     }
 
@@ -105,9 +127,8 @@ public class ArrogantDivineSylvanMusket : ModItem
 }
 
 /// <summary>
-/// 傲世荆棘针弹 - 高速穿透弹丸，使用LightShot渲染
-/// 命中时连锁弹射至附近1个敌人
-/// 累计50次命中触发万棘狂涌：释放15枚全追踪弹幕
+/// 傲世荆棘针弹 - 高速穿透弹丸 (金芯翠边流光束核)
+/// 命中刻下年轮烙印并连锁弹射至附近 1 个敌人 (最多 2 跳)
 /// </summary>
 public class ArrogantSylvanThornNeedle : ModProjectile
 {
@@ -144,15 +165,18 @@ public class ArrogantSylvanThornNeedle : ModProjectile
         target.AddBuff(BuffID.Poisoned, 300);
         target.AddBuff(BuffID.Venom, 180);
 
-        for (int i = 0; i < 10; i++) {
-            Dust d = Dust.NewDustPerfect(target.Center, DustID.JungleTorch,
-                Main.rand.NextVector2Circular(5f, 5f), 40, default, 2f);
+        // 浇灌: 刻下年轮烙印 (等迫击炮引爆收割)
+        ArrogantSylvanBrandNPC.AddStack(target);
+
+        for (int i = 0; i < 6; i++) {
+            Dust d = Dust.NewDustPerfect(target.Center, i % 2 == 0 ? DustID.JungleTorch : DustID.GoldFlame,
+                Main.rand.NextVector2Circular(5f, 5f), 40, default, 1.8f);
             d.noGravity = true;
         }
-        ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
-            ACMWeaponBurst.ArrogantSylvan, scale: 1f, owner: Projectile.owner);
+        // 高射速武器: 命中演出节流 (3 帧内不重复 spawn)
+        ArrogantSylvanFX.HitBurstThrottled(Projectile.GetSource_OnHit(target), target.Center, 0.8f, Projectile.owner);
 
-        // 连锁弹射：找最近的其他敌人，发射一枚新弹
+        // 连锁弹射: 找最近的其他敌人, 发射一枚新弹
         if (ChainCount < 2 && Projectile.owner == Main.myPlayer) {
             float closestDist = 500f;
             int chainTarget = -1;
@@ -200,7 +224,8 @@ public class ArrogantSylvanThornNeedle : ModProjectile
         for (int i = 1; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
             if (Projectile.oldPos[i] == Vector2.Zero) continue;
             float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.60f;
-            Color trailCol = Color.Lerp(new Color(220, 255, 100), new Color(50, 180, 60), (float)i / ProjectileID.Sets.TrailCacheLength[Type]);
+            Color trailCol = Color.Lerp(ArrogantSylvanPalette.GoldBright, ArrogantSylvanPalette.JadeDeep,
+                (float)i / ProjectileID.Sets.TrailCacheLength[Type]);
             sb.Draw(lsh,
                 Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition,
                 null, trailCol * a, Projectile.oldRot[i],
@@ -213,7 +238,7 @@ public class ArrogantSylvanThornNeedle : ModProjectile
             lsh.Size() * 0.5f,
             new Vector2(0.60f, 0.12f), SpriteEffects.None, 0);
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-            new Color(200, 255, 100) * 0.65f, 0f,
+            ArrogantSylvanPalette.JadeBright * 0.65f, 0f,
             sg.Size() * 0.5f,
             0.30f, SpriteEffects.None, 0);
 
@@ -226,8 +251,8 @@ public class ArrogantSylvanThornNeedle : ModProjectile
 }
 
 /// <summary>
-/// 傲世种子迫击弹 - 弧线飞行，落地分裂爆炸
-/// 分裂成3枚子迫击弹，每枚产生独立爆炸场 + 8枚追踪藤蛇弹
+/// 傲世种子迫击弹 - 弧线飞行, 落地爆炸并**引爆**范围年轮烙印 (系列引爆动作)
+/// 引爆 ≥3 层时回调枪身触发「万棘狂涌」; 母弹分裂 3 枚子迫击弹
 /// </summary>
 public class ArrogantSylvanSeedMortar : ModProjectile
 {
@@ -261,9 +286,10 @@ public class ArrogantSylvanSeedMortar : ModProjectile
     }
 
     public override void OnKill(int timeLeft) {
-        SoundEngine.PlaySound(SoundID.Item14 with { Volume = 1f, Pitch = 0.2f }, Projectile.Center);
+        SoundEngine.PlaySound(SoundID.Item14 with { Volume = 1f, Pitch = 0.2f + Main.rand.NextFloat(-0.1f, 0.1f) }, Projectile.Center);
         ACMWeaponBurst.Spawn(Projectile.GetSource_Death(), Projectile.Center,
             ACMWeaponBurst.ArrogantSylvan, scale: IsChild == 0 ? 1.5f : 1f, owner: Projectile.owner);
+        WeaponVFX.AddScreenShake(Projectile.Center, IsChild == 0 ? 5f : 3f);
 
         if (Main.myPlayer == Projectile.owner) {
             // 爆炸场
@@ -271,7 +297,15 @@ public class ArrogantSylvanSeedMortar : ModProjectile
                 ModContent.ProjectileType<ArrogantSylvanThornFieldExplosion>(),
                 Projectile.damage, Projectile.knockBack, Projectile.owner);
 
-            // 如果不是子弹药，分裂成3枚子迫击弹
+            // === 系列引爆动作: 炮爆波及范围内全部年轮烙印 ===
+            int consumed = ArrogantSylvanBloom.DetonateArea(Projectile.GetSource_Death(), Projectile.Center,
+                300f, Projectile.damage, 3f, Projectile.owner);
+            // 万棘狂涌闭环 (修复原死机制): 引爆够多年轮 → 玩家绽出追踪荆棘风暴
+            if (consumed >= 3)
+                ArrogantDivineSylvanMusket.TriggerThornFury(Main.player[Projectile.owner],
+                    Projectile.GetSource_Death(), consumed);
+
+            // 母弹分裂成 3 枚子迫击弹
             if (IsChild == 0) {
                 for (int k = -1; k <= 1; k++) {
                     float angle = MathHelper.ToRadians(45 * k) - MathHelper.PiOver2;
@@ -282,8 +316,8 @@ public class ArrogantSylvanSeedMortar : ModProjectile
                 }
             }
 
-            // 释放追踪藤蛇弹
-            int serpentCount = IsChild == 0 ? 10 : 6;
+            // 释放追踪藤蛇弹 (降量: 6/4, 可读性优先)
+            int serpentCount = IsChild == 0 ? 6 : 4;
             for (int i = 0; i < serpentCount; i++) {
                 Vector2 vel = Main.rand.NextVector2CircularEdge(7f, 7f);
                 Projectile.NewProjectile(Projectile.GetSource_Death(), Projectile.Center, vel,
@@ -292,16 +326,13 @@ public class ArrogantSylvanSeedMortar : ModProjectile
             }
         }
 
-        for (int i = 0; i < 35; i++) {
+        for (int i = 0; i < 22; i++) {
             Vector2 vel = Main.rand.NextVector2CircularEdge(10f, 10f);
             int dustType = i % 3 == 0 ? DustID.GoldFlame : DustID.JungleTorch;
             Dust d = Dust.NewDustPerfect(Projectile.Center, dustType,
-                vel, 30, default, Main.rand.NextFloat(2f, 3.5f));
+                vel, 30, default, Main.rand.NextFloat(2f, 3.2f));
             d.noGravity = true;
         }
-
-        if (Main.player[Projectile.owner].whoAmI == Main.myPlayer)
-            Main.player[Projectile.owner].GetModPlayer<ScreenShakePlayer>().ShakeScreen(8, 10);
     }
 
     public override bool PreDraw(ref Color lightColor) {
@@ -315,10 +346,10 @@ public class ArrogantSylvanSeedMortar : ModProjectile
 
         float pulse = 0.6f + 0.2f * MathF.Sin((float)Main.timeForVisualEffects * 0.3f);
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-            new Color(220, 255, 100) * 0.75f, 0f,
+            ArrogantSylvanPalette.GoldBright * 0.7f, 0f,
             sg.Size() * 0.5f, pulse, SpriteEffects.None, 0);
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-            new Color(255, 255, 220) * 0.45f, 0f,
+            ArrogantSylvanPalette.WhiteHot * 0.45f, 0f,
             sg.Size() * 0.5f, pulse * 0.5f, SpriteEffects.None, 0);
 
         sb.End();
@@ -330,13 +361,14 @@ public class ArrogantSylvanSeedMortar : ModProjectile
 }
 
 /// <summary>
-/// 傲世荆棘领域爆炸 - 种子迫击弹爆炸范围场
-/// 8道放射状SlashBurst + SoftGlow，范围随时间增长
+/// 傲世荆棘领域爆炸 - 种子迫击弹爆炸范围场 (半径与炮爆引爆半径 300px 对齐)
 /// </summary>
 public class ArrogantSylvanThornFieldExplosion : ModProjectile
 {
     public override string Texture
         => "AncientChineseMythology/Textures/Masking/SoftGlow";
+
+    private const float MaxRadius = 300f;
 
     public override void SetDefaults() {
         Projectile.width = 10;
@@ -353,11 +385,13 @@ public class ArrogantSylvanThornFieldExplosion : ModProjectile
 
     public override bool ShouldUpdatePosition() => false;
 
+    private float CurrentRadius() => Math.Min(Projectile.ai[0] * 14f, MaxRadius);
+
     public override void AI() {
         Projectile.ai[0]++;
-        float radius = Projectile.ai[0] * 14f;
+        float radius = CurrentRadius();
 
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 6; i++) {
             float angle = Main.rand.NextFloat(MathHelper.TwoPi);
             Vector2 pos = Projectile.Center + angle.ToRotationVector2() * Main.rand.NextFloat(radius * 0.4f, radius);
             int dustType = i % 2 == 0 ? DustID.JungleTorch : DustID.GoldFlame;
@@ -373,15 +407,17 @@ public class ArrogantSylvanThornFieldExplosion : ModProjectile
         target.AddBuff(BuffID.Venom, 300);
     }
 
-    public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
-        float radius = Projectile.ai[0] * 14f;
-        return VaultUtils.CircleIntersectsRectangle(Projectile.Center, radius, targetHitbox);
-    }
+    public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox)
+        => VaultUtils.CircleIntersectsRectangle(Projectile.Center, CurrentRadius(), targetHitbox);
 
     public override bool PreDraw(ref Color lightColor) {
         float prog = 1f - Projectile.timeLeft / 55f;
         float alpha = ACMUtils.QuadOut(1f - prog) * 0.90f;
         float scale = MathHelper.SmoothStep(0f, 16f, ACMUtils.QuadOut(prog));
+
+        // 炮爆年轮小环 (GrowthRing 低强度复用 — 落点即引爆区可读化)
+        ArrogantSylvanFX.DrawGrowthRing(Projectile.Center, MaxRadius, ACMUtils.QuadOut(Math.Min(prog * 1.6f, 1f)),
+            alpha * 0.45f, ringFreq: 6f);
 
         SpriteBatch sb = Main.spriteBatch;
         sb.End();
@@ -396,7 +432,7 @@ public class ArrogantSylvanThornFieldExplosion : ModProjectile
         for (int k = 0; k < 8; k++) {
             float bAngle = k * MathF.PI / 4f + Projectile.ai[0] * 0.025f;
             float bLen = k % 2 == 0 ? scale * 0.60f : scale * 0.38f;
-            Color bColor = k % 2 == 0 ? new Color(220, 255, 100) : new Color(40, 200, 60);
+            Color bColor = k % 2 == 0 ? ArrogantSylvanPalette.GoldBright : ArrogantSylvanPalette.JadeDeep;
             sb.Draw(burst, Projectile.Center - Main.screenPosition, null,
                 bColor * (alpha * 0.80f), bAngle,
                 new Vector2(burst.Width * 0.5f, burst.Height),
@@ -404,12 +440,12 @@ public class ArrogantSylvanThornFieldExplosion : ModProjectile
         }
 
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-            new Color(200, 255, 100) * (alpha * 0.50f), 0f,
+            ArrogantSylvanPalette.JadeBright * (alpha * 0.50f), 0f,
             sg.Size() * 0.5f, scale * 0.55f, SpriteEffects.None, 0);
 
         float flashAlpha = MathHelper.SmoothStep(1f, 0f, prog * 1.4f);
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-            new Color(255, 255, 220) * (alpha * flashAlpha), 0f,
+            ArrogantSylvanPalette.WhiteHot * (alpha * flashAlpha), 0f,
             sg.Size() * 0.5f, scale * 0.20f, SpriteEffects.None, 0);
 
         sb.Draw(sparkle, Projectile.Center - Main.screenPosition, null,
@@ -426,8 +462,7 @@ public class ArrogantSylvanThornFieldExplosion : ModProjectile
 }
 
 /// <summary>
-/// 傲世藤蛇弹 - 迫击弹爆炸后释放的追踪弹幕
-/// 高速追踪最近敌人，命中3次消失
+/// 傲世藤蛇弹 - 迫击炮爆炸/万棘狂涌释放的追踪弹幕 (共享节流索敌, 命中刻烙印)
 /// </summary>
 public class ArrogantSylvanMusketSerpent : ModProjectile
 {
@@ -435,6 +470,8 @@ public class ArrogantSylvanMusketSerpent : ModProjectile
         => "AncientChineseMythology/Textures/Masking/LightShot";
 
     private float _timer;
+    private ref float TargetCache => ref Projectile.localAI[0];
+    private ref float RescanTimer => ref Projectile.localAI[1];
 
     public override void SetStaticDefaults() {
         ProjectileID.Sets.TrailingMode[Type] = 2;
@@ -462,21 +499,11 @@ public class ArrogantSylvanMusketSerpent : ModProjectile
             Projectile.velocity *= 0.94f;
         }
         else {
-            float closestDist = 700f;
-            int targetIdx = -1;
-            for (int i = 0; i < Main.maxNPCs; i++) {
-                NPC npc = Main.npc[i];
-                if (!npc.CanBeChasedBy()) continue;
-                float d = Vector2.Distance(Projectile.Center, npc.Center);
-                if (d < closestDist) { closestDist = d; targetIdx = i; }
-            }
-            if (targetIdx >= 0) {
-                Vector2 dir = Projectile.DirectionTo(Main.npc[targetIdx].Center);
-                Projectile.velocity = Vector2.Lerp(Projectile.velocity, dir * 20f, 0.14f);
-            }
-            else {
+            NPC target = ArrogantSylvanTargeting.UpdateTarget(Projectile, ref TargetCache, ref RescanTimer, 700f);
+            if (target != null)
+                ArrogantSylvanTargeting.SteerTowards(Projectile, target, 20f, 0.14f);
+            else
                 Projectile.velocity *= 1.01f;
-            }
         }
 
         Dust trail = Dust.NewDustPerfect(Projectile.Center, DustID.JungleTorch,
@@ -488,6 +515,7 @@ public class ArrogantSylvanMusketSerpent : ModProjectile
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
         target.AddBuff(BuffID.Poisoned, 300);
         target.AddBuff(BuffID.Venom, 180);
+        ArrogantSylvanBrandNPC.AddStack(target);
     }
 
     public override bool PreDraw(ref Color lightColor) {
@@ -495,7 +523,7 @@ public class ArrogantSylvanMusketSerpent : ModProjectile
 
         // 藤蛇弹金翠双层 ribbon (§B.1)
         WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 8f,
-            outerColor: new Color(200, 150, 40, 150), innerColor: new Color(190, 255, 150, 200),
+            outerColor: ArrogantSylvanPalette.TrailOuter, innerColor: ArrogantSylvanPalette.TrailInner,
             uvScroll: -(float)Main.timeForVisualEffects * 0.05f);
 
         sb.End();
@@ -507,7 +535,7 @@ public class ArrogantSylvanMusketSerpent : ModProjectile
         for (int i = 1; i < ProjectileID.Sets.TrailCacheLength[Type]; i++) {
             if (Projectile.oldPos[i] == Vector2.Zero) continue;
             float a = (1f - i / (float)ProjectileID.Sets.TrailCacheLength[Type]) * 0.50f;
-            Color c = Color.Lerp(new Color(220, 255, 100), new Color(40, 200, 60),
+            Color c = Color.Lerp(ArrogantSylvanPalette.GoldBright, ArrogantSylvanPalette.JadeDeep,
                 (float)i / ProjectileID.Sets.TrailCacheLength[Type]);
             sb.Draw(lsh,
                 Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition,
@@ -517,7 +545,7 @@ public class ArrogantSylvanMusketSerpent : ModProjectile
         }
 
         sb.Draw(lsh, Projectile.Center - Main.screenPosition, null,
-            new Color(200, 255, 100), Projectile.rotation,
+            ArrogantSylvanPalette.JadeBright, Projectile.rotation,
             lsh.Size() * 0.5f,
             new Vector2(0.45f, 0.09f), SpriteEffects.None, 0);
 

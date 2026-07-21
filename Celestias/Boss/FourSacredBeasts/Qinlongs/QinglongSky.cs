@@ -27,11 +27,12 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
     /// 
     /// 多层绘制结构：
     ///  1. 墨翠风暴渐变底色 — 深翠/墨黑梯度
-    ///  2. Smoke帧动画风暴云 — 翡翠色与墨色交替
+    ///  2. Smoke帧动画风暴云 — 翡翠色与墨色交替（雷暴天气云层加深）
     ///  3. LightningBranch青雷闪电
     ///  4. GlaciateWave风暴迷雾横漂
     ///  5. Sparkle风雷火花粒子
     ///  6. 四角暗角 + 雷映脉冲
+    ///  7. 演出钩子：<see cref="FlashLightning"/> 雷击全屏白闪 / <see cref="DarkenSky"/> 相变瞬暗
     /// </summary>
     internal class QinglongSky : CustomSky, IACMLoader
     {
@@ -40,6 +41,26 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
         private bool active;
         private float intensity;
         private float globalTime;
+
+        // ---- 演出钩子 (AI 事件置位, 天幕自然衰减; 纯客户端) ----
+        /// <summary>雷击白闪 0~1.6+ (雷击瞬间置 1, 每帧 ×0.86 衰减, 全屏白叠加)。</summary>
+        internal static float s_lightningFlash;
+        /// <summary>天空瞬暗 0~1 (相变/风暴压境时逐帧置位, 快速回落)。</summary>
+        internal static float s_skyDarken;
+
+        /// <summary>雷击瞬间调用: 天幕全屏白闪 (取 max, 不叠加)。</summary>
+        public static void FlashLightning(float strength = 1f)
+            => s_lightningFlash = MathF.Max(s_lightningFlash, strength);
+
+        /// <summary>压暗天幕 (调用方逐帧维持, 不调用即自然回落)。</summary>
+        public static void DarkenSky(float amount)
+            => s_skyDarken = MathF.Max(s_skyDarken, MathHelper.Clamp(amount, 0f, 1f));
+
+        /// <summary>世界卸载/Boss 死亡时清零钩子。</summary>
+        public static void ResetHooks() {
+            s_lightningFlash = 0f;
+            s_skyDarken = 0f;
+        }
 
         private const float MaxIntensity = 1f;
         private const float FadeInSpeed = 0.012f;
@@ -139,6 +160,12 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
             for (int i = 0; i < CloudCount; i++) clouds[i].Update(stormMul);
             for (int i = 0; i < LightningCount; i++) bolts[i].Update(globalTime, isPhase2 || isPhase3 || stormWeather);
             for (int i = 0; i < SparkCount; i++) sparks[i].Update();
+
+            // 演出钩子自然衰减 (白闪快落, 瞬暗稍缓)
+            s_lightningFlash *= 0.86f;
+            if (s_lightningFlash < 0.01f) s_lightningFlash = 0f;
+            s_skyDarken *= 0.92f;
+            if (s_skyDarken < 0.01f) s_skyDarken = 0f;
         }
 
         private static NPC FindBoss() {
@@ -160,6 +187,23 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                 DrawMist(spriteBatch);
                 DrawSparks(spriteBatch);
                 DrawVignette(spriteBatch);
+                DrawHookOverlays(spriteBatch);
+            }
+        }
+
+        /// <summary>层7 — 演出钩子叠加: 相变瞬暗压屏 + 雷击全屏白闪 (最顶层)。</summary>
+        private void DrawHookOverlays(SpriteBatch sb) {
+            Texture2D pixel = VaultAsset.placeholder2.Value;
+            Rectangle screen = new(0, 0, Main.screenWidth, Main.screenHeight);
+
+            if (s_skyDarken > 0.01f)
+                sb.Draw(pixel, screen, new Color(2, 6, 5) * (s_skyDarken * 0.62f * intensity));
+
+            if (s_lightningFlash > 0.01f) {
+                float f = MathHelper.Clamp(s_lightningFlash, 0f, 1.2f);
+                Color flashC = new Color(225, 245, 255) * (f * 0.5f * intensity);
+                flashC.A = 0; // 加性白闪, 不盖死场景
+                sb.Draw(pixel, screen, flashC);
             }
         }
 
@@ -201,6 +245,9 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
             int fs = tex.Width / 4;
             Vector2 origin = new(fs / 2f);
 
+            // 雷暴天气: 云层加深压暗 (承诺窗口的世界层反馈)
+            bool stormWeather = Qinlong.s_weatherMode == 2;
+
             for (int i = 0; i < CloudCount; i++) {
                 WindCloud c = clouds[i];
                 if (!c.IsActive) continue;
@@ -208,6 +255,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                 Vector2 dp = c.Position - Main.screenPosition;
                 float lerp = MathF.Sin(globalTime * 0.5f + i * 0.3f) * 0.5f + 0.5f;
                 Color cc = Color.Lerp(new Color(15, 50, 35), new Color(30, 60, 50), lerp);
+                if (stormWeather) cc = Color.Lerp(cc, new Color(10, 22, 34), 0.5f);
                 if (i % 6 == 0) cc = Color.Lerp(cc, StormCyan, 0.12f);
 
                 float alpha = MathF.Sin(c.AnimProgress * MathHelper.Pi) * intensity * 0.5f;

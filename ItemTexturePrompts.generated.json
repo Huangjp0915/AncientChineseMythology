@@ -1,0 +1,495 @@
+{
+  "schema": "ancient-chinese-mythology.item-texture-prompts.v1",
+  "purpose": "Prompt pack for generating orderly Terraria-style pixel item atlases. Generate each page as a complete grid, then crop by cell.",
+  "output_recommendation": {
+    "canvas_size": "1024x1024",
+    "grid": {
+      "columns": 4,
+      "rows": 4,
+      "cell_size": "256x256"
+    },
+    "post_crop_target": "Crop each cell, trim transparent/chroma-key margin, then downscale or pixel-resample to the desired tModLoader item texture size, usually 32x32, 40x40, 48x48, or 64x64 depending on weapon length.",
+    "background": "Prefer true transparent PNG if the model supports it. If not, use a perfectly flat solid #00ff00 chroma-key background and remove it after generation."
+  },
+  "global_prompt": "Create a clean Terraria mod item sprite atlas: pixel art fantasy equipment icons, crisp 2D orthographic view, transparent background or perfectly flat #00ff00 chroma-key background, 4 columns by 4 rows, each sprite centered inside its own equally sized cell, generous empty padding around every sprite, no overlap between cells, no shadows on the background, no labels, no numbers, no text, no UI frame, no inventory slot border. Each item must be a single complete isolated icon with readable silhouette at small size, strong outline, limited palette, high contrast highlights, and a consistent top-left light source. Keep long weapons diagonal from lower-left to upper-right unless the item description says otherwise. Keep books, tablets, seals, shields, and charms front-facing and centered.",
+  "negative_prompt": "no text, no captions, no letters, no numbers, no watermark, no logo, no character holding the item, no hands, no scenery, no inventory boxes, no grid lines drawn over the sprites, no perspective scene, no 3D render, no blurry edges, no photorealism, no duplicated objects within one cell, no cropped-off tips, no overlapping cells, no green pixels in the item if using #00ff00 chroma key",
+  "style_reference": {
+    "medium": "Terraria-like pixel item icon, fantasy modded weapon sprite",
+    "rendering": "low-resolution pixel art, hand-painted clusters, strong black or dark colored outline, bright specular edge pixels, readable silhouette",
+    "lighting": "top-left highlight, lower-right shadow",
+    "composition": "one centered object per cell, consistent scale across the page"
+  },
+  "pages": [
+    {
+      "page_id": "aokin_aoshun_aoyuan_argus",
+      "suggested_output_file": "atlas_01_aokin_aoshun_aoyuan_argus.png",
+      "grid": {
+        "columns": 4,
+        "rows": 4
+      },
+      "prompt": "Create a 1024x1024 Terraria-style pixel art item sprite atlas on transparent or flat #00ff00 background. Arrange exactly 16 isolated item sprites in a 4x4 grid, row-major order. Keep every sprite centered, fully visible, evenly scaled, with generous padding and no labels. Row 1: (1) Inferno Dragon Spear, a long crimson-gold dragon spear with flame-edged blade, blackened shaft, tiny ember runes; (2) Flamecoil Chakram, twin circular fiery chakrams intertwined, red-orange metal, glowing inner ring; (3) Crimson Maelstrom Bow, dark red dragon-bone bow with swirling ember string and hooked tips; (4) Draconic Ember Staff, ornate short staff topped with a dragon ember core and small golden horns. Row 2: (5) Meteor Caller Staff, amber-gold celestial staff with meteor crystal head and falling-star sparks; (6) Thunderlord Halberd, blue-gold lightning halberd with storm prongs and crackling cyan edge; (7) Stormchain Whip, segmented storm chain whip coiled in an S shape, silver-blue links and lightning tips; (8) Tempest Repeater, compact storm crossbow/repeater with cloud-blue limbs and gold mechanism. Row 3: (9) Lightning Edict Tome, open dark-blue spellbook with golden thunder talisman pages and cyan arcs; (10) Azure Ruin Blade, massive broken azure blade with ancient ruins, water-blue glow, jagged edge; (11) Glacial Dragonblade, icy crescent dragon sword with pale cyan blade and frosted spine; (12) Permafrost Trident, three-pronged ice trident with dark blue shaft and frozen crystal tips. Row 4: (13) Vortex Primordial Stain, closed arcane sea-vortex grimoire with ink-blue spiral sigil; (14) Inkscaled Flow Fan, elegant black-blue folding fan with scale pattern and water swirl edge; (15) Blizzard Piercer, pale ice longbow with snowflake accents and sharp crystalline limbs; (16) Soul Piercing Arc, luminous purple-gold arc bow with spectral soul thread.",
+      "items": [
+        {
+          "index": 1,
+          "row": 1,
+          "column": 1,
+          "class": "InfernoDragonSpear",
+          "display_name_zh": "焚天龙枪",
+          "old_placeholder": "ItemID.Gungnir",
+          "cell_prompt": "Long crimson-gold dragon spear, flame-edged spearhead, blackened shaft, ember runes, diagonal lower-left to upper-right, complete tip and butt visible."
+        },
+        {
+          "index": 2,
+          "row": 1,
+          "column": 2,
+          "class": "FlamecoilChakram",
+          "display_name_zh": "焰缠双环",
+          "old_placeholder": "ItemID.LightDisc",
+          "cell_prompt": "Twin circular fiery chakrams intertwined, red-orange metal, glowing inner ring, compact centered silhouette."
+        },
+        {
+          "index": 3,
+          "row": 1,
+          "column": 3,
+          "class": "CrimsonMaelstromBow",
+          "display_name_zh": "赤潮旋涡弓",
+          "old_placeholder": "ItemID.Marrow",
+          "cell_prompt": "Dark red dragon-bone bow with hooked tips, ember string, small swirling flame motif near grip."
+        },
+        {
+          "index": 4,
+          "row": 1,
+          "column": 4,
+          "class": "DraconicEmber",
+          "display_name_zh": "龙魂余烬杖",
+          "old_placeholder": "ItemID.PygmyStaff",
+          "cell_prompt": "Short ornate staff, dragon ember core at the top, small golden horns, red glow, centered vertical icon."
+        },
+        {
+          "index": 5,
+          "row": 2,
+          "column": 1,
+          "class": "MeteorCallerStaff",
+          "display_name_zh": "唤流星杖",
+          "old_placeholder": "ItemID.AmberStaff",
+          "cell_prompt": "Amber-gold celestial staff with meteor crystal head, star sparks, diagonal stance, bright orange highlights."
+        },
+        {
+          "index": 6,
+          "row": 2,
+          "column": 2,
+          "class": "ThunderlordHalberd",
+          "display_name_zh": "雷尊方天戟",
+          "old_placeholder": "ItemID.Gungnir",
+          "cell_prompt": "Blue-gold lightning halberd, forked storm blade, cyan crackle accents, long diagonal weapon silhouette."
+        },
+        {
+          "index": 7,
+          "row": 2,
+          "column": 3,
+          "class": "StormchainWhip",
+          "display_name_zh": "风暴链鞭",
+          "old_placeholder": "ItemID.ThornWhip",
+          "cell_prompt": "Segmented silver-blue chain whip coiled in an S shape, lightning tips, readable links, centered."
+        },
+        {
+          "index": 8,
+          "row": 2,
+          "column": 4,
+          "class": "TempestRepeater",
+          "display_name_zh": "暴风连弩",
+          "old_placeholder": "ItemID.VenusMagnum",
+          "cell_prompt": "Compact storm repeater crossbow, blue metal limbs, gold mechanism, tiny cloud swirl detail, side view."
+        },
+        {
+          "index": 9,
+          "row": 3,
+          "column": 1,
+          "class": "LightningEdictTome",
+          "display_name_zh": "雷敕天书",
+          "old_placeholder": "ItemID.BookofSkulls",
+          "cell_prompt": "Open dark-blue spellbook, golden thunder talisman pages, cyan lightning arcs, front-facing centered."
+        },
+        {
+          "index": 10,
+          "row": 3,
+          "column": 2,
+          "class": "AzureRuinBlade",
+          "display_name_zh": "苍海毁刃",
+          "old_placeholder": "ItemID.BreakerBlade",
+          "cell_prompt": "Massive broken azure blade with ancient ruin markings, water-blue glow, jagged heavy sword diagonal."
+        },
+        {
+          "index": 11,
+          "row": 3,
+          "column": 3,
+          "class": "GlacialDragonblade",
+          "display_name_zh": "冰龙镰刃",
+          "old_placeholder": "ItemID.IceSickle",
+          "cell_prompt": "Icy crescent dragon sword, pale cyan blade, frost crystal spine, elegant curved silhouette."
+        },
+        {
+          "index": 12,
+          "row": 3,
+          "column": 4,
+          "class": "PermafrostTrident",
+          "display_name_zh": "永冻三叉戟",
+          "old_placeholder": "ItemID.Trident",
+          "cell_prompt": "Three-pronged ice trident, dark blue shaft, frozen crystal tips, diagonal full-length icon."
+        },
+        {
+          "index": 13,
+          "row": 4,
+          "column": 1,
+          "class": "VortexPrimordialStain",
+          "display_name_zh": "漩流玄印魔书",
+          "old_placeholder": "ItemID.BookofSkulls",
+          "cell_prompt": "Closed arcane grimoire, ink-blue cover, sea-vortex spiral sigil, small silver corners."
+        },
+        {
+          "index": 14,
+          "row": 4,
+          "column": 2,
+          "class": "InkscaledFlowFan",
+          "display_name_zh": "墨鳞流风扇",
+          "old_placeholder": "ItemID.MagicMirror",
+          "cell_prompt": "Elegant black-blue folding fan, scale pattern, pale water swirl along edge, open fan front-facing."
+        },
+        {
+          "index": 15,
+          "row": 4,
+          "column": 3,
+          "class": "BlizzardPiercer",
+          "display_name_zh": "暴雪穿云弓",
+          "old_placeholder": "ItemID.IceBow",
+          "cell_prompt": "Pale ice longbow, snowflake accents, sharp crystalline limbs, taut frosty string."
+        },
+        {
+          "index": 16,
+          "row": 4,
+          "column": 4,
+          "class": "SoulPiercingArc",
+          "display_name_zh": "穿魂弧弓",
+          "old_placeholder": "ItemID.PulseBow",
+          "cell_prompt": "Luminous purple-gold arc bow, spectral soul thread, crescent energy details, clean side silhouette."
+        }
+      ]
+    },
+    {
+      "page_id": "argus_four_sacred_beasts_vaisravana",
+      "suggested_output_file": "atlas_02_argus_four_sacred_beasts_vaisravana.png",
+      "grid": {
+        "columns": 4,
+        "rows": 4
+      },
+      "prompt": "Create a 1024x1024 Terraria-style pixel art item sprite atlas on transparent or flat #00ff00 background. Arrange exactly 16 isolated item sprites in a 4x4 grid, row-major order. Keep every sprite centered, fully visible, evenly scaled, with generous padding and no labels. Row 1: (1) Luminance Stellar Cannon, sleek white-gold star cannon with blue core and long barrel; (2) Luminous Iris Annihilator, ornate compact hand cannon shaped like a golden iris eye, violet lens; (3) Azure Torrent Blades, paired crossed water-blue blades with wave crests; (4) Windserpent Dao, long green-cyan dao saber with serpent wind curve and jade hilt. Row 2: (5) Thunderclap Longbow, gold-black storm bow with drum-like thunder ornaments; (6) Aurelian Cataclysm Smasher, heavy gold warhammer with cracked sun core; (7) Argent Pulse Obliterator, silver futuristic pulse cannon with cyan energy chamber; (8) White Tiger Claws, pair of white-silver claw gauntlets with tiger stripe marks. Row 3: (9) Starfire Annihilator, red-gold starfire cannon with flared muzzle and star core; (10) Solaris Eternal Verdict, radiant solar judgment staff with sun halo top; (11) Phoenix Flame Staff, phoenix-feather staff with orange flame crest; (12) Geocrystal Shatterblade, rugged earth crystal greatsword with amber geode shards. Row 4: (13) Geoarchon Rupturer, stone-and-gold earth scepter with floating crystal head; (14) Black Tortoise Shield, dark jade-black turtle shield with gold rim; (15) Four Symbols Tablet, square ancient tablet with four colored beast glyphs, no readable text; (16) Treasure Pagoda Staff, golden pagoda-topped staff with red jewel.",
+      "items": [
+        {
+          "index": 17,
+          "row": 1,
+          "column": 1,
+          "class": "LuminanceStellarCannon",
+          "display_name_zh": "光华星炮",
+          "old_placeholder": "ItemID.VortexBeater",
+          "cell_prompt": "Sleek white-gold star cannon, long barrel, blue stellar core, side view, compact readable shape."
+        },
+        {
+          "index": 18,
+          "row": 1,
+          "column": 2,
+          "class": "LuminousIrisAnnihilator",
+          "display_name_zh": "虹膜湮灭手铳",
+          "old_placeholder": "ItemID.Handgun",
+          "cell_prompt": "Ornate compact hand cannon shaped like a golden iris eye, violet lens, bright muzzle gem."
+        },
+        {
+          "index": 19,
+          "row": 1,
+          "column": 3,
+          "class": "AzureTorrentBlades",
+          "display_name_zh": "青涛双流刃",
+          "old_placeholder": "ItemID.Excalibur",
+          "cell_prompt": "Paired crossed water-blue blades, wave crest guards, silver hilts, symmetrical centered icon."
+        },
+        {
+          "index": 20,
+          "row": 1,
+          "column": 4,
+          "class": "WindserpentDao",
+          "display_name_zh": "风蛇长刀",
+          "old_placeholder": "ItemID.BreakerBlade",
+          "cell_prompt": "Long green-cyan dao saber, serpent-like wind curve, jade hilt, diagonal full blade."
+        },
+        {
+          "index": 21,
+          "row": 2,
+          "column": 1,
+          "class": "ThunderclapLongbow",
+          "display_name_zh": "雷鼓长弓",
+          "old_placeholder": "ItemID.PulseBow",
+          "cell_prompt": "Gold-black storm longbow, drum-like thunder ornaments, cyan string, lightning notch."
+        },
+        {
+          "index": 22,
+          "row": 2,
+          "column": 2,
+          "class": "AurelianCataclysmSmasher",
+          "display_name_zh": "万劫狂金震碎者",
+          "old_placeholder": "ItemID.PaladinsHammer",
+          "cell_prompt": "Heavy gold warhammer, cracked sun core in hammer head, ornate handle, diagonal massive silhouette."
+        },
+        {
+          "index": 23,
+          "row": 2,
+          "column": 3,
+          "class": "ArgentPulseObliterator",
+          "display_name_zh": "银脉湮灭枪",
+          "old_placeholder": "ItemID.VortexBeater",
+          "cell_prompt": "Silver futuristic pulse cannon, cyan energy chamber, long barrel, crisp sci-fantasy pixel icon."
+        },
+        {
+          "index": 24,
+          "row": 2,
+          "column": 4,
+          "class": "WhiteTigerClaws",
+          "display_name_zh": "白虎爪",
+          "old_placeholder": "ItemID.FeralClaws",
+          "cell_prompt": "Pair of white-silver claw gauntlets, tiger stripe marks, sharp metal claws, crossed compact icon."
+        },
+        {
+          "index": 25,
+          "row": 3,
+          "column": 1,
+          "class": "StarfireAnnihilator",
+          "display_name_zh": "星火灭杀枪",
+          "old_placeholder": "ItemID.VortexBeater",
+          "cell_prompt": "Red-gold starfire cannon, flared muzzle, bright star core, black heat-shadow pixels."
+        },
+        {
+          "index": 26,
+          "row": 3,
+          "column": 2,
+          "class": "SolarisEternalVerdict",
+          "display_name_zh": "日轮永恒审判杖",
+          "old_placeholder": "ItemID.OpticStaff",
+          "cell_prompt": "Radiant solar judgment staff, golden sun halo top, white shaft, orange rays, vertical centered."
+        },
+        {
+          "index": 27,
+          "row": 3,
+          "column": 3,
+          "class": "PhoenixFlameStaff",
+          "display_name_zh": "凤凰焰杖",
+          "old_placeholder": "ItemID.RainbowRod",
+          "cell_prompt": "Phoenix-feather staff, orange flame crest at top, red-gold shaft, wing-like side feathers."
+        },
+        {
+          "index": 28,
+          "row": 3,
+          "column": 4,
+          "class": "GeocrystalShatterblade",
+          "display_name_zh": "地晶裂碎大剑",
+          "old_placeholder": "ItemID.BreakerBlade",
+          "cell_prompt": "Rugged earth crystal greatsword, amber geode shards, stone cracks, heavy diagonal blade."
+        },
+        {
+          "index": 29,
+          "row": 4,
+          "column": 1,
+          "class": "GeoarchonRupturer",
+          "display_name_zh": "坤铉破渊权杖",
+          "old_placeholder": "ItemID.StaffofEarth",
+          "cell_prompt": "Stone-and-gold earth scepter, floating crystal head, amber glow, compact upright icon."
+        },
+        {
+          "index": 30,
+          "row": 4,
+          "column": 2,
+          "class": "BlackTortoiseShield",
+          "display_name_zh": "玄龟盾",
+          "old_placeholder": "ItemID.AnkhShield",
+          "cell_prompt": "Dark jade-black turtle shield, gold rim, shell pattern, subtle cyan highlights, front-facing."
+        },
+        {
+          "index": 31,
+          "row": 4,
+          "column": 3,
+          "class": "FourSymbolsTablet",
+          "display_name_zh": "四象碑",
+          "old_placeholder": "ItemID.LunarTabletFragment",
+          "cell_prompt": "Square ancient stone tablet, four colored beast glyph symbols, no readable text, carved gold border."
+        },
+        {
+          "index": 32,
+          "row": 4,
+          "column": 4,
+          "class": "TreasurePagodaStaff",
+          "display_name_zh": "宝塔法杖",
+          "old_placeholder": "ItemID.RainbowRod",
+          "cell_prompt": "Golden pagoda-topped staff, red jewel, small hanging ornaments, upright centered icon."
+        }
+      ]
+    },
+    {
+      "page_id": "vaisravana_vigor_materials_niumaa_sticks_zhenfa",
+      "suggested_output_file": "atlas_03_vaisravana_vigor_materials_niumaa_sticks_zhenfa.png",
+      "grid": {
+        "columns": 4,
+        "rows": 4
+      },
+      "prompt": "Create a 1024x1024 Terraria-style pixel art item sprite atlas on transparent or flat #00ff00 background. Arrange exactly 15 isolated item sprites in a 4x4 grid, row-major order, leaving the final bottom-right cell empty and fully transparent/chroma-key background. Keep every sprite centered, fully visible, evenly scaled, with generous padding and no labels. Row 1: (1) Vaultshade Voidshot, dark treasure sniper rifle with purple void crystal barrel; (2) Celestial Circlet Scepter, jade-gold scepter topped with floating circlet halo; (3) Treasure Pagoda Charm, small golden pagoda amulet with red cord; (4) Sin Severing Blade, huge dark-gold execution sword with red judgment mark. Row 2: (5) Aureate Voidrender, bright gold void greatblade with black-violet rift edge; (6) Verdict Seal Hammer, square golden hammer with red seal stamp face; (7) General Order, ornate military command token shaped like red-gold headgear plaque; (8) MaMian Seal, horse-faced underworld seal, antique gold mask plaque with red tassel. Row 3: (9) NiuTou Seal, ox-headed underworld seal, antique gold mask plaque with black horn motif; (10) Overseer's Eye, mechanical divine eye jewel with gold rim and blue iris; (11) Nether Chain Blade, hooked chain knife with dark iron links and teal soul glow; (12) Soul Hook Whip, ghostly hooked rope whip coiled with pale soul flame. Row 4: (13) Ruyi Jingu Bang, legendary red-and-gold iron staff with gold bands, diagonal full staff; (14) True Ruyi Stick, heavier mystical red-gold monkey king staff with glowing ends; (15) Zhenfa Book, thick formation encyclopedia book with bagua diagram on cover; (16) leave this cell completely empty.",
+      "items": [
+        {
+          "index": 33,
+          "row": 1,
+          "column": 1,
+          "class": "VaultshadeVoidshot",
+          "display_name_zh": "库藏虚空狙",
+          "old_placeholder": "ItemID.SniperRifle",
+          "cell_prompt": "Dark treasure sniper rifle, purple void crystal barrel, gold inlay, long side-view silhouette."
+        },
+        {
+          "index": 34,
+          "row": 1,
+          "column": 2,
+          "class": "CelestialCircletScepter",
+          "display_name_zh": "天冠权杖",
+          "old_placeholder": "ItemID.StaffofRegrowth",
+          "cell_prompt": "Jade-gold scepter, floating circlet halo at top, small celestial gem, upright centered."
+        },
+        {
+          "index": 35,
+          "row": 1,
+          "column": 3,
+          "class": "TreasurePagodaCharm",
+          "display_name_zh": "宝塔护符",
+          "old_placeholder": "ItemID.PaladinsShield",
+          "cell_prompt": "Small golden pagoda amulet, red cord loop, compact charm silhouette, front-facing."
+        },
+        {
+          "index": 36,
+          "row": 1,
+          "column": 4,
+          "class": "SinSeveringBlade",
+          "display_name_zh": "断罪巨剑",
+          "old_placeholder": "ItemID.BreakerBlade",
+          "cell_prompt": "Huge dark-gold execution sword, red judgment mark near guard, sharp heavy blade diagonal."
+        },
+        {
+          "index": 37,
+          "row": 2,
+          "column": 1,
+          "class": "AureateVoidrender",
+          "display_name_zh": "辉金虚空斩裂刃",
+          "old_placeholder": "ItemID.Excalibur",
+          "cell_prompt": "Bright gold void greatblade, black-violet rift edge, radiant hilt, diagonal complete sword."
+        },
+        {
+          "index": 38,
+          "row": 2,
+          "column": 2,
+          "class": "VerdictSealHammer",
+          "display_name_zh": "裁决印锤",
+          "old_placeholder": "ItemID.PaladinsHammer",
+          "cell_prompt": "Square golden hammer, red seal stamp face, short ornate handle, heavy diagonal warhammer."
+        },
+        {
+          "index": 39,
+          "row": 2,
+          "column": 3,
+          "class": "GeneralOrder",
+          "display_name_zh": "将军令",
+          "old_placeholder": "ItemID.AdamantiteHeadgear",
+          "cell_prompt": "Ornate military command token, red-gold headgear-like plaque, small tassel, front-facing material icon."
+        },
+        {
+          "index": 40,
+          "row": 2,
+          "column": 4,
+          "class": "MaMianSeal",
+          "display_name_zh": "马面印",
+          "old_placeholder": "ItemID.AncientGoldHelmet",
+          "cell_prompt": "Horse-faced underworld seal, antique gold mask plaque, red tassel, no text, centered."
+        },
+        {
+          "index": 41,
+          "row": 3,
+          "column": 1,
+          "class": "NiuTouSeal",
+          "display_name_zh": "牛头印",
+          "old_placeholder": "ItemID.AncientGoldHelmet",
+          "cell_prompt": "Ox-headed underworld seal, antique gold mask plaque, black horn motif, red tassel, no text."
+        },
+        {
+          "index": 42,
+          "row": 3,
+          "column": 2,
+          "class": "OverseersEye",
+          "display_name_zh": "观察者之眼",
+          "old_placeholder": "ItemID.EyeoftheGolem",
+          "cell_prompt": "Mechanical divine eye jewel, gold rim, blue iris, tiny radiating metal lashes, centered material icon."
+        },
+        {
+          "index": 43,
+          "row": 3,
+          "column": 3,
+          "class": "NetherChainBlade",
+          "display_name_zh": "冥链刃",
+          "old_placeholder": "ItemID.ChainKnife",
+          "cell_prompt": "Hooked chain knife, dark iron links, teal soul glow, blade and chain visible in a curved composition."
+        },
+        {
+          "index": 44,
+          "row": 3,
+          "column": 4,
+          "class": "SoulHookWhip",
+          "display_name_zh": "勾魂索",
+          "old_placeholder": "ItemID.ThornWhip",
+          "cell_prompt": "Ghostly hooked rope whip, pale soul flame, coiled loop with hook tip, readable at small size."
+        },
+        {
+          "index": 45,
+          "row": 4,
+          "column": 1,
+          "class": "RuyiJinguBang",
+          "display_name_zh": "如意金箍棒",
+          "old_placeholder": "ItemID.SilverBroadsword",
+          "cell_prompt": "Legendary red-and-gold iron staff, gold bands at both ends, diagonal full staff, no blade."
+        },
+        {
+          "index": 46,
+          "row": 4,
+          "column": 2,
+          "class": "TrueRuyiStick",
+          "display_name_zh": "真·如意棍",
+          "old_placeholder": "Item_676",
+          "cell_prompt": "Heavier mystical red-gold monkey king staff, glowing capped ends, cloud motif, diagonal complete staff."
+        },
+        {
+          "index": 47,
+          "row": 4,
+          "column": 3,
+          "class": "ZhenfaBook",
+          "display_name_zh": "阵法百科全书",
+          "old_placeholder": "Item_149",
+          "cell_prompt": "Thick formation encyclopedia book, dark cover, gold bagua diagram on cover, no readable text, front-facing."
+        }
+      ],
+      "empty_cells": [
+        {
+          "row": 4,
+          "column": 4,
+          "instruction": "Leave completely empty background for easy cropping."
+        }
+      ]
+    }
+  ],
+  "single_item_prompt_template": "Create one Terraria-style pixel art item icon on transparent or flat #00ff00 background: {{cell_prompt}} Use crisp low-resolution pixel art, strong outline, top-left highlights, readable silhouette, centered with generous padding, no text, no watermark, no character, no inventory slot frame.",
+  "notes_for_generation": [
+    "Use the page prompts when you want consistent style and easy row-column cropping.",
+    "If the model struggles with exact grid placement, generate one page at a time and restate that each cell must contain exactly one complete item.",
+    "If the model adds labels, strengthen the negative prompt with: absolutely no text, no captions, no letters, no numbers anywhere.",
+    "If using chroma key, keep #00ff00 out of the sprites and remove it after generation.",
+    "For long weapons, crop with extra margin first, then trim transparent pixels manually so blade tips are not clipped."
+  ]
+}

@@ -1,223 +1,279 @@
-﻿using Terraria;
+﻿using System;
+using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 {
     /// <summary>
-    /// 敖顺全新攻击体系 - 与敖闰完全差异化
-    /// 核心设计：地形交互、环境威胁制造、空间控制
-    /// 
-    /// 攻击列表：
-    /// 1. ChainLightning     - 雷链穿刺：节点间连锁放电
-    /// 2. AbyssalAmbush      - 深渊伏击：由AI状态机处理（Submerge→Emerge）
-    /// 3. DragonScaleStorm   - 龙鳞风暴：身体段抛射带电鳞片
-    /// 4. TornadoEnsnare     - 龙卷缠绕：盘旋释放追踪龙卷风
-    /// 5. ThunderSeal        - 天雷印：标记延迟落雷
-    /// 6. DragonKingRoar     - 龙王怒啸：全屏debuff波+冲击波
-    /// 7. EyeOfTheStorm      - 风暴之眼：缩小安全区
-    /// 8. ThunderChainCharge - 雷霆连环冲：由AI状态机处理
+    /// 敖顺 V3 攻击生成器 — 全部服务器端生成, 带数量上限与公平阀门（设计文档 §4/§7）。
+    ///
+    /// 招式与生成器对应:
+    ///  GaleCleave    → SpawnGaleBlades      臂段错相风刃(距离过滤+首波降速)
+    ///  CyclonePalm   → SpawnCyclone         程序化龙卷(同屏≤2, 不追踪)
+    ///  ThunderSeal   → SpawnSealFan         沿玩家动向扇形铺印
+    ///  AbyssBreach   → SpawnBreachCrack / ShootBreachScales / SpawnShockwave
+    ///  StormNet      → SpawnStormNet        环形电网(迁移安全缺口)
+    ///  HeavensCall   → SpawnSkyBolt         天雷柱(细红线预告)
+    ///  TempestPierce → SpawnElectricTrail   电痕(全局≤24)
+    ///  P3 眼系       → SpawnStormEyeArena   常驻竞技场风暴之眼
     /// </summary>
     public static class AoshunAttacks
     {
-        #region 1. 雷链穿刺 - 在玩家周围生成闪电节点，节点间电弧连锁
+        #region 通用
 
-        /// <summary>
-        /// 在玩家周围半随机位置生成闪电节点
-        /// 节点存在一段时间后，相邻节点之间产生电弧伤害
-        /// 玩家需要在节点间穿梭躲避
-        /// </summary>
-        public static void SpawnChainLightningNodes(NPC npc, Player player, int nodeCount) {
-            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+        /// <summary>敖顺全部敌方弹幕类型（清弹与上限统计用）</summary>
+        private static int[] HostileTypes => [
+            ModContent.ProjectileType<AoshunWindBlade>(),
+            ModContent.ProjectileType<AoshunDragonScale>(),
+            ModContent.ProjectileType<AoshunTornado>(),
+            ModContent.ProjectileType<AoshunThunderSeal>(),
+            ModContent.ProjectileType<AoshunSkyBolt>(),
+            ModContent.ProjectileType<AoshunLightningNode>(),
+            ModContent.ProjectileType<AoshunShockwave>(),
+            ModContent.ProjectileType<AoshunElectricTrail>(),
+            ModContent.ProjectileType<AoshunBreachCrack>(),
+            ModContent.ProjectileType<AoshunStormEye>(),
+        ];
 
-            int damage = Main.expertMode ? npc.damage / 4 : npc.damage / 3;
-            float spreadRadius = 400f;
-
-            // 计算节点位置 - 环绕玩家分布
-            for (int i = 0; i < nodeCount; i++) {
-                float angle = MathHelper.TwoPi * i / nodeCount + Main.rand.NextFloat(-0.3f, 0.3f);
-                float dist = spreadRadius * (0.5f + Main.rand.NextFloat(0.5f));
-                Vector2 offset = angle.ToRotationVector2() * dist;
-                Vector2 spawnPos = player.Center + offset;
-
-                // ai[0] = 节点编号, ai[1] = 总节点数
-                Projectile.NewProjectile(
-                    npc.GetSource_FromAI(),
-                    spawnPos,
-                    Vector2.Zero,
-                    ModContent.ProjectileType<AoshunLightningNode>(),
-                    damage, 0f, Main.myPlayer,
-                    ai0: i, ai1: nodeCount
-                );
+        /// <summary>换阶段/死亡清弹（公平阀门: 演出期间场上无残留威胁）</summary>
+        public static void ClearHostileProjectiles() {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
+            int[] types = HostileTypes;
+            foreach (Projectile p in Main.ActiveProjectiles) {
+                if (Array.IndexOf(types, p.type) >= 0)
+                    p.Kill();
             }
         }
 
-        #endregion
+        /// <summary>统计某类型当前活跃数量（生成上限判定）</summary>
+        public static int CountActive(int type) {
+            int n = 0;
+            foreach (Projectile p in Main.ActiveProjectiles) {
+                if (p.type == type)
+                    n++;
+            }
+            return n;
+        }
 
-        #region 3. 龙鳞风暴 - 从蠕虫身体段喷射带电龙鳞
-
-        /// <summary>
-        /// 遍历蠕虫身体段，从随机几个段向外射出带电龙鳞弹幕
-        /// 每个龙鳞向身体段法线方向(垂直于蠕虫身体)飞出
-        /// </summary>
-        public static void ShootDragonScales(NPC headNpc, int scalesPerBurst) {
-            if (Main.netMode == NetmodeID.MultiplayerClient) return;
-
-            int damage = Main.expertMode ? headNpc.damage / 4 : headNpc.damage / 3;
-
-            // 收集所有活跃身体段
-            for (int i = 0; i < Main.maxNPCs; i++) {
-                NPC seg = Main.npc[i];
-                if (!seg.active || seg.realLife != headNpc.whoAmI) continue;
-                if (seg.whoAmI == headNpc.whoAmI) continue; // 跳过头部
-                if (seg.type == ModContent.NPCType<AoshunTail>()) continue; // 跳过尾部
-
-                // 每个段有概率发射
-                if (!Main.rand.NextBool(5)) continue;
-
-                for (int s = 0; s < scalesPerBurst; s++) {
-                    // 垂直于身体的法线方向
-                    float bodyAngle = seg.rotation - MathHelper.PiOver2; // 身体朝向
-                    float normalAngle = bodyAngle + MathHelper.PiOver2 * (Main.rand.NextBool() ? 1 : -1);
-                    normalAngle += Main.rand.NextFloat(-0.4f, 0.4f); // 随机偏移
-
-                    float speed = 6f + Main.rand.NextFloat(4f);
-                    Vector2 vel = normalAngle.ToRotationVector2() * speed;
-
-                    Projectile.NewProjectile(
-                        headNpc.GetSource_FromAI(),
-                        seg.Center,
-                        vel,
-                        ModContent.ProjectileType<AoshunDragonScale>(),
-                        damage, 1f
-                    );
+        /// <summary>自 fromY 向下搜索地面(60格), 找不到则返回 fromY+700</summary>
+        public static float FindGroundY(float worldX, float fromY) {
+            int tileX = (int)(worldX / 16f);
+            int startY = (int)(fromY / 16f);
+            for (int tileY = startY; tileY < startY + 60; tileY++) {
+                if (tileX >= 0 && tileX < Main.maxTilesX && tileY >= 1 && tileY < Main.maxTilesY &&
+                    WorldGen.SolidTile(tileX, tileY)) {
+                    return tileY * 16f;
                 }
             }
+            return fromY + 700f;
         }
 
         #endregion
 
-        #region 4. 龙卷缠绕 - 释放追踪龙卷风
+        #region 风刃连斩
 
         /// <summary>
-        /// 在Boss当前位置生成一个缓慢追踪玩家的龙卷风弹幕
-        /// 龙卷风对区域内玩家造成持续伤害和击退
+        /// 从臂段(parity 奇偶批)向玩家预测位置放出风刃。
+        /// 阀门: 仅 ≥260px 的臂段发射、每批 ≤4、speedScale 首波降速。
         /// </summary>
-        public static void SpawnTornado(NPC npc, Player player) {
-            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+        public static void SpawnGaleBlades(NPC head, Player target, int parity, float speedScale) {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
 
-            int damage = Main.expertMode ? npc.damage / 5 : npc.damage / 4;
+            int damage = Main.expertMode ? head.damage / 5 : head.damage / 4;
+            int armType = ModContent.NPCType<AoshunArms>();
+            float speed = 11.5f * speedScale;
+            Vector2 predicted = target.Center + target.velocity * 14f;
 
-            // 初始速度朝向玩家
-            Vector2 toPlayer = (player.Center - npc.Center).SafeNormalize(Vector2.UnitY);
-            Vector2 vel = toPlayer * 3f;
+            int fired = 0;
+            foreach (NPC seg in Main.ActiveNPCs) {
+                if (seg.realLife != head.whoAmI || seg.type != armType)
+                    continue;
+                if (((int)seg.ai[2] & 1) != parity)
+                    continue;
+                if (Vector2.Distance(seg.Center, target.Center) < 260f)
+                    continue; // 最小发射距离: 防贴脸秒杀
 
-            Projectile.NewProjectile(
-                npc.GetSource_FromAI(),
-                npc.Center,
-                vel,
-                ModContent.ProjectileType<AoshunTornado>(),
-                damage, 5f
-            );
-        }
+                Vector2 dir = (predicted - seg.Center).SafeNormalize(Vector2.UnitX)
+                    .RotatedByRandom(0.12f);
+                // ai0 = 弧线弯曲方向, ai1 = 起步降速比
+                Projectile.NewProjectile(head.GetSource_FromAI(), seg.Center, dir * speed,
+                    ModContent.ProjectileType<AoshunWindBlade>(), damage, 1f, Main.myPlayer,
+                    ai0: Main.rand.NextBool() ? 1f : -1f, ai1: speedScale);
 
-        #endregion
-
-        #region 5. 天雷印 - 标记位置后延迟落雷
-
-        /// <summary>
-        /// 在指定位置生成天雷预警标记
-        /// delay帧后，该位置落下高伤害雷击
-        /// 预警期间地面显示电弧标记
-        /// </summary>
-        public static void SpawnThunderSealMarker(NPC npc, Vector2 position, int delay) {
-            if (Main.netMode == NetmodeID.MultiplayerClient) return;
-
-            int damage = Main.expertMode ? npc.damage / 3 : npc.damage / 2;
-
-            // ai[0] = 延迟帧数
-            Projectile.NewProjectile(
-                npc.GetSource_FromAI(),
-                position,
-                Vector2.Zero,
-                ModContent.ProjectileType<AoshunThunderSeal>(),
-                damage, 0f, Main.myPlayer,
-                ai0: delay
-            );
-        }
-
-        #endregion
-
-        #region 6. 冲击波 - 环形向外扩散
-
-        /// <summary>
-        /// 从Boss中心向所有方向释放冲击波弹幕
-        /// 用于深渊伏击出击和龙王怒啸
-        /// </summary>
-        public static void SpawnShockwave(NPC npc, int count) {
-            if (Main.netMode == NetmodeID.MultiplayerClient) return;
-
-            int damage = Main.expertMode ? npc.damage / 4 : npc.damage / 3;
-            float speed = 8f;
-
-            for (int i = 0; i < count; i++) {
-                float angle = MathHelper.TwoPi * i / count;
-                Vector2 vel = angle.ToRotationVector2() * speed;
-
-                Projectile.NewProjectile(
-                    npc.GetSource_FromAI(),
-                    npc.Center,
-                    vel,
-                    ModContent.ProjectileType<AoshunShockwave>(),
-                    damage, 3f
-                );
+                if (++fired >= 4)
+                    break;
             }
         }
 
         #endregion
 
-        #region 7. 风暴之眼 - 缩小安全区
+        #region 龙卷
 
         /// <summary>
-        /// 以指定位置为中心生成一个持续缩小的风暴眼
-        /// 风暴眼内部安全，外部持续受伤
+        /// 生成程序化龙卷。mode 0=定点扎地(不追踪), 1=沿风暴眼壁巡游(ai1=角速度方向)。
+        /// 阀门: 同屏 ≤2 只。
         /// </summary>
-        public static void SpawnStormEye(NPC npc, Vector2 center, int duration) {
-            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+        public static void SpawnCyclone(NPC head, Vector2 basePos, int mode, float wallDir = 1f) {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
+            if (CountActive(ModContent.ProjectileType<AoshunTornado>()) >= 2)
+                return;
 
-            int damage = Main.expertMode ? npc.damage / 5 : npc.damage / 4;
-
-            // ai[0] = 总持续时间
-            Projectile.NewProjectile(
-                npc.GetSource_FromAI(),
-                center,
-                Vector2.Zero,
-                ModContent.ProjectileType<AoshunStormEye>(),
-                damage, 0f, Main.myPlayer,
-                ai0: duration
-            );
+            int damage = Main.expertMode ? head.damage / 5 : head.damage / 4;
+            Projectile.NewProjectile(head.GetSource_FromAI(), basePos, Vector2.Zero,
+                ModContent.ProjectileType<AoshunTornado>(), damage, 2f, Main.myPlayer,
+                ai0: mode, ai1: wallDir, ai2: head.whoAmI);
         }
 
         #endregion
 
-        #region 8. 电痕 - 雷霆连环冲留下的持续伤害
+        #region 天雷印扇
 
         /// <summary>
-        /// 在Boss当前位置留下电痕弹幕
-        /// 电痕持续存在一段时间，接触时造成伤害
+        /// 沿玩家运动方向扇形铺设雷印, 依次延迟引爆（涟漪式）。
+        /// 阀门: 铺设一次成型不追踪、印间距 ≥170px。
         /// </summary>
-        public static void SpawnElectricTrail(NPC npc) {
-            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+        public static void SpawnSealFan(NPC head, Player target, int count) {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
 
-            int damage = Main.expertMode ? npc.damage / 5 : npc.damage / 4;
+            int damage = Main.expertMode ? head.damage / 3 : (int)(head.damage / 2.5f);
+            Vector2 dir = target.velocity.LengthSquared() > 4f
+                ? target.velocity.SafeNormalize(Vector2.UnitX)
+                : new Vector2(target.direction, 0f);
 
-            Projectile.NewProjectile(
-                npc.GetSource_FromAI(),
-                npc.Center,
-                Vector2.Zero,
-                ModContent.ProjectileType<AoshunElectricTrail>(),
-                damage, 0f
-            );
+            for (int i = 0; i < count; i++) {
+                Vector2 perp = new(-dir.Y, dir.X);
+                float side = (i % 2 == 0) ? 1f : -1f;
+                Vector2 pos = target.Center + dir * (150f + i * 175f) + perp * side * 46f * (i * 0.5f);
+                int delay = 55 + i * 7;
+
+                Projectile.NewProjectile(head.GetSource_FromAI(), pos, Vector2.Zero,
+                    ModContent.ProjectileType<AoshunThunderSeal>(), damage, 0f, Main.myPlayer,
+                    ai0: delay);
+            }
+        }
+
+        #endregion
+
+        #region 破渊突袭
+
+        /// <summary>地裂预警标记（无伤害, warnTime 帧后自灭）</summary>
+        public static void SpawnBreachCrack(NPC head, Vector2 groundPos, int warnTime) {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
+            Projectile.NewProjectile(head.GetSource_FromAI(), groundPos, Vector2.Zero,
+                ModContent.ProjectileType<AoshunBreachCrack>(), 0, 0f, Main.myPlayer,
+                ai0: warnTime);
+        }
+
+        /// <summary>破土瞬间自地表向上抛射带电龙鳞（重力回落）</summary>
+        public static void ShootBreachScales(NPC head, Vector2 origin, int count) {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
+
+            int damage = Main.expertMode ? head.damage / 5 : head.damage / 4;
+            for (int i = 0; i < count; i++) {
+                float t = count <= 1 ? 0.5f : i / (float)(count - 1);
+                float angle = -MathHelper.PiOver2 + MathHelper.Lerp(-1.05f, 1.05f, t) + Main.rand.NextFloat(-0.08f, 0.08f);
+                float speed = Main.rand.NextFloat(9f, 14f);
+                Projectile.NewProjectile(head.GetSource_FromAI(), origin,
+                    angle.ToRotationVector2() * speed,
+                    ModContent.ProjectileType<AoshunDragonScale>(), damage, 1f);
+            }
+        }
+
+        /// <summary>环形冲击波（破渊/压掌/怒啸共用）</summary>
+        public static void SpawnShockwave(NPC head, int count) {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
+
+            int damage = Main.expertMode ? head.damage / 5 : head.damage / 4;
+            for (int i = 0; i < count; i++) {
+                float angle = MathHelper.TwoPi * i / count;
+                Projectile.NewProjectile(head.GetSource_FromAI(), head.Center,
+                    angle.ToRotationVector2() * 8f,
+                    ModContent.ProjectileType<AoshunShockwave>(), damage, 3f);
+            }
+        }
+
+        #endregion
+
+        #region 雷链电网
+
+        /// <summary>
+        /// 以 anchor 为心生成环形电网节点（锚定施放瞬间, 不追踪）。
+        /// 缺口对每 90f 顺移一位, 永存安全缝。
+        /// </summary>
+        public static void SpawnStormNet(NPC head, Vector2 anchor, int nodeCount) {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
+
+            int damage = Main.expertMode ? head.damage / 5 : head.damage / 4;
+            int gapInit = Main.rand.Next(nodeCount);
+            const float Radius = 430f;
+
+            for (int i = 0; i < nodeCount; i++) {
+                float angle = MathHelper.TwoPi * i / nodeCount - MathHelper.PiOver2;
+                Vector2 pos = anchor + angle.ToRotationVector2() * Radius;
+                Projectile.NewProjectile(head.GetSource_FromAI(), pos, Vector2.Zero,
+                    ModContent.ProjectileType<AoshunLightningNode>(), damage, 0f, Main.myPlayer,
+                    ai0: i, ai1: nodeCount, ai2: gapInit);
+            }
+        }
+
+        #endregion
+
+        #region 天雷柱
+
+        /// <summary>
+        /// 在指定落点生成天雷柱（delay 帧细红线预告 → 贯天雷击）。
+        /// 调用方保证柱间距 ≥190px 与每轮数量上限。
+        /// </summary>
+        public static void SpawnSkyBolt(NPC head, Vector2 groundPos, int delay) {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
+
+            int damage = Main.expertMode ? head.damage / 3 : (int)(head.damage / 2.5f);
+            Projectile.NewProjectile(head.GetSource_FromAI(), groundPos, Vector2.Zero,
+                ModContent.ProjectileType<AoshunSkyBolt>(), damage, 0f, Main.myPlayer,
+                ai0: delay);
+        }
+
+        #endregion
+
+        #region 电痕
+
+        /// <summary>冲刺沿途电痕。阀门: 全局 ≤24。</summary>
+        public static void SpawnElectricTrail(NPC head) {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
+            if (CountActive(ModContent.ProjectileType<AoshunElectricTrail>()) >= 24)
+                return;
+
+            int damage = Main.expertMode ? head.damage / 6 : head.damage / 5;
+            Projectile.NewProjectile(head.GetSource_FromAI(), head.Center, Vector2.Zero,
+                ModContent.ProjectileType<AoshunElectricTrail>(), damage, 0f);
+        }
+
+        #endregion
+
+        #region 风暴之眼（P3 常驻竞技场）
+
+        /// <summary>生成常驻竞技场风暴之眼（Boss 死亡/离场时由眼自身消散）</summary>
+        public static int SpawnStormEyeArena(NPC head, Vector2 center) {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return -1;
+            if (CountActive(ModContent.ProjectileType<AoshunStormEye>()) > 0)
+                return -1;
+
+            int damage = Main.expertMode ? head.damage / 5 : head.damage / 4;
+            return Projectile.NewProjectile(head.GetSource_FromAI(), center, Vector2.Zero,
+                ModContent.ProjectileType<AoshunStormEye>(), damage, 0f, Main.myPlayer,
+                ai0: head.whoAmI);
         }
 
         #endregion

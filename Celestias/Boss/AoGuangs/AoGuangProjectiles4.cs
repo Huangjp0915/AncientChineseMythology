@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
+using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent;
@@ -10,7 +11,9 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
     #region 深渊漩涡
 
     /// <summary>
-    /// 深渊漩涡 - 三阶段的巨型漩涡，使用原版龙卷纹理
+    /// 深渊漩涡 (V3) - 三阶段签名 set-piece 的定点巨涡。
+    /// 公平阀门: 拉力 4s 渐强至峰值 0.35 (可对抗), 红环 (ArenaRunic) 即碰撞边界,
+    /// 全屏向心折射由 Boss 侧驱动。存活 300f。
     /// </summary>
     public class AbyssalVortex : ModProjectile
     {
@@ -21,7 +24,8 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
         private float vortexRotation;
         private float vortexAlpha = 0f;
         private float vortexRadius = 50f;
-        private const float MaxRadius = 300f;
+        private const float MaxRadius = 280f;
+        private const int LifeTime = 300;
 
         public override void SetStaticDefaults() {
             ProjectileID.Sets.DrawScreenCheckFluff[Type] = 2000;
@@ -35,59 +39,56 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
             Projectile.penetrate = -1;
             Projectile.tileCollide = false;
             Projectile.ignoreWater = true;
-            Projectile.timeLeft = 240;
+            Projectile.timeLeft = LifeTime;
         }
 
         public override void AI() {
-            vortexRotation += 0.25f;
-            vortexAlpha = MathHelper.Lerp(vortexAlpha, 1f, 0.03f);
-            vortexRadius = MathHelper.Lerp(vortexRadius, MaxRadius, 0.04f);
+            float age = LifeTime - Projectile.timeLeft;
+            vortexRotation += 0.2f + age * 0.0006f; // 转速缓升
 
-            // 强力吸引玩家
+            // 成型 / 崩解
+            if (Projectile.timeLeft > 40) {
+                vortexAlpha = MathHelper.Lerp(vortexAlpha, 1f, 0.035f);
+                vortexRadius = MathHelper.Lerp(vortexRadius, MaxRadius, 0.03f);
+            }
+            else {
+                vortexAlpha = Projectile.timeLeft / 40f;
+                vortexRadius = MathHelper.Lerp(vortexRadius, 60f, 0.08f);
+            }
+
+            // 吸引玩家: 峰值 0.35, 前 240f 线性渐强 (给足对抗与学习时间)
+            float pullRamp = MathHelper.Clamp(age / 240f, 0f, 1f) * vortexAlpha;
             foreach (Player player in Main.player) {
                 if (!player.active || player.dead) continue;
 
                 float distance = Vector2.Distance(player.Center, Projectile.Center);
-                if (distance < 600f && distance > 50f) {
+                if (distance < 640f && distance > 40f) {
                     Vector2 pullDir = (Projectile.Center - player.Center).SafeNormalize(Vector2.Zero);
-                    float pullStrength = (1f - distance / 600f) * 1.5f;
+                    float pullStrength = (1f - distance / 640f) * 0.35f * pullRamp;
                     player.velocity += pullDir * pullStrength;
 
-                    // 旋转拉扯
-                    Vector2 tangent = pullDir.RotatedBy(MathHelper.PiOver2);
-                    player.velocity += tangent * pullStrength * 0.3f;
+                    // 轻微旋转拉扯 (氛围, 不足以改变走位)
+                    player.velocity += pullDir.RotatedBy(MathHelper.PiOver2) * pullStrength * 0.25f;
                 }
             }
 
-            // 深渊粒子
+            // 螺旋吸入粒子: 从外圈螺旋卷入 (吸力的可读形状)
             if (Main.netMode != NetmodeID.Server) {
-                for (int ring = 0; ring < 3; ring++) {
-                    float ringRadius = vortexRadius * (0.4f + ring * 0.3f);
-                    int particleCount = 6 + ring * 2;
-
-                    for (int i = 0; i < particleCount; i++) {
-                        if (Main.rand.NextBool(3)) continue;
-
-                        float angle = vortexRotation * (1.2f - ring * 0.2f) + MathHelper.TwoPi * i / particleCount;
-                        Vector2 dustPos = Projectile.Center + angle.ToRotationVector2() * ringRadius;
-
-                        int dustType = Main.rand.Next(3) switch {
-                            0 => DustID.Water,
-                            1 => DustID.BlueTorch,
-                            _ => DustID.Wet
-                        };
-                        int dust = Dust.NewDust(dustPos, 0, 0, dustType, 0, 0, 150, default, 2.5f - ring * 0.3f);
-                        Main.dust[dust].noGravity = true;
-                        Main.dust[dust].velocity = (angle + MathHelper.PiOver2).ToRotationVector2() * (10f - ring * 2f);
-                    }
-                }
-
-                // 中心深渊粒子
-                for (int i = 0; i < 3; i++) {
-                    Vector2 dustPos = Projectile.Center + Main.rand.NextVector2Circular(30, 30);
-                    int dust = Dust.NewDust(dustPos, 0, 0, DustID.BlueTorch, 0, 0, 200, default, 2f);
-                    Main.dust[dust].noGravity = true;
-                    Main.dust[dust].velocity = Main.rand.NextVector2Circular(2, 2);
+                for (int i = 0; i < 4; i++) {
+                    if (Main.rand.NextBool(2)) continue;
+                    float ang = Main.rand.NextFloat(MathHelper.TwoPi);
+                    float r = Main.rand.NextFloat(vortexRadius * 0.9f, vortexRadius * 1.9f);
+                    Vector2 dustPos = Projectile.Center + ang.ToRotationVector2() * r;
+                    int dustType = Main.rand.Next(3) switch {
+                        0 => DustID.Water,
+                        1 => DustID.BlueTorch,
+                        _ => DustID.Wet
+                    };
+                    Dust d = Dust.NewDustDirect(dustPos, 0, 0, dustType, 0, 0, 140, default, 2.2f);
+                    d.noGravity = true;
+                    // 切向 + 向心的螺旋速度
+                    d.velocity = (ang + MathHelper.PiOver2 + 0.5f).ToRotationVector2() * 7f
+                               - ang.ToRotationVector2() * 3f;
                 }
             }
 
@@ -95,50 +96,45 @@ namespace AncientChineseMythology.Celestias.Boss.AoGuangs
         }
 
         public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
+            // 碰撞边界 = 红环半径 (视觉与伤害严格一致)
             Vector2 targetCenter = targetHitbox.Center.ToVector2();
             float distance = Vector2.Distance(Projectile.Center, targetCenter);
-            return distance < vortexRadius * 0.8f;
+            return vortexAlpha > 0.6f && distance < vortexRadius * 0.8f;
         }
 
         public override bool PreDraw(ref Color lightColor) {
             SpriteBatch sb = Main.spriteBatch;
             Vector2 screenPos = Projectile.Center - Main.screenPosition;
             Main.instance.LoadProjectile(ProjectileID.SandnadoHostile);
-            // 使用原版龙卷风纹理绘制深渊
             Texture2D tornadoTex = TextureAssets.Projectile[ProjectileID.SandnadoHostile].Value;
             Vector2 origin = tornadoTex.Size() / 2f;
 
-            // 绘制多层旋转深渊
-            int layers = 118;
+            // 多层旋涡 (24 层, 控 overdraw): 内亮外暗, 相邻层反向
+            int layers = 24;
             for (int layer = layers - 1; layer >= 0; layer--) {
-                float layerScale = 0.5f + layer * 0.2f;
-                float layerRot = vortexRotation * (1f + layer * 0.15f) * (layer % 2 == 0 ? 1 : -1);
-                float layerAlpha = vortexAlpha * (0.8f - layer * 0.08f);
+                float p = layer / (float)(layers - 1);
+                float layerScale = MathHelper.Lerp(0.35f, 1.55f, p);
+                float layerRot = vortexRotation * (1f + p * 0.8f) * (layer % 2 == 0 ? 1 : -1);
+                float layerAlpha = vortexAlpha * MathHelper.Lerp(0.55f, 0.1f, p);
 
-                // 颜色从外到内渐变
-                Color layerColor;
-                if (layer < 3) {
-                    layerColor = Color.Lerp(AoGuangHelper.DeepSeaBlue, AoGuangHelper.WaterGlow, layer / 3f);
-                }
-                else if (layer < 6) {
-                    layerColor = Color.Lerp(AoGuangHelper.DragonBlue, AoGuangHelper.OceanTeal, (layer - 3) / 3f);
-                }
-                else {
-                    layerColor = AoGuangHelper.DeepSeaBlue;
-                }
-
+                Color layerColor = Color.Lerp(AoGuangHelper.WaterGlow, AoGuangHelper.DeepSeaBlue, MathF.Sqrt(p));
                 layerColor *= layerAlpha;
                 layerColor.A = 0;
 
-                sb.Draw(tornadoTex, screenPos, null, layerColor, layerRot, origin, layerScale * (vortexRadius / MaxRadius), SpriteEffects.None, 0f);
+                sb.Draw(tornadoTex, screenPos, null, layerColor, layerRot, origin,
+                    layerScale * (vortexRadius / MaxRadius), SpriteEffects.None, 0f);
             }
 
-            // 中心深渊核心
+            // 中心深渊核心 (吞光的暗心 + 微亮瞳)
             if (ACMAsset.LightShot != null) {
-                Color coreColor = AoGuangHelper.DeepSeaBlue * vortexAlpha * 0.8f;
+                Color coreColor = AoGuangHelper.DeepSeaBlue * vortexAlpha * 0.85f;
                 coreColor.A = 0;
                 sb.Draw(ACMAsset.LightShot, screenPos, null, coreColor, vortexRotation * 2f,
-                    ACMAsset.LightShot.Size() / 2f, 1.5f * vortexAlpha, SpriteEffects.None, 0f);
+                    ACMAsset.LightShot.Size() / 2f, 1.4f * vortexAlpha, SpriteEffects.None, 0f);
+                Color pupil = AoGuangHelper.WaterGlow * vortexAlpha * 0.4f;
+                pupil.A = 0;
+                sb.Draw(ACMAsset.LightShot, screenPos, null, pupil, -vortexRotation * 1.5f,
+                    ACMAsset.LightShot.Size() / 2f, 0.4f * vortexAlpha, SpriteEffects.None, 0f);
             }
 
             DrawAbyssRing();

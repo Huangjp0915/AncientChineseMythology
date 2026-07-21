@@ -12,6 +12,7 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
     /// · soulCount：已吸收的灵魂数量（通过吸魂攻击击杀获得）
     /// · soulCap：灵魂上限（通过击败 Boss 提升）
     /// · defeatedBossTiers：已击败的 Boss 阶层记录
+    /// 多人安全：灵魂结算/消费全部只发生在 owner 客户端（伤害计算亦在 owner 端），数据本地存档，零网络包。
     /// </summary>
     public class SoulBannerPlayer : ModPlayer
     {
@@ -23,6 +24,57 @@ namespace AncientChineseMythology.Items.Weapons.SoulBanners
 
         /// <summary>已解锁的 Boss 阶层（用于防止重复计算）</summary>
         public HashSet<int> defeatedBossTiers = new();
+
+        // ══════════════════════════════════════════════
+        //  大招「万魂齐哭」资源接口
+        // ══════════════════════════════════════════════
+
+        /// <summary>大招最低灵魂需求</summary>
+        public const int UltMinSouls = 80;
+
+        /// <summary>大招是否就绪（灵魂足够）</summary>
+        public bool UltReady => soulCount >= UltMinSouls;
+
+        /// <summary>
+        /// 结算大招灵魂消耗：当前灵魂的 40%（至少 <see cref="UltMinSouls"/>）。
+        /// 返回实际消耗量；不足时返回 0 且不扣除。仅 owner 客户端调用。
+        /// </summary>
+        public int TrySpendUltSouls() {
+            if (!UltReady)
+                return 0;
+            int cost = Math.Max(UltMinSouls, (int)(soulCount * 0.4f));
+            cost = Math.Min(cost, soulCount);
+            soulCount -= cost;
+            return cost;
+        }
+
+        // ══════════════════════════════════════════════
+        //  UI 即时反馈脉冲（纯本地表现层）
+        // ══════════════════════════════════════════════
+
+        /// <summary>最近一次增魂后的倒计时帧（30→0，驱动 UI 脉冲/数字弹跳）</summary>
+        public int lastGainTimer;
+
+        /// <summary>最近一次增魂量（UI 浮动显示）</summary>
+        public int lastGainAmount;
+
+        /// <summary>灵魂飞线到达玩家时的身上柔光倒计时帧</summary>
+        public int absorbFlashTimer;
+
+        public override void PostUpdateMiscEffects() {
+            if (lastGainTimer > 0)
+                lastGainTimer--;
+            if (absorbFlashTimer > 0)
+                absorbFlashTimer--;
+        }
+
+        /// <summary>登记一次增魂（刷新 UI 脉冲）。仅 owner 客户端调用。</summary>
+        public void RegisterGain(int amount) {
+            if (amount <= 0)
+                return;
+            lastGainAmount = amount;
+            lastGainTimer = 30;
+        }
 
         // ══════════════════════════════════════════════
         //  Boss 阶层定义（v3.3.1 · PROGRESSION_DESIGN_SPEC §3.3）

@@ -6,280 +6,235 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.Boss.Aoyuans
 {
     /// <summary>
-    /// 敖闰攻击辅助 - 冰霜/寒水主题攻击生成逻辑
+    /// 敖闰攻击生成器 - 全部服务器权威（MultiplayerClient 直接 return）
     /// </summary>
     public static class AoyuanAttacks
     {
-        /// <summary>
-        /// 冰柱雨 - 冰柱从玩家上方随机位置降落
-        /// </summary>
-        public static void IcicleRain(NPC npc) {
+        /// <summary>头部基准伤害（不受伤害窗口逐帧调制影响）</summary>
+        private static int BossDamage(NPC npc) => npc.ModNPC is Aoyuan a ? a.ContactDamageBase : npc.damage;
+
+        #region 清弹（换阶段/死亡演出）
+
+        /// <summary>清空全部敖闰敌对弹幕 — 换阶段/死亡的公平阀门</summary>
+        public static void ClearHostileProjectiles() {
             if (Main.netMode == NetmodeID.MultiplayerClient) return;
 
-            Player player = Main.player[npc.target];
-            float speed = 10f;
-
-            Vector2 spawnPos = new Vector2(
-                player.Center.X + Main.rand.Next(-700, 700),
-                player.MountedCenter.Y - 600f - 100 * Main.rand.Next(3)
-            );
-
-            float dirY = player.Center.Y - spawnPos.Y;
-            if (dirY < 20f) dirY = 20f;
-
-            float length = MathF.Sqrt(dirY * dirY);
-            float normalizedY = speed / length * dirY + Main.rand.Next(41) * 0.02f;
-
-            Projectile.NewProjectile(
-                npc.GetSource_FromAI(),
-                spawnPos,
-                new Vector2(0, normalizedY * 1.5f),
+            int[] types = [
+                ModContent.ProjectileType<AoyuanIceball>(),
                 ModContent.ProjectileType<AoyuanIcicle>(),
-                npc.damage / 4,
-                0f
-            );
-        }
-
-        /// <summary>
-        /// 冰晶散射 - 从Boss位置向外发射扇形冰弹
-        /// </summary>
-        public static void IceBurst(NPC npc, int count, float spreadDegrees = 70f) {
-            if (Main.netMode == NetmodeID.MultiplayerClient) return;
-
-            float spread = spreadDegrees * 0.0174f;
-            float baseSpeed = npc.velocity.Length();
-            if (baseSpeed < 2f) baseSpeed = 2f;
-
-            double startAngle = Math.Atan2(npc.velocity.X, npc.velocity.Y) - spread / 2;
-            double deltaAngle = spread / Math.Max(count - 1, 1);
-
-            for (int i = 0; i < count; i++) {
-                double offsetAngle = startAngle + deltaAngle * i;
-                Projectile.NewProjectile(
-                    npc.GetSource_FromAI(),
-                    npc.Center,
-                    new Vector2(
-                        baseSpeed * (float)Math.Sin(offsetAngle) * 2,
-                        baseSpeed * (float)Math.Cos(offsetAngle) * 2
-                    ),
-                    ModContent.ProjectileType<AoyuanIceball>(),
-                    npc.damage / 4,
-                    3f
-                );
-            }
-        }
-
-        /// <summary>
-        /// 螺旋冰弹 - 从Boss位置发射螺旋排列的冰弹
-        /// </summary>
-        public static void SpiralIce(NPC npc, float baseAngle, int arms = 3, float speed = 8f) {
-            if (Main.netMode == NetmodeID.MultiplayerClient) return;
-
-            for (int arm = 0; arm < arms; arm++) {
-                float angle = baseAngle + MathHelper.TwoPi * arm / arms;
-                Vector2 vel = angle.ToRotationVector2() * speed;
-                Projectile.NewProjectile(
-                    npc.GetSource_FromAI(),
-                    npc.Center,
-                    vel,
-                    ModContent.ProjectileType<AoyuanIceball>(),
-                    npc.damage / 4,
-                    2f
-                );
-            }
-        }
-
-        /// <summary>
-        /// 追踪冰弹连射 - 发射多发高追踪冰弹
-        /// </summary>
-        public static void HomingBurst(NPC npc, int count = 5) {
-            if (Main.netMode == NetmodeID.MultiplayerClient) return;
-
-            Player player = Main.player[npc.target];
-            Vector2 toPlayer = (player.Center - npc.Center).SafeNormalize(Vector2.UnitY);
-
-            for (int i = 0; i < count; i++) {
-                Vector2 vel = toPlayer.RotatedByRandom(MathHelper.ToRadians(30)) * (6f + Main.rand.NextFloat(4f));
-                int p = Projectile.NewProjectile(
-                    npc.GetSource_FromAI(),
-                    npc.Center + toPlayer * 40f,
-                    vel,
-                    ModContent.ProjectileType<AoyuanIceball>(),
-                    npc.damage / 4,
-                    1f
-                );
-                // 延长追踪时间
-                Main.projectile[p].timeLeft = 400;
-            }
-        }
-
-        /// <summary>
-        /// 冰霜环 - 从Boss位置向全方位发射冰弹环
-        /// </summary>
-        public static void FrostRing(NPC npc, int count = 16, float speed = 6f) {
-            if (Main.netMode == NetmodeID.MultiplayerClient) return;
-
-            for (int i = 0; i < count; i++) {
-                float angle = MathHelper.TwoPi * i / count;
-                Vector2 vel = angle.ToRotationVector2() * speed;
-                Projectile.NewProjectile(
-                    npc.GetSource_FromAI(),
-                    npc.Center,
-                    vel,
-                    ModContent.ProjectileType<AoyuanIceball>(),
-                    npc.damage / 5,
-                    1f
-                );
-            }
-        }
-
-        /// <summary>
-        /// 龙息冰锥 - 朝前方密集发射冰柱
-        /// </summary>
-        public static void BreathIcicles(NPC npc, int count = 3) {
-            if (Main.netMode == NetmodeID.MultiplayerClient) return;
-
-            Vector2 dir = npc.velocity.SafeNormalize(Vector2.UnitY);
-            for (int i = 0; i < count; i++) {
-                Vector2 vel = dir.RotatedByRandom(MathHelper.ToRadians(15)) * (12f + Main.rand.NextFloat(6f));
-                int p = Projectile.NewProjectile(
-                    npc.GetSource_FromAI(),
-                    npc.Center + dir * 50f,
-                    vel,
-                    ModContent.ProjectileType<AoyuanIcicle>(),
-                    npc.damage / 3,
-                    2f
-                );
-                Main.projectile[p].tileCollide = false;
-                Main.projectile[p].timeLeft = 120;
-            }
-        }
-
-        /// <summary>
-        /// 柱状激光大招 - 释放冰束
-        /// </summary>
-        public static void FrostBeam(NPC npc) {
-            if (Main.netMode == NetmodeID.MultiplayerClient) return;
-
-            Player player = Main.player[npc.target];
-            float angle = (player.Center - npc.Center).ToRotation();
-            Projectile.NewProjectile(
-                npc.GetSource_FromAI(),
-                npc.Center,
-                Vector2.Zero,
+                ModContent.ProjectileType<AoyuanFrostVortex>(),
                 ModContent.ProjectileType<AoyuanFrostBeam>(),
-                npc.damage / 3,
-                0f,
-                ai1: angle
-            );
-        }
-
-        /// <summary>
-        /// 密集冰柱雨升级版 - 加速连续降落
-        /// </summary>
-        public static void IcicleStorm(NPC npc, int count = 3) {
-            if (Main.netMode == NetmodeID.MultiplayerClient) return;
-
-            for (int i = 0; i < count; i++) {
-                IcicleRain(npc);
-            }
-        }
-
-        /// <summary>
-        /// 寒霜吐息（锥形）- 朝指定目标方向密集发射冰锥
-        /// </summary>
-        public static void BreathConeAt(NPC npc, Vector2 targetCenter, int count = 3) {
-            if (Main.netMode == NetmodeID.MultiplayerClient) return;
-
-            Vector2 dir = (targetCenter - npc.Center).SafeNormalize(Vector2.UnitY);
-            for (int i = 0; i < count; i++) {
-                Vector2 vel = dir.RotatedByRandom(MathHelper.ToRadians(18)) * (11f + Main.rand.NextFloat(6f));
-                int p = Projectile.NewProjectile(
-                    npc.GetSource_FromAI(),
-                    npc.Center + dir * 50f,
-                    vel,
-                    ModContent.ProjectileType<AoyuanIcicle>(),
-                    npc.damage / 3,
-                    2f);
-                Main.projectile[p].tileCollide = false;
-                Main.projectile[p].timeLeft = 120;
-            }
-        }
-
-        /// <summary>
-        /// 冰晶棋局 - 在玩家周围铺 3x3 预告冰柱落点，仅部分真正落下
-        /// 每个格子生成一个预告弹幕（ai0=1 为真柱，会落冰；ai0=0 为虚招）
-        /// </summary>
-        public static void SpawnPillarChess(NPC npc, Player player) {
-            if (Main.netMode == NetmodeID.MultiplayerClient) return;
-
-            const float spacingX = 150f;
-            const float spacingY = 130f;
-            Vector2 gridCenter = new Vector2(player.Center.X, player.Center.Y);
-
-            // 随机决定哪些格子为真柱（9 格中选 4~5 个）
-            bool[] real = new bool[9];
-            int realCount = Main.expertMode ? 5 : 4;
-            int placed = 0;
-            int guard = 0;
-            while (placed < realCount && guard < 100) {
-                int idx = Main.rand.Next(9);
-                if (!real[idx]) { real[idx] = true; placed++; }
-                guard++;
-            }
-
-            int damage = Main.expertMode ? npc.damage / 4 : npc.damage / 3;
-            for (int gy = -1; gy <= 1; gy++) {
-                for (int gx = -1; gx <= 1; gx++) {
-                    int idx = (gy + 1) * 3 + (gx + 1);
-                    Vector2 cell = gridCenter + new Vector2(gx * spacingX, gy * spacingY);
-                    Projectile.NewProjectile(
-                        npc.GetSource_FromAI(),
-                        cell,
-                        Vector2.Zero,
-                        ModContent.ProjectileType<AoyuanPillarTelegraph>(),
-                        damage, 0f, Main.myPlayer,
-                        ai0: real[idx] ? 1f : 0f);
-                }
-            }
-        }
-
-        /// <summary>
-        /// 暴雪帷幕 - 从玩家一侧推进的雪墙，墙上留一道移动缺口
-        /// </summary>
-        public static void SpawnBlizzardVeil(NPC npc, Player player) {
-            if (Main.netMode == NetmodeID.MultiplayerClient) return;
-
-            int dir = player.Center.X >= npc.Center.X ? 1 : -1;
-            // 反过来从玩家更空旷一侧推来，确保有反应空间
-            dir = Main.rand.NextBool() ? 1 : -1;
-            Vector2 spawn = new Vector2(player.Center.X - dir * 1100f, player.Center.Y);
-            int damage = Main.expertMode ? npc.damage / 4 : npc.damage / 3;
-
-            Projectile.NewProjectile(
-                npc.GetSource_FromAI(),
-                spawn,
-                new Vector2(dir * (Main.expertMode ? 7f : 5.5f), 0f),
+                ModContent.ProjectileType<AoyuanPermafrostTrail>(),
+                ModContent.ProjectileType<AoyuanPillarTelegraph>(),
                 ModContent.ProjectileType<AoyuanBlizzardWall>(),
-                damage, 2f, Main.myPlayer,
-                ai0: dir,
-                ai1: Main.rand.NextFloat(-200f, 200f));
+                ModContent.ProjectileType<AoyuanAbsoluteZeroBurst>(),
+                ModContent.ProjectileType<AoyuanIceMirror>(),
+                ModContent.ProjectileType<AoyuanColdField>(),
+                ModContent.ProjectileType<AoyuanFrostRidge>(),
+                ModContent.ProjectileType<AoyuanIceSpike>(),
+                ModContent.ProjectileType<AoyuanFreezeTrap>(),
+            ];
+
+            foreach (Projectile p in Main.ActiveProjectiles) {
+                if (Array.IndexOf(types, p.type) >= 0)
+                    p.Kill();
+            }
+        }
+
+        #endregion
+
+        #region 冰镜
+
+        /// <summary>入场演出冰镜（只生长后碎裂, 无攻击）</summary>
+        public static void SpawnIntroMirror(NPC npc) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+            Projectile.NewProjectile(npc.GetSource_FromAI(), npc.Center, Vector2.Zero,
+                ModContent.ProjectileType<AoyuanIceMirror>(), 0, 0f, Main.myPlayer,
+                ai0: 2f);
         }
 
         /// <summary>
-        /// 绝对零度放射冻结波（broken=true 时为削弱版，仅减速不冻结）
+        /// 冰镜·折光阵: 玩家周围弧线布 count 面镜, 依序(间隔14f)自动射折光束
+        /// </summary>
+        public static void SpawnMirrorArc(NPC npc, Player player, int count) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+
+            int damage = BossDamage(npc) / 3;
+            float baseAng = (npc.Center - player.Center).ToRotation() + Main.rand.NextFloat(-0.4f, 0.4f);
+            for (int i = 0; i < count; i++) {
+                float ang = baseAng + (i - (count - 1) * 0.5f) * 0.58f;
+                Vector2 pos = player.Center + ang.ToRotationVector2() * 520f;
+                // ai[1] 在折光阵模式下携带发射时刻（成形22 + 蓄光45 + 波纹错拍）
+                float fireTick = 22 + 45 + i * 14;
+                Projectile.NewProjectile(npc.GetSource_FromAI(), pos, Vector2.Zero,
+                    ModContent.ProjectileType<AoyuanIceMirror>(), damage, 0f, Main.myPlayer,
+                    ai0: 0f, ai1: fireTick);
+            }
+        }
+
+        /// <summary>镜界·瞬狱: 玩家周围六角形布 6 面受指挥的镜</summary>
+        public static void SpawnMirrorHex(NPC npc, Player player) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+
+            int damage = BossDamage(npc) / 3;
+            float baseAng = Main.rand.NextFloat(MathHelper.TwoPi);
+            for (int i = 0; i < 6; i++) {
+                float ang = baseAng + MathHelper.TwoPi * i / 6f;
+                Vector2 pos = player.Center + ang.ToRotationVector2() * 600f;
+                Projectile.NewProjectile(npc.GetSource_FromAI(), pos, Vector2.Zero,
+                    ModContent.ProjectileType<AoyuanIceMirror>(), damage, 0f, Main.myPlayer,
+                    ai0: 1f);
+            }
+        }
+
+        /// <summary>由镜面射出折光冰束（束自带 26f 预警线）</summary>
+        public static void SpawnMirrorLance(Projectile mirror, float angle) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+            Projectile.NewProjectile(mirror.GetSource_FromAI(), mirror.Center, Vector2.Zero,
+                ModContent.ProjectileType<AoyuanFrostBeam>(), mirror.damage, 0f, Main.myPlayer,
+                ai1: angle);
+        }
+
+        /// <summary>枚举存活的镜界镜面</summary>
+        private static System.Collections.Generic.IEnumerable<Projectile> RealmMirrors() {
+            int type = ModContent.ProjectileType<AoyuanIceMirror>();
+            //不用 Main.ActiveProjectiles: 其枚举器为 ref-struct 语义, 不能跨 yield 边界保留 (CS4007)
+            for (int i = 0; i < Main.maxProjectiles; i++) {
+                Projectile p = Main.projectile[i];
+                if (p.active && p.type == type && p.ai[0] == 1f)
+                    yield return p;
+            }
+        }
+
+        /// <summary>最近的镜界镜面（exclude 排除指定 whoAmI, 传 -1 不排除）</summary>
+        public static Projectile FindNearestRealmMirror(Vector2 from, int exclude) {
+            Projectile best = null;
+            float bestDist = float.MaxValue;
+            foreach (Projectile p in RealmMirrors()) {
+                if (p.whoAmI == exclude) continue;
+                float d = Vector2.DistanceSquared(from, p.Center);
+                if (d < bestDist) { bestDist = d; best = p; }
+            }
+            return best;
+        }
+
+        /// <summary>最远的镜界镜面（出口选择, 确定性）</summary>
+        public static Projectile FindFarthestRealmMirror(Vector2 from) {
+            Projectile best = null;
+            float bestDist = -1f;
+            foreach (Projectile p in RealmMirrors()) {
+                float d = Vector2.DistanceSquared(from, p.Center);
+                if (d > bestDist) { bestDist = d; best = p; }
+            }
+            return best;
+        }
+
+        /// <summary>当前处于"出口白亮"状态的镜面</summary>
+        public static Projectile FindWhitenedRealmMirror() {
+            foreach (Projectile p in RealmMirrors()) {
+                if (p.ai[2] == 1f)
+                    return p;
+            }
+            return null;
+        }
+
+        /// <summary>镜界终幕: 剩余镜面齐充能锁角, 45f 后齐射折光束</summary>
+        public static void CommandRealmVolley(Player player) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+            foreach (Projectile p in RealmMirrors()) {
+                p.ai[1] = (player.Center - p.Center).ToRotation();
+                p.ai[2] = 2f;
+                p.netUpdate = true;
+            }
+        }
+
+        #endregion
+
+        #region 寒潮冻土 / 困龙局
+
+        /// <summary>寒潮·冻土席卷: 触地点展开蔓延霜面（内部派生冰脊波与尖刺）</summary>
+        public static void SpawnColdField(NPC npc, bool phase2) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+            Projectile.NewProjectile(npc.GetSource_FromAI(), npc.Center + new Vector2(0f, 30f), Vector2.Zero,
+                ModContent.ProjectileType<AoyuanColdField>(), BossDamage(npc) / 4, 1f, Main.myPlayer,
+                ai0: phase2 ? 1f : 0f);
+        }
+
+        /// <summary>
+        /// 冰封·困龙局: 玩家脚下 + 两翼布置倒计时冻结区（P2 四区且错拍引爆）
+        /// 纯控制不伤血 → 冰蓝预警（诚实倒计时环）
+        /// </summary>
+        public static void SpawnFreezeTraps(NPC npc, Player player, bool phase2) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+
+            Vector2[] offsets = phase2
+                ? [Vector2.Zero, new Vector2(420f, 0f), new Vector2(-420f, 0f), new Vector2(0f, -380f)]
+                : [Vector2.Zero, new Vector2(420f, 0f), new Vector2(-420f, 0f)];
+
+            for (int i = 0; i < offsets.Length; i++) {
+                int fuse = 90 + (phase2 ? i * 20 : 0); // P2 错拍引爆 = 节拍舞步
+                Projectile.NewProjectile(npc.GetSource_FromAI(), player.Center + offsets[i], Vector2.Zero,
+                    ModContent.ProjectileType<AoyuanFreezeTrap>(), 0, 0f, Main.myPlayer,
+                    ai0: fuse);
+            }
+        }
+
+        /// <summary>困龙局放牧压制: 一发微追踪冰晶飞棱</summary>
+        public static void SuppressShot(NPC npc, Player player) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+            Vector2 vel = (player.Center - npc.Center).SafeNormalize(Vector2.UnitY) * 7.5f;
+            Projectile.NewProjectile(npc.GetSource_FromAI(), npc.Center, vel,
+                ModContent.ProjectileType<AoyuanIceball>(), BossDamage(npc) / 4, 1f, Main.myPlayer);
+        }
+
+        #endregion
+
+        #region 绝对零度
+
+        /// <summary>
+        /// 绝对零度放射环（broken=true 为削弱寒潮环: 仅叠冰冻不伤血）
         /// </summary>
         public static void SpawnAbsoluteZeroBurst(NPC npc, bool broken) {
             if (Main.netMode == NetmodeID.MultiplayerClient) return;
-
-            int damage = Main.expertMode ? npc.damage / 3 : npc.damage / 2;
-            Projectile.NewProjectile(
-                npc.GetSource_FromAI(),
-                npc.Center,
-                Vector2.Zero,
-                ModContent.ProjectileType<AoyuanAbsoluteZeroBurst>(),
-                damage, 0f, Main.myPlayer,
+            Projectile.NewProjectile(npc.GetSource_FromAI(), npc.Center, Vector2.Zero,
+                ModContent.ProjectileType<AoyuanAbsoluteZeroBurst>(), broken ? 0 : BossDamage(npc) / 3, 0f, Main.myPlayer,
                 ai0: broken ? 1f : 0f);
         }
+
+        /// <summary>绝对零度余波: 10f 后的慢速寒潮环（叠层, 无伤害）</summary>
+        public static void SpawnAbsoluteZeroEcho(NPC npc) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+            Projectile.NewProjectile(npc.GetSource_FromAI(), npc.Center, Vector2.Zero,
+                ModContent.ProjectileType<AoyuanAbsoluteZeroBurst>(), 0, 0f, Main.myPlayer,
+                ai0: 1f, ai1: 1f);
+        }
+
+        #endregion
+
+        #region 死亡演出
+
+        /// <summary>死亡碎裂连锁: 击碎最靠尾部的一段存活身体（HitEffect 冰爆）</summary>
+        public static void ShatterOneBodySegment(NPC head) {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
+
+            int bodyType = ModContent.NPCType<AoyuanBody>();
+            NPC tail = null;
+            int maxIdx = -1;
+            for (int i = 0; i < Main.maxNPCs; i++) {
+                NPC n = Main.npc[i];
+                if (!n.active || n.type != bodyType) continue;
+                if ((int)n.ai[3] != head.whoAmI) continue;
+                if ((int)n.ai[0] > maxIdx) {
+                    maxIdx = (int)n.ai[0];
+                    tail = n;
+                }
+            }
+            if (tail != null) {
+                tail.dontTakeDamage = false;
+                tail.StrikeInstantKill();
+            }
+        }
+
+        #endregion
     }
 }

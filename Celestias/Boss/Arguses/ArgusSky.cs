@@ -24,15 +24,16 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
 
     /// <summary>
     /// 天目·追魂弧天空效果 — 星瞳虚空天幕
-    /// 
+    ///
     /// 多层绘制结构：
     ///  1. 深紫/墨蓝渐变底色 — 无尽虚空的星海
     ///  2. Smoke帧动画星云烟雾 — 紫/蓝交替,朦胧深邃
-    ///  3. SoftGlow星辰散布 — 远景的静谧星点,被天目"注视"时加亮
-    ///  4. 瞳孔投影 — 天空中浮现巨大的"天目"轮廓(SoftGlow组合+Sparkle)
+    ///  3. SoftGlow星辰散布 — 远景的静谧星点 (死亡演出时坠落熄灭)
+    ///  4. 瞳孔投影 — 天空中浮现巨大的"天目"轮廓, 常态微追踪本地玩家
+    ///     (Argus.DomainSignal 全视之域锁定 / Argus.SkyBlink 眨眼 / Argus.SkyDeathClose 死亡闭目)
     ///  5. LightningBranch 紫色凝视射线闪烁
     ///  6. 暗角 + 紫色脉冲(三阶段时天空仿佛被独眼完全占据)
-    /// 
+    ///
     /// 二阶段: 瞳孔更加清晰,星云加速旋转
     /// 三阶段: 天空被巨大紫瞳笼罩,强烈的"被注视"压迫感
     /// </summary>
@@ -79,6 +80,8 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
         // 天目瞳孔参数
         private float pupilScale;
         private float pupilAlpha;
+        private float blinkSquash;   // 眨眼纵向眯合 0~1 (随 Boss 光环眼联动, Argus.SkyBlink 驱动)
+        private float deathClose;    // 死亡闭眼进度 0~1 (Argus.SkyDeathClose 驱动)
 
         #region IACMLoader 注册
 
@@ -105,6 +108,8 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
             isPhase3 = false;
             pupilScale = 0f;
             pupilAlpha = 0f;
+            blinkSquash = 0f;
+            deathClose = 0f;
 
             for (int i = 0; i < NebulaCloudCount; i++) nebulaClouds[i].Reset();
             for (int i = 0; i < StarCount; i++) stars[i].Reset();
@@ -136,11 +141,13 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
                 if (intensity <= 0f) { intensity = 0f; if (active) Deactivate(); }
             }
 
+            float death = MathHelper.Clamp(Argus.SkyDeathClose, 0f, 1f);
+
             for (int i = 0; i < NebulaLayerCount; i++) nebulaOffsets[i] += NebulaSpeeds[i];
             float mul = isPhase3 ? 1.6f : isPhase2 ? 1.3f : 1f;
             for (int i = 0; i < NebulaCloudCount; i++) nebulaClouds[i].Update(mul);
-            for (int i = 0; i < StarCount; i++) stars[i].Update(globalTime);
-            for (int i = 0; i < GazeRayCount; i++) gazeRays[i].Update(globalTime, isPhase2, isPhase3);
+            for (int i = 0; i < StarCount; i++) stars[i].Update(globalTime, death);
+            for (int i = 0; i < GazeRayCount; i++) gazeRays[i].Update(globalTime, isPhase2, isPhase3, death);
 
             // 天目瞳孔缓慢浮现
             float targetPupilAlpha = isPhase3 ? 0.6f : isPhase2 ? 0.35f : 0.15f;
@@ -155,6 +162,12 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
             // 域内快速睁眼, 平时缓慢浮现
             pupilAlpha = MathHelper.Lerp(pupilAlpha, targetPupilAlpha, domain > 0.01f ? 0.05f : 0.008f);
             pupilScale = MathHelper.Lerp(pupilScale, targetPupilScale, domain > 0.01f ? 0.04f : 0.006f);
+
+            // 眨眼联动 (Boss 光环眼闭合 → 天幕巨瞳同步眯合, 转阶段2 眨眼演出)
+            blinkSquash = MathHelper.Lerp(blinkSquash, MathHelper.Clamp(Argus.SkyBlink, 0f, 1f), 0.14f);
+
+            // 死亡闭目: 巨眼纵向缓缓合拢 — "最后一目合上"即战斗落幕
+            deathClose = MathHelper.Lerp(deathClose, death, 0.03f);
         }
 
         private static NPC FindBoss() {
@@ -275,20 +288,23 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
             float centerX = Main.screenWidth * 0.5f;
             float centerY = Main.screenHeight * 0.3f;
 
-            // 全视之域: 巨眼瞳孔偏移锁定本地玩家 ("被注视"压迫感)
+            // 巨眼瞳孔追踪本地玩家: 常态微偏移 ("一直被看着"), 全视之域内大幅锁定
             float domain = MathHelper.Clamp(Argus.DomainSignal, 0f, 1f);
-            if (domain > 0.01f) {
-                Player lp = Main.LocalPlayer;
-                if (lp != null && lp.active) {
-                    Vector2 sp = lp.Center - Main.screenPosition;
-                    centerX += (sp.X - centerX) * 0.25f * domain;
-                    centerY += (sp.Y - centerY) * 0.12f * domain;
-                }
+            Player lp = Main.LocalPlayer;
+            if (lp != null && lp.active) {
+                Vector2 sp = lp.Center - Main.screenPosition;
+                float followX = 0.05f + 0.20f * domain;
+                float followY = 0.025f + 0.095f * domain;
+                centerX += (sp.X - centerX) * followX;
+                centerY += (sp.Y - centerY) * followY;
             }
+
+            // 眨眼/死亡闭目: 全部纵向分量合拢
+            float lidClose = 1f - MathHelper.Clamp(MathF.Max(blinkSquash, deathClose), 0f, 1f) * 0.92f;
 
             // 外层: 椭圆形"眼白" — 柔和紫色
             float outerScaleX = pupilScale * Main.screenWidth * 0.25f / glow.Width;
-            float outerScaleY = outerScaleX * 0.55f; // 椭圆
+            float outerScaleY = outerScaleX * 0.55f * lidClose; // 椭圆
             Color outerC = DeepIndigo * alpha * 0.5f;
             outerC.A = 0;
             sb.Draw(glow, new Vector2(centerX, centerY), null, outerC, 0f, origin,
@@ -301,7 +317,7 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
             Color irisC = GazePurple * alpha * 0.45f;
             irisC.A = 0;
             sb.Draw(glow, new Vector2(centerX, centerY), null, irisC, 0f, origin,
-                new Vector2(irisScaleVal, irisScaleVal * 0.9f), SpriteEffects.None, 0f);
+                new Vector2(irisScaleVal, irisScaleVal * 0.9f * lidClose), SpriteEffects.None, 0f);
 
             // 内核: 白色瞳孔——凝视的焦点
             float coreScale = pupilScale * 0.25f;
@@ -310,7 +326,7 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
             Color coreC = StarWhite * alpha * 0.6f;
             coreC.A = 0;
             sb.Draw(glow, new Vector2(centerX, centerY), null, coreC, 0f, origin,
-                new Vector2(coreScaleVal, coreScaleVal), SpriteEffects.None, 0f);
+                new Vector2(coreScaleVal, coreScaleVal * lidClose), SpriteEffects.None, 0f);
 
             // 三阶段: 瞳孔外圈扩展紫色光晕——天空被瞳孔占据
             if (isPhase3) {
@@ -318,19 +334,19 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
                 Color hugeC = GazePurple * alpha * 0.15f;
                 hugeC.A = 0;
                 sb.Draw(glow, new Vector2(centerX, centerY), null, hugeC, 0f, origin,
-                    new Vector2(hugeScale, hugeScale * 0.6f), SpriteEffects.None, 0f);
+                    new Vector2(hugeScale, hugeScale * 0.6f * lidClose), SpriteEffects.None, 0f);
             }
 
             // 使用Sparkle绘制瞳孔周围的光芒——虹膜纹理
             Texture2D sparkle = ACMAsset.Sparkle;
-            if (sparkle != null) {
+            if (sparkle != null && lidClose > 0.2f) {
                 Vector2 spOrigin = sparkle.Size() / 2f;
                 int rayCount = isPhase3 ? 8 : isPhase2 ? 6 : 4;
                 for (int i = 0; i < rayCount; i++) {
                     float angle = MathHelper.TwoPi / rayCount * i + globalTime * 0.3f;
                     float dist = irisScaleVal * glow.Width * 0.5f;
-                    Vector2 pos = new Vector2(centerX, centerY) + new Vector2(MathF.Cos(angle), MathF.Sin(angle) * 0.6f) * dist;
-                    Color rayC = Color.Lerp(GazePurple, StarBlue, MathF.Sin(angle + globalTime) * 0.5f + 0.5f) * alpha * 0.25f;
+                    Vector2 pos = new Vector2(centerX, centerY) + new Vector2(MathF.Cos(angle), MathF.Sin(angle) * 0.6f * lidClose) * dist;
+                    Color rayC = Color.Lerp(GazePurple, StarBlue, MathF.Sin(angle + globalTime) * 0.5f + 0.5f) * alpha * 0.25f * lidClose;
                     rayC.A = 0;
                     float rayScale = 0.04f + pupilScale * 0.02f;
                     sb.Draw(sparkle, pos, null, rayC, angle + MathHelper.PiOver2, spOrigin, rayScale, SpriteEffects.None, 0f);
@@ -474,6 +490,7 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
             public float Alpha, Scale, Rotation, BlueShift;
             private float twinklePhase;
             private float twinkleSpeed;
+            private float fallSpeed;
 
             public void Reset() {
                 ScreenPos = new Vector2(
@@ -485,12 +502,21 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
                 twinklePhase = Main.rand.NextFloat(MathHelper.TwoPi);
                 twinkleSpeed = Main.rand.NextFloat(1f, 3f);
                 Rotation = Main.rand.NextFloat(MathHelper.TwoPi);
+                fallSpeed = Main.rand.NextFloat(1.5f, 4f);
             }
 
-            public void Update(float gTime) {
+            public void Update(float gTime, float death) {
                 // 星星闪烁
                 Alpha = (MathF.Sin(gTime * twinkleSpeed + twinklePhase) * 0.5f + 0.5f) * 0.35f;
                 Rotation += 0.002f;
+
+                // 死亡演出: 星辰坠落并熄灭 — 整片星空为天目送葬
+                if (death > 0.01f) {
+                    ScreenPos.Y += fallSpeed * death;
+                    Alpha *= 1f - death * 0.7f;
+                    if (ScreenPos.Y > Main.screenHeight + 20)
+                        ScreenPos.Y = -20;
+                }
             }
         }
 
@@ -518,8 +544,15 @@ namespace AncientChineseMythology.Celestias.Boss.Arguses
                 Distance = 50f + index * 30f;
             }
 
-            public void Update(float gTime, bool phase2, bool phase3) {
+            public void Update(float gTime, bool phase2, bool phase3, float death) {
                 timer += 1f / 60f;
+
+                // 死亡演出: 凝视射线归寂
+                if (death > 0.3f) {
+                    Alpha = MathHelper.Lerp(Alpha, 0f, 0.1f);
+                    return;
+                }
+
                 float period = (phase2 || phase3) ? basePeriod * 0.5f : basePeriod;
                 float pos = timer % period;
                 float flashDur = 0.6f;

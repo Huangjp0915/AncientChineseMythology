@@ -1,523 +1,151 @@
 ﻿using AncientChineseMythology.Helpers;
 using Microsoft.Xna.Framework.Graphics;
 using System;
-using System.Collections.Generic;
-using System.IO;
 using Terraria;
-using Terraria.Audio;
-using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.ID;
+using Terraria.Localization;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Projectiles
 {
-    internal class GemStickSpearProjectile : ModProjectile
+    /// <summary>
+    /// 宝石棍左键: 横扫 → 回扫 → 重抡; 每次命中沿击飞方向绽出 2 枚棱光碎片 (六色轮转, 0.25x)。
+    /// hue 流转拖尾 — "碎片颜色即判定"的多彩语言。
+    /// </summary>
+    internal class GemStickSpearProjectile : StickComboSwingBase
     {
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/GemStickSpearProjectile";
-        //定义一些常量，决定剑的挥动范围
-        //注意，我们在这里使用乘数，因为这简化了这些交互的调整
-        //你可以更改这些值或完全替换它们，但这些值是根据外观调整的
-        private const float SWINGRANGE = 1.67f * (float)Math.PI; //挥动攻击覆盖的角度（300度）
-        private const float FIRSTHALFSWING = 0.45f; //达到目标角度之前的挥动比例（相对于 swingRange）
-        private const float SPINRANGE = 1.67f * (float)Math.PI; //旋转攻击覆盖的角度（630度）
-        private const float UNWIND = 0.4f; //剑何时开始消失
-        private const float SPINTIME = 1f; //旋转攻击比挥动攻击多的时长
 
-        private const int THRUST_COUNT = 6; //刺击次数
-        private const float THRUST_DISTANCE = 60f; //刺击距离
-        private Color swingColor;
+        /// <summary>六色宝石轮盘 (红/绿/蓝/金/紫/钻白) — 系列内共享。</summary>
+        public static readonly Color[] GemColors = {
+            new(255, 80, 90), new(110, 240, 130), new(90, 150, 255),
+            new(255, 210, 90), new(190, 110, 255), new(235, 245, 255),
+        };
 
-        private enum AttackType //当前进行的攻击类型
-        {
-            //挥动是正常的剑挥动，可以稍微瞄准
-            //挥动会经历完整的动画周期
-            Swing,
-            //旋转是全圆形的挥动
-            //它们较慢并造成更多击退
-            Spin,
-            //刺击是向前刺击的攻击
-            Thrust,
-            //旋转刺击是旋转着快速向鼠标方向移动的攻击
-            SpinThrust
-        }
+        private static readonly SwingStep[] _steps = {
+            SwingStep.Sweep(3.7f, 1f),
+            SwingStep.Sweep(3.7f, 1.05f, sign: -1),
+            SwingStep.Sweep(4.5f, 1.3f, sign: 1, timeMul: 1.25f, scaleMul: 1.1f, impact: true),
+        };
 
-        private enum AttackStage //当前执行的攻击阶段，具体见 AI 中的函数描述
-        {
-            Prepare,
-            Execute,
-            Unwind
-        }
-
-        //这些属性封装了常规的 ai 和 localAI 数组，以便更简洁易懂
-        private AttackType CurrentAttack {
-            get => (AttackType)Projectile.ai[0];
-            set => Projectile.ai[0] = (float)value;
-        }
-
-        private AttackStage CurrentStage {
-            get => (AttackStage)Projectile.localAI[0];
-            set {
-                Projectile.localAI[0] = (float)value;
-                Timer = 0; //切换状态时重置计时器
+        protected override SwingStep[] Steps => _steps;
+        protected override int CycleFrames => 30;
+        protected override Color TrailOuter {
+            get {
+                float hue = (Main.GlobalTimeWrappedHourly * 0.25f) % 1f;
+                Color c = Main.hslToRgb(hue, 1f, 0.35f);
+                c.A = 150;
+                return c;
             }
         }
+        protected override Color TrailInner {
+            get {
+                float hue = (Main.GlobalTimeWrappedHourly * 0.25f + 0.12f) % 1f;
+                Color c = Main.hslToRgb(hue, 1f, 0.72f);
+                c.A = 205;
+                return c;
+            }
+        }
+        protected override float TipLength => 98f;
+        protected override float Overshoot => 0.14f;
+        protected override int BurstTheme => ACMWeaponBurst.Gem;
+        protected override float HitShake => 2f;
+        protected override int HitDustType => DustID.GemDiamond;
+        protected override Vector3 GlowLight => new(0.35f, 0.25f, 0.5f);
 
-        //运行时跟踪的变量
-        private ref float InitialAngle => ref Projectile.ai[1]; //瞄准的角度（带有限制）
-        private ref float Timer => ref Projectile.ai[2]; //计时器，用于跟踪每个阶段的进度
-        private ref float Progress => ref Projectile.localAI[1]; //剑相对于初始角度的位置
-        private ref float Size => ref Projectile.localAI[2]; //剑的大小
+        protected override void OnStickHitNPC(NPC target, NPC.HitInfo hit) {
+            // 命中绽碎片: owner 端生成 (同屏上限 12), 沿击飞方向扇形
+            if (Main.myPlayer != Projectile.owner)
+                return;
+            if (Owner.ownedProjectileCounts[ModContent.ProjectileType<GemShardProj>()] >= 12)
+                return;
 
-        //定义每个阶段的时间函数，考虑到近战攻击速度
-        //注意，你可以根据投射物的需要更改这个
-        private float prepTime => 6f / Owner.GetTotalAttackSpeed(Projectile.DamageType);
-        private float execTime => 6f / Owner.GetTotalAttackSpeed(Projectile.DamageType);
-        private float hideTime => 6f / Owner.GetTotalAttackSpeed(Projectile.DamageType);
+            Vector2 away = (target.Center - Owner.MountedCenter).SafeNormalize(Vector2.UnitX);
+            for (int i = 0; i < 2; i++) {
+                Vector2 vel = away.RotatedBy(Main.rand.NextFloat(-0.55f, 0.55f)) * Main.rand.NextFloat(7f, 10.5f);
+                Projectile.NewProjectile(Projectile.GetSource_OnHit(target), target.Center, vel,
+                    ModContent.ProjectileType<GemShardProj>(), (int)(Projectile.damage * 0.25f), 1f,
+                    Projectile.owner, Main.rand.Next(GemColors.Length));
+            }
+        }
+    }
 
-        //public override string Texture => "MyMod2/Content/Items/YingYangSword"; //使用物品的纹理作为投射物的纹理
-        private Player Owner => Main.player[Projectile.owner];
+    /// <summary>
+    /// 棱光碎片: 宝石棍命中绽出/棱光回旋甩出的小穿刺体。颜色由 ai[0] 指定 (生成包同步)。
+    /// 无独立贴图 — Sparkle 遮罩 + 细拖尾程序化绘制。
+    /// </summary>
+    internal class GemShardProj : ModProjectile
+    {
+        public override string Texture => "InnoVault/Assets/placeholder";
+
+        public override LocalizedText DisplayName
+            => Language.GetOrRegister("Mods.AncientChineseMythology.Projectiles.GemStickSpearProjectile.DisplayName");
+
+        private Color ShardColor => GemStickSpearProjectile.GemColors[
+            Math.Clamp((int)Projectile.ai[0], 0, GemStickSpearProjectile.GemColors.Length - 1)];
 
         public override void SetStaticDefaults() {
-            ProjectileID.Sets.HeldProjDoesNotUsePlayerGfxOffY[Type] = true;
-            ProjectileID.Sets.TrailingMode[Type] = 2; //尾随模式为 2，表示尾随着玩家
-            ProjectileID.Sets.TrailCacheLength[Type] = 12; //尾迹缓存长度
-            base.SetStaticDefaults();
+            ProjectileID.Sets.TrailCacheLength[Type] = 6;
+            ProjectileID.Sets.TrailingMode[Type] = 0;
         }
 
         public override void SetDefaults() {
-            Projectile.width = 86; //投射物的碰撞箱宽度
-            Projectile.height = 86; //投射物的碰撞箱高度
-            Projectile.friendly = true; //投射物可以击中敌人
-            Projectile.timeLeft = 10000; //投射物失效所需的时间
-            Projectile.penetrate = -1; //投射物无限穿透
-            Projectile.tileCollide = false; //投射物不与瓦片碰撞
-            Projectile.usesLocalNPCImmunity = true; //使用局部免疫帧
-            Projectile.localNPCHitCooldown = 10; //设置局部NPC命中冷却时间
-            Projectile.ownerHitCheck = true; //确保投射物的拥有者有视线可以瞄准目标（即不能穿越瓦片击中目标）
-            Projectile.DamageType = DamageClass.Melee; //投射物为近战投射物
-        }
-
-        public override void OnSpawn(IEntitySource source) {
-            Projectile.spriteDirection = Main.MouseWorld.X > Owner.MountedCenter.X ? 1 : -1;
-            float targetAngle = (Main.MouseWorld - Owner.MountedCenter).ToRotation();
-
-            if (CurrentAttack == AttackType.Spin) {
-                InitialAngle = targetAngle - FIRSTHALFSWING * SWINGRANGE * Projectile.spriteDirection * 1.6f; //否则我们计算角度
-            }
-            else if (CurrentAttack == AttackType.Swing) {
-                if (Projectile.spriteDirection == 1) {
-                    //不过，我们限制可能方向的范围，以免看起来太过荒谬
-                    targetAngle = MathHelper.Clamp(targetAngle, (float)-Math.PI * 1 / 3, (float)Math.PI * 1 / 6);
-                }
-                else {
-                    if (targetAngle < 0) {
-                        targetAngle += 2 * (float)Math.PI; //使角度范围连续，以便于操作
-                    }
-
-                    targetAngle = MathHelper.Clamp(targetAngle, (float)Math.PI * 5 / 6, (float)Math.PI * 4 / 3);
-                }
-
-                InitialAngle = targetAngle - FIRSTHALFSWING * SWINGRANGE * Projectile.spriteDirection * 1.2f; //否则我们计算角度
-            }
-            else if (CurrentAttack == AttackType.Thrust || CurrentAttack == AttackType.SpinThrust) {
-                InitialAngle = targetAngle; //刺击和旋转刺击直接指向目标角度
-            }
-
-            //随机选择颜色
-            Color[] colors = { Color.Red * 0.8f, Color.Green * 1.6f, Color.Blue, Color.Gold * 0.8f, Color.Purple, Color.White * 0.5f };
-            swingColor = colors[Main.rand.Next(colors.Length)];
-        }
-
-        public override void SendExtraAI(BinaryWriter writer) {
-            //这个投射物的 Projectile.spriteDirection 在 OnSpawn 中根据拥有者的鼠标位置得出，因此需要同步。spriteDirection 不是自动同步的字段. 由于所有 Projectile.ai 插槽都已使用，因此我们将其手动同步。
-            writer.Write((sbyte)Projectile.spriteDirection);
-        }
-
-        public override void ReceiveExtraAI(BinaryReader reader) {
-            Projectile.spriteDirection = reader.ReadSByte();
+            Projectile.width = 10;
+            Projectile.height = 10;
+            Projectile.friendly = true;
+            Projectile.penetrate = 2;
+            Projectile.timeLeft = 45;
+            Projectile.tileCollide = true;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 20;
+            Projectile.DamageType = DamageClass.Melee;
         }
 
         public override void AI() {
-            //更新投射物的位置和旋转
-            Projectile.oldPos[0] = Projectile.position;
-            Projectile.oldRot[0] = Projectile.rotation;
-
-            //添加光效
-            Lighting.AddLight(Projectile.Center, Color.Gold.ToVector3() * 0.5f);
-            //更新历史位置和旋转
-            for (int i = Projectile.oldPos.Length - 1; i > 0; i--) {
-                Projectile.oldPos[i] = Projectile.oldPos[i - 1];
-                Projectile.oldRot[i] = Projectile.oldRot[i - 1];
-            }
-
-            //在投射物被杀死之前延长使用动画
-            Owner.itemAnimation = 2;
-            Owner.itemTime = 2;
-
-            //如果玩家死去或被控制，杀死投射物
-            if (!Owner.active || Owner.dead || Owner.noItems || Owner.CCed) {
-                //drawTrail = 0;
-                Projectile.Kill();
-                return;
-            }
-
-            //AI 取决于阶段和攻击
-            //注意，这些阶段是为了在开始和结束时促使缩放效果
-            //如果这不是你想要的，可以简化
-            switch (CurrentStage) {
-                case AttackStage.Prepare:
-                    PrepareStrike();
-                    break;
-                case AttackStage.Execute:
-                    ExecuteStrike();
-                    break;
-                default:
-                    UnwindStrike();
-                    break;
-            }
-
-            SetSwordPosition();
-            Timer++;
-
-            //随机选择粒子类型
-            int[] dustTypes = { DustID.RedTorch, DustID.BubbleBurst_Blue, DustID.Poisoned, DustID.MagicMirror, DustID.GoldFlame, DustID.Shadowflame };
-            int selectedDustType = dustTypes[Main.rand.Next(dustTypes.Length)];
-            //在 SpinThrust 攻击时生成粒子
-            if (CurrentAttack == AttackType.SpinThrust) {
-                //计算右上角位置并生成粒子
-                Vector2 dustOffset = new Vector2(60, -60);
-                Vector2 rotatedDustOffset = dustOffset.RotatedBy(Projectile.rotation);
-                Vector2 dustPosition = Projectile.Center + rotatedDustOffset - new Vector2(8, 5);
-
-                int dust_1 = Dust.NewDust(dustPosition, 10, 10, selectedDustType, 0, 0, 1, swingColor, 1f);
-                Main.dust[dust_1].noGravity = true;
-                Main.dust[dust_1].velocity *= 0.2f;
-                Main.dust[dust_1].scale = 1.2f;
-                Main.dust[dust_1].alpha = 100;
-
-                Vector2 dustOffset_2 = new Vector2(-60, 60);
-                Vector2 rotatedDustOffset_2 = dustOffset_2.RotatedBy(Projectile.rotation);
-                Vector2 dustPosition_2 = Projectile.Center + rotatedDustOffset_2 - new Vector2(8, 5);
-
-                int dust_2 = Dust.NewDust(dustPosition_2, 10, 10, selectedDustType, 0, 0, 1, swingColor, 1f);
-                Main.dust[dust_2].noGravity = true;
-                Main.dust[dust_2].velocity *= 0.2f;
-                Main.dust[dust_2].scale = 1.2f;
-                Main.dust[dust_2].alpha = 100;
+            Projectile.velocity.Y += 0.12f;
+            Projectile.rotation = Projectile.velocity.ToRotation();
+            Projectile.Opacity = MathHelper.Clamp(Projectile.timeLeft / 12f, 0f, 1f);
+            Lighting.AddLight(Projectile.Center, ShardColor.ToVector3() * 0.3f);
+            if (Main.rand.NextBool(4)) {
+                Dust d = Dust.NewDustPerfect(Projectile.Center, DustID.GemDiamond,
+                    Projectile.velocity * 0.1f, 120, ShardColor, 0.8f);
+                d.noGravity = true;
             }
         }
-        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
-            //重置投射物的碰撞检测，以便可以多次击中敌人
-            Projectile.localNPCImmunity[target.whoAmI] = 10; //设置局部NPC命中冷却时间
-            target.immune[Projectile.owner] = 0; //确保敌人不会对投射物的拥有者免疫
-            //宝石多彩命中演出
-            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
-                ACMWeaponBurst.Gem, scale: 1f, owner: Projectile.owner);
-        }
-        public struct CustomVertex : IVertexType
-        {
-            public Vector3 Position;
-            public Color Color;
 
-            public static readonly VertexDeclaration VertexDeclaration = new VertexDeclaration(
-                new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 0),
-                new VertexElement(12, VertexElementFormat.Color, VertexElementUsage.Color, 0)
-            );
-
-            VertexDeclaration IVertexType.VertexDeclaration => VertexDeclaration;
-
-            public CustomVertex(Vector3 position, Color color) {
-                Position = position;
-                Color = color;
+        public override void OnKill(int timeLeft) {
+            for (int i = 0; i < 4; i++) {
+                Dust d = Dust.NewDustPerfect(Projectile.Center, DustID.GemDiamond,
+                    Main.rand.NextVector2Circular(2.5f, 2.5f), 100, ShardColor, Main.rand.NextFloat(0.7f, 1.1f));
+                d.noGravity = true;
             }
         }
-        public override bool PreDraw(ref Microsoft.Xna.Framework.Color lightColor) {
-            //长矛线统一拖尾 (§3.2): 宝石棍 = 多彩流转 (随时间偏移色相)
-            float hue = (Main.GlobalTimeWrappedHourly * 0.25f) % 1f;
-            Color gemOuter = Main.hslToRgb(hue, 1f, 0.35f); gemOuter.A = 150;
-            Color gemInner = Main.hslToRgb((hue + 0.12f) % 1f, 1f, 0.72f); gemInner.A = 205;
-            WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 9f,
-                outerColor: gemOuter, innerColor: gemInner,
-                uvScroll: -Main.GlobalTimeWrappedHourly * 1.6f);
 
-            Microsoft.Xna.Framework.Vector2 origin;
-            float rotationOffset;
-            SpriteEffects effects; //贴图效果
+        public override bool PreDraw(ref Color lightColor) {
+            Color c = ShardColor;
+            c.A = 150;
+            Color inner = Color.Lerp(ShardColor, Color.White, 0.6f);
+            inner.A = 205;
+            WeaponVFX.DrawProjectileTrail(Projectile, 4f, c, inner,
+                uvScroll: -Main.GlobalTimeWrappedHourly * 2f, subdivisions: 2);
 
-            if (Projectile.spriteDirection > 0) {
-                origin = new Microsoft.Xna.Framework.Vector2(Projectile.width / 2, Projectile.height / 2); //原点在中心
-                rotationOffset = MathHelper.ToRadians(45f); //旋转偏移45度
-                effects = SpriteEffects.None; //贴图不翻转
+            Texture2D star = ACMAsset.Sparkle;
+            if (star != null) {
+                Color glow = ShardColor * Projectile.Opacity;
+                glow.A = 0;
+                SpriteBatch sb = Main.spriteBatch;
+                sb.End();
+                sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
+                    DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+                sb.Draw(star, Projectile.Center - Main.screenPosition, null, glow,
+                    Projectile.rotation + Main.GlobalTimeWrappedHourly * 4f, star.Size() * 0.5f, 0.16f, SpriteEffects.None, 0f);
+                sb.Draw(star, Projectile.Center - Main.screenPosition, null, glow * 0.7f,
+                    -Projectile.rotation, star.Size() * 0.5f, 0.1f, SpriteEffects.None, 0f);
+                sb.End();
+                ACMShaders.RestoreDefaultBatch(sb);
             }
-            else {
-                origin = new Microsoft.Xna.Framework.Vector2(Projectile.width / 2, Projectile.height / 2); //原点在中心
-                rotationOffset = MathHelper.ToRadians(135f); //旋转偏移135度
-                effects = SpriteEffects.FlipHorizontally; //翻转贴图
-            }
-
-            SpriteBatch sb = Main.spriteBatch;
-            GraphicsDevice gd = Main.graphics.GraphicsDevice;
-
-            sb.End();
-            sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
-            //开始顶点绘制
-
-            List<ColoredVertex> ve = new List<ColoredVertex>();
-
-            Color color = swingColor * 0.24f;
-            Color color1 = swingColor * 0.12f;
-
-            Player player = Main.player[Projectile.owner];
-            if (CurrentAttack == AttackType.Swing
-                && CurrentStage != AttackStage.Prepare
-                ) {
-                if (Projectile.spriteDirection > 0) {
-                    for (int i = 0; i < 12; i++) {
-                        ve.Add(new ColoredVertex(player.Center - Main.screenPosition + new Vector2(0, -115).RotatedBy(Projectile.oldRot[i] + rotationOffset * 2),
-                            new Vector3(i / 12f, 1, 1),
-                            color));
-                        ve.Add(new ColoredVertex(player.Center - Main.screenPosition + new Vector2(0, -40).RotatedBy(Projectile.oldRot[i] + rotationOffset * 2),
-                            new Vector3(i / 12f, 0, 1),
-                            color1));
-
-                    }
-                }
-                else {
-                    for (int i = 0; i < 12; i++) {
-
-                        ve.Add(new ColoredVertex(player.Center - Main.screenPosition + new Vector2(0, -40).RotatedBy(Projectile.oldRot[i] - rotationOffset * 2),
-                            new Vector3(i / 12f, 1, 1),
-                            color1));
-                        ve.Add(new ColoredVertex(player.Center - Main.screenPosition + new Vector2(0, -115).RotatedBy(Projectile.oldRot[i] - rotationOffset * 2),
-                            new Vector3(i / 12f, 0, 1),
-                            color));
-                    }
-                }
-            }
-            if (CurrentAttack == AttackType.Spin
-                && CurrentStage != AttackStage.Prepare) {
-                if (Projectile.spriteDirection > 0) {
-                    for (int i = 0; i < 12; i++) {
-                        ve.Add(new ColoredVertex(player.Center - Main.screenPosition - new Vector2(0, -40).RotatedBy(Projectile.oldRot[i] - rotationOffset * 2),
-                            new Vector3(i / 12f, 1, 1),
-                            color1));
-                        ve.Add(new ColoredVertex(player.Center - Main.screenPosition - new Vector2(0, -115).RotatedBy(Projectile.oldRot[i] - rotationOffset * 2),
-                            new Vector3(i / 12f, 0, 1),
-                            color));
-                    }
-                }
-                else {
-                    for (int i = 0; i < 12; i++) {
-                        ve.Add(new ColoredVertex(player.Center - Main.screenPosition - new Vector2(0, -115).RotatedBy(Projectile.oldRot[i] + rotationOffset * 2),
-                            new Vector3(i / 12f, 1, 1),
-                            color));
-                        ve.Add(new ColoredVertex(player.Center - Main.screenPosition - new Vector2(0, -40).RotatedBy(Projectile.oldRot[i] + rotationOffset * 2),
-                            new Vector3(i / 12f, 0, 1),
-                            color1));
-                    }
-                }
-
-            }
-
-            if (CurrentAttack == AttackType.Thrust
-                && CurrentStage != AttackStage.Prepare) {
-                Vector2 direction = Vector2.Normalize(Main.MouseWorld - player.Center); //计算玩家中心到鼠标方向的向量
-                SpriteEffects effects_Thrust; //贴图效果
-                if (Main.MouseWorld.X - player.Center.X > 0) {
-                    effects_Thrust = SpriteEffects.None; //贴图不翻转
-                }
-                else {
-                    effects_Thrust = SpriteEffects.FlipVertically; //翻转贴图
-                }
-                //绘制发光的尖刺  
-                Vector2 spikePosition = Projectile.Center + direction * (Projectile.width * 0.2f);
-                Texture2D spikeTexture = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/Projectiles/StickSpearProjectile_Thrust").Value;
-                sb.Draw(spikeTexture, spikePosition - Main.screenPosition, null, swingColor, Projectile.rotation, new Vector2(spikeTexture.Width / 2, spikeTexture.Height / 2), 1.6f, effects_Thrust, 0f);
-            }
-
-            if (ve.Count >= 3) {
-                gd.Textures[0] = ModContent.Request<Texture2D>("AncientChineseMythology/Textures/Projectiles/SwordTrail55").Value;
-                gd.DrawUserPrimitives(PrimitiveType.TriangleStrip, ve.ToArray(), 0, ve.Count - 2);
-            }
-
-            sb.End();
-            sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
-
-            Main.spriteBatch.Draw(TextureAssets.Projectile[Type].Value,
-                Projectile.Center - Main.screenPosition,
-                default,
-                lightColor * Projectile.Opacity,
-                Projectile.rotation + rotationOffset,
-                origin,
-                Projectile.scale,
-                effects,
-                0);
-
-            //由于我们在进行自定义绘制，因此不进行正常绘制
             return false;
-        }
-
-        //找到剑的起始和结束位置，并使用线段碰撞检测与敌人检查碰撞
-        public override bool? Colliding(Microsoft.Xna.Framework.Rectangle projHitbox, Microsoft.Xna.Framework.Rectangle targetHitbox) {
-            Microsoft.Xna.Framework.Vector2 start = Owner.MountedCenter;//计算投射物的起点
-            float collisionPoint = 0f;//碰撞点
-            if (CurrentAttack == AttackType.Thrust) {
-                Microsoft.Xna.Framework.Vector2 end = start + Projectile.rotation.ToRotationVector2() * ((Projectile.Size.Length()) * Projectile.scale * 1.18f);//计算投射物的终点
-                return Collision.CheckAABBvLineCollision(targetHitbox.TopLeft(), targetHitbox.Size(), start, end, 15f * Projectile.scale, ref collisionPoint);//调用线段碰撞检测
-            }
-            else if (CurrentAttack == AttackType.SpinThrust) {
-                Microsoft.Xna.Framework.Vector2 end = Projectile.Center + Projectile.rotation.ToRotationVector2() * ((Projectile.Size.Length()) * Projectile.scale * 0.4f);//计算投射物的终点
-                return Collision.CheckAABBvLineCollision(targetHitbox.TopLeft(), targetHitbox.Size(), Projectile.Center, end, 15f * Projectile.scale, ref collisionPoint);//调用线段碰撞检测
-            }
-            else {
-                Microsoft.Xna.Framework.Vector2 end = start + Projectile.rotation.ToRotationVector2() * (Projectile.Size.Length() * Projectile.scale * 0.8f);//计算投射物的终点
-                return Collision.CheckAABBvLineCollision(targetHitbox.TopLeft(), targetHitbox.Size(), start, end, 15f * Projectile.scale, ref collisionPoint);//调用线段碰撞检测
-            }
-        }
-
-        //对瓦片进行类似的碰撞检测
-        public override void CutTiles() {
-            Microsoft.Xna.Framework.Vector2 start = Owner.MountedCenter;
-            if (CurrentAttack == AttackType.Thrust || CurrentAttack == AttackType.SpinThrust) {
-                Microsoft.Xna.Framework.Vector2 end = start + Projectile.rotation.ToRotationVector2() * (Projectile.Size.Length() * Projectile.scale * 1.2f);//计算投射物的终点
-                Utils.PlotTileLine(start, end, 15 * Projectile.scale, DelegateMethods.CutTiles);//绘制线段，并对其上的瓦片进行碰撞检测
-            }
-            else {
-                Microsoft.Xna.Framework.Vector2 end = start + Projectile.rotation.ToRotationVector2() * (Projectile.Size.Length() * Projectile.scale * 0.9f);//计算投射物的终点
-                Utils.PlotTileLine(start, end, 15 * Projectile.scale, DelegateMethods.CutTiles);//绘制线段，并对其上的瓦片进行碰撞检测
-            }
-        }
-
-        //确保投射物仅在释放阶段和放松阶段造成伤害
-        public override bool? CanDamage() {
-            if (CurrentStage == AttackStage.Prepare)
-                return false;
-            return base.CanDamage();
-        }
-
-        public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers) {
-            //确保击退方向远离玩家
-            modifiers.HitDirectionOverride = target.position.X > Owner.MountedCenter.X ? 1 : -1;
-
-            //如果当前攻击是 SpinThrust，伤害加倍
-            if (CurrentAttack == AttackType.SpinThrust) {
-                modifiers.FinalDamage *= 2f;
-            }
-        }
-
-        //方便设置投射物和手臂位置的函数
-        public void SetSwordPosition() {
-            Vector2 mousPos = Main.MouseWorld; //获取鼠标位置
-            Vector2 armPosition = Owner.GetFrontHandPosition(Player.CompositeArmStretchAmount.Full, Projectile.rotation - (float)Math.PI / 2); //获取手的位置
-
-            armPosition.Y += Owner.gfxOffY; //添加偏移
-
-            Projectile.scale = Size * 1.2f * Owner.GetAdjustedItemScale(Owner.HeldItem); //稍微放大投射物，也考虑到近战尺寸的修正
-
-            Owner.heldProj = Projectile.whoAmI; //设置持有的投射物为这个投射物
-
-            if (CurrentAttack == AttackType.Thrust) {
-                Vector2 direction = Vector2.Normalize(mousPos - armPosition); //计算方向
-                Projectile.rotation = direction.ToRotation(); //设置投射物的旋转
-                Projectile.Center = armPosition + direction * (30f + Progress); //设置投射物到手的位置，并向外偏移
-            }
-            else if (CurrentAttack == AttackType.SpinThrust) {
-                Vector2 direction = Vector2.Normalize(mousPos - armPosition); //计算方向
-                Projectile.rotation += 0.8f * Projectile.spriteDirection; //设置投射物的旋转
-                Projectile.Center = armPosition + direction * (30f + Progress); //设置投射物到手的位置，并向外偏移
-            }
-            else {
-                //设置复合手臂，允许你独立设置手臂的旋转和前后手臂的伸展
-                Owner.SetCompositeArmFront(true, Player.CompositeArmStretchAmount.Full, Projectile.rotation - MathHelper.ToRadians(90f)); //设置手臂位置（由于手臂起始时低下，所以有 90 度偏移）
-                Projectile.rotation = InitialAngle + Projectile.spriteDirection * Progress; //设置投射物的旋转
-
-                Projectile.Center = armPosition + Projectile.rotation.ToRotationVector2() * 30f; //设置投射物到手的位置，并向外偏移20像素
-            }
-        }
-
-
-        //准备攻击的函数
-        private void PrepareStrike() {
-            Size = 1f; //使剑在准备攻击时缓慢增加大小，直到达到最大值
-            if (Timer >= prepTime) {
-                SoundEngine.PlaySound(SoundID.Item1); //播放剑的声音，因为在生成时播放太早
-                CurrentStage = AttackStage.Execute; //如果攻击超过准备时间，进入下一个阶段
-            }
-        }
-
-        //实现挥动的首半部分
-        private void ExecuteStrike() {
-            if (CurrentAttack == AttackType.Swing) {
-                Progress = MathHelper.SmoothStep(0, SWINGRANGE, (1f - UNWIND / 2) * Timer / (execTime * 2));
-
-                if (Timer >= execTime * 3) {
-                    CurrentStage = AttackStage.Unwind; //完成攻击，进入放松阶段
-                }
-            }
-            else if (CurrentAttack == AttackType.Spin) {
-                Progress = MathHelper.SmoothStep(0, -SPINRANGE, (1f - UNWIND / 2) * Timer / (execTime * SPINTIME * 2));
-
-                if (Timer >= execTime * SPINTIME * 3) {
-                    CurrentStage = AttackStage.Unwind; //完成攻击，进入放松阶段
-                }
-            }
-            else if (CurrentAttack == AttackType.Thrust) {
-                float thrustProgress = (Timer / execTime) % 1f;
-                if (thrustProgress < 0.5f) {
-                    Progress = MathHelper.SmoothStep(0, THRUST_DISTANCE, thrustProgress * 2);
-                }
-                else {
-                    Progress = MathHelper.SmoothStep(THRUST_DISTANCE, 0, (thrustProgress - 0.5f) * 2);
-                }
-
-                if (Timer >= execTime * THRUST_COUNT) {
-                    CurrentStage = AttackStage.Unwind; //完成攻击，进入放松阶段
-                }
-            }
-            else if (CurrentAttack == AttackType.SpinThrust) {
-                float spinThrustProgress = (Timer / execTime) % 4f;
-                if (spinThrustProgress < 2f) {
-                    Progress = MathHelper.SmoothStep(0, 200f, spinThrustProgress * 2);
-                }
-                else {
-                    Progress = MathHelper.SmoothStep(200f, 0, (spinThrustProgress - 0.5f) * 2);
-                }
-
-                if (Timer >= execTime * 2) {
-                    CurrentStage = AttackStage.Unwind; //完成攻击，进入放松阶段
-                }
-            }
-        }
-
-        //实现挥动后半部分，剑消失
-        private void UnwindStrike() {
-            if (CurrentAttack == AttackType.Swing) {
-                Progress = MathHelper.SmoothStep(0, SWINGRANGE, (1f - UNWIND / 10) + UNWIND * Timer / (hideTime));
-                //Size = 1f - MathHelper.SmoothStep(0, 1, Timer / hideTime); //在挥动结束时，使剑在大小上逐渐减小，形成平滑的隐藏动画
-
-                if (Timer >= hideTime) {
-                    Projectile.Kill(); //完成隐藏阶段，杀死投射物
-                }
-            }
-            else if (CurrentAttack == AttackType.Spin) {
-                Progress = MathHelper.SmoothStep(0, -SPINRANGE, (1f - UNWIND / 10) + UNWIND * Timer / (hideTime * SPINTIME));
-                //Size = 1f - MathHelper.SmoothStep(0, 1, Timer / (hideTime * SPINTIME));
-
-                if (Timer >= hideTime * SPINTIME) {
-                    Projectile.Kill(); //完成隐藏阶段，杀死投射物
-                }
-            }
-            else if (CurrentAttack == AttackType.Thrust) {
-                if (Timer >= hideTime) {
-                    Projectile.Kill(); //完成隐藏阶段，杀死投射物
-                }
-            }
-            else if (CurrentAttack == AttackType.SpinThrust) {
-                if (Timer >= hideTime) {
-                    Projectile.Kill(); //完成隐藏阶段，杀死投射物
-                }
-            }
         }
     }
 }

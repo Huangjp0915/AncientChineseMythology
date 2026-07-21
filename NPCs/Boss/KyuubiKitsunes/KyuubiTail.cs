@@ -88,10 +88,26 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         public Color RoleTint { get; set; } = Color.Transparent;
         /// <summary>幻影真身尾尖额外提亮 (0~1) — 让玩家一眼读出"哪个九尾是真"。</summary>
         public float TipGlowBoost { get; set; } = 0f;
-        /// <summary>狐火曼陀罗钉位模式: 尾尖固定指向九边形顶点。</summary>
+        /// <summary>姿态钉位模式: 尾尖固定指向给定目标 (曼陀罗墙/扇展/光环/垂落等姿态复用同一通道)。</summary>
         public bool Pinned { get; set; } = false;
         /// <summary>钉位目标 (世界坐标)。</summary>
         public Vector2 PinnedTarget { get; set; }
+
+        // —— V3: 姿态参数化 / 后坐冲量 / 尾焰 / 死亡消散 ——
+        /// <summary>钉位时的目标延展倍率 (扇展 1.7 / 光环 1.15 / 垂落 0.9 / 曼陀罗 3.4)。</summary>
+        public float PinExtension { get; set; } = MaxExtensionMultiplier * 0.85f;
+        /// <summary>钉位时的辉光目标值。</summary>
+        public float PinGlow { get; set; } = 0.65f;
+        /// <summary>尾焰额外强度 (姿态点火用, 与攻击辉光叠加)。</summary>
+        public float FlameBoost { get; set; }
+        /// <summary>尾焰逐尾相位种子 (打破 9 尾同步闪烁)。</summary>
+        public float FlameSeed { get; private set; }
+        /// <summary>死亡消散进度 0~1: 尾巴从尖到根缩短并淡出 (死亡演出逐尾熄灭)。</summary>
+        public float DeathFade { get; set; }
+        /// <summary>尾尖狐火强度 (本体批量绘制尾焰用)。</summary>
+        public float TipFlameIntensity => MathHelper.Clamp(glowIntensity + TipGlowBoost + FlameBoost, 0f, 1.2f) * (1f - DeathFade);
+        /// <summary>当前攻击进度 0~1 (本体读取以对齐伤害窗口)。</summary>
+        public float AttackProgress => attackProgress;
 
         private bool HasRole => Role >= 0 && RoleTint.A > 0;
 
@@ -126,6 +142,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
 
             // 初始化相位偏移，让每条尾巴的摆动有差异
             swayPhase = tailIndex * MathHelper.TwoPi / 9f;
+            FlameSeed = tailIndex * 1.37f + 0.4f;
 
             // 初始化段宽度（从粗到细的渐变）
             for (int i = 0; i < JointCount; i++) {
@@ -171,10 +188,10 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
                 UpdateAttack(globalTime);
             }
             else if (Pinned) {
-                // 曼陀罗钉位: 尾尖固定指向九边形顶点, 大幅延展
+                // 姿态钉位: 尾尖固定指向目标 (延展/辉光由姿态参数决定 — 扇展/光环/垂落/曼陀罗复用)
                 TargetPosition = PinnedTarget;
-                targetExtension = MaxExtensionMultiplier * 0.85f;
-                glowIntensity = MathHelper.Lerp(glowIntensity, 0.65f, 0.08f);
+                targetExtension = MathHelper.Clamp(PinExtension, 0.6f, MaxExtensionMultiplier);
+                glowIntensity = MathHelper.Lerp(glowIntensity, PinGlow, 0.08f);
             }
             else {
                 UpdateIdleMotion(ownerVelocity, globalTime);
@@ -290,28 +307,29 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         private void UpdateStabAttack() {
             float t = attackProgress;
 
-            // 使用贝塞尔曲线和分段时间控制
-            if (t < 0.25f) // 蓄力阶段 (0-25%)
+            // 波形按 MOTION §1: 长前摇(42%) / 一瞬爆发(13%, poly8 ease-out) / 弹性收招(45%)
+            if (t < 0.42f) // 蓄力后撤 — 末端 pow8 急吸 (nothing…nothing…NOW)
             {
-                float localT = t / 0.25f;
-                localT = EaseOutQuad(localT);
-                TargetPosition = Vector2.Lerp(attackKeyframes[0], attackKeyframes[1], localT);
-                stiffness = 0.3f; // 增加刚度表现力量感
+                float localT = t / 0.42f;
+                float snap = 0.55f * EaseOutQuad(localT) + 0.45f * MathF.Pow(localT, 8f);
+                TargetPosition = Vector2.Lerp(attackKeyframes[0], attackKeyframes[1], snap);
+                stiffness = MathHelper.Lerp(0.2f, 0.42f, localT);
+                glowIntensity = localT * 0.7f; // 点火渐亮 = 倒计时读法
             }
-            else if (t < 0.5f) // 突刺阶段 (25-50%)
+            else if (t < 0.55f) // 突刺 — 首帧即到位的骤然感
             {
-                float localT = (t - 0.25f) / 0.25f;
-                localT = EaseInQuad(localT); // 加速刺出
-                TargetPosition = Vector2.Lerp(attackKeyframes[1], attackKeyframes[2], localT);
-                stiffness = 0.5f; // 最高刚度
-                glowIntensity = localT; // 发光
+                float localT = (t - 0.42f) / 0.13f;
+                float strike = 1f - MathF.Pow(1f - localT, 8f);
+                TargetPosition = Vector2.Lerp(attackKeyframes[1], attackKeyframes[2], strike);
+                stiffness = 0.62f; // 最高刚度
+                glowIntensity = 1f;
             }
-            else // 回收阶段 (50-100%)
+            else // 回收 — 平滑沉降
             {
-                float localT = (t - 0.5f) / 0.5f;
+                float localT = (t - 0.55f) / 0.45f;
                 localT = EaseOutQuad(localT);
                 TargetPosition = Vector2.Lerp(attackKeyframes[2], attackKeyframes[3], localT);
-                stiffness = MathHelper.Lerp(0.5f, 0.15f, localT);
+                stiffness = MathHelper.Lerp(0.62f, 0.15f, localT);
                 glowIntensity = 1f - localT;
             }
         }
@@ -405,6 +423,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             attackDuration = duration;
             AttackTargetPos = target;
             attackStartPos = Joints[JointCount - 1];
+            firedProjectile = false;
         }
 
         private void UpdateProjectileAttack() {
@@ -505,9 +524,10 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         }
 
         /// <summary>
-        /// 开始远距离刺击攻击 - 大范围远距离突刺，尾巴会动态延展
+        /// 开始远距离刺击攻击 - 大范围远距离突刺，尾巴会动态延展。
+        /// V3: 预警线默认关闭 — 真伤害由 KyuubiTailLance 弹幕权威绘制预警, 尾巴只做身体语言。
         /// </summary>
-        public void StartLongRangeStabAttack(Vector2 direction, float telegraphTime = 0.5f, float stabTime = 0.15f, float recoverTime = 0.4f) {
+        public void StartLongRangeStabAttack(Vector2 direction, float telegraphTime = 0.5f, float stabTime = 0.15f, float recoverTime = 0.4f, bool showTelegraph = false) {
             IsAttacking = true;
             CurrentAttack = TailAttackType.LongRangeStab;
             AttackTimer = 0f;
@@ -526,7 +546,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             longRangePhases[1] = stabTime;
             longRangePhases[2] = recoverTime;
 
-            ShowTelegraph = true;
+            ShowTelegraph = showTelegraph;
         }
 
         // 远距离刺击时间分配
@@ -586,12 +606,31 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         }
 
         private void EndAttack() {
+            // 收招余摆: 给末端关节一个横向冲量, 让动作结束后尾巴仍在"呼吸" (MOTION §4 aftermath oscillation)
+            if (CurrentAttack == TailAttackType.Stab || CurrentAttack == TailAttackType.Sweep ||
+                CurrentAttack == TailAttackType.LongRangeStab || CurrentAttack == TailAttackType.Slam) {
+                Vector2 tipDir = GetTipDirection();
+                Vector2 side = new(-tipDir.Y, tipDir.X);
+                ApplyImpulse(side * (TailIndex % 2 == 0 ? 5f : -5f));
+            }
+
             IsAttacking = false;
             CurrentAttack = TailAttackType.None;
             AttackTimer = 0f;
             stiffness = 0.15f;
             glowIntensity = 0f;
             ShowTelegraph = false;
+        }
+
+        /// <summary>
+        /// 给尾巴末端 40% 关节施加速度冲量 (发射后坐 / 收招余摆 / 落地反震),
+        /// 冲量沿链向尖端放大 — 一帧输入换一秒有机余动。
+        /// </summary>
+        public void ApplyImpulse(Vector2 impulse) {
+            for (int i = (int)(JointCount * 0.6f); i < JointCount; i++) {
+                float w = (i - JointCount * 0.6f) / (JointCount * 0.4f);
+                Velocities[i] += impulse * (0.4f + 0.6f * w);
+            }
         }
 
         #endregion
@@ -724,7 +763,7 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         #region 绘制
 
         /// <summary>
-        /// 绘制尾巴
+        /// 绘制尾巴 (V3: 支持死亡消散 — 从尖到根逐节熄灭)
         /// </summary>
         public void Draw(SpriteBatch spriteBatch, Vector2 screenPos, Color lightColor) {
             Texture2D bodyTex = KyuubiKitsune.MissesBody;
@@ -733,8 +772,15 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             if (bodyTex == null || tipTex == null)
                 return;
 
+            if (DeathFade >= 0.995f)
+                return;
+
+            // 死亡消散: 尖端起消失的节数
+            int visibleJoints = JointCount - (int)(DeathFade * JointCount);
+            float fadeMul = 1f - DeathFade * 0.6f;
+
             // V2: 狐火 ribbon 拖尾 (图元拖尾原语), 发光时叠在尾骨上 — 角色色编码
-            if (glowIntensity > 0.15f && Joints != null) {
+            if (glowIntensity > 0.15f && Joints != null && DeathFade < 0.05f) {
                 Color baseTint = HasRole ? RoleTint : new Color(255, 180, 80);
                 Color ribOuter = baseTint * 0.7f;
                 Color ribInner = Color.Lerp(baseTint, Color.White, 0.4f);
@@ -745,12 +791,13 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             }
 
             // 绘制所有体节
-            for (int i = 0; i < JointCount - 1; i++) {
-                DrawSegment(spriteBatch, screenPos, bodyTex, i, lightColor);
+            for (int i = 0; i < Math.Min(visibleJoints, JointCount - 1); i++) {
+                DrawSegment(spriteBatch, screenPos, bodyTex, i, lightColor * fadeMul);
             }
 
             // 绘制尾尖
-            DrawTip(spriteBatch, screenPos, tipTex, lightColor);
+            if (visibleJoints >= JointCount)
+                DrawTip(spriteBatch, screenPos, tipTex, lightColor * fadeMul);
 
             // 绘制发光效果
             if (glowIntensity > 0) {
@@ -759,84 +806,19 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
         }
 
         /// <summary>
-        /// 绘制预判线（在尾巴绘制之前调用）
+        /// 绘制预判线（在尾巴绘制之前调用）。
+        /// V3: 仅在尾巴自带预警的旧路径使用 (真伤害预警由 KyuubiTailLance 权威绘制); 改为干净的细红光束。
         /// </summary>
         public void DrawTelegraph(SpriteBatch spriteBatch, Vector2 screenPos) {
             if (!ShowTelegraph || TelegraphLength <= 0)
                 return;
 
-            // 预判线参数 — 致命攻击预警统一纯红 (全局观感契约 §6.1: 红=致命且唯一)
-            float pulseTime = (float)Main.timeForVisualEffects * 0.1f;
-            float pulse = 0.5f + 0.5f * MathF.Sin(pulseTime * 8f);
-            Color telegraphColor = TelegraphColors.Lethal * (0.35f + pulse * 0.35f);
-            telegraphColor.A = 0; // 加性混合
-
-            Vector2 startPos = RootPosition;
+            float pulse = 0.5f + 0.5f * MathF.Sin((float)Main.timeForVisualEffects * 0.8f);
             Vector2 endPos = RootPosition + TelegraphDirection * TelegraphLength;
-
-            // 绘制预判线（使用多个点连成线）
-            int segments = 30;
-            float lineWidth = 4f + pulse * 2f;
-
-            for (int i = 0; i < segments; i++) {
-                float t1 = (float)i / segments;
-                float t2 = (float)(i + 1) / segments;
-
-                Vector2 p1 = Vector2.Lerp(startPos, endPos, t1);
-                Vector2 p2 = Vector2.Lerp(startPos, endPos, t2);
-
-                // 虚线效果
-                if (i % 3 == 0) continue;
-
-                // 渐变淡出
-                float alpha = 1f - t1 * 0.5f;
-                Color segColor = telegraphColor * alpha;
-
-                // 绘制线段（简化为点）
-                Vector2 drawPos = (p1 + p2) * 0.5f - screenPos;
-                float segLength = Vector2.Distance(p1, p2);
-                float rotation = (p2 - p1).ToRotation();
-
-                // 使用尾巴体节纹理绘制预判线
-                Texture2D bodyTex = KyuubiKitsune.MissesBody;
-                if (bodyTex != null) {
-                    Vector2 scale = new Vector2(segLength / bodyTex.Width * 1.5f, lineWidth / bodyTex.Height);
-                    spriteBatch.Draw(
-                        bodyTex,
-                        drawPos,
-                        null,
-                        segColor,
-                        rotation,
-                        new Vector2(bodyTex.Width * 0.5f, bodyTex.Height * 0.5f),
-                        scale,
-                        SpriteEffects.None,
-                        0f
-                    );
-                }
-            }
-
-            // 在终点绘制警告标记
-            float warningPulse = 1f + 0.3f * MathF.Sin(pulseTime * 12f);
-            Color warningColor = TelegraphColors.Lethal * (0.6f + pulse * 0.3f);
-            warningColor.A = 0;
-
-            Texture2D tipTex = KyuubiKitsune.MissesTop;
-            if (tipTex != null) {
-                spriteBatch.Draw(
-                    tipTex,
-                    endPos - screenPos,
-                    null,
-                    warningColor,
-                    TelegraphDirection.ToRotation(),
-                    new Vector2(0, tipTex.Height * 0.5f),
-                    warningPulse * 0.8f,
-                    SpriteEffects.None,
-                    0f
-                );
-            }
-
-            // 添加光照
-            Lighting.AddLight(endPos, new Vector3(1f, 0.3f, 0.1f) * pulse * 0.5f);
+            ACMShaders.DrawBeam(RootPosition, endPos, 2.5f + pulse * 1.5f,
+                TelegraphColors.Lethal, TelegraphColors.Lethal * 0.35f, 0.35f + pulse * 0.3f,
+                flowSpeed: 3f, coreSharp: 3f);
+            Lighting.AddLight(endPos, new Vector3(1f, 0.2f, 0.15f) * pulse * 0.4f);
         }
 
         /// <summary>
@@ -982,12 +964,17 @@ namespace AncientChineseMythology.NPCs.Boss.KyuubiKitsunes
             return (Joints[JointCount - 1] - Joints[JointCount - 2]).SafeNormalize(Vector2.UnitX);
         }
 
+        private bool firedProjectile;
+
         /// <summary>
-        /// 检查射弹发射时机
+        /// 检查射弹发射时机 (V3: 每次攻击只触发一次, 消费式)
         /// </summary>
         public bool ShouldFireProjectile() {
-            return CurrentAttack == TailAttackType.ProjectileFire &&
-                   attackProgress >= 0.6f && attackProgress < 0.65f;
+            if (CurrentAttack == TailAttackType.ProjectileFire && attackProgress >= 0.6f && !firedProjectile) {
+                firedProjectile = true;
+                return true;
+            }
+            return false;
         }
 
         /// <summary>

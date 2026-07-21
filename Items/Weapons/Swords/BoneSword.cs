@@ -2,42 +2,47 @@
 using AncientChineseMythology.Items.Materials;
 using AncientChineseMythology.Projectiles;
 using Terraria;
+using Terraria.Audio;
 using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Items.Weapons.Swords
 {
     /// <summary>
-    /// 骨剑 — 超快挥速 (useTime 6)。可见质变 (纯表现, 极廉价): 挥砍偶发骨白小尘,
-    /// 偶发命中触发轻量 <see cref="ACMWeaponBurst"/> 骨白爆发。机制/伤害不变。
+    /// 骨剑 — 超快挥速 (useTime 6) 的上古骨器。
+    /// 重做机制"碎骨": 命中计数, 每第 8 击伤害 ×2 并触发骨白爆发 + 骨屑喷溅 + 轻屏震 + 低沉音,
+    /// 换目标不清零 → 鼓励贴脸连打的节奏高点。其余保持低阶朴素。
     /// </summary>
     public class BoneSword : ModItem
     {
-        public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Swords/BoneSword"; //使用物品的纹理作为投射物的纹理
+        public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Swords/BoneSword";
+
+        private const int ShatterEvery = 8; // 第 N 击触发碎骨
+        private int hitCounter;             // 本地手感层计数 (owner 端命中驱动)
 
         public override void SetDefaults() {
-            Item.damage = 3; //基础伤害
-            Item.crit = 5; //爆击率
-            Item.DamageType = DamageClass.Melee; //伤害类型
-            Item.width = 52; //物品宽度
-            Item.height = 52; //物品高度
-            Item.useTime = 6; //使用时间
-            Item.useAnimation = 6; //使用动画时间
-            Item.useStyle = ItemUseStyleID.Swing; //使用风格
-            Item.knockBack = 0; //击退
-            Item.value = Item.buyPrice(0, 0, 0, 0); //物品价值
-            Item.rare = ItemRarityID.Green; //稀有度
-            Item.UseSound = SoundID.Item1; //使用声音
-            //Item.useTurn = true; //自动转向
-            Item.autoReuse = true; //自动使用
-            Item.shoot = ModContent.ProjectileType<BlankProjectile>(); //射击类型
+            Item.damage = 3;
+            Item.crit = 5;
+            Item.DamageType = DamageClass.Melee;
+            Item.width = 52;
+            Item.height = 52;
+            Item.useTime = 6;
+            Item.useAnimation = 6;
+            Item.useStyle = ItemUseStyleID.Swing;
+            Item.knockBack = 0;
+            Item.value = Item.buyPrice(0, 0, 0, 0);
+            Item.rare = ItemRarityID.Green;
+            Item.UseSound = SoundID.Item1 with { PitchVariance = 0.15f, Pitch = 0.1f };
+            Item.autoReuse = true;
+            Item.shoot = ModContent.ProjectileType<BlankProjectile>();
             Item.shootSpeed = 16;
-            Item.noUseGraphic = false; //显示使用图标
+            Item.noUseGraphic = false;
         }
 
-        // 极廉价骨白尘 (挥速极快, 强力门控避免刷屏)
+        // 极廉价骨白尘 (挥速极快, 强力门控避免刷屏); 临近碎骨时骨尘渐密作为"充能广播"
         public override void MeleeEffects(Player player, Rectangle hitbox) {
-            if (Main.rand.NextBool(4)) {
+            int gate = hitCounter >= ShatterEvery - 2 ? 2 : 4;
+            if (Main.rand.NextBool(gate)) {
                 Dust d = Dust.NewDustDirect(new Vector2(hitbox.X, hitbox.Y), hitbox.Width, hitbox.Height, DustID.Bone);
                 d.noGravity = true;
                 d.velocity *= 0.3f;
@@ -45,11 +50,35 @@ namespace AncientChineseMythology.Items.Weapons.Swords
             }
         }
 
+        public override void ModifyHitNPC(Player player, NPC target, ref NPC.HitModifiers modifiers) {
+            // 即将落下的这一击是第 8 击 → 碎骨 ×2
+            if (hitCounter >= ShatterEvery - 1)
+                modifiers.FinalDamage *= 2f;
+        }
+
         public override void OnHitNPC(Player player, NPC target, NPC.HitInfo hit, int damageDone) {
-            // 仅偶发触发, 保持极低开销
-            if (Main.rand.NextBool(5)) {
+            hitCounter++;
+            if (hitCounter >= ShatterEvery) {
+                hitCounter = 0;
+                // 碎骨节拍: 骨白爆发 + 骨屑喷溅 + 微后坐 + 低沉音
                 ACMWeaponBurst.Spawn(player.GetSource_OnHit(target), target.Center,
-                    ACMWeaponBurst.Bone, scale: 0.7f, owner: player.whoAmI);
+                    ACMWeaponBurst.Bone, scale: 1.3f, owner: player.whoAmI);
+                WeaponVFX.AddScreenShake(target.Center, 1.5f);
+                SoundEngine.PlaySound(SoundID.NPCHit2 with { Pitch = -0.4f, Volume = 0.9f }, target.Center);
+                if (player.whoAmI == Main.myPlayer)
+                    player.velocity -= player.DirectionTo(target.Center) * 0.6f; // 反作用微后坐
+                if (!Main.dedServ) {
+                    for (int i = 0; i < 14; i++) {
+                        Dust d = Dust.NewDustPerfect(target.Center, DustID.Bone,
+                            Main.rand.NextVector2Circular(4.5f, 4.5f), 0, default, Main.rand.NextFloat(0.9f, 1.4f));
+                        d.noGravity = Main.rand.NextBool();
+                    }
+                }
+            }
+            else if (Main.rand.NextBool(6)) {
+                // 平击偶发轻反馈, 保持极低开销
+                ACMWeaponBurst.Spawn(player.GetSource_OnHit(target), target.Center,
+                    ACMWeaponBurst.Bone, scale: 0.6f, owner: player.whoAmI);
             }
         }
 

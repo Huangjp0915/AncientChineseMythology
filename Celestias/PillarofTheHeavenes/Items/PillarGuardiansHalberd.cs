@@ -1,6 +1,7 @@
 ﻿using AncientChineseMythology.Celestias.PillarofTheHeavenes.Tiles;
 using AncientChineseMythology.Helpers;
 using Microsoft.Xna.Framework.Graphics;
+using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -11,23 +12,27 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
 {
     /// <summary>
-    /// 天柱守卫戟 - 天柱敌怪掉落的长枪类近战武器
-    /// 金色+青色主题，突刺并释放天柱冲击
+    /// 镇天神戟 - 天柱敌怪掉落的长枪类近战武器。
+    /// 机制身份: 方阵三连突 — 两记短突接第三记"贯阵"重突 (前摇拉杆→爆发全伸→玩家借势前冲),
+    /// 贯阵命中轰落天罚落雷。决策点: 连突节奏与第三突的对线定位。
     /// </summary>
     public class PillarGuardiansHalberd : ModItem
     {
+        private int comboStep;       // 三连突计数 (Shoot 仅 owner 端调用, 实例字段安全)
+        private uint lastThrustTime; // 连段窗口计时
+
         public override void SetDefaults() {
-            Item.damage = 225;
+            Item.damage = 210;
             Item.DamageType = DamageClass.Melee;
             Item.width = 60;
             Item.height = 60;
-            Item.useTime = 22;
-            Item.useAnimation = 22;
+            Item.useTime = 14;
+            Item.useAnimation = 14;
             Item.useStyle = ItemUseStyleID.Shoot;
             Item.knockBack = 6.5f;
             Item.value = Item.sellPrice(gold: 25);
             Item.rare = ItemRarityID.Red;
-            Item.UseSound = SoundID.Item1;
+            Item.UseSound = null; // 每突手动播放 (音高随连段递升)
             Item.autoReuse = true;
             Item.noMelee = true;
             Item.noUseGraphic = true;
@@ -36,14 +41,37 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
             Item.crit = 12;
         }
 
+        public override bool CanUseItem(Player player) {
+            // 上一突进行中不可再突 (突刺节奏由弹幕生命周期控制)
+            return player.ownedProjectileCounts[ModContent.ProjectileType<HalberdThrust>()] == 0;
+        }
+
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
-            Projectile.NewProjectile(source, player.Center, velocity, type, damage, knockback, player.whoAmI);
+            // 1.6s 未续段则重置回第一突
+            if (Main.GameUpdateCount - lastThrustTime > 96)
+                comboStep = 0;
+            lastThrustTime = Main.GameUpdateCount;
+
+            int step = comboStep;
+            comboStep = (comboStep + 1) % 3;
+
+            float dmgMul = step == 2 ? 1.7f : 0.85f;
+            Projectile.NewProjectile(source, player.Center, velocity, type,
+                (int)(damage * dmgMul), knockback, player.whoAmI, step);
+
+            // 突刺声: 短突音高递升, 贯阵低沉
+            if (step == 2)
+                SoundEngine.PlaySound(SoundID.Item1 with { Pitch = -0.35f, Volume = 1f }, player.Center);
+            else
+                SoundEngine.PlaySound(SoundID.Item1 with { Pitch = 0.1f + step * 0.15f, Volume = 0.8f }, player.Center);
+
             return false;
         }
 
         public override void ModifyTooltips(System.Collections.Generic.List<TooltipLine> tooltips) {
-            tooltips.Add(new TooltipLine(Mod, "HeavenLore", "天柱守卫所持的神圣长戟"));
-            tooltips.Add(new TooltipLine(Mod, "HeavenEffect", "突刺后释放天柱冲击波"));
+            tooltips.Add(new TooltipLine(Mod, "HeavenLore", "天柱守卫方阵所持的神圣长戟"));
+            tooltips.Add(new TooltipLine(Mod, "HeavenEffect", "三连突刺：两记短突接一记贯阵重突"));
+            tooltips.Add(new TooltipLine(Mod, "HeavenEffect2", "贯阵释放冲击波并借势前冲，命中轰落天罚落雷"));
         }
 
         public override void AddRecipes() {
@@ -52,22 +80,27 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
     }
 
     /// <summary>
-    /// 长戟突刺弹幕 - 手持弹幕
+    /// 长戟突刺弹幕 - 手持弹幕。ai[0]=连段序号 (0/1 短突 12f, 2 贯阵 20f)。
+    /// 波形: 收杆反拉 → poly(20) 爆发全伸 → 收回 (力量感来自爆发帧的陡峭缓出)。
     /// </summary>
     public class HalberdThrust : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Celestias/PillarofTheHeavenes/Items/PillarGuardiansHalberd";
 
-        private float thrustProgress = 0f;
-        private float maxExtend = 130f;
-        private bool hasReleasedWave = false;
+        private int Step => (int)Projectile.ai[0];
+        private bool Heavy => Step >= 2;
+        private int Duration => Heavy ? 20 : 12;
+
+        private ref float Timer => ref Projectile.localAI[0];
+        private ref float BoltFired => ref Projectile.localAI[1];
+
+        private bool hasReleasedWave;
+        private float extend; // 当前伸出量 (像素, 负=收杆)
 
         private Player Owner => Main.player[Projectile.owner];
 
-        public override void SetStaticDefaults() {
-            ProjectileID.Sets.TrailCacheLength[Type] = 6;
-            ProjectileID.Sets.TrailingMode[Type] = 2;
-        }
+        // poly(N) ease-out: 前几帧走完几乎全部行程 — "一击"而非"一波"
+        private static float PolyOut(float t, float power) => 1f - MathF.Pow(1f - MathHelper.Clamp(t, 0f, 1f), power);
 
         public override void SetDefaults() {
             Projectile.width = 30;
@@ -75,12 +108,12 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
             Projectile.friendly = true;
             Projectile.DamageType = DamageClass.Melee;
             Projectile.penetrate = -1;
-            Projectile.timeLeft = 18;
+            Projectile.timeLeft = 60;
             Projectile.tileCollide = false;
             Projectile.ignoreWater = true;
             Projectile.ownerHitCheck = true;
             Projectile.usesLocalNPCImmunity = true;
-            Projectile.localNPCHitCooldown = 10;
+            Projectile.localNPCHitCooldown = -1; // 每突每敌一跳
         }
 
         public override void AI() {
@@ -93,19 +126,29 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
             Owner.itemTime = 2;
             Owner.heldProj = Projectile.whoAmI;
 
-            // 突刺动画
-            thrustProgress += 0.1f;
-            float extend;
-            if (thrustProgress < 0.5f) {
-                extend = ACMUtils.QuadOut(thrustProgress * 2f) * maxExtend;
-            }
-            else {
-                extend = (1f - ACMUtils.QuadIn((thrustProgress - 0.5f) * 2f)) * maxExtend;
-            }
-
-            if (thrustProgress >= 1f) {
+            float t = Timer;
+            Timer += 1f;
+            if (t >= Duration) {
                 Projectile.Kill();
                 return;
+            }
+
+            float maxExtend = Heavy ? 200f : 150f;
+            float pullBack = Heavy ? -40f : -28f;
+            // 三段: 收杆(慢, 可读) → 爆发(2~3 帧走完全程) → 收回
+            float pullFrames = Heavy ? 8f : 4f;
+            float burstFrames = Heavy ? 3f : 2f;
+
+            if (t < pullFrames) {
+                extend = pullBack * ACMUtils.QuadOut(t / pullFrames);
+            }
+            else if (t < pullFrames + burstFrames) {
+                float bt = (t - pullFrames) / burstFrames;
+                extend = MathHelper.Lerp(pullBack, maxExtend, PolyOut(bt, 20f));
+            }
+            else {
+                float rt = (t - pullFrames - burstFrames) / (Duration - pullFrames - burstFrames);
+                extend = MathHelper.Lerp(maxExtend, 26f, ACMUtils.QuadIn(rt));
             }
 
             Vector2 direction = Projectile.velocity.SafeNormalize(Vector2.UnitX);
@@ -116,30 +159,52 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
             float armRotation = direction.ToRotation() - MathHelper.PiOver2;
             Owner.SetCompositeArmFront(true, Player.CompositeArmStretchAmount.Full, armRotation);
 
-            // 突刺最远点时释放冲击波
-            if (thrustProgress >= 0.45f && thrustProgress < 0.55f && !hasReleasedWave) {
+            // 收杆期: 尘向杆身收敛 (蓄势可读)
+            if (t < pullFrames && Main.rand.NextBool(2)) {
+                Vector2 from = Projectile.Center + Main.rand.NextVector2CircularEdge(40f, 40f);
+                Dust d = Dust.NewDustPerfect(from, DustID.GoldCoin, (Projectile.Center - from) * 0.15f, 120, default, 1.1f);
+                d.noGravity = true;
+            }
+
+            // 爆发帧: 冲击波 + 贯阵前冲
+            if (t >= pullFrames && !hasReleasedWave) {
                 hasReleasedWave = true;
-                Projectile.NewProjectile(Projectile.GetSource_FromThis(), Projectile.Center, direction * 14f,
-                    ModContent.ProjectileType<HalberdShockwave>(), Projectile.damage, Projectile.knockBack, Projectile.owner);
 
-                SoundEngine.PlaySound(SoundID.Item71 with { Pitch = 0.1f, Volume = 0.8f }, Projectile.Center);
+                if (Heavy) {
+                    // 贯阵: 冲击波 + 玩家借势前冲 (后坐的反向 — 突刺即位移)
+                    if (Projectile.owner == Main.myPlayer) {
+                        Projectile.NewProjectile(Projectile.GetSource_FromThis(), Projectile.Center, direction * 15f,
+                            ModContent.ProjectileType<HalberdShockwave>(), (int)(Projectile.damage * 0.47f), Projectile.knockBack, Projectile.owner);
+                    }
 
-                // 爆发粒子
-                for (int i = 0; i < 15; i++) {
-                    Vector2 dustVel = direction.RotatedByRandom(0.4f) * Main.rand.NextFloat(5, 10);
+                    if (Projectile.owner == Main.myPlayer) {
+                        float fwd = Vector2.Dot(Owner.velocity, direction);
+                        if (fwd < 9f)
+                            Owner.velocity += direction * 5f;
+                    }
+
+                    WeaponVFX.AddScreenShake(Projectile.Center, 3f);
+                    SoundEngine.PlaySound(SoundID.Item71 with { Pitch = -0.2f, Volume = 0.9f }, Projectile.Center);
+                }
+                else {
+                    SoundEngine.PlaySound(SoundID.Item71 with { Pitch = 0.25f + Step * 0.1f, Volume = 0.55f }, Projectile.Center);
+                }
+
+                int burstDust = Heavy ? 16 : 8;
+                for (int i = 0; i < burstDust; i++) {
+                    Vector2 dustVel = direction.RotatedByRandom(0.35f) * Main.rand.NextFloat(5, Heavy ? 12 : 8);
                     int dustType = Main.rand.NextBool() ? DustID.GoldFlame : DustID.IceTorch;
-                    int dust = Dust.NewDust(Projectile.Center, 0, 0, dustType, dustVel.X, dustVel.Y, 100, default, 2f);
-                    Main.dust[dust].noGravity = true;
+                    Dust d = Dust.NewDustPerfect(Projectile.Center + direction * 30f, dustType, dustVel, 100, default, Heavy ? 2.2f : 1.6f);
+                    d.noGravity = true;
                 }
             }
 
-            // 金色粒子
-            if (Main.rand.NextBool(2)) {
-                Vector2 dustPos = Projectile.Center + direction * 20f;
+            // 杆尖金尘 (伸出期)
+            if (extend > 40f && Main.rand.NextBool(2)) {
+                Vector2 dustPos = Projectile.Center + direction * 24f;
                 int dustType = Main.rand.NextBool() ? DustID.GoldCoin : DustID.IceTorch;
-                int dust = Dust.NewDust(dustPos, 0, 0, dustType, 0, 0, 100, default, 1.6f);
-                Main.dust[dust].noGravity = true;
-                Main.dust[dust].velocity = direction * 2f;
+                Dust d = Dust.NewDustPerfect(dustPos, dustType, direction * 2f, 100, default, 1.5f);
+                d.noGravity = true;
             }
 
             Lighting.AddLight(Projectile.Center, new Vector3(1f, 0.9f, 0.4f) * 0.6f);
@@ -154,16 +219,36 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
             }
 
             ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
-                ACMWeaponBurst.HeavenlyPillar, 1f, Projectile.owner);
+                ACMWeaponBurst.HeavenlyPillar, Heavy ? 1.3f : 0.9f, Projectile.owner);
+            WeaponVFX.AddScreenShake(target.Center, Heavy ? 2.5f : 1.5f);
+
+            // 贯阵命中: 天罚落雷 (每次贯阵只落一道)
+            if (Heavy && BoltFired == 0f) {
+                BoltFired = 1f;
+                HeavenJudgmentBolt.Strike(Projectile.GetSource_OnHit(target),
+                    target.Center, (int)(Projectile.damage * 0.35f), 3f, Projectile.owner, 0.85f);
+            }
         }
 
         public override bool PreDraw(ref Color lightColor) {
+            Vector2 direction = Projectile.velocity.SafeNormalize(Vector2.UnitX);
+
+            // 爆发窗口: 杆身白金光轴 (速度门控 — 只在最快的几帧出现)
+            float pullFrames = Heavy ? 8f : 4f;
+            float burstFrames = Heavy ? 3f : 2f;
+            if (Timer >= pullFrames && Timer < pullFrames + burstFrames + 3f) {
+                float w = Heavy ? 9f : 6f;
+                ACMShaders.DrawBeam(Owner.MountedCenter, Projectile.Center + direction * 52f, w,
+                    PillarPalette.HolyWhite, PillarPalette.SkyCyan, 0.8f, flowSpeed: 3f, coreSharp: 2.8f);
+            }
+
             Texture2D tex = TextureAssets.Projectile[Type].Value;
             Vector2 origin = tex.Size() / 2;
             SpriteEffects effects = Owner.direction > 0 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
             float drawRot = Projectile.rotation + (Owner.direction > 0 ? 0 : MathHelper.PiOver2);
+
             // 发光
-            Color glowColor = Color.Gold * 0.4f;
+            Color glowColor = Color.Gold * (Heavy ? 0.55f : 0.4f);
             glowColor.A = 0;
             Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, glowColor, drawRot, origin, Projectile.scale * 1.2f, effects, 0f);
 
@@ -174,15 +259,18 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
         }
 
         public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
+            // 伸出不足时不判定 (视觉与伤害对齐: 收杆期无伤害)
+            if (extend < 20f)
+                return false;
             Vector2 start = Owner.MountedCenter;
-            Vector2 end = Projectile.Center + Projectile.rotation.ToRotationVector2() * 50f;
+            Vector2 end = Projectile.Center + Projectile.velocity.SafeNormalize(Vector2.UnitX) * 50f;
             float collisionPoint = 0f;
             return Collision.CheckAABBvLineCollision(targetHitbox.TopLeft(), targetHitbox.Size(), start, end, 30f, ref collisionPoint);
         }
     }
 
     /// <summary>
-    /// 长戟冲击波
+    /// 贯阵冲击波 - 第三突释放的天柱冲击
     /// </summary>
     public class HalberdShockwave : ModProjectile
     {
@@ -211,7 +299,6 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
             Projectile.rotation = Projectile.velocity.ToRotation();
             Projectile.velocity *= 0.96f;
 
-            // 金色粒子
             for (int i = 0; i < 2; i++) {
                 Vector2 dustPos = Projectile.Center + Main.rand.NextVector2Circular(15, 8);
                 int dustType = Main.rand.NextBool() ? DustID.GoldFlame : DustID.IceTorch;

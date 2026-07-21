@@ -8,8 +8,10 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
 {
     /// <summary>
     /// 白虎·裂地银脉 Rend Beam —— 沿固定方向的撕裂光束，用于「裂地灭世爪」的平行爪痕与三阶段爪裂射线。
-    /// 两段式可读结构（§6.1）：先 <b>预告(红，非致命)</b> 渐亮 telegraph，再 <b>释放(银白，致命)</b>；
-    /// 视觉走硬化 <see cref="ACMShaders.DrawBeam"/>（缺着色器自动降级 no-op）。固定不动、方向锁定，命中可读靠站位。
+    /// 两段式可读结构（§6.1）：先 <b>预告(红，非致命)</b> 渐亮 telegraph，再 <b>释放(银白，致命)</b>。
+    /// V3 视觉升级：整条视觉走 <see cref="BaihuVFX.DrawClawRend"/>（BaihuClawRend.fx 三道平行耙痕：
+    /// 锯齿噪声缘 + 银白核，uMode 红色预告/银白释放切换，uProgress 撕裂揭示）。
+    /// 固定不动、方向锁定，命中可读靠站位。
     /// </summary>
     public class BaihuRendBeam : ModProjectile
     {
@@ -48,6 +50,9 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
                     Dust d = Dust.NewDustPerfect(p, DustID.RedTorch, Vector2.Zero, 150, default, 0.8f);
                     d.noGravity = true;
                 }
+                // 释放前 3 帧: 撕裂爆开的干裂声
+                if (Age == (int)TelegraphTime - 3 && !Main.dedServ)
+                    Terraria.Audio.SoundEngine.PlaySound(SoundID.Item71 with { Pitch = 0.5f, Volume = 0.7f }, Projectile.Center);
             }
             else {
                 if (!Main.dedServ && Main.rand.NextBool(2)) {
@@ -85,18 +90,18 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
             Vector2 end = Projectile.Center + DirVec * Length;
 
             if (!Active) {
+                // 红色预告: 三道耙痕从起点向终点缓慢撕开(渐亮 + 揭示)
                 float teleProg = TelegraphTime > 0 ? MathHelper.Clamp(Age / TelegraphTime, 0f, 1f) : 1f;
-                float pulse = 0.6f + 0.4f * MathF.Sin(Main.GlobalTimeWrappedHourly * 12f);
-                ACMShaders.DrawBeam(start, end, 4f + 4f * teleProg,
-                    TelegraphColors.Lethal, TelegraphColors.Lethal * 0.4f,
-                    (0.3f + 0.45f * teleProg) * pulse, flowSpeed: 0.8f, flowScale: 3f, coreSharp: 3f);
+                float pulse = 0.75f + 0.25f * MathF.Sin(Main.GlobalTimeWrappedHourly * 12f);
+                BaihuVFX.DrawClawRend(start, end, 14f + 10f * teleProg,
+                    (0.35f + 0.55f * teleProg) * pulse, 0.25f + 0.75f * teleProg, release: false);
             }
             else {
+                // 银白释放: 撕裂全开, 判定半宽 26px ↔ 视觉半宽 30px(略宽, 对玩家宽容)
                 float lifeProg = MathHelper.Clamp(Projectile.timeLeft / 22f, 0f, 1f); // 末段淡出
-                float intensity = MathHelper.Clamp(lifeProg, 0.2f, 1f);
-                ACMShaders.DrawBeam(start, end, 22f * (0.6f + 0.4f * intensity),
-                    Color.White, TelegraphColors.WhiteTiger, intensity,
-                    flowSpeed: 1.8f, flowScale: 2f, coreSharp: 2.2f, coreGlow: 1.2f);
+                float burst = MathHelper.Clamp((Age - TelegraphTime) / 5f, 0f, 1f);   // 释放头 5 帧爆亮
+                float intensity = MathHelper.Clamp(lifeProg, 0.2f, 1f) * (0.75f + 0.45f * (1f - burst));
+                BaihuVFX.DrawClawRend(start, end, 30f, intensity, 1f, release: true);
             }
             return false;
         }

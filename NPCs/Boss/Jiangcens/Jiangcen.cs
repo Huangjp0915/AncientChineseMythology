@@ -10,15 +10,20 @@ using Terraria.GameContent;
 using Terraria.GameContent.ItemDropRules;
 using Terraria.Graphics.Effects;
 using Terraria.ID;
+using Terraria.Localization;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.NPCs.Boss.Jiangcens
 {
-    // 将臣 Jiangcen —— 飞僵尸将 / 雷锤主题 Boss 重做
-    // 设计：阶段枚举 + 每攻击带可读预告（telegraph）的子状态机；
-    //       六柄环绕重锤变为功能性武器（蓄力变红→沿径向猛砸）；
-    //       50% 进入「雷狱」阶段：边界雷霆 + 锚点链式闪电；
-    //       移除「距离=狂暴」反模式，玩家过远改用僵尸跳近身。
+    // ============================================================
+    // 将臣 Jiangcen —— 四大僵尸始祖之首 / 尸将军 V3 重做
+    // 主题: 尸将军・军令・天罚雷狱。攻击语言统一为"军阵指令":
+    //   点将(六锤受命猛砸) / 布阵(尸坟唤将) / 将令(雷印点名) / 天罚(雷狱・万雷点将)
+    // 移动语言 = 僵尸跳(蹲伏→弹射→空中僵直→直线下砸), 不飞行追击。
+    // 三大演出: 天雷显形入场 / 雷狱降临换阶段 / 天罚轰顶死亡(CheckDead 拦截)。
+    // 弹幕组见 JiangcenProjectiles.cs, 环绕重锤见 JiangcenHammer.cs,
+    // 屏幕氛围见 JiangcenThunderPrisonSystem.cs, 着色器工具见 JiangcenVFX.cs。
+    // ============================================================
     [AutoloadBossHead]
     internal class Jiangcen : ModNPC
     {
@@ -26,19 +31,22 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
         {
             Intro = 0,
             Phase1 = 1,
-            Transition = 2, //雷狱化演出
+            Transition = 2, //雷狱降临演出
             Phase2 = 3,
+            Death = 4,      //死亡演出(CheckDead 拦截)
         }
 
         public enum Attack
         {
-            Reposition = 0, //过渡 / 选招中枢
-            HammerSlam = 1, //重锤蓄力猛砸
-            JiangshiHop = 2, //僵尸三连跳 + 落地震波
-            ThunderHammerThrow = 3, //雷锤回旋投掷
-            CorpseRain = 4, //尸坟 → 尸手上抓
-            GeneralsOrder = 5, //将令：冻结 + 镜像锤魂
-            ChainLightning = 6, //雷狱：三锚点链式闪电
+            Reposition = 0,        //连接拍 / 选招中枢
+            HammerSlam = 1,        //点将猛砸
+            JiangshiHop = 2,       //僵尸三连跳 + 落地震波
+            ThunderHammerThrow = 3,//雷锤回旋投掷
+            CorpseRain = 4,        //尸坟唤将(波浪尸手)
+            GeneralsOrder = 5,     //将令雷印(点名) + 镜像锤魂
+            ChainLightning = 6,    //雷狱链电(4锚菱形电网)
+            ThunderRollCall = 7,   //万雷点将(终章走廊落雷)
+            HammerPrison = 8,      //六锤连狱(弦线对穿)
         }
 
         public BossPhase Phase {
@@ -52,38 +60,57 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
         public ref float SubStep => ref NPC.ai[2];
         public ref float AttackTimer => ref NPC.ai[3];
 
-        //供环绕重锤读取的同步字段
+        //供环绕重锤/弹幕读取的同步字段
         public float HammerOrbit;
         public bool HammersChanneling;
         public Vector2 ArenaCenter;
+        public float ChordBaseAngle;   //六锤连狱的边界基准角
+        public bool InPhase2 => enteredPhase2;
+        public float PrisonRadius => BoundaryRadius * 0.72f;
 
         private bool enteredPhase2;
         private int attackIndex;
         private float generalTimer;
-        private bool spawnedHammers;
-        private bool didIntroShock;
-        private float introAppear;
+        private int despawnTimer;
 
-        //子计数器（仅服务器/单机运行 AI，安全使用字段）
+        //子状态数据(状态切换时 netUpdate 同步)
+        private Vector2 jumpTarget;
         private int hopCount;
-        private Vector2 storePos;
-        private readonly Vector2[] graveMarks = new Vector2[5];
+        private readonly Vector2[] graveMarks = new Vector2[6];
         private int phase2HazardTimer;
+        private int safeLaneIndex;
 
-        //V2 演出标量(纯本地视觉, 平滑过渡): 雷牢可见度 / 雷暴压暗
+        //纯本地视觉标量
         private float prisonVis;
         private float stormVis;
+        private float instabilityVis;
+        private float introDissolve = 1f;  //入场显形: 1=未显形
+        private float deathDissolve;       //死亡崩解: 1=完全消散
+        private float eyeGlow;
+        private float bodyArcGlow;
+        private float armSnap;             //点将抬臂 snap
+        private Vector2 bodySquash = Vector2.One;
 
         private const float BoundaryRadius = 1300f;
 
+        //手写节奏数组: 压制(跳) ↔ 布阵(坟/链电) ↔ 爆发(锤) 交替, 攻击序列本身就是编排
         private static readonly Attack[] Phase1Rotation = {
-            Attack.HammerSlam, Attack.JiangshiHop, Attack.ThunderHammerThrow,
-            Attack.CorpseRain, Attack.GeneralsOrder,
+            Attack.JiangshiHop, Attack.HammerSlam, Attack.ThunderHammerThrow,
+            Attack.JiangshiHop, Attack.CorpseRain, Attack.GeneralsOrder,
         };
         private static readonly Attack[] Phase2Rotation = {
-            Attack.HammerSlam, Attack.ChainLightning, Attack.JiangshiHop,
-            Attack.CorpseRain, Attack.ThunderHammerThrow, Attack.GeneralsOrder,
+            Attack.JiangshiHop, Attack.ChainLightning, Attack.HammerSlam,
+            Attack.JiangshiHop, Attack.GeneralsOrder, Attack.HammerPrison,
+            Attack.CorpseRain, Attack.ThunderHammerThrow,
         };
+        //终章(<18%): 万雷点将领衔, 全部强招入池
+        private static readonly Attack[] FinalRotation = {
+            Attack.ThunderRollCall, Attack.JiangshiHop, Attack.ChainLightning,
+            Attack.HammerSlam, Attack.JiangshiHop, Attack.HammerPrison,
+            Attack.GeneralsOrder, Attack.JiangshiHop,
+        };
+
+        private bool IsFinalPhase => enteredPhase2 && NPC.life <= NPC.lifeMax * 0.18f;
 
         public override void SetStaticDefaults() {
             Main.npcFrameCount[Type] = 1;
@@ -97,10 +124,10 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
             NPC.npcSlots = 14f;
             NPC.width = 140;
             NPC.height = 140;
-            NPC.defense = 25;
-            NPC.damage = 60;
+            NPC.defense = 36;
+            NPC.damage = 70;
             NPC.value = Item.buyPrice(0, 50, 0, 0);
-            NPC.lifeMax = 420000;
+            NPC.lifeMax = 480000;
             NPC.aiStyle = -1;
             AIType = -1;
             NPC.knockBackResist = 0f;
@@ -125,6 +152,24 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
             return false;
         }
 
+        // ===== 死亡拦截: 尸祖之死必须是一场天罚 =====
+        public override bool CheckDead() {
+            if (Phase != BossPhase.Death) {
+                NPC.life = 1;
+                NPC.dontTakeDamage = true;
+                Phase = BossPhase.Death;
+                SubStep = 0;
+                AttackTimer = 0;
+                HammersChanneling = false;
+                if (!VaultUtils.isClient) {
+                    ClearHostileProjectiles();
+                }
+                NPC.netUpdate = true;
+                return false;
+            }
+            return true;
+        }
+
         public override bool? DrawHealthBar(byte hbPosition, ref float scale, ref Vector2 position) {
             scale = 1.5f;
             return base.DrawHealthBar(hbPosition, ref scale, ref position);
@@ -138,19 +183,27 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
             writer.Write(HammerOrbit);
             writer.Write(HammersChanneling);
             writer.WriteVector2(ArenaCenter);
+            writer.Write(ChordBaseAngle);
             writer.Write(enteredPhase2);
             writer.Write(attackIndex);
+            writer.WriteVector2(jumpTarget);
+            writer.Write(hopCount);
+            writer.Write(safeLaneIndex);
         }
 
         public override void ReceiveExtraAI(BinaryReader reader) {
             HammerOrbit = reader.ReadSingle();
             HammersChanneling = reader.ReadBoolean();
             ArenaCenter = reader.ReadVector2();
+            ChordBaseAngle = reader.ReadSingle();
             enteredPhase2 = reader.ReadBoolean();
             attackIndex = reader.ReadInt32();
+            jumpTarget = reader.ReadVector2();
+            hopCount = reader.ReadInt32();
+            safeLaneIndex = reader.ReadInt32();
         }
 
-        internal int GetBossDamage(float scaling = 1f) => Math.Max(1, (int)(NPC.damage * scaling));
+        internal int GetBossDamage(float scaling = 1f) => Math.Max(1, (int)(NPC.defDamage * scaling));
 
         private void SetAttack(Attack a) {
             CurrentAttack = a;
@@ -161,25 +214,59 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
             NPC.netUpdate = true;
         }
 
+        private void ClearHostileProjectiles() {
+            for (int i = 0; i < Main.maxProjectiles; i++) {
+                Projectile p = Main.projectile[i];
+                if (p.active && p.hostile && p.damage > 0) {
+                    p.Kill();
+                }
+            }
+        }
+
+        private void Announce(string key, Color color) {
+            if (Main.dedServ)
+                return;
+            string text = Language.GetTextValue("Mods.AncientChineseMythology.NPCs.Jiangcen." + key);
+            CombatText.NewText(NPC.getRect(), color, text, true);
+        }
+
+        // ===== 锤指令 =====
+        private void CommandHammer(int index, int state, bool onlyIdle = false) {
+            foreach (NPC npc in Main.ActiveNPCs) {
+                if (npc.ModNPC is JiangcenHammer && (int)npc.ai[0] == NPC.whoAmI && (int)npc.ai[1] == index) {
+                    if (onlyIdle && npc.ai[2] != 0)
+                        return;
+                    npc.ai[2] = state;
+                    npc.ai[3] = 0;
+                    npc.netUpdate = true;
+                    return;
+                }
+            }
+        }
+
+        private void CommandAllHammers(int state) {
+            foreach (NPC npc in Main.ActiveNPCs) {
+                if (npc.ModNPC is JiangcenHammer && (int)npc.ai[0] == NPC.whoAmI && npc.ai[2] < 7) {
+                    npc.ai[2] = state;
+                    npc.ai[3] = 0;
+                    npc.netUpdate = true;
+                }
+            }
+        }
+
         public override void AI() {
             generalTimer++;
 
-            //出场：天空、生成六锤、记录场地中心
-            if (!spawnedHammers) {
-                spawnedHammers = true;
-                if (!VaultUtils.isClient) {
-                    for (int i = 0; i < 6; i++) {
-                        NPC.NewNPCDirect(NPC.GetSource_FromAI(), NPC.Center, ModContent.NPCType<JiangcenHammer>(), NPC.whoAmI, NPC.whoAmI, i);
-                    }
-                }
-                for (int i = 0; i < 50; i++) {
-                    Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Shadowflame, Main.rand.NextFloat(-4, 4), Main.rand.NextFloat(-4, 4), 150, Color.DarkRed, 2f);
-                }
-                SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.5f }, NPC.position);
-            }
-
+            //天幕激活(纯客户端)
             if (!VaultUtils.isServer && !SkyManager.Instance[JiangcenSky.name].IsActive()) {
                 SkyManager.Instance.Activate(JiangcenSky.name);
+            }
+
+            //死亡演出优先于一切(无目标也照常播完)
+            if (Phase == BossPhase.Death) {
+                RunDeath();
+                PublishPresentation();
+                return;
             }
 
             NPC.TargetClosest();
@@ -188,19 +275,34 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
                 NPC.TargetClosest();
                 target = Main.player[NPC.target];
                 if (!target.Alives()) {
-                    NPC.velocity *= 0.96f;
+                    //无人可战: 收势升空离场
+                    NPC.damage = 0;
                     HammersChanneling = false;
                     HammerOrbit += 0.03f;
+                    if (++despawnTimer > 120) {
+                        NPC.velocity.Y -= 0.4f;
+                        NPC.velocity.X *= 0.98f;
+                        NPC.EncourageDespawn(20);
+                    }
+                    else {
+                        NPC.velocity *= 0.96f;
+                    }
+                    PublishPresentation();
                     return;
                 }
             }
+            despawnTimer = 0;
+
+            //接触伤害默认关闭, 只有僵尸跳下砸段开启(伤害窗与视觉对齐)
+            NPC.damage = 0;
 
             //环绕重锤公转：仅在非引导时推进（引导时锤悬停以便阅读）
-            if (!HammersChanneling) HammerOrbit += 0.03f;
+            if (!HammersChanneling)
+                HammerOrbit += 0.03f;
 
             AttackTimer++;
 
-            //雷狱阶段的边界雷霆（站墙=被劈）
+            //雷狱阶段的边界雷霆（出界=被劈）
             if (Phase == BossPhase.Phase2) {
                 Phase2BoundaryHazard(target);
             }
@@ -217,60 +319,150 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
                     break;
             }
 
+            //视觉标量衰减
+            armSnap = Math.Max(0f, armSnap - 1f);
+            bodySquash = Vector2.Lerp(bodySquash, Vector2.One, 0.12f);
+
             PublishPresentation();
         }
 
-        // ===== V2 演出发布: 雷牢可见度 / 雷暴压暗 平滑过渡 + 每帧发布给屏幕系统 =====
+        // ===== 演出标量发布: 平滑过渡 + 每帧发布给屏幕系统/天幕 =====
         private void PublishPresentation() {
             if (Main.dedServ)
                 return;
 
             float prisonTarget = 0f;
             float stormTarget = 0f;
+            float instabilityTarget = 0f;
+            float skyPhase = enteredPhase2 ? 1f : 0f;
+            float skyDeath = 0f;
+
             if (Phase == BossPhase.Transition) {
-                //雷牢降临: 随过渡演出推进合拢
-                prisonTarget = MathHelper.Clamp(AttackTimer / 90f, 0f, 1f);
-                stormTarget = prisonTarget;
+                //军鼓推进雷暴, 牢体在 impact 拍才点亮(SubStep 3 直接 snap prisonVis)
+                stormTarget = MathHelper.Clamp((SubStep + 1) * 0.25f, 0f, 1f);
+                prisonTarget = SubStep >= 3 ? 1f : 0f;
+                skyPhase = 1f;
             }
             else if (Phase == BossPhase.Phase2) {
                 prisonTarget = 1f;
                 stormTarget = 1f;
+                if (IsFinalPhase)
+                    instabilityTarget = 0.35f;
+                if (CurrentAttack == Attack.ThunderRollCall)
+                    instabilityTarget = 0.5f;
+            }
+            else if (Phase == BossPhase.Death) {
+                //坠地→挣扎期雷牢失稳衰减, 天罚后彻底熄灭
+                bool annihilated = SubStep >= 4;
+                prisonTarget = annihilated ? 0f : 0.55f;
+                stormTarget = annihilated ? 0.25f : 0.7f;
+                instabilityTarget = annihilated ? 1f : MathHelper.Clamp(0.3f + (float)SubStep * 0.2f, 0f, 1f);
+                skyDeath = annihilated ? 0.35f : MathHelper.Clamp((float)SubStep * 0.3f, 0f, 0.9f);
+                skyPhase = 1f;
             }
 
-            prisonVis = MathHelper.Lerp(prisonVis, prisonTarget, 0.06f);
+            prisonVis = MathHelper.Lerp(prisonVis, prisonTarget, prisonTarget > prisonVis ? 0.5f : 0.06f);
             stormVis = MathHelper.Lerp(stormVis, stormTarget, 0.05f);
+            instabilityVis = MathHelper.Lerp(instabilityVis, instabilityTarget, 0.06f);
+
+            //红目/缠电辉光
+            float eyeTarget = Phase == BossPhase.Intro ? MathHelper.Clamp((AttackTimer - 80f) / 60f, 0f, 1f) : 1f;
+            if (Phase == BossPhase.Death)
+                eyeTarget = SubStep >= 4 ? 0f : 0.8f;
+            eyeGlow = MathHelper.Lerp(eyeGlow, eyeTarget, 0.05f);
+
+            float arcTarget = 0.18f;
+            if (enteredPhase2) arcTarget = 0.42f;
+            if (Phase == BossPhase.Transition) arcTarget = 0.3f + (float)SubStep * 0.2f;
+            if (CurrentAttack == Attack.ThunderRollCall && Phase == BossPhase.Phase2) arcTarget = 0.9f;
+            if (Phase == BossPhase.Death) arcTarget = SubStep >= 4 ? 0f : 0.85f;
+            if (Phase == BossPhase.Intro) arcTarget = eyeGlow * 0.25f;
+            bodyArcGlow = MathHelper.Lerp(bodyArcGlow, arcTarget, 0.07f);
 
             JiangcenThunderPrisonSystem.Publish(
                 ArenaCenter == Vector2.Zero ? NPC.Center : ArenaCenter,
-                BoundaryRadius * 0.72f, prisonVis, stormVis,
-                Phase == BossPhase.Phase2, (float)Main.GlobalTimeWrappedHourly);
+                PrisonRadius, prisonVis, stormVis,
+                Phase == BossPhase.Phase2, (float)Main.GlobalTimeWrappedHourly, instabilityVis);
+            JiangcenSky.PublishState(skyPhase, skyDeath);
         }
 
+        // ============================================================
+        //  入场: 雷暴压城 → 天雷显形 → 静立亮目 → 六锤点兵 → 长啸
+        // ============================================================
         private void RunIntro(Player target) {
-            if (ArenaCenter == Vector2.Zero) ArenaCenter = target.Center;
+            NPC.dontTakeDamage = true;
 
-            introAppear = MathHelper.Clamp(introAppear + 1f / 120f, 0, 1);
-            Vector2 desired = target.Center + new Vector2(0, -320);
-            NPC.Center += (desired - NPC.Center) * 0.08f;
-            NPC.velocity *= 0.85f;
+            if (AttackTimer == 1) {
+                ArenaCenter = target.Center;
+                //显形点: 玩家侧上方
+                jumpTarget = target.Center + new Vector2(target.direction * -240f, -220f);
+                NPC.Center = jumpTarget;
+                NPC.velocity = Vector2.Zero;
+                introDissolve = 1f;
+                NPC.netUpdate = true;
+            }
 
-            if (!VaultUtils.isServer && generalTimer % 4 == 0) {
-                for (int i = 0; i < 5; i++) {
-                    Vector2 off = Main.rand.NextVector2CircularEdge(90, 90) * (1 - introAppear);
-                    int d = Dust.NewDust(NPC.Center + off, 0, 0, DustID.Shadowflame, 0, 0, 150, Color.DarkRed, Main.rand.NextFloat(1.2f, 2.6f));
-                    Main.dust[d].noGravity = true;
-                    Main.dust[d].velocity = -off.SafeNormalize(Vector2.Zero) * 2.4f;
+            NPC.velocity *= 0.9f;
+
+            //远景雷暴前兆
+            if (AttackTimer == 22 || AttackTimer == 48) {
+                JiangcenSky.TriggerFlash(0.45f);
+                SoundEngine.PlaySound(SoundID.Thunder with { Volume = 0.55f, Pitch = -0.4f }, target.Center);
+            }
+
+            //t=70: 天雷轰落, 尸将军在雷柱中显形
+            if (AttackTimer == 70) {
+                SoundEngine.PlaySound(SoundID.Thunder with { Volume = 1.1f, Pitch = -0.15f }, NPC.Center);
+                ACMScreenShakeSystem.Add(9f);
+                JiangcenThunderPrisonSystem.FlashWhite(0.4f);
+                JiangcenThunderPrisonSystem.Pulse(NPC.Center, 0.8f, TelegraphColors.Lightning);
+                JiangcenSky.TriggerFlash(1f);
+                if (!VaultUtils.isClient) {
+                    //纯视觉显形雷柱
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
+                        ModContent.ProjectileType<JiangcenLightningStrike>(), 0, 0f, Main.myPlayer, 0, 2, 1500);
                 }
             }
 
-            if (!didIntroShock && introAppear > 0.9f) {
-                didIntroShock = true;
-                SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.4f, Volume = 1.2f }, NPC.Center);
-                ACMScreenShakeSystem.Add(10f);
-                JiangcenThunderPrisonSystem.Pulse(NPC.Center, 0.7f, new Color(180, 40, 50));
+            //显形: 溶解阈值 1→0 (雷青灼边)
+            if (AttackTimer > 70) {
+                introDissolve = Math.Max(0f, introDissolve - 1f / 30f);
             }
 
-            if (AttackTimer > 140) {
+            //静立期: 只有低鸣与细尘(menace is stillness)
+            if (!VaultUtils.isServer && AttackTimer > 70 && AttackTimer < 150 && generalTimer % 5 == 0) {
+                Vector2 off = Main.rand.NextVector2CircularEdge(90, 90);
+                int d = Dust.NewDust(NPC.Center + off, 0, 0, DustID.Shadowflame, 0, 0, 150, Color.DarkRed, 1.6f);
+                Main.dust[d].noGravity = true;
+                Main.dust[d].velocity = -off.SafeNormalize(Vector2.Zero) * 1.6f;
+            }
+
+            //六锤点兵: 每 8 帧一柄自脚下拔出
+            for (int i = 0; i < 6; i++) {
+                if (AttackTimer == 150 + i * 8) {
+                    SoundEngine.PlaySound(SoundID.Item52 with { Pitch = -0.4f + i * 0.08f, Volume = 0.9f }, NPC.Center);
+                    if (!VaultUtils.isClient) {
+                        NPC.NewNPCDirect(NPC.GetSource_FromAI(), NPC.Center + new Vector2(0, 60), ModContent.NPCType<JiangcenHammer>(), NPC.whoAmI, NPC.whoAmI, i);
+                    }
+                    if (!VaultUtils.isServer) {
+                        for (int k = 0; k < 8; k++) {
+                            int d = Dust.NewDust(NPC.Center + new Vector2(0, 50), 10, 10, DustID.Electric, 0, -2f, 100, default, 1.5f);
+                            Main.dust[d].noGravity = true;
+                        }
+                    }
+                }
+            }
+
+            //长啸开战
+            if (AttackTimer == 198) {
+                SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.45f, Volume = 1.25f }, NPC.Center);
+                ACMScreenShakeSystem.Add(10f);
+                JiangcenThunderPrisonSystem.Pulse(NPC.Center, 0.7f, JiangcenVFX.CorpseRed);
+                JiangcenSky.TriggerFlash(1.1f);
+            }
+
+            if (AttackTimer > 215) {
+                NPC.dontTakeDamage = false;
                 Phase = BossPhase.Phase1;
                 attackIndex = -1;
                 SetAttack(Attack.Reposition);
@@ -300,17 +492,35 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
                 case Attack.ChainLightning:
                     Run_ChainLightning(target);
                     break;
+                case Attack.ThunderRollCall:
+                    Run_ThunderRollCall(target);
+                    break;
+                case Attack.HammerPrison:
+                    Run_HammerPrison(target);
+                    break;
             }
         }
 
-        // ===== 中枢：过渡 + 选招 =====
+        //雷狱内的悬停锚点(栓绳: 不许把玩家引出牢)
+        private Vector2 ClampToPrison(Vector2 pos, float margin = 160f) {
+            if (!enteredPhase2 || ArenaCenter == Vector2.Zero)
+                return pos;
+            Vector2 rel = pos - ArenaCenter;
+            float maxR = PrisonRadius - margin;
+            if (rel.LengthSquared() > maxR * maxR)
+                pos = ArenaCenter + rel.SafeNormalize(Vector2.Zero) * maxR;
+            return pos;
+        }
+
+        // ===== 连接拍: 僵直漂浮 + 选招 =====
         private void Run_Reposition(Player target) {
-            Vector2 hover = target.Center + new Vector2(0, -300);
-            NPC.Center += (hover - NPC.Center) * 0.08f;
+            Vector2 hover = ClampToPrison(target.Center + new Vector2(0, -300));
+            NPC.Center += (hover - NPC.Center) * 0.07f;
             NPC.velocity *= 0.9f;
 
-            if (AttackTimer > 36) {
-                //阶段转换：50% 一次性进入雷狱（改规则，而非加速）
+            int wait = IsFinalPhase ? 14 : 24;
+            if (AttackTimer > wait) {
+                //阶段转换：50% 一次性进入雷狱（改规则，而非加数值）
                 if (!enteredPhase2 && NPC.life <= NPC.lifeMax * 0.5f) {
                     Phase = BossPhase.Transition;
                     SubStep = 0;
@@ -320,78 +530,268 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
                 }
 
                 attackIndex++;
-                Attack[] rotation = enteredPhase2 ? Phase2Rotation : Phase1Rotation;
+                Attack[] rotation = IsFinalPhase ? FinalRotation : (enteredPhase2 ? Phase2Rotation : Phase1Rotation);
                 Attack next = rotation[((attackIndex % rotation.Length) + rotation.Length) % rotation.Length];
 
                 //玩家过远：用僵尸跳贴近（位置博弈，而非提高 DPS）
-                if (Vector2.Distance(target.Center, NPC.Center) > 1400f) {
+                if (Vector2.Distance(target.Center, NPC.Center) > 1500f) {
                     next = Attack.JiangshiHop;
                 }
                 SetAttack(next);
             }
         }
 
-        // ===== 雷狱化演出 =====
+        // ============================================================
+        //  雷狱降临(50% 换阶段演出): 收锤升空 → 三声军鼓钉雷矛 → 静默 → 合拢 impact
+        // ============================================================
         private void RunTransition(Player target) {
-            NPC.velocity *= 0.85f;
             NPC.dontTakeDamage = true;
+            HammersChanneling = true;
+            HammerOrbit += 0.09f; //收拢锤加速环转
 
-            if (AttackTimer == 1) {
-                ArenaCenter = target.Center;
-                SoundEngine.PlaySound(SoundID.NPCDeath6 with { Pitch = -0.5f, Volume = 1.3f }, NPC.Center);
-                //雷牢降临: 一次性大震 + Boss 中心雷暴泛光冲击波
-                ACMScreenShakeSystem.Add(12f);
-                JiangcenThunderPrisonSystem.Pulse(NPC.Center, 1f, TelegraphColors.Lightning);
+            if (SubStep == 0) {
+                if (AttackTimer == 1) {
+                    ArenaCenter = target.Center;
+                    if (!VaultUtils.isClient)
+                        ClearHostileProjectiles();
+                    CommandAllHammers(4);
+                    SoundEngine.PlaySound(SoundID.NPCDeath6 with { Pitch = -0.5f, Volume = 1.3f }, NPC.Center);
+                    Announce("ThunderPrison", TelegraphColors.Lightning);
+                    NPC.netUpdate = true;
+                }
+                //升空至场心上方
+                Vector2 rise = ArenaCenter + new Vector2(0, -340);
+                NPC.Center += (rise - NPC.Center) * 0.07f;
+                NPC.velocity *= 0.9f;
+                if (AttackTimer > 60) {
+                    SubStep = 1;
+                    AttackTimer = 0;
+                    NPC.netUpdate = true;
+                }
             }
-
-            //边界裂纹环：标出雷狱场地范围
-            if (!VaultUtils.isServer && AttackTimer % 3 == 0) {
-                float ang = Main.rand.NextFloat(MathHelper.TwoPi);
-                Vector2 edge = ArenaCenter + ang.ToRotationVector2() * BoundaryRadius;
-                int d = Dust.NewDust(edge, 0, 0, DustID.Electric, 0, 0, 100, default, 2.2f);
-                Main.dust[d].noGravity = true;
-                Main.dust[d].velocity = (ArenaCenter - edge).SafeNormalize(Vector2.Zero) * 3f;
+            else if (SubStep == 1) {
+                NPC.velocity *= 0.9f;
+                //三声军鼓: 每 40 帧一声, 每声在边界钉入 4 根雷矛(共 12 根 30° 均布)
+                for (int drum = 0; drum < 3; drum++) {
+                    if (AttackTimer == 1 + drum * 40) {
+                        SoundEngine.PlaySound(SoundID.DD2_MonkStaffGroundImpact with { Pitch = -0.5f + drum * 0.15f, Volume = 1.3f }, NPC.Center);
+                        ACMScreenShakeSystem.Add(5f + drum * 2f);
+                        JiangcenSky.TriggerFlash(0.5f + drum * 0.25f);
+                        JiangcenThunderPrisonSystem.Pulse(ArenaCenter, 0.4f + drum * 0.15f, TelegraphColors.Lightning);
+                        if (!VaultUtils.isClient) {
+                            for (int k = 0; k < 4; k++) {
+                                float ang = MathHelper.ToRadians(drum * 30f + k * 90f + 15f);
+                                Vector2 spot = ArenaCenter + ang.ToRotationVector2() * PrisonRadius;
+                                Projectile.NewProjectile(NPC.GetSource_FromAI(), spot, Vector2.Zero,
+                                    ModContent.ProjectileType<JiangcenLightningStrike>(), 0, 0f, Main.myPlayer, 0, 2, 1600);
+                            }
+                        }
+                    }
+                }
+                if (AttackTimer > 125) {
+                    SubStep = 2;
+                    AttackTimer = 0;
+                    NPC.netUpdate = true;
+                }
             }
-
-            if (AttackTimer % 18 == 0 && !VaultUtils.isClient) {
-                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
-                    ModContent.ProjectileType<JiangcenTelegraphMark>(), 0, 0f, Main.myPlayer, 3, 60);
+            else if (SubStep == 2) {
+                //静默收拢: 尖啸前的吸气, 一切熄灭
+                NPC.velocity *= 0.85f;
+                if (AttackTimer > 30) {
+                    SubStep = 3;
+                    AttackTimer = 0;
+                    //雷牢合拢 impact
+                    prisonVis = 1f;
+                    enteredPhase2 = true;
+                    SoundEngine.PlaySound(SoundID.Thunder with { Pitch = -0.3f, Volume = 1.2f }, NPC.Center);
+                    SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.2f, Volume = 1.2f }, NPC.Center);
+                    ACMScreenShakeSystem.Add(14f);
+                    JiangcenThunderPrisonSystem.FlashWhite(0.75f);
+                    JiangcenThunderPrisonSystem.Pulse(ArenaCenter, 1f, TelegraphColors.Lightning);
+                    JiangcenSky.TriggerFlash(1.4f);
+                    NPC.netUpdate = true;
+                }
             }
-
-            if (AttackTimer > 150) {
-                enteredPhase2 = true;
-                NPC.dontTakeDamage = false;
-                Phase = BossPhase.Phase2;
-                attackIndex = -1;
-                SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.2f, Volume = 1.2f }, NPC.Center);
-                SetAttack(Attack.Reposition);
+            else {
+                //落回战位, 给玩家缓冲
+                Vector2 back = ClampToPrison(target.Center + new Vector2(0, -300));
+                NPC.Center += (back - NPC.Center) * 0.06f;
+                NPC.velocity *= 0.9f;
+                if (AttackTimer == 30) {
+                    CommandAllHammers(0);
+                    HammersChanneling = false;
+                }
+                if (AttackTimer > 55) {
+                    NPC.dontTakeDamage = false;
+                    Phase = BossPhase.Phase2;
+                    attackIndex = -1;
+                    SetAttack(Attack.Reposition);
+                    AttackTimer = -30; //首招额外缓冲
+                }
             }
         }
 
-        // ===== 攻击 1：重锤蓄力猛砸（功能化环绕锤）=====
+        // ============================================================
+        //  死亡演出: 坠地 → 六锤失能 → 挣扎 → 天罚预兆 → 静默 → 六雷轰顶 → 溶解
+        // ============================================================
+        private void RunDeath() {
+            NPC.dontTakeDamage = true;
+            NPC.damage = 0;
+            AttackTimer++;
+
+            if (SubStep == 0) {
+                //失能坠地(重力), 落地弹跳一次
+                if (AttackTimer == 1) {
+                    SoundEngine.PlaySound(SoundID.NPCDeath14 with { Pitch = -0.5f, Volume = 1.2f }, NPC.Center);
+                    NPC.velocity = new Vector2(NPC.velocity.X * 0.3f, -3f);
+                }
+                NPC.velocity.X *= 0.97f;
+                NPC.velocity.Y = Math.Min(NPC.velocity.Y + 0.5f, 13f);
+                float groundY = GetGroundY(NPC.Center.X, NPC.Center.Y - 60);
+                if (NPC.Bottom.Y >= groundY - 4 && NPC.velocity.Y > 0) {
+                    if (NPC.localAI[0] == 0) {
+                        //第一次触地: 弹跳
+                        NPC.localAI[0] = 1;
+                        NPC.velocity.Y = -4.5f;
+                        NPC.velocity.X *= 0.5f;
+                        ACMScreenShakeSystem.Add(7f);
+                        SoundEngine.PlaySound(SoundID.Item70 with { Pitch = -0.6f }, NPC.Center);
+                        bodySquash = new Vector2(1.25f, 0.72f);
+                        SpawnGroundDust(18);
+                    }
+                    else {
+                        //落定
+                        NPC.velocity = Vector2.Zero;
+                        NPC.Bottom = new Vector2(NPC.Bottom.X, groundY);
+                        SubStep = 1;
+                        AttackTimer = 0;
+                        bodySquash = new Vector2(1.15f, 0.82f);
+                        NPC.netUpdate = true;
+                    }
+                }
+                if (AttackTimer > 120) { //高空打死的保底
+                    SubStep = 1;
+                    AttackTimer = 0;
+                    NPC.velocity = Vector2.Zero;
+                    NPC.netUpdate = true;
+                }
+            }
+            else if (SubStep == 1) {
+                //挣扎: 两次缓慢撑起又跪落(呼吸感), 电弧失控
+                NPC.velocity = Vector2.Zero;
+                float t = AttackTimer / 90f;
+                float rise = JiangcenVFX.Bump(t * 2f % 1f) * 14f;
+                bodySquash = Vector2.Lerp(bodySquash, new Vector2(1f - rise * 0.006f, 1f + rise * 0.006f), 0.2f);
+                if (!VaultUtils.isServer && generalTimer % 3 == 0) {
+                    int d = Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Electric, 0, 0, 120, default, Main.rand.NextFloat(1f, 2f));
+                    Main.dust[d].noGravity = true;
+                    Main.dust[d].velocity = Main.rand.NextVector2Circular(3, 3);
+                }
+                if (AttackTimer == 30 || AttackTimer == 72) {
+                    SoundEngine.PlaySound(SoundID.Zombie20 with { Pitch = -0.6f, Volume = 1.1f }, NPC.Center);
+                }
+                if (AttackTimer > 90) {
+                    SubStep = 2;
+                    AttackTimer = 0;
+                    NPC.netUpdate = true;
+                }
+            }
+            else if (SubStep == 2) {
+                //天罚预兆: 收束预告 + 递升轰鸣
+                NPC.velocity = Vector2.Zero;
+                float t = MathHelper.Clamp(AttackTimer / 60f, 0f, 1f);
+                ACMScreenShakeSystem.Add(t * t * 5f);
+                if (AttackTimer % 12 == 0) {
+                    JiangcenSky.TriggerFlash(0.3f + t * 0.5f);
+                }
+                if (AttackTimer == 1) {
+                    SoundEngine.PlaySound(SoundID.DD2_DarkMageCastHeal with { Pitch = -0.6f, Volume = 1.2f }, NPC.Center);
+                }
+                if (AttackTimer > 60) {
+                    SubStep = 3;
+                    AttackTimer = 0;
+                    NPC.netUpdate = true;
+                }
+            }
+            else if (SubStep == 3) {
+                //静默 12 帧(一切熄灭)
+                NPC.velocity = Vector2.Zero;
+                if (AttackTimer > 12) {
+                    SubStep = 4;
+                    AttackTimer = 0;
+                    //六雷轰顶 impact
+                    SoundEngine.PlaySound(SoundID.Thunder with { Pitch = -0.2f, Volume = 1.3f }, NPC.Center);
+                    SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.4f, Volume = 1.2f }, NPC.Center);
+                    ACMScreenShakeSystem.Add(16f);
+                    JiangcenThunderPrisonSystem.FlashWhite(0.95f);
+                    JiangcenThunderPrisonSystem.Pulse(NPC.Center, 1f, Color.White);
+                    JiangcenSky.TriggerFlash(1.5f);
+                    if (!VaultUtils.isClient) {
+                        for (int i = 0; i < 6; i++) {
+                            Vector2 off = new Vector2((i - 2.5f) * 34f, 0);
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center + off, Vector2.Zero,
+                                ModContent.ProjectileType<JiangcenLightningStrike>(), 0, 0f, Main.myPlayer, 0, 2, 1600);
+                        }
+                    }
+                    NPC.netUpdate = true;
+                }
+            }
+            else {
+                //溶解崩解 → 真死
+                NPC.velocity = Vector2.Zero;
+                deathDissolve = MathHelper.Clamp(AttackTimer / 82f, 0f, 1f);
+                if (!VaultUtils.isServer && generalTimer % 2 == 0 && deathDissolve < 1f) {
+                    //灰烬上升
+                    int d = Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Ash, 0, -2.5f, 130, default, Main.rand.NextFloat(1f, 1.8f));
+                    Main.dust[d].noGravity = true;
+                    int e = Dust.NewDust(NPC.position, NPC.width, NPC.height, DustID.Electric, 0, -1f, 150, default, 1.2f);
+                    Main.dust[e].noGravity = true;
+                }
+                if (AttackTimer > 88 && !VaultUtils.isClient) {
+                    NPC.life = 0;
+                    NPC.checkDead(); //Phase==Death → CheckDead 放行 → OnKill/掉落
+                    NPC.netUpdate = true;
+                }
+            }
+        }
+
+        private void SpawnGroundDust(int count) {
+            if (VaultUtils.isServer)
+                return;
+            for (int i = 0; i < count; i++) {
+                int d = Dust.NewDust(NPC.Bottom - new Vector2(NPC.width / 2, 8), NPC.width, 14, DustID.Smoke, 0, 0, 120, default, 2f);
+                Main.dust[d].velocity = new Vector2(Main.rand.NextFloat(-5, 5), Main.rand.NextFloat(-6, -1));
+            }
+        }
+
+        // ============================================================
+        //  攻击 1: 点将猛砸 —— 本体逐柄点将, 六锤受命猛砸
+        // ============================================================
         private void Run_HammerSlam(Player target) {
             HammersChanneling = true;
-            Vector2 hover = target.Center + new Vector2(0, -260);
+            Vector2 hover = ClampToPrison(target.Center + new Vector2(0, -260));
             NPC.Center += (hover - NPC.Center) * 0.07f;
             NPC.velocity *= 0.9f;
 
-            int slamCount = Main.masterMode ? 5 : (Main.expertMode ? 4 : 3);
-            //空间分散的触发顺序，使猛砸扇面铺开
+            int slamCount = enteredPhase2 ? 6 : 4;
+            int cadence = enteredPhase2 ? 30 : 40;
+            bool pairs = IsFinalPhase; //终章两两齐发
             int[] order = { 0, 3, 1, 4, 2, 5 };
 
             if (AttackTimer == 6) {
                 SoundEngine.PlaySound(SoundID.DD2_DarkMageCastHeal with { Pitch = -0.4f }, NPC.Center);
             }
 
-            //每 46t 引导一柄锤进入蓄力（变红）→ 其自身蓄力 ~120t 后径向猛砸
-            int triggerStep = 46;
             for (int k = 0; k < slamCount; k++) {
-                if (AttackTimer == 10 + k * triggerStep) {
-                    CommandHammerSlam(order[k % 6]);
+                int fireAt = pairs ? 10 + (k / 2) * (cadence + 14) : 10 + k * cadence;
+                if (AttackTimer == fireAt) {
+                    CommandHammer(order[k % 6], 1, onlyIdle: true);
+                    armSnap = 10f; //点将抬臂 snap
+                    SoundEngine.PlaySound(SoundID.Item29 with { Pitch = 0.2f, Volume = 0.7f }, NPC.Center);
                 }
             }
 
-            //充能粒子
+            //蓄力汇聚粒子
             if (!VaultUtils.isServer && AttackTimer % 5 == 0) {
                 Vector2 off = Main.rand.NextVector2CircularEdge(120, 120);
                 int d = Dust.NewDust(NPC.Center + off, 0, 0, DustID.Shadowflame, 0, 0, 120, Color.DarkRed, 1.8f);
@@ -399,84 +799,135 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
                 Main.dust[d].velocity = -off.SafeNormalize(Vector2.Zero) * 3f;
             }
 
-            if (AttackTimer > 10 + slamCount * triggerStep + 170) {
+            int chargeTime = enteredPhase2 ? 70 : 90;
+            int lastFire = pairs ? 10 + ((slamCount - 1) / 2) * (cadence + 14) : 10 + (slamCount - 1) * cadence;
+            if (AttackTimer > lastFire + chargeTime + 110) {
                 HammersChanneling = false;
                 SetAttack(Attack.Reposition);
             }
         }
 
-        private void CommandHammerSlam(int hammerIndex) {
-            foreach (NPC npc in Main.ActiveNPCs) {
-                if (npc.ModNPC is JiangcenHammer && (int)npc.ai[0] == NPC.whoAmI && (int)npc.ai[1] == hammerIndex && npc.ai[2] == 0) {
-                    npc.ai[2] = 1; //charge
-                    npc.ai[3] = 0;
-                    npc.netUpdate = true;
-                    break;
-                }
-            }
-        }
-
-        // ===== 攻击 2：僵尸三连跳 + 落地震波 =====
+        // ============================================================
+        //  攻击 2: 僵尸三连跳 —— 蹲伏→弹射→空中僵直→直线下砸→震波
+        //  SubStep: 0 蹲伏预告 / 1 腾空 / 2 空中定格 / 3 下砸(接触伤害窗) / 4 落地恢复
+        // ============================================================
         private void Run_JiangshiHop(Player target) {
             HammersChanneling = false;
+            bool bigHop = hopCount == 2; //第三跳是"帅跳"
 
-            //SubStep: 0 预告(落点标线), 1 跳跃, 2 落地震波/恢复
             if (SubStep == 0) {
+                int crouchTime = bigHop ? 48 : 40;
                 NPC.velocity *= 0.8f;
                 if (AttackTimer == 1) {
-                    //预测落点 + 落地预告
-                    storePos = target.Center + target.velocity * 14f;
-                    storePos.Y = GetGroundY(storePos.X, target.Center.Y - 200) - NPC.height * 0.5f - 30;
+                    //预测落点(锁定于起跳前, 空中不追踪)
+                    jumpTarget = target.Center + target.velocity * 18f;
+                    jumpTarget = ClampToPrison(jumpTarget, 120f);
+                    jumpTarget.Y = GetGroundY(jumpTarget.X, Math.Min(target.Center.Y, NPC.Center.Y) - 200) - NPC.height * 0.5f + 6;
                     SoundEngine.PlaySound(SoundID.DD2_GoblinBomberThrow with { Pitch = -0.3f }, NPC.Center);
                     if (!VaultUtils.isClient) {
-                        Projectile.NewProjectile(NPC.GetSource_FromAI(), storePos, Vector2.Zero,
-                            ModContent.ProjectileType<JiangcenTelegraphMark>(), 0, 0f, Main.myPlayer, 0, 50);
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), jumpTarget, Vector2.Zero,
+                            ModContent.ProjectileType<JiangcenTelegraphMark>(), 0, 0f, Main.myPlayer, 0, crouchTime + 48);
                     }
+                    NPC.netUpdate = true;
                 }
-                //蓄势下蹲
+                //蹲伏压缩(蓄势), 末 8 帧 late-snap 下沉
+                float ct = AttackTimer / (float)crouchTime;
+                bodySquash = Vector2.Lerp(bodySquash, new Vector2(1.12f, 0.84f), 0.15f);
+                if (ct > 0.8f) {
+                    float sink = MathF.Pow((ct - 0.8f) / 0.2f, 3f);
+                    bodySquash = new Vector2(1.12f + sink * 0.08f, 0.84f - sink * 0.06f);
+                }
                 if (!VaultUtils.isServer && AttackTimer % 3 == 0) {
                     int d = Dust.NewDust(NPC.Bottom - new Vector2(NPC.width / 2, 0), NPC.width, 8, DustID.Shadowflame, 0, -2f, 120, Color.DarkRed, 1.6f);
                     Main.dust[d].noGravity = true;
                 }
-                if (AttackTimer > 46) {
+                if (AttackTimer > crouchTime) {
                     SubStep = 1;
                     AttackTimer = 0;
+                    //1 帧 set 起跳(launch is a set, not a ramp)
+                    float dx = jumpTarget.X - NPC.Center.X;
+                    NPC.velocity = new Vector2(MathHelper.Clamp(dx / 34f, -26f, 26f), bigHop ? -34f : -28f);
+                    bodySquash = new Vector2(0.84f, 1.18f);
+                    SoundEngine.PlaySound(SoundID.Item74 with { Pitch = -0.2f, Volume = 1.1f }, NPC.Center);
+                    ACMScreenShakeSystem.Add(4f);
+                    SpawnGroundDust(10);
                     NPC.netUpdate = true;
                 }
             }
             else if (SubStep == 1) {
-                //快速腾跃至落点
-                NPC.Center = Vector2.Lerp(NPC.Center, storePos, 0.28f);
-                NPC.velocity *= 0.6f;
-                if (AttackTimer > 16 || Vector2.Distance(NPC.Center, storePos) < 40f) {
+                //腾空: 手动重力, 后仰
+                NPC.velocity.Y += 0.9f;
+                NPC.velocity.X *= 0.995f;
+                if (NPC.velocity.Y > -3f || AttackTimer > 40) {
                     SubStep = 2;
                     AttackTimer = 0;
                     NPC.netUpdate = true;
-                    //落地砸击：震波环
+                }
+            }
+            else if (SubStep == 2) {
+                //空中僵直定格(menace 拍): 悬停一瞬, 对准落点
+                NPC.velocity *= 0.62f;
+                bodySquash = Vector2.Lerp(bodySquash, Vector2.One, 0.2f);
+                if (AttackTimer > 10) {
+                    SubStep = 3;
+                    AttackTimer = 0;
+                    //直线下砸(1 帧 set), 伤害窗开启
+                    NPC.velocity = (jumpTarget - NPC.Center).SafeNormalize(Vector2.UnitY) * (bigHop ? 50f : 44f);
+                    bodySquash = new Vector2(0.8f, 1.24f);
+                    SoundEngine.PlaySound(SoundID.Item71 with { Pitch = -0.5f, Volume = 1.1f }, NPC.Center);
+                    NPC.netUpdate = true;
+                }
+            }
+            else if (SubStep == 3) {
+                //下砸: 全程接触伤害(伤害窗与视觉严格对齐)
+                NPC.damage = GetBossDamage(1f);
+                if (Vector2.Distance(NPC.Center, jumpTarget) < 48f || NPC.Center.Y >= jumpTarget.Y - 10f || AttackTimer > 36) {
+                    SubStep = 4;
+                    AttackTimer = 0;
+                    NPC.Center = jumpTarget;
+                    NPC.velocity = Vector2.Zero;
+                    bodySquash = new Vector2(1.3f, 0.7f);
+                    //落地震波
                     SoundEngine.PlaySound(SoundID.Item70 with { Pitch = -0.4f, Volume = 1.2f }, NPC.Center);
-                    ACMScreenShakeSystem.Add(11f);
-                    JiangcenThunderPrisonSystem.Pulse(NPC.Bottom, 0.6f, new Color(200, 50, 40));
+                    ACMScreenShakeSystem.Add(bigHop ? 12f : 10f);
+                    JiangcenThunderPrisonSystem.Pulse(NPC.Bottom, 0.6f, JiangcenVFX.CorpseRed);
                     if (!VaultUtils.isClient) {
-                        int bolts = Main.masterMode ? 16 : (Main.expertMode ? 12 : 9);
+                        int bolts = Main.masterMode ? 14 : (Main.expertMode ? 11 : 8);
+                        float baseSpeed = Main.expertMode ? 10.5f : 9f;
+                        //双层交错震波环(内快外慢, 缝隙可读)
                         for (int i = 0; i < bolts; i++) {
                             float a = MathHelper.TwoPi * i / bolts;
-                            Vector2 v = a.ToRotationVector2() * (Main.expertMode ? 11f : 9f);
-                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Bottom, v,
-                                ModContent.ProjectileType<JiangcenShockBolt>(), GetBossDamage(0.8f), 2f, Main.myPlayer);
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Bottom, a.ToRotationVector2() * baseSpeed,
+                                ModContent.ProjectileType<JiangcenShockBolt>(), GetBossDamage(0.8f), 2f, Main.myPlayer, baseSpeed);
+                            float b = a + MathHelper.Pi / bolts;
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Bottom, b.ToRotationVector2() * baseSpeed * 0.62f,
+                                ModContent.ProjectileType<JiangcenShockBolt>(), GetBossDamage(0.75f), 2f, Main.myPlayer, baseSpeed * 0.62f);
+                        }
+                        //帅跳(第三跳)在雷狱阶段追加十字短震波
+                        if (bigHop && enteredPhase2) {
+                            for (int i = 0; i < 4; i++) {
+                                float a = MathHelper.PiOver2 * i + MathHelper.PiOver4;
+                                Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Bottom, a.ToRotationVector2() * baseSpeed * 1.35f,
+                                    ModContent.ProjectileType<JiangcenShockBolt>(), GetBossDamage(0.85f), 2f, Main.myPlayer, baseSpeed * 1.35f);
+                            }
                         }
                     }
                     if (!VaultUtils.isServer) {
-                        for (int i = 0; i < 26; i++) {
+                        SpawnGroundDust(22);
+                        for (int i = 0; i < 20; i++) {
                             int d = Dust.NewDust(NPC.Bottom - new Vector2(NPC.width / 2, 8), NPC.width, 14, DustID.Shadowflame, 0, 0, 100, Color.DarkRed, 2.4f);
                             Main.dust[d].noGravity = true;
                             Main.dust[d].velocity = new Vector2(Main.rand.NextFloat(-7, 7), Main.rand.NextFloat(-9, -2));
                         }
                     }
+                    NPC.netUpdate = true;
                 }
             }
             else {
+                //落地后 6 帧仍有接触伤害(碾在落点上的判定与视觉一致), 之后恢复
+                NPC.damage = AttackTimer <= 6 ? GetBossDamage(1f) : 0;
                 NPC.velocity *= 0.85f;
-                if (AttackTimer > 24) {
+                if (AttackTimer > 22) {
                     hopCount++;
                     if (hopCount >= 3) {
                         SetAttack(Attack.Reposition);
@@ -490,168 +941,355 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
             }
         }
 
-        // ===== 攻击 3：雷锤回旋投掷 =====
+        // ============================================================
+        //  攻击 3: 雷锤回旋 —— 反向拉弓蓄势 → 掷锤反冲 → 两段躲
+        // ============================================================
         private void Run_ThunderHammerThrow(Player target) {
             HammersChanneling = false;
             if (SubStep == 0) {
-                Vector2 hover = target.Center + new Vector2(target.Center.X < NPC.Center.X ? 260 : -260, -180);
+                //拉弓: 悬停点随蓄力向玩家反方向漂移(drift-back)
+                float t = MathHelper.Clamp(AttackTimer / 46f, 0f, 1f);
+                float side = target.Center.X < NPC.Center.X ? 1f : -1f;
+                Vector2 hover = ClampToPrison(target.Center + new Vector2(side * (260f + t * t * 160f), -180));
                 NPC.Center += (hover - NPC.Center) * 0.08f;
                 NPC.velocity *= 0.9f;
-                if (!VaultUtils.isServer && AttackTimer % 3 == 0) {
+
+                //末 6 帧静默(inhale); 其余时间电荷汇聚
+                bool silent = AttackTimer > 40;
+                if (!VaultUtils.isServer && !silent && AttackTimer % 3 == 0) {
                     Vector2 off = Main.rand.NextVector2CircularEdge(70, 70);
                     int d = Dust.NewDust(NPC.Center + off, 0, 0, DustID.Electric, 0, 0, 120, default, 1.7f);
                     Main.dust[d].noGravity = true;
                     Main.dust[d].velocity = -off.SafeNormalize(Vector2.Zero) * 3.5f;
                 }
-                if (AttackTimer == 6) SoundEngine.PlaySound(SoundID.Item71 with { Pitch = -0.3f }, NPC.Center);
-                if (AttackTimer > 42) {
+                if (AttackTimer == 6)
+                    SoundEngine.PlaySound(SoundID.Item71 with { Pitch = -0.3f }, NPC.Center);
+
+                if (AttackTimer > 46) {
                     SubStep = 1;
                     AttackTimer = 0;
-                    NPC.netUpdate = true;
                     SoundEngine.PlaySound(SoundID.Item1 with { Pitch = -0.4f, Volume = 1.2f }, NPC.Center);
                     ACMScreenShakeSystem.Add(8f);
+                    Vector2 dir = NPC.DirectionTo(target.Center);
+                    //掷锤反冲(mass is reaction)
+                    NPC.velocity = -dir * 7f;
+                    armSnap = 10f;
                     if (!VaultUtils.isClient) {
-                        int hammers = Main.masterMode ? 3 : (Main.expertMode ? 2 : 1);
+                        int hammers = enteredPhase2 ? 3 : 2;
                         for (int i = 0; i < hammers; i++) {
                             float spread = MathHelper.ToRadians((i - (hammers - 1) / 2f) * 16f);
-                            Vector2 v = NPC.DirectionTo(target.Center).RotatedBy(spread) * 19f;
+                            Vector2 v = dir.RotatedBy(spread) * 19f;
                             Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, v,
-                                ModContent.ProjectileType<JiangcenThrownHammer>(), GetBossDamage(1.1f), 3f, Main.myPlayer, NPC.whoAmI);
+                                ModContent.ProjectileType<JiangcenThrownHammer>(), GetBossDamage(1.1f), 3f, Main.myPlayer, NPC.whoAmI, enteredPhase2 ? 1 : 0);
                         }
                     }
+                    NPC.netUpdate = true;
                 }
             }
             else {
                 NPC.velocity *= 0.92f;
-                Vector2 hover = target.Center + new Vector2(0, -300);
+                Vector2 hover = ClampToPrison(target.Center + new Vector2(0, -300));
                 NPC.Center += (hover - NPC.Center) * 0.04f;
-                if (AttackTimer > 150) SetAttack(Attack.Reposition);
+                //接锤时刻的小顿(约在回程末尾)
+                if (AttackTimer == 96)
+                    armSnap = 8f;
+                if (AttackTimer > 130)
+                    SetAttack(Attack.Reposition);
             }
         }
 
-        // ===== 攻击 4：尸坟 → 尸手上抓（垂直命中区，非随机天降）=====
+        // ============================================================
+        //  攻击 4: 尸坟唤将 —— 军鼓两声 → 尸坟依次点亮 → 尸手波浪抓出
+        // ============================================================
         private void Run_CorpseRain(Player target) {
             HammersChanneling = false;
             NPC.velocity *= 0.9f;
-            Vector2 hover = target.Center + new Vector2(0, -340);
+            Vector2 hover = ClampToPrison(target.Center + new Vector2(0, -340));
             NPC.Center += (hover - NPC.Center) * 0.06f;
 
             if (SubStep == 0) {
+                //两声军鼓(点兵的仪式感)
+                if (AttackTimer == 6 || AttackTimer == 30) {
+                    SoundEngine.PlaySound(SoundID.DD2_MonkStaffGroundImpact with { Pitch = AttackTimer == 6 ? -0.4f : -0.2f, Volume = 1.2f }, NPC.Center);
+                    ACMScreenShakeSystem.Add(3f);
+                    armSnap = 8f;
+                }
                 if (AttackTimer == 1) {
-                    SoundEngine.PlaySound(SoundID.DD2_GhastlyGlaiveImpactGhost with { Pitch = -0.3f }, NPC.Center);
                     float spacing = 230f;
                     float startX = target.Center.X - spacing * 2f;
                     for (int i = 0; i < 5; i++) {
                         float gx = startX + spacing * i + Main.rand.NextFloat(-40, 40);
                         float gy = GetGroundY(gx, target.Center.Y - 100);
                         graveMarks[i] = new Vector2(gx, gy);
+                    }
+                }
+                //尸坟标记依次点亮(每 6 帧一座, 军列感)
+                for (int i = 0; i < 5; i++) {
+                    if (AttackTimer == 34 + i * 6) {
+                        SoundEngine.PlaySound(SoundID.DD2_GhastlyGlaiveImpactGhost with { Pitch = -0.3f + i * 0.06f, Volume = 0.8f }, graveMarks[i]);
                         if (!VaultUtils.isClient) {
                             Projectile.NewProjectile(NPC.GetSource_FromAI(), graveMarks[i], Vector2.Zero,
-                                ModContent.ProjectileType<JiangcenTelegraphMark>(), 0, 0f, Main.myPlayer, 1, 70);
+                                ModContent.ProjectileType<JiangcenTelegraphMark>(), 0, 0f, Main.myPlayer, 1, 60 - i * 6);
                         }
                     }
                 }
-                if (AttackTimer > 62) {
+                if (AttackTimer > 86) {
                     SubStep = 1;
                     AttackTimer = 0;
-                    NPC.netUpdate = true;
                     SoundEngine.PlaySound(SoundID.NPCDeath2 with { Pitch = -0.5f, Volume = 1.2f }, NPC.Center);
                     if (!VaultUtils.isClient) {
                         for (int i = 0; i < 5; i++) {
+                            //波浪时序: 第 i 座延迟 i*9 帧(ripple, 玩家可沿波前奔跑)
                             Projectile.NewProjectile(NPC.GetSource_FromAI(), graveMarks[i], Vector2.Zero,
-                                ModContent.ProjectileType<JiangcenCorpseHand>(), GetBossDamage(1f), 2f, Main.myPlayer);
+                                ModContent.ProjectileType<JiangcenCorpseHand>(), GetBossDamage(1f), 2f, Main.myPlayer,
+                                i * 9, 0, enteredPhase2 ? 400f : 320f);
                         }
                     }
+                    NPC.netUpdate = true;
                 }
             }
             else {
-                if (AttackTimer > 90) SetAttack(Attack.Reposition);
+                if (AttackTimer > 150)
+                    SetAttack(Attack.Reposition);
             }
         }
 
-        // ===== 攻击 5：将令——冻结 + 镜像锤魂 =====
+        // ============================================================
+        //  攻击 5: 将令雷印 —— 点名(跟随→锁定→落雷) + 镜像锤魂, 全程可操作
+        // ============================================================
         private void Run_GeneralsOrder(Player target) {
             HammersChanneling = false;
             NPC.velocity *= 0.9f;
-            Vector2 hover = target.Center + new Vector2(0, -320);
+            Vector2 hover = ClampToPrison(target.Center + new Vector2(0, -320));
             NPC.Center += (hover - NPC.Center) * 0.06f;
 
             if (SubStep == 0) {
                 if (AttackTimer == 1) {
-                    ArenaCenter = target.Center; //以当前为镜像中心
+                    ArenaCenter = enteredPhase2 ? ArenaCenter : target.Center; //雷狱期沿用牢心为镜像中心
                     SoundEngine.PlaySound(SoundID.DD2_BetsyScream with { Pitch = 0.2f, Volume = 1.1f }, NPC.Center);
-                    ACMScreenShakeSystem.Add(9f);
-                    JiangcenThunderPrisonSystem.Pulse(NPC.Center, 0.55f, new Color(190, 70, 200));
-                    //冻结约 1.5s（将令定身，作预告/布阵）
-                    target.AddBuff(BuffID.Frozen, 90);
+                    ACMScreenShakeSystem.Add(6f);
+                    armSnap = 10f;
+                    Announce("SealOrder", JiangcenVFX.GeneralGold);
+                    JiangcenThunderPrisonSystem.Pulse(NPC.Center, 0.5f, JiangcenVFX.GeneralGold);
                     if (!VaultUtils.isClient) {
+                        //雷印点名(取代旧版冻结): P1 一枚跟随本人, P2 追加镜像枚
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), target.Bottom, Vector2.Zero,
+                            ModContent.ProjectileType<JiangcenSealMark>(), GetBossDamage(1.1f), 2f, Main.myPlayer, 0, NPC.whoAmI);
+                        if (enteredPhase2) {
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(), target.Bottom, Vector2.Zero,
+                                ModContent.ProjectileType<JiangcenSealMark>(), GetBossDamage(1.1f), 2f, Main.myPlayer, 1, NPC.whoAmI);
+                        }
+                        //镜像锤魂(影子突袭)
                         Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
                             ModContent.ProjectileType<JiangcenHammerGhost>(), GetBossDamage(1.2f), 2f, Main.myPlayer, 0, NPC.whoAmI);
                         Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
                             ModContent.ProjectileType<JiangcenHammerGhost>(), GetBossDamage(1.2f), 2f, Main.myPlayer, 1, NPC.whoAmI);
                     }
+                    NPC.netUpdate = true;
                 }
-                //持续给予短冻结，维持定身窗口
-                if (AttackTimer % 20 == 0 && AttackTimer < 90) target.AddBuff(BuffID.Frozen, 24);
-                if (AttackTimer > 90) {
+                if (AttackTimer > 100) {
                     SubStep = 1;
                     AttackTimer = 0;
                     NPC.netUpdate = true;
                 }
             }
             else {
-                //锤魂自行镜像→突袭；Boss 等待整个流程结束
-                if (AttackTimer > 170) SetAttack(Attack.Reposition);
+                //锤魂突袭 + 雷印引爆自行走完; 本体等待收势
+                if (AttackTimer > 90)
+                    SetAttack(Attack.Reposition);
             }
         }
 
-        // ===== 攻击 6（雷狱）：三锚点链式闪电 =====
+        // ============================================================
+        //  攻击 6(雷狱): 链电电网 —— 4 锚菱形, 边错拍点亮, 再点对角线
+        // ============================================================
         private void Run_ChainLightning(Player target) {
             HammersChanneling = false;
             NPC.velocity *= 0.9f;
-            Vector2 hover = target.Center + new Vector2(0, -320);
+            Vector2 hover = ClampToPrison(target.Center + new Vector2(0, -320));
             NPC.Center += (hover - NPC.Center) * 0.06f;
 
             if (SubStep == 0) {
                 if (AttackTimer == 1) {
                     SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.3f }, NPC.Center);
                     float baseRot = Main.rand.NextFloat(MathHelper.TwoPi);
-                    for (int i = 0; i < 3; i++) {
-                        float a = baseRot + MathHelper.TwoPi * i / 3f;
-                        graveMarks[i] = target.Center + a.ToRotationVector2() * 430f;
+                    for (int i = 0; i < 4; i++) {
+                        float a = baseRot + MathHelper.PiOver2 * i;
+                        graveMarks[i] = ClampToPrison(target.Center + a.ToRotationVector2() * 470f, 60f);
                         if (!VaultUtils.isClient) {
                             Projectile.NewProjectile(NPC.GetSource_FromAI(), graveMarks[i], Vector2.Zero,
-                                ModContent.ProjectileType<JiangcenTelegraphMark>(), 0, 0f, Main.myPlayer, 2, 75);
+                                ModContent.ProjectileType<JiangcenTelegraphMark>(), 0, 0f, Main.myPlayer, 2, 60);
                         }
+                    }
+                }
+                //锚点依次"钉入"脉冲(每 8 帧一个)
+                for (int i = 0; i < 4; i++) {
+                    if (AttackTimer == 20 + i * 8) {
+                        SoundEngine.PlaySound(SoundID.Item94 with { Pitch = 0.3f + i * 0.08f, Volume = 0.7f }, graveMarks[i]);
+                        ACMScreenShakeSystem.Add(2f);
+                        JiangcenThunderPrisonSystem.Pulse(graveMarks[i], 0.3f, TelegraphColors.Lightning);
                     }
                 }
                 if (AttackTimer > 56) {
                     SubStep = 1;
                     AttackTimer = 0;
-                    NPC.netUpdate = true;
                     SoundEngine.PlaySound(SoundID.Item94 with { Pitch = -0.2f, Volume = 1.2f }, NPC.Center);
                     if (!VaultUtils.isClient) {
-                        for (int i = 0; i < 3; i++) {
+                        //四边错拍(边 i 延迟 i*12): 电网像风车一样依次通电, 玩家沿熄灭的边穿行
+                        for (int i = 0; i < 4; i++) {
                             Vector2 a = graveMarks[i];
-                            Vector2 b = graveMarks[(i + 1) % 3];
-                            Vector2 mid = (a + b) * 0.5f;
-                            Projectile.NewProjectile(NPC.GetSource_FromAI(), mid, b - a,
-                                ModContent.ProjectileType<JiangcenChainArc>(), GetBossDamage(1f), 2f, Main.myPlayer);
+                            Vector2 b = graveMarks[(i + 1) % 4];
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(), (a + b) * 0.5f, b - a,
+                                ModContent.ProjectileType<JiangcenChainArc>(), GetBossDamage(1f), 2f, Main.myPlayer, 0, 0, i * 12);
+                        }
+                        //第二轮: 两条对角线(× 封口), 在四边跑完后点亮
+                        for (int i = 0; i < 2; i++) {
+                            Vector2 a = graveMarks[i];
+                            Vector2 b = graveMarks[i + 2];
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(), (a + b) * 0.5f, b - a,
+                                ModContent.ProjectileType<JiangcenChainArc>(), GetBossDamage(1f), 2f, Main.myPlayer, 0, 0, 68 + i * 12);
                         }
                     }
+                    NPC.netUpdate = true;
                 }
             }
             else {
-                if (AttackTimer > 100) SetAttack(Attack.Reposition);
+                if (AttackTimer > 200)
+                    SetAttack(Attack.Reposition);
             }
         }
 
-        // ===== 雷狱边界雷霆：玩家离场地中心过远→被劈（位置型危险）=====
+        // ============================================================
+        //  攻击 7(终章): 万雷点将 —— 走廊落雷三波, 安全缝提前标出
+        // ============================================================
+        private void Run_ThunderRollCall(Player target) {
+            HammersChanneling = true;
+            HammerOrbit += 0.06f;
+
+            if (SubStep == 0) {
+                //升至牢心上空 + 充能
+                Vector2 podium = ArenaCenter + new Vector2(0, -380);
+                NPC.Center += (podium - NPC.Center) * 0.08f;
+                NPC.velocity *= 0.9f;
+                if (AttackTimer == 1) {
+                    Announce("RollCall", JiangcenVFX.GeneralGold);
+                    SoundEngine.PlaySound(SoundID.DD2_BetsyScream with { Pitch = -0.25f, Volume = 1.2f }, NPC.Center);
+                    CommandAllHammers(4);
+                }
+                float chargeT = MathHelper.Clamp(AttackTimer / 70f, 0f, 1f);
+                ACMScreenShakeSystem.Add(chargeT * chargeT * 4f);
+                if (AttackTimer % 14 == 0)
+                    JiangcenSky.TriggerFlash(0.3f + chargeT * 0.4f);
+                if (AttackTimer > 70) {
+                    SubStep = 1;
+                    AttackTimer = 0;
+                    NPC.netUpdate = true;
+                }
+            }
+            else if (SubStep == 1) {
+                NPC.velocity *= 0.9f;
+                float laneW = PrisonRadius * 2f / 7f;
+                float laneX(int i) => ArenaCenter.X - PrisonRadius + laneW * (i + 0.5f);
+
+                //波次 1: 奇数列
+                if (AttackTimer == 1 && !VaultUtils.isClient) {
+                    for (int i = 1; i < 7; i += 2)
+                        SpawnCorridorStrike(laneX(i));
+                }
+                //波次 2: 偶数列
+                if (AttackTimer == 88 && !VaultUtils.isClient) {
+                    for (int i = 0; i < 7; i += 2)
+                        SpawnCorridorStrike(laneX(i));
+                }
+                //波次 3 预告: 选定玩家最近列为安全缝, 提前 60 帧翠色标出
+                if (AttackTimer == 176) {
+                    safeLaneIndex = (int)MathHelper.Clamp(MathF.Round((target.Center.X - (ArenaCenter.X - PrisonRadius)) / laneW - 0.5f), 0, 6);
+                    if (!VaultUtils.isClient) {
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), new Vector2(laneX(safeLaneIndex), ArenaCenter.Y), Vector2.Zero,
+                            ModContent.ProjectileType<JiangcenTelegraphMark>(), 0, 0f, Main.myPlayer, 4, 140);
+                    }
+                    SoundEngine.PlaySound(SoundID.Item29 with { Pitch = 0.5f, Volume = 1f }, target.Center);
+                    NPC.netUpdate = true;
+                }
+                //波次 3: 全列齐落, 只留安全缝
+                if (AttackTimer == 236) {
+                    if (!VaultUtils.isClient) {
+                        for (int i = 0; i < 7; i++) {
+                            if (i == safeLaneIndex)
+                                continue;
+                            SpawnCorridorStrike(laneX(i));
+                        }
+                    }
+                    JiangcenSky.TriggerFlash(1.2f);
+                }
+                if (AttackTimer > 330) {
+                    CommandAllHammers(0);
+                    HammersChanneling = false;
+                    SetAttack(Attack.Reposition);
+                }
+            }
+        }
+
+        private void SpawnCorridorStrike(float x) {
+            Projectile.NewProjectile(NPC.GetSource_FromAI(), new Vector2(x, ArenaCenter.Y), Vector2.Zero,
+                ModContent.ProjectileType<JiangcenLightningStrike>(), GetBossDamage(1.05f), 2f, Main.myPlayer, 0, 1, 1500);
+        }
+
+        // ============================================================
+        //  攻击 8(雷狱): 六锤连狱 —— 六锤边界就位, 依次沿弦线对穿雷牢
+        // ============================================================
+        private void Run_HammerPrison(Player target) {
+            HammersChanneling = true; //锤由指令驱动, 公转冻结
+
+            //本体镇守牢心上空(channel 姿态)
+            Vector2 podium = ArenaCenter + new Vector2(0, -360);
+            NPC.Center += (podium - NPC.Center) * 0.07f;
+            NPC.velocity *= 0.9f;
+
+            if (SubStep == 0) {
+                if (AttackTimer == 1) {
+                    ChordBaseAngle = Main.rand.NextFloat(MathHelper.TwoPi);
+                    CommandAllHammers(5); //飞往边界槽位
+                    SoundEngine.PlaySound(SoundID.DD2_DarkMageCastHeal with { Pitch = -0.2f, Volume = 1.1f }, NPC.Center);
+                    armSnap = 10f;
+                    NPC.netUpdate = true;
+                }
+                if (AttackTimer > 44) {
+                    SubStep = 1;
+                    AttackTimer = 0;
+                    NPC.netUpdate = true;
+                }
+            }
+            else if (SubStep == 1) {
+                //每 14 帧点一柄: 弦线预告(36f) + 对穿
+                for (int i = 0; i < 6; i++) {
+                    if (AttackTimer == 1 + i * 14) {
+                        CommandHammer(i, 6);
+                        armSnap = 8f;
+                        SoundEngine.PlaySound(SoundID.Item29 with { Pitch = 0.1f + i * 0.06f, Volume = 0.7f }, NPC.Center);
+                    }
+                }
+                if (AttackTimer > 1 + 5 * 14 + 36 + 110) {
+                    SubStep = 2;
+                    AttackTimer = 0;
+                    NPC.netUpdate = true;
+                }
+            }
+            else {
+                if (AttackTimer > 30) {
+                    CommandAllHammers(0);
+                    HammersChanneling = false;
+                    SetAttack(Attack.Reposition);
+                }
+            }
+        }
+
+        // ===== 雷狱边界雷霆：出界=被劈（位置型危险）=====
         private void Phase2BoundaryHazard(Player target) {
             //边界裂纹视觉
             if (!VaultUtils.isServer && generalTimer % 2 == 0) {
                 float ang = Main.rand.NextFloat(MathHelper.TwoPi);
-                Vector2 edge = ArenaCenter + ang.ToRotationVector2() * BoundaryRadius;
+                Vector2 edge = ArenaCenter + ang.ToRotationVector2() * PrisonRadius;
                 if (Vector2.Distance(edge, Main.LocalPlayer.Center) < 1400f) {
                     int d = Dust.NewDust(edge, 0, 0, DustID.Electric, 0, 0, 150, default, Main.rand.NextFloat(1.2f, 2.2f));
                     Main.dust[d].noGravity = true;
@@ -662,11 +1300,11 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
             phase2HazardTimer++;
             if (phase2HazardTimer >= 55) {
                 phase2HazardTimer = 0;
-                if (Vector2.Distance(target.Center, ArenaCenter) > BoundaryRadius * 0.72f) {
+                if (Vector2.Distance(target.Center, ArenaCenter) > PrisonRadius) {
                     SoundEngine.PlaySound(SoundID.Item93 with { Pitch = 0.3f }, target.Center);
                     if (!VaultUtils.isClient) {
-                        Projectile.NewProjectile(NPC.GetSource_FromAI(), new Vector2(target.Center.X, target.Center.Y),
-                            Vector2.Zero, ModContent.ProjectileType<JiangcenLightningStrike>(), GetBossDamage(1.1f), 2f, Main.myPlayer);
+                        Projectile.NewProjectile(NPC.GetSource_FromAI(), target.Center, Vector2.Zero,
+                            ModContent.ProjectileType<JiangcenLightningStrike>(), GetBossDamage(1.1f), 2f, Main.myPlayer, 0, 0, 1100);
                     }
                 }
             }
@@ -692,689 +1330,205 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
             return Vector2.Distance(p, a + ab * t);
         }
 
+        // ============================================================
+        //  绘制: squash&stretch + 速度门控残影 + 红目 + 缠电 + 溶解显形/崩解
+        // ============================================================
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
             Texture2D mainValue = TextureAssets.Npc[Type].Value;
             Rectangle rectangle = mainValue.GetRectangle();
-            float sengs = 0.2f;
-            for (int i = 0; i < NPC.oldPos.Length; i++) {
-                Vector2 drawOldPos = NPC.oldPos[i] + NPC.Size / 2 - Main.screenPosition;
-                spriteBatch.Draw(mainValue, drawOldPos, rectangle, drawColor * sengs
-                    , 0, rectangle.Size() / 2, NPC.scale, SpriteEffects.None, 0);
-                sengs *= 0.8f;
-            }
-            spriteBatch.Draw(mainValue, NPC.Center - Main.screenPosition, rectangle, drawColor
-                , NPC.rotation, rectangle.Size() / 2, NPC.scale, SpriteEffects.None, 0);
 
-            DrawPrisonWallBeams();
+            //点将抬臂 snap: 短促上抬回落的倾角
+            float snapRot = -0.14f * JiangcenVFX.Bump(armSnap / 10f);
+            float drawRot = NPC.rotation + snapRot + MathHelper.Clamp(NPC.velocity.X * 0.008f, -0.16f, 0.16f);
+            Vector2 scaleVec = bodySquash * NPC.scale;
+
+            //溶解态(仅入场显形 / 死亡崩解两个阶段; 其余阶段必须完整可见 — 兼容中途加入的客户端)
+            float dissolve = Phase == BossPhase.Death ? deathDissolve
+                : (Phase == BossPhase.Intro ? introDissolve : 0f);
+            if (dissolve > 0.001f) {
+                if (dissolve < 0.999f) {
+                    DrawDissolveBody(spriteBatch, mainValue, rectangle, drawRot, scaleVec, dissolve);
+                }
+                //完全未显形/已消散: 不画本体
+                DrawEyeGlow(spriteBatch);
+                return false;
+            }
+
+            //速度门控残影(只有真的快才有影)
+            if (NPC.velocity.LengthSquared() > 196f) {
+                float sengs = 0.25f;
+                for (int i = 0; i < NPC.oldPos.Length; i++) {
+                    Vector2 drawOldPos = NPC.oldPos[i] + NPC.Size / 2 - Main.screenPosition;
+                    spriteBatch.Draw(mainValue, drawOldPos, rectangle, (JiangcenVFX.CorpseRed with { A = 0 }) * sengs
+                        , drawRot, rectangle.Size() / 2, scaleVec, SpriteEffects.None, 0);
+                    sengs *= 0.78f;
+                }
+            }
+
+            //尸气红边(rim): 微偏移的加性轮廓
+            Color rim = JiangcenVFX.CorpseRed with { A = 0 } * (0.16f + 0.1f * eyeGlow);
+            for (int i = 0; i < 4; i++) {
+                Vector2 off = (MathHelper.PiOver2 * i).ToRotationVector2() * 3f;
+                spriteBatch.Draw(mainValue, NPC.Center + off - Main.screenPosition, rectangle, rim,
+                    drawRot, rectangle.Size() / 2, scaleVec, SpriteEffects.None, 0);
+            }
+
+            spriteBatch.Draw(mainValue, NPC.Center - Main.screenPosition, rectangle, drawColor
+                , drawRot, rectangle.Size() / 2, scaleVec, SpriteEffects.None, 0);
+
+            //周身缠电(蓄力/雷狱/终章)
+            if (bodyArcGlow > 0.05f && MythologyConfig.Trail != TrailQualityLevel.Off) {
+                JiangcenVFX.DrawBodyArcs(spriteBatch, NPC.Center, 84f, bodyArcGlow, NPC.whoAmI);
+            }
+
+            DrawEyeGlow(spriteBatch);
+            DrawDeathOmen(spriteBatch);
+            DrawPrisonWallArcs();
             return false;
         }
 
-        // ===== 雷牢墙体闪电: 沿环形雷牢边界的流动发光弧段(BeamGrad), 与 ArenaRunic 牢笼罩叠出"雷墙"质感 =====
-        private void DrawPrisonWallBeams() {
+        //红目辉光(将臣血目 — 尸祖的身份灯)
+        private void DrawEyeGlow(SpriteBatch sb) {
+            if (eyeGlow <= 0.03f)
+                return;
+            Texture2D glow = ACMAsset.SoftGlow;
+            if (glow == null)
+                return;
+            float pulse = 0.8f + 0.2f * (float)Math.Sin(generalTimer * 0.11f);
+            Vector2 eyePos = NPC.Center + new Vector2(NPC.direction * 16f, -30f) * bodySquash;
+            sb.Draw(glow, eyePos - Main.screenPosition, null,
+                new Color(255, 40, 45, 0) * eyeGlow * pulse, 0f, glow.Size() / 2, 0.34f, SpriteEffects.None, 0);
+            sb.Draw(glow, eyePos - Main.screenPosition, null,
+                new Color(255, 150, 140, 0) * eyeGlow * pulse * 0.7f, 0f, glow.Size() / 2, 0.15f, SpriteEffects.None, 0);
+        }
+
+        //死亡天罚预兆: 六个收束预告环压向本体
+        private void DrawDeathOmen(SpriteBatch sb) {
+            if (Phase != BossPhase.Death || SubStep != 2)
+                return;
+            Texture2D glow = ACMAsset.SoftGlow;
+            if (glow == null)
+                return;
+            float t = MathHelper.Clamp(AttackTimer / 60f, 0f, 1f);
+            for (int i = 0; i < 6; i++) {
+                float ang = MathHelper.TwoPi * i / 6f + generalTimer * 0.02f;
+                float dist = MathHelper.Lerp(420f, 60f, t) ;
+                Vector2 p = NPC.Center + ang.ToRotationVector2() * dist;
+                Color c = TelegraphColors.Lightning with { A = 0 } * (0.25f + 0.55f * t);
+                sb.Draw(glow, p - Main.screenPosition, null, c, 0f, glow.Size() / 2, 0.5f + 0.4f * t, SpriteEffects.None, 0);
+            }
+        }
+
+        //溶解显形/崩解: DissolveBurn 专用批
+        private void DrawDissolveBody(SpriteBatch sb, Texture2D tex, Rectangle src, float rot, Vector2 scaleVec, float dissolve) {
+            Effect fx = ACMShaders.DissolveBurn;
+            if (fx == null || !MythologyConfig.FullscreenShadersEnabled) {
+                //降级: 淡入淡出
+                sb.Draw(tex, NPC.Center - Main.screenPosition, src, Color.White * (1f - dissolve),
+                    rot, src.Size() / 2, scaleVec, SpriteEffects.None, 0);
+                return;
+            }
+
+            Color edge = Phase == BossPhase.Death ? new Color(255, 120, 90) : TelegraphColors.Lightning;
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uIntensity"]?.SetValue(1f);
+            fx.Parameters["uThreshold"]?.SetValue(dissolve);
+            fx.Parameters["uEdgeWidth"]?.SetValue(0.09f);
+            fx.Parameters["uNoiseScale"]?.SetValue(2.4f);
+            fx.Parameters["uEdgeColor"]?.SetValue(edge.ToVector4());
+            fx.Parameters["uDirection"]?.SetValue(Phase == BossPhase.Death ? new Vector2(0f, -1f) : new Vector2(0f, 1f));
+            fx.Parameters["uSweepStrength"]?.SetValue(0.35f);
+
+            GraphicsDevice gd = Main.graphics.GraphicsDevice;
+            sb.End();
+            sb.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.LinearClamp,
+                DepthStencilState.None, RasterizerState.CullNone, fx, Main.GameViewMatrix.TransformationMatrix);
+            gd.Textures[1] = ACMShaders.NoiseTexture;
+            gd.SamplerStates[1] = SamplerState.LinearWrap;
+            sb.Draw(tex, NPC.Center - Main.screenPosition, src, Color.White, rot, src.Size() / 2, scaleVec, SpriteEffects.None, 0);
+            sb.End();
+            ACMShaders.RestoreDefaultBatch(sb);
+        }
+
+        // ===== 雷牢墙体电弧: 沿环形边界的跳变电弧段(专属着色器), 失稳期闪断 =====
+        private void DrawPrisonWallArcs() {
             if (Main.dedServ || prisonVis < 0.25f || ArenaCenter == Vector2.Zero)
                 return;
             if (MythologyConfig.Trail == TrailQualityLevel.Off)
                 return;
 
-            float r = BoundaryRadius * 0.72f;
+            float r = PrisonRadius;
             float time = (float)Main.GlobalTimeWrappedHourly;
             Vector2 screenCenter = Main.screenPosition + new Vector2(Main.screenWidth, Main.screenHeight) * 0.5f;
-            const int segs = 10;
-            float baseAng = time * 0.12f;
+            const int segs = 12;
+            float baseAng = time * 0.1f;
 
+            JiangcenVFX.BeginArcs(Main.spriteBatch);
             for (int i = 0; i < segs; i++) {
-                //每段独立频闪, 同帧约半数点亮(雷墙跳动感, 省批)
+                //每段独立频闪, 同帧约半数点亮(雷墙跳动感, 省批); 失稳期整段断电
                 float flick = (float)Math.Sin(time * 9f + i * 2.3f) * (float)Math.Sin(time * 3.1f + i * 5.7f);
-                if (flick < 0.4f)
+                if (flick < 0.35f - instabilityVis * 0.3f)
                     continue;
+                if (instabilityVis > 0.05f && (float)Math.Sin(time * 17f + i * 3.1f) > 0.85f - instabilityVis * 0.5f)
+                    continue; //失稳闪断
 
                 float a0 = baseAng + MathHelper.TwoPi * i / segs;
-                float a1 = a0 + MathHelper.TwoPi / segs * 0.9f;
+                float a1 = a0 + MathHelper.TwoPi / segs * 0.94f;
                 Vector2 p0 = ArenaCenter + a0.ToRotationVector2() * r;
                 Vector2 p1 = ArenaCenter + a1.ToRotationVector2() * r;
 
                 if (Vector2.Distance((p0 + p1) * 0.5f, screenCenter) > Main.screenWidth)
                     continue;
 
-                float intensity = MathHelper.Clamp(prisonVis * (0.4f + 0.6f * flick), 0f, 1f) * 0.8f;
-                ACMShaders.DrawBeam(p0, p1, 5f + 4f * flick,
-                    TelegraphColors.Lightning, new Color(40, 90, 180, 0), intensity, 2.2f, 2.5f);
+                float intensity = MathHelper.Clamp(prisonVis * (0.4f + 0.6f * flick), 0f, 1f) * 0.85f;
+                Color core = Color.Lerp(TelegraphColors.Lightning, JiangcenVFX.CorpseRed, instabilityVis * 0.5f) with { A = 220 };
+                JiangcenVFX.Arc(p0, p1, 20f + 8f * flick, core, JiangcenVFX.ArcBlue with { A = 80 },
+                    intensity, i * 7.3f, 0.26f, 9f);
             }
+            JiangcenVFX.EndArcs(Main.spriteBatch);
         }
     }
 
-    // ===== 环绕重锤：从纯装饰变为功能性武器 =====
-    // ai[0]=Boss whoAmI, ai[1]=序号(0..5), ai[2]=状态(0公转/1蓄力/2猛砸/3收回), ai[3]=状态计时
-    internal class JiangcenHammer : ModNPC
-    {
-        private const int ChargeTime = 120; //~2s 变红蓄力
-        private const int SlamTime = 34;
-        private const int RecoverTime = 38;
-        private const float OrbitRadius = 150f;
-
-        public override void SetStaticDefaults() {
-            Main.npcFrameCount[Type] = 1;
-            NPCID.Sets.TrailingMode[Type] = 3;
-            NPCID.Sets.TrailCacheLength[Type] = 6;
-        }
-
-        public override void SetDefaults() {
-            NPC.width = 76;
-            NPC.height = 76;
-            NPC.damage = 0;
-            NPC.defense = 20;
-            NPC.lifeMax = 60000;
-            NPC.HitSound = SoundID.NPCHit4;
-            NPC.DeathSound = SoundID.NPCHit4;
-            NPC.value = 0f;
-            NPC.knockBackResist = 0f;
-            NPC.noTileCollide = true;
-            NPC.noGravity = true;
-            NPC.dontCountMe = true;
-            NPC.dontTakeDamage = true;
-        }
-
-        public override bool CheckActive() => false;
-
-        public override void AI() {
-            NPC boss = Main.npc[(int)NPC.ai[0]];
-            if (!boss.Alives() || boss.ModNPC is not Jiangcen jc) {
-                NPC.active = false;
-                NPC.netUpdate = true;
-                return;
-            }
-            NPC.realLife = boss.whoAmI;
-            NPC.target = boss.target;
-
-            ref float state = ref NPC.ai[2];
-            ref float timer = ref NPC.ai[3];
-            float index = NPC.ai[1];
-
-            Vector2 orbitPos = boss.Center + (jc.HammerOrbit * 0.6f + MathHelper.TwoPi / 6f * index).ToRotationVector2() * OrbitRadius;
-            timer++;
-
-            if (state == 0) { //公转（待命，无伤害）
-                NPC.damage = 0;
-                NPC.Center = orbitPos;
-                NPC.velocity = Vector2.Zero;
-                NPC.rotation = boss.AngleTo(NPC.Center);
-            }
-            else if (state == 1) { //蓄力变红（悬停于径向，可读）
-                NPC.damage = 0;
-                NPC.Center = orbitPos; //引导期间公转冻结→锤悬停
-                NPC.velocity = Vector2.Zero;
-                NPC.rotation = boss.AngleTo(NPC.Center);
-                if (!VaultUtils.isServer && timer % 4 == 0) {
-                    int d = Dust.NewDust(NPC.Center, 0, 0, DustID.RedTorch, 0, 0, 100, default, 1.6f);
-                    Main.dust[d].noGravity = true;
-                    Main.dust[d].velocity = Main.rand.NextVector2Circular(2, 2);
-                }
-                if (timer >= ChargeTime) {
-                    state = 2;
-                    timer = 0;
-                    Vector2 dir = (NPC.Center - boss.Center).SafeNormalize(Vector2.UnitX);
-                    NPC.velocity = dir * (Main.expertMode ? 40f : 33f);
-                    NPC.rotation = dir.ToRotation();
-                    SoundEngine.PlaySound(SoundID.Item70 with { Pitch = -0.3f, Volume = 1.1f }, NPC.Center);
-                    ACMScreenShakeSystem.Add(8f);
-                    JiangcenThunderPrisonSystem.Pulse(NPC.Center, 0.65f, TelegraphColors.Lethal);
-                    NPC.netUpdate = true;
-                }
-            }
-            else if (state == 2) { //径向猛砸（长矩形扫掠命中区）
-                NPC.damage = jc.GetBossDamage(1.3f);
-                NPC.velocity *= 0.985f;
-                if (!VaultUtils.isServer) {
-                    int d = Dust.NewDust(NPC.Center, 0, 0, DustID.Shadowflame, 0, 0, 100, Color.DarkRed, 2f);
-                    Main.dust[d].noGravity = true;
-                }
-                if (timer >= SlamTime) {
-                    state = 3;
-                    timer = 0;
-                    NPC.damage = 0;
-                    NPC.netUpdate = true;
-                }
-            }
-            else { //收回
-                NPC.damage = 0;
-                NPC.Center = Vector2.Lerp(NPC.Center, orbitPos, 0.12f);
-                NPC.velocity *= 0.9f;
-                NPC.rotation = boss.AngleTo(NPC.Center);
-                if (timer >= RecoverTime || Vector2.Distance(NPC.Center, orbitPos) < 24f) {
-                    state = 0;
-                    timer = 0;
-                }
-            }
-        }
-
-        public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
-            Texture2D mainValue = TextureAssets.Npc[Type].Value;
-            Rectangle rectangle = mainValue.GetRectangle();
-
-            DrawSlamTelegraph();
-
-            //蓄力期间逐渐变红预告
-            Color tint = drawColor;
-            if (NPC.ai[2] == 1) {
-                float t = MathHelper.Clamp(NPC.ai[3] / ChargeTime, 0, 1);
-                float flash = 0.5f + 0.5f * (float)Math.Sin(NPC.ai[3] * (0.2f + t * 0.4f));
-                tint = Color.Lerp(drawColor, new Color(255, 40, 40) * (0.7f + 0.3f * flash), 0.4f + 0.6f * t);
-            }
-            else if (NPC.ai[2] == 2) {
-                tint = Color.Lerp(drawColor, new Color(255, 70, 60), 0.7f);
-            }
-
-            float sengs = 0.2f;
-            for (int i = 0; i < NPC.oldPos.Length; i++) {
-                Vector2 drawOldPos = NPC.oldPos[i] + NPC.Size / 2 - Main.screenPosition;
-                spriteBatch.Draw(mainValue, drawOldPos, rectangle, tint * sengs
-                    , NPC.oldRot[i] + MathHelper.PiOver2, rectangle.Size() / 2, NPC.scale, SpriteEffects.None, 0);
-                sengs *= 0.8f;
-            }
-            spriteBatch.Draw(mainValue, NPC.Center - Main.screenPosition, rectangle, tint
-                , NPC.rotation + MathHelper.PiOver2, rectangle.Size() / 2, NPC.scale, SpriteEffects.None, 0);
-            return false;
-        }
-
-        // ===== 猛砸径向预告线: 蓄力期间沿"对穿走廊"渐强的致命红线(BeamGrad), 让径向猛砸可读 =====
-        private void DrawSlamTelegraph() {
-            if (Main.dedServ || NPC.ai[2] != 1)
-                return;
-            NPC boss = Main.npc[(int)NPC.ai[0]];
-            if (!boss.Alives())
-                return;
-
-            float t = MathHelper.Clamp(NPC.ai[3] / ChargeTime, 0f, 1f);
-            Vector2 dir = (NPC.Center - boss.Center).SafeNormalize(Vector2.UnitX);
-            Vector2 start = NPC.Center;
-            Vector2 end = NPC.Center + dir * 1000f; //径向猛砸扫掠方向
-
-            //命中前渐强红线(红只留给真正的伤害源 — 猛砸路径)
-            float intensity = 0.15f + 0.7f * t;
-            float w = 4f + 12f * t;
-            ACMShaders.DrawBeam(start, end, w,
-                TelegraphColors.Lethal, new Color(120, 10, 15, 0), intensity, 1.6f, 2.0f);
-        }
-    }
-
-    // ===== 预告标记：落点 / 尸坟 / 锚点 / 边界（无伤害纯视觉）=====
-    // ai[0]=样式(0落点环,1尸坟,2锚点,3边界), ai[1]=寿命
-    internal class JiangcenTelegraphMark : ModProjectile
-    {
-        public override string Texture => "AncientChineseMythology/Textures/Masking/SoftGlow";
-
-        public override void SetDefaults() {
-            Projectile.width = Projectile.height = 24;
-            Projectile.friendly = false;
-            Projectile.hostile = false;
-            Projectile.tileCollide = false;
-            Projectile.timeLeft = 80;
-            Projectile.penetrate = -1;
-        }
-
-        public override void AI() {
-            if (Projectile.localAI[0] == 0 && Projectile.ai[1] > 0) {
-                Projectile.timeLeft = (int)Projectile.ai[1];
-            }
-            Projectile.localAI[0]++;
-            if (!VaultUtils.isServer && Projectile.localAI[0] % 4 == 0) {
-                int style = (int)Projectile.ai[0];
-                bool warm = style == 0 || style == 1; //落点/尸坟=暖红粒子, 锚点/边界=雷青粒子
-                int dustType = warm ? DustID.Shadowflame : DustID.Electric;
-                Color col = warm ? Color.DarkRed : default;
-                float r = style == 1 ? 18f : 34f;
-                Vector2 off = Main.rand.NextVector2CircularEdge(r, r);
-                int d = Dust.NewDust(Projectile.Center + off, 0, 0, dustType, 0, 0, 120, col, 1.4f);
-                Main.dust[d].noGravity = true;
-                Main.dust[d].velocity = off.SafeNormalize(Vector2.Zero) * 0.6f;
-            }
-        }
-
-        public override bool PreDraw(ref Color lightColor) {
-            Texture2D tex = TextureAssets.Projectile[Type].Value;
-            int style = (int)Projectile.ai[0];
-            float life = Math.Max(1f, Projectile.ai[1]);
-            float prog = MathHelper.Clamp(Projectile.localAI[0] / life, 0, 1);
-            float pulse = 0.6f + 0.4f * (float)Math.Sin(Projectile.localAI[0] * 0.25f);
-
-            //统一预警配色(§2.1): 落点=致命红 / 尸坟=暖暗红 / 锚点=雷青 / 边界=低饱和脉动
-            Color baseCol = style switch {
-                0 => TelegraphColors.Lethal,            //僵尸跳落点(致命猛砸)
-                1 => new Color(190, 45, 35),            //尸坟(暖暗红)
-                2 => TelegraphColors.Lightning,         //链电锚点(雷青)
-                3 => new Color(110, 150, 200),          //雷牢边界(低饱和)
-                _ => TelegraphColors.Lightning
-            };
-            baseCol.A = 0;
-
-            Vector2 pos = Projectile.Center - Main.screenPosition;
-
-            //环形扩张/收束的预告圈
-            float ringScale = MathHelper.Lerp(2.6f, 0.7f, prog) * (style == 3 ? 0.6f : 1f);
-            Main.spriteBatch.Draw(tex, pos, null,
-                baseCol * (0.5f + 0.5f * prog) * pulse, 0f, tex.Size() / 2, ringScale, SpriteEffects.None, 0);
-            Main.spriteBatch.Draw(tex, pos, null,
-                baseCol * 0.5f, 0f, tex.Size() / 2, 1.1f * pulse, SpriteEffects.None, 0);
-
-            //锁定式内核: 落点/锚点临近命中时收束变亮(可读的"就是这里")
-            if (style == 0 || style == 2) {
-                float lockT = prog * prog;
-                Main.spriteBatch.Draw(tex, pos, null,
-                    baseCol * (0.3f + 0.7f * lockT), 0f, tex.Size() / 2,
-                    MathHelper.Lerp(0.9f, 0.35f, prog) * pulse, SpriteEffects.None, 0);
-            }
-            return false;
-        }
-    }
-
-    // ===== 落地震波弹：雷主题径向电弹 =====
-    internal class JiangcenShockBolt : ModProjectile
-    {
-        public override string Texture => "AncientChineseMythology/Textures/Projectiles/ThunderOrb";
-
-        public override void SetStaticDefaults() {
-            ProjectileID.Sets.TrailingMode[Type] = 2;
-            ProjectileID.Sets.TrailCacheLength[Type] = 8;
-        }
-
-        public override void SetDefaults() {
-            Projectile.width = Projectile.height = 26;
-            Projectile.friendly = false;
-            Projectile.hostile = true;
-            Projectile.tileCollide = false;
-            Projectile.timeLeft = 80;
-            Projectile.penetrate = -1;
-        }
-
-        public override void AI() {
-            Projectile.velocity *= 0.985f;
-            Projectile.rotation += 0.3f;
-            if (!VaultUtils.isServer) {
-                int d = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height, DustID.Electric, 0, 0, 120, default, 1.3f);
-                Main.dust[d].noGravity = true;
-                Main.dust[d].velocity *= 0.3f;
-            }
-        }
-
-        public override bool PreDraw(ref Color lightColor) {
-            Texture2D tex = TextureAssets.Projectile[Type].Value;
-            for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                Vector2 op = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
-                float f = 1f - i / (float)Projectile.oldPos.Length;
-                Main.spriteBatch.Draw(tex, op, null, new Color(120, 180, 255, 0) * f * 0.5f, Projectile.rotation, tex.Size() / 2, Projectile.scale * f, SpriteEffects.None, 0);
-            }
-            Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, lightColor, Projectile.rotation, tex.Size() / 2, Projectile.scale, SpriteEffects.None, 0);
-            return false;
-        }
-    }
-
-    // ===== 尸手：从尸坟向上抓起的垂直命中柱 =====
-    internal class JiangcenCorpseHand : ModProjectile
-    {
-        public override string Texture => "AncientChineseMythology/Textures/Masking/SlashBurst";
-
-        private const int WarnTime = 26;
-        private const int RiseTime = 30;
-        private const int ActiveTime = 46;
-        private const float ColumnHeight = 320f;
-
-        public override void SetDefaults() {
-            Projectile.width = 64;
-            Projectile.height = (int)ColumnHeight;
-            Projectile.friendly = false;
-            Projectile.hostile = true;
-            Projectile.tileCollide = false;
-            Projectile.timeLeft = WarnTime + RiseTime + ActiveTime + 10;
-            Projectile.penetrate = -1;
-        }
-
-        public override void AI() {
-            //锚定于坟口，命中柱自下而上
-            if (Projectile.ai[1] == 0) Projectile.ai[1] = Projectile.Center.Y;
-            Projectile.Center = new Vector2(Projectile.Center.X, Projectile.ai[1] - ColumnHeight / 2f);
-
-            Projectile.localAI[0]++;
-            if (Projectile.localAI[0] == WarnTime) {
-                SoundEngine.PlaySound(SoundID.NPCDeath6 with { Pitch = 0.2f }, Projectile.Center);
-            }
-            if (!VaultUtils.isServer) {
-                if (Projectile.localAI[0] < WarnTime) {
-                    int d = Dust.NewDust(new Vector2(Projectile.Center.X - 20, Projectile.ai[1] - 8), 40, 8, DustID.Shadowflame, 0, -1f, 120, Color.DarkRed, 1.5f);
-                    Main.dust[d].noGravity = true;
-                }
-                else {
-                    int d = Dust.NewDust(new Vector2(Projectile.Center.X - 24, Projectile.Center.Y), 48, (int)ColumnHeight, DustID.Shadowflame, 0, -3f, 120, Color.DarkRed, 1.8f);
-                    Main.dust[d].noGravity = true;
-                }
-            }
-        }
-
-        public override bool CanHitPlayer(Player target) {
-            return Projectile.localAI[0] >= WarnTime;
-        }
-
-        public override bool PreDraw(ref Color lightColor) {
-            Texture2D tex = TextureAssets.Projectile[Type].Value;
-            float t = Projectile.localAI[0];
-            float rise = MathHelper.Clamp((t - WarnTime) / RiseTime, 0f, 1f);
-            float warnAlpha = MathHelper.Clamp(t / WarnTime, 0f, 1f);
-            //SlashBurst 自底向上发散：原点取底部中心
-            Vector2 bottom = new Vector2(Projectile.Center.X, Projectile.ai[1]) - Main.screenPosition;
-            float scaleY = (ColumnHeight / tex.Height) * (t < WarnTime ? 0.25f : rise);
-            float scaleX = 64f / tex.Width;
-            Color col = (t < WarnTime ? new Color(120, 10, 10) * warnAlpha * 0.5f : new Color(200, 30, 30));
-            col.A = 0;
-            Main.spriteBatch.Draw(tex, bottom, null, col, 0f, new Vector2(tex.Width / 2f, tex.Height), new Vector2(scaleX, scaleY), SpriteEffects.None, 0);
-            return false;
-        }
-    }
-
-    // ===== 雷锤回旋投掷：飞出再回返，需躲两段 =====
-    // ai[0]=Boss whoAmI
-    internal class JiangcenThrownHammer : ModProjectile
-    {
-        public override string Texture => "AncientChineseMythology/NPCs/Boss/Jiangcens/JiangcenHammer";
-
-        private const int OutTime = 42;
-
-        public override void SetStaticDefaults() {
-            ProjectileID.Sets.TrailingMode[Type] = 2;
-            ProjectileID.Sets.TrailCacheLength[Type] = 10;
-        }
-
-        public override void SetDefaults() {
-            Projectile.width = Projectile.height = 70;
-            Projectile.friendly = false;
-            Projectile.hostile = true;
-            Projectile.tileCollide = false;
-            Projectile.timeLeft = 240;
-            Projectile.penetrate = -1;
-        }
-
-        public override void AI() {
-            Projectile.rotation += 0.45f;
-            Projectile.ai[1]++;
-
-            if (Projectile.ai[1] < OutTime) {
-                Projectile.velocity *= 0.965f; //飞出减速
-            }
-            else {
-                //回返至 Boss
-                NPC boss = Main.npc[(int)Projectile.ai[0]];
-                Vector2 dest = boss.Alives() ? boss.Center : Projectile.Center;
-                Vector2 dir = (dest - Projectile.Center).SafeNormalize(Vector2.Zero);
-                Projectile.velocity = Vector2.Lerp(Projectile.velocity, dir * 22f, 0.06f);
-                if (boss.Alives() && Vector2.Distance(Projectile.Center, dest) < 70f) {
-                    Projectile.Kill();
-                }
-            }
-
-            if (!VaultUtils.isServer) {
-                int d = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height, DustID.Electric, 0, 0, 120, default, 1.4f);
-                Main.dust[d].noGravity = true;
-                Main.dust[d].velocity *= 0.4f;
-            }
-        }
-
-        public override bool PreDraw(ref Color lightColor) {
-            Texture2D tex = TextureAssets.Projectile[Type].Value;
-            for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                Vector2 op = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
-                float f = 1f - i / (float)Projectile.oldPos.Length;
-                Main.spriteBatch.Draw(tex, op, null, new Color(120, 170, 255, 0) * f * 0.4f, Projectile.rotation, tex.Size() / 2, Projectile.scale * f, SpriteEffects.None, 0);
-            }
-            Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, lightColor, Projectile.rotation, tex.Size() / 2, Projectile.scale, SpriteEffects.None, 0);
-            return false;
-        }
-    }
-
-    // ===== 镜像锤魂：镜像玩家走位后突袭 =====
-    // ai[0]=类型(0点对称,1水平镜像), ai[1]=Boss whoAmI
-    internal class JiangcenHammerGhost : ModProjectile
-    {
-        public override string Texture => "AncientChineseMythology/NPCs/Boss/Jiangcens/JiangcenHammer";
-
-        private const int MirrorTime = 120;
-        private const int StrikeTime = 46;
-
-        public override void SetStaticDefaults() {
-            ProjectileID.Sets.TrailingMode[Type] = 2;
-            ProjectileID.Sets.TrailCacheLength[Type] = 10;
-        }
-
-        public override void SetDefaults() {
-            Projectile.width = Projectile.height = 70;
-            Projectile.friendly = false;
-            Projectile.hostile = true;
-            Projectile.tileCollide = false;
-            Projectile.timeLeft = MirrorTime + StrikeTime + 40;
-            Projectile.penetrate = -1;
-        }
-
-        public override void AI() {
-            NPC boss = Main.npc[(int)Projectile.ai[1]];
-            if (!boss.Alives() || boss.ModNPC is not Jiangcen jc) {
-                Projectile.Kill();
-                return;
-            }
-            Player target = Main.player[boss.target];
-            Projectile.localAI[0]++;
-            float t = Projectile.localAI[0];
-            Projectile.rotation += 0.2f;
-
-            if (t < MirrorTime) {
-                //镜像玩家相对场地中心的位置
-                Vector2 mirror;
-                if ((int)Projectile.ai[0] == 0) {
-                    mirror = jc.ArenaCenter * 2f - target.Center; //点对称
-                }
-                else {
-                    mirror = new Vector2(jc.ArenaCenter.X * 2f - target.Center.X, target.Center.Y); //水平镜像
-                }
-                Projectile.Center = Vector2.Lerp(Projectile.Center, mirror, 0.25f);
-                Projectile.velocity = Vector2.Zero;
-                if (!VaultUtils.isServer && t % 3 == 0) {
-                    int d = Dust.NewDust(Projectile.Center, 0, 0, DustID.Shadowflame, 0, 0, 120, Color.DarkRed, 1.4f);
-                    Main.dust[d].noGravity = true;
-                }
-            }
-            else if (t == MirrorTime) {
-                Projectile.localAI[1] = 1; //记录已捕捉
-                Vector2 dir = (target.Center - Projectile.Center).SafeNormalize(Vector2.UnitY);
-                Projectile.velocity = dir * 26f;
-                SoundEngine.PlaySound(SoundID.Item71 with { Pitch = 0.3f, Volume = 1.1f }, Projectile.Center);
-            }
-            else {
-                Projectile.velocity *= 0.992f;
-                if (!VaultUtils.isServer) {
-                    int d = Dust.NewDust(Projectile.position, Projectile.width, Projectile.height, DustID.Shadowflame, 0, 0, 120, Color.DarkRed, 1.6f);
-                    Main.dust[d].noGravity = true;
-                }
-            }
-        }
-
-        public override bool CanHitPlayer(Player target) {
-            return Projectile.localAI[0] >= MirrorTime;
-        }
-
-        public override bool PreDraw(ref Color lightColor) {
-            Texture2D tex = TextureAssets.Projectile[Type].Value;
-            bool striking = Projectile.localAI[0] >= MirrorTime;
-            //与本体异色(紫红): 标明"这是你的影子", 强化与自己走位对抗的体验
-            Color tint = striking ? new Color(225, 75, 205) : new Color(150, 60, 175) * 0.75f;
-            for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                Vector2 op = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
-                float f = 1f - i / (float)Projectile.oldPos.Length;
-                Main.spriteBatch.Draw(tex, op, null, tint * f * 0.4f, Projectile.rotation, tex.Size() / 2, Projectile.scale * f, SpriteEffects.None, 0);
-            }
-            Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, tint, Projectile.rotation, tex.Size() / 2, Projectile.scale, SpriteEffects.None, 0);
-
-            //突袭起手的致命突进线(红=真正伤害源): 命中前可读"影子从哪扑来"
-            float strikeT = Projectile.localAI[0] - MirrorTime;
-            if (striking && strikeT < 16f && Projectile.velocity.LengthSquared() > 1f) {
-                float fade = 1f - strikeT / 16f;
-                Vector2 dir = Projectile.velocity.SafeNormalize(Vector2.UnitY);
-                ACMShaders.DrawBeam(Projectile.Center, Projectile.Center + dir * 520f, 6f + 6f * fade,
-                    TelegraphColors.Lethal, new Color(150, 20, 90, 0), 0.85f * fade, 1.8f, 2.2f);
-            }
-            return false;
-        }
-    }
-
-    // ===== 雷狱垂直落雷：边界位置型危险（自带预告）=====
-    internal class JiangcenLightningStrike : ModProjectile
-    {
-        public override string Texture => "AncientChineseMythology/Textures/Masking/LightningBranch";
-
-        private const int WarnTime = 42;
-        private const int ActiveTime = 22;
-        private const float ColumnHeight = 1100f;
-
-        public override void SetDefaults() {
-            Projectile.width = 46;
-            Projectile.height = (int)ColumnHeight;
-            Projectile.friendly = false;
-            Projectile.hostile = true;
-            Projectile.tileCollide = false;
-            Projectile.timeLeft = WarnTime + ActiveTime + 8;
-            Projectile.penetrate = -1;
-        }
-
-        public override void AI() {
-            Projectile.localAI[0]++;
-            if (Projectile.localAI[0] == WarnTime) {
-                SoundEngine.PlaySound(SoundID.Item122 with { Pitch = 0.4f, Volume = 1.2f }, Projectile.Center);
-                ACMScreenShakeSystem.Add(7f);
-                JiangcenThunderPrisonSystem.Pulse(Projectile.Center, 0.5f, TelegraphColors.Lightning);
-                if (!VaultUtils.isServer) {
-                    for (int i = 0; i < 24; i++) {
-                        int d = Dust.NewDust(new Vector2(Projectile.Center.X - 8, Projectile.Center.Y - ColumnHeight / 2), 16, (int)ColumnHeight, DustID.Electric, 0, 0, 100, default, 1.8f);
-                        Main.dust[d].noGravity = true;
-                        Main.dust[d].velocity = new Vector2(Main.rand.NextFloat(-2, 2), Main.rand.NextFloat(-2, 2));
-                    }
-                }
-            }
-        }
-
-        public override bool CanHitPlayer(Player target) {
-            return Projectile.localAI[0] >= WarnTime && Projectile.localAI[0] < WarnTime + ActiveTime;
-        }
-
-        public override bool PreDraw(ref Color lightColor) {
-            Texture2D tex = TextureAssets.Projectile[Type].Value;
-            float t = Projectile.localAI[0];
-            bool active = t >= WarnTime;
-            float warnAlpha = MathHelper.Clamp(t / WarnTime, 0, 1);
-            float flick = 0.6f + 0.4f * (float)Main.rand.NextFloat();
-            Color col = active ? new Color(180, 220, 255) * flick : new Color(80, 140, 255) * warnAlpha * 0.4f;
-            col.A = 0;
-            float scaleY = ColumnHeight / tex.Height;
-            float scaleX = (active ? 1f : 0.35f) * 46f / tex.Width;
-            Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, null, col, 0f, new Vector2(tex.Width / 2f, tex.Height / 2f), new Vector2(scaleX, scaleY), SpriteEffects.None, 0);
-            return false;
-        }
-    }
-
-    // ===== 雷狱链式闪电：锚点之间的线段命中（自带预告）=====
-    // 生成：position=中点, velocity=(B-A)；首帧存半向量于 ai[0],ai[1]
-    internal class JiangcenChainArc : ModProjectile
-    {
-        public override string Texture => "AncientChineseMythology/Textures/Masking/LightningBranch";
-
-        private const int WarnTime = 44;
-        private const int ActiveTime = 30;
-
-        public override void SetDefaults() {
-            Projectile.width = 40;
-            Projectile.height = 40;
-            Projectile.friendly = false;
-            Projectile.hostile = true;
-            Projectile.tileCollide = false;
-            Projectile.timeLeft = WarnTime + ActiveTime + 8;
-            Projectile.penetrate = -1;
-        }
-
-        public override void AI() {
-            if (Projectile.localAI[1] == 0) {
-                Projectile.localAI[1] = 1;
-                Vector2 half = Projectile.velocity * 0.5f;
-                Vector2 mid = Projectile.Center;
-                Projectile.ai[0] = half.X;
-                Projectile.ai[1] = half.Y;
-                Projectile.velocity = Vector2.Zero;
-                //扩张 AABB 作为宽相位包围盒（精确判定见 Colliding）
-                Projectile.width = (int)Math.Max(40, Math.Abs(half.X) * 2 + 40);
-                Projectile.height = (int)Math.Max(40, Math.Abs(half.Y) * 2 + 40);
-                Projectile.Center = mid;
-                Projectile.netUpdate = true;
-            }
-            Projectile.localAI[0]++;
-            if (Projectile.localAI[0] == WarnTime) {
-                SoundEngine.PlaySound(SoundID.Item94 with { Pitch = 0.2f }, Projectile.Center);
-            }
-            if (!VaultUtils.isServer && Projectile.localAI[0] >= WarnTime) {
-                Vector2 half = new Vector2(Projectile.ai[0], Projectile.ai[1]);
-                Vector2 a = Projectile.Center - half;
-                Vector2 b = Projectile.Center + half;
-                Vector2 p = Vector2.Lerp(a, b, Main.rand.NextFloat());
-                int d = Dust.NewDust(p, 0, 0, DustID.Electric, 0, 0, 100, default, 1.6f);
-                Main.dust[d].noGravity = true;
-                Main.dust[d].velocity = Main.rand.NextVector2Circular(2, 2);
-            }
-        }
-
-        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
-            if (Projectile.localAI[0] < WarnTime || Projectile.localAI[0] >= WarnTime + ActiveTime) return false;
-            Vector2 half = new Vector2(Projectile.ai[0], Projectile.ai[1]);
-            Vector2 a = Projectile.Center - half;
-            Vector2 b = Projectile.Center + half;
-            Vector2 c = targetHitbox.Center.ToVector2();
-            return Jiangcen.DistanceToSegment(c, a, b) < 30f;
-        }
-
-        public override bool PreDraw(ref Color lightColor) {
-            Texture2D tex = TextureAssets.Projectile[Type].Value;
-            Vector2 half = new Vector2(Projectile.ai[0], Projectile.ai[1]);
-            Vector2 a = Projectile.Center - half - Main.screenPosition;
-            Vector2 b = Projectile.Center + half - Main.screenPosition;
-            float len = (b - a).Length();
-            float rot = (b - a).ToRotation() - MathHelper.PiOver2;
-            float t = Projectile.localAI[0];
-            bool active = t >= WarnTime;
-            float warnAlpha = MathHelper.Clamp(t / WarnTime, 0, 1);
-            float flick = 0.6f + 0.4f * Main.rand.NextFloat();
-            Color col = active ? new Color(180, 220, 255) * flick : new Color(80, 140, 255) * warnAlpha * 0.4f;
-            col.A = 0;
-            float scaleY = len / tex.Height;
-            float scaleX = (active ? 0.9f : 0.3f) * 40f / tex.Width;
-            Main.spriteBatch.Draw(tex, a, null, col, rot, new Vector2(tex.Width / 2f, 0f), new Vector2(scaleX, scaleY), SpriteEffects.None, 0);
-
-            //激活段升格为发光雷电 beam(流动 UV), 锚点间链电更有存在感
-            if (active) {
-                Vector2 aWorld = Projectile.Center - half;
-                Vector2 bWorld = Projectile.Center + half;
-                ACMShaders.DrawBeam(aWorld, bWorld, 8f + 6f * flick,
-                    TelegraphColors.Lightning, new Color(40, 90, 180, 0), 0.5f + 0.5f * flick, 2.6f, 3.0f);
-            }
-            return false;
-        }
-    }
-
+    // ============================================================
+    //  将臣雷暴天幕(V3 重写): JiangcenStormSky 程序化雷暴云 + 云内放电 + 远景闪电
+    //  注册名与 LoadInstance 签名保持不变(ACMMod.Load 调用)
+    // ============================================================
     internal class JiangcenSky : CustomSky
     {
         private bool active;
         private float intensity;
-        private const float maxIntensity = 0.6f;
-        private Color skyColor;
+        private float globalTime;
+        private float phaseAmt;   //0=常态雷暴 1=雷狱相
+        private float deathDim;
+        private float flash;
+
+        //Boss 每帧发布的目标标量(客户端)
+        private static float phaseTarget;
+        private static float deathTarget;
+        private static float pendingFlash;
+
         internal static string name;
+
         public static void LoadInstance() {
             name = "AncientChineseMythology:JiangcenSky";
             SkyManager.Instance[name] = new JiangcenSky();
         }
 
+        /// <summary>大节拍天幕亮拍(军鼓/合拢/天罚), 取 max 待消费。</summary>
+        public static void TriggerFlash(float amount) {
+            if (amount > pendingFlash)
+                pendingFlash = amount;
+        }
+
+        /// <summary>由 Boss 每帧发布雷狱相/死亡压暗目标。</summary>
+        public static void PublishState(float phase, float death) {
+            phaseTarget = phase;
+            deathTarget = death;
+        }
+
         public override void Activate(Vector2 position, params object[] args) {
             active = true;
-            intensity = 0.01f;
+            intensity = Math.Max(intensity, 0.01f);
         }
 
         public override void Deactivate(params object[] args) {
@@ -1382,69 +1536,92 @@ namespace AncientChineseMythology.NPCs.Boss.Jiangcens
         }
 
         public override bool IsActive() {
-            return active;
+            return active || intensity > 0.01f;
         }
 
         public override void Reset() {
             active = false;
-            intensity = 0.01f;
-        }
-
-        public override Color OnTileColor(Color inColor) {
-            return inColor * (1f - intensity);
-        }
-
-        public override void Draw(SpriteBatch spriteBatch, float minDepth, float maxDepth) {
-            NPC boss = GetBoss();
-            Vector2 pullShake = Vector2.Zero;
-
-            if (boss != null) {
-                float time = (float)Main.gameTimeCache.TotalGameTime.TotalSeconds;
-                Vector2 jitter = new Vector2(
-                    (float)Math.Sin(time * 6f),
-                    (float)Math.Cos(time * 4.2f)
-                ) * (1.5f * intensity);
-
-                pullShake = (boss.Center - Main.LocalPlayer.Center)
-                    .SafeNormalize(Vector2.Zero) * (2f * intensity) + jitter;
-            }
-
-            float pulse = 0.85f + 0.15f * (float)Math.Sin(Main.GlobalTimeWrappedHourly * 2f);
-            Color finalColor = skyColor * (intensity * pulse);
-
-            spriteBatch.Draw(
-                VaultAsset.placeholder2.Value,
-                new Rectangle((int)pullShake.X, (int)pullShake.Y, Main.screenWidth, Main.screenHeight),
-                finalColor
-            );
+            intensity = 0f;
         }
 
         public override void Update(GameTime gameTime) {
+            globalTime += (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+            //消费亮拍并衰减
+            if (pendingFlash > flash)
+                flash = pendingFlash;
+            pendingFlash = 0f;
+            flash = MathHelper.Lerp(flash, 0f, 0.075f);
+
             NPC boss = GetBoss();
             if (boss != null) {
-                float distance = Main.LocalPlayer.Distance(boss.Center);
-                float t = MathHelper.Clamp(distance / 1600f, 0f, 1f);
-                t *= t;
-
-                Color nearRed = new Color(160, 0, 20);
-                if (Main.GlobalTimeWrappedHourly % 1f < 0.5f)
-                    nearRed = Color.Lerp(nearRed, new Color(200, 20, 40), 0.5f + 0.5f * (float)Math.Sin(Main.GlobalTimeWrappedHourly * 10f));
-
-                skyColor = VaultUtils.MultiStepColorLerp(t,
-                    new Color(15, 8, 30),
-                    new Color(20, 50, 50),
-                    nearRed
-                );
-
-                intensity = MathHelper.Min(maxIntensity, intensity + 0.02f);
+                intensity = MathHelper.Min(1f, intensity + 0.02f);
+                phaseAmt = MathHelper.Lerp(phaseAmt, phaseTarget, 0.03f);
+                deathDim = MathHelper.Lerp(deathDim, deathTarget, 0.05f);
                 active = true;
             }
             else {
-                intensity = MathHelper.Max(0f, intensity - 0.015f);
+                intensity = MathHelper.Max(0f, intensity - 0.012f);
+                deathDim = MathHelper.Lerp(deathDim, 0f, 0.02f);
                 if (intensity <= 0f) {
                     Deactivate();
                 }
             }
+        }
+
+        public override Color OnTileColor(Color inColor) {
+            float darken = intensity * (0.38f + phaseAmt * 0.14f + deathDim * 0.1f);
+            return inColor * (1f - darken);
+        }
+
+        public override float GetCloudAlpha() => 1f - intensity * 0.85f;
+
+        public override void Draw(SpriteBatch spriteBatch, float minDepth, float maxDepth) {
+            //仅最远背景层
+            if (!(maxDepth >= 0 && minDepth < 0) || intensity <= 0.01f)
+                return;
+
+            Effect fx = MythologyConfig.FullscreenShadersEnabled ? JiangcenVFX.SkyEffect : null;
+            if (fx == null) {
+                DrawFallback(spriteBatch);
+                return;
+            }
+
+            //Boss 屏幕归一化坐标(血晕锚点)
+            Vector2 bossUV = new(0.5f, 0.42f);
+            NPC boss = GetBoss();
+            if (boss != null) {
+                Vector2 sp = boss.Center - Main.screenPosition;
+                bossUV = new Vector2(
+                    MathHelper.Clamp(sp.X / Main.screenWidth, -0.5f, 1.5f),
+                    MathHelper.Clamp(sp.Y / Main.screenHeight, -0.5f, 1.5f));
+            }
+
+            fx.Parameters["uTime"]?.SetValue(globalTime);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(intensity, 0f, 1f));
+            fx.Parameters["uPhase"]?.SetValue(MathHelper.Clamp(phaseAmt, 0f, 1f));
+            fx.Parameters["uAspect"]?.SetValue(Main.screenWidth / (float)Main.screenHeight);
+            fx.Parameters["uBossUV"]?.SetValue(bossUV);
+            fx.Parameters["uFlash"]?.SetValue(MathHelper.Clamp(flash, 0f, 1.5f));
+            fx.Parameters["uDeath"]?.SetValue(MathHelper.Clamp(deathDim, 0f, 1f));
+
+            spriteBatch.End();
+            spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.LinearClamp,
+                DepthStencilState.None, RasterizerState.CullNone, fx, Matrix.Identity);
+            spriteBatch.Draw(VaultAsset.placeholder2.Value,
+                new Rectangle(0, 0, Main.screenWidth, Main.screenHeight), Color.White);
+            spriteBatch.End();
+            spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null, Matrix.Identity);
+        }
+
+        //着色器不可用时的纯色降级(旧版观感)
+        private void DrawFallback(SpriteBatch spriteBatch) {
+            float pulse = 0.85f + 0.15f * (float)Math.Sin(globalTime * 2f);
+            Color col = Color.Lerp(new Color(15, 8, 30), new Color(96, 14, 20), 0.4f + phaseAmt * 0.2f);
+            spriteBatch.Draw(VaultAsset.placeholder2.Value,
+                new Rectangle(0, 0, Main.screenWidth, Main.screenHeight),
+                col * (intensity * 0.55f * pulse));
         }
 
         private static NPC GetBoss() {

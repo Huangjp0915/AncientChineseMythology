@@ -9,8 +9,11 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
 {
     /// <summary>
-    /// 青龙雷柱 — 顶点绘制锯齿闪电拖尾 + LightningBranch/ElectricArcSheet灰度图叠加
-    /// 渲染技术：ColoredVertex TriangleStrip锯齿电弧拖尾 + 双层灰度图弹体 + 抖动偏移
+    /// 青龙雷矢 (V3) — 顶点绘制锯齿闪电拖尾 + LightningBranch/ElectricArcSheet 灰度图叠加。
+    /// V3 修订: 配色从离板的紫色改为青龙板式「青白雷」(TelegraphColors.Lightning 系),
+    /// 并新增 <b>ambient 氛围模式</b> (ai[1]=1): 零伤害纯视觉余弹, 供雷暴天气与死亡演出
+    /// 「化雨升天」当远景落雷氛围复用 — 由 Qinlong.SpawnAmbientBolt 服务器统一生成。
+    /// 渲染技术: ColoredVertex TriangleStrip 锯齿电弧拖尾 + 双层灰度图弹体 + 抖动偏移。
     /// </summary>
     public class QinglongThunderBolt : ModProjectile
     {
@@ -18,6 +21,15 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
 
         private float jitterSeed;
         private float trailOffset;
+
+        /// <summary>ai[1]=1: 氛围模式 (零伤害, 视觉更淡, 落地自灭)。</summary>
+        private bool Ambient => Projectile.ai[1] == 1f;
+
+        // 青白雷配色 (青龙板式, 替代旧紫)
+        private static readonly Color BoltOuter = new(70, 170, 235);
+        private static readonly Color BoltMain = new(140, 215, 255);
+        private static readonly Color BoltBright = new(200, 240, 255);
+        private static readonly Color BoltCore = new(235, 250, 255);
 
         public override void SetStaticDefaults() {
             ProjectileID.Sets.TrailCacheLength[Type] = 16;
@@ -40,16 +52,32 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
             jitterSeed += 0.3f;
             trailOffset += 0.02f;
 
+            if (Ambient) {
+                // 氛围余弹: 永不致伤; 加速下坠, 靠近地面/瓦片即自灭 (远景落雷感)
+                Projectile.hostile = false;
+                Projectile.damage = 0;
+                Projectile.velocity.Y += 0.35f;
+                if (Projectile.velocity.Y > 26f)
+                    Projectile.velocity.Y = 26f;
+
+                Point tile = Projectile.Center.ToTileCoordinates();
+                if (tile.X >= 0 && tile.X < Main.maxTilesX && tile.Y >= 0 && tile.Y < Main.maxTilesY &&
+                    WorldGen.SolidTile(tile.X, tile.Y)) {
+                    Projectile.Kill();
+                    return;
+                }
+            }
+
             if (Main.rand.NextBool(2)) {
                 Vector2 offset = Main.rand.NextVector2Circular(18, 18);
                 Dust d = Dust.NewDustDirect(Projectile.Center + offset, 0, 0,
                     DustID.Electric, Main.rand.NextFloat(-3, 3), Main.rand.NextFloat(-3, 3),
-                    60, default, 1.0f);
+                    60, default, Ambient ? 0.8f : 1.0f);
                 d.noGravity = true;
                 d.fadeIn = 1.3f;
             }
 
-            Lighting.AddLight(Projectile.Center, 0.35f, 0.25f, 0.6f);
+            Lighting.AddLight(Projectile.Center, 0.22f, 0.42f, 0.60f);
         }
 
         public override bool PreDraw(ref Color lightColor) {
@@ -57,6 +85,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
             GraphicsDevice gd = Main.graphics.GraphicsDevice;
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
             float pulse = 1f + MathF.Sin(jitterSeed * 4f) * 0.15f;
+            float dim = Ambient ? 0.72f : 1f; // 氛围模式整体更淡 (远景层)
 
             // === 1. 顶点TriangleStrip锯齿闪电拖尾 ===
             if (Projectile.oldPos[1] != Vector2.Zero) {
@@ -65,12 +94,12 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                     DepthStencilState.None, RasterizerState.CullNone, null,
                     Main.GameViewMatrix.TransformationMatrix);
 
-                // 外层宽电弧 — 紫蓝色
-                DrawLightningStrip(gd, new Color(100, 80, 255) * 0.65f, new Color(60, 40, 180) * 0.2f,
+                // 外层宽电弧 — 青蓝
+                DrawLightningStrip(gd, BoltOuter * (0.65f * dim), new Color(30, 90, 160) * (0.2f * dim),
                     20f, 1.5f, 0f);
 
-                // 内层窄亮芯 — 白紫色
-                DrawLightningStrip(gd, new Color(200, 180, 255) * 0.5f, new Color(160, 140, 255) * 0.15f,
+                // 内层窄亮芯 — 青白
+                DrawLightningStrip(gd, BoltBright * (0.5f * dim), BoltMain * (0.15f * dim),
                     8f, 0.8f, 0.3f);
 
                 sb.End();
@@ -91,23 +120,23 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                     MathF.Sin(jitterSeed * 7.3f) * 5f,
                     MathF.Cos(jitterSeed * 5.7f) * 5f);
 
-                // 底层：LightningBranch 主电弧（大尺寸，紫蓝色）
+                // 底层：LightningBranch 主电弧（大尺寸，青蓝）
                 Texture2D boltTex = ACMAsset.LightningBranch;
                 Vector2 boltOrigin = boltTex.Size() / 2f;
 
-                Color boltOuter = new Color(80, 60, 200, 0) * (0.5f * pulse);
-                sb.Draw(boltTex, drawPos + jitter, null, boltOuter, Projectile.rotation,
+                Color boltOuterC = BoltOuter with { A = 0 } * (0.5f * pulse * dim);
+                sb.Draw(boltTex, drawPos + jitter, null, boltOuterC, Projectile.rotation,
                     boltOrigin, new Vector2(0.12f, 0.18f) * pulse, SpriteEffects.None, 0f);
 
-                Color boltMain = new Color(130, 110, 255, 0) * 0.7f;
-                sb.Draw(boltTex, drawPos + jitter * 0.7f, null, boltMain, Projectile.rotation,
+                Color boltMainC = BoltMain with { A = 0 } * (0.7f * dim);
+                sb.Draw(boltTex, drawPos + jitter * 0.7f, null, boltMainC, Projectile.rotation,
                     boltOrigin, new Vector2(0.08f, 0.14f), SpriteEffects.None, 0f);
 
                 // 第二层：镜像分叉闪电
                 Vector2 jitter2 = new(
                     MathF.Sin(jitterSeed * 11.1f) * 7f,
                     MathF.Cos(jitterSeed * 9.3f) * 7f);
-                Color bolt2Color = new Color(180, 150, 255, 0) * 0.4f;
+                Color bolt2Color = BoltBright with { A = 0 } * (0.4f * dim);
                 sb.Draw(boltTex, drawPos + jitter2, null, bolt2Color, Projectile.rotation + 0.2f,
                     boltOrigin, new Vector2(0.07f, 0.12f), SpriteEffects.FlipHorizontally, 0f);
 
@@ -118,20 +147,20 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
                     int sectionHeight = arcTex.Height / 4;
                     Rectangle arcFrame = new(0, arcSection * sectionHeight, arcTex.Width, sectionHeight);
                     Vector2 arcOrigin = new(arcFrame.Width / 2f, arcFrame.Height / 2f);
-                    Color arcColor = new Color(200, 170, 255, 0) * (0.4f * pulse);
+                    Color arcColor = BoltBright with { A = 0 } * (0.4f * pulse * dim);
                     sb.Draw(arcTex, drawPos + jitter * 0.4f, arcFrame, arcColor,
                         Projectile.rotation - MathHelper.PiOver2 + MathF.Sin(jitterSeed) * 0.25f,
                         arcOrigin, new Vector2(0.09f, 0.07f), SpriteEffects.None, 0f);
                 }
 
-                // 中心SoftGlow高亮 — 白紫核心
+                // 中心SoftGlow高亮 — 青白核心
                 Texture2D glowTex = ACMAsset.SoftGlow;
                 Vector2 glowOrigin = glowTex.Size() / 2f;
-                Color coreGlow = new Color(200, 180, 255, 0) * (0.8f * pulse);
+                Color coreGlow = BoltBright with { A = 0 } * (0.8f * pulse * dim);
                 sb.Draw(glowTex, drawPos, null, coreGlow, 0f,
                     glowOrigin, 1.3f * pulse, SpriteEffects.None, 0f);
 
-                Color whiteCore = new Color(240, 230, 255, 0) * 0.45f;
+                Color whiteCore = BoltCore with { A = 0 } * (0.45f * dim);
                 sb.Draw(glowTex, drawPos, null, whiteCore, 0f,
                     glowOrigin, 0.5f, SpriteEffects.None, 0f);
 
@@ -183,13 +212,17 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Qinlongs
         }
 
         public override void OnKill(int timeLeft) {
-            SoundEngine.PlaySound(SoundID.Item94 with { Volume = 0.5f, Pitch = 0.3f }, Projectile.Center);
-            for (int i = 0; i < 15; i++) {
+            SoundEngine.PlaySound(SoundID.Item94 with { Volume = Ambient ? 0.35f : 0.5f, Pitch = 0.3f }, Projectile.Center);
+            int dustCount = Ambient ? 9 : 15;
+            for (int i = 0; i < dustCount; i++) {
                 Dust d = Dust.NewDustDirect(Projectile.position, Projectile.width, Projectile.height,
                     DustID.Electric, Main.rand.NextFloat(-5, 5), Main.rand.NextFloat(-5, 5),
                     50, default, 1.4f);
                 d.noGravity = true;
             }
+            // 氛围余弹落地: 触发天幕微闪 (远雷感)
+            if (Ambient && !Main.dedServ)
+                QinglongSky.FlashLightning(0.30f);
         }
     }
 }

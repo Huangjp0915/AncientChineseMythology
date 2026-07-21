@@ -12,6 +12,8 @@ float uIntensity;         // 整体强度 (0~1, 用于淡入淡出)
 float uAspect;            // 屏幕宽高比 (width / height)
 float4 uColorPrimary;    // 主色调 (深林绿)
 float4 uColorSecondary;  // 辅色调 (古金色)
+float uCrack;             // 裂纹强度 (0=完好, ~0.85 濒死, 1=碎裂崩解; 默认 0 向后兼容)
+float uFlash;             // 全环闪光 (换阶段/碎裂瞬间的白热脉冲, 默认 0)
 
 float4 ArenaCirclePS(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0) : COLOR0
 {
@@ -138,9 +140,40 @@ float4 ArenaCirclePS(float4 sampleColor : COLOR0, float2 coords : TEXCOORD0) : C
                     * smoothstep(1.0, 1.015, normDist) * 0.10;
 
     // ==========================================
+    //  裂纹演变 (uCrack: 血量/阶段驱动的损伤叙事)
+    // ==========================================
+    if (uCrack > 0.001)
+    {
+        // 静态角向噪声 (不随时间滚动 → 裂纹位置稳定可记忆)
+        float crackNoise = tex2D(uImage0, float2(angNorm * 7.0, dN * 1.3)).b;
+        // 裂隙区: uCrack 越高吞掉越多环带
+        float hole = smoothstep(uCrack * 0.62, uCrack * 0.62 - 0.10, crackNoise);
+        // 裂隙边缘: 窄亮缝, 能量外泄的金色辉光 (带闪烁)
+        float rim = smoothstep(uCrack * 0.62 + 0.09, uCrack * 0.62, crackNoise) * (1.0 - hole);
+        float flicker = 0.75 + 0.25 * sin(uTime * 9.0 + angle * 11.0);
+
+        // 只作用在环带主体上 (不动内外辉光的柔和感)
+        float ringZone = saturate(shape);
+        shape *= (1.0 - hole * ringZone * saturate(uCrack * 1.35));
+        baseColor.rgb += rim * ringZone * flicker * float3(0.55, 0.42, 0.10) * uCrack;
+
+        // 接近 1: 整体崩解 — 残片保持, 其余急速透明
+        float collapse = smoothstep(0.9, 1.0, uCrack);
+        shape *= 1.0 - collapse * 0.75;
+    }
+
+    // ==========================================
     //  最终合成
     // ==========================================
     float alpha = saturate((shape * pulse + edgeWarn + outerGlow) * uIntensity);
+
+    // 全环白热闪光 (换阶段收缩 / 碎裂瞬间)
+    if (uFlash > 0.001)
+    {
+        float ringZone2 = saturate(shape);
+        baseColor.rgb = lerp(baseColor.rgb, float3(1.0, 0.97, 0.82), saturate(uFlash * 0.85));
+        alpha = saturate(alpha + uFlash * ringZone2 * 0.6);
+    }
 
     return float4(baseColor.rgb, alpha);
 }

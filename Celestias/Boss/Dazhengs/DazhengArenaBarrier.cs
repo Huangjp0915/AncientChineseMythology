@@ -12,7 +12,11 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
     /// <summary>
     /// 大椿Boss限制圈弹幕
     /// 在Boss周围生成一个圆形自然屏障，限制玩家战斗区域
-    /// 使用自定义着色器 + 噪声纹理渲染动态藤蔓纹路
+    /// 使用自定义着色器 + 噪声纹理渲染动态藤蔓纹路。
+    ///
+    /// V3 阶段化演变: 裂纹 (uCrack) 由大椿血量/阶段驱动 — P2 起浮现、濒死加深;
+    /// 换阶段收缩瞬间白热闪光 (uFlash); 死亡演出中按 <see cref="Dazheng.DeathBarrierShatterTick"/>
+    /// 执行碎裂时间轴 (闪光 → 崩解淡出 → 自灭), 死亡期间停用界外伤害与推力 (战场规则先死)。
     /// </summary>
     public class DazhengArenaBarrier : ModProjectile
     {
@@ -35,7 +39,6 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 
         #region 静态资源
 
-        private static Texture2D noiseTexture;
         private static Asset<Effect> arenaEffect;
 
         #endregion
@@ -55,6 +58,12 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
         // 季节换色 (向当前主导季节平滑过渡)
         private Vector4 curPrimary = ColorPrimary;
         private Vector4 curSecondary = ColorSecondary;
+
+        // V3 阶段化演变 (本地视觉)
+        private float crack;         // 裂纹强度 (向 Boss 授权值平滑)
+        private float flash;         // 白热闪光 (脉冲后衰减)
+        private bool bossDying;      // 死亡演出中 (停界外伤害/推力)
+        private int shatterTimer;    // 碎裂时间轴 (>0 已开始)
 
         #endregion
 
@@ -86,8 +95,6 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
         }
 
         public override void Unload() {
-            noiseTexture?.Dispose();
-            noiseTexture = null;
             arenaEffect = null;
         }
 
@@ -117,17 +124,42 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             // 动画时间
             animTime += 1f / 30f;
 
-            // 季节换色: 屏障主/辅色向当前主导季节平滑过渡
+            // 季节换色 + 阶段化演变: 从大椿读取裂纹授权/闪光节拍/死亡时刻
             if (boss.ModNPC is Dazheng dz) {
                 int s = dz.CurrentSeason;
                 Vector4 tgtP = new(DazhengSeasons.Tint(s).ToVector3() * 0.45f, 1f);
                 Vector4 tgtS = new(DazhengSeasons.Accent(s).ToVector3() * 0.85f, 1f);
                 curPrimary = Vector4.Lerp(curPrimary, tgtP, 0.02f);
                 curSecondary = Vector4.Lerp(curSecondary, tgtS, 0.02f);
-            }
 
-            // 服务端：界外伤害
-            if (Main.netMode != NetmodeID.MultiplayerClient) {
+                // 裂纹向授权值平滑 (P2 跳变 0.35 / 濒死 0.85 / 死亡 → 1)
+                crack = MathHelper.Lerp(crack, dz.BarrierCrack, 0.045f);
+                bossDying = dz.IsDying;
+
+                // 换阶段爆发帧: 白热闪光脉冲
+                if (dz.Phase == Dazheng.BossPhase.PhaseTransition_2 &&
+                    (int)boss.ai[1] == Dazheng.Transition2BurstTick) {
+                    flash = 1f;
+                }
+
+                // 死亡碎裂时间轴
+                if (bossDying && boss.ai[1] >= Dazheng.DeathBarrierShatterTick) {
+                    if (shatterTimer == 0)
+                        BeginShatter();
+                    shatterTimer++;
+                    crack = 1f;
+                    // 崩解: 40t 内 alpha 塌缩, 之后自灭 (战场规则先于树神死去)
+                    fadeProgress = MathHelper.Clamp(fadeProgress - 0.028f, 0f, 1f);
+                    if (fadeProgress <= 0f) {
+                        Projectile.Kill();
+                        return;
+                    }
+                }
+            }
+            flash = MathHelper.Lerp(flash, 0f, 0.08f);
+
+            // 服务端：界外伤害 (死亡演出中停用 — 结界已死)
+            if (Main.netMode != NetmodeID.MultiplayerClient && !bossDying) {
                 damageTimer++;
                 if (damageTimer >= DamageInterval) {
                     damageTimer = 0;
@@ -135,9 +167,10 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 }
             }
 
-            // 客户端：推力 + 边缘粒子
-            if (Main.netMode != NetmodeID.Server) {
-                ApplyPushForce();
+            // 客户端：推力 + 边缘粒子 (碎裂后停止)
+            if (Main.netMode != NetmodeID.Server && shatterTimer == 0) {
+                if (!bossDying)
+                    ApplyPushForce();
                 SpawnEdgeParticles();
             }
 
@@ -148,7 +181,22 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 Vector2 lightPos = Projectile.Center + new Vector2(
                     MathF.Cos(angle) * currentRadius,
                     MathF.Sin(angle) * currentRadius);
-                Lighting.AddLight(lightPos, new Vector3(0.1f, 0.25f, 0.08f) * glow);
+                Lighting.AddLight(lightPos, new Vector3(0.1f, 0.25f, 0.08f) * glow * fadeProgress);
+            }
+        }
+
+        /// <summary>碎裂起点: 白热闪光 + 沿圆周崩解尘环 (一次性; 声画节拍由大椿死亡时间轴配)。</summary>
+        private void BeginShatter() {
+            flash = 1f;
+            if (Main.netMode == NetmodeID.Server)
+                return;
+            for (int i = 0; i < 64; i++) {
+                float angle = MathHelper.TwoPi / 64 * i;
+                Vector2 pos = Projectile.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * currentRadius;
+                Dust d = Dust.NewDustPerfect(pos, Main.rand.NextBool() ? DustID.JungleGrass : DustID.GoldFlame,
+                    new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * Main.rand.NextFloat(1f, 4f) +
+                    new Vector2(0, Main.rand.NextFloat(1f, 3f)), 90, default, Main.rand.NextFloat(1.4f, 2.2f));
+                d.noGravity = Main.rand.NextBool();
             }
         }
 
@@ -228,9 +276,9 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             if (Main.dedServ || fadeProgress <= 0.01f)
                 return false;
 
-            EnsureNoiseTexture();
             Effect effect = GetEffect();
-            if (effect == null || noiseTexture == null)
+            Texture2D noise = ACMShaders.NoiseTexture; // V3: 共享噪声件, 弃用私有重复生成器
+            if (effect == null || noise == null)
                 return false;
 
             SpriteBatch sb = Main.spriteBatch;
@@ -255,6 +303,8 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             effect.Parameters["uAspect"]?.SetValue(aspect);
             effect.Parameters["uColorPrimary"]?.SetValue(curPrimary);
             effect.Parameters["uColorSecondary"]?.SetValue(curSecondary);
+            effect.Parameters["uCrack"]?.SetValue(MathHelper.Clamp(crack, 0f, 1f));
+            effect.Parameters["uFlash"]?.SetValue(MathHelper.Clamp(flash, 0f, 1f));
 
             // 切换SpriteBatch到着色器模式
             sb.End();
@@ -269,7 +319,7 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 Matrix.Identity);
 
             // 全屏绘制噪声纹理（Immediate模式下SpriteBatch会自动Apply着色器Pass）
-            sb.Draw(noiseTexture,
+            sb.Draw(noise,
                 new Rectangle(0, 0, Main.screenWidth, Main.screenHeight),
                 Color.White);
 
@@ -292,109 +342,11 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 
         #region 资源管理
 
-        private static void EnsureNoiseTexture() {
-            if (noiseTexture == null || noiseTexture.IsDisposed)
-                noiseTexture = GenerateNoiseTexture(Main.graphics.GraphicsDevice);
-        }
-
         private static Effect GetEffect() {
             arenaEffect ??= ModContent.Request<Effect>(
                 "AncientChineseMythology/Effects/DazhengArenaCircle",
                 AssetRequestMode.ImmediateLoad);
             return arenaEffect?.Value;
-        }
-
-        /// <summary>
-        /// 生成可平铺的三通道分形噪声纹理
-        /// R/G/B 各通道为独立噪声，着色器中分别采样以获得丰富的有机纹路
-        /// </summary>
-        private static Texture2D GenerateNoiseTexture(GraphicsDevice device, int size = 256) {
-            Color[] pixels = new Color[size * size];
-            byte[][] channels = new byte[3][];
-
-            for (int c = 0; c < 3; c++) {
-                channels[c] = new byte[size * size];
-                float[,] noise = GenerateTileableFBM(size, octaves: 5, seed: 42 + c * 173);
-
-                for (int y = 0; y < size; y++)
-                    for (int x = 0; x < size; x++)
-                        channels[c][y * size + x] = (byte)(noise[x, y] * 255);
-            }
-
-            for (int i = 0; i < pixels.Length; i++)
-                pixels[i] = new Color(channels[0][i], channels[1][i], channels[2][i], (byte)255);
-
-            Texture2D tex = new(device, size, size, false, SurfaceFormat.Color);
-            tex.SetData(pixels);
-            return tex;
-        }
-
-        /// <summary>
-        /// 可平铺的分形布朗运动 (FBM) 噪声
-        /// 多八度值噪声叠加，边缘无缝衔接
-        /// </summary>
-        private static float[,] GenerateTileableFBM(int size, int octaves, int seed) {
-            float[,] result = new float[size, size];
-            Random rng = new(seed);
-
-            float amplitude = 1f;
-            float frequency = 1f;
-            float maxValue = 0f;
-
-            for (int oct = 0; oct < octaves; oct++) {
-                int grid = Math.Max(2, (int)(4 * frequency));
-
-                // 生成格点随机值
-                float[] lattice = new float[(grid + 1) * (grid + 1)];
-                for (int i = 0; i < lattice.Length; i++)
-                    lattice[i] = (float)rng.NextDouble();
-
-                // 平铺：右边缘 = 左边缘，下边缘 = 上边缘
-                for (int i = 0; i <= grid; i++) {
-                    lattice[i * (grid + 1) + grid] = lattice[i * (grid + 1)];
-                    lattice[grid * (grid + 1) + i] = lattice[i];
-                }
-                lattice[grid * (grid + 1) + grid] = lattice[0];
-
-                // 双线性插值 + smoothstep
-                for (int y = 0; y < size; y++) {
-                    for (int x = 0; x < size; x++) {
-                        float fx = (float)x / size * grid;
-                        float fy = (float)y / size * grid;
-                        int ix = Math.Min((int)fx, grid - 1);
-                        int iy = Math.Min((int)fy, grid - 1);
-
-                        float tx = fx - ix;
-                        float ty = fy - iy;
-                        tx = tx * tx * (3 - 2 * tx); // smoothstep
-                        ty = ty * ty * (3 - 2 * ty);
-
-                        float v00 = lattice[iy * (grid + 1) + ix];
-                        float v10 = lattice[iy * (grid + 1) + ix + 1];
-                        float v01 = lattice[(iy + 1) * (grid + 1) + ix];
-                        float v11 = lattice[(iy + 1) * (grid + 1) + ix + 1];
-
-                        float vx0 = v00 + (v10 - v00) * tx;
-                        float vx1 = v01 + (v11 - v01) * tx;
-                        float v = vx0 + (vx1 - vx0) * ty;
-
-                        result[x, y] += v * amplitude;
-                    }
-                }
-
-                maxValue += amplitude;
-                amplitude *= 0.5f;
-                frequency *= 2f;
-            }
-
-            // 归一化到 0~1
-            if (maxValue > 0) {
-                for (int y = 0; y < size; y++)
-                    for (int x = 0; x < size; x++)
-                        result[x, y] /= maxValue;
-            }
-
-            return result;
         }
 
         #endregion

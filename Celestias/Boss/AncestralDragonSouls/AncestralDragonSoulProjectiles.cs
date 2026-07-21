@@ -38,6 +38,17 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
         public override void AI() {
             mistPhase += 0.15f;
 
+            // 出膛热身: 前 ~14f 从 35% 速度爬满 (防换招瞬间 telefrag; 各端确定性推导)
+            if (Projectile.localAI[0] == 0f) {
+                Projectile.localAI[0] = MathF.Max(Projectile.velocity.Length(), 0.1f);
+                Projectile.velocity *= 0.35f;
+            }
+            float fullSpeed = Projectile.localAI[0];
+            float curSpeed = Projectile.velocity.Length();
+            if (curSpeed < fullSpeed) {
+                Projectile.velocity = Projectile.velocity.SafeNormalize(Vector2.UnitY) * MathF.Min(curSpeed * 1.085f + 0.05f, fullSpeed);
+            }
+
             // 轻微追踪
             if (Projectile.timeLeft > 180) {
                 Player target = Main.player[Player.FindClosest(Projectile.position, Projectile.width, Projectile.height)];
@@ -449,6 +460,17 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
             wavePhase += 0.15f;
             Projectile.rotation = Projectile.velocity.ToRotation();
 
+            // 出膛热身: 从 35% 速度爬满, 尾扫不再零预兆糊脸
+            if (Projectile.localAI[0] == 0f) {
+                Projectile.localAI[0] = MathF.Max(Projectile.velocity.Length(), 0.1f);
+                Projectile.velocity *= 0.35f;
+            }
+            float fullSpeed = Projectile.localAI[0];
+            float curSpeed = Projectile.velocity.Length();
+            if (curSpeed < fullSpeed) {
+                Projectile.velocity = Projectile.velocity.SafeNormalize(Vector2.UnitY) * MathF.Min(curSpeed * 1.09f + 0.05f, fullSpeed);
+            }
+
             // 波浪飘动
             Vector2 perpendicular = Projectile.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
             float wave = MathF.Sin(wavePhase * 2f) * 2f;
@@ -516,18 +538,28 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
     }
 
     /// <summary>
-    /// 祖龙吐息激光 - 大型追踪激光
+    /// 祖龙吐息激光 — V3 读法重做:
+    /// 55f 预警 (金白细线沿锁定角拉直, 最后 18f 转赤红 = 即将喷息) → 110f 喷息 (12f 展宽,
+    /// 扫速硬上限 0.011 rad/f 缓慢追向玩家 — 可跑赢) → 15f 收束。判定严格 = 喷息期 且 宽度 &gt; 40%。
     /// </summary>
     public class AncestralDragonBeam : ModProjectile
     {
         public override string Texture => "InnoVault/Assets/placeholder";
 
         private const float LaserLength = 2500f;
-        private const int LaserDuration = 120;
+        private const int TelegraphDur = 55;
+        private const int LethalTele = 18;   // 预警末段转红时长
+        private const int BeamDur = 110;
+        private const int FadeDur = 15;
+        private const float MaxSweep = 0.011f; // 扫速硬上限 (公平阀门)
 
         private ref float OwnerIndex => ref Projectile.ai[0];
         private ref float LaserAngle => ref Projectile.ai[1];
         private float laserWidth = 0f;
+
+        private float Age => (TelegraphDur + BeamDur + FadeDur) - Projectile.timeLeft;
+        private bool InTelegraph => Age < TelegraphDur;
+        private bool InBeam => Age >= TelegraphDur && Age < TelegraphDur + BeamDur;
 
         public override void SetStaticDefaults() {
             ProjectileID.Sets.DrawScreenCheckFluff[Type] = 3500;
@@ -541,7 +573,7 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
             Projectile.penetrate = -1;
             Projectile.tileCollide = false;
             Projectile.ignoreWater = true;
-            Projectile.timeLeft = LaserDuration;
+            Projectile.timeLeft = TelegraphDur + BeamDur + FadeDur;
         }
 
         public override void AI() {
@@ -553,32 +585,39 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
 
             Projectile.Center = owner.Center;
 
-            // 缓慢追踪
-            Player target = Main.player[Player.FindClosest(Projectile.position, Projectile.width, Projectile.height)];
-            if (target.active && !target.dead) {
-                float targetAngle = (target.Center - Projectile.Center).ToRotation();
-                float turnSpeed = Main.expertMode ? 0.02f : 0.015f;
-                LaserAngle = MathHelper.Lerp(LaserAngle, targetAngle, turnSpeed);
+            // 预警期锁角不动 (纯读线); 喷息期以硬上限缓扫追向玩家
+            if (InBeam) {
+                Player target = Main.player[Player.FindClosest(Projectile.position, Projectile.width, Projectile.height)];
+                if (target.active && !target.dead) {
+                    float targetAngle = (target.Center - Projectile.Center).ToRotation();
+                    float diff = MathHelper.WrapAngle(targetAngle - LaserAngle);
+                    LaserAngle += MathHelper.Clamp(diff, -MaxSweep, MaxSweep);
+                }
             }
 
             Projectile.rotation = LaserAngle;
 
-            // 激光宽度动画
-            float progress = 1f - (float)Projectile.timeLeft / LaserDuration;
-            if (progress < 0.1f) {
-                laserWidth = MathHelper.Lerp(0f, 1f, progress / 0.1f);
-            }
-            else if (progress > 0.85f) {
-                laserWidth = MathHelper.Lerp(1f, 0f, (progress - 0.85f) / 0.15f);
-            }
-            else {
+            // 宽度包络: 喷息 12f 展宽 → 满宽 → 收束期归零
+            float age = Age;
+            if (age < TelegraphDur)
+                laserWidth = 0f;
+            else if (age < TelegraphDur + 12f)
+                laserWidth = (age - TelegraphDur) / 12f;
+            else if (age < TelegraphDur + BeamDur)
                 laserWidth = 1f;
+            else
+                laserWidth = MathHelper.Clamp(1f - (age - TelegraphDur - BeamDur) / FadeDur, 0f, 1f);
+
+            // 喷息开幕音 (转红结束 → 爆发)
+            if ((int)age == TelegraphDur && Main.netMode != NetmodeID.Server) {
+                SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.6f, Volume = 1.1f }, Projectile.Center);
+                ACMUtils.AddScreenShake(6f);
             }
 
-            // 激光粒子
-            if (Main.netMode != NetmodeID.Server) {
+            // 激光粒子 (仅喷息期)
+            if (Main.netMode != NetmodeID.Server && laserWidth > 0.1f) {
                 Vector2 laserDir = LaserAngle.ToRotationVector2();
-                for (int i = 0; i < 8; i++) {
+                for (int i = 0; i < 6; i++) {
                     float dist = Main.rand.NextFloat(LaserLength);
                     Vector2 dustPos = Projectile.Center + laserDir * dist + Main.rand.NextVector2Circular(20 * laserWidth, 20 * laserWidth);
                     int dustType = Main.rand.Next(3) switch {
@@ -593,13 +632,18 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
             }
 
             // 发光
-            for (int i = 0; i < 12; i++) {
-                Vector2 lightPos = Projectile.Center + LaserAngle.ToRotationVector2() * (i * 200);
-                Lighting.AddLight(lightPos, new Vector3(0.9f, 0.95f, 1f) * 1.5f * laserWidth);
+            if (laserWidth > 0.05f) {
+                for (int i = 0; i < 12; i++) {
+                    Vector2 lightPos = Projectile.Center + LaserAngle.ToRotationVector2() * (i * 200);
+                    Lighting.AddLight(lightPos, new Vector3(0.9f, 0.95f, 1f) * 1.5f * laserWidth);
+                }
             }
         }
 
         public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
+            // 判定与视觉严格对齐: 只在喷息期且宽度 >40% 造成伤害
+            if (!InBeam || laserWidth < 0.4f)
+                return false;
             float point = 0f;
             Vector2 start = Projectile.Center;
             Vector2 end = Projectile.Center + LaserAngle.ToRotationVector2() * LaserLength;
@@ -611,43 +655,63 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
             if (laserTex == null) return false;
 
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
-            // SlashBurst纹理朝向上方,底部为起点,需要原点放底边中央并加PiOver2
-            Vector2 origin = new Vector2(laserTex.Width / 2f, laserTex.Height);
-            float drawRot = LaserAngle + MathHelper.PiOver2;
+            float age = Age;
 
-            // 多层激光:内核白色,外层淡青,越外层越宽越淡
-            for (int layer = 3; layer >= 0; layer--) {
-                float layerWidth = (0.25f + layer * 0.22f) * laserWidth;
-                float layerAlpha = 0.9f - layer * 0.2f;
-
-                Color layerColor = layer switch {
-                    0 => new Color(255, 255, 255),
-                    1 => new Color(240, 250, 255),
-                    2 => new Color(210, 235, 255),
-                    _ => new Color(180, 215, 255)
-                };
-                layerColor *= layerAlpha;
-                layerColor.A = 0;
-
-                Vector2 scale = new Vector2(layerWidth, LaserLength / laserTex.Height);
-                Main.spriteBatch.Draw(laserTex, drawPos, null, layerColor, drawRot, origin, scale, SpriteEffects.None, 0f);
+            // —— 预警细线: 金白 → 末 18f 转红 (唯一红 = 即将造成伤害) ——
+            if (InTelegraph) {
+                float teleT = age / TelegraphDur;
+                float lethalBlend = MathHelper.Clamp((age - (TelegraphDur - LethalTele)) / LethalTele, 0f, 1f);
+                Color teleCol = Color.Lerp(TelegraphColors.Holy, TelegraphColors.Lethal, lethalBlend);
+                Vector2 dir = LaserAngle.ToRotationVector2();
+                ACMShaders.DrawBeam(Projectile.Center, Projectile.Center + dir * LaserLength,
+                    3.5f + lethalBlend * 3f, teleCol, teleCol * 0.35f, 0.3f + teleT * 0.45f);
             }
 
-            // 起点光球
-            if (ACMAsset.LightShot != null) {
-                Color orbColor = new Color(255, 255, 255) * laserWidth * 0.8f;
-                orbColor.A = 0;
-                Main.spriteBatch.Draw(ACMAsset.LightShot, drawPos, null, orbColor, 0f,
-                    ACMAsset.LightShot.Size() / 2f, 3f * laserWidth, SpriteEffects.None, 0f);
-            }
+            if (laserWidth > 0.02f) {
+                // SlashBurst纹理朝向上方,底部为起点,需要原点放底边中央并加PiOver2
+                Vector2 origin = new Vector2(laserTex.Width / 2f, laserTex.Height);
+                float drawRot = LaserAngle + MathHelper.PiOver2;
 
-            // 星光效果
-            if (ACMAsset.Sparkle != null) {
-                Color sparkleColor = new Color(230, 245, 255) * laserWidth * 0.6f;
-                sparkleColor.A = 0;
-                float sparkleRot = (float)Main.GameUpdateCount * 0.1f;
-                Main.spriteBatch.Draw(ACMAsset.Sparkle, drawPos, null, sparkleColor, sparkleRot,
-                    ACMAsset.Sparkle.Size() / 2f, 2.5f * laserWidth, SpriteEffects.None, 0f);
+                // 多层激光:内核白色,外层淡青,越外层越宽越淡
+                for (int layer = 3; layer >= 0; layer--) {
+                    float layerWidth = (0.25f + layer * 0.22f) * laserWidth;
+                    float layerAlpha = 0.9f - layer * 0.2f;
+
+                    Color layerColor = layer switch {
+                        0 => new Color(255, 255, 255),
+                        1 => new Color(240, 250, 255),
+                        2 => new Color(210, 235, 255),
+                        _ => new Color(180, 215, 255)
+                    };
+                    layerColor *= layerAlpha;
+                    layerColor.A = 0;
+
+                    Vector2 scale = new Vector2(layerWidth, LaserLength / laserTex.Height);
+                    Main.spriteBatch.Draw(laserTex, drawPos, null, layerColor, drawRot, origin, scale, SpriteEffects.None, 0f);
+                }
+
+                // 流光内芯 (BeamGrad 直带, 给喷息加"活的"能量流)
+                ACMShaders.DrawBeam(Projectile.Center,
+                    Projectile.Center + LaserAngle.ToRotationVector2() * LaserLength,
+                    26f * laserWidth, new Color(255, 255, 255, 170), new Color(140, 205, 255, 0),
+                    laserWidth * 0.85f, flowSpeed: 2.6f, flowScale: 1.6f);
+
+                // 起点光球
+                if (ACMAsset.LightShot != null) {
+                    Color orbColor = new Color(255, 255, 255) * laserWidth * 0.8f;
+                    orbColor.A = 0;
+                    Main.spriteBatch.Draw(ACMAsset.LightShot, drawPos, null, orbColor, 0f,
+                        ACMAsset.LightShot.Size() / 2f, 3f * laserWidth, SpriteEffects.None, 0f);
+                }
+
+                // 星光效果
+                if (ACMAsset.Sparkle != null) {
+                    Color sparkleColor = new Color(230, 245, 255) * laserWidth * 0.6f;
+                    sparkleColor.A = 0;
+                    float sparkleRot = (float)Main.GameUpdateCount * 0.1f;
+                    Main.spriteBatch.Draw(ACMAsset.Sparkle, drawPos, null, sparkleColor, sparkleRot,
+                        ACMAsset.Sparkle.Size() / 2f, 2.5f * laserWidth, SpriteEffects.None, 0f);
+                }
             }
 
             return false;
@@ -1002,6 +1066,28 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
             Texture2D tex = ACMAsset.LightShot ?? TextureAssets.Projectile[Type].Value;
             Vector2 origin = tex.Size() / 2f;
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
+
+            // 绑定期灵链线: 读出双珠的配对关系与将要分离的轴向 (仅由编号小的一颗绘制)
+            float bindAge = 500 - Projectile.timeLeft;
+            if (bindAge < BindTime && PartnerIndex >= 0 && PartnerIndex < Main.maxProjectiles
+                && Projectile.whoAmI < (int)PartnerIndex && ACMAsset.LightningBranch != null) {
+                Projectile partner = Main.projectile[(int)PartnerIndex];
+                if (partner.active && partner.type == Type) {
+                    Vector2 from = Projectile.Center - Main.screenPosition;
+                    Vector2 to = partner.Center - Main.screenPosition;
+                    Vector2 delta = to - from;
+                    float len = delta.Length();
+                    if (len > 8f) {
+                        Texture2D link = ACMAsset.LightningBranch;
+                        float charge = bindAge / BindTime;
+                        Color linkCol = new Color(200, 230, 255) * (0.15f + charge * 0.25f);
+                        linkCol.A = 0;
+                        Vector2 lOrigin = new Vector2(link.Width / 2f, link.Height);
+                        Main.spriteBatch.Draw(link, from, null, linkCol, delta.ToRotation() + MathHelper.PiOver2,
+                            lOrigin, new Vector2(0.14f + charge * 0.1f, len / link.Height), SpriteEffects.None, 0f);
+                    }
+                }
+            }
 
             // 白/青阴阳配色
             Color coreCol = PhaseOffset < 1f ? new Color(255, 255, 255) : new Color(200, 230, 255);

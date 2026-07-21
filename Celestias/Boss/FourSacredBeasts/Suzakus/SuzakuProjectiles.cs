@@ -381,6 +381,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
                 Color core = TelegraphColors.Vermilion;
                 Color edge = TelegraphColors.Flame;
                 ACMShaders.DrawBeam(start, end, 4f + grow * 5f, core, edge, 0.25f + grow * 0.35f, 2.2f, 2.4f, 2.6f);
+                DrawMuzzleCorona(start, grow);
             }
             else {
                 int st = t - WindupTicks;
@@ -393,6 +394,36 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
                 ACMShaders.DrawBeam(start, end, 18f * life, Color.White, core, life * 0.9f, 1.6f, 2.0f, 2.6f);
             }
             return false;
+        }
+
+        /// <summary>
+        /// 蓄力日冕收束（V3 §4.3 光束蓄力）：枪口 Sparkle 双层反向旋转、随蓄力收缩 + 白热核渐亮。
+        /// DrawBeam 返回时批次已恢复为项目默认批, 此处自行切 Additive 段再复原。
+        /// </summary>
+        private void DrawMuzzleCorona(Vector2 worldStart, float grow) {
+            if (Main.dedServ) return;
+            Texture2D spark = ACMAsset.Sparkle;
+            Texture2D glow = ACMAsset.SoftGlow;
+            if (spark == null || glow == null) return;
+
+            SpriteBatch sb = Main.spriteBatch;
+            Vector2 dp = worldStart - Main.screenPosition;
+            float shrink = 1.15f - grow * 0.75f; // 收束: 越蓄越小(爆发前坍缩)
+            float t = Projectile.localAI[0];
+
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
+
+            Color coronaC = new Color(255, 140, 60, 0) * (0.35f + grow * 0.55f);
+            sb.Draw(spark, dp, null, coronaC, t * 0.10f, spark.Size() / 2f, 0.80f * shrink, SpriteEffects.None, 0f);
+            sb.Draw(spark, dp, null, coronaC * 0.7f, -t * 0.07f, spark.Size() / 2f, 0.55f * shrink, SpriteEffects.None, 0f);
+            Color coreC = new Color(255, 235, 190, 0) * (0.3f + grow * 0.6f);
+            sb.Draw(glow, dp, null, coreC, 0f, glow.Size() / 2f, 0.22f + grow * 0.22f, SpriteEffects.None, 0f);
+
+            sb.End();
+            sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
+                DepthStencilState.None, RasterizerState.CullNone, null, Main.GameViewMatrix.TransformationMatrix);
         }
     }
 }

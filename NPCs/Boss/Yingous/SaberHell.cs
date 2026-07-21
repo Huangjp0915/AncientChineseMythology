@@ -1,37 +1,47 @@
-﻿using System;
-using Terraria;
+﻿using Terraria;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.NPCs.Boss.Yingous
 {
+    /// <summary>
+    /// 地狱刀气 —— 直线预告体: 40f 蓝→红充能线, 充满后在两端各生成一柄 <see cref="SaberKiller"/> 真刃回扫。
+    /// ai[0]/ai[1] = 轨道中心 (仅前置阶段用); ai[2] &lt; 0 = 轨道前置计时 (出生同步, 多人一致):
+    /// &lt; -10 绕心公转 (旋刃牢笼), -10 起指向中心, 归零后进入正常充能。
+    /// </summary>
     internal class SaberHell : ModProjectile
     {
         public override string Texture => "InnoVault/Assets/placeholder";
+
         public override void SetDefaults() {
             Projectile.width = Projectile.height = 32;
             Projectile.friendly = false;
-            Projectile.timeLeft = 120;
+            Projectile.timeLeft = 130;
             Projectile.tileCollide = false;
         }
 
         public override void AI() {
+            //首帧本地初始化 (各端都会执行, 不依赖 OnSpawn 同步): 轨道前置按延迟顺延寿命
+            if (Projectile.localAI[2] == 0) {
+                Projectile.localAI[2] = 1;
+                if (Projectile.ai[2] < 0)
+                    Projectile.timeLeft = 130 - (int)Projectile.ai[2];
+            }
+
             Projectile.velocity = Projectile.velocity.UnitVector();
-            // 处理特殊前置阶段：localAI[0] < 0 表示图案附加前旋或延伸
-            if (Projectile.localAI[0] < 0) {
-                Projectile.localAI[0]++;
-                // 旋转阶段：围绕 ai 里记录的中心点公转
-                if (Projectile.localAI[0] < -10) {
-                    Vector2 center = new Vector2(Projectile.ai[0], Projectile.ai[1]);
-                    float ang = Projectile.velocity.ToRotation();
-                    ang += 0.2f * Math.Sign(Projectile.velocity.X + Projectile.velocity.Y);
+
+            //前置阶段: 绕 (ai0, ai1) 公转 → 指向中心收束 (计时走同步的 ai[2])
+            if (Projectile.ai[2] < 0) {
+                Projectile.ai[2]++;
+                Vector2 center = new Vector2(Projectile.ai[0], Projectile.ai[1]);
+                if (Projectile.ai[2] < -10) {
                     Vector2 toCenter = Projectile.Center - center;
-                    toCenter = toCenter.RotatedBy(0.12f);
+                    toCenter = toCenter.RotatedBy(0.045);
                     Projectile.Center = center + toCenter;
+                    //切向朝向: 旋刃牢笼读感
+                    Projectile.velocity = toCenter.SafeNormalize(Vector2.UnitX).RotatedBy(MathHelper.PiOver2);
                 }
-                if (Projectile.localAI[0] == -10) {
-                    // 向中心收束
-                    Vector2 center = new Vector2(Projectile.ai[0], Projectile.ai[1]);
-                    Projectile.velocity = (center - Projectile.Center).SafeNormalize(Vector2.UnitY) * 28f;
+                else {
+                    Projectile.velocity = (center - Projectile.Center).SafeNormalize(Vector2.UnitY);
                 }
                 return;
             }
@@ -39,7 +49,8 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             if (Projectile.localAI[0] < 40) {
                 if (Projectile.localAI[0] == 0) Projectile.localAI[1] = 30;
                 Projectile.localAI[0]++;
-                if (Projectile.localAI[0] == 40) {
+                if (Projectile.localAI[0] == 40 && Projectile.owner == Main.myPlayer) {
+                    //充能完毕: 两端真刃相向回扫 (仅所有权端生成, 服务器自动同步)
                     int num = 1000;
                     int num2 = 36;
                     Projectile.NewProjectile(Projectile.FromObjectGetParent(),
@@ -62,17 +73,16 @@ namespace AncientChineseMythology.NPCs.Boss.Yingous
             if (Main.dedServ)
                 return false;
 
-            // V2: 刀光升格为 BeamGrad 流动梯度直带 (toolkit §A.6 DrawBeam)。
-            // 充能越满越红 = 致命预警 (§6.1 红只留给伤害源): 充满后旋即生成 SaberKiller(真实刀刃)。
+            //刀光 = BeamGrad 流动梯度直带; 充能越满越红 (红只留给即将出鞘的真刃)。
             float chargeT;   // 0~1 充能进度(→红)
             float thickness; // 屏幕像素全宽
             float intensity; // 0~1 整体亮度/淡入淡出
-            if (Projectile.localAI[0] < 0) {
-                // 前置旋转/收束阶段: 细预告线渐增, 蓝色 (尚未致命)
-                float pre = MathHelper.Clamp(Math.Abs(Projectile.localAI[0]) / 60f, 0f, 1f);
-                chargeT = pre * 0.35f;
-                thickness = MathHelper.Lerp(6f, 26f, pre);
-                intensity = pre * 0.7f;
+            if (Projectile.ai[2] < 0) {
+                //前置公转/收束阶段: 细预告线, 蓝色 (尚未致命); 越近发动越亮
+                float toStrike = MathHelper.Clamp(-Projectile.ai[2] / 60f, 0f, 1f);
+                chargeT = (1f - toStrike) * 0.35f;
+                thickness = MathHelper.Lerp(22f, 9f, toStrike);
+                intensity = MathHelper.Lerp(0.6f, 0.28f, toStrike);
             }
             else {
                 chargeT = MathHelper.Clamp(Projectile.localAI[0] / 40f, 0f, 1f);

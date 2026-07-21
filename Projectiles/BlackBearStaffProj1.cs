@@ -1,177 +1,291 @@
 ﻿using AncientChineseMythology.Helpers;
 using Microsoft.Xna.Framework.Graphics;
+using ReLogic.Content;
 using System;
 using Terraria;
-using Terraria.GameContent;
+using Terraria.Audio;
 using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Projectiles
 {
+    /// <summary>
+    /// 黑熊幼灵 (黑熊法杖召唤物)。
+    /// 形象复用黑熊精 Boss 精灵图 (只读贴图资源, 0.22 缩放幽灵化着色 + 金冠亮点)。
+    /// 攻击循环: 蓄势后仰(前摇) → 黑风猛扑(爆发, 仅此段有接触判定) → 落掌震击(BlackBearStaffProj2 AoE)
+    /// → 反冲收招。每第 4 次落掌为「金冠怒击」: 前摇更长 + 金光定格, 震击 ×1.5。
+    /// </summary>
     public class BlackBearStaffProj1 : ModProjectile
     {
-        public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Summoning Staffs/BlackBearStaff"; //使用物品的纹理作为投射物的纹理
+        public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/idle_344";
 
-        private Player player => Main.player[Projectile.owner];
+        // —— 状态机 (ai 同步字段) ——
+        private const int StIdle = 0, StWindup = 1, StPounce = 2, StRecover = 3;
+        private ref float State => ref Projectile.ai[0];
+        private ref float Timer => ref Projectile.ai[1];
+        private ref float SlamCount => ref Projectile.ai[2];
 
-        // 召唤显形计时 (纯视觉): 0→20 帧内由噪声溶解逐渐凝实
-        private int _materializeTimer;
+        private const int WindupTime = 18;
+        private const int FuryExtra = 8;      // 怒击追加前摇 (金光定格)
+        private const int PounceMax = 16;
+        private const int RecoverTime = 22;
+        private const float SpriteScale = 0.22f;
+
+        /// <summary>下一次落掌是否为金冠怒击 (每第 4 掌)。</summary>
+        private bool FuryNext => ((int)SlamCount % 4) == 3;
+        private int CurWindup => WindupTime + (FuryNext ? FuryExtra : 0);
+
+        private int _materializeTimer;        // 显形计时 (纯视觉)
+
+        // —— 精灵图静态缓存 (与 Boss 共享 Asset 缓存, 客户端惰性一次) ——
+        private static Texture2D texIdle, texRun;
+        private static readonly SoundStyle PounceSound = new("AncientChineseMythology/Sounds/BlackBear/BlackBear_Attack_1");
+        private static readonly SoundStyle FuryRoar = new("AncientChineseMythology/Sounds/BlackBear/BlackBear_Roar");
+
+        private static void EnsureTextures() {
+            if (texIdle != null)
+                return;
+            static Texture2D Load(string name) =>
+                ModContent.Request<Texture2D>("AncientChineseMythology/Textures/NPCs/Boss/BlackBear/" + name, AssetRequestMode.ImmediateLoad).Value;
+            texIdle = Load("idle_344");   // 332x1376, 4 帧
+            texRun = Load("run_332");     // 304x1992, 6 帧
+        }
+
+        public override void SetStaticDefaults() {
+            Main.projPet[Type] = true;
+            ProjectileID.Sets.MinionSacrificable[Type] = true;
+            ProjectileID.Sets.MinionTargettingFeature[Type] = true;
+            ProjectileID.Sets.TrailCacheLength[Type] = 10;
+            ProjectileID.Sets.TrailingMode[Type] = 0;
+        }
 
         public override void SetDefaults() {
-            ProjectileID.Sets.MinionSacrificable[Projectile.type] = true;
-            Projectile.width = 22; //弹幕宽度
-            Projectile.height = 18; //弹幕高度
-            Projectile.friendly = true; //友方弹幕
-            Projectile.tileCollide = false; //不与瓷砖碰撞
-            Projectile.DamageType = DamageClass.Summon; //伤害类型改为召唤伤害
-            Projectile.penetrate = -1; //无限穿透
-            Projectile.ignoreWater = true; //无视液体
-            Projectile.timeLeft = 120; //存在时间无限
-            Projectile.alpha = 100; //透明度
-            Projectile.light = 0.75f; //发光亮度
-            Projectile.minion = true; //设置为召唤物
-            Projectile.minionSlots = 0.5f; //占用一个召唤栏位
-            Projectile.aiStyle = -1;//不使用原版AI
-            Projectile.rotation = Projectile.velocity.ToRotation(); //设置初始旋转角度
-            base.SetDefaults();
-        }
-        public override bool? CanCutTiles() {
-            return false;//我们不想召唤兽会割草
+            Projectile.width = 44;
+            Projectile.height = 38;
+            Projectile.friendly = true;
+            Projectile.tileCollide = false;
+            Projectile.DamageType = DamageClass.Summon;
+            Projectile.penetrate = -1;
+            Projectile.ignoreWater = true;
+            Projectile.timeLeft = 120;
+            Projectile.light = 0.4f;
+            Projectile.minion = true;
+            Projectile.minionSlots = 0.5f;
+            Projectile.aiStyle = -1;
+            Projectile.usesLocalNPCImmunity = true;
+            Projectile.localNPCHitCooldown = 20;
+            Projectile.netImportant = true;
         }
 
-        private void AttackShooting(NPC target) {
+        public override bool? CanCutTiles() => false;
 
-            Projectile.ai[0]++;//随便拿一个ai0当计时器
-            if (Projectile.ai[0] == 60)//每半秒攻击一次
-            {
-                Projectile.ai[0] = 0;
-                //获取玩家的位置
-                Player player = Main.player[Projectile.owner];
-                //计算方向向量
-                Vector2 direction = target.Center - player.Center;
-                direction.Normalize();
-                int projectileCount = Main.rand.Next(4, 6);
-                for (int i = 0; i < projectileCount; i++) {
-                    int projectileType = ModContent.ProjectileType<BlackBearStaffProj2>();
-                    Vector2 spawnPosition = Projectile.Center;
-                    Projectile.NewProjectile(Projectile.GetSource_FromAI(), spawnPosition, direction * 16f, projectileType, Projectile.originalDamage, 0, Main.myPlayer);
-                }
-            }
-        }
+        // 只有猛扑段有接触判定 (伤害窗口与视觉冲刺严格对齐)
+        public override bool? CanDamage() => State == StPounce ? null : false;
 
         public override void AI() {
+            Player player = Main.player[Projectile.owner];
 
             if (_materializeTimer < 20)
                 _materializeTimer++;
 
-            if (player.HasBuff<Buffs.BuffsBlackBearStaff>()) //如果玩家有召唤物BUFF
-                Projectile.timeLeft = 2; //维持住弹幕的时间
+            if (!player.active || player.dead) {
+                Projectile.Kill();
+                return;
+            }
+            if (player.HasBuff<Buffs.BuffsBlackBearStaff>())
+                Projectile.timeLeft = 2;
 
-            NPC target = null; //先设出目标NPC，默认为空
-
-            //这一段是当你的召唤兽设定了右键锁敌情况下必须要写的部分,防止进行寻敌判定
-            if (player.HasMinionAttackTargetNPC) {
-                target = Main.npc[player.MinionAttackTargetNPC]; //让目标为鼠标锁住的敌人
-                float between = Vector2.Distance(target.Center, Projectile.Center);
-                //小于2000防止锁住太远的敌人
-                if (between < 2000f) {
-                    target = null;
-                }
+            // 离主人太远: 强制回归 (公平阀)
+            if (Vector2.Distance(player.Center, Projectile.Center) > 2000f && State != StIdle) {
+                State = StIdle;
+                Timer = 0f;
             }
 
-            if (target == null || !target.active) //如果目标是空的或者失活的，那么重新寻找敌人
-            {
-                int t = Projectile.FindTargetWithLineOfSight(1500); //寻找1500像素范围内最近敌人号码（不隔墙）
-                                                                    //这个方法如果在没有敌怪时会返回-1，用来检测是否能找到敌人
-                if (t >= 0)
-                    target = Main.npc[t]; //定义这个NPC为目标
-            }
+            NPC target = FindTarget(player);
 
-            if (target != null && target.active) //如果目标不为空且存活在此处执行攻击性AI
-            {
-                if (target.active) {
-                    if (Vector2.Distance(player.Center, target.Center) > 2000)//如果找到的目标距离玩家太远了
-                    {
-                        Vector2 p = Vector2.Lerp(Projectile.Center, player.Center, 0.1f);
-                        Projectile.velocity = p - Projectile.Center;//直接强制回归，不要继续攻击了
-                        return;//我们的AI就不需要继续往下走了
+            switch ((int)State) {
+                case StIdle:
+                    IdleFollow(player);
+                    if (target != null) {
+                        State = StWindup;
+                        Timer = 0f;
+                        Projectile.netUpdate = true;
+                        if (FuryNext && !Main.dedServ)
+                            SoundEngine.PlaySound(FuryRoar with { Volume = 0.32f, Pitch = 0.15f }, Projectile.Center);
                     }
-                    AttackShooting(target);//进行攻击AI
-                }
-            }
-            Projectile.velocity = Vector2.Zero; //弹幕速度清零
-            //使用正弦波使弹幕上下浮动
-            float floatAmplitude = 4f; //漂浮幅度
-            float floatSpeed = 0.05f; //漂浮速度，可以调整以加快或减慢浮动效果
+                    break;
 
-            //计算浮动的偏移量
-            Projectile.position.Y = player.Center.Y - 60 + (float)Math.Sin(Main.GameUpdateCount * floatSpeed) * floatAmplitude;
-            Projectile.rotation = 0;
-            Projectile.position.X = player.Center.X - 12;
+                case StWindup: {
+                    Timer++;
+                    if (target == null) {
+                        State = StIdle; Timer = 0f;
+                        break;
+                    }
+                    // 蓄势后仰: 末段 pow(4) 突然向后吸 (late-snap reel-back)
+                    float t = Timer / CurWindup;
+                    Vector2 away = (Projectile.Center - target.Center).SafeNormalize(-Vector2.UnitY);
+                    Projectile.velocity = Projectile.velocity * 0.80f + away * MathF.Pow(t, 4f) * 5f;
+                    Projectile.spriteDirection = target.Center.X > Projectile.Center.X ? 1 : -1;
+
+                    // 黑风汇聚预警 (客户端纯视觉)
+                    if (!Main.dedServ && Main.rand.NextBool(FuryNext ? 1 : 2)) {
+                        Vector2 from = Projectile.Center + Main.rand.NextVector2CircularEdge(46f, 46f);
+                        Dust d = Dust.NewDustPerfect(from, DustID.Smoke, (Projectile.Center - from) * 0.09f, 150,
+                            new Color(45, 45, 65), 1.25f);
+                        d.noGravity = true;
+                        if (FuryNext && Main.rand.NextBool(3)) {
+                            Dust g = Dust.NewDustPerfect(from, DustID.GoldCoin, (Projectile.Center - from) * 0.10f, 100, default, 0.9f);
+                            g.noGravity = true;
+                        }
+                    }
+
+                    if (Timer >= CurWindup) {
+                        // 猛扑: 一帧 set 速度 (launch is a set) + 提前量
+                        Vector2 aim = target.Center + target.velocity * 6f - Projectile.Center;
+                        Projectile.velocity = aim.SafeNormalize(Vector2.UnitX * Projectile.spriteDirection) * 21f;
+                        State = StPounce;
+                        Timer = 0f;
+                        Projectile.netUpdate = true;
+                        if (!Main.dedServ) {
+                            SoundEngine.PlaySound(PounceSound with { Volume = 0.30f, Pitch = 0.25f }, Projectile.Center);
+                            SoundEngine.PlaySound(SoundID.Item1 with { Volume = 0.5f, Pitch = -0.2f + Main.rand.NextFloat(-0.1f, 0.1f) }, Projectile.Center);
+                        }
+                    }
+                    break;
+                }
+
+                case StPounce: {
+                    Timer++;
+                    // 冲刺复利加速, 近乎直线 (straight reads fast)
+                    if (Projectile.velocity.Length() < 30f)
+                        Projectile.velocity *= 1.025f;
+                    Projectile.spriteDirection = Projectile.velocity.X >= 0f ? 1 : -1;
+
+                    bool passed = target != null &&
+                        Vector2.Dot(target.Center - Projectile.Center, Projectile.velocity) < 0f;
+                    if (Timer >= PounceMax || passed)
+                        DoSlam(Projectile.Center);
+                    break;
+                }
+
+                case StRecover:
+                    Timer++;
+                    Projectile.velocity *= 0.90f;
+                    if (Timer >= RecoverTime) {
+                        State = StIdle;
+                        Timer = 0f;
+                    }
+                    break;
+            }
         }
 
+        private NPC FindTarget(Player player) {
+            // 右键锁敌优先 (修复旧版判断反转导致锁敌失效的 bug)
+            if (player.HasMinionAttackTargetNPC) {
+                NPC locked = Main.npc[player.MinionAttackTargetNPC];
+                if (locked.CanBeChasedBy(this) && Vector2.Distance(locked.Center, Projectile.Center) < 2000f)
+                    return locked;
+            }
+            int idx = Projectile.FindTargetWithLineOfSight(900f);
+            return idx >= 0 ? Main.npc[idx] : null;
+        }
 
-        public override bool PreDraw(ref Color lightColor)//predraw返回false即可禁用原版绘制
-        {
-            Main.projFrames[Type] = 1;//设置帧数为1，因为我们只需要一个帧的弹幕
-            ProjectileID.Sets.TrailingMode[Type] = 2;//设置尾迹模式为2，即尾迹为圆形
-            ProjectileID.Sets.TrailCacheLength[Type] = 6;//设置尾迹缓存长度为5，即最多保留5个尾迹
-            //同时，需要进行的绘制在这里面写就好
+        private void IdleFollow(Player player) {
+            // 弹簧跟随玩家侧后方 + 呼吸浮动 (软追踪, 落后半拍的灵体感)
+            Vector2 anchor = player.MountedCenter + new Vector2(-player.direction * 46f,
+                -46f + MathF.Sin(Main.GameUpdateCount * 0.045f + Projectile.whoAmI * 1.3f) * 5f);
+            Vector2 toAnchor = anchor - Projectile.Center;
 
-            Texture2D texture = TextureAssets.Projectile[Type].Value;//声明本弹幕的材质
-            Rectangle rectangle = new Rectangle(//因为手动绘制需要自己填写帧图框,所以要先算出来
-                0,//这个框的左上角的水平坐标(填0就好)
-                texture.Height / Main.projFrames[Type] * Projectile.frame,//框的左上角的纵向坐标
-                texture.Width, //框的宽度(材质宽度即可)
-                texture.Height / Main.projFrames[Type]//框的高度（用材质高度除以帧数得到单帧高度）
-                );
+            if (toAnchor.Length() > 1400f && Main.myPlayer == Projectile.owner) {
+                Projectile.position = anchor - Projectile.Size * 0.5f;
+                Projectile.velocity *= 0.1f;
+                Projectile.netUpdate = true;
+                return;
+            }
 
-            // 召唤显形: 前 20 帧用噪声溶解 (threshold 1→0) 把熊体凝实, 暖青铜灼烧边
+            Projectile.velocity = (Projectile.velocity + toAnchor * 0.055f) * 0.86f;
+            if (Projectile.velocity.Length() > 14f)
+                Projectile.velocity = Projectile.velocity.SafeNormalize(Vector2.Zero) * 14f;
+            Projectile.spriteDirection = player.direction;
+        }
+
+        /// <summary>落掌: 生成熊掌震击 AoE (owner 端), 反冲收招。</summary>
+        private void DoSlam(Vector2 pos) {
+            bool fury = FuryNext;
+            SlamCount++;
+            if (Main.myPlayer == Projectile.owner) {
+                int dmg = (int)(Projectile.damage * (fury ? 1.5f : 1f));
+                Projectile.NewProjectile(Projectile.GetSource_FromAI(), pos, Vector2.Zero,
+                    ModContent.ProjectileType<BlackBearStaffProj2>(), dmg, 6f, Projectile.owner, fury ? 1f : 0f);
+            }
+            Projectile.velocity *= -0.25f; // 落掌反冲 (recoil on emission)
+            State = StRecover;
+            Timer = 0f;
+            Projectile.netUpdate = true;
+        }
+
+        public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+            // 扑中敌人: 立即在敌人身上落掌 (提前引爆), 金辉命中反馈
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.Gold, scale: 0.8f, owner: Projectile.owner);
+            WeaponVFX.AddScreenShake(target.Center, 2f);
+            if (State == StPounce)
+                DoSlam(target.Center);
+        }
+
+        public override bool PreDraw(ref Color lightColor) {
+            if (Main.dedServ)
+                return false;
+            EnsureTextures();
+            if (texIdle == null || texRun == null)
+                return false;
+
+            // 帧选择: 待机/收招 = idle 4 帧慢放; 前摇/猛扑 = run 6 帧快放
+            bool running = State == StWindup || State == StPounce;
+            Texture2D tex = running ? texRun : texIdle;
+            int frameH = running ? 332 : 344;
+            int totalFrames = running ? 6 : 4;
+            int frameTicks = State == StPounce ? 4 : running ? 6 : 12;
+            int frame = (int)(Main.GameUpdateCount / (uint)frameTicks) % totalFrames;
+            Rectangle src = new(0, frame * frameH, tex.Width, frameH);
+            Vector2 origin = new(tex.Width / 2f, frameH / 2f);
+            // 与 Boss 绘制同约定: 原图朝右, spriteDirection=1 时不翻转
+            SpriteEffects fxFlip = Projectile.spriteDirection == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
+            float rot = State == StPounce ? Projectile.velocity.X * 0.012f : 0f;
+
+            // 召唤显形: 前 20 帧噪声溶解凝实 (金冠灼烧边)
             float materialize = MathHelper.Clamp(_materializeTimer / 20f, 0f, 1f);
             if (materialize < 1f) {
-                WeaponVFX.ApplyDissolveBurn(texture, Projectile.Center, rectangle, Color.White,
-                    Projectile.rotation, new Vector2(texture.Width / 2f, texture.Height / 2f / Main.projFrames[Type]),
-                    1f, threshold: 1f - materialize, intensity: 1f,
-                    edgeColor: new Color(255, 200, 120), edgeWidth: 0.1f);
+                WeaponVFX.ApplyDissolveBurn(tex, Projectile.Center, src, new Color(150, 155, 190),
+                    rot, origin, SpriteScale, threshold: 1f - materialize, intensity: 1f,
+                    edgeColor: new Color(255, 205, 110), edgeWidth: 0.12f, effects: fxFlip);
                 return false;
             }
 
-            //要制作拖尾，首先要建立一个for循环语句，从0一直走到轨迹末端
-            //这里我们介绍一个能产生高亮叠加绘制的办法（A=0）
-            Color MyColor = Color.White;
-            MyColor.A = 0;//让A=0是为了能直接叠加颜色
-            if (player.velocity.X != 0)
-                for (int i = 0; i < ProjectileID.Sets.TrailCacheLength[Type]; i++)//循环上限小于轨迹长度
-                {
-                    float factor = 1 - (float)i / ProjectileID.Sets.TrailCacheLength[Type];//计算当前位置的透明度因子
-                                                                                           //定义一个从新到旧由1逐渐减少到0的变量，比如i = 0时，factor = 1
-                    Vector2 oldcenter = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;//获取旧位置的中心点
-                                                                                                         //由于轨迹只能记录弹幕碰撞箱左上角位置，我们要手动加上弹幕宽高一半来获取中心
-                    Main.EntitySpriteDraw(texture, oldcenter, rectangle, MyColor * factor,//颜色逐渐变淡
-                        Projectile.oldRot[i],//弹幕轨迹上的曾经的方向
-                        new Vector2(texture.Width / 2, texture.Height / 2 / Main.projFrames[Type]),
-                         new Vector2(1f),
-                         SpriteEffects.None, 0);//最后两个参数是贴图缩放和旋转，这里不用管
-                }
-            //由于tr绘制是先执行的先绘制，所以要想残影不覆盖到本体上面，就要先写残影绘制
+            // 猛扑拖尾: 黑风外层 + 金芯
+            if (State == StPounce)
+                WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 11f,
+                    outerColor: new Color(28, 28, 44, 170), innerColor: new Color(255, 215, 120, 185),
+                    uvScroll: -Main.GlobalTimeWrappedHourly * 2f);
 
-            Main.EntitySpriteDraw(  //entityspritedraw是弹幕，NPC等常用的绘制方法
-                texture,//第一个参数是材质
-                Projectile.Center - Main.screenPosition,//注意，绘制时的位置是以屏幕左上角为0点
-                                                        //因此要用弹幕世界坐标减去屏幕左上角的坐标
-                rectangle,//第三个参数就是帧图选框了
-                Color.White,//第四个参数是颜色，这里我们用自带的lightcolor，可以受到自然光照影响
-                Projectile.rotation,//第五个参数是贴图旋转方向
-                new Vector2(texture.Width / 2, texture.Height / 2 / Main.projFrames[Type]),
-                //第六个参数是贴图参照原点的坐标，这里写为贴图单帧的中心坐标，这样旋转和缩放都是围绕中心
-                new Vector2(1f),//第七个参数是缩放，X是水平倍率，Y是竖直倍率
-                SpriteEffects.None,
-                //第八个参数是设置图片翻转效果，需要手动判定并设置spriteeffects
-                0//第九个参数是绘制层级，但填0就行了，不太好使
-                );
+            // 灵体底光 (暗金柔光)
+            WeaponVFX.DrawGlowBurst(Projectile.Center, 0.42f, new Color(120, 95, 40) * 0.5f);
 
-            return false;//return false阻止自动绘制
+            // 本体: 幽灵化着色 (暗蓝灰半透)
+            Color spirit = Color.Lerp(lightColor, new Color(110, 120, 170), 0.55f) * 0.92f;
+            Main.EntitySpriteDraw(tex, Projectile.Center - Main.screenPosition, src, spirit,
+                rot, origin, SpriteScale, fxFlip, 0);
+
+            // 金冠亮点 (怒击前摇时增辉充能)
+            float furyCharge = State == StWindup && FuryNext ? MathHelper.Clamp(Timer / CurWindup, 0f, 1f) : 0f;
+            float glint = 0.35f + 0.15f * MathF.Sin(Main.GlobalTimeWrappedHourly * 5f) + furyCharge * 0.8f;
+            Vector2 crownPos = Projectile.Center + new Vector2(Projectile.spriteDirection * 9f, -frameH * SpriteScale * 0.34f);
+            Color crown = new Color(255, 215, 110) * glint;
+            crown.A = 0;
+            Main.EntitySpriteDraw(ACMAsset.SoftGlow, crownPos - Main.screenPosition, null, crown,
+                0f, ACMAsset.SoftGlow.Size() * 0.5f, 0.28f + furyCharge * 0.22f, SpriteEffects.None, 0);
+
+            return false;
         }
     }
 }
-

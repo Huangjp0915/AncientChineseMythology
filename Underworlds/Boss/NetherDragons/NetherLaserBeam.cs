@@ -7,25 +7,47 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 {
     /// <summary>
-    /// 幽冥魂束 (Nether Soul Beam) —— P2《裂土》尾鞭横扫的单次 telegraphed 激光。
+    /// 幽冥魂束 (Nether Soul Beam) —— V3 扫射魂束。
     ///
-    /// V2: 不再是常驻喷射流, 而是传送门出口处尾鞭甩出的**一道**有预告激光:
-    ///   ● 起手 <see cref="WindupTime"/> 为细红 telegraph 线(非致命, §6.1 红=致命路径预告)。
-    ///   ● 期满展开为鬼绿魂束(致命), 命中叠 <see cref="UnderworldField"/> 魂蚀。
-    /// 绘制走共享 <see cref="ACMShaders.DrawBeam"/> 原语(BeamGrad), 取代旧手抄 fog 贴图分段。
+    /// 遵守扫射预警线规范: 预警期以锥形 shader (头部挂载时) + 两界红线画出**全部扫掠扇区**,
+    /// 起始线最亮 (束将从此点燃); 期满自起始角以**恒定角速度**扫过扇区 (可预跑), 全程无变速。
+    ///
+    /// 参数 (全在 ai[] 内, 各端确定性推进, 零额外同步):
+    ///   ai[0] = 起始角 (rad);
+    ///   ai[1] = 带符号扫掠弧 (rad, 符号=方向; |弧|&lt;1 → 短预警 50f, 否则 75f);
+    ///   ai[2] = 挂载头索引 (&lt;0 = 静止炮口, 万魂门的门口束)。
+    /// 命中叠 <see cref="UnderworldField"/> 魂蚀。绘制走共享 <see cref="ACMShaders.DrawBeam"/>。
     /// </summary>
     internal class NetherLaserBeam : ModProjectile
     {
         public override string Texture => "InnoVault/Assets/placeholder";
 
-        private ref float LaserDirection => ref Projectile.ai[0];
-        private ref float LaserTimer => ref Projectile.ai[1];
-        private ref float MaxLength => ref Projectile.ai[2];
+        private ref float StartAngle => ref Projectile.ai[0];
+        private ref float SignedArc => ref Projectile.ai[1];
+        private ref float HeadIndex => ref Projectile.ai[2];
 
-        private float currentLength = 0f;
-        private const float TargetLength = 1600f;
-        private const float BeamHalfWidth = 26f;
-        private const int WindupTime = 26;     // 红色 telegraph 渐强(非致命)
+        private float timer;
+        private float currentLength;
+
+        private const float TargetLength = 1500f;
+        private const float BeamHalfWidth = 22f;
+        private const float SweepRate = 0.0155f;   // rad/f 恒速 (≈80°/90f)
+        private const int FadeTime = 16;
+
+        private int WindupTime => MathF.Abs(SignedArc) < 1f ? 50 : 75;
+        private int SweepTime => Math.Max(20, (int)(MathF.Abs(SignedArc) / SweepRate));
+        private bool Armed => timer >= WindupTime;
+        private bool AttachedToHead => HeadIndex >= 0;
+
+        /// <summary>当前束角: 预警期停在起始角; 扫射期恒速推进。</summary>
+        private float CurrentAngle {
+            get {
+                if (!Armed)
+                    return StartAngle;
+                float p = MathHelper.Clamp((timer - WindupTime) / SweepTime, 0f, 1f);
+                return StartAngle + SignedArc * p;
+            }
+        }
 
         public override void SetDefaults() {
             Projectile.width = 30;
@@ -33,7 +55,7 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             Projectile.hostile = true;
             Projectile.friendly = false;
             Projectile.penetrate = -1;
-            Projectile.timeLeft = 120;
+            Projectile.timeLeft = 75 + 130;   // 上限; 实际按 windup+sweep+fade 提前 Kill
             Projectile.alpha = 0;
             Projectile.ignoreWater = true;
             Projectile.tileCollide = false;
@@ -41,65 +63,91 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             Projectile.localNPCHitCooldown = 10;
         }
 
-        private bool Armed => LaserTimer >= WindupTime;
-
         public override void AI() {
-            LaserTimer++;
+            timer++;
 
-            if (!Armed) {
-                // telegraph 期: 细线预告, 不伸展致命长度
+            // 挂载头: 炮口跟随龙口
+            if (AttachedToHead) {
+                int idx = (int)HeadIndex;
+                if (idx >= 0 && idx < Main.maxNPCs && Main.npc[idx].active &&
+                    Main.npc[idx].ModNPC is NetherDragonHead) {
+                    NPC head = Main.npc[idx];
+                    Projectile.Center = head.Center + CurrentAngle.ToRotationVector2() * 46f;
+                }
+                else if (Armed) {
+                    // 头没了 → 立即进入淡出
+                    timer = MathF.Max(timer, WindupTime + SweepTime);
+                }
+            }
+
+            if ((int)timer == 1)
+                SoundEngine.PlaySound(SoundID.Item8 with { Pitch = 0.4f, Volume = 0.5f }, Projectile.Center);
+
+            if ((int)timer == WindupTime) {
+                SoundEngine.PlaySound(SoundID.Item33 with { Volume = 1.1f }, Projectile.Center);
+                SoundEngine.PlaySound(SoundID.Item74 with { Pitch = 0.2f, Volume = 0.6f }, Projectile.Center);
+                ACMUtils.AddScreenShake(4f);
+            }
+
+            // 束长: 点燃 8f 展开; 收尾 FadeTime 缩回
+            int total = WindupTime + SweepTime + FadeTime;
+            if (!Armed)
                 currentLength = TargetLength;
-                if (LaserTimer == 1f)
-                    SoundEngine.PlaySound(SoundID.Item8 with { Pitch = 0.4f, Volume = 0.5f }, Projectile.Center);
-            }
-            else {
-                int sinceArm = (int)(LaserTimer - WindupTime);
-                if (sinceArm < 8)
-                    currentLength = MathHelper.Lerp(0f, TargetLength, sinceArm / 8f);
-                else if (Projectile.timeLeft < 18)
-                    currentLength = MathHelper.Lerp(TargetLength, 0f, 1f - Projectile.timeLeft / 18f);
-                else
-                    currentLength = TargetLength;
+            else if (timer < WindupTime + 8)
+                currentLength = MathHelper.Lerp(0f, TargetLength, (timer - WindupTime) / 8f);
+            else if (timer > total - FadeTime)
+                currentLength = MathHelper.Lerp(TargetLength, 0f, (timer - (total - FadeTime)) / FadeTime);
+            else
+                currentLength = TargetLength;
 
-                if (sinceArm == 0)
-                    SoundEngine.PlaySound(SoundID.Item33, Projectile.Center);
+            if (timer >= total) {
+                Projectile.Kill();
+                return;
             }
 
-            MaxLength = GetLaserLength();
+            // 头部挂载时把整个扫掠扇区推给锥形预警 (slot 按扫向分流 — P3 双向剪刀各占一槽)
+            if (!Main.dedServ && AttachedToHead && !Armed) {
+                float progress = timer / WindupTime;
+                int slot = SignedArc >= 0f ? 0 : 1;
+                NetherDragonScreenSystem.PublishCone(slot, Projectile.Center,
+                    StartAngle + SignedArc * 0.5f, MathF.Abs(SignedArc) * 0.5f + 0.05f,
+                    TargetLength * 0.6f, progress, 0.5f + progress * 0.5f);
+            }
 
-            // 轻微摆动 (尾鞭横扫感)
-            LaserDirection += MathF.Sin(LaserTimer * 0.08f) * 0.0025f;
-
+            // 扫射期末端火花
             if (Armed && !Main.dedServ && Main.rand.NextBool(2)) {
-                Vector2 laserEnd = Projectile.Center + LaserDirection.ToRotationVector2() * MaxLength;
-                Vector2 dustPos = Vector2.Lerp(Projectile.Center, laserEnd, Main.rand.NextFloat(0.1f, 1f));
-                int dust = Dust.NewDust(dustPos, 1, 1, DustID.GreenTorch, 0, 0, 110, new Color(110, 230, 150), 1.1f);
-                Main.dust[dust].noGravity = true;
-                Main.dust[dust].velocity = Main.rand.NextVector2Circular(2f, 2f);
+                float len = GetOccludedLength();
+                Vector2 tip = Projectile.Center + CurrentAngle.ToRotationVector2() * len;
+                Vector2 dustPos = Vector2.Lerp(Projectile.Center, tip, Main.rand.NextFloat(0.15f, 1f));
+                var d = Dust.NewDustPerfect(dustPos, DustID.GreenTorch, Vector2.Zero, 110,
+                    new Color(110, 230, 150), 1.2f);
+                d.noGravity = true;
+                d.velocity = Main.rand.NextVector2Circular(2f, 2f);
             }
 
             Lighting.AddLight(Projectile.Center, 0.2f, 0.45f, 0.3f);
         }
 
-        private float GetLaserLength() {
+        private float GetOccludedLength() {
             float length = 50f;
-            Vector2 direction = LaserDirection.ToRotationVector2();
+            Vector2 direction = CurrentAngle.ToRotationVector2();
             while (length <= currentLength) {
                 Vector2 testPoint = Projectile.Center + direction * length;
                 if (!Collision.CanHit(Projectile.Center, 1, 1, testPoint, 1, 1))
                     return length - 20f;
-                length += 20f;
+                length += 40f;
             }
             return currentLength;
         }
 
         public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
             if (!Armed)
-                return false; // telegraph 期无伤
+                return false; // 预警期无伤 (伤害窗口与视觉严格对齐)
             Vector2 start = Projectile.Center;
-            Vector2 end = start + LaserDirection.ToRotationVector2() * MaxLength;
+            Vector2 end = start + CurrentAngle.ToRotationVector2() * GetOccludedLength();
             float point = 0f;
-            return Collision.CheckAABBvLineCollision(targetHitbox.TopLeft(), targetHitbox.Size(), start, end, BeamHalfWidth, ref point);
+            return Collision.CheckAABBvLineCollision(targetHitbox.TopLeft(), targetHitbox.Size(),
+                start, end, BeamHalfWidth, ref point);
         }
 
         public override void OnHitPlayer(Player target, Player.HurtInfo info) {
@@ -111,20 +159,26 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
                 return false;
 
             Vector2 start = Projectile.Center;
-            Vector2 dir = LaserDirection.ToRotationVector2();
-            Vector2 end = start + dir * MaxLength;
 
             if (!Armed) {
-                // 红色致命路径预告 (细线渐强)
-                float t = MathHelper.Clamp(LaserTimer / WindupTime, 0f, 1f);
-                ACMShaders.DrawBeam(start, end, 2.5f + t * 2.5f,
-                    TelegraphColors.Lethal, TelegraphColors.Lethal with { A = 0 }, 0.45f + t * 0.4f,
+                float t = MathHelper.Clamp(timer / WindupTime, 0f, 1f);
+                // 起始线 (束将从此点燃, 最亮红)
+                ACMShaders.DrawBeam(start, start + StartAngle.ToRotationVector2() * TargetLength,
+                    2.5f + t * 2.5f, TelegraphColors.Lethal, TelegraphColors.Lethal with { A = 0 },
+                    0.45f + t * 0.4f, flowSpeed: 2.2f, flowScale: 3f, coreSharp: 3f);
+                // 终止线 (扇区另一界, 弱红) — 静止炮口 (万魂门) 没有锥形 shader, 靠双界线读扇区
+                float endA = StartAngle + SignedArc;
+                ACMShaders.DrawBeam(start, start + endA.ToRotationVector2() * TargetLength * 0.8f,
+                    2f, TelegraphColors.Lethal, TelegraphColors.Lethal with { A = 0 },
+                    (0.18f + t * 0.2f) * (AttachedToHead ? 0.6f : 1f),
                     flowSpeed: 2.2f, flowScale: 3f, coreSharp: 3f);
             }
             else {
-                float lenFrac = MaxLength / TargetLength;
+                float len = GetOccludedLength();
+                Vector2 dir = CurrentAngle.ToRotationVector2();
+                float lenFrac = MathHelper.Clamp(len / TargetLength, 0f, 1f);
                 // 致命鬼绿魂束 (核心亮 + 外晕)
-                ACMShaders.DrawBeam(start, start + dir * MaxLength, BeamHalfWidth,
+                ACMShaders.DrawBeam(start, start + dir * len, BeamHalfWidth,
                     new Color(180, 255, 210), new Color(110, 230, 150) with { A = 0 }, lenFrac,
                     flowSpeed: 1.8f, flowScale: 2.4f, coreSharp: 2.2f, coreGlow: 1.2f);
             }

@@ -35,6 +35,37 @@ namespace AncientChineseMythology.Underworlds.Boss.AwakeningNethers
 
         #endregion
 
+        #region 专属着色器 (V3, 静态缓存, 不注册进 ACMShaders)
+
+        private static Asset<Effect> _soulflameRef;
+        private static Asset<Effect> _voidRiftRef;
+
+        /// <summary>魂焰着色器 — 鬼绿芯→觉醒紫缘的程序化冥火 (火舌/魂雾场双形态)。</summary>
+        public static Effect SoulflameShader {
+            get {
+                if (Main.dedServ)
+                    return null;
+                _soulflameRef ??= ModContent.Request<Effect>(
+                    "AncientChineseMythology/Effects/AwakeningNetherSoulflame",
+                    AssetRequestMode.ImmediateLoad);
+                return _soulflameRef?.Value;
+            }
+        }
+
+        /// <summary>虚空裂隙着色器 — 吸积盘奇点/次元裂隙门 (uProgress 旋开, uLethal 转红)。</summary>
+        public static Effect VoidRiftShader {
+            get {
+                if (Main.dedServ)
+                    return null;
+                _voidRiftRef ??= ModContent.Request<Effect>(
+                    "AncientChineseMythology/Effects/AwakeningNetherVoidRift",
+                    AssetRequestMode.ImmediateLoad);
+                return _voidRiftRef?.Value;
+            }
+        }
+
+        #endregion
+
         #region 终局级特效颜色
 
         /// <summary>觉醒紫色 - 主色调</summary>

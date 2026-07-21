@@ -28,27 +28,32 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 
         #endregion
 
-        #region 二阶段AI · 天王降临
+        #region 二阶段AI · 枢纽 / 夜叉召唤
 
         private void RunPhase2Hub(Player target) {
             // 降临枢纽 — 居于玩家上方稍近处
             Vector2 hoverPos = target.Center + new Vector2(MathF.Sin(globalTime * 0.8f) * 80f, -300);
-            NPC.velocity = Vector2.Lerp(NPC.velocity, (hoverPos - NPC.Center) * 0.03f, 0.08f);
+            Vector2 toHover = hoverPos - NPC.Center;
+            NPC.velocity = Vector2.Lerp(NPC.velocity, toHover * 0.03f, 0.08f);
             towerOrbitSpeed = 0.018f;
 
             // 低压力压制：带充能宝塔点射
-            if (AttackTimer % 50 == 0) {
+            if (AttackTimer % 46 == 0) {
                 FireTowerTap(target);
             }
 
-            if (PhaseTimer > 130) {
-                // 固定可读轮替：四象射线 → 仙气地波 → 守护姿态
+            bool inPosition = toHover.LengthSquared() < 160f * 160f;
+            if (PhaseTimer > 90 || (PhaseTimer > 50 && inPosition)) {
+                // 固定可读轮替：步战镇压与弹幕控场交替，守护姿态作为呼吸拍
                 BossPhase[] rotation = {
+                    BossPhase.Phase2_StampFormation,
                     BossPhase.Phase2_QuadrantRay,
+                    BossPhase.Phase2_PagodaSuppress,
                     BossPhase.Phase2_ImmortalWave,
                     BossPhase.Phase2_GuardianStance,
+                    BossPhase.Phase2_StampFormation,
                     BossPhase.Phase2_QuadrantRay,
-                    BossPhase.Phase2_ImmortalWave
+                    BossPhase.Phase2_PagodaSuppress
                 };
                 TransitionTo(rotation[p2Index % rotation.Length]);
                 p2Index++;
@@ -96,6 +101,10 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             }
         }
 
+        #endregion
+
+        #region 二阶段AI · 四象射线（夜叉锚定安全道）
+
         /// <summary>
         /// 四象射线 — 夜叉锚定安全道。
         /// 每个基本方向射出固定方位激光；某方向夜叉死亡后，其【对侧】方向开出安全道。
@@ -111,13 +120,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                     if (PhaseTimer == 1)
                         SoundEngine.PlaySound(SoundID.Item15 with { Pitch = 0.5f }, NPC.Center);
 
-                    if (!VaultUtils.isServer) {
-                        for (int c = 0; c < 4; c++) {
-                            bool safe = !YakshaAlive(Opposite(c));
-                            if (safe) continue; // 安全道不画危险标线
-                            TelegraphLine(NPC.Center, CardinalAngle[c].ToRotationVector2(), 12, DustID.GoldFlame);
-                        }
-                    }
+                    // 预告升级：DrawBeam 金带由绘制层依 SubState/PhaseTimer 画出（见 DrawQuadrantTell）
 
                     if (PhaseTimer >= 50) {
                         SubState = 1;
@@ -132,11 +135,12 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                                 bool safe = !YakshaAlive(Opposite(c));
                                 if (safe) continue;
                                 Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
-                                    ModContent.ProjectileType<QuadrantRay>(), NPC.damage / 2, 0f, Main.myPlayer,
+                                    ModContent.ProjectileType<QuadrantRay>(), NPC.defDamage / 2, 0f, Main.myPlayer,
                                     ai0: NPC.whoAmI, ai1: CardinalAngle[c]);
                             }
                         }
                         SoundEngine.PlaySound(SoundID.Item122 with { Volume = 1.3f }, NPC.Center);
+                        bodyFlash = 0.6f;
                         if (!VaultUtils.isServer)
                             ACMScreenShakeSystem.Add(12f);
                     }
@@ -148,9 +152,12 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             }
         }
 
+        #endregion
+
+        #region 二阶段AI · 仙气地波
+
         /// <summary>
         /// 仙气地波 — 随地形起伏的冲击环，吸附地表/平台高度，迫使纵向跳跃走位。
-        /// （区别于观察者的平面环）
         /// </summary>
         private void RunPhase2ImmortalWave(Player target) {
             switch ((int)SubState) {
@@ -175,9 +182,9 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                             Vector2 spawn = new Vector2(target.Center.X, target.Center.Y - 40);
                             float speed = Main.expertMode ? 9f : 7.5f;
                             Projectile.NewProjectile(NPC.GetSource_FromAI(), spawn, new Vector2(-speed, 0),
-                                ModContent.ProjectileType<ImmortalGroundShock>(), NPC.damage / 3, 0f, Main.myPlayer);
+                                ModContent.ProjectileType<ImmortalGroundShock>(), NPC.defDamage / 3, 0f, Main.myPlayer);
                             Projectile.NewProjectile(NPC.GetSource_FromAI(), spawn, new Vector2(speed, 0),
-                                ModContent.ProjectileType<ImmortalGroundShock>(), NPC.damage / 3, 0f, Main.myPlayer);
+                                ModContent.ProjectileType<ImmortalGroundShock>(), NPC.defDamage / 3, 0f, Main.myPlayer);
                         }
                         SoundEngine.PlaySound(SoundID.Item29 with { Pitch = -0.1f }, NPC.Center);
                         if (!VaultUtils.isServer)
@@ -191,20 +198,171 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             }
         }
 
+        #endregion
+
+        #region 二阶段AI · 天王踏阵
+
         /// <summary>
-        /// 守护姿态 — 守护者身份窗口（借鉴玄武 绝对防御）。
-        /// Boss 钉死并开启无敌/反震；玩家应停火、靠走位躲避缓速金环，
-        /// 而非继续输出（输出会被劫财反震）。窗口结束有破防硬直。
+        /// 天王踏阵：四连天王步，架步渐短（26→20f）、步频音阶递升；
+        /// 第四步「震地大踏」——落点提前 26f 坛城预告，落地震屏 10 + 双向全程地波 +
+        /// 留缝金环。接触伤害仅各步跨步窗口。
+        /// </summary>
+        private void RunPhase2StampFormation(Player target) {
+            // 状态机保底出口
+            if (AttackTimer > 700) {
+                TransitionTo(BossPhase.Phase2_Hub);
+                return;
+            }
+
+            bool finalStamp = dashCount >= 3;
+
+            switch ((int)SubState) {
+                case 0: { // 架步
+                    int windup = finalStamp ? 34 : Math.Max(20, 26 - dashCount * 2);
+
+                    if (PhaseTimer == 1) {
+                        stepStart = NPC.Center;
+                        PickStepTarget(target);
+                        // 步频音阶递升
+                        SoundEngine.PlaySound(SoundID.Item35 with { Pitch = 0.2f + dashCount * 0.18f, Volume = 1f }, NPC.Center);
+                    }
+
+                    StepAnticipate(PhaseTimer / (float)windup);
+
+                    if (PhaseTimer >= windup) {
+                        SubState = 1;
+                        PhaseTimer = 0;
+                        StepLaunch();
+                    }
+                    break;
+                }
+
+                case 1: { // 跨步（接触伤害窗口）
+                    NPC.damage = NPC.defDamage;
+
+                    bool passed = Vector2.Dot(dashTarget - NPC.Center, stepDir) < 0f;
+                    if (PhaseTimer >= stepTravelNeeded || passed) {
+                        SubState = 2;
+                        PhaseTimer = 0;
+                    }
+                    break;
+                }
+
+                case 2: { // 落地
+                    if (PhaseTimer == 1) {
+                        if (finalStamp) {
+                            // 震地大踏：全程地波 + 留缝金环 + 强震
+                            StepLandImpact(spawnShock: true, shockTravel: 2400f, shockDamageDiv: 3);
+                            SoundEngine.PlaySound(SoundID.DD2_KoboldExplosion with { Pitch = -0.3f, Volume = 1.2f }, NPC.Center);
+                            bodyFlash = 0.8f;
+                            if (!VaultUtils.isServer) {
+                                ACMScreenShakeSystem.Add(10f);
+                                VaisravanaTreasureScreenSystem.PulseBloom(0.5f);
+                            }
+                            if (Main.netMode != NetmodeID.MultiplayerClient) {
+                                float safeAngle = (target.Center - NPC.Center).ToRotation();
+                                int count = 18;
+                                float safeHalf = MathHelper.ToRadians(40);
+                                for (int i = 0; i < count; i++) {
+                                    float angle = MathHelper.TwoPi * i / count;
+                                    if (MathF.Abs(MathHelper.WrapAngle(angle - safeAngle)) < safeHalf) continue;
+                                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, angle.ToRotationVector2() * 6f,
+                                        ModContent.ProjectileType<TreasureTowerOrb>(), NPC.defDamage / 4, 1f, Main.myPlayer);
+                                }
+                            }
+                        }
+                        else {
+                            StepLandImpact(spawnShock: dashCount % 2 == 0, shockTravel: 560f);
+                        }
+                    }
+
+                    NPC.velocity *= 0.62f;
+
+                    int settleTime = finalStamp ? 40 : 16;
+                    if (PhaseTimer >= settleTime) {
+                        dashCount++;
+                        if (dashCount >= 4) {
+                            TransitionTo(BossPhase.Phase2_Hub);
+                        }
+                        else {
+                            SubState = 0;
+                            PhaseTimer = 0;
+                            NPC.netUpdate = true;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
+        #endregion
+
+        #region 二阶段AI · 塔光柱镇压
+
+        /// <summary>
+        /// 塔光柱镇压（P2 代表招）：两座宝塔飞至玩家两侧上空，塔下天光柱 45f 细线预告 →
+        /// 90f 全宽爆发并以 0.55px/f 向中缝夹击。中缝始终 ≥260px（公平阀门），
+        /// 逼迫玩家在收窄的金柱走廊里贴塔窃取赐福（风险奖励闭环）。
+        /// </summary>
+        private void RunPhase2PagodaSuppress(Player target) {
+            switch ((int)SubState) {
+                case 0: { // 布阵：本体后撤上移，让出舞台
+                    Vector2 stagePos = target.Center + new Vector2(0, -430);
+                    NPC.velocity = ACMUtils.SpringDamp2D(NPC.Center, stagePos, ref dashVelocity, 2.0f, 7f, 1f / 60f) - NPC.Center;
+
+                    if (PhaseTimer == 1) {
+                        SoundEngine.PlaySound(SoundID.Item15 with { Pitch = -0.1f, Volume = 1.2f }, NPC.Center);
+                        if (Main.netMode != NetmodeID.MultiplayerClient) {
+                            // 双柱夹击：左右各一根，模式 1（收拢），ai1=收拢方向
+                            float halfGap = 480f;
+                            for (int s = -1; s <= 1; s += 2) {
+                                Vector2 spawn = new(target.Center.X + s * halfGap, target.Center.Y);
+                                Projectile.NewProjectile(NPC.GetSource_FromAI(), spawn, Vector2.Zero,
+                                    ModContent.ProjectileType<VaisravanaLightPillar>(), NPC.defDamage / 2, 0f, Main.myPlayer,
+                                    ai0: 1f, ai1: -s);
+                            }
+                            NPC.netUpdate = true;
+                        }
+                    }
+
+                    if (PhaseTimer >= 30) {
+                        SubState = 1;
+                        PhaseTimer = 0;
+                    }
+                    break;
+                }
+
+                case 1: { // 镇压运行期：塔口点射维持压力
+                    NPC.velocity *= 0.94f;
+
+                    if (PhaseTimer % 55 == 30)
+                        FireTowerTap(target);
+
+                    if (PhaseTimer > 165) {
+                        TransitionTo(BossPhase.Phase2_Hub);
+                    }
+                    break;
+                }
+            }
+        }
+
+        #endregion
+
+        #region 二阶段AI · 宝伞格挡
+
+        /// <summary>
+        /// 宝伞格挡 — 守护者身份窗口。伞盖张开（24f 展开动画）期间无敌 + 劫财反震；
+        /// 玩家应停火走位躲避留缝金环。窗口结束伞收，留 20f 破防硬直（可打窗口）。
         /// </summary>
         private void RunPhase2GuardianStance(Player target) {
             switch ((int)SubState) {
-                case 0: // 入场钉死 + 预告
+                case 0: // 入场钉死 + 伞盖展开
                     NPC.velocity = ACMUtils.SpringDamp2D(NPC.Center, NPC.Center, ref dashVelocity, 0.5f, 12f, 1f / 60f) - NPC.Center;
 
                     if (PhaseTimer == 1)
                         SoundEngine.PlaySound(SoundID.Item37 with { Pitch = -0.3f, Volume = 1.2f }, NPC.Center);
 
-                    if (PhaseTimer >= 30) {
+                    if (PhaseTimer >= 24) {
                         SubState = 1;
                         PhaseTimer = 0;
                         guardActive = true;
@@ -227,16 +385,24 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                             float angle = MathHelper.TwoPi * i / count;
                             if (MathF.Abs(MathHelper.WrapAngle(angle - safeAngle)) < safeHalf) continue;
                             Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, angle.ToRotationVector2() * 5.5f,
-                                ModContent.ProjectileType<TreasureTowerOrb>(), NPC.damage / 4, 1f, Main.myPlayer);
+                                ModContent.ProjectileType<TreasureTowerOrb>(), NPC.defDamage / 4, 1f, Main.myPlayer);
                         }
                         SoundEngine.PlaySound(SoundID.Item8 with { Pitch = 0.2f }, NPC.Center);
                     }
 
-                    if (PhaseTimer > 150) {
+                    if (PhaseTimer > 130) {
+                        SubState = 2;
+                        PhaseTimer = 0;
                         guardActive = false;
                         NPC.dontTakeDamage = false;
                         guardVisual = 1.6f; // 破防闪
                         SoundEngine.PlaySound(SoundID.NPCHit42 with { Pitch = 0.3f }, NPC.Center);
+                    }
+                    break;
+
+                case 2: // 破防硬直（可打窗口）
+                    NPC.velocity *= 0.9f;
+                    if (PhaseTimer >= 20) {
                         TransitionTo(BossPhase.Phase2_Hub);
                     }
                     break;
@@ -250,21 +416,14 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
         private void RunPhase3SealRings(Player target) {
             // A 幕 · 金环收束：向内收缩的金环，标记安全道
             switch ((int)SubState) {
-                case 0: // 预告安全道
+                case 0: // 预告安全道（Safe 翠玉双线由绘制层画出）
                     NPC.velocity = ACMUtils.SpringDamp2D(NPC.Center, target.Center + new Vector2(0, -260), ref dashVelocity, 2.2f, 6f, 1f / 60f) - NPC.Center;
 
                     if (PhaseTimer == 1) {
                         // 安全道角度：避开仍存活夜叉的方向（存活方向被「强化」=危险）
                         laserAngle = ChooseSealSafeAngle();
                         SoundEngine.PlaySound(SoundID.Item15 with { Pitch = 0.3f, Volume = 1.1f }, NPC.Center);
-                    }
-
-                    if (!VaultUtils.isServer) {
-                        Vector2 c = NPC.Center;
-                        for (int s = -1; s <= 1; s++) {
-                            float a = laserAngle + s * MathHelper.ToRadians(30);
-                            TelegraphLine(c, a.ToRotationVector2(), 12, DustID.GoldCoin);
-                        }
+                        NPC.netUpdate = true;
                     }
 
                     if (PhaseTimer >= 55) {
@@ -278,7 +437,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                         if (Main.netMode != NetmodeID.MultiplayerClient) {
                             float startRadius = 780f;
                             Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
-                                ModContent.ProjectileType<TreasurySealRing>(), NPC.damage / 3, 0f, Main.myPlayer,
+                                ModContent.ProjectileType<TreasurySealRing>(), NPC.defDamage / 3, 0f, Main.myPlayer,
                                 ai0: laserAngle, ai1: startRadius);
                         }
                         SoundEngine.PlaySound(SoundID.Item122 with { Pitch = -0.2f, Volume = 1.1f }, NPC.Center);
@@ -312,21 +471,13 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
         /// </summary>
         private void RunPhase3YakshaMirror(Player target) {
             switch ((int)SubState) {
-                case 0: // 选定镜轴 + 预告
+                case 0: // 选定镜轴 + 预告（金色安全轴由绘制层 DrawMirrorAxisTell 画出）
                     NPC.velocity = ACMUtils.SpringDamp2D(NPC.Center, target.Center + new Vector2(0, -280), ref dashVelocity, 2.2f, 6f, 1f / 60f) - NPC.Center;
 
                     if (PhaseTimer == 1) {
                         mirrorAxis = (target.Center - NPC.Center).ToRotation();
                         SoundEngine.PlaySound(SoundID.Item15 with { Pitch = 0.7f }, NPC.Center);
-                    }
-
-                    if (!VaultUtils.isServer) {
-                        // 画出镜轴（安全线）
-                        Vector2 dir = mirrorAxis.ToRotationVector2();
-                        for (int i = -10; i <= 10; i++) {
-                            int dust = Dust.NewDust(NPC.Center + dir * (i * 70f), 0, 0, DustID.WhiteTorch, 0, 0, 150, default, 1f);
-                            Main.dust[dust].noGravity = true;
-                        }
+                        NPC.netUpdate = true;
                     }
 
                     if (PhaseTimer >= 50) {
@@ -364,16 +515,17 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                 Vector2 toAxisPoint = (NPC.Center + axisDir * Vector2.Dot(origin - NPC.Center, axisDir)) - origin;
                 Vector2 vel = toAxisPoint.SafeNormalize(perp * -s) * 13f;
                 Projectile.NewProjectile(NPC.GetSource_FromAI(), origin, vel,
-                    ModContent.ProjectileType<YakshaMirrorBolt>(), NPC.damage / 3, 2f, Main.myPlayer);
+                    ModContent.ProjectileType<YakshaMirrorBolt>(), NPC.defDamage / 3, 2f, Main.myPlayer);
             }
         }
 
         /// <summary>
-        /// C 幕 · 终极宝塔：单束终极激光，约 70 tick 蓄力 + 地纹预告，绝不与 10tick 喷射重叠。
+        /// C 幕 · 终极宝塔：单束终极激光，70f 蓄力（专属坛城地纹逐圈点亮 + 四塔金链汇能）
+        /// → 发射瞬间本体反冲 + 白闪 + 金爆。绝不与高频喷射重叠。
         /// </summary>
         private void RunPhase3UltimateTower(Player target) {
             switch ((int)SubState) {
-                case 0: // 70 tick 蓄力 + 地纹预告
+                case 0: // 70f 蓄力 + 地纹预告
                     NPC.velocity = ACMUtils.SpringDamp2D(NPC.Center, target.Center + new Vector2(0, -320), ref dashVelocity, 1.6f, 7f, 1f / 60f) - NPC.Center;
 
                     if (PhaseTimer == 1) {
@@ -391,31 +543,32 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                     // 蓄力期持续微调朝向（可读），并震屏渐强
                     laserAngle = MathHelper.Lerp(laserAngle, (target.Center - NPC.Center).ToRotation(), 0.03f);
 
-                    if (!VaultUtils.isServer) {
-                        for (int i = 0; i < 12; i++) {
-                            Vector2 dustPos = NPC.Center + Main.rand.NextVector2CircularEdge(220, 220);
-                            int dust = Dust.NewDust(dustPos, 0, 0, DustID.GoldFlame, 0, 0, 50, default, 2.6f);
-                            Main.dust[dust].noGravity = true;
-                            Main.dust[dust].velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 13f;
-                        }
-                        if (PhaseTimer % 8 == 0)
-                            ACMScreenShakeSystem.Add(MathHelper.Clamp(PhaseTimer / 10f, 0f, 12f));
-                        // 坛城地纹与本体金爆由 ScreenSystem(逐圈) 与 PreDraw(DrawRadialBloomAt) 演出, 此处仅震屏渐强
+                    // 汇聚金流（72% 硬切，最后一段静默）
+                    if (!VaultUtils.isServer && PhaseTimer < 50 && PhaseTimer % 2 == 0) {
+                        Vector2 dustPos = NPC.Center + Main.rand.NextVector2CircularEdge(220, 220);
+                        int dust = Dust.NewDust(dustPos, 0, 0, DustID.GoldFlame, 0, 0, 50, default, 2.6f);
+                        Main.dust[dust].noGravity = true;
+                        Main.dust[dust].velocity = (NPC.Center - dustPos).SafeNormalize(Vector2.Zero) * 13f;
                     }
+                    if (!VaultUtils.isServer && PhaseTimer % 8 == 0)
+                        ACMScreenShakeSystem.Add(MathHelper.Clamp(PhaseTimer / 10f, 0f, 12f));
 
                     if (PhaseTimer >= 70) {
                         SubState = 1;
                         PhaseTimer = 0;
                         if (Main.netMode != NetmodeID.MultiplayerClient) {
                             Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, Vector2.Zero,
-                                ModContent.ProjectileType<TreasureTowerRay>(), (int)(NPC.damage * 1.4f), 0f, Main.myPlayer,
+                                ModContent.ProjectileType<TreasureTowerRay>(), (int)(NPC.defDamage * 1.4f), 0f, Main.myPlayer,
                                 ai0: NPC.whoAmI, ai1: laserAngle);
                         }
+                        // 发射：本体反冲 + 白闪 + 金爆 + 强震
+                        NPC.velocity = -laserAngle.ToRotationVector2() * 14f;
+                        bodyFlash = 1f;
                         SoundEngine.PlaySound(SoundID.Zombie104 with { Pitch = -0.3f, Volume = 2f }, NPC.Center);
                         if (!VaultUtils.isServer) {
-                            // 终极宝塔·财神镇压：金爆泛光 + 强震屏
                             ACMScreenShakeSystem.Add(12f);
                             VaisravanaTreasureScreenSystem.PulseBloom(1f);
+                            VaisravanaTreasureScreenSystem.PulseWhiteFlash(0.35f);
                         }
                     }
                     break;
@@ -432,7 +585,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
         }
 
         /// <summary>
-        /// 幕间守护节拍：短暂守护反击窗口 + 宝塔回充，作为可读性阀门，避免连续高压。
+        /// 幕间宝伞节拍：短暂守护反击窗口 + 宝塔回充，作为可读性阀门，避免连续高压。
         /// </summary>
         private void RunPhase3SealBeat(Player target) {
             NPC.velocity = ACMUtils.SpringDamp2D(NPC.Center, target.Center + new Vector2(0, -300), ref dashVelocity, 1.2f, 8f, 1f / 60f) - NPC.Center;
@@ -453,7 +606,7 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                     float angle = MathHelper.TwoPi * i / count;
                     if (MathF.Abs(MathHelper.WrapAngle(angle - safeAngle)) < MathHelper.ToRadians(40)) continue;
                     Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, angle.ToRotationVector2() * 5f,
-                        ModContent.ProjectileType<TreasureTowerOrb>(), NPC.damage / 4, 1f, Main.myPlayer);
+                        ModContent.ProjectileType<TreasureTowerOrb>(), NPC.defDamage / 4, 1f, Main.myPlayer);
                 }
             }
 

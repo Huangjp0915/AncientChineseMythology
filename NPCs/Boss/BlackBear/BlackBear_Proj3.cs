@@ -10,39 +10,46 @@ using Rectangle = Microsoft.Xna.Framework.Rectangle;
 namespace AncientChineseMythology.NPCs.Boss.BlackBear
 {
     /// <summary>
-    /// 黑熊精头饰光环 (V2 改造)。原版是"半血一次性发射头饰弹", V2 改为 P2 <b>复发</b>机制:
-    /// 由 Boss 在玩家周围生成一圈 (默认 6 颗), 环绕玩家 3s (含间隙, 可穿缝) → 向内收拢 (致命扫拢, 逼玩家离环) → 消散。
-    /// 教学意图: 让新手第一次体会"换阶段=出现新机制", 而非单纯换贴图。
-    /// owner = 目标玩家索引; ai[0] = 起始角; ai[1] = 计时。
+    /// 黑熊精·金冠光环 (V3) — P2 复发机制: 6 枚头饰从 <b>Boss 头顶飞行抵达</b>玩家周围环位
+    /// (traveled 而非瞬移, 修复 V2 凭空出现), 环绕留缝 → 变红收拢预警 → 向内致命扫拢 → 消散。
+    /// 全程伤害常开但入场路径可见 + 环绕期有明确空缝, 公平性由"看得见的抵达"保证。
+    /// ai[0] = 环位基准角; ai[1] = 计时 (自增); ai[2] = 目标玩家索引。
     /// </summary>
     public class BlackBear_Proj3 : ModProjectile
     {
-        private const int OrbitTicks = 180;   // 环绕 3s
-        private const int CollapseTicks = 45; // 收拢
-        private const float OrbitRadius = 240f;
-        private const float CollapseRadius = 28f;
+        private const int FlyInTicks = 30;    // 飞行抵达
+        private const int OrbitTicks = 150;   // 环绕 (含 20f 变红预警尾段)
+        private const int CollapseTicks = 42; // 收拢
+        private const int WarnTicks = 20;     // 收拢前变红
+        private const float OrbitRadius = 250f;
+        private const float CollapseRadius = 24f;
 
         public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/BlackBear_Proj3";
 
+        private ref float BaseAngle => ref Projectile.ai[0];
+        private ref float Timer => ref Projectile.ai[1];
+        private ref float TargetIdx => ref Projectile.ai[2];
+
+        private Player Target => Main.player[(int)MathHelper.Clamp(TargetIdx, 0, Main.maxPlayers - 1)];
+
+        public override void SetStaticDefaults() {
+            ProjectileID.Sets.TrailingMode[Type] = 2;
+            ProjectileID.Sets.TrailCacheLength[Type] = 6;
+        }
+
         public override void SetDefaults() {
             Projectile.hostile = true;
-            Projectile.width = 56;
-            Projectile.height = 40;
             Projectile.friendly = false;
+            Projectile.width = 44;
+            Projectile.height = 32;
             Projectile.tileCollide = false;
             Projectile.DamageType = DamageClass.Default;
             Projectile.penetrate = -1;
             Projectile.ignoreWater = true;
-            Projectile.timeLeft = OrbitTicks + CollapseTicks + 20;
-            Projectile.alpha = 255; // 淡入
+            Projectile.timeLeft = FlyInTicks + OrbitTicks + CollapseTicks + 10;
+            Projectile.alpha = 160;
             Projectile.light = 0.3f;
         }
-
-        private ref float BaseAngle => ref Projectile.ai[0];
-        private ref float Timer => ref Projectile.ai[1];
-        private ref float BaseDamage => ref Projectile.ai[2];
-
-        private Player Target => Main.player[(int)MathHelper.Clamp(Projectile.owner, 0, Main.maxPlayers - 1)];
 
         public override void AI() {
             Player target = Target;
@@ -52,43 +59,51 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
                 return;
             }
 
-            // 首帧捕获基础伤害 (随生成同步), 之后据阶段开关致命性
+            // 首帧捕获基础伤害 (localAI: 各端在本地第 0 帧捕获生成包伤害, 确定一致);
+            // 飞行抵达期 + 环绕成形前 10f 无伤害 — 入场路径不打人
             if (Timer == 0f)
-                BaseDamage = Projectile.damage;
+                Projectile.localAI[0] = Projectile.damage;
             Timer++;
+            Projectile.damage = Timer < FlyInTicks + 10 ? 0 : (int)Projectile.localAI[0];
 
-            // 淡入
             if (Projectile.alpha > 0)
-                Projectile.alpha = Math.Max(0, Projectile.alpha - 12);
+                Projectile.alpha = Math.Max(0, Projectile.alpha - 10);
+
+            // 自转角由 Timer 推导 (各端确定, 不用 GlobalTime 避免跨端漂移)
+            float ang = BaseAngle + Timer * 0.0225f;
+            Projectile.rotation += 0.14f;
+
+            if (Timer <= FlyInTicks) {
+                // 飞行抵达: 从生成点 (Boss 头顶) 平滑奔向环位 — 玩家能看见"金冠飞来了"
+                Vector2 slot = target.Center + ang.ToRotationVector2() * OrbitRadius;
+                float t = Timer / FlyInTicks;
+                Projectile.Center = Vector2.Lerp(Projectile.Center, slot, 0.10f + 0.22f * t * t);
+                return;
+            }
+
+            float sinceOrbit = Timer - FlyInTicks;
+            bool collapsing = sinceOrbit >= OrbitTicks;
 
             float radius;
-            bool collapsing = Timer >= OrbitTicks;
-            float orbitSpin = (float)Main.GlobalTimeWrappedHourly * 1.2f;
-
-            // 仅在成形后 (>30 帧) 或收拢期才致命; 淡入期安全
-            Projectile.damage = (collapsing || Timer >= 30f) ? (int)BaseDamage : 0;
-
             if (!collapsing) {
                 radius = OrbitRadius;
             }
             else {
-                // 收拢期: 半径向内 lerp, 致命扫拢
-                float t = MathHelper.Clamp((Timer - OrbitTicks) / (float)CollapseTicks, 0f, 1f);
-                radius = MathHelper.Lerp(OrbitRadius, CollapseRadius, t);
-                if (Timer >= OrbitTicks + CollapseTicks) {
+                float t = MathHelper.Clamp((sinceOrbit - OrbitTicks) / CollapseTicks, 0f, 1f);
+                // 收拢曲线: t³ — 慢启动给反应时间, 末段猛收
+                radius = MathHelper.Lerp(OrbitRadius, CollapseRadius, t * t * t);
+                if (sinceOrbit >= OrbitTicks + CollapseTicks) {
                     Burst();
                     Projectile.Kill();
                     return;
                 }
             }
 
-            float ang = BaseAngle + orbitSpin;
-            Vector2 desired = target.Center + ang.ToRotationVector2() * radius;
-            Projectile.Center = desired;
-            Projectile.rotation += 0.15f;
+            Projectile.Center = target.Center + ang.ToRotationVector2() * radius;
 
-            // 收拢预警 dust (红芒脉冲)
-            if (!Main.dedServ && collapsing && Timer % 4 == 0) {
+            // 收拢预警/收拢期: 红芒内吸 dust
+            bool warning = sinceOrbit >= OrbitTicks - WarnTicks;
+            if (!Main.dedServ && warning && (int)Timer % 4 == 0) {
                 Dust d = Dust.NewDustPerfect(Projectile.Center, DustID.GoldFlame, Vector2.Zero, 100, Color.OrangeRed, 1.1f);
                 d.noGravity = true;
                 d.velocity = (target.Center - Projectile.Center).SafeNormalize(Vector2.Zero) * 2f;
@@ -99,8 +114,8 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
             if (Main.dedServ)
                 return;
             for (int i = 0; i < 8; i++) {
-                Vector2 pos = Projectile.Center + Main.rand.NextVector2Circular(10f, 10f);
-                Dust d = Dust.NewDustPerfect(pos, DustID.Gold, Main.rand.NextVector2Circular(2f, 2f), 100);
+                Dust d = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(10f, 10f),
+                    DustID.Gold, Main.rand.NextVector2Circular(2.5f, 2.5f), 100);
                 d.noGravity = true;
             }
         }
@@ -109,26 +124,34 @@ namespace AncientChineseMythology.NPCs.Boss.BlackBear
             Texture2D texture = TextureAssets.Projectile[Type].Value;
             int frames = Math.Max(1, Main.projFrames[Type]);
             int fh = texture.Height / frames;
-            Rectangle rectangle = new Rectangle(0, fh * Projectile.frame, texture.Width, fh);
-            Vector2 origin = new Vector2(texture.Width / 2f, fh / 2f);
+            Rectangle rect = new(0, fh * Projectile.frame, texture.Width, fh);
+            Vector2 origin = new(texture.Width / 2f, fh / 2f);
 
-            bool collapsing = Timer >= OrbitTicks;
-            // 收拢期叠红警示色, 环绕期金色
-            Color tint = collapsing
-                ? Color.Lerp(TelegraphColors.Gold, TelegraphColors.Lethal, 0.6f)
+            float sinceOrbit = Timer - FlyInTicks;
+            bool warning = sinceOrbit >= OrbitTicks - WarnTicks;
+            Color tint = warning
+                ? Color.Lerp(TelegraphColors.Gold, TelegraphColors.Lethal, 0.65f)
                 : TelegraphColors.Gold;
             tint *= Projectile.Opacity;
 
             // 拖尾
-            ProjectileID.Sets.TrailingMode[Type] = 2;
-            ProjectileID.Sets.TrailCacheLength[Type] = 6;
             for (int i = 0; i < Projectile.oldPos.Length; i++) {
                 float factor = 1f - (float)i / Projectile.oldPos.Length;
                 Vector2 old = Projectile.oldPos[i] + Projectile.Size / 2f - Main.screenPosition;
-                Main.EntitySpriteDraw(texture, old, rectangle, tint * factor * 0.5f, Projectile.oldRot[i], origin, Projectile.scale * 0.8f, SpriteEffects.None, 0);
+                Main.EntitySpriteDraw(texture, old, rect, tint * (factor * 0.45f), Projectile.oldRot[i], origin,
+                    Projectile.scale * 0.8f, SpriteEffects.None, 0);
             }
 
-            Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, rectangle, tint,
+            // 底层金晕
+            Texture2D soft = ACMAsset.SoftGlow;
+            if (soft != null) {
+                Color halo = (warning ? TelegraphColors.Lethal : TelegraphColors.Gold) * (0.4f * Projectile.Opacity);
+                halo.A = 0;
+                Main.spriteBatch.Draw(soft, Projectile.Center - Main.screenPosition, null, halo, 0f,
+                    soft.Size() / 2f, 0.55f, SpriteEffects.None, 0f);
+            }
+
+            Main.EntitySpriteDraw(texture, Projectile.Center - Main.screenPosition, rect, tint,
                 Projectile.rotation, origin, Projectile.scale, SpriteEffects.None, 0);
             return false;
         }

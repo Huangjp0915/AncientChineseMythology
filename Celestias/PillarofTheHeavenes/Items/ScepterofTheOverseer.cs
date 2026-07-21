@@ -1,6 +1,7 @@
 ﻿using AncientChineseMythology.Celestias.PillarofTheHeavenes.Tiles;
 using AncientChineseMythology.Helpers;
 using Microsoft.Xna.Framework.Graphics;
+using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -11,13 +12,14 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
 {
     /// <summary>
-    /// 监天权杖 - 天柱敌怪掉落的法杖类魔法武器
-    /// 金色+青色主题，发射追踪天光球
+    /// 监察者权杖 - 天柱敌怪掉落的法杖类魔法武器。
+    /// 机制身份: 监天印 — 光球命中烙下监天印, 同一目标叠满三印即引落天罚落雷。
+    /// 决策点: 集火叠印处决 vs 分散压制。
     /// </summary>
     public class ScepterofTheOverseer : ModItem
     {
         public override void SetDefaults() {
-            Item.damage = 165;
+            Item.damage = 190;
             Item.DamageType = DamageClass.Magic;
             Item.width = 40;
             Item.height = 40;
@@ -31,25 +33,20 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
             Item.autoReuse = true;
             Item.noMelee = true;
             Item.shoot = ModContent.ProjectileType<OverseerOrb>();
-            Item.shootSpeed = 10f;
+            Item.shootSpeed = 11f;
             Item.mana = 14;
             Item.crit = 8;
             Item.staff[Type] = true;
         }
 
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
-            // 发射两个光球
-            for (int i = -1; i <= 1; i += 2) {
-                Vector2 offset = velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2) * i * 15f;
-                Vector2 newVel = velocity.RotatedBy(MathHelper.ToRadians(8 * i));
-                Projectile.NewProjectile(source, position + offset, newVel, type, damage, knockback, player.whoAmI);
-            }
+            // 单发监天光球 (追踪增强, 必中感; 伤害全额不再摊到双球)
+            Projectile.NewProjectile(source, position, velocity, type, damage, knockback, player.whoAmI);
 
-            // 释放粒子
-            for (int i = 0; i < 12; i++) {
+            for (int i = 0; i < 10; i++) {
                 Vector2 dustVel = velocity.SafeNormalize(Vector2.Zero).RotatedByRandom(0.5f) * Main.rand.NextFloat(3, 7);
                 int dustType = Main.rand.NextBool() ? DustID.GoldCoin : DustID.IceTorch;
-                int dust = Dust.NewDust(position, 0, 0, dustType, dustVel.X, dustVel.Y, 100, default, 1.8f);
+                int dust = Dust.NewDust(position, 0, 0, dustType, dustVel.X, dustVel.Y, 100, default, 1.6f);
                 Main.dust[dust].noGravity = true;
             }
 
@@ -57,8 +54,9 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
         }
 
         public override void ModifyTooltips(System.Collections.Generic.List<TooltipLine> tooltips) {
-            tooltips.Add(new TooltipLine(Mod, "HeavenLore", "监视天界的神圣权杖"));
-            tooltips.Add(new TooltipLine(Mod, "HeavenEffect", "发射追踪天光球，命中后爆炸"));
+            tooltips.Add(new TooltipLine(Mod, "HeavenLore", "监视天界的神圣权杖，所见即所判"));
+            tooltips.Add(new TooltipLine(Mod, "HeavenEffect", "发射追踪天光球，命中烙下监天印"));
+            tooltips.Add(new TooltipLine(Mod, "HeavenEffect2", "同一目标叠满三层监天印，将引落一道天罚落雷"));
         }
 
         public override void AddRecipes() {
@@ -67,7 +65,72 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
     }
 
     /// <summary>
-    /// 监天光球 - 追踪并爆炸
+    /// 监天印 - 权杖光球烙下的判罚印记 (owner 端闭环: owner 命中累计, owner 端引爆生成同步弹幕)。
+    /// 头顶金环点数 = 层数; 叠满三层清空并引落天罚落雷。
+    /// </summary>
+    public class OverseerMarkGlobalNPC : GlobalNPC
+    {
+        public override bool InstancePerEntity => true;
+
+        /// <summary>当前印记层数 (0~2, 叠满即刻引爆清零)。</summary>
+        public int Stacks;
+        /// <summary>印记剩余帧数 (归零清层)。</summary>
+        public int Timer;
+
+        /// <summary>叠一层监天印; 叠满三层清空并引落天罚落雷 (仅 owner 端调用生效)。</summary>
+        public static void AddMark(NPC target, Projectile source) {
+            if (Main.myPlayer != source.owner)
+                return;
+            var mark = target.GetGlobalNPC<OverseerMarkGlobalNPC>();
+            mark.Timer = 300;
+            mark.Stacks++;
+            if (mark.Stacks >= 3) {
+                mark.Stacks = 0;
+                // 审判确认音 + 1.5× 天罚
+                SoundEngine.PlaySound(SoundID.Item29 with { Pitch = 0.6f, Volume = 0.9f }, target.Center);
+                HeavenJudgmentBolt.Strike(source.GetSource_FromThis(), target.Center,
+                    (int)(source.damage * 1.5f), 4f, source.owner, 1.1f);
+            }
+        }
+
+        public override void PostAI(NPC npc) {
+            if (Timer > 0) {
+                Timer--;
+                if (Timer == 0)
+                    Stacks = 0;
+            }
+        }
+
+        public override void PostDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
+            if (Stacks <= 0 || Main.dedServ)
+                return;
+
+            Texture2D star = ACMAsset.BlankStar;
+            if (star == null)
+                return;
+
+            // 头顶旋转金环点阵: 点数 = 层数 (可读的判罚进度)
+            Vector2 anchor = npc.Top + new Vector2(0f, -22f);
+            float baseRot = (float)Main.GlobalTimeWrappedHourly * 2.2f;
+            for (int i = 0; i < Stacks; i++) {
+                float ang = baseRot + MathHelper.TwoPi * i / MathF.Max(Stacks, 1);
+                Vector2 pos = anchor + ang.ToRotationVector2() * 14f;
+                Color c = PillarPalette.Gold * (0.55f + 0.25f * Stacks);
+                c.A = 0;
+                spriteBatch.Draw(star, pos - screenPos, null, c, ang, star.Size() * 0.5f, 0.16f, SpriteEffects.None, 0f);
+            }
+
+            // 两层以上: 头顶垂下细天光丝 (预告天罚将至)
+            if (Stacks >= 2) {
+                ACMShaders.DrawBeam(anchor - new Vector2(0f, 260f), anchor + new Vector2(0f, 10f), 2.2f,
+                    PillarPalette.HolyWhite, PillarPalette.SkyCyan, 0.35f + 0.15f * MathF.Sin((float)Main.GlobalTimeWrappedHourly * 6f),
+                    flowSpeed: 2.8f, coreSharp: 3f);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 监天光球 - 强追踪, 命中爆炸并烙监天印
     /// </summary>
     public class OverseerOrb : ModProjectile
     {
@@ -93,14 +156,16 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
         public override void AI() {
             Projectile.rotation += 0.15f;
 
-            // 追踪
-            NPC target = FindClosestNPC(600f);
-            if (target != null) {
-                Vector2 toTarget = (target.Center - Projectile.Center).SafeNormalize(Vector2.Zero);
-                Projectile.velocity = Vector2.Lerp(Projectile.velocity, toTarget * 14f, 0.06f);
+            // 追踪 (8 帧重锁, 目标缓存 localAI[0]; 转向比旧版更硬 → "被盯上就跑不掉"的监视感)
+            if (++Projectile.localAI[1] % 8 == 0 || Projectile.localAI[0] == 0f)
+                Projectile.localAI[0] = 1f + (FindClosestNPC(620f)?.whoAmI ?? -2);
+
+            int targetId = (int)Projectile.localAI[0] - 1;
+            if (targetId >= 0 && targetId < Main.npc.Length && Main.npc[targetId].active && Main.npc[targetId].CanBeChasedBy()) {
+                Vector2 toTarget = (Main.npc[targetId].Center - Projectile.Center).SafeNormalize(Vector2.Zero);
+                Projectile.velocity = Vector2.Lerp(Projectile.velocity, toTarget * 15f, 0.09f);
             }
 
-            // 金色+青色粒子
             for (int i = 0; i < 2; i++) {
                 int dustType = Main.rand.NextBool() ? DustID.GoldFlame : DustID.IceTorch;
                 int dust = Dust.NewDust(Projectile.Center + Main.rand.NextVector2Circular(8, 8), 0, 0, dustType, 0, 0, 150, default, 1.5f);
@@ -127,19 +192,15 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
         }
 
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
-            // 爆炸
             SoundEngine.PlaySound(SoundID.Item14 with { Pitch = 0.3f, Volume = 0.7f }, Projectile.Center);
 
-            // 大量金色粒子爆发
-            for (int i = 0; i < 25; i++) {
+            for (int i = 0; i < 20; i++) {
                 Vector2 vel = Main.rand.NextVector2CircularEdge(8, 8);
                 int dustType = Main.rand.NextBool() ? DustID.GoldFlame : DustID.GoldCoin;
-                int dust = Dust.NewDust(target.Center, 0, 0, dustType, vel.X, vel.Y, 80, default, 2.5f);
+                int dust = Dust.NewDust(target.Center, 0, 0, dustType, vel.X, vel.Y, 80, default, 2.2f);
                 Main.dust[dust].noGravity = true;
             }
-
-            // 青色粒子
-            for (int i = 0; i < 15; i++) {
+            for (int i = 0; i < 10; i++) {
                 Vector2 vel = Main.rand.NextVector2Circular(6, 6);
                 int dust = Dust.NewDust(target.Center, 0, 0, DustID.IceTorch, vel.X, vel.Y, 100, default, 2f);
                 Main.dust[dust].noGravity = true;
@@ -148,6 +209,9 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
             ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
                 ACMWeaponBurst.HeavenlyPillar, 1.2f, Projectile.owner);
             WeaponVFX.AddScreenShake(target.Center, 2f);
+
+            // 烙监天印 (三层引落天罚)
+            OverseerMarkGlobalNPC.AddMark(target, Projectile);
         }
 
         public override bool PreDraw(ref Color lightColor) {
@@ -177,7 +241,7 @@ namespace AncientChineseMythology.Celestias.PillarofTheHeavenes.Items
             outerGlow.A = 0;
             Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, rectangle, outerGlow, Projectile.rotation, origin, Projectile.scale * 1.4f, SpriteEffects.None, 0f);
 
-            // 中层青色
+            // 中层青色 (反向旋转 = 监视之眼)
             Color midGlow = new Color(100, 200, 180) * 0.5f;
             midGlow.A = 0;
             Main.spriteBatch.Draw(tex, Projectile.Center - Main.screenPosition, rectangle, midGlow, -Projectile.rotation, origin, Projectile.scale * 1.1f, SpriteEffects.None, 0f);

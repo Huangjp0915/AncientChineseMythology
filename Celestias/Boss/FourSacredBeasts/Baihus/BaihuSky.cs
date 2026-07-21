@@ -31,7 +31,9 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
     ///  3. SlashBurst金属裂痕闪光
     ///  4. EmberShards金属碎片飘落
     ///  5. Sparkle金色火花粒子
-    ///  6. 暗角 + 金色脉冲
+    ///  6. P3 地平线银辉(<see cref="Baihu.s_silverHorizon"/> 钩子)
+    ///  7. 暗角 + 金色脉冲
+    ///  8. 演出覆盖：入场啸暗(<see cref="Baihu.s_skyDim"/>) + 流星/终啸白闪(<see cref="Baihu.s_skyFlash"/>)
     /// </summary>
     internal class BaihuSky : CustomSky, IACMLoader
     {
@@ -105,7 +107,13 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
 
         public override void Deactivate(params object[] args) => active = false;
         public override bool IsActive() => active || intensity > 0.01f;
-        public override void Reset() { active = false; intensity = 0f; }
+        public override void Reset() {
+            active = false;
+            intensity = 0f;
+            Baihu.s_skyDim = 0f;
+            Baihu.s_silverHorizon = 0f;
+            Baihu.s_skyFlash = 0f;
+        }
 
         public override void Update(GameTime gameTime) {
             globalTime += (float)gameTime.ElapsedGameTime.TotalSeconds;
@@ -125,6 +133,10 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
             else {
                 intensity -= FadeOutSpeed;
                 if (intensity <= 0f) { intensity = 0f; if (active) Deactivate(); }
+                // Boss 已不在场: 演出钩子标量兜底衰减(防止异常消失时残留)
+                Baihu.s_skyDim *= 0.94f;
+                Baihu.s_silverHorizon *= 0.94f;
+                Baihu.s_skyFlash *= 0.9f;
             }
 
             float stormMul = isPhase3 ? 1.5f : isPhase2 ? 1.2f : 1f;
@@ -152,7 +164,9 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
                 DrawSlashes(spriteBatch);
                 DrawShards(spriteBatch);
                 DrawSparks(spriteBatch);
+                DrawSilverHorizon(spriteBatch);
                 DrawVignette(spriteBatch);
+                DrawCineOverlays(spriteBatch);
             }
         }
 
@@ -284,6 +298,52 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
                 sc.A = 0;
                 float scale = s.Scale * (0.05f + progress * 0.08f);
                 sb.Draw(tex, dp, null, sc, globalTime * 3f + i, origin, scale, SpriteEffects.None, 0f);
+            }
+        }
+
+        #endregion
+
+        #region 层5b — P3 地平线银辉 / 演出覆盖
+
+        /// <summary>P3「白虎落地」后地平线泛起银辉 —— 世界层宣告落地形态(静态标量钩子 s_silverHorizon)。</summary>
+        private void DrawSilverHorizon(SpriteBatch sb) {
+            float silver = Baihu.s_silverHorizon * intensity;
+            if (silver <= 0.01f)
+                return;
+            Texture2D pixel = VaultAsset.placeholder2.Value;
+
+            // 地平线亮带: 屏幕下 1/3 起的银白渐变(带缓慢呼吸)
+            int bands = 8;
+            int baseY = (int)(Main.screenHeight * 0.62f);
+            int bandH = (Main.screenHeight - baseY) / bands + 1;
+            float breath = 0.85f + 0.15f * MathF.Sin(globalTime * 0.8f);
+            for (int i = 0; i < bands; i++) {
+                float t = (float)i / bands;
+                Color c = Color.Lerp(SteelFlash, GoldWhite, t) * (silver * 0.16f * t * breath);
+                c.A = 0;
+                sb.Draw(pixel, new Rectangle(0, baseY + i * bandH, Main.screenWidth, bandH), c);
+            }
+
+            // 地平线上一条锐利银线
+            Color lineC = SteelFlash * (silver * 0.28f * breath);
+            lineC.A = 0;
+            sb.Draw(pixel, new Rectangle(0, (int)(Main.screenHeight * 0.86f), Main.screenWidth, 2), lineC);
+        }
+
+        /// <summary>入场啸暗 + 流星坠地/死亡终啸白闪(全屏 overlay, 不占后处理名额)。</summary>
+        private void DrawCineOverlays(SpriteBatch sb) {
+            Texture2D pixel = VaultAsset.placeholder2.Value;
+            Rectangle screen = new(0, 0, Main.screenWidth, Main.screenHeight);
+
+            float dim = Baihu.s_skyDim;
+            if (dim > 0.01f)
+                sb.Draw(pixel, screen, Color.Black * (dim * 0.42f));
+
+            float flash = Baihu.s_skyFlash;
+            if (flash > 0.01f) {
+                Color fc = SteelFlash * (flash * flash * 0.5f);
+                fc.A = 0;
+                sb.Draw(pixel, screen, fc);
             }
         }
 

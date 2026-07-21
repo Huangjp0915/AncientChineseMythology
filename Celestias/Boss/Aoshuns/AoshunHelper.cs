@@ -50,6 +50,33 @@ namespace AncientChineseMythology.Celestias.Boss.Aoshuns
 
         #endregion
 
+        #region 蠕虫链辅助（身段读取头部状态）
+
+        /// <summary>从身段 NPC 取头部 Aoshun 实例（ai[3] 存头索引）；取不到返回 null。</summary>
+        internal static Aoshun GetHead(NPC segment) {
+            int headIdx = (int)segment.ai[3];
+            if (headIdx <= 0 || headIdx >= Terraria.Main.maxNPCs)
+                return null;
+            NPC head = Terraria.Main.npc[headIdx];
+            if (!head.active)
+                return null;
+            return head.ModNPC as Aoshun;
+        }
+
+        /// <summary>头部是否处于停火演出（入场/换阶段/死亡）→ 身段接触伤害同步关闭。</summary>
+        internal static bool HeadIsPacified(NPC segment) =>
+            !(GetHead(segment)?.ContactDamageEnabled ?? true);
+
+        /// <summary>死亡演出渐隐：本体压暗趋白（配合叠加的白热光晕 = 逐段熄灭成风）。</summary>
+        internal static Color ApplyDeathFade(Color drawColor, float deathProgress) {
+            if (deathProgress <= 0f)
+                return drawColor;
+            Color faded = Color.Lerp(drawColor, ElectricWhite, deathProgress * 0.5f);
+            return faded * (1f - deathProgress * 0.55f);
+        }
+
+        #endregion
+
         #region 粒子效果
 
         /// <summary>

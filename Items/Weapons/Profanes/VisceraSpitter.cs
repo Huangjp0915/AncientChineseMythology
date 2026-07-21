@@ -10,10 +10,9 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Items.Weapons.Profanes;
 
 /// <summary>
-/// 脏器喷吐枪 - 射手枪类武器
-/// 五连发血液弹丸（高速穿透），每第5轮连射发射一颗巨型脏器弹
-/// 脏器弹碰撞后爆炸：释放大量血液+追踪内脏碎片
-/// 枪口喷洒血液粒子效果
+/// 脏器喷吐枪 - 五连发血液弹丸（高速穿透）。
+/// 蓄压可读化：25 发循环的最后 5 发心跳加速、枪口辉光增长、音高逐发上行，
+/// 第 25 发喷出巨型脏器弹（大后坐+震屏+双层湿裂音），直击 +2 剖检印。
 /// </summary>
 public class VisceraSpitter : ModItem
 {
@@ -49,24 +48,47 @@ public class VisceraSpitter : ModItem
         _burstCounter++;
         Vector2 muzzleDir = velocity.SafeNormalize(Vector2.UnitX);
         Vector2 muzzlePos = position + muzzleDir * 44f;
+        int cyclePos = _burstCounter % 25;
 
-        if (_burstCounter % 25 == 0) {
-            // 每5轮(25发)射出巨型脏器弹
+        if (cyclePos == 0) {
+            // 第 25 发: 巨型脏器弹 —— 大后坐 + 震屏 + 双层湿裂 (蓄压峰值)
             Vector2 visceraVel = velocity * 0.65f;
             Projectile.NewProjectile(source, muzzlePos, visceraVel,
                 ModContent.ProjectileType<VisceraGlobShot>(),
                 damage * 4, knockback * 3f, player.whoAmI);
             SoundEngine.PlaySound(SoundID.NPCDeath13 with { Pitch = 0.3f, Volume = 0.8f }, position);
+            ProfaneCommon.PlaySquelch(muzzlePos, 1.2f, -0.15f);
+            if (player.whoAmI == Main.myPlayer)
+                player.velocity -= muzzleDir * 3f;
+            WeaponVFX.AddScreenShake(player.Center, 5f);
         }
         else {
             Vector2 perturbedVel = velocity.RotatedByRandom(MathHelper.ToRadians(5));
             Projectile.NewProjectile(source, muzzlePos, perturbedVel, type, damage, knockback, player.whoAmI);
+
+            // 蓄压尾段 (最后 5 发): 心跳加速 + 音高逐发上行 —— 脏器弹前兆
+            if (cyclePos >= 20) {
+                float pressure = (cyclePos - 20) / 5f;
+                ProfaneCommon.PlayThump(muzzlePos,
+                    pitch: MathHelper.Lerp(-0.8f, -0.2f, pressure),
+                    volume: 0.4f + 0.3f * pressure);
+                // 枪管膨压渗血
+                for (int i = 0; i < 3; i++) {
+                    Dust d = Dust.NewDustPerfect(muzzlePos - muzzleDir * Main.rand.NextFloat(10f, 34f),
+                        DustID.Blood, Main.rand.NextVector2Circular(1.5f, 1.5f), 0, default, 1.2f + pressure);
+                    d.noGravity = true;
+                }
+            }
+            // 微后坐 (每发)
+            if (player.whoAmI == Main.myPlayer)
+                player.velocity -= muzzleDir * 0.4f;
         }
 
-        // 枪口血液粒子 + 血雾烟
+        // 枪口血液粒子 + 血雾烟 (蓄压尾段辉光增长)
+        float glowMult = cyclePos >= 20 ? 1f + (cyclePos - 20) / 5f : 1f;
         for (int i = 0; i < 3; i++) {
             Vector2 dustVel = muzzleDir.RotatedByRandom(0.4f) * Main.rand.NextFloat(3f, 6f);
-            Dust d = Dust.NewDustPerfect(muzzlePos, DustID.Blood, dustVel, 0, default, 1.5f);
+            Dust d = Dust.NewDustPerfect(muzzlePos, DustID.Blood, dustVel, 0, default, 1.5f * glowMult);
             d.noGravity = true;
         }
         for (int i = 0; i < 2; i++) {
@@ -81,7 +103,7 @@ public class VisceraSpitter : ModItem
 }
 
 /// <summary>
-/// 血液弹丸 - 高速穿透小型弹丸，暗红色LightShot渲染
+/// 血液弹丸 - 高速穿透小型弹丸，暗红色LightShot渲染。
 /// </summary>
 public class VisceraBloodBullet : ModProjectile
 {
@@ -122,7 +144,7 @@ public class VisceraBloodBullet : ModProjectile
     public override bool PreDraw(ref Color lightColor) {
         // 统一双层暗红血肉拖尾
         WeaponVFX.DrawProjectileTrail(Projectile, baseWidth: 6f,
-            outerColor: new Color(102, 10, 12), innerColor: new Color(255, 72, 58),
+            outerColor: ProfaneCommon.FleshDark, innerColor: ProfaneCommon.BloodBright,
             uvScroll: -Main.GlobalTimeWrappedHourly * 2f);
 
         SpriteBatch sb = Main.spriteBatch;
@@ -152,9 +174,8 @@ public class VisceraBloodBullet : ModProjectile
 }
 
 /// <summary>
-/// 脏器弹 - 巨型脏器飞弹，弧线飞行后爆炸
-/// 爆炸释放大量血液+追踪内脏碎片
-/// 使用SoftGlow做飞行时呼吸光晕
+/// 脏器弹 - 巨型脏器飞弹，弧线飞行后爆炸。
+/// 心跳呼吸缩放；直击 +2 剖检印；爆炸释放血肉膜+追踪触手。
 /// </summary>
 public class VisceraGlobShot : ModProjectile
 {
@@ -178,6 +199,7 @@ public class VisceraGlobShot : ModProjectile
         AiTimer++;
         Projectile.velocity.Y += 0.18f;
         Projectile.rotation += Projectile.velocity.X * 0.03f;
+        Projectile.scale = 1f + ProfaneCommon.Heartbeat() * 0.12f; // 心跳呼吸 (系列签名)
         Lighting.AddLight(Projectile.Center, 0.5f, 0.08f, 0.06f);
 
         // 血液拖尾
@@ -192,6 +214,8 @@ public class VisceraGlobShot : ModProjectile
     }
 
     public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
+        // 直击 +2 印; 摘取伤害 = 面板×2 (脏器弹为面板×4 → ×0.5)
+        ProfaneCommon.AddMark(target, Projectile, 2, Projectile.damage / 2);
         Explode();
     }
 
@@ -205,26 +229,27 @@ public class VisceraGlobShot : ModProjectile
         _exploded = true;
 
         SoundEngine.PlaySound(SoundID.NPCDeath1 with { Volume = 1f, Pitch = -0.4f }, Projectile.Center);
+        ProfaneCommon.PlaySquelch(Projectile.Center, 1.2f, -0.25f);
 
         // 脏器弹爆裂血肉演出 (冲击环 + 径向辉光)
         ACMWeaponBurst.Spawn(Projectile.GetSource_Death(), Projectile.Center,
             ACMWeaponBurst.Profane, scale: 1.5f, owner: Projectile.owner);
 
         if (Main.myPlayer == Projectile.owner) {
-            // 爆炸VFX弹幕
+            // 爆炸AOE弹幕
             Projectile.NewProjectile(
                 Projectile.GetSource_Death(), Projectile.Center, Vector2.Zero,
                 ModContent.ProjectileType<VisceraBlastExplosion>(),
                 Projectile.damage, Projectile.knockBack, Projectile.owner);
 
-            // 6道追踪内脏碎片
+            // 6道追踪内脏碎片 (远程)
             for (int i = 0; i < 6; i++) {
                 float angle = MathHelper.TwoPi * i / 6;
                 Vector2 fragVel = angle.ToRotationVector2() * Main.rand.NextFloat(6f, 10f);
                 Projectile.NewProjectile(
                     Projectile.GetSource_Death(), Projectile.Center, fragVel,
                     ModContent.ProjectileType<ProfaneTendrilChaser>(),
-                    Projectile.damage / 3, 2f, Projectile.owner);
+                    Projectile.damage / 3, 2f, Projectile.owner, 0f, ProfaneTendrilChaser.ClassRanged);
             }
         }
 
@@ -235,7 +260,7 @@ public class VisceraGlobShot : ModProjectile
             boom.noGravity = true;
         }
 
-        Main.player[Projectile.owner].GetModPlayer<ScreenShakePlayer>().ShakeScreen(5, 8);
+        WeaponVFX.AddScreenShake(Projectile.Center, 5f);
         Projectile.Kill();
     }
 
@@ -248,7 +273,7 @@ public class VisceraGlobShot : ModProjectile
             DepthStencilState.None, RasterizerState.CullNone, null,
             Main.GameViewMatrix.TransformationMatrix);
 
-        float pulse = 0.50f + 0.15f * MathF.Sin(AiTimer * 0.25f);
+        float pulse = 0.55f + 0.25f * ProfaneCommon.Heartbeat();
         sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
             new Color(220, 40, 30) * 0.65f, 0f,
             sg.Size() * 0.5f,
@@ -267,7 +292,8 @@ public class VisceraGlobShot : ModProjectile
 }
 
 /// <summary>
-/// 脏器爆炸VFX - 使用SlashBurst做放射状血肉爆发
+/// 脏器爆炸 - FleshPulse 血肉膜 + SlashBurst 放射。
+/// 伤害半径与膜/冲击环视觉严格对齐（上限 150px）。
 /// </summary>
 public class VisceraBlastExplosion : ModProjectile
 {
@@ -275,6 +301,9 @@ public class VisceraBlastExplosion : ModProjectile
         => "AncientChineseMythology/Textures/Masking/SoftGlow";
 
     private ref float Timer => ref Projectile.ai[0];
+    private float Seed => (Projectile.whoAmI * 0.163f) % 1f;
+
+    private float Radius => MathF.Min(16f + Timer * 12f, 150f);
 
     public override void SetDefaults() {
         Projectile.width = 10;
@@ -293,11 +322,10 @@ public class VisceraBlastExplosion : ModProjectile
 
     public override void AI() {
         Timer++;
-        float radius = Timer * 11f;
 
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < 5; i++) {
             float angle = Main.rand.NextFloat(MathHelper.TwoPi);
-            Vector2 pos = Projectile.Center + angle.ToRotationVector2() * Main.rand.NextFloat(radius * 0.4f, radius);
+            Vector2 pos = Projectile.Center + angle.ToRotationVector2() * Main.rand.NextFloat(Radius * 0.4f, Radius);
             Dust d = Dust.NewDustPerfect(pos, DustID.Blood,
                 Main.rand.NextVector2Circular(2f, 2f), 0, default, 1.8f);
             d.noGravity = true;
@@ -311,8 +339,7 @@ public class VisceraBlastExplosion : ModProjectile
     }
 
     public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
-        float radius = Timer * 11f;
-        return VaultUtils.CircleIntersectsRectangle(Projectile.Center, radius, targetHitbox);
+        return VaultUtils.CircleIntersectsRectangle(Projectile.Center, Radius, targetHitbox);
     }
 
     public override bool PreDraw(ref Color lightColor) {
@@ -320,9 +347,11 @@ public class VisceraBlastExplosion : ModProjectile
         float alpha = ACMUtils.QuadOut(1f - prog) * 0.88f;
         float scale = MathHelper.SmoothStep(0f, 13f, ACMUtils.QuadOut(prog));
 
-        // 血肉冲击环 (在自管批之前调用, 由 helper 自行开合批)
-        WeaponVFX.DrawShockwaveRing(Projectile.Center, 16f + prog * 130f, 10f, alpha * 0.85f,
-            new Color(255, 72, 58), new Color(102, 10, 12));
+        // 血肉膜 (与伤害半径同式) + 冲击环
+        ProfaneCommon.DrawFleshMembrane(Projectile.Center, Radius * 1.06f, alpha * 0.85f,
+            1f - prog, veinBoost: 0.5f, seed: Seed);
+        WeaponVFX.DrawShockwaveRing(Projectile.Center, Radius, 10f, alpha * 0.85f,
+            ProfaneCommon.BloodBright, ProfaneCommon.FleshDark);
 
         SpriteBatch sb = Main.spriteBatch;
         sb.End();
@@ -337,19 +366,13 @@ public class VisceraBlastExplosion : ModProjectile
         for (int k = 0; k < 8; k++) {
             float bAngle = k * MathF.PI / 4f + Timer * 0.02f;
             bool cardinal = (k % 2 == 0);
-            Color bColor = cardinal ? new Color(200, 30, 20) : new Color(255, 130, 110);
-            float bLen = cardinal ? scale * 0.55f : scale * 0.35f;
+            Color bColor = cardinal ? ProfaneCommon.FleshMid : ProfaneCommon.BloodBright;
+            float bLen = cardinal ? scale * 0.50f : scale * 0.32f;
             sb.Draw(burst, Projectile.Center - Main.screenPosition, null,
-                bColor * (alpha * 0.75f), bAngle,
+                bColor * (alpha * 0.70f), bAngle,
                 new Vector2(burst.Width * 0.5f, burst.Height),
                 new Vector2(0.13f, bLen), SpriteEffects.None, 0);
         }
-
-        // 外层血雾光环
-        sb.Draw(sg, Projectile.Center - Main.screenPosition, null,
-            new Color(200, 30, 20) * (alpha * 0.45f), 0f,
-            sg.Size() * 0.5f,
-            scale * 0.50f, SpriteEffects.None, 0);
 
         // 中心白核
         float flashAlpha = MathHelper.SmoothStep(1f, 0f, prog * 1.5f);

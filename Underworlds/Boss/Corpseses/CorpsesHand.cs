@@ -11,164 +11,179 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.Corpseses
 {
     /// <summary>
-    /// 枉死千骸的手臂部件，使用IK系统实现自然的手臂运动
+    /// 尸骸·判官之手 —— V3 执行器化重做。
+    ///
+    /// 设计要点 (Docs/BossRedo/Corpses.md §4):
+    ///   ● 手不再自主攻击, 全部招式由 <see cref="Corpses"/> 节拍表下达指令 (确定性时刻, 多端一致);
+    ///   ● 每招严格三段波形: 长前摇(慢/高/counter-motion) → 瞬发爆发(poly 高次) → 收招;
+    ///   ● <b>伤害窗口只在爆发段</b> (CanHitPlayer 严格对齐视觉), 预警一律走 CorpsesBoneRing decal;
+    ///   ● 旧版抓取锁位 (player.Center 直改, 多人不安全) 删除, 命中改叠魂蚀/冥律身份层;
+    ///   ● Controlled/Channeling/Stunned 编排接口保留 (万骸旋冢 / 引魂大阵 / 破阵硬直)。
     /// </summary>
     internal class CorpsesHand : ModNPC
     {
-        // ====== IK系统参数 ======
-        private const float UpperArmLength = 120f;  // 上臂长度
-        private const float ForearmLength = 100f;   // 前臂长度
-        private const float MaxReach = UpperArmLength + ForearmLength - 10f; // 最大触及距离
+        // ====== IK 骨臂参数 ======
+        private const float UpperArmLength = 120f;
+        private const float ForearmLength = 100f;
+        private const float MaxReach = UpperArmLength + ForearmLength - 10f;
         [VaultLoaden("AncientChineseMythology/Underworlds/Boss/Corpseses/")]
-        private static Texture2D CorpsesArm = null;//反射加载得到手臂纹理，手臂宽26像素，高98像素
+        private static Texture2D CorpsesArm = null; // 手臂纹理 26x98
 
-        // IK关节位置
-        private Vector2 shoulderPos;  // 肩部（连接点）
-        private Vector2 elbowPos;     // 肘部
-        private Vector2 handPos;      // 手部
+        private Vector2 shoulderPos;
+        private Vector2 elbowPos;
+        private Vector2 handPos;
 
-        // ====== 手部状态 ======
+        // ====== 状态机 ======
         public enum HandState
         {
-            Idle,           // 空闲跟随
-            Reaching,       // 伸展攻击
-            Slashing,       // 挥砍
-            Grabbing,       // 抓取
-            Retracting,     // 回缩
-            BoneToss,       // 泼洒骨头
-            ClapCharging,   // 拍掌蓄力
-            ClapStrike,     // 拍掌攻击
-            TeleportClap,   // 传送拍掌
-            Controlled,     // V2: Boss 外部驱动位置 (千骸旋冢环绕 / 引魂大阵就坛)
-            Channeling,     // V2: 就坛施法 (引魂大阵, 可见破绽)
-            Stunned         // V2: 仪式被破/重伤后硬直 (头部破绽窗口)
+            Idle,           // 待机呼吸浮动 (跟随头颅)
+            Retracting,     // 回位
+            PalmSlam,       // 崩掌拍落: 抬手蓄势 → 顶点悬停 → 瞬拍 → 落地锁定
+            BoneSweep,      // 白骨横扫: 后摆锁线 → 瞬扫 → 硬刹
+            BoneVolley,     // 指骨连环: 后摆 → 3 波甩腕骨镖 (带后坐)
+            ClapPincer,     // 合掌夹击: 飞位 → 反向拉开 → 静止 → 瞬合 → 锁定
+            Controlled,     // Boss 外部驱动 (旋冢环绕 / 就坛飞行)
+            Channeling,     // 就坛施法 (引魂大阵)
+            Stunned,        // 破阵硬直坠落
+            Materializing,  // 入场演出: 尸雾中重凝现身
+            Dying           // 死亡演出: 坠地崩解
         }
 
         private HandState currentState = HandState.Idle;
         private int stateTimer = 0;
-        private Vector2 targetPosition;
-        private float attackProgress = 0f;
 
-        // ====== V2 外部驱动 / 仪式 / 硬直 ======
-        private Vector2 controlledPos;        // Boss 每帧驱动的目标位 (Controlled/Channeling)
-        private bool controlledCanHit = false; // Controlled 期间是否造成接触伤害
-        private int stunTimer = 0;             // Stunned 剩余帧
-        private float detachDissolve = 0f;     // 脱体/回体 骨→魂→骨 溶解进度 0~1
-        private int detachDissolveDir = 0;     // +1 溶出(脱体) / -1 重凝(回体)
-        private int clapBloomTimer = 0;        // 拍掌命中后径向泛光残留 (PreDraw 消费)
+        // ====== 招式同步数据 ======
+        private Vector2 aimPoint;          // 落点 / 合击点 / 扫掠通过点 / 齐射目标
+        private Vector2 axisDir = Vector2.UnitX; // 合掌轴向 / 扫掠方向 (单位向量)
+        private Vector2 startPos;          // 招式起手位置 (发令帧锁定)
+        private bool sprayOnImpact;        // 拍落是否溅射骨镖 (P2/P3)
+        private int volleyWave;            // 指骨连环已发波数
+
+        // ====== 编排接口数据 (V2 保留) ======
+        private Vector2 controlledPos;
+        private bool controlledCanHit;
+        private int stunTimer;
+        private float detachDissolve = 0f;   // 骨→魂→骨 溶解脉冲 0~1
+        private int detachDissolveDir = 0;   // +1 溶出 / -1 重凝
+
+        // ====== 纯视觉 (本地) ======
+        private int clapBloomTimer;
         private Vector2 clapBloomPos;
+        private int impactRingTimer;         // 冲击环 decal 残留
+        private Vector2 impactRingPos;
+        private readonly List<Vector2> oldPositions = new();
+        private readonly List<float> oldRotations = new();
+        private const int TrailLength = 14;
+        private float flameSeed;
 
         public HandState State => currentState;
         public bool InControlled => currentState == HandState.Controlled;
         public bool InChanneling => currentState == HandState.Channeling;
         public bool IsStunned => currentState == HandState.Stunned;
+        public bool IsIdle() => currentState == HandState.Idle;
 
-        // ====== 攻击和动作 ======
-        private int attackCooldown = 0;
-        private Vector2 slashStartPos;
-        private Vector2 slashEndPos;
-        private float slashProgress = 0f;
+        /// <summary>攻击指令仅在待机/回位时接受 (节拍表已保证间距, 此为兜底)。</summary>
+        private bool CanAcceptCommand => currentState == HandState.Idle || currentState == HandState.Retracting;
 
-        // 抓取玩家相关
-        private Player grabbedPlayer = null;
-        private int grabDuration = 0;
-
-        // 骨头泼洒攻击
-        private Vector2 boneTossDirection;
-        private int boneTossCount = 0;
-
-        // 拍掌攻击（需要两只手协同）
-        private bool isClapReady = false;
-        private Vector2 clapTargetPos;
-        private Vector2 teleportDest; // 传送目标位置
-
-        // ====== 拖尾效果 ======
-        public List<Vector2> oldPositions = new List<Vector2>();
-        public List<float> oldRotations = new List<float>();
-        private const int TrailLength = 20;
-
-        // ====== 方向标识 ======
         public int Direction {
             get => (int)NPC.ai[1];
             set => NPC.ai[1] = value;
         }
 
-        // ====== 公开的攻击触发接口 ======
-        public void TriggerAttack(HandState attackType, Vector2? targetPos = null) {
-            if (currentState == HandState.Idle || currentState == HandState.Retracting) {
-                switch (attackType) {
-                    case HandState.Reaching:
-                        if (targetPos.HasValue) {
-                            targetPosition = targetPos.Value;
-                            currentState = HandState.Reaching;
-                            attackProgress = 0f;
-                            stateTimer = 0;
-                            attackCooldown = 30;
-                            SoundEngine.PlaySound(SoundID.Item1 with { Pitch = -0.3f }, NPC.Center);
-                        }
-                        break;
+        // ====== 招式时间表 (帧) ======
+        // 崩掌拍落: 抬手 38 + 顶点悬停 14 + 拍落 5 + 落地锁定 16 + 收 30
+        private const int SlamHoist = 38, SlamHold = 14, SlamDrop = 5, SlamLock = 16, SlamRecover = 30;
+        private const int SlamDropStart = SlamHoist + SlamHold;
+        private const float SlamHoverHeight = 420f;
+        // 白骨横扫: 后摆 34 + 静止 8 + 扫 10 + 刹车回摆 26
+        private const int SweepBack = 34, SweepStill = 8, SweepStrike = 10, SweepBrake = 26;
+        private const int SweepStrikeStart = SweepBack + SweepStill;
+        private const float SweepHalfLen = 430f;
+        // 指骨连环: 后摆 22 + 3 波 × 16 + 收 24
+        private const int VolleyBack = 22, VolleyWaveTime = 16, VolleyWaves = 3;
+        // 合掌夹击: 飞位 26 + 外拉 30 + 静止 12 + 合拢 4 + 锁定 18 + 弹开 22
+        private const int PincerFly = 26, PincerPull = 30, PincerStill = 12, PincerSnap = 4, PincerLock = 18, PincerRecoil = 22;
+        private const int PincerSnapStart = PincerFly + PincerPull + PincerStill;
+        private const float PincerFarDist = 430f, PincerNearDist = 280f;
 
-                    case HandState.Slashing:
-                        if (targetPos.HasValue) {
-                            Vector2 dirToTarget = (targetPos.Value - NPC.Center).SafeNormalize(Vector2.UnitX);
-                            slashStartPos = NPC.Center + dirToTarget.RotatedBy(Direction * -0.8f) * 200f;
-                            slashEndPos = targetPos.Value + dirToTarget.RotatedBy(Direction * 0.8f) * 220f;
-                            currentState = HandState.Slashing;
-                            slashProgress = 0f;
-                            stateTimer = 0;
-                            attackCooldown = 35;
-                            SoundEngine.PlaySound(SoundID.Item71 with { Volume = 0.8f }, NPC.Center);
-                        }
-                        break;
+        // ================================================================
+        //  Boss 指令接口
+        // ================================================================
 
-                    case HandState.Grabbing:
-                        currentState = HandState.Grabbing;
-                        stateTimer = 0;
-                        attackCooldown = 60;
-                        SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.4f, Volume = 0.6f }, NPC.Center);
-                        break;
-
-                    case HandState.BoneToss:
-                        if (targetPos.HasValue) {
-                            boneTossDirection = (targetPos.Value - NPC.Center).SafeNormalize(Vector2.UnitX);
-                            currentState = HandState.BoneToss;
-                            stateTimer = 0;
-                            boneTossCount = 0;
-                            attackCooldown = 55;
-                            SoundEngine.PlaySound(SoundID.Item1 with { Pitch = -0.5f }, NPC.Center);
-                        }
-                        break;
-
-                    case HandState.ClapCharging:
-                        if (targetPos.HasValue) {
-                            clapTargetPos = targetPos.Value;
-                            currentState = HandState.ClapCharging;
-                            stateTimer = 0;
-                            isClapReady = false;
-                            attackCooldown = 90;
-                        }
-                        break;
-
-                    case HandState.TeleportClap:
-                        if (targetPos.HasValue) {
-                            teleportDest = targetPos.Value;
-                            currentState = HandState.TeleportClap;
-                            stateTimer = 0;
-                            isClapReady = false;
-                            attackCooldown = 100;
-                        }
-                        break;
-                }
-            }
+        /// <summary>崩掌拍落: 落点由 Boss 探地锁定, 抬手期不追踪 (公平阀门)。</summary>
+        public bool CommandPalmSlam(Vector2 impactPoint, bool spray) {
+            if (!CanAcceptCommand)
+                return false;
+            aimPoint = impactPoint;
+            sprayOnImpact = spray;
+            BeginMove(HandState.PalmSlam);
+            SoundEngine.PlaySound(SoundID.Item8 with { Pitch = -0.6f, Volume = 0.9f }, NPC.Center);
+            return true;
         }
 
-        public bool IsIdle() {
-            return currentState == HandState.Idle;
+        /// <summary>白骨横扫: 过 through 点、沿 sweepDir 的线段, 后摆期锁线。</summary>
+        public bool CommandBoneSweep(Vector2 through, Vector2 sweepDir) {
+            if (!CanAcceptCommand)
+                return false;
+            aimPoint = through;
+            axisDir = sweepDir.SafeNormalize(Vector2.UnitX);
+            BeginMove(HandState.BoneSweep);
+            SoundEngine.PlaySound(SoundID.Item1 with { Pitch = -0.4f }, NPC.Center);
+            return true;
         }
 
-        // ====== V2 公开控制接口 (Boss 编排用) ======
+        /// <summary>指骨连环: 3 波扇形骨镖, 每波带甩腕与后坐。</summary>
+        public bool CommandBoneVolley(Vector2 aim) {
+            if (!CanAcceptCommand)
+                return false;
+            aimPoint = aim;
+            volleyWave = 0;
+            BeginMove(HandState.BoneVolley);
+            SoundEngine.PlaySound(SoundID.Item8 with { Pitch = -0.2f, Volume = 0.8f }, NPC.Center);
+            return true;
+        }
 
-        /// <summary>进入"外部驱动"状态: 由 Boss 每帧 <see cref="DriveControlled"/> 设定位置 (旋冢环绕 / 就坛飞行)。</summary>
+        /// <summary>合掌夹击: 两手同帧受令, 合击点/轴向锁定, 轴垂直方向永远敞开。</summary>
+        public bool CommandClapPincer(Vector2 meet, Vector2 axis) {
+            if (!CanAcceptCommand)
+                return false;
+            aimPoint = meet;
+            axisDir = axis.SafeNormalize(Vector2.UnitX);
+            BeginMove(HandState.ClapPincer);
+            return true;
+        }
+
+        /// <summary>入场演出: 于 pos 处从尸雾中重凝现身。</summary>
+        public void BeginMaterialize(Vector2 pos) {
+            NPC.Center = pos;
+            currentState = HandState.Materializing;
+            stateTimer = 0;
+            detachDissolve = 1f;
+            detachDissolveDir = -1;
+            NPC.netUpdate = true;
+        }
+
+        /// <summary>死亡演出: 停止一切, 坠地崩解。</summary>
+        public void BeginDeathCollapse() {
+            currentState = HandState.Dying;
+            stateTimer = 0;
+            controlledCanHit = false;
+            NPC.velocity = new Vector2(NPC.velocity.X * 0.3f, MathF.Min(NPC.velocity.Y, 0f));
+            NPC.netUpdate = true;
+            SoundEngine.PlaySound(SoundID.NPCDeath6 with { Pitch = -0.6f, Volume = 0.9f }, NPC.Center);
+        }
+
+        private void BeginMove(HandState move) {
+            currentState = move;
+            stateTimer = 0;
+            startPos = NPC.Center;
+            NPC.velocity = Vector2.Zero;
+            NPC.netUpdate = true;
+        }
+
+        // ====== V2 编排接口 (保留) ======
+
+        /// <summary>进入"外部驱动"状态: 由 Boss 每帧 <see cref="DriveControlled"/> 设定位置。</summary>
         public void EnterControlled(Vector2 pos, bool canHit) {
             if (currentState != HandState.Controlled) {
                 detachDissolve = 0f;
@@ -189,7 +204,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
             }
         }
 
-        /// <summary>进入"就坛施法"状态 (引魂大阵双手据坛)。</summary>
+        /// <summary>进入"就坛施法"状态 (引魂大阵)。</summary>
         public void EnterChanneling(Vector2 altarPos) {
             if (currentState != HandState.Channeling) {
                 detachDissolve = 0f;
@@ -202,17 +217,17 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
             NPC.netUpdate = true;
         }
 
-        /// <summary>仪式被破 / 重伤: 双手硬直坠落 (Boss 头部破绽窗口)。</summary>
+        /// <summary>仪式被破: 硬直坠落 (头颅破绽窗口)。</summary>
         public void StunHand(int duration) {
             currentState = HandState.Stunned;
             stunTimer = duration;
             controlledCanHit = false;
-            detachDissolveDir = -1; // 重凝
+            detachDissolveDir = -1;
             stateTimer = 0;
             NPC.netUpdate = true;
         }
 
-        /// <summary>释放回体 (返回待机编排)。</summary>
+        /// <summary>释放回体。</summary>
         public void ReleaseToIdle() {
             if (currentState == HandState.Idle || currentState == HandState.Retracting)
                 return;
@@ -223,13 +238,22 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
             NPC.netUpdate = true;
         }
 
+        /// <summary>由 Boss 在拍掌命中点注入径向泛光残留 (客户端表现)。</summary>
+        public void FlagClapBloom(Vector2 worldPos) {
+            clapBloomTimer = 10;
+            clapBloomPos = worldPos;
+        }
+
+        // ================================================================
+        //  ModNPC
+        // ================================================================
+
         public override void SetStaticDefaults() {
             Main.npcFrameCount[NPC.type] = 1;
             NPCID.Sets.MustAlwaysDraw[NPC.type] = true;
             NPCID.Sets.MPAllowedEnemies[Type] = true;
-            NPCID.Sets.NPCBestiaryDrawModifiers npcDrawModifiers = new NPCID.Sets.NPCBestiaryDrawModifiers();
-            npcDrawModifiers.Hide = true;
-            NPCID.Sets.NPCBestiaryDrawOffset[Type] = npcDrawModifiers;
+            var drawModifiers = new NPCID.Sets.NPCBestiaryDrawModifiers { Hide = true };
+            NPCID.Sets.NPCBestiaryDrawOffset[Type] = drawModifiers;
             NPCID.Sets.TrailingMode[Type] = 3;
             NPCID.Sets.TrailCacheLength[Type] = 15;
         }
@@ -242,7 +266,7 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
             NPC.lifeMax = 100000;
             NPC.HitSound = SoundID.NPCHit2;
             NPC.DeathSound = SoundID.NPCDeath14;
-            NPC.value = 5000f;
+            NPC.value = 0f;
             NPC.knockBackResist = 0f;
             NPC.noTileCollide = true;
             NPC.noGravity = true;
@@ -253,13 +277,11 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
         public override void SendExtraAI(BinaryWriter writer) {
             writer.Write((int)currentState);
             writer.Write(stateTimer);
-            writer.Write(attackCooldown);
-            writer.WriteVector2(targetPosition);
-            writer.WriteVector2(teleportDest);
-            writer.WriteVector2(clapTargetPos);
-            writer.Write(isClapReady);
-            writer.WriteVector2(boneTossDirection);
-            writer.Write(boneTossCount);
+            writer.WriteVector2(aimPoint);
+            writer.WriteVector2(axisDir);
+            writer.WriteVector2(startPos);
+            writer.Write(sprayOnImpact);
+            writer.Write(volleyWave);
             writer.WriteVector2(controlledPos);
             writer.Write(controlledCanHit);
             writer.Write(stunTimer);
@@ -270,13 +292,11 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
         public override void ReceiveExtraAI(BinaryReader reader) {
             currentState = (HandState)reader.ReadInt32();
             stateTimer = reader.ReadInt32();
-            attackCooldown = reader.ReadInt32();
-            targetPosition = reader.ReadVector2();
-            teleportDest = reader.ReadVector2();
-            clapTargetPos = reader.ReadVector2();
-            isClapReady = reader.ReadBoolean();
-            boneTossDirection = reader.ReadVector2();
-            boneTossCount = reader.ReadInt32();
+            aimPoint = reader.ReadVector2();
+            axisDir = reader.ReadVector2();
+            startPos = reader.ReadVector2();
+            sprayOnImpact = reader.ReadBoolean();
+            volleyWave = reader.ReadInt32();
             controlledPos = reader.ReadVector2();
             controlledCanHit = reader.ReadBoolean();
             stunTimer = reader.ReadInt32();
@@ -285,9 +305,8 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
         }
 
         public override void AI() {
-            // 获取Boss引用
             NPC boss = Main.npc[(int)NPC.ai[0]];
-            if (!boss.active || boss.ModNPC is not Corpses corpsesBoss) {
+            if (!boss.active || boss.ModNPC is not Corpses) {
                 NPC.active = false;
                 NPC.netUpdate = true;
                 return;
@@ -297,312 +316,387 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
             NPC.realLife = boss.whoAmI;
             NPC.target = boss.target;
 
-            stateTimer++;
-            if (attackCooldown > 0) attackCooldown--;
+            if (flameSeed == 0f)
+                flameSeed = NPC.whoAmI * 3.71f + 1.3f;
 
-            // V2 溶解过渡推进: 骨→魂→骨 的一次 0→峰→0 脉冲 (脱体/回体瞬间的魂态化)
+            stateTimer++;
+
+            // 骨→魂→骨 溶解脉冲推进 (脱体/回体瞬间的魂态化)
             if (detachDissolveDir != 0) {
                 detachDissolve = MathHelper.Clamp(detachDissolve + detachDissolveDir * 0.16f, 0f, 1f);
                 if (detachDissolve >= 1f && detachDissolveDir > 0)
-                    detachDissolveDir = -1;      // 到峰值后回凝
+                    detachDissolveDir = -1;
                 else if (detachDissolve <= 0f && detachDissolveDir < 0)
-                    detachDissolveDir = 0;        // 回凝完成
+                    detachDissolveDir = 0;
             }
             if (clapBloomTimer > 0) clapBloomTimer--;
+            if (impactRingTimer > 0) impactRingTimer--;
 
-            // 安全检查：如果状态持续时间过长，强制回到待机 (Boss 编排状态由 Boss 管理, 豁免)
-            if (stateTimer > 300 && currentState != HandState.Idle
+            // 兜底出口: 攻击态超时强制回位 (编排态由 Boss 管理, 豁免)
+            if (stateTimer > 400 && currentState != HandState.Idle
                 && currentState != HandState.Controlled && currentState != HandState.Channeling
-                && currentState != HandState.Stunned) {
-                currentState = HandState.Retracting;
-                stateTimer = 0;
-                isClapReady = false;
-                NPC.velocity = Vector2.Zero;
-                NPC.netUpdate = true;
+                && currentState != HandState.Stunned && currentState != HandState.Dying) {
+                ReleaseToIdle();
             }
 
-            // 根据状态执行不同的行为
+            Vector2 prevCenter = NPC.Center;
+
             switch (currentState) {
-                case HandState.Idle:
-                    HandleIdleState(boss, target);
-                    break;
-                case HandState.Reaching:
-                    HandleReachingState(boss, target);
-                    break;
-                case HandState.Slashing:
-                    HandleSlashingState(boss, target);
-                    break;
-                case HandState.Grabbing:
-                    HandleGrabbingState(boss, target);
-                    break;
-                case HandState.Retracting:
-                    HandleRetractingState(boss, target);
-                    break;
-                case HandState.BoneToss:
-                    HandleBoneTossState(boss, target);
-                    break;
-                case HandState.ClapCharging:
-                    HandleClapChargingState(boss, target);
-                    break;
-                case HandState.TeleportClap:
-                    HandleTeleportClapState(boss, target);
-                    break;
-                case HandState.ClapStrike:
-                    HandleClapStrikeState(boss, target);
-                    break;
-                case HandState.Controlled:
-                    HandleControlledState(boss, target);
-                    break;
-                case HandState.Channeling:
-                    HandleChannelingState(boss, target);
-                    break;
-                case HandState.Stunned:
-                    HandleStunnedState(boss, target);
-                    break;
+                case HandState.Idle: TickIdle(boss); break;
+                case HandState.Retracting: TickRetracting(boss); break;
+                case HandState.PalmSlam: TickPalmSlam(boss); break;
+                case HandState.BoneSweep: TickBoneSweep(boss); break;
+                case HandState.BoneVolley: TickBoneVolley(boss); break;
+                case HandState.ClapPincer: TickClapPincer(boss); break;
+                case HandState.Controlled: TickControlled(target); break;
+                case HandState.Channeling: TickChanneling(target); break;
+                case HandState.Stunned: TickStunned(); break;
+                case HandState.Materializing: TickMaterializing(); break;
+                case HandState.Dying: TickDying(); break;
             }
 
-            // 更新IK系统
             UpdateIKSystem(boss);
-
-            // 更新拖尾
             UpdateTrail();
 
-            // 处理抓取的玩家
-            if (grabbedPlayer != null && grabDuration > 0) {
-                grabbedPlayer.Center = NPC.Center;
-                grabbedPlayer.velocity = Vector2.Zero;
-                grabDuration--;
-
-                if (grabDuration <= 0) {
-                    // 抛出玩家
-                    Vector2 throwDir = (boss.Center - NPC.Center).SafeNormalize(Vector2.Zero);
-                    grabbedPlayer.velocity = throwDir * 20f;
-                    grabbedPlayer = null;
-                }
+            // 位置直设状态: 位移折算为 velocity 并回退半步, 由引擎统一施加
+            // (避免"直设位置 + 引擎再加 velocity"的双重位移; Stunned/Dying 本就是 velocity 驱动)
+            if (currentState is not (HandState.Stunned or HandState.Dying)) {
+                Vector2 moved = NPC.Center - prevCenter;
+                NPC.position -= moved;
+                NPC.velocity = moved;
             }
 
-            // 防止离Boss太远 (传送 / Boss 外部驱动状态豁免)
-            if (currentState != HandState.TeleportClap && currentState != HandState.ClapStrike
-                && currentState != HandState.Controlled && currentState != HandState.Channeling
-                && currentState != HandState.Stunned) {
+            // 距离栓绳 (脱体编排态豁免)
+            if (currentState is HandState.Idle or HandState.Retracting or HandState.BoneVolley) {
                 float distanceToBoss = Vector2.Distance(NPC.Center, boss.Center);
-                if (distanceToBoss > 1200f) {
-                    NPC.Center = boss.Center + (NPC.Center - boss.Center).SafeNormalize(Vector2.Zero) * 1200f;
-                }
+                if (distanceToBoss > 1300f)
+                    NPC.Center = boss.Center + (NPC.Center - boss.Center).SafeNormalize(Vector2.Zero) * 1300f;
             }
         }
 
-        // ====== IK系统核心 ======
-        private void UpdateIKSystem(NPC boss) {
-            // 肩部位置：在Boss身体两侧
-            float shoulderOffset = Direction * 60f;
-            shoulderPos = boss.Center + new Vector2(shoulderOffset, 30);
+        // ================================================================
+        //  招式实现
+        // ================================================================
 
-            // 目标位置（手部应该到达的位置）
-            Vector2 targetPos = NPC.Center;
+        private Vector2 RestPos(NPC boss) =>
+            boss.Center + new Vector2(Direction * (150f + MathF.Sin(Main.GameUpdateCount * 0.02f + Direction) * 16f),
+                                      -46f + MathF.Cos(Main.GameUpdateCount * 0.025f + Direction * 2f) * 13f);
 
-            // 计算从肩部到手部的向量
-            Vector2 shoulderToHand = targetPos - shoulderPos;
-            float distance = shoulderToHand.Length();
-
-            // 如果距离超过最大触及距离，限制手部位置
-            if (distance > MaxReach) {
-                targetPos = shoulderPos + shoulderToHand.SafeNormalize(Vector2.Zero) * MaxReach;
-                shoulderToHand = targetPos - shoulderPos;
-                distance = MaxReach;
-            }
-
-            // 计算肘部位置（使用余弦定理）
-            if (distance > 1f) {
-                // 计算肘部弯曲角度
-                float a = UpperArmLength;
-                float b = ForearmLength;
-                float c = distance;
-
-                // 使用余弦定理计算肘部角度
-                float angleA = MathF.Acos(MathHelper.Clamp((b * b + c * c - a * a) / (2 * b * c), -1f, 1f));
-
-                // 肘部应该向外弯曲
-                float baseAngle = shoulderToHand.ToRotation();
-                float elbowAngle = baseAngle + MathHelper.PiOver2 * Direction;
-
-                // 计算肘部偏移
-                float elbowOffset = MathF.Sqrt(MathHelper.Max(0, a * a - (c * 0.5f) * (c * 0.5f)));
-                Vector2 elbowDir = new Vector2(MathF.Cos(elbowAngle), MathF.Sin(elbowAngle));
-
-                elbowPos = shoulderPos + shoulderToHand * 0.5f + elbowDir * elbowOffset * 0.5f;
-            }
-            else {
-                elbowPos = shoulderPos;
-            }
-
-            handPos = targetPos;
-
-            // 更新NPC旋转（手部朝向）
-            Vector2 elbowToHand = handPos - elbowPos;
-            if (elbowToHand.Length() > 1f) {
-                NPC.rotation = elbowToHand.ToRotation();
-            }
+        private void TickIdle(NPC boss) {
+            // 待机呼吸浮动; 不自主攻击 (指挥权全在节拍表)
+            NPC.Center += (RestPos(boss) - NPC.Center) * 0.12f;
+            NPC.rotation = NPC.rotation.AngleLerp(Direction > 0 ? 0.35f : MathHelper.Pi - 0.35f, 0.08f);
         }
 
-        // ====== 状态处理 ======
-        private void HandleIdleState(NPC boss, Player target) {
-            // 空闲时在Boss身边待命，轻微摇摆
-            float angle = MathF.Sin(Main.GameUpdateCount * 0.03f) * 0.3f;
-            float offsetX = Direction * (140f + MathF.Sin(Main.GameUpdateCount * 0.02f) * 20f);
-            float offsetY = -60f + MathF.Cos(Main.GameUpdateCount * 0.025f) * 15f;
-
-            Vector2 desiredPos = boss.Center + new Vector2(offsetX, offsetY).RotatedBy(angle);
-            NPC.Center += (desiredPos - NPC.Center) * 0.15f;
-
-            // 手臂自主攻击 - 降低触发频率，但保持威胁
-            if (attackCooldown <= 0 && stateTimer > 60) {
-                float distToTarget = Vector2.Distance(NPC.Center, target.Center);
-
-                // 近距离优先近战
-                if (distToTarget < 350f && Main.rand.NextBool(4)) {
-                    if (Main.rand.NextBool())
-                        StartSlashAttack(target);
-                    else
-                        StartGrabAttack(target);
-                }
-                // 中距离挥砍
-                else if (distToTarget < 550f && Main.rand.NextBool(5)) {
-                    StartSlashAttack(target);
-                }
-                // 远距离偶尔泼洒
-                else if (Main.rand.NextBool(8)) {
-                    StartBoneTossAttack(target);
-                }
-            }
-        }
-
-        private void HandleReachingState(NPC boss, Player target) {
-            // 向目标位置伸展
-            attackProgress = MathHelper.Clamp(attackProgress + 0.05f, 0, 1);
-            float easeProgress = ACMUtils.QuadOut(attackProgress);
-
-            Vector2 startPos = boss.Center + new Vector2(Direction * 120f, 0);
-            NPC.Center = Vector2.Lerp(startPos, targetPosition, easeProgress);
-
-            if (attackProgress >= 1f) {
-                currentState = HandState.Retracting;
-                attackProgress = 0f;
-                stateTimer = 0;
-            }
-        }
-
-        private void HandleSlashingState(NPC boss, Player target) {
-            // 挥砍动作
-            slashProgress = MathHelper.Clamp(slashProgress + 0.08f, 0, 1);
-            float easeProgress = ACMUtils.SineInOut(slashProgress);
-
-            NPC.Center = Vector2.Lerp(slashStartPos, slashEndPos, easeProgress);
-
-            // 产生斩击粒子效果
-            if (Main.netMode != NetmodeID.Server && slashProgress > 0.3f && slashProgress < 0.7f && Main.rand.NextBool(3)) {
-                int dust = Dust.NewDust(NPC.Center, NPC.width, NPC.height, DustID.Shadowflame, 0, 0, 100, default, 1.5f);
-                Main.dust[dust].noGravity = true;
-                Main.dust[dust].velocity = NPC.rotation.ToRotationVector2() * 5f;
-            }
-
-            if (slashProgress >= 1f) {
-                currentState = HandState.Retracting;
-                slashProgress = 0f;
-                stateTimer = 0;
-                attackCooldown = 60;
-            }
-        }
-
-        private void HandleGrabbingState(NPC boss, Player target) {
-            // 抓取攻击
-            Vector2 toTarget = target.Center - NPC.Center;
-            float distance = toTarget.Length();
-
-            if (distance > 5f) {
-                NPC.velocity = toTarget.SafeNormalize(Vector2.Zero) * 18f;
-            }
-            else {
-                NPC.velocity *= 0.8f;
-            }
-
-            // 检测是否抓到玩家
-            if (stateTimer > 120) {
-                currentState = HandState.Retracting;
-                stateTimer = 0;
-                attackCooldown = 90;
-            }
-        }
-
-        private void HandleRetractingState(NPC boss, Player target) {
-            // 回缩到Boss附近
-            Vector2 restPos = boss.Center + new Vector2(Direction * 140f, -40f);
-            NPC.Center += (restPos - NPC.Center) * 0.25f;
-
-            // 清除速度，避免残留
-            NPC.velocity *= 0.85f;
-
-            if (Vector2.Distance(NPC.Center, restPos) < 40f || stateTimer > 35) {
+        private void TickRetracting(NPC boss) {
+            Vector2 rest = RestPos(boss);
+            NPC.Center += (rest - NPC.Center) * 0.2f;
+            if (Vector2.Distance(NPC.Center, rest) < 36f || stateTimer > 40) {
                 currentState = HandState.Idle;
                 stateTimer = 0;
-                attackProgress = 0f;
-                NPC.velocity = Vector2.Zero; // 完全清除速度
-
-                // 确保所有标志都重置
-                isClapReady = false;
-                slashProgress = 0f;
-                boneTossCount = 0;
+                volleyWave = 0;
             }
         }
 
-        // ====== V2 状态处理: 外部驱动 / 施法 / 硬直 ======
-        private void HandleControlledState(NPC boss, Player target) {
-            // 由 Boss 每帧 DriveControlled 设定的位置, 平滑跟随 (旋冢环绕 / 就坛飞行)
-            NPC.Center += (controlledPos - NPC.Center) * 0.35f;
-            NPC.velocity = (controlledPos - NPC.Center) * 0.15f;
+        // —— 崩掌拍落 ——
+        private void TickPalmSlam(NPC boss) {
+            Vector2 hover = new(aimPoint.X, aimPoint.Y - SlamHoverHeight);
+            int t = stateTimer;
+            // 掌心朝下的姿态角: 左手绘制时补偿 +π, 此处预扣使两手视觉一致
+            float palmDown = Direction > 0 ? MathHelper.PiOver2 : -MathHelper.PiOver2;
 
-            // 朝向目标的手部转向
-            Vector2 toTarget = (target.Center - NPC.Center);
+            if (t <= SlamHoist) {
+                // 抬手蓄势: 慢而高, SineInOut 上举
+                float p = ACMUtils.SineInOut(t / (float)SlamHoist);
+                NPC.Center = Vector2.Lerp(startPos, hover, p);
+                NPC.rotation = NPC.rotation.AngleLerp(palmDown, 0.15f); // 掌心朝下
+                // 蓄势聚魂粒子 (向掌心收束)
+                if (!Main.dedServ && Main.rand.NextBool(2)) {
+                    Vector2 off = Main.rand.NextVector2CircularEdge(70f, 70f);
+                    var d = Dust.NewDustPerfect(NPC.Center + off, DustID.Shadowflame);
+                    d.noGravity = true; d.scale = 1.3f;
+                    d.velocity = -off * 0.09f;
+                }
+            }
+            else if (t <= SlamDropStart) {
+                // 顶点悬停: 末端反向再抬 (吸气), 粒子熄灭 = pre-silence
+                float p = (t - SlamHoist) / (float)SlamHold;
+                NPC.Center = hover - new Vector2(0f, MathF.Pow(p, 3f) * 30f);
+                if (t == SlamDropStart - 8)
+                    SoundEngine.PlaySound(SoundID.Item103 with { Pitch = -0.5f, Volume = 0.7f }, NPC.Center);
+            }
+            else if (t <= SlamDropStart + SlamDrop) {
+                // 瞬拍: poly ease-out, 首帧即走完大半 (launch is a set)
+                float p = (t - SlamDropStart) / (float)SlamDrop;
+                float e = 1f - MathF.Pow(1f - p, 12f);
+                NPC.Center = Vector2.Lerp(hover - new Vector2(0, 30f), aimPoint, e);
+                NPC.rotation = palmDown;
+
+                if (t == SlamDropStart + SlamDrop)
+                    SlamImpact(boss);
+            }
+            else if (t <= SlamDropStart + SlamDrop + SlamLock) {
+                // 落地锁定: 完全静止 (顿帧), 也是玩家的输出窗口
+                NPC.Center = aimPoint;
+            }
+            else if (t <= SlamDropStart + SlamDrop + SlamLock + SlamRecover) {
+                // 收招: 缓缓抬回
+                float p = (t - SlamDropStart - SlamDrop - SlamLock) / (float)SlamRecover;
+                NPC.Center = Vector2.Lerp(aimPoint, RestPos(boss), ACMUtils.QuadInOut(p));
+            }
+            else {
+                currentState = HandState.Retracting;
+                stateTimer = 0;
+            }
+        }
+
+        private void SlamImpact(NPC boss) {
+            impactRingTimer = 14;
+            impactRingPos = aimPoint;
+            ACMUtils.AddScreenShake(9f);
+            SoundEngine.PlaySound(SoundID.Item14 with { Pitch = -0.4f, Volume = 1.2f }, aimPoint);
+            SoundEngine.PlaySound(SoundID.NPCHit2 with { Pitch = -0.7f }, aimPoint);
+
+            // 头颅受震反馈 (secondary motion)
+            if (boss.ModNPC is Corpses head)
+                head.NotifyImpactShake(3.2f);
+
+            if (!Main.dedServ) {
+                for (int i = 0; i < 26; i++) {
+                    Vector2 vel = new(Main.rand.NextFloat(-7f, 7f), Main.rand.NextFloat(-8f, -1.5f));
+                    var d = Dust.NewDustPerfect(aimPoint + new Vector2(Main.rand.NextFloat(-40f, 40f), 8f), DustID.Bone, vel);
+                    d.noGravity = Main.rand.NextBool();
+                    d.scale = Main.rand.NextFloat(1.1f, 1.9f);
+                }
+            }
+
+            // P2/P3: 落点向上溅射骨镖 (可读弧线, 服务器生成)
+            if (sprayOnImpact && Main.netMode != NetmodeID.MultiplayerClient && boss.ModNPC is Corpses c) {
+                for (int i = -2; i <= 2; i++) {
+                    Vector2 vel = new(i * 2.6f, -9.5f + Math.Abs(i) * 0.8f);
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), aimPoint + new Vector2(0, -20f), vel,
+                        ModContent.ProjectileType<CorpsesBoneShower>(), c.GetBossDamage(0.5f), 2f, Main.myPlayer, 0f, 1f);
+                }
+            }
+        }
+
+        // —— 白骨横扫 ——
+        private void TickBoneSweep(NPC boss) {
+            Vector2 lineStart = aimPoint - axisDir * SweepHalfLen;
+            Vector2 lineEnd = aimPoint + axisDir * SweepHalfLen;
+            Vector2 backPos = lineStart - axisDir * 130f - new Vector2(0f, 120f);
+            int t = stateTimer;
+
+            if (t <= SweepBack) {
+                // 后摆: 抬到扫线起点侧后上方
+                float p = ACMUtils.SineInOut(t / (float)SweepBack);
+                NPC.Center = Vector2.Lerp(startPos, backPos, p);
+                NPC.rotation = NPC.rotation.AngleLerp(axisDir.ToRotation(), 0.12f);
+            }
+            else if (t <= SweepStrikeStart) {
+                // 静止蓄势 (扫线已锁定, 预警轴亮起)
+                NPC.Center = backPos;
+                if (t == SweepStrikeStart - 4)
+                    SoundEngine.PlaySound(SoundID.Item71 with { Pitch = -0.3f, Volume = 1.1f }, NPC.Center);
+            }
+            else if (t <= SweepStrikeStart + SweepStrike) {
+                // 瞬扫: poly16 从起点掠到终点
+                float p = (t - SweepStrikeStart) / (float)SweepStrike;
+                float e = 1f - MathF.Pow(1f - p, 16f);
+                NPC.Center = Vector2.Lerp(lineStart, lineEnd, e) - new Vector2(0f, MathF.Sin(p * MathHelper.Pi) * 26f);
+                NPC.rotation = axisDir.ToRotation();
+
+                if (!Main.dedServ && Main.rand.NextBool()) {
+                    var d = Dust.NewDustPerfect(NPC.Center + Main.rand.NextVector2Circular(28f, 28f), DustID.Shadowflame);
+                    d.noGravity = true; d.scale = 1.6f;
+                    d.velocity = axisDir * Main.rand.NextFloat(3f, 8f);
+                }
+                if (t == SweepStrikeStart + SweepStrike && boss.ModNPC is Corpses head)
+                    head.NotifyImpactShake(1.6f);
+            }
+            else if (t <= SweepStrikeStart + SweepStrike + SweepBrake) {
+                // 硬刹 + 回摆
+                float p = (t - SweepStrikeStart - SweepStrike) / (float)SweepBrake;
+                NPC.Center = Vector2.Lerp(lineEnd, RestPos(boss), ACMUtils.QuadIn(p));
+            }
+            else {
+                currentState = HandState.Retracting;
+                stateTimer = 0;
+            }
+        }
+
+        // —— 指骨连环 ——
+        private void TickBoneVolley(NPC boss) {
+            Vector2 aimDir = (aimPoint - boss.Center).SafeNormalize(Vector2.UnitX);
+            Vector2 anchor = boss.Center + new Vector2(Direction * 170f, -80f) - aimDir * 40f;
+            int t = stateTimer;
+
+            if (t <= VolleyBack) {
+                // 后摆聚焰
+                float p = ACMUtils.QuadInOut(t / (float)VolleyBack);
+                NPC.Center = Vector2.Lerp(startPos, anchor, p);
+                NPC.rotation = NPC.rotation.AngleLerp(aimDir.ToRotation(), 0.15f);
+                if (!Main.dedServ && Main.rand.NextBool(2)) {
+                    Vector2 off = Main.rand.NextVector2CircularEdge(46f, 46f);
+                    var d = Dust.NewDustPerfect(NPC.Center + off, DustID.CursedTorch);
+                    d.noGravity = true; d.scale = 1.1f;
+                    d.velocity = -off * 0.1f;
+                }
+            }
+            else if (t <= VolleyBack + VolleyWaves * VolleyWaveTime) {
+                int wt = (t - VolleyBack - 1) % VolleyWaveTime;
+                if (wt < 6) {
+                    // 甩腕: 向目标方向捅出
+                    float p = 1f - MathF.Pow(1f - wt / 6f, 6f);
+                    NPC.Center = anchor + aimDir * p * 96f;
+                }
+                else {
+                    // 后坐: 弹回
+                    float p = (wt - 6) / (float)(VolleyWaveTime - 6);
+                    NPC.Center = anchor + aimDir * (96f - ACMUtils.QuadOut(p) * 118f);
+                }
+
+                // 甩腕末帧发射扇形骨镖 (服务器)
+                if (wt == 5 && volleyWave < VolleyWaves) {
+                    volleyWave++;
+                    SoundEngine.PlaySound(SoundID.Item1 with { Pitch = 0.15f }, NPC.Center);
+                    if (Main.netMode != NetmodeID.MultiplayerClient && boss.ModNPC is Corpses c) {
+                        Player tgt = Main.player[NPC.target];
+                        Vector2 dir = (tgt.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
+                        for (int i = -2; i <= 2; i++) {
+                            Vector2 vel = dir.RotatedBy(i * 0.16f) * 13.5f;
+                            Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center + dir * 30f, vel,
+                                ModContent.ProjectileType<CorpsesBoneShower>(), c.GetBossDamage(0.45f), 2f, Main.myPlayer, 0f, 0f);
+                        }
+                    }
+                }
+            }
+            else if (t <= VolleyBack + VolleyWaves * VolleyWaveTime + 24) {
+                float p = (t - VolleyBack - VolleyWaves * VolleyWaveTime) / 24f;
+                NPC.Center = Vector2.Lerp(NPC.Center, RestPos(boss), p * 0.3f);
+            }
+            else {
+                currentState = HandState.Retracting;
+                stateTimer = 0;
+            }
+        }
+
+        // —— 合掌夹击 ——
+        private void TickClapPincer(NPC boss) {
+            float side = Direction >= 0 ? 1f : -1f;
+            Vector2 nearPos = aimPoint + axisDir * side * PincerNearDist;
+            Vector2 farPos = aimPoint + axisDir * side * PincerFarDist;
+            Vector2 meet = aimPoint + axisDir * side * 26f; // 手对手, 不完全重叠
+            int t = stateTimer;
+
+            if (t <= PincerFly) {
+                float p = ACMUtils.SineInOut(t / (float)PincerFly);
+                NPC.Center = Vector2.Lerp(startPos, nearPos, p);
+                NPC.rotation = NPC.rotation.AngleLerp((aimPoint - NPC.Center).ToRotation(), 0.2f);
+            }
+            else if (t <= PincerFly + PincerPull) {
+                // 反向拉开: t² 加速外撤 (ramped reverse, 吸气感)
+                float p = (t - PincerFly) / (float)PincerPull;
+                NPC.Center = Vector2.Lerp(nearPos, farPos, p * p);
+                NPC.rotation = (aimPoint - NPC.Center).ToRotation();
+            }
+            else if (t <= PincerSnapStart) {
+                // 静止蓄势 (轴线预警最亮, pre-silence)
+                NPC.Center = farPos;
+                if (t == PincerSnapStart - 5 && Direction > 0)
+                    SoundEngine.PlaySound(SoundID.Item103 with { Pitch = -0.2f, Volume = 0.8f }, aimPoint);
+            }
+            else if (t <= PincerSnapStart + PincerSnap) {
+                // 瞬合
+                float p = (t - PincerSnapStart) / (float)PincerSnap;
+                float e = 1f - MathF.Pow(1f - p, 14f);
+                NPC.Center = Vector2.Lerp(farPos, meet, e);
+
+                if (t == PincerSnapStart + PincerSnap && Direction > 0)
+                    PincerImpact(boss);
+            }
+            else if (t <= PincerSnapStart + PincerSnap + PincerLock) {
+                // 合击锁定 (顿帧)
+                NPC.Center = meet;
+            }
+            else if (t <= PincerSnapStart + PincerSnap + PincerLock + PincerRecoil) {
+                // 弹开 recoil
+                float p = (t - PincerSnapStart - PincerSnap - PincerLock) / (float)PincerRecoil;
+                NPC.Center = Vector2.Lerp(meet, aimPoint + axisDir * side * 200f - new Vector2(0, 40f), ACMUtils.QuadOut(p));
+            }
+            else {
+                currentState = HandState.Retracting;
+                stateTimer = 0;
+            }
+        }
+
+        private void PincerImpact(NPC boss) {
+            FlagClapBloom(aimPoint);
+            impactRingTimer = 14;
+            impactRingPos = aimPoint;
+            ACMUtils.AddScreenShake(8f);
+            SoundEngine.PlaySound(SoundID.Item14 with { Volume = 1.4f, Pitch = -0.1f }, aimPoint);
+
+            if (boss.ModNPC is Corpses head)
+                head.NotifyImpactShake(2.6f);
+
+            if (!Main.dedServ) {
+                for (int i = 0; i < 34; i++) {
+                    Vector2 vel = Main.rand.NextVector2Circular(16f, 16f);
+                    var d = Dust.NewDustPerfect(aimPoint, DustID.PurpleTorch, vel);
+                    d.noGravity = true; d.scale = Main.rand.NextFloat(1.6f, 2.6f);
+                }
+            }
+
+            // 环形冥掌冲击波: 从合击点向外 → 贴着合击点反而是安全芯
+            if (Main.netMode != NetmodeID.MultiplayerClient && boss.ModNPC is Corpses c) {
+                int count = 14;
+                for (int i = 0; i < count; i++) {
+                    float a = MathHelper.TwoPi * i / count;
+                    Vector2 vel = a.ToRotationVector2() * 11.5f;
+                    Projectile.NewProjectile(NPC.GetSource_FromAI(), aimPoint, vel,
+                        ModContent.ProjectileType<CorpsesClapWave>(), c.GetBossDamage(0.55f), 3f, Main.myPlayer, 0f, 0f);
+                }
+            }
+        }
+
+        // —— 编排态 (V2 保留) ——
+        private void TickControlled(Player target) {
+            NPC.Center += (controlledPos - NPC.Center) * 0.35f;
+            Vector2 toTarget = target.Center - NPC.Center;
             if (toTarget.LengthSquared() > 1f)
                 NPC.rotation = toTarget.ToRotation();
 
-            // 环绕魂火残痕
-            if (Main.netMode != NetmodeID.Server && Main.rand.NextBool(3)) {
-                int dust = Dust.NewDust(NPC.Center, NPC.width, NPC.height, DustID.Shadowflame, 0, 0, 120, default, 1.4f);
-                Main.dust[dust].noGravity = true;
-                Main.dust[dust].velocity = NPC.velocity * 0.3f;
+            if (!Main.dedServ && Main.rand.NextBool(3)) {
+                var d = Dust.NewDustPerfect(NPC.Center + Main.rand.NextVector2Circular(30f, 30f), DustID.Shadowflame);
+                d.noGravity = true; d.scale = 1.4f;
+                d.velocity = NPC.velocity * 0.3f;
             }
         }
 
-        private void HandleChannelingState(NPC boss, Player target) {
-            // 据坛施法: 轻微上下浮动 + 内向施法手势
+        private void TickChanneling(Player target) {
             float bob = MathF.Sin(stateTimer * 0.08f) * 10f;
             Vector2 anchor = controlledPos + new Vector2(0, bob);
             NPC.Center += (anchor - NPC.Center) * 0.2f;
-            NPC.velocity *= 0.8f;
-
-            // 手心朝向法阵中心 (controlledPos 由 Boss 设为坛位, 朝向玩家方向作施法感)
             NPC.rotation = (target.Center - NPC.Center).ToRotation();
 
-            if (Main.netMode != NetmodeID.Server && stateTimer % 3 == 0) {
-                Vector2 off = Main.rand.NextVector2Circular(36, 36);
-                int dust = Dust.NewDust(NPC.Center + off, 0, 0, DustID.PurpleTorch, 0, 0, 100, default, 1.6f);
-                Main.dust[dust].noGravity = true;
-                Main.dust[dust].velocity = -off.SafeNormalize(Vector2.Zero) * 2.5f;
+            if (!Main.dedServ && stateTimer % 3 == 0) {
+                Vector2 off = Main.rand.NextVector2Circular(36f, 36f);
+                var d = Dust.NewDustPerfect(NPC.Center + off, DustID.PurpleTorch);
+                d.noGravity = true; d.scale = 1.6f;
+                d.velocity = -off.SafeNormalize(Vector2.Zero) * 2.5f;
             }
         }
 
-        private void HandleStunnedState(NPC boss, Player target) {
-            // 硬直坠落 + 缓慢旋转, 表达"重伤"
+        private void TickStunned() {
             NPC.velocity.Y += 0.25f;
             NPC.velocity.X *= 0.96f;
             if (NPC.velocity.Y > 7f) NPC.velocity.Y = 7f;
-            NPC.Center += NPC.velocity;
             NPC.rotation += 0.05f * (Direction >= 0 ? 1 : -1);
 
-            if (Main.netMode != NetmodeID.Server && Main.rand.NextBool(2)) {
-                int dust = Dust.NewDust(NPC.Center, NPC.width, NPC.height, DustID.Smoke, 0, 0, 120, default, 1.6f);
-                Main.dust[dust].noGravity = true;
+            if (!Main.dedServ && Main.rand.NextBool(2)) {
+                var d = Dust.NewDustPerfect(NPC.Center + Main.rand.NextVector2Circular(30f, 30f), DustID.Smoke);
+                d.noGravity = true; d.scale = 1.6f;
             }
 
             stunTimer--;
@@ -614,332 +708,86 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
             }
         }
 
-        /// <summary>由 Boss 在拍掌命中点注入径向泛光残留 (PreDraw 消费, 客户端表现)。</summary>
-        public void FlagClapBloom(Vector2 worldPos) {
-            clapBloomTimer = 10;
-            clapBloomPos = worldPos;
-        }
-
-        // ====== 攻击发起方法 ======
-        private void StartReachAttack(Player target) {
-            currentState = HandState.Reaching;
-            targetPosition = target.Center + target.velocity * 15f;
-            attackProgress = 0f;
-            stateTimer = 0;
-            attackCooldown = 35;
-
-            SoundEngine.PlaySound(SoundID.Item1 with { Pitch = -0.3f }, NPC.Center);
-        }
-
-        private void StartSlashAttack(Player target) {
-            currentState = HandState.Slashing;
-
-            Vector2 dirToTarget = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
-            slashStartPos = NPC.Center + dirToTarget.RotatedBy(Direction * -0.8f) * 200f;
-            slashEndPos = target.Center + dirToTarget.RotatedBy(Direction * 0.8f) * 220f;
-
-            slashProgress = 0f;
-            stateTimer = 0;
-            attackCooldown = 40;
-
-            SoundEngine.PlaySound(SoundID.Item71 with { Volume = 0.8f }, NPC.Center);
-        }
-
-        private void StartGrabAttack(Player target) {
-            currentState = HandState.Grabbing;
-            stateTimer = 0;
-            attackCooldown = 70;
-
-            SoundEngine.PlaySound(SoundID.Roar with { Pitch = -0.4f, Volume = 0.6f }, NPC.Center);
-        }
-
-        // ====== 新增攻击方法 ======
-        private void StartBoneTossAttack(Player target) {
-            currentState = HandState.BoneToss;
-            stateTimer = 0;
-            boneTossCount = 0;
-            boneTossDirection = (target.Center - NPC.Center).SafeNormalize(Vector2.UnitX);
-            attackCooldown = 60;
-
-            SoundEngine.PlaySound(SoundID.Item1 with { Pitch = -0.5f }, NPC.Center);
-        }
-
-        public void StartClapCharge(Vector2 targetPos) {
-            currentState = HandState.ClapCharging;
-            stateTimer = 0;
-            clapTargetPos = targetPos;
-            isClapReady = false;
-        }
-
-        private void HandleBoneTossState(NPC boss, Player target) {
-            // 手臂向后摆动准备
-            if (stateTimer < 20) {
-                Vector2 backSwing = boss.Center + boneTossDirection.RotatedBy(Direction * -1.2f) * 150f;
-                NPC.Center += (backSwing - NPC.Center) * 0.2f;
+        private void TickMaterializing() {
+            // 尸雾中重凝: 位置原地, 轻微下沉浮出
+            NPC.Center += new Vector2(0f, MathF.Sin(stateTimer * 0.12f) * 0.6f);
+            if (!Main.dedServ && Main.rand.NextBool(2)) {
+                Vector2 off = Main.rand.NextVector2Circular(50f, 50f);
+                var d = Dust.NewDustPerfect(NPC.Center + off, DustID.Shadowflame);
+                d.noGravity = true; d.scale = 1.4f;
+                d.velocity = -off * 0.06f;
             }
-            // 向前挥动泼洒骨头
-            else if (stateTimer < 50) {
-                Vector2 forwardSwing = boss.Center + boneTossDirection.RotatedBy(Direction * 0.8f) * 200f;
-                NPC.Center += (forwardSwing - NPC.Center) * 0.3f;
-
-                // 泼洒骨头弹幕
-                if (stateTimer % 3 == 0 && boneTossCount < 8 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    Vector2 velocity = boneTossDirection.RotatedByRandom(0.6f) * Main.rand.NextFloat(10f, 16f);
-                    velocity.Y -= Main.rand.NextFloat(2f, 5f); // 向上抛
-
-                    Projectile.NewProjectile(NPC.GetSource_FromAI(), NPC.Center, velocity,
-                        ModContent.ProjectileType<CorpsesBoneShower>(), 40, 2f);
-
-                    boneTossCount++;
-                }
-
-                // 泼洒粒子效果
-                if (Main.rand.NextBool(2)) {
-                    int dust = Dust.NewDust(NPC.Center, NPC.width, NPC.height, DustID.Shadowflame,
-                        boneTossDirection.X * 3f, -2f, 100, default, 1.5f);
-                    Main.dust[dust].noGravity = true;
-                }
-            }
-            else {
-                currentState = HandState.Retracting;
+            if (stateTimer > 34) {
+                currentState = HandState.Idle;
                 stateTimer = 0;
             }
         }
 
-        private void HandleTeleportClapState(NPC boss, Player target) {
-            // 0-20帧：消失 (Vanish)
-            if (stateTimer < 20) {
-                // 缩小并产生粒子
-                NPC.scale = MathHelper.Lerp(1f, 0f, stateTimer / 20f);
-                NPC.rotation += 0.4f * Direction;
+        private void TickDying() {
+            // 坠地崩解: 加速下坠 + 翻转, 落到 Boss 记录的崩解高度即溶解消亡
+            NPC.velocity.Y += 0.32f;
+            if (NPC.velocity.Y > 11f) NPC.velocity.Y = 11f;
+            NPC.velocity.X *= 0.97f;
+            NPC.rotation += 0.07f * (Direction >= 0 ? 1 : -1);
+            detachDissolve = MathHelper.Clamp(detachDissolve + 0.012f, 0f, 1f);
+            detachDissolveDir = 0;
 
-                if (Main.rand.NextBool(2)) {
-                    int dust = Dust.NewDust(NPC.Center, NPC.width, NPC.height, DustID.Shadowflame, 0, 0, 100, default, 1.5f);
-                    Main.dust[dust].noGravity = true;
-                    Main.dust[dust].velocity *= 2f;
-                }
+            if (!Main.dedServ) {
+                var d = Dust.NewDustPerfect(NPC.Center + Main.rand.NextVector2Circular(34f, 34f), DustID.Bone);
+                d.velocity = new Vector2(Main.rand.NextFloat(-2f, 2f), Main.rand.NextFloat(-1f, 3f));
+                d.scale = Main.rand.NextFloat(1f, 1.7f);
             }
-            // 20帧：传送 (Teleport)
-            else if (stateTimer == 20) {
-                NPC.Center = teleportDest;
-                NPC.velocity = Vector2.Zero;
-                NPC.rotation = 0f;
-                NPC.netUpdate = true; // 确保位置同步
 
-                // 传送音效
-                SoundEngine.PlaySound(SoundID.Item6 with { Volume = 1.2f, Pitch = -0.1f }, NPC.Center);
-
-                // 出现时的爆发粒子
-                for (int i = 0; i < 30; i++) {
-                    Vector2 vel = Main.rand.NextVector2Circular(12, 12);
-                    int dust = Dust.NewDust(NPC.Center, 0, 0, DustID.PurpleTorch, vel.X, vel.Y, 100, default, 2.5f);
-                    Main.dust[dust].noGravity = true;
+            // 落过地表或超时 → 崩解消亡
+            bool grounded = Collision.SolidCollision(NPC.position + new Vector2(0, NPC.height * 0.5f), NPC.width, 24);
+            if (grounded || stateTimer > 150) {
+                if (!Main.dedServ) {
+                    for (int i = 0; i < 30; i++) {
+                        var d = Dust.NewDustPerfect(NPC.Center, DustID.Bone, Main.rand.NextVector2Circular(8f, 6f));
+                        d.scale = Main.rand.NextFloat(1.2f, 2f);
+                    }
                 }
-            }
-            // 20-40帧：出现 (Appear)
-            else if (stateTimer < 40) {
-                NPC.scale = MathHelper.Lerp(0f, 1f, (stateTimer - 20) / 20f);
-
-                // 绘制传送门效果 (通过粒子)
-                if (Main.rand.NextBool(2)) {
-                    Vector2 offset = Main.rand.NextVector2CircularEdge(60, 60);
-                    int dust = Dust.NewDust(NPC.Center + offset, 0, 0, DustID.PurpleTorch, 0, 0, 100, default, 1.5f);
-                    Main.dust[dust].velocity = -offset.SafeNormalize(Vector2.Zero) * 4f;
-                    Main.dust[dust].noGravity = true;
-                }
-
-                // 准备就绪
-                if (stateTimer == 35) {
-                    isClapReady = true;
-                    NPC.netUpdate = true;
-                }
-            }
-            // 40-70帧：蓄力震动 (Charge) - 增加蓄力时间给玩家反应
-            else if (stateTimer < 70) {
-                NPC.scale = 1f;
-                float wobble = MathF.Sin(stateTimer * 0.8f) * 6f;
-                NPC.Center = teleportDest + new Vector2(Direction * wobble, 0);
-
-                // 检查是否可以合击
-                if (stateTimer > 45 && ShouldExecuteClap(boss)) {
-                    currentState = HandState.ClapStrike;
-                    stateTimer = 0;
-                    NPC.netUpdate = true;
-                }
-            }
-            // 超时
-            else {
-                currentState = HandState.Retracting;
-                stateTimer = 0;
-                isClapReady = false;
-                attackCooldown = 60;
-                NPC.scale = 1f; // 确保恢复大小
+                SoundEngine.PlaySound(SoundID.NPCDeath6 with { Pitch = -0.4f }, NPC.Center);
+                ACMUtils.AddScreenShake(6f);
+                NPC.life = 0;
+                NPC.active = false;
                 NPC.netUpdate = true;
             }
         }
 
-        private void HandleClapChargingState(NPC boss, Player target) {
-            // 第一阶段：快速移动到预备位置（两侧）
-            if (stateTimer < 15) {
-                NPC.Center += (clapTargetPos - NPC.Center) * 0.3f;
+        // ================================================================
+        //  IK / 拖尾 / 碰撞
+        // ================================================================
 
-                // 蓄力粒子
-                if (Main.rand.NextBool(3)) {
-                    Vector2 offset = Main.rand.NextVector2Circular(40, 40);
-                    int dust = Dust.NewDust(NPC.Center + offset, 0, 0, DustID.PurpleTorch, 0, 0, 100, default, 2f);
-                    Main.dust[dust].velocity = -offset.SafeNormalize(Vector2.Zero) * 3f;
-                    Main.dust[dust].noGravity = true;
-                }
+        private void UpdateIKSystem(NPC boss) {
+            shoulderPos = boss.Center + new Vector2(Direction * 60f, 30f);
+            Vector2 targetPos = NPC.Center;
+            Vector2 shoulderToHand = targetPos - shoulderPos;
+            float distance = shoulderToHand.Length();
 
-                if (Vector2.Distance(NPC.Center, clapTargetPos) < 40f) {
-                    isClapReady = true;
-                }
+            if (distance > MaxReach) {
+                targetPos = shoulderPos + shoulderToHand.SafeNormalize(Vector2.Zero) * MaxReach;
+                distance = MaxReach;
             }
-            // 第二阶段：等待另一只手到位（但有超时机制）
-            else if (stateTimer < 35) {
-                // 轻微晃动表示蓄力
-                float wobble = MathF.Sin(stateTimer * 0.5f) * 5f;
-                Vector2 wobblePos = clapTargetPos + new Vector2(Direction * wobble, 0);
-                NPC.Center += (wobblePos - NPC.Center) * 0.2f;
 
-                // 检查是否应该执行拍掌
-                if (stateTimer >= 20 && ShouldExecuteClap(boss)) {
-                    currentState = HandState.ClapStrike;
-                    stateTimer = 0;
-                }
+            if (distance > 1f) {
+                float a = UpperArmLength;
+                float baseAngle = shoulderToHand.ToRotation();
+                float elbowAngle = baseAngle + MathHelper.PiOver2 * Direction;
+                float elbowOffset = MathF.Sqrt(MathHelper.Max(0, a * a - (distance * 0.5f) * (distance * 0.5f)));
+                Vector2 elbowDir = elbowAngle.ToRotationVector2();
+                elbowPos = shoulderPos + (targetPos - shoulderPos) * 0.5f + elbowDir * elbowOffset * 0.5f;
             }
-            // 超时退出机制
             else {
-                // 等待太久，取消拍掌攻击
-                currentState = HandState.Retracting;
-                stateTimer = 0;
-                isClapReady = false;
-                attackCooldown = 50;
-            }
-        }
-
-        private void HandleClapStrikeState(NPC boss, Player target) {
-            // 寻找另一只手以确定合击中心点
-            Vector2 meetPos = NPC.Center;
-            bool foundOther = false;
-            foreach (NPC npc in Main.ActiveNPCs) {
-                if (npc.active && npc.ModNPC is CorpsesHand otherHand &&
-                    npc.ai[0] == boss.whoAmI && npc.ai[1] != Direction) {
-                    // 动态计算两手中心点
-                    meetPos = (NPC.Center + npc.Center) / 2f;
-                    foundOther = true;
-                    break;
-                }
+                elbowPos = shoulderPos;
             }
 
-            // 如果没找到另一只手，回退到旧逻辑
-            if (!foundOther) {
-                meetPos = boss.Center + (target.Center - boss.Center).SafeNormalize(Vector2.Zero) * 200f;
-            }
-
-            // === 动作序列 ===
-
-            // 0-5帧：极速合拢 (Smash)
-            if (stateTimer < 6) {
-                // 使用非常激进的插值，制造瞬间合拢的视觉冲击
-                NPC.Center = Vector2.Lerp(NPC.Center, meetPos, 0.5f);
-
-                // 最后一帧强制吸附到位
-                if (stateTimer == 5) NPC.Center = meetPos;
-            }
-            // 6帧：接触瞬间，爆发 (Impact)
-            else if (stateTimer == 6) {
-                NPC.Center = meetPos; // 锁定位置
-                NPC.netUpdate = true;
-                FlagClapBloom(meetPos); // V2: 拍掌冲击波径向泛光 (PreDraw 消费)
-                ACMUtils.AddScreenShake(10f); // §6.2 大招释放预算 (取 max)
-
-                // 视觉效果：撞击粒子爆发
-                for (int i = 0; i < 40; i++) {
-                    Vector2 vel = Main.rand.NextVector2Circular(20, 20);
-                    int dust = Dust.NewDust(NPC.Center, 0, 0, DustID.PurpleTorch, vel.X, vel.Y, 100, default, 3f);
-                    Main.dust[dust].noGravity = true;
-                    Main.dust[dust].velocity *= 1.5f;
-                }
-
-                // 产生冲击波圈
-                if (Main.netMode != NetmodeID.Server) {
-                    for (int i = 0; i < 5; i++) {
-                        // 模拟冲击波纹
-                        int dust = Dust.NewDust(NPC.Center, 0, 0, DustID.Shadowflame, 0, 0, 0, default, 2f);
-                        Main.dust[dust].velocity *= 0.1f;
-                        Main.dust[dust].noGravity = true;
-                        Main.dust[dust].scale = 1f + i * 0.8f;
-                    }
-                }
-
-                // 只由右手触发伤害逻辑和音效，避免重复
-                if (Direction > 0 && Main.netMode != NetmodeID.MultiplayerClient) {
-                    // 环形射弹 - 数量增加，速度加快
-                    int projectileCount = 24;
-                    for (int i = 0; i < projectileCount; i++) {
-                        float angle = MathHelper.TwoPi * i / projectileCount;
-                        Vector2 velocity = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 16f;
-
-                        Projectile.NewProjectile(NPC.GetSource_FromAI(), meetPos, velocity,
-                            ModContent.ProjectileType<CorpsesClapWave>(), 50, 3f, Main.myPlayer, 0, 1);
-                    }
-
-                    // 冲击音效 - 更响亮
-                    SoundEngine.PlaySound(SoundID.Item14 with { Volume = 1.5f, Pitch = -0.1f }, meetPos);
-                }
-            }
-            // 6-18帧：停顿 (Freeze/Hold) - 强调打击感
-            else if (stateTimer < 18) {
-                NPC.Center = meetPos;
-                NPC.velocity = Vector2.Zero;
-            }
-            // 18帧后：反弹回缩 (Recoil)
-            else {
-                // 在刚开始反弹时给一个爆发速度
-                if (stateTimer == 18) {
-                    // 向外反弹
-                    Vector2 recoilDir = (NPC.Center - boss.Center).SafeNormalize(Vector2.UnitX * Direction);
-                    // 稍微向上抬起一点
-                    recoilDir.Y -= 0.5f;
-                    NPC.velocity = recoilDir.SafeNormalize(Vector2.Zero) * 15f;
-                }
-
-                NPC.velocity *= 0.92f;
-
-                if (stateTimer > 40) {
-                    currentState = HandState.Retracting;
-                    stateTimer = 0;
-                    attackCooldown = 120;
-                    isClapReady = false;
-                    NPC.netUpdate = true;
-                }
-            }
-        }
-
-        // 检查是否应该执行拍掌（两只手都到位）
-        private bool ShouldExecuteClap(NPC boss) {
-            // 自己还没准备好
-            if (!isClapReady) return false;
-
-            // 查找另一只手
-            foreach (NPC npc in Main.ActiveNPCs) {
-                if (npc.active && npc.ModNPC is CorpsesHand otherHand &&
-                    npc.ai[0] == boss.whoAmI && npc.ai[1] != Direction) {
-                    // 另一只手也准备好了，并且也在蓄力状态（包括普通蓄力和传送蓄力）
-                    if (otherHand.isClapReady &&
-                       (otherHand.currentState == HandState.ClapCharging || otherHand.currentState == HandState.TeleportClap)) {
-                        return true;
-                    }
-                }
-            }
-            return false;
+            handPos = targetPos;
         }
 
         private void UpdateTrail() {
             oldPositions.Add(NPC.Center);
             oldRotations.Add(NPC.rotation);
-
             if (oldPositions.Count > TrailLength) {
                 oldPositions.RemoveAt(0);
                 oldRotations.RemoveAt(0);
@@ -947,105 +795,91 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
         }
 
         public override bool ModifyCollisionData(Rectangle victimHitbox, ref int immunityCooldownSlot, ref MultipliableFloat damageMultiplier, ref Rectangle npcHitbox) {
-            // 手部碰撞盒
             int hitboxSize = 60;
             npcHitbox = new Rectangle(
                 (int)(NPC.Center.X - hitboxSize / 2),
                 (int)(NPC.Center.Y - hitboxSize / 2),
-                hitboxSize,
-                hitboxSize
-            );
+                hitboxSize, hitboxSize);
             return true;
         }
 
+        /// <summary>伤害窗口严格对齐爆发段视觉 (公平契约): 前摇/收招零伤害。</summary>
         public override bool CanHitPlayer(Player target, ref int cooldownSlot) {
-            return currentState == HandState.Slashing || currentState == HandState.Reaching
-                || (currentState == HandState.Controlled && controlledCanHit)
-                || currentState == HandState.Grabbing;
+            return currentState switch {
+                HandState.PalmSlam => stateTimer > SlamDropStart && stateTimer <= SlamDropStart + SlamDrop + 8,
+                HandState.BoneSweep => stateTimer > SweepStrikeStart && stateTimer <= SweepStrikeStart + SweepStrike,
+                HandState.ClapPincer => stateTimer > PincerSnapStart && stateTimer <= PincerSnapStart + PincerSnap + 10,
+                HandState.Controlled => controlledCanHit,
+                _ => false
+            };
         }
 
         public override void OnHitPlayer(Player target, Player.HurtInfo hurtInfo) {
-            // 地府身份层: 手部命中叠魂蚀 DoT (魂蚀); 抓取另叠冥律标记
-            Underworlds.UnderworldField.AddSoulErosion(target, 2);
-
-            // 抓取玩家
-            if (currentState == HandState.Grabbing && grabbedPlayer == null) {
-                grabbedPlayer = target;
-                grabDuration = 60;
-                Underworlds.UnderworldField.AddNetherDecree(target, 1);
-                SoundEngine.PlaySound(SoundID.NPCHit2, NPC.Center);
-            }
+            // 地府身份层: 判官之手命中叠魂蚀; 合掌重击另记一笔冥律
+            UnderworldField.AddSoulErosion(target, 2);
+            if (currentState == HandState.ClapPincer || currentState == HandState.PalmSlam)
+                UnderworldField.AddNetherDecree(target, 1);
         }
 
-        public override bool CheckActive() {
-            return false;
-        }
+        public override bool CheckActive() => false;
+
+        // ================================================================
+        //  绘制
+        // ================================================================
 
         public override bool PreDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
-            Texture2D handTexture = TextureAssets.Npc[NPC.type].Value;
-            Vector2 handOrigin = Direction > 0 ? new Vector2(0, handTexture.Height / 2) : new Vector2(handTexture.Width, handTexture.Height / 2);
+            if (Main.dedServ)
+                return false;
 
-            // V2 拍掌冲击波: 命中点加性径向泛光 (硬化 ACMShaders.DrawRadialBloomAt, 自带全屏名额仲裁)
+            Texture2D handTexture = TextureAssets.Npc[NPC.type].Value;
+            Vector2 handOrigin = Direction > 0
+                ? new Vector2(0, handTexture.Height / 2)
+                : new Vector2(handTexture.Width, handTexture.Height / 2);
+
+            DrawTelegraphs(spriteBatch);
+
+            // 拍掌命中泛光残留
             if (clapBloomTimer > 0) {
                 float bloomT = clapBloomTimer / 10f;
                 ACMShaders.DrawRadialBloomAt(clapBloomPos, 0.16f * bloomT + 0.05f, bloomT,
                     new Color(180, 80, 255), 8f, 2.4f);
             }
 
-            // 决定是否绘制手臂连接
-            bool shouldDrawArm = true;
-            if (currentState == HandState.TeleportClap) {
-                // 传送过程中不绘制手臂
-                if (stateTimer > 5 && stateTimer < 40)
-                    shouldDrawArm = false;
+            DrawArmOrSoulChain(spriteBatch, drawColor);
+
+            // 爆发段残影 (速度门控: 只在瞬发帧出现, dressing 不常开)
+            bool strikeAct = IsInStrikeAct();
+            if (strikeAct) {
+                float trailOpacity = 0.45f;
+                for (int i = oldPositions.Count - 2; i >= 0; i -= 2) {
+                    float progress = i / (float)oldPositions.Count;
+                    Vector2 drawPos = oldPositions[i] - Main.screenPosition;
+                    Color trailColor = TelegraphColors.GhostGreen with { A = 0 } * (trailOpacity * progress);
+                    float rot = oldRotations[i] + (Direction > 0 ? 0 : MathHelper.Pi);
+                    SpriteEffects fx = Direction > 0 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
+                    spriteBatch.Draw(handTexture, drawPos, null, trailColor, rot, handOrigin, NPC.scale * 0.92f, fx, 0);
+                }
             }
 
-            // 如果距离太远也不绘制 (手臂断开效果)
-            if (Vector2.Distance(shoulderPos, handPos) > MaxReach + 50f) {
-                shouldDrawArm = false;
-            }
+            // 脱体编排态掌心魂焰
+            if (currentState is HandState.Controlled or HandState.Channeling)
+                Corpses.DrawSoulFlame(spriteBatch, NPC.Center, 0.9f, 0.8f, flameSeed);
 
-            // 如果手臂纹理已加载，使用专门的手臂纹理绘制IK骨骼
-            if (shouldDrawArm && CorpsesArm != null && Main.netMode != NetmodeID.Server) {
-                // 绘制上臂（从肩部到肘部）
-                DrawArmSegment(spriteBatch, shoulderPos, elbowPos, CorpsesArm, drawColor, 1.0f);
-
-                // 绘制前臂（从肘部到手部）
-                DrawArmSegment(spriteBatch, elbowPos, handPos, CorpsesArm, drawColor, 0.9f);
-            }
-            else if (shouldDrawArm && Main.netMode != NetmodeID.Server) {
-                // 备用方案：使用简单的线条绘制骨骼（调试用）
-                DrawBone(spriteBatch, shoulderPos, elbowPos, Color.Gray * 0.6f, 8f);
-                DrawBone(spriteBatch, elbowPos, handPos, Color.Gray * 0.6f, 6f);
-            }
-
-            // 绘制手部拖尾效果
-            float trailOpacity = 0.3f;
-            for (int i = 0; i < oldPositions.Count; i++) {
-                float progress = i / (float)oldPositions.Count;
-                Vector2 drawPos = oldPositions[i] - Main.screenPosition;
-                Color trailColor = drawColor * (trailOpacity * (1 - progress));
-                float rot = oldRotations[i] + (Direction > 0 ? 0 : MathHelper.Pi);
-                SpriteEffects effects = Direction > 0 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
-
-                spriteBatch.Draw(handTexture, drawPos, null, trailColor, rot, handOrigin, NPC.scale * 0.9f, effects, 0);
-            }
-
-            // 绘制主体手部
             float rotation = NPC.rotation + (Direction > 0 ? 0 : MathHelper.Pi);
             SpriteEffects mainEffects = Direction > 0 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
 
             Color mainColor = drawColor;
-            if (currentState == HandState.Slashing && slashProgress > 0.3f && slashProgress < 0.7f) {
-                // 攻击时发红光
-                mainColor = Color.Lerp(drawColor, Color.Red, 0.4f);
-            }
+            if (strikeAct)
+                mainColor = Color.Lerp(drawColor, TelegraphColors.GhostGreen, 0.35f);
+            if (currentState == HandState.Dying)
+                mainColor = Color.Lerp(drawColor, new Color(60, 50, 70), detachDissolve * 0.6f);
 
-            // V2 脱体/回体 骨→魂→骨: 用 DissolveBurn 单 pass 溶解过渡; 否则常规绘制
-            if (detachDissolve > 0.02f && ACMShaders.DissolveBurn is Effect dissolve && Main.netMode != NetmodeID.Server) {
+            // 骨→魂→骨 溶解过渡 / 死亡崩解
+            float dissolveAmount = detachDissolve;
+            if (dissolveAmount > 0.02f && ACMShaders.DissolveBurn is Effect dissolve) {
                 dissolve.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
                 dissolve.Parameters["uIntensity"]?.SetValue(1f);
-                dissolve.Parameters["uThreshold"]?.SetValue(detachDissolve * 0.85f);
+                dissolve.Parameters["uThreshold"]?.SetValue(dissolveAmount * 0.85f);
                 dissolve.Parameters["uEdgeWidth"]?.SetValue(0.12f);
                 dissolve.Parameters["uNoiseScale"]?.SetValue(2.2f);
                 dissolve.Parameters["uEdgeColor"]?.SetValue(new Color(180, 90, 255).ToVector4());
@@ -1069,68 +903,91 @@ namespace AncientChineseMythology.Underworlds.Boss.Corpseses
             return false;
         }
 
-        // 绘制手臂段（使用专门的手臂纹理）
+        private bool IsInStrikeAct() {
+            return currentState switch {
+                HandState.PalmSlam => stateTimer > SlamDropStart && stateTimer <= SlamDropStart + SlamDrop + 4,
+                HandState.BoneSweep => stateTimer > SweepStrikeStart && stateTimer <= SweepStrikeStart + SweepStrike + 4,
+                HandState.ClapPincer => stateTimer > PincerSnapStart && stateTimer <= PincerSnapStart + PincerSnap + 6,
+                _ => false
+            };
+        }
+
+        // 预警 decal: 落点光柱 / 扫掠轴线 / 合掌轴线 / 冲击环 (CorpsesBoneRing, 不占全屏名额)
+        private void DrawTelegraphs(SpriteBatch sb) {
+            // 崩掌拍落: 抬手期落点光柱渐强 (红=致命)
+            if (currentState == HandState.PalmSlam && stateTimer <= SlamDropStart + SlamDrop) {
+                float prog = MathHelper.Clamp(stateTimer / (float)SlamDropStart, 0f, 1f);
+                Corpses.DrawBoneRingDecal(sb, 0, aimPoint, 52f, 0.85f, prog,
+                    Vector2.UnitX, 0f, TelegraphColors.Lethal, TelegraphColors.NetherViolet);
+            }
+
+            // 白骨横扫: 后摆期轴线束
+            if (currentState == HandState.BoneSweep && stateTimer <= SweepStrikeStart + SweepStrike) {
+                float prog = MathHelper.Clamp(stateTimer / (float)SweepStrikeStart, 0f, 1f);
+                Corpses.DrawBoneRingDecal(sb, 2, aimPoint, 42f, 0.8f, prog,
+                    axisDir, SweepHalfLen + 80f, TelegraphColors.Lethal, TelegraphColors.NetherViolet);
+            }
+
+            // 合掌夹击: 拉开期轴线束 (仅右手绘制, 避免双份)
+            if (currentState == HandState.ClapPincer && Direction > 0
+                && stateTimer > PincerFly / 2 && stateTimer <= PincerSnapStart + PincerSnap) {
+                float prog = MathHelper.Clamp((stateTimer - PincerFly / 2) / (float)(PincerSnapStart - PincerFly / 2), 0f, 1f);
+                Corpses.DrawBoneRingDecal(sb, 2, aimPoint, 46f, 0.85f, prog,
+                    axisDir, PincerFarDist + 110f, TelegraphColors.Lethal, TelegraphColors.NetherViolet);
+            }
+
+            // 冲击环残留
+            if (impactRingTimer > 0) {
+                float p = 1f - impactRingTimer / 14f;
+                Corpses.DrawBoneRingDecal(sb, 1, impactRingPos, 340f, 1f, p,
+                    Vector2.UnitX, 0f, new Color(225, 240, 220), TelegraphColors.GhostGreen);
+            }
+        }
+
+        // 臂绘制: 近距画 IK 骨臂, 超距化为魂链光束 (脱体幽手)
+        private void DrawArmOrSoulChain(SpriteBatch sb, Color drawColor) {
+            if (currentState == HandState.Dying)
+                return; // 死亡崩解: 臂已断
+
+            float dist = Vector2.Distance(shoulderPos, NPC.Center);
+            if (dist <= MaxReach + 40f && CorpsesArm != null) {
+                DrawArmSegment(sb, shoulderPos, elbowPos, CorpsesArm, drawColor, 1.0f);
+                DrawArmSegment(sb, elbowPos, handPos, CorpsesArm, drawColor, 0.9f);
+            }
+            else {
+                // 魂链: 肩部残臂短段 + 鬼绿锁链光束
+                if (CorpsesArm != null) {
+                    Vector2 stumpEnd = shoulderPos + (NPC.Center - shoulderPos).SafeNormalize(Vector2.UnitX) * 60f;
+                    DrawArmSegment(sb, shoulderPos, stumpEnd, CorpsesArm, drawColor, 1.0f);
+                }
+                float fade = MathHelper.Clamp(1.6f - dist / 1400f, 0.35f, 1f);
+                ACMShaders.DrawBeam(shoulderPos, NPC.Center, 7f,
+                    TelegraphColors.GhostGreen, TelegraphColors.NetherViolet, 0.55f * fade, 1.8f, 2.6f);
+            }
+        }
+
         private void DrawArmSegment(SpriteBatch spriteBatch, Vector2 start, Vector2 end, Texture2D armTexture, Color color, float scale = 1f) {
             Vector2 diff = end - start;
             float rotation = diff.ToRotation();
             float length = diff.Length();
+            if (length < 4f)
+                return;
 
-            // 手臂纹理：宽26像素，高98像素
-            // 计算需要绘制多少个手臂段来填充整个长度
             float armSegmentLength = armTexture.Height * scale;
             int segmentCount = (int)Math.Ceiling(length / armSegmentLength);
 
-            // 从起点向终点绘制手臂段
             for (int i = 0; i < segmentCount; i++) {
                 float progress = i / (float)segmentCount;
                 Vector2 segmentPos = Vector2.Lerp(start, end, progress);
-
-                // 计算这一段的实际长度
                 float segmentLength = Math.Min(armSegmentLength, length - i * armSegmentLength);
                 float lengthScale = segmentLength / armTexture.Height;
 
-                // 纹理原点在底部中心，这样旋转时会围绕连接点旋转
-                Vector2 origin = new Vector2(armTexture.Width * 0.5f, armTexture.Height);
-                Vector2 drawScale = new Vector2(scale, lengthScale * scale);
+                Vector2 origin = new(armTexture.Width * 0.5f, armTexture.Height);
+                Vector2 drawScale = new(scale, lengthScale * scale);
 
-                // 根据手臂状态调整颜色
-                Color segmentColor = color;
-                if (currentState == HandState.Slashing && slashProgress > 0.2f && slashProgress < 0.8f) {
-                    // 攻击时手臂也发光
-                    segmentColor = Color.Lerp(color, new Color(255, 100, 100), 0.3f * (float)Math.Sin(slashProgress * MathHelper.Pi));
-                }
-                else if (currentState == HandState.Reaching) {
-                    // 伸展时淡淡的发光
-                    segmentColor = Color.Lerp(color, new Color(200, 200, 255), 0.2f);
-                }
-
-                spriteBatch.Draw(
-                    armTexture,
-                    segmentPos - Main.screenPosition,
-                    null,
-                    segmentColor,
-                    rotation + MathHelper.PiOver2, // 旋转90度使纹理正确朝向
-                    origin,
-                    drawScale,
-                    SpriteEffects.None,
-                    0
-                );
+                spriteBatch.Draw(armTexture, segmentPos - Main.screenPosition, null, color,
+                    rotation + MathHelper.PiOver2, origin, drawScale, SpriteEffects.None, 0);
             }
-        }
-
-        // 绘制骨骼连接线（备用方案）
-        private void DrawBone(SpriteBatch spriteBatch, Vector2 start, Vector2 end, Color color, float thickness) {
-            Vector2 diff = end - start;
-            float rotation = diff.ToRotation();
-            float length = diff.Length();
-
-            // 使用简单的矩形绘制骨骼
-            Texture2D pixel = TextureAssets.MagicPixel.Value;
-            Rectangle rect = new Rectangle(0, 0, 1, 1);
-            Vector2 origin = new Vector2(0, 0.5f);
-            Vector2 scale = new Vector2(length, thickness);
-
-            spriteBatch.Draw(pixel, start - Main.screenPosition, rect, color, rotation, origin, scale, SpriteEffects.None, 0);
         }
     }
 }

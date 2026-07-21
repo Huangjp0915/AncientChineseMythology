@@ -1,44 +1,49 @@
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
+using Terraria.GameContent;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
 {
     /// <summary>
-    /// 毗沙门天王 V2 库藏·宝塔屏幕氛围系统（对位 <see cref="Aoshuns.AoshunStormScreenSystem"/> 等）。
+    /// 毗沙门天王 V3 库藏·宝塔屏幕氛围系统。
     /// 由 <see cref="Vaisravana.PublishScreenState"/> 每帧 <see cref="Publish"/> 一组 0~1 标量驱动,
-    /// 集中绘制三类**非 screenTarget** overlay（不占 <see cref="ACMShaders.RequestFullscreenSlot"/> 名额）:
-    ///   ● <b>ElementalScreenTint</b> —— 财神金幕底色（= 库藏开启度, 三阶段/终极宝塔蓄力时加深, 暖金=财气而非危险）。
-    ///   ● <b>ArenaRunic</b>(法阵环) —— 终极宝塔（Pagoda Apex）地面金色坛城符文, 随 70 tick 蓄力逐圈点亮的预告地纹。
+    /// 集中绘制四类 overlay（前三类**非 screenTarget**, 不占 <see cref="ACMShaders.RequestFullscreenSlot"/> 名额）:
+    ///   ● <b>ElementalScreenTint</b> —— 财神金幕底色（= 库藏开启度, 蓄力/三阶段加深, 暖金=财气而非危险）。
+    ///   ● <b>VaisravanaMandala</b>(专属佛纹坛城) —— 大招/演出的地面金色坛城, uReveal 逐圈点亮的预告地纹。
     ///   ● <b>RadialBloom</b> —— 赐福窃取金闪 / 终极金柱蓄满与发射的财宝泛光（取 max 脉冲, 逐帧衰减）。
+    ///   ● <b>白闪 impact frame</b> —— 死亡终爆/换阶段爆点的单帧过曝白（PostDrawInterface 纯像素, 一次性脉冲）。
     ///
-    /// 绘制位于 <see cref="PostDrawTiles"/>(无活动批): 氛围/泛光/地纹位于实体之下, 危险弹幕在其上层 → 不遮挡躲避信息(§6.6)。
-    /// 全部占位像素 overlay, 纯本地视觉, 服务端零绘制, 受 <see cref="MythologyConfig"/> 降级。
+    /// 前三类绘制位于 <see cref="PostDrawTiles"/>(无活动批): 氛围/泛光/地纹位于实体之下,
+    /// 危险弹幕在其上层 → 不遮挡躲避信息。全部纯本地视觉, 服务端零绘制, 受 <see cref="MythologyConfig"/> 降级。
     /// </summary>
     public class VaisravanaTreasureScreenSystem : ModSystem
     {
         private static Vector2 _center;       // Boss 中心(世界)
         private static float _goldTint;       // 库藏金幕强度 0~1
         private static float _bloom;          // 瞬时财宝泛光 0~1（赐福窃取 / 终极金柱）
+        private static float _whiteFlash;     // 白闪 impact frame 0~1（死亡终爆, 快衰减）
 
-        // 终极宝塔（Pagoda Apex）地面坛城符文
+        // 坛城法阵（专属 VaisravanaMandala 着色器）
         private static bool _runeActive;
         private static Vector2 _runeCenter;
         private static float _runeRadius;
-        private static float _runeIntensity;  // 蓄力进度 0~1（逐圈点亮）
+        private static float _runeIntensity;  // 总亮度 0~1
+        private static float _runeReveal;     // 0~1 由内向外逐圈点亮（蓄力语法）
 
         private static float _time;
         private static ulong _lastPublishFrame;
 
         /// <summary>由毗沙门每帧调用, 发布当前库藏金幕氛围标量（纯本地视觉）。</summary>
         public static void Publish(Vector2 center, float goldTint, bool runeActive, Vector2 runeCenter,
-            float runeRadius, float runeIntensity, float time) {
+            float runeRadius, float runeIntensity, float runeReveal, float time) {
             _center = center;
             _goldTint = goldTint;
             _runeActive = runeActive;
             _runeCenter = runeCenter;
             _runeRadius = runeRadius;
             _runeIntensity = runeIntensity;
+            _runeReveal = runeReveal;
             _time = time;
             _lastPublishFrame = Main.GameUpdateCount;
         }
@@ -49,8 +54,17 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
                 _bloom = amount;
         }
 
+        /// <summary>
+        /// 白闪 impact frame 脉冲（取 max）。1f 档只留给死亡终爆——每场战斗唯一一次;
+        /// 换阶段爆点用 ≤0.35f 的低档。
+        /// </summary>
+        public static void PulseWhiteFlash(float amount) {
+            if (amount > _whiteFlash)
+                _whiteFlash = amount;
+        }
+
         public override void OnWorldUnload() {
-            _goldTint = _bloom = 0f;
+            _goldTint = _bloom = _whiteFlash = 0f;
             _runeActive = false;
         }
 
@@ -68,8 +82,24 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             }
 
             DrawTreasuryGoldVeil();
-            DrawApexMandalaRune();
+            DrawMandalaRune();
             DrawTreasuryBloom();
+        }
+
+        /// <summary>白闪 impact frame：覆于一切之上的单帧过曝白（UI 层, 10 帧内衰竭）。</summary>
+        public override void PostDrawInterface(SpriteBatch spriteBatch) {
+            if (Main.dedServ || Main.gameMenu || _whiteFlash <= 0.02f)
+                return;
+            if (!MythologyConfig.FullscreenShadersEnabled) {
+                _whiteFlash = 0f;
+                return;
+            }
+
+            Texture2D pixel = TextureAssets.MagicPixel.Value;
+            spriteBatch.Draw(pixel, new Rectangle(0, 0, Main.screenWidth, Main.screenHeight),
+                Color.White * MathHelper.Clamp(_whiteFlash, 0f, 1f) * 0.92f);
+
+            _whiteFlash *= 0.80f; // 快速衰竭：一次冲击帧，不是持续白屏
         }
 
         // ===== ElementalScreenTint: 财神金幕底色 = 库藏开启度 =====
@@ -97,29 +127,13 @@ namespace AncientChineseMythology.Celestias.Boss.Vaisravanas
             ACMShaders.DrawFullscreenOverlay(fx, BlendState.AlphaBlend);
         }
 
-        // ===== ArenaRunic: 终极宝塔地面金色坛城符文（70 tick 蓄力地纹预告）=====
-        private static void DrawApexMandalaRune() {
+        // ===== VaisravanaMandala: 专属佛纹坛城（蓄力逐圈点亮的地纹预告）=====
+        private static void DrawMandalaRune() {
             if (!_runeActive || _runeRadius < 16f || _runeIntensity <= 0.01f)
                 return;
-            Effect fx = ACMShaders.ArenaRunic;
-            if (fx == null)
-                return;
 
-            ACMShaders.WorldDecalParams(_runeCenter, _runeRadius, out Vector2 uv, out float radiusFrac, out float aspect);
-
-            fx.Parameters["uTime"]?.SetValue(_time);
-            fx.Parameters["uCenter"]?.SetValue(uv);
-            fx.Parameters["uRadius"]?.SetValue(MathHelper.Clamp(radiusFrac, 0.05f, 0.95f));
-            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(_runeIntensity, 0f, 1f));
-            fx.Parameters["uAspect"]?.SetValue(aspect);
-            // 暖金坛城（财神镇压地纹）。双色皆金系: 内琉璃金 / 外暖金边, 暖金=蓄力危险预告
-            fx.Parameters["uColorPrimary"]?.SetValue(new Vector4(TelegraphColors.Gold.ToVector3(), 1f));
-            fx.Parameters["uColorSecondary"]?.SetValue(new Vector4(VaisravanaHelper.TowerGold.ToVector3(), 1f));
-            fx.Parameters["uRuneFreq"]?.SetValue(12f);
-            fx.Parameters["uMode"]?.SetValue(0f);
-            fx.Parameters["uShape"]?.SetValue(0f);
-
-            ACMShaders.DrawScreenSpaceDecalStandalone(fx, BlendState.AlphaBlend);
+            VaisravanaHelper.DrawMandalaStandalone(_runeCenter, _runeRadius,
+                MathHelper.Clamp(_runeIntensity, 0f, 1f), _runeReveal, _time * 0.35f);
         }
 
         // ===== RadialBloom: 赐福窃取 / 终极金柱泛光 =====

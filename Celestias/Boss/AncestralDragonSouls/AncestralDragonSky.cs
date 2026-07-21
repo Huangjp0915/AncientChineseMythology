@@ -3,13 +3,14 @@ using ReLogic.Content;
 using Terraria;
 using Terraria.Graphics.Effects;
 using Terraria.Graphics.Shaders;
+using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
 {
     internal class AncestralDragonEffect : ModSceneEffect
     {
-        public override int Music => -1;
+        public override int Music => MusicID.LunarBoss;
         public override SceneEffectPriority Priority => SceneEffectPriority.BossLow;
         public override bool IsSceneEffectActive(Player player) => NPC.AnyNPCs(ModContent.NPCType<AncestralDragonSoulHead>());
         public override void SpecialVisuals(Player player, bool isActive) {
@@ -43,9 +44,24 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
         // 分裂/回拢/解锁等大节拍触发的天幕亮拍 (静态待发, 由实例消费)
         private static float pendingFlash;
 
+        // 叙事节拍目标 (由龙头每帧发布, 实例平滑跟随): 入场星流汇聚 / 分裂后星座龙巡游 / 死亡熄灭
+        private static float targetConverge;
+        private static float targetSwim;
+        private static float targetDeathDim;
+        private float converge;
+        private float swim;
+        private float deathDim;
+
         /// <summary>由 Boss 在分裂/双魂回拢/碎片解锁等节拍触发一次天幕亮拍 (纯本地视觉)。</summary>
         public static void TriggerFlash(float amount) {
             if (amount > pendingFlash) pendingFlash = amount;
+        }
+
+        /// <summary>由龙头每帧发布天幕叙事节拍标量 (纯本地视觉)。</summary>
+        public static void PublishBeats(float convergeBeat, float swimBeat, float deathDimBeat) {
+            targetConverge = convergeBeat;
+            targetSwim = swimBeat;
+            targetDeathDim = deathDimBeat;
         }
 
         void IACMLoader.LoadData() {
@@ -81,8 +97,15 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
             pendingFlash = 0f;
             flash = MathHelper.Lerp(flash, 0f, 0.06f);
 
+            // 叙事节拍平滑跟随 (Boss 离场时目标自动归零)
+            converge = MathHelper.Lerp(converge, targetConverge, 0.05f);
+            swim = MathHelper.Lerp(swim, targetSwim, 0.02f);
+            deathDim = MathHelper.Lerp(deathDim, targetDeathDim, 0.05f);
+
             NPC boss = FindBoss();
             bool shouldBeActive = boss != null && boss.active;
+            if (!shouldBeActive)
+                targetConverge = targetSwim = targetDeathDim = 0f;
 
             if (shouldBeActive) {
                 if (!active) Activate(Vector2.Zero);
@@ -155,6 +178,9 @@ namespace AncientChineseMythology.Celestias.Boss.AncestralDragonSouls
             fx.Parameters["uBossUV"]?.SetValue(bossUV);
             fx.Parameters["uPulse"]?.SetValue(pulsePhase);
             fx.Parameters["uFlash"]?.SetValue(MathHelper.Clamp(flash, 0f, 1.5f));
+            fx.Parameters["uConverge"]?.SetValue(MathHelper.Clamp(converge, 0f, 1f));
+            fx.Parameters["uSwim"]?.SetValue(MathHelper.Clamp(swim, 0f, 1f));
+            fx.Parameters["uDeathDim"]?.SetValue(MathHelper.Clamp(deathDim, 0f, 1f));
 
             // 切换SpriteBatch为带shader的Immediate模式, 全屏绘制后恢复
             spriteBatch.End();

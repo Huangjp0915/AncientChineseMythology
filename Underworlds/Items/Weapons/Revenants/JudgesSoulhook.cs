@@ -13,12 +13,16 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
 {
     /// <summary>
     /// 判官勾魂枪 - 判官用以勾取有罪之魂的长枪，近战长枪类武器
-    /// 肉后中期，手持突刺型弹幕，命中时勾取灵魂恢复生命
+    /// 肉后中期，三连段手持突刺 (刺→疾刺→勾魂上挑)：一二段命中 +1 业、三段 +2 业,
+    /// 命中固定吸取 3 HP; 三段勾在目标业力将满 (≥5) 时命中触发"灵魂剥离"大补时刻。
     /// </summary>
     public class JudgesSoulhook : ModItem
     {
+        /// <summary>连段计数 (0/1/2 循环)。Shoot 仅在 owner 客户端执行, 经弹幕 ai[2] 下发连段号。</summary>
+        private int comboStep;
+
         public override void SetDefaults() {
-            Item.damage = 72;
+            Item.damage = 66;
             Item.crit = 6;
             Item.DamageType = DamageClass.Melee;
             Item.width = 48;
@@ -29,7 +33,8 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
             Item.knockBack = 5f;
             Item.value = Item.buyPrice(gold: 8);
             Item.rare = ItemRarityID.Pink;
-            Item.UseSound = SoundID.Item1;
+            //起刺音效移交弹幕爆发帧播放 (音高随连段上行), 物品本身不出声
+            Item.UseSound = null;
             Item.autoReuse = true;
             Item.noMelee = true;
             Item.noUseGraphic = true;
@@ -39,6 +44,12 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
 
         public override bool CanUseItem(Player player) {
             return player.ownedProjectileCounts[ModContent.ProjectileType<JudgesSoulhookProjectile>()] < 1;
+        }
+
+        public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
+            Projectile.NewProjectile(source, position, velocity, type, damage, knockback, player.whoAmI, 0f, 0f, comboStep);
+            comboStep = (comboStep + 1) % 3;
+            return false;
         }
 
         public override void AddRecipes() {
@@ -52,7 +63,9 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
     }
 
     /// <summary>
-    /// 判官勾魂枪弹幕 - 手持突刺型长枪弹幕，枪尖带有勾魂光效
+    /// 判官勾魂枪弹幕 - 三连段手持突刺长枪 (ai[2]=连段号 0/1/2)。
+    /// 一段刺 42px / 二段疾刺 52px / 三段勾魂上挑 78px (蓄势抖枪 + 弧形上旋 ~0.35rad, 伤害 ×1.25)。
+    /// 前摇 quad 回拉 -10px → 爆发 poly ease-out (前 1-2 帧完成 ~80% 行程) → SmoothStep 收招。
     /// 使用ACMAsset.LightShot叠加枪尖光弹，ACMAsset.SoftGlow绘制勾魂光圈
     /// </summary>
     public class JudgesSoulhookProjectile : ModProjectile
@@ -70,13 +83,36 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
 
         private ref float Timer => ref Projectile.ai[1];
         private ref float ThrustDistance => ref Projectile.localAI[0];
-        private const float MaxThrustDistance = 30f;
         private const float BaseOffset = 4f;
+        private const float PullbackDistance = 10f;
         private Player Owner => Main.player[Projectile.owner];
 
-        private float PrepareTime => 3f / Owner.GetTotalAttackSpeed(Projectile.DamageType);
-        private float ThrustTime => 7f / Owner.GetTotalAttackSpeed(Projectile.DamageType);
-        private float RetractTime => 5f / Owner.GetTotalAttackSpeed(Projectile.DamageType);
+        /// <summary>连段号 (0=一段刺 1=二段疾刺 2=三段勾魂上挑), 由物品 Shoot 经 ai[2] 传入。</summary>
+        private int Combo => (int)Projectile.ai[2];
+
+        /// <summary>三段蓄势期的枪尖抖动偏移 (纯视觉, 各客户端各自随机)。</summary>
+        private Vector2 tipJitter;
+
+        private float AttackSpeed => Owner.GetTotalAttackSpeed(Projectile.DamageType);
+        private float MaxThrust => Combo switch { 0 => 42f, 1 => 52f, _ => 78f };
+        private float PrepareTime => (Combo switch { 0 => 4f, 1 => 3f, _ => 8f }) / AttackSpeed;
+        private float ThrustTime => (Combo == 1 ? 5f : 6f) / AttackSpeed;
+        private float RetractTime => (Combo == 2 ? 10f : 8f) / AttackSpeed;
+
+        /// <summary>三段上挑弧偏角: Thrust 内随进度向上旋 ~0.35rad, Retract 保持挑起角回拉。</summary>
+        private float ArcOffset {
+            get {
+                if (Combo != 2)
+                    return 0f;
+                float t = CurrentStage switch {
+                    AttackStage.Thrust => MathHelper.Clamp(Timer / ThrustTime, 0f, 1f),
+                    AttackStage.Retract => 1f,
+                    _ => 0f,
+                };
+                //屏幕 Y 向下, 面右取负角、面左取正角才是"向上"挑
+                return -0.35f * t * Projectile.spriteDirection;
+            }
+        }
 
         public override void SetStaticDefaults() {
             ProjectileID.Sets.HeldProjDoesNotUsePlayerGfxOffY[Type] = true;
@@ -97,8 +133,12 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
             Projectile.localNPCHitCooldown = 12;
         }
 
+        //位置每帧由 AI 钉在手上, velocity 只复用作瞄准方向 (随弹幕自动同步)
+        public override bool ShouldUpdatePosition() => false;
+
         public override void OnSpawn(IEntitySource source) {
-            Projectile.spriteDirection = Main.MouseWorld.X > Owner.MountedCenter.X ? 1 : -1;
+            Projectile.velocity = Projectile.velocity.SafeNormalize(Vector2.UnitX);
+            Projectile.spriteDirection = Projectile.velocity.X >= 0f ? 1 : -1;
         }
 
         public override void AI() {
@@ -110,6 +150,13 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
             Owner.itemAnimation = 2;
             Owner.itemTime = 2;
             Owner.heldProj = Projectile.whoAmI;
+
+            //前摇期 owner 持续跟枪, 进入爆发前一帧锁向并同步给其他客户端
+            if (CurrentStage == AttackStage.Prepare && Main.myPlayer == Projectile.owner) {
+                Projectile.velocity = (Main.MouseWorld - Owner.MountedCenter).SafeNormalize(Vector2.UnitX);
+                if (Timer >= PrepareTime - 1f)
+                    Projectile.netUpdate = true;
+            }
 
             switch (CurrentStage) {
                 case AttackStage.Prepare:
@@ -133,33 +180,66 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
         }
 
         private void HandlePrepare() {
-            ThrustDistance = MathHelper.Lerp(0, -8f, Timer / PrepareTime);
+            float progress = MathHelper.Clamp(Timer / PrepareTime, 0f, 1f);
+            //quad in-out 回拉蓄势 (-10px 起手)
+            float pull = progress < 0.5f
+                ? 2f * progress * progress
+                : 1f - MathF.Pow(-2f * progress + 2f, 2f) * 0.5f;
+            ThrustDistance = -PullbackDistance * pull;
+
+            //三段: 蓄势期枪尖抖动 ±1.5px, 末 2 帧静止 (凝势读招帧)
+            tipJitter = Combo == 2 && Timer < PrepareTime - 2f
+                ? Main.rand.NextVector2Circular(1.5f, 1.5f)
+                : Vector2.Zero;
+
             if (Timer >= PrepareTime) {
+                tipJitter = Vector2.Zero;
                 CurrentStage = AttackStage.Thrust;
-                SoundEngine.PlaySound(SoundID.Item1 with { Pitch = 0.1f }, Projectile.Center);
+
+                //起刺音: 音高随连段上行 (0/0.15/0.3) + 随机微扰; 三段叠低音重锤
+                SoundEngine.PlaySound(SoundID.Item1 with {
+                    Pitch = 0.15f * Combo + Main.rand.NextFloat(-0.1f, 0.1f)
+                }, Projectile.Center);
+                if (Combo == 2)
+                    SoundEngine.PlaySound(SoundID.Item71 with { Volume = 0.6f, Pitch = -0.35f }, Projectile.Center);
+
+                //爆发帧冲击粒子: 沿刺出方向自枪尖喷薄
+                Vector2 dir = Projectile.velocity.SafeNormalize(Vector2.UnitX);
+                Vector2 tip = Projectile.Center + dir * 35f;
+                int burstCount = Combo == 2 ? 10 : 6;
+                for (int i = 0; i < burstCount; i++) {
+                    Dust d = Dust.NewDustPerfect(
+                        tip, DustID.GreenTorch,
+                        dir.RotatedByRandom(0.35f) * Main.rand.NextFloat(3f, 8f),
+                        100, default, Main.rand.NextFloat(1.1f, 1.6f)
+                    );
+                    d.noGravity = true;
+                }
             }
         }
 
         private void HandleThrust() {
-            float progress = Timer / ThrustTime;
-            ThrustDistance = MathHelper.SmoothStep(-8f, MaxThrustDistance, progress);
+            float progress = MathHelper.Clamp(Timer / ThrustTime, 0f, 1f);
+            //poly ease-out 爆发: 前 1-2 帧完成 ~80% 行程, 余帧缓收
+            float burst = MathF.Pow(progress, 0.12f);
+            ThrustDistance = MathHelper.Lerp(-PullbackDistance, MaxThrust, burst);
             if (Timer >= ThrustTime) {
                 CurrentStage = AttackStage.Retract;
             }
         }
 
         private void HandleRetract() {
-            float progress = Timer / RetractTime;
-            ThrustDistance = MathHelper.SmoothStep(MaxThrustDistance, 0, progress);
+            float progress = MathHelper.Clamp(Timer / RetractTime, 0f, 1f);
+            ThrustDistance = MathHelper.SmoothStep(MaxThrust, 0f, progress);
             if (Timer >= RetractTime) {
                 Projectile.Kill();
             }
         }
 
         private void UpdatePositionAndRotation() {
-            Vector2 direction = (Main.MouseWorld - Owner.MountedCenter).SafeNormalize(Vector2.UnitX);
+            Projectile.spriteDirection = Projectile.velocity.X >= 0f ? 1 : -1;
+            Vector2 direction = Projectile.velocity.SafeNormalize(Vector2.UnitX).RotatedBy(ArcOffset);
             Projectile.rotation = direction.ToRotation();
-            Projectile.spriteDirection = direction.X > 0 ? 1 : -1;
             Owner.direction = Projectile.spriteDirection;
 
             float armRotation = Projectile.rotation - MathHelper.PiOver2;
@@ -167,11 +247,22 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
 
             Vector2 handPosition = Owner.GetFrontHandPosition(Player.CompositeArmStretchAmount.Full, armRotation);
             handPosition.Y += Owner.gfxOffY;
-            Projectile.Center = handPosition + direction * (BaseOffset + ThrustDistance);
+            Projectile.Center = handPosition + direction * (BaseOffset + ThrustDistance) + tipJitter;
         }
 
         private void SpawnSoulhookParticles() {
-            Vector2 tipPos = Projectile.Center + Projectile.rotation.ToRotationVector2() * 35f;
+            Vector2 dir = Projectile.rotation.ToRotationVector2();
+            Vector2 tipPos = Projectile.Center + dir * 35f;
+
+            //蓄势收束: 粒子自外圈汇向枪尖 (勾魂吸聚感)
+            if (CurrentStage == AttackStage.Prepare && Main.rand.NextBool(2)) {
+                Vector2 from = tipPos + Main.rand.NextVector2CircularEdge(26f, 26f);
+                Dust gather = Dust.NewDustPerfect(
+                    from, DustID.GreenTorch, (tipPos - from) * 0.16f,
+                    120, default, Main.rand.NextFloat(0.8f, 1.2f)
+                );
+                gather.noGravity = true;
+            }
 
             //突刺时枪尖勾魂粒子
             if (CurrentStage == AttackStage.Thrust && Main.rand.NextBool(2)) {
@@ -180,7 +271,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                     0f, 0f, 100, default, Main.rand.NextFloat(1.0f, 1.6f)
                 );
                 hook.noGravity = true;
-                hook.velocity = -Projectile.rotation.ToRotationVector2() * 2f + Main.rand.NextVector2Circular(1f, 1f);
+                hook.velocity = -dir * 2f + Main.rand.NextVector2Circular(1f, 1f);
             }
 
             //枪身暗影粒子
@@ -204,27 +295,60 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
         }
 
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
-            //勾魂效果：吸取灵魂恢复生命
-            int healAmount = Main.rand.Next(6, 14);
-            Owner.Heal(healAmount);
+            bool hookFinisher = Combo == 2;
 
-            //附加减速
-            target.AddBuff(BuffID.Slow, 120);
-            target.AddBuff(BuffID.ShadowFlame, 90);
+            //宣判预读: 三段 +2 业即将业满 (业力 ≥5) 的"灵魂剥离"时刻, 须在 AddKarma 前判层
+            bool soulRip = hookFinisher && target.GetGlobalNPC<RevenantKarmaGlobalNPC>().Karma >= 5;
 
-            //勾魂特效：灵魂从敌人飞向玩家
-            for (int i = 0; i < 10; i++) {
-                Vector2 velocity = (Owner.Center - target.Center).SafeNormalize(Vector2.Zero) * Main.rand.NextFloat(4f, 8f);
+            RevenantKarma.AddKarma(Projectile, target, hookFinisher ? 2 : 1);
+
+            //勾魂固定吸取 (仅 owner 本地 Heal)
+            if (Main.myPlayer == Projectile.owner) {
+                Owner.Heal(3);
+                if (soulRip)
+                    Owner.Heal(12);
+            }
+
+            if (hookFinisher) {
+                //灵魂剥离: 减速 + 暗影焰
+                target.AddBuff(BuffID.Slow, 120);
+                target.AddBuff(BuffID.ShadowFlame, 120);
+                //勾拽: 非 Boss 且可受击退者被拽向玩家 (owner 端结算, 接受轻微视觉差)
+                if (!target.boss && target.knockBackResist > 0f)
+                    target.velocity = (Owner.Center - target.Center).SafeNormalize(Vector2.Zero) * 6f;
+                WeaponVFX.AddScreenShake(target.Center, 2.5f);
+            }
+
+            //勾魂命中演出: 鬼绿径向辉光 (更新阶段安全)
+            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                ACMWeaponBurst.GhostGreen, scale: hookFinisher ? 1.2f : 0.8f, owner: Projectile.owner);
+
+            if (soulRip) {
+                //灵魂剥离大补演出: 追加更大鬼绿爆发 + 魂流回饲
+                ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
+                    ACMWeaponBurst.GhostGreen, scale: 1.4f, owner: Projectile.owner);
+                for (int i = 0; i < 10; i++) {
+                    Vector2 velocity = (Owner.Center - target.Center).SafeNormalize(Vector2.Zero) * Main.rand.NextFloat(5f, 9f);
+                    velocity = velocity.RotatedByRandom(MathHelper.ToRadians(20));
+                    Dust soul = Dust.NewDustPerfect(
+                        target.Center, DustID.GreenTorch, velocity,
+                        100, default, Main.rand.NextFloat(1.3f, 1.8f)
+                    );
+                    soul.noGravity = true;
+                }
+            }
+
+            //基础勾魂反馈: 少量魂流向玩家 + 暗影焰迸散
+            for (int i = 0; i < 4; i++) {
+                Vector2 velocity = (Owner.Center - target.Center).SafeNormalize(Vector2.Zero) * Main.rand.NextFloat(4f, 7f);
                 velocity = velocity.RotatedByRandom(MathHelper.ToRadians(25));
                 Dust soul = Dust.NewDustPerfect(
                     target.Center, DustID.GreenTorch, velocity,
-                    100, default, Main.rand.NextFloat(1.2f, 1.8f)
+                    100, default, Main.rand.NextFloat(1.1f, 1.5f)
                 );
                 soul.noGravity = true;
             }
-
-            //击中爆发暗影焰
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < 5; i++) {
                 Vector2 vel = Main.rand.NextVector2Circular(4f, 4f);
                 Dust burst = Dust.NewDustPerfect(
                     target.Center, DustID.Shadowflame, vel,
@@ -234,10 +358,6 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
             }
 
             SoundEngine.PlaySound(SoundID.NPCDeath6 with { Volume = 0.4f, Pitch = 0.4f }, target.Center);
-
-            //勾魂命中演出: 鬼绿径向辉光 + 冲击环 (代偿 GenericWarp 局部扭曲, 更新阶段安全)
-            ACMWeaponBurst.Spawn(Projectile.GetSource_OnHit(target), target.Center,
-                ACMWeaponBurst.GhostGreen, scale: 1f, owner: Projectile.owner);
         }
 
         public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
@@ -259,6 +379,9 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
 
         public override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers) {
             modifiers.HitDirectionOverride = target.position.X > Owner.MountedCenter.X ? 1 : -1;
+            //三段勾魂重击
+            if (Combo == 2)
+                modifiers.FinalDamage *= 1.25f;
         }
 
         public override bool PreDraw(ref Color lightColor) {
@@ -282,17 +405,27 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 Projectile.rotation + rotationOffset, origin, Projectile.scale, effects, 0
             );
 
-            //枪身 BeamGrad 鬼绿冥流光束 (突刺时增亮)
+            //三段勾魂: 枪身整程叠一层鬼绿挥舞辉光 (a=0 加色)
+            if (Combo == 2) {
+                Color hookGlow = new Color(90, 230, 140) * (CurrentStage == AttackStage.Thrust ? 0.55f : 0.32f);
+                hookGlow.A = 0;
+                Main.EntitySpriteDraw(
+                    texture, Projectile.Center - Main.screenPosition, null, hookGlow,
+                    Projectile.rotation + rotationOffset, origin, Projectile.scale * 1.12f, effects, 0
+                );
+            }
+
+            //枪身 BeamGrad 鬼绿冥流光束 (突刺时增亮, 三段更宽)
             Vector2 dir = Projectile.rotation.ToRotationVector2();
             Vector2 tip = Projectile.Center + dir * 38f;
             Vector2 butt = Projectile.Center - dir * 22f;
-            float beamIntensity = CurrentStage == AttackStage.Thrust ? 0.85f : 0.4f;
-            ACMShaders.DrawBeam(butt, tip, halfWidth: CurrentStage == AttackStage.Thrust ? 9f : 6f,
+            bool thrusting = CurrentStage == AttackStage.Thrust;
+            ACMShaders.DrawBeam(butt, tip, halfWidth: thrusting ? (Combo == 2 ? 11f : 9f) : 6f,
                 core: new Color(150, 255, 170), edge: new Color(30, 110, 70),
-                intensity: beamIntensity, flowSpeed: 2.4f, flowScale: 2.2f, coreSharp: 2.4f);
+                intensity: thrusting ? 0.85f : 0.4f, flowSpeed: 2.4f, flowScale: 2.2f, coreSharp: 2.4f);
 
             //突刺时绘制勾魂光效
-            if (CurrentStage == AttackStage.Thrust) {
+            if (thrusting) {
                 //枪身光晕
                 Color glowColor = new Color(80, 200, 120) * 0.4f;
                 glowColor.A = 0;
@@ -304,7 +437,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 //枪尖处使用LightShot叠加勾魂光弹
                 Texture2D lightShot = ACMAsset.LightShot;
                 if (lightShot != null) {
-                    Vector2 tipPos = Projectile.Center + Projectile.rotation.ToRotationVector2() * 35f - Main.screenPosition;
+                    Vector2 tipPos = Projectile.Center + dir * 35f - Main.screenPosition;
                     Vector2 lsOrigin = lightShot.Size() / 2f;
                     Color tipGlow = new Color(100, 255, 150) * 0.5f;
                     tipGlow.A = 0;
@@ -314,7 +447,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Revenants
                 //枪尖处使用SoftGlow叠加勾魂光圈
                 Texture2D softGlow = ACMAsset.SoftGlow;
                 if (softGlow != null) {
-                    Vector2 tipPos = Projectile.Center + Projectile.rotation.ToRotationVector2() * 35f - Main.screenPosition;
+                    Vector2 tipPos = Projectile.Center + dir * 35f - Main.screenPosition;
                     Vector2 sgOrigin = softGlow.Size() / 2f;
                     Color circleGlow = new Color(60, 220, 100) * 0.35f;
                     circleGlow.A = 0;

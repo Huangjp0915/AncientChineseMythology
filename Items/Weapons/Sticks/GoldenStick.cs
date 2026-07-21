@@ -7,31 +7,26 @@ using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Items.Weapons.Sticks
 {
-    public class GoldenStick : ModItem
+    /// <summary>金棍: 三段连段 + 每 4 挥金光三连突; 右键掷棍如意 (掷出期间棍不在手, 不可用)。</summary>
+    public class GoldenStick : StickWeaponItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Sticks/GoldenStick";
-        public int attackType = 0; //记录当前攻击类型
-        public int comboExpireTimer = 0; //当武器在一定时间内未使用时重置攻击模式
-        public override Color? GetAlpha(Color lightColor) { return Color.White; }
 
-        public override void SetStaticDefaults() {
-            Item.ResearchUnlockCount = 1; //允许在旅程模式研究
-        }
+        protected override int ComboLength => 3;
+        protected override int SpecialEvery => 4;
+        protected override int SpecialStepIndex => 3;
 
         public override void SetDefaults() {
-            //物品基础属性（这里的值只是“默认”）
-            Item.damage = 48;                 //默认伤害
+            Item.damage = 48;
             Item.DamageType = DamageClass.Melee;
             Item.width = 40;
             Item.height = 40;
-            Item.useTime = 40;
-            Item.useAnimation = 40;
-            Item.knockBack = 12f;             //默认击退
+            Item.useTime = 30;
+            Item.useAnimation = 30;
+            Item.knockBack = 12f;
             Item.value = Item.buyPrice(gold: 48);
             Item.rare = ItemRarityID.Blue;
             Item.autoReuse = true;
-
-            //默认设定为长矛刺击（左键）
             Item.useStyle = ItemUseStyleID.Shoot;
             Item.noUseGraphic = true;
             Item.noMelee = true;
@@ -39,41 +34,24 @@ namespace AncientChineseMythology.Items.Weapons.Sticks
             Item.shootSpeed = 3.5f;
         }
 
-        //启用右键备用功能
-        public override bool AltFunctionUse(Player player) {
-            return true;
-        }
-
-        public override void UpdateInventory(Player player) {
-            if (comboExpireTimer++ >= 120) //在库存中存放 120 个 ticks（== 2 秒）后，重置攻击模式
-                attackType = 0;
-        }
-
-        public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
-            if (player.altFunctionUse == 2) //右键射击
-            {
-                if (comboExpireTimer < 120)
-                    Projectile.NewProjectile(source, position, velocity, ModContent.ProjectileType<GoldenStickSpearProjectile_2>(), damage, knockback, Main.myPlayer, attackType);
-                else {
-                    Projectile.NewProjectile(source, position, velocity, ModContent.ProjectileType<GoldenStickSpearProjectile>(), damage, knockback, Main.myPlayer, attackType);
-                    attackType = (attackType + 1) % 2; //增加攻击类型以确保下一个挥动不同
-                    comboExpireTimer = 0; //每次使用武器时重置计时器，以便组合不会过期
-                }
-
+        public override bool CanUseItem(Player player) {
+            // 棍已掷出 → 不在手, 左右键都不可用
+            if (player.ownedProjectileCounts[ModContent.ProjectileType<GoldenStickSpearProjectile_2>()] > 0)
                 return false;
-            }
-            else if (!Main.mouseRight) {
-                Projectile.NewProjectile(source, position, velocity, ModContent.ProjectileType<GoldenStickSpearProjectile>(), damage, knockback, Main.myPlayer, attackType);
-                attackType = (attackType + 1) % 3; //增加攻击类型以确保下一个挥动不同
-                comboExpireTimer = 0; //每次使用武器时重置计时器，以便组合不会过期
-                return false;
-            }
-            return false; //返回 false 以防止原始投射物被发射
+            return base.CanUseItem(player);
         }
+
+        protected override void ShootAlt(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int damage, float knockback) {
+            // 目标距离 owner 端算好经 ai[0] 同步; 掷出瞬间反向后坐
+            float dist = MathHelper.Clamp(Vector2.Distance(player.MountedCenter, Main.MouseWorld), 80f, 480f);
+            Projectile.NewProjectile(source, position, velocity,
+                ModContent.ProjectileType<GoldenStickSpearProjectile_2>(), damage, knockback * 0.6f, player.whoAmI, dist);
+            player.velocity -= velocity.SafeNormalize(Vector2.Zero) * 2f;
+        }
+
         public override void AddRecipes() {
             Recipe recipe = CreateRecipe();
             recipe.AddIngredient(ModContent.ItemType<IronStick>(), 1);
-            //使用现有的配方组或自定义一个
             recipe.AddIngredient(ItemID.GoldBar, 81);
             recipe.AddIngredient(ModContent.ItemType<YaoQiFragment>(), 10);
             recipe.AddTile(TileID.Anvils);

@@ -12,11 +12,17 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
 {
     /// <summary>
-    /// 索魂匕 - 地府索魂使者的双匕首，投掷/近战武器
-    /// 肉后初期，可投掷，攻速快，有几率造成即死（对普通敌人）
+    /// 索魂匕 - 地府索魂使者的双匕首，投掷武器。
+    /// 重做"左右开弓"：投掷交替左右手（出手位置偏移、旋向相反），每第 3 投为双匕交叉 ——
+    /// 两匕 ±12° 出射并在飞行中向中线收束交叉（X 轨迹）。处决机制保留（低血非 Boss 索命）。
     /// </summary>
     public class SoulseekerDaggers : ModItem
     {
+        /// <summary>投掷计数（第 3 投交叉双掷）。</summary>
+        internal int throwCounter;
+        /// <summary>当前出手侧（1=右手 -1=左手）。</summary>
+        internal int hand = 1;
+
         public override void SetDefaults() {
             Item.damage = 38; //基础伤害
             Item.crit = 12; //高暴击率
@@ -29,7 +35,7 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
             Item.knockBack = 2f; //低击退
             Item.value = Item.buyPrice(gold: 4, silver: 50); //物品价值
             Item.rare = ItemRarityID.LightRed; //肉后稀有度
-            Item.UseSound = SoundID.Item1; //使用声音
+            Item.UseSound = null; //出手声由 Shoot 分层播放 (左右手音高互异)
             Item.autoReuse = true; //自动连击
             Item.shoot = ModContent.ProjectileType<SoulseekerDaggersProj>(); //投掷索魂匕弹幕
             Item.shootSpeed = 16f; //投掷速度
@@ -37,35 +43,31 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
             Item.noUseGraphic = true;
         }
 
-        public override void OnHitNPC(Player player, NPC target, NPC.HitInfo hit, int damageDone) {
-            //索魂一击：低血量敌人有几率被索命
-            if (target.life < target.lifeMax * 0.15f && !target.boss && Main.rand.NextBool(5)) {
-                //对非Boss低血量敌人造成致命伤害
-                target.SimpleStrikeNPC(target.life + 10, hit.HitDirection, true, 0f, null, false, 0, true);
-                //产生索魂特效
-                for (int i = 0; i < 6; i++) {
-                    Dust.NewDust(target.position, target.width, target.height,
-                        DustID.Wraith, Main.rand.NextFloat(-3f, 3f), Main.rand.NextFloat(-3f, 3f), 100, default, 1.5f);
-                }
-                SoulseekerSoulChain.SpawnExecute(player.GetSource_OnHit(target), target.Center, player.whoAmI);
-            }
-        }
-
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback) {
-            //有几率投掷两把匕首
-            if (Main.rand.NextBool(3)) {
-                Vector2 perturbedSpeed = velocity.RotatedByRandom(MathHelper.ToRadians(15));
-                Projectile.NewProjectile(source, position, perturbedSpeed, type, damage, knockback, player.whoAmI);
-            }
-            return true;
-        }
+            throwCounter++;
+            Vector2 dir = velocity.SafeNormalize(Vector2.UnitX);
+            Vector2 perp = dir.RotatedBy(MathHelper.PiOver2);
 
-        public override void MeleeEffects(Player player, Rectangle hitbox) {
-            //挥舞时产生幽魂粒子
-            if (Main.rand.NextBool(3)) {
-                Dust.NewDust(new Vector2(hitbox.X, hitbox.Y), hitbox.Width, hitbox.Height,
-                    DustID.Wraith, 0f, 0f, 150, default, 0.8f);
+            if (throwCounter >= 3) {
+                //—— 第 3 投: 双匕交叉 (±12° 出射, 飞行中向中线收束成 X) ——
+                throwCounter = 0;
+                for (int side = -1; side <= 1; side += 2) {
+                    Vector2 vel = velocity.RotatedBy(MathHelper.ToRadians(12f * side));
+                    //ai[1]=1 交叉标记, ai[2]=side (收束方向 + 旋向), 随弹幕同步
+                    Projectile.NewProjectile(source, position + perp * (10f * side), vel, type, damage, knockback,
+                        player.whoAmI, 0f, 1f, side);
+                }
+                SoundEngine.PlaySound(SoundID.Item1 with { Volume = 0.8f, Pitch = 0.35f }, player.Center);
+                SoundEngine.PlaySound(SoundID.Item71 with { Volume = 0.5f, Pitch = 0.2f }, player.Center);
             }
+            else {
+                //交替左右手 (出手位置偏移 ±10px, 旋向相反; ai[2]=旋向)
+                hand = -hand;
+                Projectile.NewProjectile(source, position + perp * (10f * hand), velocity, type, damage, knockback,
+                    player.whoAmI, 0f, 0f, hand);
+                SoundEngine.PlaySound(SoundID.Item1 with { Volume = 0.7f, Pitch = 0.1f + (hand > 0 ? 0.08f : -0.08f) }, player.Center);
+            }
+            return false;
         }
 
         public override void AddRecipes() {
@@ -74,12 +76,14 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
     }
 
     /// <summary>
-    /// 索魂匕弹幕 - 投掷后旋转飞行，可穿透敌人，带有幽魂拖尾
+    /// 索魂匕弹幕 - 投掷后旋转飞行，可穿透敌人，带有幽魂拖尾。
+    /// ai[1]=1 为交叉双掷之一（飞行前期向中线收束成 X 轨迹）；ai[2]=旋向/收束侧（±1）。
     /// </summary>
     public class SoulseekerDaggersProj : ModProjectile
     {
         private ref float Timer => ref Projectile.ai[0];
-        private ref float HasHitEnemy => ref Projectile.ai[1]; //记录是否击中过敌人
+        private bool CrossThrow => Projectile.ai[1] >= 1f;
+        private int Side => Projectile.ai[2] >= 0f ? 1 : -1;
 
         public override void SetStaticDefaults() {
             ProjectileID.Sets.TrailCacheLength[Projectile.type] = 8;
@@ -103,11 +107,17 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
         public override void AI() {
             Timer++;
 
-            //快速旋转
-            Projectile.rotation += 0.4f * Projectile.direction;
+            //快速旋转 (左右手旋向相反 — 双匕可辨)
+            Projectile.rotation += 0.4f * Side;
 
-            //轻微重力
-            if (Projectile.velocity.Y < 12f) {
+            //交叉双掷: 前 22 帧向中线收束 (角速度渐减 → 划出 X 轨迹)
+            if (CrossThrow && Timer < 22f) {
+                float converge = MathHelper.ToRadians(1.35f) * (1f - Timer / 22f);
+                Projectile.velocity = Projectile.velocity.RotatedBy(-converge * Side);
+            }
+
+            //轻微重力 (交叉匕收束期免重力, 轨迹干净)
+            if (!(CrossThrow && Timer < 22f) && Projectile.velocity.Y < 12f) {
                 Projectile.velocity.Y += 0.15f;
             }
 
@@ -152,8 +162,6 @@ namespace AncientChineseMythology.Underworlds.Items.Weapons.Umbrals
         }
 
         public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
-            HasHitEnemy = 1;
-
             //索魂一击：低血量敌人有几率被索命
             if (target.life < target.lifeMax * 0.15f && !target.boss && Main.rand.NextBool(5)) {
                 //对非Boss低血量敌人造成致命伤害

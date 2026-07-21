@@ -8,87 +8,69 @@ using Rectangle = Microsoft.Xna.Framework.Rectangle;
 
 namespace AncientChineseMythology.NPCs.Boss.BlackBear
 {
+    /// <summary>
+    /// 黑熊精·裂地波 (V3) — 纯视觉地面裂纹动画 (damage=0), 由挥击/震地/入场砸落在脚下生成。
+    /// 贴图 874×328×6 帧; 按 32px 分段贴合地形绘制 (V2 曾按 1px 切 874 段, 每帧 874 次 Draw — 已修复)。
+    /// ai[0] = 横向缩放 (0 视为 1, 入场/震地可传更大值)。
+    /// </summary>
     public class BlackBear_Proj1 : ModProjectile
     {
-        private int frameCounter = 0;
-        private int frameSpeed = 5; //每帧持续时间
-        private int totalFrames = 6; //总帧数
-        private bool initialized = false; //是否已初始化
+        private const int TotalFrames = 6;
+        private const int FrameTime = 5;
+        private const int SegmentPx = 32;
 
-        public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/attack_328_Proj1"; //使用物品的纹理作为投射物的纹理
+        public override string Texture => "AncientChineseMythology/Textures/NPCs/Boss/BlackBear/attack_328_Proj1";
 
         public override void SetDefaults() {
-            Projectile.hostile = true; //敌方伤害
-            Projectile.width = 874; //弹幕宽度
-            Projectile.height = 328; //弹幕高度
-            Projectile.friendly = false; //友方弹幕
-            Projectile.tileCollide = false; //不与瓷砖碰撞
-            Projectile.DamageType = DamageClass.Default; //伤害类型
-            Projectile.penetrate = 1; //穿透
-            Projectile.ignoreWater = true; //无视液体
-            Projectile.timeLeft = 120; //存在时间，单位为帧
-            Projectile.alpha = 1; //透明度
-            Projectile.light = 0.5f; //发光亮度
+            Projectile.hostile = false;   // 纯视觉: 伤害走 Boss 激活帧接触 / GroundShock
+            Projectile.friendly = false;
+            Projectile.width = 874;
+            Projectile.height = 328;
+            Projectile.tileCollide = false;
+            Projectile.penetrate = -1;
+            Projectile.ignoreWater = true;
+            Projectile.timeLeft = TotalFrames * FrameTime;
+            Projectile.light = 0.4f;
         }
 
         public override void AI() {
-            if (!initialized) {
-                //初始化时检测与下方物块的距离
-                int startX = (int)(Projectile.position.X / 16f);
-                int endX = (int)((Projectile.position.X + Projectile.width) / 16f);
-                int minY = int.MaxValue;
-
-                for (int x = startX; x <= endX; x++) {
-                    int tileY = (int)((Projectile.position.Y + Projectile.height) / 16f);
-                    while (tileY < Main.maxTilesY && Main.tile[x, tileY] != null && !Main.tile[x, tileY].HasTile) {
-                        tileY++;
-                    }
-                    minY = Math.Min(minY, tileY * 16);
-                }
-
-                //将弹幕位置设置在物块上方
-                Projectile.position.Y = minY - Projectile.height;
-                initialized = true;
-            }
-
-            frameCounter++;
-            if (frameCounter >= frameSpeed) {
-                frameCounter = 0;
-                Projectile.frame++;
-                if (Projectile.frame >= totalFrames) {
-                    //Projectile.frame = 0;
-                    Projectile.Kill();
-                }
-            }
+            Projectile.velocity = Vector2.Zero;
+            int age = TotalFrames * FrameTime - Projectile.timeLeft;
+            Projectile.frame = Math.Min(age / FrameTime, TotalFrames - 1);
         }
 
         public override bool PreDraw(ref Color lightColor) {
             Texture2D texture = TextureAssets.Projectile[Type].Value;
+            int frameHeight = texture.Height / TotalFrames;
+            float scaleX = Projectile.ai[0] > 0.01f ? Projectile.ai[0] : 1f;
 
-            int frameHeight = texture.Height / totalFrames;
-            int segmentWidth = texture.Width / 874; //将图片切割成10份
+            int segments = Projectile.width / SegmentPx;
+            float drawnSegW = SegmentPx * scaleX;
+            float left = Projectile.Center.X - segments * drawnSegW * 0.5f;
 
-            for (int i = 0; i < 874; i++) {
-                int segmentX = (int)(Projectile.position.X + i * segmentWidth);
-                int tileX = segmentX / 16;
-                int tileY = (int)((Projectile.position.Y + Projectile.height) / 16f);
+            for (int i = 0; i < segments; i++) {
+                float worldX = left + (i + 0.5f) * drawnSegW;
+                int tileX = (int)MathHelper.Clamp(worldX / 16f, 1, Main.maxTilesX - 2);
+                int tileY = (int)MathHelper.Clamp(Projectile.Center.Y / 16f - 3, 1, Main.maxTilesY - 2);
 
-                //只与可以阻挡玩家的物块进行限制
-                while (tileY < Main.maxTilesY && Main.tile[tileX, tileY] != null && (!Main.tile[tileX, tileY].HasTile || !Main.tileSolid[Main.tile[tileX, tileY].TileType])) {
+                // 向下找可站立固体面, 让裂纹贴合地形起伏
+                while (tileY < Main.maxTilesY - 1) {
+                    Tile t = Main.tile[tileX, tileY];
+                    if (t != null && t.HasTile && Main.tileSolid[t.TileType] && !Main.tileSolidTop[t.TileType])
+                        break;
                     tileY++;
                 }
 
-                int heightAdjustment = tileY * 16 - (int)Projectile.position.Y - Projectile.height;
-                Vector2 drawPos = new Vector2(segmentX, Projectile.position.Y + heightAdjustment) - Main.screenPosition;
+                float groundY = tileY * 16f;
+                Vector2 drawPos = new Vector2(worldX, groundY) - Main.screenPosition;
+                Rectangle src = new(i * SegmentPx, Projectile.frame * frameHeight, SegmentPx, frameHeight);
+                Vector2 origin = new(SegmentPx / 2f, frameHeight); // 底边锚地
 
-                Rectangle sourceRectangle = new Rectangle(i * segmentWidth, Projectile.frame * frameHeight, segmentWidth, frameHeight);
-                Vector2 origin = new Vector2(segmentWidth / 2f, frameHeight / 2f);
-
-                Main.EntitySpriteDraw(texture, drawPos + new Vector2(0, Projectile.height / 2), sourceRectangle, lightColor, Projectile.rotation, origin, Projectile.scale, SpriteEffects.None, 0);
+                Main.EntitySpriteDraw(texture, drawPos, src, lightColor, 0f, origin,
+                    new Vector2(scaleX, 1f), SpriteEffects.None, 0);
             }
 
             return false;
         }
-
     }
 }

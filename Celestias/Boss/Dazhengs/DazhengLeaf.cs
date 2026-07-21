@@ -8,11 +8,15 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
 {
     /// <summary>
     /// 大椿树叶弹幕 — 飘落的树叶，带有旋转和飘荡效果
-    /// 使用原版树叶 Gore 风格 + SoftGlow 光效
+    /// 使用原版树叶 Gore 风格 + SoftGlow 光效。
+    ///
+    /// V3: ai[0]=1 →「金叶 nova」模式 (夏季高潮拍): 直线辐射、微加速、亮金配色, 不飘荡。
     /// </summary>
     public class DazhengLeaf : ModProjectile
     {
         public override string Texture => "AncientChineseMythology/Textures/Projectiles/BlankProjectile";
+
+        private bool IsNova => Projectile.ai[0] == 1f;
 
         private float leafSpin;
         private float sway; // 左右飘荡
@@ -45,18 +49,26 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
             sway += swaySpeed;
             leafSpin += 0.12f;
 
-            // 树叶飘荡 — 正弦波横向运动
-            float swayAmount = MathF.Sin(sway + Projectile.localAI[1]) * 2.5f;
-            Projectile.velocity.X += swayAmount * 0.02f;
+            if (IsNova) {
+                // nova 模式: 直线辐射 + 微加速 (速度对比: 静默拍后的爆发)
+                if (Projectile.velocity.Length() < 16f)
+                    Projectile.velocity *= 1.012f;
+                Projectile.rotation = Projectile.velocity.ToRotation() + leafSpin * 0.5f;
+            }
+            else {
+                // 树叶飘荡 — 正弦波横向运动
+                float swayAmount = MathF.Sin(sway + Projectile.localAI[1]) * 2.5f;
+                Projectile.velocity.X += swayAmount * 0.02f;
 
-            // 限制水平速度，防止漂移过远
-            Projectile.velocity.X = MathHelper.Clamp(Projectile.velocity.X, -8f, 8f);
+                // 限制水平速度，防止漂移过远
+                Projectile.velocity.X = MathHelper.Clamp(Projectile.velocity.X, -8f, 8f);
 
-            // 旋转跟随运动方向，叠加自旋
-            Projectile.rotation = Projectile.velocity.ToRotation() + leafSpin;
+                // 旋转跟随运动方向，叠加自旋
+                Projectile.rotation = Projectile.velocity.ToRotation() + leafSpin;
 
-            // 微弱阻力
-            Projectile.velocity *= 0.995f;
+                // 微弱阻力
+                Projectile.velocity *= 0.995f;
+            }
 
             // 粒子效果 — 偶尔释放小树叶粒子
             if (Main.rand.NextBool(6)) {
@@ -69,7 +81,10 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                 d.fadeIn = 1.2f;
             }
 
-            Lighting.AddLight(Projectile.Center, 0.15f, 0.25f, 0.05f);
+            if (IsNova)
+                Lighting.AddLight(Projectile.Center, 0.35f, 0.28f, 0.08f);
+            else
+                Lighting.AddLight(Projectile.Center, 0.15f, 0.25f, 0.05f);
         }
 
         public override bool PreDraw(ref Color lightColor) {
@@ -100,23 +115,28 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                     DepthStencilState.None, RasterizerState.CullNone, null,
                     Main.GameViewMatrix.TransformationMatrix);
 
+                // nova 模式换亮金配色 (高潮拍的视觉分级)
+                Color cOuter = IsNova ? new Color(255, 190, 60) : new Color(60, 180, 50);
+                Color cMain = IsNova ? new Color(255, 220, 110) : new Color(120, 220, 80);
+                Color cCore = IsNova ? new Color(255, 245, 190) : new Color(200, 230, 100);
+
                 Texture2D glowTex = ACMAsset.SoftGlow;
                 if (glowTex != null) {
                     Vector2 glowOrigin = glowTex.Size() / 2f;
                     float pulse = 1f + MathF.Sin(sway * 4f) * 0.1f;
 
-                    // 外层绿色光晕
-                    Color outerColor = new Color(60, 180, 50, 0) * (0.5f * pulse);
+                    // 外层光晕
+                    Color outerColor = (cOuter with { A = 0 }) * (0.5f * pulse);
                     sb.Draw(glowTex, drawPos, null, outerColor, Projectile.rotation,
                         glowOrigin, 0.7f * pulse, SpriteEffects.None, 0f);
 
-                    // 中层亮绿
-                    Color mainColor = new Color(120, 220, 80, 0) * 0.6f;
+                    // 中层
+                    Color mainColor = (cMain with { A = 0 }) * 0.6f;
                     sb.Draw(glowTex, drawPos, null, mainColor, Projectile.rotation + 0.3f,
                         glowOrigin, new Vector2(0.5f, 0.3f), SpriteEffects.None, 0f);
 
-                    // 内层黄绿芯
-                    Color coreColor = new Color(200, 230, 100, 0) * 0.45f;
+                    // 内层芯
+                    Color coreColor = (cCore with { A = 0 }) * 0.45f;
                     sb.Draw(glowTex, drawPos, null, coreColor, Projectile.rotation + 0.1f,
                         glowOrigin, new Vector2(0.35f, 0.2f), SpriteEffects.None, 0f);
                 }
@@ -128,12 +148,12 @@ namespace AncientChineseMythology.Celestias.Boss.Dazhengs
                     float leafAngle = Projectile.rotation;
 
                     // 叶片主体
-                    Color leafColor = new Color(80, 200, 60, 0) * 0.55f;
+                    Color leafColor = ((IsNova ? new Color(255, 200, 80) : new Color(80, 200, 60)) with { A = 0 }) * 0.55f;
                     sb.Draw(bladeTex, drawPos, null, leafColor, leafAngle,
                         bladeOrigin, new Vector2(0.06f, 0.03f), SpriteEffects.None, 0f);
 
                     // 叶脉高光
-                    Color veinColor = new Color(160, 240, 120, 0) * 0.3f;
+                    Color veinColor = ((IsNova ? new Color(255, 240, 160) : new Color(160, 240, 120)) with { A = 0 }) * 0.3f;
                     sb.Draw(bladeTex, drawPos, null, veinColor, leafAngle,
                         bladeOrigin, new Vector2(0.04f, 0.015f), SpriteEffects.None, 0f);
                 }

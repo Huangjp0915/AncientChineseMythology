@@ -7,19 +7,19 @@ using Terraria.ModLoader;
 namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
 {
     /// <summary>
-    /// 幽冥火残痕 (Nether-Flame DoT Trail) —— P1 龙身分段沿途留下的可破坏式空间机制。
+    /// 幽冥火残痕 (Nether-Flame DoT Trail) —— P1《巡墓》龙身分段沿途留下的驻留幽火。
     ///
-    /// 把"被动跟随的蠕虫身段"升格为**机制**: 每隔数节身段在掘墓轨迹上留下一摊驻留鬼绿幽火,
-    /// 玩家须读身段间的**可读空隙**穿行 (gapped); 站位其上叠加 <see cref="UnderworldField"/> 魂蚀 DoT。
-    /// 出现有 <see cref="ArmTime"/> 的 telegraph 渐显窗口(非致命), 期满才造成伤害 (每招必预告)。
+    /// 把"被动跟随的蠕虫身段"升格为机制: 每隔数节身段在掘墓轨迹上留一摊驻留鬼绿幽火,
+    /// 玩家须读身段间的可读空隙穿行; 站位其上叠 <see cref="UnderworldField"/> 魂蚀 DoT。
+    /// 出现有 <see cref="ArmTime"/> telegraph 渐显窗口 (紫, 非致命), 期满转鬼绿才造成伤害。
+    /// V3 视觉: SoftGlow 焰堆 (下宽上收的三层焰体) + 上升焰舌尘, 取代 fog 贴图糊团。
     /// </summary>
     internal class NetherFlameTrail : ModProjectile
     {
-        // 复用 sibling 占位贴图 (本类绘制走 Underworld.Fog 灰度纹理, 仅需一个合法自动加载锚点)
         public override string Texture => "InnoVault/Assets/placeholder";
 
         private ref float ArmTimer => ref Projectile.ai[0];
-        private const int ArmTime = 30;     // telegraph 渐显(非致命)
+        private const int ArmTime = 30;     // telegraph 渐显 (非致命)
 
         public override void SetDefaults() {
             Projectile.width = 70;
@@ -38,7 +38,6 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         public override void AI() {
             ArmTimer++;
 
-            // 渐显: alpha 由 telegraph 推进
             float armed = MathHelper.Clamp(ArmTimer / ArmTime, 0f, 1f);
             Projectile.alpha = (int)(255 * (1f - armed * 0.75f));
 
@@ -46,12 +45,14 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
             if (Projectile.timeLeft < 40)
                 Projectile.alpha = (int)MathHelper.Lerp(64, 255, 1f - Projectile.timeLeft / 40f);
 
-            if (!Main.dedServ && Main.rand.NextBool(armed > 0.99f ? 2 : 4)) {
-                Vector2 dpos = Projectile.Center + Main.rand.NextVector2Circular(Projectile.width * 0.4f, Projectile.height * 0.4f);
-                int d = Dust.NewDust(dpos, 1, 1, DustID.GreenTorch, 0, 0, 120,
+            if (!Main.dedServ && Main.rand.NextBool(armed > 0.99f ? 3 : 5)) {
+                Vector2 dpos = Projectile.Center + new Vector2(
+                    Main.rand.NextFloat(-0.5f, 0.5f) * Projectile.width,
+                    Main.rand.NextFloat(0.1f, 0.4f) * Projectile.height);
+                var d = Dust.NewDustPerfect(dpos, DustID.GreenTorch, Vector2.Zero, 120,
                     armed > 0.99f ? new Color(110, 230, 150) : new Color(120, 90, 200), 1.3f);
-                Main.dust[d].noGravity = true;
-                Main.dust[d].velocity = new Vector2(0, -Main.rand.NextFloat(0.6f, 1.6f));
+                d.noGravity = true;
+                d.velocity = new Vector2(Main.rand.NextFloat(-0.3f, 0.3f), -Main.rand.NextFloat(0.8f, 2f));
             }
 
             Lighting.AddLight(Projectile.Center, 0.15f, 0.35f, 0.2f);
@@ -69,25 +70,36 @@ namespace AncientChineseMythology.Underworlds.Boss.NetherDragons
         public override bool PreDraw(ref Color lightColor) {
             if (Main.dedServ)
                 return false;
-            Texture2D tex = Underworld.Fog;
-            if (tex == null)
+            Texture2D soft = ACMAsset.SoftGlow;
+            if (soft == null)
                 return false;
 
             Vector2 drawPos = Projectile.Center - Main.screenPosition;
-            Vector2 origin = tex.Size() * 0.5f;
+            Vector2 origin = soft.Size() * 0.5f;
             float armed = MathHelper.Clamp(ArmTimer / ArmTime, 0f, 1f);
-            float alpha = (1f - Projectile.alpha / 255f);
-            float pulse = 1f + MathF.Sin((float)Main.timeForVisualEffects * 0.08f + Projectile.whoAmI) * 0.12f;
+            float alpha = 1f - Projectile.alpha / 255f;
+            float t = (float)Main.timeForVisualEffects * 0.08f + Projectile.whoAmI;
 
-            // telegraph: 紫预备 → 致命驻留: 鬼绿
-            Color col = Color.Lerp(new Color(120, 90, 200), new Color(110, 230, 150), armed);
-            float baseScale = Projectile.width / (float)tex.Width;
+            // telegraph 紫预备 → 致命驻留鬼绿
+            Color col = Color.Lerp(new Color(120, 90, 200, 0), new Color(110, 230, 150, 0), armed);
+            Color core = new Color(200, 255, 220, 0);
+            float baseScale = Projectile.width / (float)soft.Width;
 
-            for (int i = 0; i < 3; i++) {
-                float s = baseScale * (1.6f - i * 0.4f) * pulse;
-                Main.spriteBatch.Draw(tex, drawPos, null, col * (alpha * (0.18f + i * 0.06f)),
-                    Projectile.rotation + i * 0.7f, origin, s, SpriteEffects.None, 0f);
+            // 三层焰体: 底盘宽晕 + 两簇错相摇曳焰舌 (下宽上收)
+            Main.spriteBatch.Draw(soft, drawPos + new Vector2(0, 10f), null, col * (alpha * 0.40f), 0f,
+                origin, new Vector2(baseScale * 2.1f, baseScale * 0.9f), SpriteEffects.None, 0f);
+            for (int i = 0; i < 2; i++) {
+                float sway = MathF.Sin(t * (1.1f + i * 0.4f) + i * 2.2f) * 6f;
+                float rise = 8f + i * 10f + MathF.Sin(t * 1.7f + i) * 3f;
+                float s = baseScale * (1.15f - i * 0.32f);
+                Main.spriteBatch.Draw(soft, drawPos + new Vector2(sway, -rise), null,
+                    col * (alpha * (0.45f - i * 0.12f)), 0f, origin,
+                    new Vector2(s * 0.8f, s * 1.25f), SpriteEffects.None, 0f);
             }
+            // 白热芯 (仅致命态)
+            if (armed > 0.9f)
+                Main.spriteBatch.Draw(soft, drawPos - new Vector2(0, 4f), null, core * (alpha * 0.30f), 0f,
+                    origin, baseScale * 0.5f, SpriteEffects.None, 0f);
 
             return false;
         }

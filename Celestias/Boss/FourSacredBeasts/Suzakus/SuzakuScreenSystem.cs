@@ -20,22 +20,32 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
         private static float _tint;     // ElementalScreenTint 强度
         private static float _bloom;    // RadialBloom 强度
         private static float _runic;    // ArenaRunic 法阵强度
+        private static float _ashen;    // 涅槃灰烬去饱和（SuzakuSky 联动消费）
+        private static float _sunBurst; // 天幕日轮爆亮（入场/涅槃爆燃, SuzakuSky 联动消费）
         private static Vector2 _center; // 世界坐标中心（Boss / 落点）
         private static float _time;     // 着色器时间(秒)
         private static ulong _lastPublishFrame;
 
+        /// <summary>涅槃灰烬期天幕去饱和标量（0~1, 由 SuzakuSky 读取）。</summary>
+        public static float AshenLevel => _ashen;
+        /// <summary>天幕日轮爆亮标量（0~1, 由 SuzakuSky 读取）。</summary>
+        public static float SunBurstLevel => _sunBurst;
+
         /// <summary>由 Suzaku 每帧调用，发布当前赤焰氛围标量（纯本地视觉）。</summary>
-        public static void Publish(Vector2 center, float tint, float bloom, float runic, float time) {
+        public static void Publish(Vector2 center, float tint, float bloom, float runic, float time,
+            float ashen = 0f, float sunBurst = 0f) {
             _center = center;
             _tint = tint;
             _bloom = bloom;
             _runic = runic;
+            _ashen = ashen;
+            _sunBurst = sunBurst;
             _time = time;
             _lastPublishFrame = Main.GameUpdateCount;
         }
 
         public override void OnWorldUnload() {
-            _tint = _bloom = _runic = 0f;
+            _tint = _bloom = _runic = _ashen = _sunBurst = 0f;
         }
 
         public override void PostDrawTiles() {
@@ -49,6 +59,8 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
                 _tint = MathHelper.Lerp(_tint, 0f, 0.1f);
                 _bloom = MathHelper.Lerp(_bloom, 0f, 0.18f);
                 _runic = MathHelper.Lerp(_runic, 0f, 0.15f);
+                _ashen = MathHelper.Lerp(_ashen, 0f, 0.06f);
+                _sunBurst = MathHelper.Lerp(_sunBurst, 0f, 0.12f);
             }
 
             DrawAmbientTint();
@@ -57,13 +69,15 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
         }
 
         private static void DrawAmbientTint() {
-            if (_tint <= 0.01f) return;
+            // 灰烬寂静期赤焰氛围让位给去饱和（PaletteLUT 主导）, 火幕淡出
+            float tint = _tint * (1f - _ashen * 0.8f);
+            if (tint <= 0.01f) return;
             Effect fx = ACMShaders.ElementalScreenTint;
             if (fx == null) return;
 
             float aspect = (float)Main.screenWidth / Main.screenHeight;
             fx.Parameters["uTime"]?.SetValue(_time);
-            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(_tint, 0f, 1f));
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(tint, 0f, 1f));
             fx.Parameters["uAspect"]?.SetValue(aspect);
             // 上=金橙日照，下=暗赤压底；覆盖度保守，始终看得清弹幕
             fx.Parameters["uTint"]?.SetValue(new Vector4(TelegraphColors.Flame.ToVector3(), 0.26f));

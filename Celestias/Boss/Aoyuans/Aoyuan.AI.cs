@@ -1,6 +1,5 @@
 ﻿using System;
 using Terraria;
-using Terraria.Audio;
 using Terraria.Graphics.Effects;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -24,13 +23,14 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
             NPC.TargetClosest(true);
             Player player = Main.player[NPC.target];
 
-            if (!player.active || player.dead) {
+            if ((!player.active || player.dead) && CurrentState != AoyuanState.DeathAnim) {
                 despawn = true;
             }
             if (despawn) {
                 if (!VaultUtils.isServer && AoyuanSky.name != null)
                     SkyManager.Instance.Deactivate(AoyuanSky.name);
                 NPC.velocity.Y -= 0.4f;
+                NPC.dontTakeDamage = true;
                 NPC.ai[3]++;
                 if (NPC.ai[3] >= 300)
                     NPC.active = false;
@@ -40,31 +40,34 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
             // 蠕虫身体链生成（首次）
             SpawnWormBody();
 
-            // 出生渐显粒子
-            if (NPC.alpha > 0) {
-                if (!VaultUtils.isServer) {
-                    for (int spawnDust = 0; spawnDust < 2; spawnDust++) {
-                        int d = Dust.NewDust(NPC.position, NPC.width, NPC.height,
-                            DustID.IceTorch, 0f, 0f, 100, default, 2f);
-                        Main.dust[d].noGravity = true;
-                    }
-                }
-                NPC.alpha -= 12;
+            // 显隐: 入场未现身/入镜隐没时保持全透明
+            if (BodyHidden) {
+                NPC.alpha = 255;
+            }
+            else if (NPC.alpha > 0) {
+                NPC.alpha -= 25;
                 if (NPC.alpha < 0) NPC.alpha = 0;
             }
 
             // 张嘴动画帧推进
             UpdateMouthAnimation();
 
+            // 踉跄易伤窗倒计时
+            if (staggerTimer > 0)
+                staggerTimer--;
+
             // === 阶段转换检查 ===
-            if (IsPhase2 && !didPhase2Transition && CurrentState != AoyuanState.PhaseTransition) {
-                TransitionToPhase2();
+            if (IsPhase2 && !DidPhase2Transition
+                && CurrentState != AoyuanState.PhaseTransition
+                && CurrentState != AoyuanState.Intro
+                && CurrentState != AoyuanState.DeathAnim) {
+                EnterState(AoyuanState.PhaseTransition);
+                if (Main.netMode != NetmodeID.MultiplayerClient)
+                    AoyuanAttacks.ClearHostileProjectiles();
             }
 
-            // === 永冻地痕：巡游/冷却中铺设 ===
-            EmitPermafrostTrail();
-
             // === 状态机主循环 ===
+            StateTimer++;
             switch (CurrentState) {
                 case AoyuanState.Intro:
                     RunIntro(player);
@@ -72,17 +75,17 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
                 case AoyuanState.Patrol:
                     RunPatrol(player);
                     break;
-                case AoyuanState.PreAttack:
-                    RunPreAttack(player);
+                case AoyuanState.Sheath:
+                    RunSheath(player);
                     break;
                 case AoyuanState.Attacking:
                     RunAttacking(player);
                     break;
-                case AoyuanState.Cooldown:
-                    RunCooldown(player);
-                    break;
                 case AoyuanState.PhaseTransition:
                     RunPhaseTransition(player);
+                    break;
+                case AoyuanState.DeathAnim:
+                    RunDeathAnim(player);
                     break;
             }
 
@@ -90,12 +93,18 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
             NPC.rotation = (float)Math.Atan2(NPC.velocity.Y, NPC.velocity.X) + 1.57f;
             NPC.spriteDirection = NPC.velocity.X > 0 ? -1 : 1;
 
-            // 冰霜光照（二阶段更亮）
+            // 伤害窗口与视觉严格对齐: 突刺帧满额, 静滞/巡逻只留 45% 的"擦身"伤害
+            BladeActive = NPC.velocity.Length() > 30f && CurrentState == AoyuanState.Attacking;
+            bool noContact = BodyHidden || CurrentState == AoyuanState.Intro
+                || CurrentState == AoyuanState.PhaseTransition || CurrentState == AoyuanState.DeathAnim;
+            NPC.damage = noContact ? 0 : (int)(contactDamageBase * (BladeActive ? 1.35f : 0.45f));
+
+            // 冰霜光照
             float lightMul = IsPhase2 ? 1.5f : 1f;
             Lighting.AddLight(NPC.Center, new Vector3(0.3f, 0.6f, 0.9f) * glowIntensity * lightMul);
 
-            // V2 霜冻屏幕演出（纯本地视觉）
-            UpdateFrostScreenFx(player);
+            // 屏幕演出标量（纯本地视觉）
+            UpdateScreenFx(player);
 
             if ((NPC.velocity.X > 0 && NPC.oldVelocity.X < 0 || NPC.velocity.X < 0 && NPC.oldVelocity.X > 0 ||
                  NPC.velocity.Y > 0 && NPC.oldVelocity.Y < 0 || NPC.velocity.Y < 0 && NPC.oldVelocity.Y > 0) && !NPC.justHit)
@@ -104,52 +113,93 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
             return false;
         }
 
+        /// <summary>统一状态切换: 清计时器 + netUpdate</summary>
+        private void EnterState(AoyuanState state) {
+            CurrentState = state;
+            StateTimer = 0;
+            ParamB = 0;
+            NPC.netUpdate = true;
+        }
+
         #endregion
 
-        #region V2 霜冻屏幕演出 — 标量驱动（着色器验证层）
+        #region 屏幕演出标量
 
         /// <summary>
-        /// 每帧平滑推进霜冻屏幕演出标量, 并发布给 <see cref="AoyuanFrostScreenSystem"/>。
-        /// 设计契约: 二阶段常驻轻度 ElementalScreenTint 氛围; 仅在绝对零度蓄力→放射冻结 / 浮空破境的
-        /// 签名时刻拉满昂贵的 GenericWarp 扭曲(走单一全屏后处理名额)。红色只留给真正致命的完整冻结(见弹幕侧)。
+        /// 每帧平滑推进屏幕演出标量并发布给 <see cref="AoyuanFrostScreenSystem"/>。
+        /// 设计契约: 二阶段常驻轻度氛围底色; 昂贵的 AoyuanCrystalline 棱镜后处理(单一全屏名额)
+        /// 只在签名时刻(绝对零度/破境/死亡/出剑瞬间)拉起。红色只留给真正致命的伤害源。
         /// </summary>
-        private void UpdateFrostScreenFx(Player player) {
+        private void UpdateScreenFx(Player player) {
             if (Main.dedServ)
                 return;
 
-            bool azActive = CurrentState == AoyuanState.Attacking
-                && (AoyuanAttackType)(int)NPC.ai[2] == AoyuanAttackType.AbsoluteZero;
-            // WeakPointsExposed 仅在绝对零度吸气蓄力期间为真
-            bool azCharging = azActive && WeakPointsExposed;
-            float azProgress = azCharging ? MathHelper.Clamp(attackTimer / 180f, 0f, 1f) : 0f;
+            bool azCharging = CurrentState == AoyuanState.Attacking
+                && (AoyuanAttackType)(int)NPC.ai[2] == AoyuanAttackType.AbsoluteZero
+                && WeakPointsExposed;
+            float azProgress = azCharging ? MathHelper.Clamp((StateTimer - 30f) / 190f, 0f, 1f) : 0f;
 
-            // 蓄力末段渐增震屏(处决级预警, 取 max 不累加)
-            if (azCharging && azProgress > 0.6f)
-                ACMUtils.AddScreenShake((azProgress - 0.6f) / 0.4f * 5f);
+            // 蓄力末段渐增震屏(处决级预警, charge³ 曲线)
+            if (azCharging)
+                ACMUtils.AddScreenShake(azProgress * azProgress * azProgress * 4f);
 
             // —— ElementalScreenTint 氛围底色: 二阶段常驻, 蓄力/冻爆加浓 ——
-            float tintTarget = IsPhase2 ? 0.5f : 0.08f;
+            float tintTarget = IsPhase2 ? 0.45f : 0.08f;
             if (azCharging)
-                tintTarget = Math.Max(tintTarget, 0.35f + azProgress * 0.45f);
+                tintTarget = Math.Max(tintTarget, 0.35f + azProgress * 0.4f);
             tintTarget = Math.Max(tintTarget, freezeBloom * 0.9f);
             frostTint = MathHelper.Lerp(frostTint, tintTarget, 0.04f);
-
-            // —— GenericWarp(frost) 全屏扭曲: 仅签名时刻 ——
-            float warpTarget = 0f;
-            if (CurrentState == AoyuanState.PhaseTransition)
-                warpTarget = 0.45f;
-            if (azCharging)
-                warpTarget = Math.Max(warpTarget, 0.2f + azProgress * 0.6f);
-            warpTarget = Math.Max(warpTarget, freezeBloom * 0.85f);
-            frostWarp = MathHelper.Lerp(frostWarp, warpTarget, warpTarget > frostWarp ? 0.08f : 0.04f);
 
             // —— 冻爆泛光逐帧衰减 ——
             if (freezeBloom > 0f)
                 freezeBloom = Math.Max(0f, freezeBloom - 0.025f);
 
-            // —— ArenaRunic 霜冻法阵地纹: 蓄力期向心收口预警 ——
+            // —— ArenaRunic 霜冻法阵地纹: 绝对零度蓄力向心收口预警 ——
             float runicTarget = azCharging ? 0.35f + azProgress * 0.5f : 0f;
             arenaRunic = MathHelper.Lerp(arenaRunic, runicTarget, 0.07f);
+
+            // —— AoyuanCrystalline 棱镜标量 ——
+            float crystalTarget = 0f;
+            float stillTarget = 0f;
+            float frostEdgeTarget = IsPhase2 ? 0.12f : 0f;
+
+            switch (CurrentState) {
+                case AoyuanState.Intro:
+                    // 入场: 天幕结霜自边缘漫入
+                    frostEdgeTarget = Math.Max(frostEdgeTarget, MathHelper.Clamp(StateTimer / 120f, 0f, 1f) * 0.4f);
+                    crystalTarget = StateTimer > IntroMirrorTime ? 0.12f : 0f;
+                    break;
+                case AoyuanState.PhaseTransition:
+                    // 时滞破境: 去饱和 + 全屏棱面化
+                    stillTarget = StateTimer < 95f ? MathHelper.Clamp((StateTimer - 20f) / 70f, 0f, 1f) * 0.85f : 0f;
+                    crystalTarget = 0.35f;
+                    break;
+                case AoyuanState.DeathAnim:
+                    stillTarget = MathHelper.Clamp((StateTimer - 40f) / 180f, 0f, 1f);
+                    crystalTarget = 0.25f + MathHelper.Clamp(StateTimer / 250f, 0f, 1f) * 0.4f;
+                    break;
+            }
+            if (azCharging)
+                crystalTarget = Math.Max(crystalTarget, 0.15f + azProgress * 0.45f);
+            crystalTarget = Math.Max(crystalTarget, freezeBloom * 0.7f);
+            // 出剑瞬间的短促棱面脉冲
+            crystalTarget = Math.Max(crystalTarget, slashFlash * 0.30f);
+
+            crystalFx = MathHelper.Lerp(crystalFx, crystalTarget, crystalTarget > crystalFx ? 0.12f : 0.05f);
+            stillFx = MathHelper.Lerp(stillFx, stillTarget, stillTarget > stillFx ? 0.10f : 0.06f);
+            frostEdge = MathHelper.Lerp(frostEdge, frostEdgeTarget, 0.04f);
+
+            // 冲击帧自然衰减（由死亡碎裂一次性置 1）
+            if (flashFx > 0f)
+                flashFx = Math.Max(0f, flashFx - 0.09f);
+
+            // 预警线视觉衰减
+            if (telegraphAlpha > 0f && CurrentState != AoyuanState.Attacking && CurrentState != AoyuanState.Intro)
+                telegraphAlpha = Math.Max(0f, telegraphAlpha - 0.1f);
+            if (telegraphLock > 0f)
+                telegraphLock = Math.Max(0f, telegraphLock - 0.05f);
+            if (slashFlash > 0f)
+                slashFlash = Math.Max(0f, slashFlash - 0.08f);
 
             AoyuanFrostScreenSystem.Publish(NPC.Center, frostTint, freezeBloom, arenaRunic, globalTime);
         }
@@ -188,37 +238,6 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
 
         #endregion
 
-        #region 永冻地痕 — 签名机制
-
-        /// <summary>
-        /// 巡游/冷却/转移期间周期性在身后铺设寒冰地痕，玩家站在地痕上叠加冰冻
-        /// 二阶段地痕额外令地面打滑
-        /// </summary>
-        private void EmitPermafrostTrail() {
-            if (CurrentState == AoyuanState.PreAttack)
-                return;
-            if (NPC.velocity.Length() < 2f)
-                return;
-
-            trailTimer++;
-            int interval = IsPhase2 ? 7 : 10;
-            if (trailTimer < interval)
-                return;
-            trailTimer = 0;
-
-            if (Main.netMode != NetmodeID.MultiplayerClient) {
-                Projectile.NewProjectile(
-                    NPC.GetSource_FromAI(),
-                    NPC.Center,
-                    Vector2.Zero,
-                    ModContent.ProjectileType<AoyuanPermafrostTrail>(),
-                    0, 0f, Main.myPlayer,
-                    ai0: IsPhase2 ? 1f : 0f);
-            }
-        }
-
-        #endregion
-
         #region 蠕虫身体生成
 
         private void SpawnWormBody() {
@@ -234,85 +253,36 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
                 Main.npc[latestNPC].realLife = NPC.whoAmI;
                 Main.npc[latestNPC].ai[3] = NPC.whoAmI;
                 Main.npc[latestNPC].ai[2] = BodyFrameSequence[i];
+                Main.npc[latestNPC].ai[0] = i; // 段序号（尾段最大, 死亡晶化顺序用）
                 Main.npc[latestNPC].netUpdate = true;
             }
             NPC.ai[0] = 1;
-            NPC.netUpdate = true;
+
+            // 出生即进入入场演出: 隐身盘蜷
+            BodyHidden = true;
+            NPC.dontTakeDamage = true;
+            EnterState(AoyuanState.Intro);
         }
 
         #endregion
 
-        #region 蠕虫移动
+        #region 运动学原语
 
         /// <summary>
-        /// 标准蠕虫移动 - 平滑追踪玩家（沿用原版蠕虫栅格追踪）
+        /// 盘蜷: 头部追踪绕锚点旋转的目标点, 蛇身自然盘成"剑鞘"环。
+        /// coilAngle 各端本地积分（纯位置修饰, 关键帧由 netUpdate 校正）。
         /// </summary>
-        private void WormMovement(Player player, float speed, float acceleration) {
-            Vector2 npcCenter = new Vector2(NPC.position.X + NPC.width * 0.5f, NPC.position.Y + NPC.height * 0.5f);
-            float targetXPos = player.Center.X;
-            float targetYPos = player.Center.Y;
-
-            float targetRoundedPosX = (int)(targetXPos / 16.0) * 16;
-            float targetRoundedPosY = (int)(targetYPos / 16.0) * 16;
-            npcCenter.X = (int)(npcCenter.X / 16.0) * 16;
-            npcCenter.Y = (int)(npcCenter.Y / 16.0) * 16;
-            float dirX = targetRoundedPosX - npcCenter.X;
-            float dirY = targetRoundedPosY - npcCenter.Y;
-
-            float length = (float)Math.Sqrt(dirX * dirX + dirY * dirY);
-
-            if (NPC.soundDelay == 0) {
-                float num1 = length / 40f;
-                if (num1 < 10.0) num1 = 10f;
-                if (num1 > 20.0) num1 = 20f;
-                NPC.soundDelay = (int)num1;
-            }
-
-            float absDirX = Math.Abs(dirX);
-            float absDirY = Math.Abs(dirY);
-            if (length == 0f) length = 1f;
-            float newSpeed = speed / length;
-            dirX *= newSpeed;
-            dirY *= newSpeed;
-
-            if ((NPC.velocity.X > 0.0 && dirX > 0.0) || (NPC.velocity.X < 0.0 && dirX < 0.0) ||
-                (NPC.velocity.Y > 0.0 && dirY > 0.0) || (NPC.velocity.Y < 0.0 && dirY < 0.0)) {
-                if (NPC.velocity.X < dirX) NPC.velocity.X += acceleration;
-                else if (NPC.velocity.X > dirX) NPC.velocity.X -= acceleration;
-                if (NPC.velocity.Y < dirY) NPC.velocity.Y += acceleration;
-                else if (NPC.velocity.Y > dirY) NPC.velocity.Y -= acceleration;
-
-                if (Math.Abs(dirY) < speed * 0.2 && ((NPC.velocity.X > 0.0 && dirX < 0.0) || (NPC.velocity.X < 0.0 && dirX > 0.0))) {
-                    if (NPC.velocity.Y > 0.0) NPC.velocity.Y += acceleration * 2f;
-                    else NPC.velocity.Y -= acceleration * 2f;
-                }
-                if (Math.Abs(dirX) < speed * 0.2 && ((NPC.velocity.Y > 0.0 && dirY < 0.0) || (NPC.velocity.Y < 0.0 && dirY > 0.0))) {
-                    if (NPC.velocity.X > 0.0) NPC.velocity.X += acceleration * 2f;
-                    else NPC.velocity.X -= acceleration * 2f;
-                }
-            }
-            else if (absDirX > absDirY) {
-                if (NPC.velocity.X < dirX) NPC.velocity.X += acceleration * 1.1f;
-                else if (NPC.velocity.X > dirX) NPC.velocity.X -= acceleration * 1.1f;
-                if (Math.Abs(NPC.velocity.X) + Math.Abs(NPC.velocity.Y) < speed * 0.5) {
-                    if (NPC.velocity.Y > 0.0) NPC.velocity.Y += acceleration;
-                    else NPC.velocity.Y -= acceleration;
-                }
-            }
-            else {
-                if (NPC.velocity.Y < dirY) NPC.velocity.Y += acceleration * 1.1f;
-                else if (NPC.velocity.Y > dirY) NPC.velocity.Y -= acceleration * 1.1f;
-                if (Math.Abs(NPC.velocity.X) + Math.Abs(NPC.velocity.Y) < speed * 0.5) {
-                    if (NPC.velocity.X > 0.0) NPC.velocity.X += acceleration;
-                    else NPC.velocity.X -= acceleration;
-                }
-            }
+        private void CoilAround(Vector2 anchor, float radius, float angSpeed, float snap = 0.5f) {
+            coilAngle += angSpeed * orbitDir;
+            Vector2 target = anchor + coilAngle.ToRotationVector2() * radius;
+            Vector2 toTarget = target - NPC.Center;
+            float dist = toTarget.Length();
+            Vector2 desired = toTarget.SafeNormalize(Vector2.UnitY) * Math.Clamp(dist * 0.30f, 4f, 30f);
+            NPC.velocity = Vector2.Lerp(NPC.velocity, desired, snap);
         }
 
-        /// <summary>
-        /// 向指定点平滑移动（用于盘旋/俯冲等特殊机动）
-        /// </summary>
-        private void WormMoveTo(Vector2 target, float speed, float accel) {
+        /// <summary>向指定点平滑移动（速度差追赶）</summary>
+        private void GlideTo(Vector2 target, float speed, float accel) {
             Vector2 dir = target - NPC.Center;
             float length = dir.Length();
             if (length < 8f) return;
@@ -323,71 +293,82 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
             else if (NPC.velocity.Y > dir.Y) NPC.velocity.Y -= accel;
         }
 
-        #endregion
-
-        #region 状态：出场
-
-        private void RunIntro(Player player) {
-            attackTimer++;
-            float speed = IsPhase2 ? PatrolSpeedPhase2 : PatrolSpeed;
-            WormMovement(player, speed, 0.16f);
-
-            if (attackTimer >= 60) {
-                CurrentState = AoyuanState.Patrol;
-                patrolTimer = 0;
-                patrolDuration = Main.rand.Next(MinPatrolDuration, MaxPatrolDuration);
-                attackTimer = 0;
-                NPC.netUpdate = true;
-            }
+        /// <summary>
+        /// 突刺沿途铺设冰封航迹（服务器）: 每 spacing px 一段。
+        /// 剑痕朝向经 ai2 传递（多人下 rotation 不同步, ai 同步）。
+        /// </summary>
+        private void EmitThrustWake(float spacing, int crystallizeDelay, int lifeAfter) {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
+            if (Vector2.Distance(NPC.Center, lastWakePos) < spacing)
+                return;
+            lastWakePos = NPC.Center;
+            Terraria.Projectile.NewProjectile(
+                NPC.GetSource_FromAI(),
+                NPC.Center, Vector2.Zero,
+                ModContent.ProjectileType<AoyuanPermafrostTrail>(),
+                (int)(contactDamageBase * 0.28f), 0f, Main.myPlayer,
+                ai0: crystallizeDelay, ai1: lifeAfter, ai2: NPC.velocity.ToRotation());
         }
 
         #endregion
 
-        #region 状态：巡逻
+        #region 状态：巡逻（收剑巡游）
 
         private void RunPatrol(Player player) {
-            float speed = IsPhase2 ? PatrolSpeedPhase2 : PatrolSpeed;
-            float accel = IsPhase2 ? 0.18f : 0.13f;
+            // 绕玩家的克制盘旋: 锚点在玩家周围缓慢公转 + 正弦游摆
+            orbitAngle += 0.017f * orbitDir;
+            float orbitR = 520f + MathF.Sin(globalTime * 0.9f) * 55f;
+            Vector2 anchor = player.Center + orbitAngle.ToRotationVector2() * orbitR;
 
-            // 远距离冲锋加速
+            float speed = IsPhase2 ? 16f : 13f;
+            float accel = IsPhase2 ? 0.30f : 0.24f;
+
+            // 距离栓绳: 玩家逃远则强力收拢, 防脱屏绕圈
             float dist = Vector2.Distance(NPC.Center, player.Center);
-            if (dist > 700f) {
-                speed *= 1.35f;
-                accel *= 1.25f;
+            if (dist > 1100f) {
+                speed *= 1.6f;
+                accel *= 1.6f;
+                anchor = player.Center + (NPC.Center - player.Center).SafeNormalize(Vector2.UnitY) * 600f;
             }
 
-            WormMovement(player, speed, accel);
+            GlideTo(anchor, speed, accel);
 
-            patrolTimer++;
-            if (patrolTimer >= patrolDuration) {
+            // 呼吸寒气（轻, 不铺屏）
+            if (!VaultUtils.isServer && Main.rand.NextBool(9))
+                AoyuanHelper.CreateFrostTrail(NPC.Center, NPC.velocity, 0.7f);
+
+            if (StateTimer >= patrolDuration) {
                 ChooseNextAttack(player);
             }
         }
 
         #endregion
 
-        #region 状态：预攻击（蓄力电报）
+        #region 状态：收剑连接拍
 
-        private void RunPreAttack(Player player) {
-            // 减速悬停，蓄力光效
-            NPC.velocity *= 0.94f;
+        /// <summary>攻击后的段落句号: 25f 直线缓滑 + 收剑冰铃, 让玩家的眼睛翻页</summary>
+        private void RunSheath(Player player) {
+            NPC.velocity *= 0.955f;
 
-            attackTimer++;
+            if (StateTimer == 6 && !VaultUtils.isServer)
+                AoyuanHelper.PlayChime(NPC.Center, -0.55f, 0.6f);
 
-            if (attackTimer == 1) {
-                SoundEngine.PlaySound(SoundID.Item28 with { Pitch = -0.5f, Volume = 0.8f }, NPC.Center);
+            if (StateTimer >= SheathDuration) {
+                EnterState(AoyuanState.Patrol);
+                orbitDir = Main.rand.NextBool() ? 1 : -1;
+                int min = IsPhase2 ? PatrolMinP2 : PatrolMin;
+                int max = IsPhase2 ? PatrolMaxP2 : PatrolMax;
+                if (IsDesperation) { min = min * 3 / 4; max = max * 3 / 4; }
+                patrolDuration = Main.rand.Next(min, max);
             }
-            if (!VaultUtils.isServer && attackTimer % 3 == 0) {
-                AoyuanHelper.CreateFrostVortex(NPC.Center, 50f, 0.4f, 8);
-            }
+        }
 
-            if (attackTimer >= PreAttackDuration) {
-                CurrentState = AoyuanState.Attacking;
-                attackTimer = 0;
-                veilCount = 0;
-                waveCount = 0;
-                NPC.netUpdate = true;
-            }
+        /// <summary>攻击结束统一走收剑拍</summary>
+        private void FinishAttack() {
+            CloseMouth();
+            WeakPointsExposed = false;
+            EnterState(AoyuanState.Sheath);
         }
 
         #endregion
@@ -395,77 +376,78 @@ namespace AncientChineseMythology.Celestias.Boss.Aoyuans
         #region 状态：攻击执行
 
         private void RunAttacking(Player player) {
-            attackTimer++;
             AoyuanAttackType currentAttack = (AoyuanAttackType)(int)NPC.ai[2];
 
             bool finished = currentAttack switch {
-                AoyuanAttackType.GlacialPillarChess => AttackGlacialPillarChess(player),
-                AoyuanAttackType.BlizzardVeil => AttackBlizzardVeil(player),
-                AoyuanAttackType.FrostBreath => AttackFrostBreath(player),
-                AoyuanAttackType.IcicleRainCombo => AttackIcicleRainCombo(player),
-                AoyuanAttackType.FrostRingCombo => AttackFrostRingCombo(player),
+                AoyuanAttackType.InstantThrust => AttackInstantThrust(player),
+                AoyuanAttackType.MirrorArray => AttackMirrorArray(player),
+                AoyuanAttackType.ColdWave => AttackColdWave(player),
+                AoyuanAttackType.FreezeTrap => AttackFreezeTrap(player),
+                AoyuanAttackType.FrostBlades => AttackFrostBlades(player),
                 AoyuanAttackType.AbsoluteZero => AttackAbsoluteZero(player),
+                AoyuanAttackType.MirrorRealm => AttackMirrorRealm(player),
                 _ => true
             };
 
+            // 保底出口: 任何攻击超时强制收剑（状态机不允许死路）
+            if (StateTimer > 900)
+                finished = true;
+
             if (finished) {
-                CloseMouth();
-                CurrentState = AoyuanState.Cooldown;
-                attackTimer = 0;
-                NPC.netUpdate = true;
+                BodyHidden = false;
+                NPC.dontTakeDamage = false;
+                FinishAttack();
             }
         }
 
         #endregion
 
-        #region 状态：冷却
+        #region 攻击选择 — 洗牌袋
 
-        private void RunCooldown(Player player) {
-            float speed = IsPhase2 ? PatrolSpeedPhase2 : PatrolSpeed;
-            WormMovement(player, speed, IsPhase2 ? 0.18f : 0.13f);
-
-            attackTimer++;
-            int cd = IsPhase2 ? CooldownDuration / 2 : CooldownDuration;
-            if (attackTimer >= cd) {
-                CurrentState = AoyuanState.Patrol;
-                patrolTimer = 0;
-                int min = IsPhase2 ? MinPatrolDuration / 2 : MinPatrolDuration;
-                int max = IsPhase2 ? MaxPatrolDuration / 2 : MaxPatrolDuration;
-                patrolDuration = Main.rand.Next(min, max);
-                attackTimer = 0;
-                NPC.netUpdate = true;
-            }
-        }
-
-        #endregion
-
-        #region 攻击选择
-
+        /// <summary>
+        /// 洗牌袋 + 防重: 每袋 = 当前阶段全招式池洗牌; 袋首与上一招相同则后移;
+        /// 绝对零度每袋至多一次且不排袋首。服务器权威。
+        /// </summary>
         private void ChooseNextAttack(Player player) {
             if (Main.netMode == NetmodeID.MultiplayerClient) return;
 
-            int maxType = IsPhase2 ? Phase2AttackCount : Phase1AttackCount;
+            if (attackBag.Count == 0)
+                RefillAttackBag();
 
-            AoyuanAttackType chosen;
-            int attempts = 0;
-            do {
-                chosen = (AoyuanAttackType)Main.rand.Next(maxType);
-                attempts++;
-            } while (chosen == lastAttack && attempts < 10);
+            AoyuanAttackType chosen = attackBag[0];
+            attackBag.RemoveAt(0);
+            lastAttack = chosen;
 
-            // 二阶段有概率优先释放绝对零度大招
-            if (IsPhase2 && lastAttack != AoyuanAttackType.AbsoluteZero && Main.rand.NextBool(4)) {
-                chosen = AoyuanAttackType.AbsoluteZero;
+            NPC.ai[2] = (float)chosen;
+            ParamA = 0;
+            EnterState(AoyuanState.Attacking);
+        }
+
+        private void RefillAttackBag() {
+            attackBag.Clear();
+            attackBag.Add(AoyuanAttackType.InstantThrust);
+            attackBag.Add(AoyuanAttackType.MirrorArray);
+            attackBag.Add(AoyuanAttackType.ColdWave);
+            attackBag.Add(AoyuanAttackType.FreezeTrap);
+            attackBag.Add(AoyuanAttackType.FrostBlades);
+            if (IsPhase2) {
+                attackBag.Add(AoyuanAttackType.AbsoluteZero);
+                attackBag.Add(AoyuanAttackType.MirrorRealm);
             }
 
-            lastAttack = chosen;
-            NPC.ai[2] = (float)chosen;
-            attackTimer = 0;
-            veilCount = 0;
-            waveCount = 0;
+            // Fisher-Yates 洗牌
+            for (int i = attackBag.Count - 1; i > 0; i--) {
+                int j = Main.rand.Next(i + 1);
+                (attackBag[i], attackBag[j]) = (attackBag[j], attackBag[i]);
+            }
 
-            CurrentState = AoyuanState.PreAttack;
-            NPC.netUpdate = true;
+            // 防重: 袋首 == 上一招 → 与中位交换
+            if (attackBag.Count > 1 && attackBag[0] == lastAttack)
+                (attackBag[0], attackBag[attackBag.Count / 2]) = (attackBag[attackBag.Count / 2], attackBag[0]);
+
+            // 大招不做开袋第一印象（换阶段刚结束时给玩家喘息）
+            if (attackBag.Count > 1 && attackBag[0] == AoyuanAttackType.AbsoluteZero)
+                (attackBag[0], attackBag[1]) = (attackBag[1], attackBag[0]);
         }
 
         #endregion

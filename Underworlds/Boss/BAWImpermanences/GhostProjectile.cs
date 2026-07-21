@@ -3,27 +3,34 @@ using System;
 using Terraria;
 using Terraria.Audio;
 using Terraria.ID;
+using Terraria.Localization;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
 {
     /// <summary>
-    /// 白无常基础幽魂弹幕 - 飘忽的追踪幽魂
+    /// 白无常幽魂 (V3)。
+    /// ai[0]=模式: 0 扇潮(弱追踪) / 1 休眠追(45f 显形后才缓追) / 2 阴阳潮(直线, 安全缝前熄灭) / 3 灯矢(直线快弹)。
+    /// ai[2]=所属 NPC (孤使白 → 黑蕊白魂配色)。伤害窗口与显形严格对齐。
     /// </summary>
     public class GhostProjectile : ModProjectile
     {
         public override string Texture => BAWHelper.Path + "BAWDust";
 
-        private float homingStrength = 0.025f;
-        private float pulsePhase = 0f;
-        private float ghostAlpha = 0f;
-        private float wobblePhase = 0f;
+        private float pulsePhase;
+        private float wobblePhase;
+        private float ghostAlpha;
+        private float timer;
 
-        private NPC owner => Projectile.ai[2] >= 0 && (int)Projectile.ai[2] < Main.npc.Length
+        private int Mode => (int)Projectile.ai[0];
+        private NPC Owner => Projectile.ai[2] >= 0 && Projectile.ai[2] < Main.npc.Length
             ? Main.npc[(int)Projectile.ai[2]] : null;
 
+        private const float DormantTime = 45f;
+        private bool Dormant => Mode == 1 && timer < DormantTime;
+
         public override void SetStaticDefaults() {
-            ProjectileID.Sets.TrailCacheLength[Projectile.type] = 15;
+            ProjectileID.Sets.TrailCacheLength[Projectile.type] = 12;
             ProjectileID.Sets.TrailingMode[Projectile.type] = 2;
         }
 
@@ -34,435 +41,591 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
             Projectile.friendly = false;
             Projectile.tileCollide = false;
             Projectile.penetrate = 1;
-            Projectile.timeLeft = 300;
-            Projectile.alpha = 100;
+            Projectile.timeLeft = 280;
         }
 
         public override void AI() {
-            // 淡入效果
-            ghostAlpha = MathHelper.Lerp(ghostAlpha, 1f, 0.05f);
+            timer++;
             pulsePhase += 0.12f;
             wobblePhase += 0.08f;
-
-            // 幽灵般的旋转（缓慢且飘忽）
             Projectile.rotation += MathF.Sin(wobblePhase) * 0.05f + 0.02f;
 
-            // 追踪最近玩家
-            Player target = null;
-            float closestDist = 700f;
-            foreach (var p in Main.player) {
-                if (p != null && p.active && !p.dead) {
-                    float dist = p.Distance(Projectile.Center);
-                    if (dist < closestDist) {
-                        closestDist = dist;
-                        target = p;
+            switch (Mode) {
+                case 0: {
+                    // 扇潮: 弱追踪 (0.02 恒可甩) + 波浪漂移
+                    ghostAlpha = MathHelper.Lerp(ghostAlpha, 1f, 0.08f);
+                    Player t = FindNearest(760f);
+                    if (t != null) {
+                        Vector2 to = (t.Center - Projectile.Center).SafeNormalize(Vector2.Zero);
+                        float speed = MathF.Max(6.5f, Projectile.velocity.Length());
+                        Projectile.velocity = Vector2.Lerp(Projectile.velocity, to * speed, 0.02f);
                     }
+                    ApplyWobble(2f);
+                    break;
+                }
+                case 1: {
+                    // 休眠: 原地显形 (无伤害) → 45f 后开始缓追 (7px/f 可甩)
+                    if (Dormant) {
+                        ghostAlpha = MathHelper.Lerp(ghostAlpha, 0.4f, 0.06f);
+                        Projectile.velocity *= 0.85f;
+                        if (timer == DormantTime - 6f)
+                            SoundEngine.PlaySound(SoundID.Item8 with { Pitch = 0.5f, Volume = 0.5f }, Projectile.Center);
+                    }
+                    else {
+                        ghostAlpha = MathHelper.Lerp(ghostAlpha, 1f, 0.1f);
+                        Player t = FindNearest(1100f);
+                        if (t != null) {
+                            Vector2 to = (t.Center - Projectile.Center).SafeNormalize(Vector2.Zero);
+                            Projectile.velocity = Vector2.Lerp(Projectile.velocity, to * 7f, 0.04f);
+                        }
+                        ApplyWobble(1.4f);
+                    }
+                    break;
+                }
+                case 2: {
+                    // 阴阳潮: 直线缓推, 靠近安全缝 150px 即熄灭 (公平走廊)
+                    ghostAlpha = MathHelper.Lerp(ghostAlpha, 1f, 0.08f);
+                    ApplyWobble(1.6f);
+                    if (timer % 8 == 0 && Main.netMode != NetmodeID.MultiplayerClient) {
+                        NPC black = FindBoss(ModContent.NPCType<BlackImpermanence>());
+                        NPC white = FindBoss(ModContent.NPCType<WhiteImpermanence>());
+                        if (black != null && white != null) {
+                            Vector2 mid = (black.Center + white.Center) * 0.5f;
+                            Vector2 whiteNormal = (white.Center - black.Center).SafeNormalize(Vector2.UnitX);
+                            if (Vector2.Dot(Projectile.Center - mid, whiteNormal) < 150f)
+                                Projectile.Kill();
+                        }
+                    }
+                    break;
+                }
+                case 3: {
+                    // 灯矢: 直线快弹
+                    ghostAlpha = MathHelper.Lerp(ghostAlpha, 1f, 0.2f);
+                    if (Projectile.timeLeft > 110)
+                        Projectile.timeLeft = 110;
+                    break;
                 }
             }
 
-            if (target != null) {
-                Vector2 toTarget = (target.Center - Projectile.Center).SafeNormalize(Vector2.Zero);
-                float currentSpeed = Projectile.velocity.Length();
-                float targetSpeed = MathHelper.Lerp(8f, 14f, 1f - closestDist / 700f);
-                Projectile.velocity = Vector2.Lerp(Projectile.velocity, toTarget * targetSpeed, homingStrength);
-            }
-
-            // 幽灵般的飘动（更明显的波浪运动）
-            Vector2 perpendicular = Projectile.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
-            float drift = MathF.Sin(wobblePhase * 1.5f + Projectile.whoAmI * 0.5f) * 2f;
-            Projectile.position += perpendicular * drift;
-
-            // 主体粒子效果
-            if (Main.rand.NextBool(2)) {
-                Vector2 dustOffset = Main.rand.NextVector2Circular(12, 12);
-                var d = Dust.NewDustPerfect(Projectile.Center + dustOffset, DustID.SpectreStaff);
+            // 体表魂点
+            if (!Main.dedServ && Main.rand.NextBool(3)) {
+                var d = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(10f, 10f), DustID.SpectreStaff);
                 d.noGravity = true;
                 d.scale = 0.9f * ghostAlpha;
-                d.velocity = -Projectile.velocity * 0.15f + dustOffset * 0.1f;
-                d.alpha = 100;
+                d.velocity = -Projectile.velocity * 0.12f;
+                d.alpha = 110;
             }
 
-            // 尾迹粒子
-            if (Main.rand.NextBool(3)) {
-                var d = Dust.NewDustPerfect(Projectile.oldPos[4] + Projectile.Size / 2, DustID.SpectreStaff);
-                d.noGravity = true;
-                d.scale = 0.6f;
-                d.velocity = Main.rand.NextVector2Circular(1, 1);
-                d.alpha = 150;
-            }
-
-            // 光照（脉动）
-            float lightPulse = 0.4f + MathF.Sin(pulsePhase) * 0.15f;
+            float lightPulse = 0.35f + MathF.Sin(pulsePhase) * 0.12f;
             Lighting.AddLight(Projectile.Center, new Color(180, 180, 255).ToVector3() * lightPulse * ghostAlpha);
+        }
+
+        private void ApplyWobble(float amp) {
+            Vector2 perp = Projectile.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
+            Projectile.position += perp * MathF.Sin(wobblePhase * 1.5f + Projectile.whoAmI * 0.5f) * amp;
+        }
+
+        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
+            return Dormant ? false : null; // 休眠显形期无伤害
+        }
+
+        public override void OnHitPlayer(Player target, Player.HurtInfo info) {
+            target.GetModPlayer<BAWPlayer>().ApplyYinQiCorrosion(120);
+            SoundEngine.PlaySound(SoundID.NPCHit54 with { Pitch = 0.3f }, Projectile.Center);
         }
 
         public override bool PreDraw(ref Color lightColor) {
             SpriteBatch sb = Main.spriteBatch;
             var tex = BAWHelper.DustTexture;
-            if (tex == null) return false;
+            if (tex == null)
+                return false;
 
             Vector2 origin = tex.Size() / 2f;
+            GetPalette(out Color core, out Color glow);
 
-            // 绘制幽灵拖尾（多层渐变）
-            for (int layer = 0; layer < 2; layer++) {
-                for (int i = Projectile.oldPos.Length - 1; i >= 0; i--) {
-                    if (Projectile.oldPos[i] == Vector2.Zero) continue;
-
-                    float progress = 1f - (float)i / Projectile.oldPos.Length;
-                    float trailAlpha = progress * 0.4f * ghostAlpha;
-                    float trailScale = (0.5f + progress * 0.8f) * (layer == 0 ? 1.5f : 1f);
-
-                    Color trailColor = layer == 0
-                        ? new Color(100, 150, 255) * trailAlpha * 0.3f
-                        : Color.LightCyan * trailAlpha;
-                    trailColor.A = 0;
-
-                    Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
-
-                    // 轻微偏移增加飘忽感
-                    float wobble = MathF.Sin(wobblePhase + i * 0.3f) * 3f;
-                    drawPos.Y += wobble;
-
-                    sb.Draw(tex, drawPos, null, trailColor, Projectile.oldRot[i], origin, trailScale, SpriteEffects.None, 0);
-                }
+            // 幽灵拖尾 (双层渐变)
+            for (int i = Projectile.oldPos.Length - 1; i >= 0; i--) {
+                if (Projectile.oldPos[i] == Vector2.Zero)
+                    continue;
+                float progress = 1f - (float)i / Projectile.oldPos.Length;
+                Color trailColor = glow * (progress * 0.35f * ghostAlpha);
+                trailColor.A = 0;
+                Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
+                drawPos.Y += MathF.Sin(wobblePhase + i * 0.3f) * 3f;
+                sb.Draw(tex, drawPos, null, trailColor, Projectile.oldRot[i], origin, (0.4f + progress * 0.8f), SpriteEffects.None, 0);
             }
 
             // 主体幽魂光球
-            BAWHelper.DrawGhostOrb(sb, Projectile.Center,
-                new Color(200, 220, 255) * ghostAlpha,
-                new Color(120, 180, 255),
-                1.2f, pulsePhase);
+            BAWHelper.DrawGhostOrb(sb, Projectile.Center, core * ghostAlpha, glow, Mode == 3 ? 0.9f : 1.15f, pulsePhase);
 
-            // 额外的幽灵"眼睛"效果
+            // 幽灵"眼睛"
             float eyeOffset = MathF.Sin(pulsePhase * 2f) * 2f;
-            Color eyeColor = Color.White * ghostAlpha * 0.8f;
+            Color eyeColor = (Mode == 1 && Dormant ? Color.Red * 0.7f : Color.White * 0.8f) * ghostAlpha;
             eyeColor.A = 0;
-            sb.Draw(tex, Projectile.Center - Main.screenPosition + new Vector2(-4, eyeOffset - 3),
-                null, eyeColor, 0f, origin, 0.3f, SpriteEffects.None, 0);
-            sb.Draw(tex, Projectile.Center - Main.screenPosition + new Vector2(4, eyeOffset - 3),
-                null, eyeColor, 0f, origin, 0.3f, SpriteEffects.None, 0);
+            sb.Draw(tex, Projectile.Center - Main.screenPosition + new Vector2(-4, eyeOffset - 3), null, eyeColor, 0f, origin, 0.28f, SpriteEffects.None, 0);
+            sb.Draw(tex, Projectile.Center - Main.screenPosition + new Vector2(4, eyeOffset - 3), null, eyeColor, 0f, origin, 0.28f, SpriteEffects.None, 0);
 
             return false;
         }
 
-        public override void OnHitPlayer(Player target, Player.HurtInfo info) {
-            target.GetModPlayer<BAWPlayer>().ApplyYinQiCorrosion(180);
-
-            // 命中特效
-            SoundEngine.PlaySound(SoundID.NPCHit54 with { Pitch = 0.3f }, Projectile.Center);
+        /// <summary>配色: 常态青白; 孤使白 → 黑蕊白魂。</summary>
+        private void GetPalette(out Color core, out Color glow) {
+            if (Owner?.ModNPC is BAWImpermanenceBase b && b.Unleashed) {
+                core = new Color(60, 45, 90);
+                glow = new Color(230, 235, 255);
+            }
+            else {
+                core = new Color(200, 220, 255);
+                glow = new Color(120, 180, 255);
+            }
         }
 
         public override void OnKill(int timeLeft) {
-            SoundEngine.PlaySound(SoundID.Item10 with { Pitch = 0.5f, Volume = 0.8f }, Projectile.Center);
-
-            // 幽魂消散
-            for (int i = 0; i < 15; i++) {
+            if (Main.dedServ)
+                return;
+            SoundEngine.PlaySound(SoundID.Item10 with { Pitch = 0.5f, Volume = 0.6f }, Projectile.Center);
+            for (int i = 0; i < 10; i++) {
                 var d = Dust.NewDustPerfect(Projectile.Center, DustID.SpectreStaff);
                 d.noGravity = true;
-                d.scale = 1.3f;
-                d.velocity = Main.rand.NextVector2Circular(6, 6);
-                d.alpha = 50;
+                d.scale = 1.2f;
+                d.velocity = Main.rand.NextVector2Circular(5f, 5f);
+                d.alpha = 60;
             }
+        }
+
+        private Player FindNearest(float maxDist) {
+            Player best = null;
+            float bestDist = maxDist;
+            for (int i = 0; i < Main.maxPlayers; i++) {
+                Player p = Main.player[i];
+                if (p != null && p.active && !p.dead) {
+                    float dist = p.Distance(Projectile.Center);
+                    if (dist < bestDist) { bestDist = dist; best = p; }
+                }
+            }
+            return best;
+        }
+
+        private static NPC FindBoss(int type) {
+            for (int i = 0; i < Main.maxNPCs; i++) {
+                NPC n = Main.npc[i];
+                if (n != null && n.active && n.type == type)
+                    return n;
+            }
+            return null;
         }
     }
 
     /// <summary>
-    /// 白无常幽灵法阵弹幕 - 环绕玩家的收缩法阵
+    /// 引魂灯 (V3)。
+    /// ai[0]=模式: 0 灯扑(抛落→60f 充能→环波+径向幽魂) / 1 阵灯(错峰显形→锁线点射) / 2 摄魂帷(锚定结界)。
+    /// ai[1]=阵位索引; ai[2]=所属 NPC。灯体本身无接触伤害 (伤害全部来自显形后的弹幕/结界减速)。
     /// </summary>
     public class SpiritCircleProjectile : ModProjectile
     {
         public override string Texture => BAWHelper.Path + "BAWDust";
 
-        private float orbitRadius = 300f;
-        private float orbitSpeed = 0.03f;
-        private float pulsePhase = 0f;
-        private float runeRotation = 0f;
-        private Player targetPlayer = null;
+        private float timer;
+        private float pulsePhase;
+        private float veilRadius;
+        private Vector2 lockedAim;
+        private bool aimLocked;
 
-        private float circleAngle {
-            get => Projectile.ai[0];
-            set => Projectile.ai[0] = value;
-        }
+        private int Mode => (int)Projectile.ai[0];
+        private int Index => (int)Projectile.ai[1];
+        private NPC Owner => Projectile.ai[2] >= 0 && Projectile.ai[2] < Main.npc.Length
+            ? Main.npc[(int)Projectile.ai[2]] : null;
 
-        private NPC owner => Projectile.ai[1] >= 0 && (int)Projectile.ai[1] < Main.npc.Length
-            ? Main.npc[(int)Projectile.ai[1]] : null;
+        // mode1 阵灯时序
+        private float AppearTime => Index * 6f;
+        private float FireTime => 100f + Index * 10f;
+
+        // mode0 灯扑时序
+        private const float ChargeTime = 60f;
+        private float landTime = -1f;
 
         public override void SetDefaults() {
-            Projectile.width = 50;
-            Projectile.height = 50;
+            Projectile.width = 40;
+            Projectile.height = 40;
             Projectile.hostile = true;
             Projectile.friendly = false;
             Projectile.tileCollide = false;
             Projectile.penetrate = -1;
-            Projectile.timeLeft = 200;
-            Projectile.alpha = 50;
+            Projectile.timeLeft = 400;
+            Projectile.netImportant = true;
         }
 
+        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) => false; // 灯体无接触伤害
+
         public override void AI() {
-            // 寻找目标玩家
-            if (targetPlayer == null || !targetPlayer.active || targetPlayer.dead) {
-                float closestDist = float.MaxValue;
-                foreach (var p in Main.player) {
-                    if (p != null && p.active && !p.dead) {
-                        float dist = p.Distance(Projectile.Center);
-                        if (dist < closestDist) {
-                            closestDist = dist;
-                            targetPlayer = p;
-                        }
-                    }
+            timer++;
+            pulsePhase += 0.11f;
+
+            switch (Mode) {
+                case 0: AI_Pounce(); break;
+                case 1: AI_Array(); break;
+                case 2: AI_Veil(); break;
+            }
+        }
+
+        /// <summary>mode0 灯扑: 抛物飞行 → 悬停充能 (收缩环读条) → 爆: 环波 + 5 径向幽魂。</summary>
+        private void AI_Pounce() {
+            if (landTime < 0f) {
+                Projectile.velocity.Y += 0.3f;
+                Projectile.velocity *= 0.985f;
+                Projectile.rotation = Projectile.velocity.X * 0.04f;
+                if (timer >= 40f || Projectile.velocity.Length() < 3f) {
+                    landTime = timer;
+                    Projectile.velocity = Vector2.Zero;
+                    SoundEngine.PlaySound(SoundID.Item8 with { Pitch = -0.2f }, Projectile.Center);
+                }
+            }
+            else {
+                float charge = (timer - landTime) / ChargeTime;
+                Projectile.velocity = Vector2.Zero;
+                Projectile.rotation = MathHelper.Lerp(Projectile.rotation, 0f, 0.1f);
+
+                // 收缩环读条 (密度∝charge, 末段安静)
+                if (!Main.dedServ && charge < 0.75f && timer % 2 == 0) {
+                    float r = MathHelper.Lerp(180f, 30f, charge);
+                    float ang = Main.rand.NextFloat(MathHelper.TwoPi);
+                    var d = Dust.NewDustPerfect(Projectile.Center + ang.ToRotationVector2() * r, DustID.SpectreStaff);
+                    d.noGravity = true;
+                    d.scale = 1.2f;
+                    d.velocity = -ang.ToRotationVector2() * 2.5f;
+                }
+
+                if (charge >= 1f) {
+                    Burst();
+                    Projectile.Kill();
                 }
             }
 
-            if (targetPlayer != null) {
-                // 环绕玩家旋转
-                circleAngle += orbitSpeed;
-                orbitSpeed = MathHelper.Lerp(orbitSpeed, 0.05f, 0.005f); // 加速旋转
-                orbitRadius = MathHelper.Lerp(orbitRadius, 60f, 0.008f); // 收紧包围圈
+            Lighting.AddLight(Projectile.Center, new Color(255, 240, 200).ToVector3() * 0.5f);
+        }
 
-                Vector2 targetPos = targetPlayer.Center + new Vector2(MathF.Cos(circleAngle), MathF.Sin(circleAngle)) * orbitRadius;
-                Projectile.velocity = (targetPos - Projectile.Center) * 0.15f;
+        private void Burst() {
+            SoundEngine.PlaySound(SoundID.Item73 with { Pitch = -0.2f, Volume = 1f }, Projectile.Center);
+            ACMScreenShakeSystem.Add(4f);
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
+
+            // 幽魂环波 (4.5px/f 可跑赢, 灯扑版无缺口但慢)
+            var ring = Projectile.NewProjectileDirect(Projectile.GetSource_FromThis(), Projectile.Center, Vector2.Zero,
+                ModContent.ProjectileType<GhostWaveProjectile>(), Projectile.damage, 0f, -1, 2f, 0f, 4.5f);
+            ring.netUpdate = true;
+
+            // 5 发径向幽魂 (72° 均布 = 恒有缝)
+            for (int i = 0; i < 5; i++) {
+                float ang = MathHelper.TwoPi / 5f * i + 0.3f;
+                var p = Projectile.NewProjectileDirect(Projectile.GetSource_FromThis(), Projectile.Center,
+                    ang.ToRotationVector2() * 6f, ModContent.ProjectileType<GhostProjectile>(),
+                    (int)(Projectile.damage * 0.9f), 0f, -1, 0f, 0f, Projectile.ai[2]);
+                p.netUpdate = true;
+            }
+        }
+
+        /// <summary>mode1 阵灯: 错峰显形 → 8f 锁线 (矢向锁定不追预判) → 点射 → 熄灭。</summary>
+        private void AI_Array() {
+            Projectile.velocity = Vector2.Zero;
+
+            // 锁线: 射前 8f 锁定玩家当时位置
+            if (!aimLocked && timer >= FireTime - 8f) {
+                aimLocked = true;
+                Player t = FindNearestPlayer();
+                lockedAim = t != null ? t.Center : Projectile.Center + Vector2.UnitY * 100f;
+                SoundEngine.PlaySound(SoundID.MaxMana with { Pitch = 0.4f, Volume = 0.6f }, Projectile.Center);
             }
 
-            pulsePhase += 0.1f;
-            runeRotation += 0.08f;
+            if (timer == FireTime) {
+                SoundEngine.PlaySound(SoundID.Item73 with { Pitch = 0.2f, Volume = 0.8f }, Projectile.Center);
+                if (Main.netMode != NetmodeID.MultiplayerClient) {
+                    Vector2 dir = (lockedAim - Projectile.Center).SafeNormalize(Vector2.UnitY);
+                    var p = Projectile.NewProjectileDirect(Projectile.GetSource_FromThis(), Projectile.Center,
+                        dir * 17f, ModContent.ProjectileType<GhostProjectile>(),
+                        Projectile.damage, 0f, -1, 3f, 0f, Projectile.ai[2]);
+                    p.netUpdate = true;
+                }
+            }
 
-            // 符文粒子效果
-            if (Main.rand.NextBool(2)) {
-                float particleAngle = Main.rand.NextFloat(MathHelper.TwoPi);
-                float particleRadius = 25f + MathF.Sin(pulsePhase + particleAngle * 3) * 8f;
-                Vector2 dustPos = Projectile.Center + new Vector2(MathF.Cos(particleAngle), MathF.Sin(particleAngle)) * particleRadius;
+            if (timer > FireTime + 24f)
+                Projectile.Kill();
 
-                var d = Dust.NewDustPerfect(dustPos, DustID.SpectreStaff);
+            float vis = Visibility();
+            Lighting.AddLight(Projectile.Center, new Color(255, 240, 200).ToVector3() * 0.45f * vis);
+        }
+
+        /// <summary>mode2 摄魂帷: 锚定结界 40f 展开 → 驻留 300f (10% 减速 + 周期魂蚀) → 26f 收拢。</summary>
+        private void AI_Veil() {
+            Projectile.velocity = Vector2.Zero;
+            if (timer == 1f)
+                Projectile.timeLeft = 366;
+
+            veilRadius = timer < 40f
+                ? MathHelper.Lerp(0f, 420f, timer / 40f)
+                : Projectile.timeLeft < 26 ? veilRadius * 0.92f : 420f;
+
+            if (veilRadius > 60f) {
+                for (int i = 0; i < Main.maxPlayers; i++) {
+                    Player p = Main.player[i];
+                    if (p == null || !p.active || p.dead || p.Distance(Projectile.Center) > veilRadius)
+                        continue;
+                    var mp = p.GetModPlayer<BAWPlayer>();
+                    mp.ApplyYinQiCorrosion(10); // 10% 减速 (出域即解)
+                    if (timer % 60 == 0)
+                        UnderworldField.AddSoulErosion(p, 1);
+                }
+            }
+
+            // 边界游光 (稀疏, 结界主体由 ArenaRunic 绘制)
+            if (!Main.dedServ && veilRadius > 60f && Main.rand.NextBool(4)) {
+                float ang = Main.rand.NextFloat(MathHelper.TwoPi);
+                var d = Dust.NewDustPerfect(Projectile.Center + ang.ToRotationVector2() * veilRadius, DustID.SpectreStaff);
                 d.noGravity = true;
-                d.scale = 0.8f;
-                d.velocity = new Vector2(MathF.Cos(particleAngle + MathHelper.PiOver2), MathF.Sin(particleAngle + MathHelper.PiOver2)) * 2.5f;
-                d.alpha = 100;
+                d.scale = 0.9f;
+                d.velocity = (ang + MathHelper.PiOver2).ToRotationVector2() * 1.4f;
             }
 
-            // 连接线粒子（连接到其他法阵）
-            if (Main.rand.NextBool(8) && targetPlayer != null) {
-                // 找到同类型的其他弹幕
-                foreach (var proj in Main.projectile) {
-                    if (proj.active && proj.type == Projectile.type && proj.whoAmI != Projectile.whoAmI) {
-                        float dist = Vector2.Distance(Projectile.Center, proj.Center);
-                        if (dist < 400f) {
-                            Vector2 midPoint = (Projectile.Center + proj.Center) / 2f;
-                            var d = Dust.NewDustPerfect(midPoint + Main.rand.NextVector2Circular(20, 20), DustID.SpectreStaff);
-                            d.noGravity = true;
-                            d.scale = 0.5f;
-                            d.alpha = 150;
-                            break;
-                        }
-                    }
-                }
-            }
+            Lighting.AddLight(Projectile.Center, new Color(160, 170, 230).ToVector3() * 0.4f);
+        }
 
-            Lighting.AddLight(Projectile.Center, new Color(130, 150, 255).ToVector3() * (0.4f + MathF.Sin(pulsePhase) * 0.1f));
+        private float Visibility() {
+            if (Mode != 1)
+                return 1f;
+            if (timer < AppearTime)
+                return 0f;
+            return MathHelper.Clamp((timer - AppearTime) / 50f, 0f, 1f);
         }
 
         public override bool PreDraw(ref Color lightColor) {
             SpriteBatch sb = Main.spriteBatch;
-            var tex = BAWHelper.DustTexture;
-            if (tex == null) return false;
 
-            Vector2 origin = tex.Size() / 2f;
-
-            // 绘制多层光环
-            for (int ring = 0; ring < 3; ring++) {
-                float ringRadius = 20f + ring * 12f;
-                float ringAlpha = 0.5f - ring * 0.15f;
-                int segments = 12 - ring * 2;
-                float ringRotation = runeRotation * (ring % 2 == 0 ? 1 : -1);
-
-                for (int i = 0; i < segments; i++) {
-                    float angle = ringRotation + MathHelper.TwoPi * i / segments;
-                    float pulse = MathF.Sin(pulsePhase + angle * 2) * 0.3f + 0.7f;
-                    Vector2 pos = Projectile.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * ringRadius;
-
-                    Color runeColor = new Color(150, 180, 255) * ringAlpha * pulse;
-                    runeColor.A = 0;
-
-                    float runeScale = 0.6f + pulse * 0.3f;
-                    sb.Draw(tex, pos - Main.screenPosition, null, runeColor, angle + MathHelper.PiOver4, origin, runeScale, SpriteEffects.None, 0);
-                }
+            if (Mode == 2) {
+                DrawVeil(sb);
+                return false;
             }
 
-            // 中心核心
-            float corePulse = 1f + MathF.Sin(pulsePhase * 1.5f) * 0.2f;
-            BAWHelper.DrawGhostOrb(sb, Projectile.Center,
-                new Color(180, 200, 255), new Color(100, 150, 255),
-                1.5f * corePulse, pulsePhase);
+            float vis = Visibility();
+            if (vis <= 0.01f)
+                return false;
+
+            // 灯焰 (程序魂火): 充能/点射前更旺
+            float flameBoost = 0.55f;
+            if (Mode == 0 && landTime >= 0f)
+                flameBoost = 0.55f + 0.45f * MathHelper.Clamp((timer - landTime) / ChargeTime, 0f, 1f);
+            if (Mode == 1 && aimLocked)
+                flameBoost = 1f;
+
+            BAWFX.DrawSoulFlame(sb, Projectile.Center - new Vector2(0f, 10f), new Vector2(64f, 92f),
+                new Color(255, 244, 210), new Color(255, 210, 140), Projectile.whoAmI * 0.31f, flameBoost * vis, 0f, 1.25f);
+
+            // 灯体 (CPU 光层)
+            var tex = BAWHelper.DustTexture;
+            if (tex != null) {
+                Vector2 origin = tex.Size() / 2f;
+                float pulse = 1f + MathF.Sin(pulsePhase) * 0.12f;
+                Color shell = new Color(255, 240, 210, 0) * (0.7f * vis);
+                sb.Draw(tex, Projectile.Center - Main.screenPosition, null, shell, 0f, origin, 1.1f * pulse, SpriteEffects.None, 0);
+                Color coreC = new Color(255, 255, 240, 0) * (0.9f * vis);
+                sb.Draw(tex, Projectile.Center - Main.screenPosition, null, coreC, 0f, origin, 0.45f * pulse, SpriteEffects.None, 0);
+            }
+
+            // mode1 锁线预警
+            if (Mode == 1 && aimLocked && timer < FireTime) {
+                float k = Utils.GetLerpValue(FireTime - 8f, FireTime, timer, true);
+                Color c = Color.Lerp(BAWFX.YangColor, TelegraphColors.Lethal, k);
+                Vector2 dir = (lockedAim - Projectile.Center).SafeNormalize(Vector2.UnitY);
+                ACMShaders.DrawBeam(Projectile.Center, Projectile.Center + dir * 1300f, 6f + k * 5f, c, c * 0.4f, 0.3f + k * 0.5f);
+            }
 
             return false;
         }
 
-        public override void OnHitPlayer(Player target, Player.HurtInfo info) {
-            target.GetModPlayer<BAWPlayer>().ApplyYinQiCorrosion(120);
-            SoundEngine.PlaySound(SoundID.Item29 with { Pitch = 0.2f }, Projectile.Center);
+        /// <summary>摄魂帷: ArenaRunic 屏幕空间结界 (法阵模式, 幽蓝紫)。</summary>
+        private void DrawVeil(SpriteBatch sb) {
+            if (veilRadius < 8f)
+                return;
+            Effect fx = ACMShaders.ArenaRunic;
+            if (fx == null)
+                return;
+
+            ACMShaders.WorldDecalParams(Projectile.Center, veilRadius, out Vector2 uvCenter, out float radiusFrac, out float aspect);
+            float intensity = MathHelper.Clamp(veilRadius / 420f, 0f, 1f) * 0.85f;
+
+            fx.Parameters["uTime"]?.SetValue(Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uCenter"]?.SetValue(uvCenter);
+            fx.Parameters["uRadius"]?.SetValue(radiusFrac);
+            fx.Parameters["uIntensity"]?.SetValue(intensity);
+            fx.Parameters["uAspect"]?.SetValue(aspect);
+            fx.Parameters["uColorPrimary"]?.SetValue(new Vector4(TelegraphColors.NetherViolet.ToVector3(), 1f));
+            fx.Parameters["uColorSecondary"]?.SetValue(new Vector4(BAWFX.YangColor.ToVector3(), 1f));
+            fx.Parameters["uRuneFreq"]?.SetValue(11f);
+            fx.Parameters["uMode"]?.SetValue(0f);
+            fx.Parameters["uShape"]?.SetValue(0f);
+            ACMShaders.DrawScreenSpaceDecal(sb, fx, BlendState.Additive);
         }
 
         public override void OnKill(int timeLeft) {
-            SoundEngine.PlaySound(SoundID.Item10, Projectile.Center);
-            for (int i = 0; i < 20; i++) {
-                float angle = MathHelper.TwoPi * i / 20;
-                Vector2 vel = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 5f;
+            if (Main.dedServ)
+                return;
+            SoundEngine.PlaySound(SoundID.Item10 with { Pitch = 0.2f, Volume = 0.6f }, Projectile.Center);
+            for (int i = 0; i < 12; i++) {
                 var d = Dust.NewDustPerfect(Projectile.Center, DustID.SpectreStaff);
                 d.noGravity = true;
                 d.scale = 1.2f;
-                d.velocity = vel;
+                d.velocity = Main.rand.NextVector2Circular(5f, 5f);
             }
+        }
+
+        private Player FindNearestPlayer() {
+            Player best = null;
+            float bestDist = float.MaxValue;
+            for (int i = 0; i < Main.maxPlayers; i++) {
+                Player p = Main.player[i];
+                if (p != null && p.active && !p.dead) {
+                    float dist = p.Distance(Projectile.Center);
+                    if (dist < bestDist) { bestDist = dist; best = p; }
+                }
+            }
+            return best;
         }
     }
 
     /// <summary>
-    /// 白无常幽魂波弹幕 - 扩散的幽灵波浪
+    /// 幽魂环波 (V3): 恒速扩散的环带判定。
+    /// ai[0]=变体: 0 阴(幽紫)/1 阳(暖白) 带双对称缺口, 2 灯扑白环无缺口 (更慢可跑赢)。
+    /// ai[1]=缺口中心角 (缓慢旋转, 缺口半宽 24°); ai[2]=扩散速度 (0=默认 4.5)。
     /// </summary>
     public class GhostWaveProjectile : ModProjectile
     {
         public override string Texture => BAWHelper.Path + "BAWDust";
 
-        private float waveWidth = 1f;
-        private float pulsePhase = 0f;
+        private float radius;
+        private float pulsePhase;
 
-        public override void SetStaticDefaults() {
-            ProjectileID.Sets.TrailCacheLength[Projectile.type] = 20;
-            ProjectileID.Sets.TrailingMode[Projectile.type] = 2;
-        }
+        private int Variant => (int)Projectile.ai[0];
+        private bool HasGap => Variant != 2;
+        private float GapHalf => 0.42f; // ~24°
+        private float Speed => Projectile.ai[2] > 0.5f ? Projectile.ai[2] : 4.5f;
+        private float MaxRadius => Variant == 2 ? 480f : 560f;
 
         public override void SetDefaults() {
-            Projectile.width = 60;
+            Projectile.width = 30;
             Projectile.height = 30;
             Projectile.hostile = true;
             Projectile.friendly = false;
             Projectile.tileCollide = false;
             Projectile.penetrate = -1;
             Projectile.timeLeft = 200;
-            Projectile.alpha = 80;
+            Projectile.netImportant = true;
         }
 
         public override void AI() {
-            Projectile.rotation = Projectile.velocity.ToRotation();
-            pulsePhase += 0.15f;
+            pulsePhase += 0.14f;
+            radius += Speed;
+            Projectile.velocity = Vector2.Zero;
 
-            // 波浪展宽
-            waveWidth = MathHelper.Lerp(waveWidth, 2.5f, 0.01f);
+            // 缺口缓旋 (可读的移动安全窗)
+            if (HasGap)
+                Projectile.ai[1] += 0.006f;
 
-            // 波浪运动
-            float waveOffset = MathF.Sin(pulsePhase * 0.8f) * 4f;
-            Vector2 perpendicular = Projectile.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
-            Projectile.position += perpendicular * waveOffset;
+            if (radius >= MaxRadius)
+                Projectile.Kill();
 
-            // 渐进加速
-            if (Projectile.velocity.Length() < 16) {
-                Projectile.velocity *= 1.012f;
-            }
-
-            // 波浪粒子效果
-            for (int i = 0; i < 3; i++) {
-                float offsetY = (i - 1) * 15f * waveWidth;
-                Vector2 dustPos = Projectile.Center + perpendicular * offsetY;
-                dustPos += Main.rand.NextVector2Circular(8, 8);
-
-                var d = Dust.NewDustPerfect(dustPos, DustID.SpectreStaff);
-                d.noGravity = true;
-                d.scale = 0.9f;
-                d.velocity = -Projectile.velocity * 0.1f;
-                d.alpha = 80;
-            }
-
-            Lighting.AddLight(Projectile.Center, new Color(160, 180, 255).ToVector3() * 0.5f);
+            Lighting.AddLight(Projectile.Center, (Variant == 0 ? BAWFX.YinColor : BAWFX.YangColor).ToVector3() * 0.35f);
         }
 
-        public override bool PreDraw(ref Color lightColor) {
-            SpriteBatch sb = Main.spriteBatch;
-            var tex = BAWHelper.DustTexture;
-            if (tex == null) return false;
+        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
+            if (radius < 24f)
+                return false;
 
-            Vector2 origin = tex.Size() / 2f;
-            Vector2 perpendicular = Projectile.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
+            Vector2 c = Projectile.Center;
+            Vector2 p = targetHitbox.Center.ToVector2();
+            float dist = Vector2.Distance(c, p);
+            if (MathF.Abs(dist - radius) > 15f + targetHitbox.Width * 0.5f)
+                return false;
 
-            // 绘制波浪拖尾
-            for (int i = Projectile.oldPos.Length - 1; i >= 0; i--) {
-                if (Projectile.oldPos[i] == Vector2.Zero) continue;
-
-                float progress = 1f - (float)i / Projectile.oldPos.Length;
-                float trailWidth = waveWidth * progress;
-
-                // 多层波浪效果
-                for (int layer = -2; layer <= 2; layer++) {
-                    float layerOffset = layer * 12f * trailWidth;
-                    float layerAlpha = (1f - MathF.Abs(layer) / 3f) * progress * 0.4f;
-
-                    Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2 + perpendicular * layerOffset - Main.screenPosition;
-
-                    // 波浪起伏
-                    float waveY = MathF.Sin(pulsePhase + i * 0.2f + layer * 0.5f) * 3f;
-                    drawPos.Y += waveY;
-
-                    Color trailColor = Color.Lerp(new Color(150, 180, 255), new Color(200, 220, 255), progress) * layerAlpha;
-                    trailColor.A = 0;
-
-                    Vector2 trailScale = new Vector2(1f + MathF.Abs(layer) * 0.2f, 0.8f * progress);
-                    sb.Draw(tex, drawPos, null, trailColor, Projectile.oldRot[i], origin, trailScale, SpriteEffects.None, 0);
-                }
+            if (HasGap) {
+                float ang = (p - c).ToRotation();
+                float d1 = MathF.Abs(MathHelper.WrapAngle(ang - Projectile.ai[1]));
+                float d2 = MathF.Abs(MathHelper.WrapAngle(ang - Projectile.ai[1] - MathHelper.Pi));
+                if (MathF.Min(d1, d2) < GapHalf)
+                    return false; // 缺口内安全
             }
-
-            // 主体波浪
-            float mainPulse = 1f + MathF.Sin(pulsePhase) * 0.2f;
-            for (int w = -2; w <= 2; w++) {
-                float wOffset = w * 15f * waveWidth;
-                float wAlpha = 1f - MathF.Abs(w) / 3f;
-                Vector2 wPos = Projectile.Center + perpendicular * wOffset;
-
-                Color waveColor = new Color(180, 200, 255) * wAlpha * 0.7f;
-                waveColor.A = 0;
-
-                sb.Draw(tex, wPos - Main.screenPosition, null, waveColor, Projectile.rotation, origin,
-                    new Vector2(1.5f, 1.2f * mainPulse), SpriteEffects.None, 0);
-            }
-
-            // 前端亮点
-            Color headColor = Color.White * 0.6f;
-            headColor.A = 0;
-            sb.Draw(tex, Projectile.Center - Main.screenPosition, null, headColor,
-                Projectile.rotation, origin, 0.8f * mainPulse, SpriteEffects.None, 0);
-
-            return false;
+            return true;
         }
 
         public override void OnHitPlayer(Player target, Player.HurtInfo info) {
             target.GetModPlayer<BAWPlayer>().ApplyYinQiCorrosion(150);
         }
 
-        public override void OnKill(int timeLeft) {
-            SoundEngine.PlaySound(SoundID.Item10 with { Pitch = 0.3f }, Projectile.Center);
+        public override bool PreDraw(ref Color lightColor) {
+            SpriteBatch sb = Main.spriteBatch;
+            var tex = BAWHelper.DustTexture;
+            if (tex == null || radius < 4f)
+                return false;
 
-            Vector2 perpendicular = Projectile.velocity.SafeNormalize(Vector2.Zero).RotatedBy(MathHelper.PiOver2);
-            for (int i = 0; i < 20; i++) {
-                float offset = (i - 10) * 8f;
-                var d = Dust.NewDustPerfect(Projectile.Center + perpendicular * offset, DustID.SpectreStaff);
+            Vector2 origin = tex.Size() / 2f;
+            Color body = Variant switch {
+                0 => BAWFX.YinColor,
+                1 => BAWFX.YangColor,
+                _ => new Color(220, 230, 255)
+            };
+            body.A = 0;
+            float fade = MathHelper.Clamp((MaxRadius - radius) / 120f, 0f, 1f);
+
+            const int segs = 44;
+            for (int i = 0; i < segs; i++) {
+                float ang = MathHelper.TwoPi / segs * i + pulsePhase * 0.05f;
+                if (HasGap) {
+                    float d1 = MathF.Abs(MathHelper.WrapAngle(ang - Projectile.ai[1]));
+                    float d2 = MathF.Abs(MathHelper.WrapAngle(ang - Projectile.ai[1] - MathHelper.Pi));
+                    if (MathF.Min(d1, d2) < GapHalf)
+                        continue; // 缺口不绘制 = 视觉与判定一致
+                }
+                Vector2 pos = Projectile.Center + ang.ToRotationVector2() * radius;
+                float pulse = 0.75f + MathF.Sin(pulsePhase + i * 0.6f) * 0.25f;
+                sb.Draw(tex, pos - Main.screenPosition, null, body * (0.5f * fade * pulse), ang, origin, 0.85f, SpriteEffects.None, 0);
+                sb.Draw(tex, pos - Main.screenPosition, null, Color.White with { A = 0 } * (0.22f * fade * pulse), ang, origin, 0.4f, SpriteEffects.None, 0);
+            }
+
+            return false;
+        }
+
+        public override void OnKill(int timeLeft) {
+            if (Main.dedServ)
+                return;
+            for (int i = 0; i < 16; i++) {
+                float ang = MathHelper.TwoPi / 16f * i;
+                var d = Dust.NewDustPerfect(Projectile.Center + ang.ToRotationVector2() * radius,
+                    Variant == 0 ? DustID.Shadowflame : DustID.SpectreStaff);
                 d.noGravity = true;
                 d.scale = 1.1f;
-                d.velocity = Main.rand.NextVector2Circular(4, 4);
+                d.velocity = ang.ToRotationVector2() * 2f;
             }
         }
     }
 
     /// <summary>
-    /// 白无常灵魂吸取弹幕 - 连接并吸取玩家生命
+    /// 汲魂链 (V3): 缓速魂梭追踪 → 命中挂链 (叠魂蚀 + 白使回血)。
+    /// **挣断机制**: 与白使拉开 >640px 即断 (播报"挣断!"), 240f 超时自断 —— 反制即玩法。
+    /// ai[0]=所属 NPC; ai[1]=被挂玩家 whoAmI+1 (0=未挂)。不再直接 Hurt 扣血 (多人安全)。
     /// </summary>
     public class SoulDrainProjectile : ModProjectile
     {
         public override string Texture => BAWHelper.Path + "BAWDust";
 
-        private bool isConnected = false;
-        private Player connectedPlayer = null;
-        private float drainTimer = 0f;
-        private float connectionAlpha = 0f;
-        private float pulsePhase = 0f;
+        private float latchTimer;
+        private float pulsePhase;
+        private float beamAlpha;
 
-        private NPC owner => Projectile.ai[0] >= 0 && (int)Projectile.ai[0] < Main.npc.Length
+        private NPC Owner => Projectile.ai[0] >= 0 && Projectile.ai[0] < Main.npc.Length
             ? Main.npc[(int)Projectile.ai[0]] : null;
+        private Player Latched => Projectile.ai[1] >= 1f && Projectile.ai[1] <= Main.maxPlayers
+            ? Main.player[(int)Projectile.ai[1] - 1] : null;
+
+        private const float BreakDistance = 640f;
+        private const float MaxLatch = 240f;
 
         public override void SetStaticDefaults() {
             ProjectileID.Sets.TrailCacheLength[Projectile.type] = 8;
@@ -470,90 +633,78 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
         }
 
         public override void SetDefaults() {
-            Projectile.width = 35;
-            Projectile.height = 35;
+            Projectile.width = 32;
+            Projectile.height = 32;
             Projectile.hostile = true;
             Projectile.friendly = false;
             Projectile.tileCollide = false;
             Projectile.penetrate = -1;
-            Projectile.timeLeft = 300;
+            Projectile.timeLeft = 480;
+            Projectile.netImportant = true;
         }
 
         public override void AI() {
+            pulsePhase += 0.1f;
+            NPC owner = Owner;
             if (owner == null || !owner.active) {
                 Projectile.Kill();
                 return;
             }
 
-            pulsePhase += 0.1f;
-
-            if (!isConnected) {
-                // 追踪玩家
-                Player target = null;
-                float closestDist = 500f;
-                foreach (var p in Main.player) {
-                    if (p != null && p.active && !p.dead) {
-                        float dist = p.Distance(Projectile.Center);
-                        if (dist < closestDist) {
-                            closestDist = dist;
-                            target = p;
-                        }
-                    }
+            Player latched = Latched;
+            if (latched == null) {
+                // 追踪 (0.045 温和转向, 可甩)
+                Player t = FindNearest(720f);
+                if (t != null) {
+                    Vector2 to = (t.Center - Projectile.Center).SafeNormalize(Vector2.Zero);
+                    Projectile.velocity = Vector2.Lerp(Projectile.velocity, to * 12f, 0.045f);
                 }
-
-                if (target != null) {
-                    Vector2 toTarget = (target.Center - Projectile.Center).SafeNormalize(Vector2.Zero);
-                    Projectile.velocity = Vector2.Lerp(Projectile.velocity, toTarget * 14, 0.07f);
-
-                    // 检测命中
-                    if (Projectile.Hitbox.Intersects(target.Hitbox)) {
-                        isConnected = true;
-                        connectedPlayer = target;
-                        Projectile.velocity = Vector2.Zero;
-                        SoundEngine.PlaySound(SoundID.NPCHit54 with { Pitch = -0.2f, Volume = 1.2f }, Projectile.Center);
-                    }
-                }
-
                 Projectile.rotation = Projectile.velocity.ToRotation();
-                connectionAlpha = MathHelper.Lerp(connectionAlpha, 0f, 0.1f);
+                beamAlpha = MathHelper.Lerp(beamAlpha, 0f, 0.1f);
 
-                // 追踪粒子
-                if (Main.rand.NextBool(2)) {
-                    var d = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(15, 15), DustID.SpectreStaff);
+                if (!Main.dedServ && Main.rand.NextBool(2)) {
+                    var d = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(12f, 12f), DustID.SpectreStaff);
                     d.noGravity = true;
-                    d.scale = 1.0f;
-                    d.velocity = -Projectile.velocity * 0.2f;
+                    d.scale = 1f;
+                    d.velocity = -Projectile.velocity * 0.18f;
                 }
+                // 空放超时
+                if (Projectile.timeLeft < 240)
+                    Projectile.Kill();
             }
-            else if (connectedPlayer != null && connectedPlayer.active && !connectedPlayer.dead) {
-                // 吸取状态
-                connectionAlpha = MathHelper.Lerp(connectionAlpha, 1f, 0.05f);
-                Projectile.Center = connectedPlayer.Center;
-                drainTimer++;
+            else if (latched.active && !latched.dead) {
+                latchTimer++;
+                beamAlpha = MathHelper.Lerp(beamAlpha, 1f, 0.06f);
+                Projectile.Center = latched.Center;
+                Projectile.velocity = Vector2.Zero;
 
-                // 从玩家吸取能量到boss
-                if (drainTimer % 12 == 0) {
-                    // 伤害玩家
-                    connectedPlayer.Hurt(Terraria.DataStructures.PlayerDeathReason.ByNPC(owner.whoAmI), 8, 0);
-
-                    // 治疗boss
-                    if (owner.life < owner.lifeMax) {
-                        int healAmount = 60;
-                        owner.life += healAmount;
-                        if (owner.life > owner.lifeMax)
-                            owner.life = owner.lifeMax;
-                        owner.HealEffect(healAmount);
+                // 汲魂: 叠魂蚀 (身份层 DoT) + 白使回血 —— 不直接扣血 (多人安全)
+                if (latchTimer % 45 == 0)
+                    UnderworldField.AddSoulErosion(latched, 1);
+                if (latchTimer % 30 == 0) {
+                    if (Main.netMode != NetmodeID.MultiplayerClient && owner.life < owner.lifeMax) {
+                        owner.life = Math.Min(owner.lifeMax, owner.life + 30);
+                        owner.HealEffect(30);
                     }
-
-                    // 应用debuff
-                    connectedPlayer.GetModPlayer<BAWPlayer>().ApplyYinQiCorrosion(30);
-
-                    // 吸取脉冲音效
                     SoundEngine.PlaySound(SoundID.Item29 with { Pitch = 0.5f, Volume = 0.5f }, Projectile.Center);
                 }
 
-                // 吸取一定时间后断开
-                if (drainTimer > 150 || !connectedPlayer.active || connectedPlayer.dead) {
+                // 汲取流粒子: 玩家 → 白使
+                if (!Main.dedServ && Main.rand.NextBool(2)) {
+                    Vector2 pos = Vector2.Lerp(latched.Center, owner.Center, Main.rand.NextFloat());
+                    var d = Dust.NewDustPerfect(pos, DustID.SpectreStaff);
+                    d.noGravity = true;
+                    d.scale = 1.1f;
+                    d.velocity = (owner.Center - latched.Center).SafeNormalize(Vector2.Zero) * 7f;
+                }
+
+                // 挣断 / 超时
+                if (latched.Distance(owner.Center) > BreakDistance || latchTimer > MaxLatch) {
+                    if (latched.whoAmI == Main.myPlayer && latchTimer <= MaxLatch) {
+                        string text = Language.GetTextValue("Mods.AncientChineseMythology.NPCs.WhiteImpermanence.TetherBreak");
+                        CombatText.NewText(latched.Hitbox, TelegraphColors.Safe, text, true);
+                    }
+                    SoundEngine.PlaySound(SoundID.Item20 with { Pitch = 0.6f, Volume = 0.9f }, Projectile.Center);
                     Projectile.Kill();
                 }
             }
@@ -561,132 +712,62 @@ namespace AncientChineseMythology.Underworlds.Boss.BAWImpermanences
                 Projectile.Kill();
             }
 
-            Lighting.AddLight(Projectile.Center, new Color(180, 100, 220).ToVector3() * (0.4f + connectionAlpha * 0.3f));
+            Lighting.AddLight(Projectile.Center, new Color(180, 150, 230).ToVector3() * (0.35f + beamAlpha * 0.25f));
+        }
+
+        public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox) {
+            return Latched != null ? false : null; // 挂链后不再重复判伤
+        }
+
+        public override void OnHitPlayer(Player target, Player.HurtInfo info) {
+            if (Projectile.ai[1] < 1f) {
+                Projectile.ai[1] = target.whoAmI + 1;
+                Projectile.netUpdate = true;
+                target.GetModPlayer<BAWPlayer>().ApplyYinQiCorrosion(90);
+                SoundEngine.PlaySound(SoundID.NPCHit54 with { Pitch = -0.2f, Volume = 1.1f }, Projectile.Center);
+            }
         }
 
         public override bool PreDraw(ref Color lightColor) {
-            if (owner == null) return false;
-
             SpriteBatch sb = Main.spriteBatch;
+            NPC owner = Owner;
 
-            // 绘制能量吸取射线
-            if (connectionAlpha > 0.1f) {
-                DrawDrainBeam(sb);
+            // 汲魂链光束 (白使 ↔ 玩家)
+            if (owner != null && beamAlpha > 0.05f) {
+                Color core = Color.Lerp(new Color(220, 200, 255), Color.White, MathF.Sin(pulsePhase) * 0.5f + 0.5f);
+                ACMShaders.DrawBeam(Projectile.Center, owner.Center, 9f * beamAlpha, core, BAWFX.YangColor * 0.5f, beamAlpha * 0.8f);
             }
 
-            // 绘制弹幕本体
-            if (!isConnected) {
-                // 追踪状态：绘制追踪光球
-                DrawTrackingOrb(sb);
-            }
-            else {
-                // 吸取状态：绘制附着效果
-                DrawDrainEffect(sb);
-            }
+            // 魂梭本体
+            BAWHelper.DrawGhostOrb(sb, Projectile.Center,
+                new Color(210, 190, 255), new Color(160, 120, 230), Latched != null ? 1.3f : 1.6f, pulsePhase);
 
             return false;
         }
 
-        private void DrawTrackingOrb(SpriteBatch sb) {
-            var tex = BAWHelper.DustTexture;
-            if (tex == null) return;
-
-            Vector2 origin = tex.Size() / 2f;
-
-            // 拖尾
-            for (int i = 0; i < Projectile.oldPos.Length; i++) {
-                if (Projectile.oldPos[i] == Vector2.Zero) continue;
-
-                float progress = 1f - (float)i / Projectile.oldPos.Length;
-                Color trailColor = new Color(180, 100, 220) * progress * 0.4f;
-                trailColor.A = 0;
-
-                Vector2 drawPos = Projectile.oldPos[i] + Projectile.Size / 2 - Main.screenPosition;
-                sb.Draw(tex, drawPos, null, trailColor, 0f, origin, progress * 1.5f, SpriteEffects.None, 0);
-            }
-
-            // 主体
-            BAWHelper.DrawGhostOrb(sb, Projectile.Center,
-                new Color(200, 120, 255), new Color(150, 80, 200),
-                1.8f, pulsePhase);
-        }
-
-        private void DrawDrainBeam(SpriteBatch sb) {
-            // 使用高级能量射线绘制
-            Color beamColor = Color.Lerp(new Color(180, 100, 220), new Color(255, 150, 255), MathF.Sin(pulsePhase) * 0.5f + 0.5f);
-            beamColor *= connectionAlpha;
-
-            BAWHelper.DrawEnergyBeam(sb, connectedPlayer?.Center ?? Projectile.Center, owner.Center, beamColor,
-                12f * connectionAlpha, pulsePhase * 60f);
-
-            // 沿射线流动的能量粒子（视觉上的，不是实际粒子）
-            var tex = BAWHelper.DustTexture;
-            if (tex == null || connectedPlayer == null) return;
-
-            Vector2 start = connectedPlayer.Center;
-            Vector2 end = owner.Center;
-            Vector2 direction = (end - start).SafeNormalize(Vector2.Zero);
-            float distance = Vector2.Distance(start, end);
-
-            int orbCount = 5;
-            for (int i = 0; i < orbCount; i++) {
-                float t = ((drainTimer * 0.03f + i / (float)orbCount) % 1f);
-                Vector2 orbPos = Vector2.Lerp(start, end, t);
-
-                float orbPulse = MathF.Sin(pulsePhase + i * MathHelper.Pi / orbCount) * 0.3f + 0.7f;
-                Color orbColor = new Color(220, 150, 255) * connectionAlpha * orbPulse;
-                orbColor.A = 0;
-
-                sb.Draw(tex, orbPos - Main.screenPosition, null, orbColor, 0f, tex.Size() / 2f, 0.8f * orbPulse, SpriteEffects.None, 0);
-            }
-        }
-
-        private void DrawDrainEffect(SpriteBatch sb) {
-            if (connectedPlayer == null) return;
-
-            var tex = BAWHelper.DustTexture;
-            if (tex == null) return;
-
-            Vector2 origin = tex.Size() / 2f;
-
-            // 在玩家身上绘制吸取漩涡
-            int spiralArms = 3;
-            for (int arm = 0; arm < spiralArms; arm++) {
-                float baseAngle = pulsePhase + MathHelper.TwoPi * arm / spiralArms;
-
-                for (int i = 0; i < 8; i++) {
-                    float t = i / 8f;
-                    float spiralRadius = 40f * (1f - t);
-                    float spiralAngle = baseAngle + t * MathHelper.TwoPi * 2f;
-
-                    Vector2 pos = connectedPlayer.Center + new Vector2(MathF.Cos(spiralAngle), MathF.Sin(spiralAngle)) * spiralRadius;
-
-                    float alpha = (1f - t) * connectionAlpha * 0.6f;
-                    Color spiralColor = new Color(200, 120, 255) * alpha;
-                    spiralColor.A = 0;
-
-                    sb.Draw(tex, pos - Main.screenPosition, null, spiralColor, spiralAngle, origin, 0.5f * (1f - t * 0.5f), SpriteEffects.None, 0);
-                }
-            }
-
-            // 中心吸取点
-            float centerPulse = 1f + MathF.Sin(pulsePhase * 2f) * 0.3f;
-            BAWHelper.DrawGhostOrb(sb, connectedPlayer.Center,
-                new Color(255, 150, 255) * connectionAlpha,
-                new Color(200, 100, 220),
-                1.2f * centerPulse, pulsePhase * 2f);
-        }
-
         public override void OnKill(int timeLeft) {
+            if (Main.dedServ)
+                return;
             SoundEngine.PlaySound(SoundID.Item10 with { Pitch = -0.3f }, Projectile.Center);
-
-            // 断开连接的爆发效果
-            for (int i = 0; i < 20; i++) {
+            for (int i = 0; i < 14; i++) {
                 var d = Dust.NewDustPerfect(Projectile.Center, DustID.SpectreStaff);
                 d.noGravity = true;
-                d.scale = 1.4f;
-                d.velocity = Main.rand.NextVector2Circular(8, 8);
+                d.scale = 1.3f;
+                d.velocity = Main.rand.NextVector2Circular(7f, 7f);
             }
+        }
+
+        private Player FindNearest(float maxDist) {
+            Player best = null;
+            float bestDist = maxDist;
+            for (int i = 0; i < Main.maxPlayers; i++) {
+                Player p = Main.player[i];
+                if (p != null && p.active && !p.dead) {
+                    float dist = p.Distance(Projectile.Center);
+                    if (dist < bestDist) { bestDist = dist; best = p; }
+                }
+            }
+            return best;
         }
     }
 }

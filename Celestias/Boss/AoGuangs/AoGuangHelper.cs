@@ -1,14 +1,93 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
+using ReLogic.Content;
 using System;
 using Terraria;
+using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Celestias.Boss.AoGuangs
 {
     /// <summary>
-    /// 东海龙王辅助类 - 颜色和绘制工具
+    /// 东海龙王辅助类 - 颜色、专属着色器缓存与绘制工具
     /// </summary>
     public static class AoGuangHelper
     {
+        #region 专属着色器缓存 (每个 Effect 只 Request 一次)
+
+        private const string EffectPath = "AncientChineseMythology/Effects/";
+
+        private static Asset<Effect> _waterSerpent;
+        private static Asset<Effect> _tidalWall;
+        private static Asset<Effect> _abyssalSea;
+
+        /// <summary>龙躯水流 ribbon (TriangleStrip 像素着色器, s0=噪声)。</summary>
+        public static Effect WaterSerpentEffect => GetEffect(ref _waterSerpent, "AoGuangWaterSerpent");
+        /// <summary>浪墙屏幕空间 decal (s0=噪声): 整面巨浪 + 穿越缺口。</summary>
+        public static Effect TidalWallEffect => GetEffect(ref _tidalWall, "AoGuangTidalWall");
+        /// <summary>沧海沉浸全屏后处理 (s0=screenTarget, s1=噪声): 折射+水位线+吸入+impact frame。</summary>
+        public static Effect AbyssalSeaEffect => GetEffect(ref _abyssalSea, "AoGuangAbyssalSea");
+
+        private static Effect GetEffect(ref Asset<Effect> slot, string name) {
+            if (Main.dedServ)
+                return null;
+            slot ??= ModContent.Request<Effect>(EffectPath + name, AssetRequestMode.ImmediateLoad);
+            return slot?.Value;
+        }
+
+        #endregion
+
+        #region 浪墙 decal 绘制
+
+        /// <summary>
+        /// 绘制一面屏幕空间浪墙 (AoGuangTidalWall 着色器, 经 <see cref="ACMShaders.DrawScreenSpaceDecal"/>)。
+        /// 坐标为世界系, 内部做缩放感知的世界→屏幕 UV 换算 (两轴均以屏幕高度为单位)。
+        /// </summary>
+        /// <param name="worldLinePoint">浪墙中心线上一点 (世界坐标)。</param>
+        /// <param name="dir">行进方向单位向量 (世界系, 前沿朝向)。</param>
+        /// <param name="halfThickWorld">浪体半厚 (世界像素)。</param>
+        /// <param name="gapWorldPos">缺口中心 (世界坐标; 无缺口时传 worldLinePoint 且 gapHalfWorld=0)。</param>
+        /// <param name="gapHalfWorld">缺口半宽 (世界像素, 0=无缺口)。</param>
+        /// <param name="intensity">整体强度 0~1。</param>
+        /// <param name="warnOnly">true = 半场预警幕布模式 (dir 指向安全侧)。</param>
+        /// <param name="halfDir">半场遮罩方向 (指向危险半场, Zero=不启用) — 天倾竖落用。</param>
+        public static void DrawTidalWallDecal(SpriteBatch sb, Vector2 worldLinePoint, Vector2 dir,
+            float halfThickWorld, Vector2 gapWorldPos, float gapHalfWorld, float intensity,
+            bool warnOnly = false, Vector2 halfDir = default) {
+            if (Main.dedServ || intensity <= 0.01f)
+                return;
+            Effect fx = TidalWallEffect;
+            if (fx == null)
+                return;
+
+            // 缩放感知换算: 与 ACMShaders.WorldDecalParams 同约定
+            float zoom = Main.GameViewMatrix.Zoom.X;
+            Vector2 halfScreen = new(Main.screenWidth * 0.5f, Main.screenHeight * 0.5f);
+            Vector2 screenPt = (worldLinePoint - Main.screenPosition - halfScreen) * zoom + halfScreen;
+            Vector2 uvPoint = screenPt / new Vector2(Main.screenWidth, Main.screenHeight);
+
+            Vector2 dirN = dir.SafeNormalize(Vector2.UnitX);
+            Vector2 perp = dirN.RotatedBy(MathHelper.PiOver2);
+            float gapCenter = Vector2.Dot(gapWorldPos - worldLinePoint, perp) * zoom / Main.screenHeight;
+
+            fx.Parameters["uTime"]?.SetValue((float)Main.GlobalTimeWrappedHourly);
+            fx.Parameters["uIntensity"]?.SetValue(MathHelper.Clamp(intensity, 0f, 1f));
+            fx.Parameters["uAspect"]?.SetValue((float)Main.screenWidth / Main.screenHeight);
+            fx.Parameters["uDir"]?.SetValue(dirN);
+            fx.Parameters["uLinePoint"]?.SetValue(uvPoint);
+            fx.Parameters["uHalfThick"]?.SetValue(halfThickWorld * zoom / Main.screenHeight);
+            fx.Parameters["uGapCenter"]?.SetValue(gapCenter);
+            fx.Parameters["uGapHalf"]?.SetValue(gapHalfWorld * zoom / Main.screenHeight);
+            fx.Parameters["uWarnOnly"]?.SetValue(warnOnly ? 1f : 0f);
+            fx.Parameters["uHalfDir"]?.SetValue(halfDir);
+            fx.Parameters["uColorDeep"]?.SetValue(new Vector4(DeepSeaBlue.ToVector3(), 0.85f));
+            fx.Parameters["uColorCrest"]?.SetValue(new Vector4(FoamWhite.ToVector3(), 1f));
+            fx.Parameters["uColorSafe"]?.SetValue(new Vector4(TelegraphColors.Safe.ToVector3(), 1f));
+            fx.Parameters["uColorLethal"]?.SetValue(new Vector4(TelegraphColors.Lethal.ToVector3(), 1f));
+
+            ACMShaders.DrawScreenSpaceDecal(sb, fx, BlendState.AlphaBlend);
+        }
+
+        #endregion
+
         #region 主题颜色
 
         /// <summary>龙王蓝 - 主色调</summary>

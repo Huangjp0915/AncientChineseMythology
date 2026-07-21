@@ -93,12 +93,15 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Baihus
                 DepthStencilState.None, RasterizerState.CullNone, null,
                 Main.GameViewMatrix.TransformationMatrix);
 
-            // 高光核心
+            // 高光核心 —— 微金光: 与虚影(去饱和闪灰)对照, 标识"这片是真的"
             Texture2D glowTex = ACMAsset.SoftGlow;
             Vector2 glowOrigin = glowTex.Size() / 2f;
             Color metalGlow = new Color(200, 210, 255, 0) * 0.3f;
             sb.Draw(glowTex, drawPos, null, metalGlow, 0f,
                 glowOrigin, 0.5f, SpriteEffects.None, 0f);
+            Color goldHint = new Color(255, 215, 130, 0) * 0.22f;
+            sb.Draw(glowTex, drawPos, null, goldHint, 0f,
+                glowOrigin, 0.3f, SpriteEffects.None, 0f);
 
             sb.End();
             sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,

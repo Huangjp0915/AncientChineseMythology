@@ -147,15 +147,58 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
 
         #region Draw
 
+        // 涅槃联动标量（由 SuzakuScreenSystem 发布, 每帧 Draw 起始采样）
+        private float ashen;    // 灰烬去饱和 0~1
+        private float sunBurst; // 日轮爆亮 0~1
+
         public override void Draw(SpriteBatch spriteBatch, float minDepth, float maxDepth) {
             if (maxDepth >= 0 && minDepth < 0 && intensity > 0.01f) {
+                ashen = MathHelper.Clamp(SuzakuScreenSystem.AshenLevel, 0f, 1f);
+                sunBurst = MathHelper.Clamp(SuzakuScreenSystem.SunBurstLevel, 0f, 1f);
+
                 DrawBackground(spriteBatch);
                 DrawFireClouds(spriteBatch);
                 DrawFlamePillars(spriteBatch);
                 DrawHeatWaves(spriteBatch);
                 DrawEmbers(spriteBatch);
+                DrawBurstSun(spriteBatch);
                 DrawVignette(spriteBatch);
             }
+        }
+
+        /// <summary>涅槃灰烬期的天幕去饱和（按亮度回灰）。</summary>
+        private Color Grey(Color c) {
+            if (ashen <= 0.01f) return c;
+            float l = (c.R * 0.3f + c.G * 0.59f + c.B * 0.11f) / 255f;
+            return Color.Lerp(c, new Color(l * 0.9f, l * 0.9f, l * 0.92f), ashen * 0.85f);
+        }
+
+        /// <summary>爆燃日轮：入场日轮开屏 / 涅槃爆燃时的天空巨日同步爆亮。</summary>
+        private void DrawBurstSun(SpriteBatch sb) {
+            if (sunBurst <= 0.02f) return;
+            Texture2D glow = ACMAsset.SoftGlow;
+            if (glow == null) return;
+
+            Vector2 pos = new(Main.screenWidth * 0.5f, Main.screenHeight * 0.30f);
+            Vector2 go = glow.Size() / 2f;
+            float baseScale = MathF.Min(Main.screenWidth, Main.screenHeight) / glow.Width;
+
+            Color outer = Color.Lerp(VermillionRed, SolarGold, 0.5f) with { A = 0 };
+            sb.Draw(glow, pos, null, outer * (sunBurst * 0.65f), 0f, go, baseScale * (1.4f + sunBurst * 2.0f), SpriteEffects.None, 0f);
+            sb.Draw(glow, pos, null, (SolarGold with { A = 0 }) * (sunBurst * 0.8f), 0f, go, baseScale * (0.8f + sunBurst * 1.2f), SpriteEffects.None, 0f);
+            sb.Draw(glow, pos, null, (WhiteHot with { A = 0 }) * sunBurst, 0f, go, baseScale * (0.35f + sunBurst * 0.6f), SpriteEffects.None, 0f);
+
+            Texture2D spark = ACMAsset.Sparkle;
+            if (spark != null) {
+                Color rc = (SolarGold with { A = 0 }) * (sunBurst * 0.7f);
+                sb.Draw(spark, pos, null, rc, globalTime * 0.1f, spark.Size() / 2f, baseScale * (1.2f + sunBurst * 1.6f), SpriteEffects.None, 0f);
+                sb.Draw(spark, pos, null, rc * 0.7f, -globalTime * 0.07f, spark.Size() / 2f, baseScale * (0.9f + sunBurst * 1.2f), SpriteEffects.None, 0f);
+            }
+
+            // 全屏金白闪（爆燃一瞬）
+            Texture2D pixel = VaultAsset.placeholder2.Value;
+            Color flash = (WhiteHot with { A = 0 }) * (sunBurst * sunBurst * 0.30f);
+            sb.Draw(pixel, new Rectangle(0, 0, Main.screenWidth, Main.screenHeight), flash);
         }
 
         #endregion
@@ -166,19 +209,19 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
             Texture2D pixel = VaultAsset.placeholder2.Value;
             Rectangle screen = new(0, 0, Main.screenWidth, Main.screenHeight);
 
-            sb.Draw(pixel, screen, DeepCrimson * intensity * 0.95f);
+            sb.Draw(pixel, screen, Grey(DeepCrimson) * intensity * 0.95f);
 
             int bands = 10;
             for (int i = 0; i < bands; i++) {
                 float t = (float)i / bands;
                 int h = Main.screenHeight / bands;
                 // 顶部更亮（火的照映），底部更暗
-                Color c = Color.Lerp(BurntOrange, DeepCrimson, t) * intensity * 0.5f;
+                Color c = Grey(Color.Lerp(BurntOrange, DeepCrimson, t)) * intensity * 0.5f;
                 sb.Draw(pixel, new Rectangle(0, i * h, Main.screenWidth, h), c);
             }
 
-            // 火焰呼吸脉冲 — 三阶段涅槃时白热化
-            float breath = (0.5f + MathF.Sin(globalTime * 1.8f) * 0.5f) * intensity * 0.08f;
+            // 火焰呼吸脉冲 — 三阶段涅槃时白热化；灰烬寂静期呼吸熄止
+            float breath = (0.5f + MathF.Sin(globalTime * 1.8f) * 0.5f) * intensity * 0.08f * (1f - ashen);
             if (isPhase3) breath *= 2.5f;
             else if (isPhase2) breath *= 1.6f;
             Color breathC = isPhase3
@@ -204,18 +247,18 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
 
                 Vector2 dp = c.Position - Main.screenPosition;
                 float lerp = MathF.Sin(globalTime * 0.6f + i * 0.25f) * 0.5f + 0.5f;
-                Color cc = Color.Lerp(new Color(60, 15, 5), BurntOrange, lerp);
-                if (i % 4 == 0) cc = Color.Lerp(cc, SolarGold, 0.15f);
+                Color cc = Grey(Color.Lerp(new Color(60, 15, 5), BurntOrange, lerp));
+                if (i % 4 == 0) cc = Color.Lerp(cc, Grey(SolarGold), 0.15f);
 
-                float alpha = MathF.Sin(c.AnimProgress * MathHelper.Pi) * intensity * 0.5f;
+                float alpha = MathF.Sin(c.AnimProgress * MathHelper.Pi) * intensity * 0.5f * (1f - ashen * 0.5f);
                 cc *= alpha;
                 cc.A = 0;
 
                 Rectangle src = new((i % 4) * fs, (i / 4 % 4) * fs, fs, fs);
                 sb.Draw(tex, dp, src, cc, c.Rotation, origin, c.Scale, SpriteEffects.None, 0f);
 
-                // 火光映底
-                Color glow = Color.Lerp(VermillionRed, SolarGold, lerp) * alpha * 0.2f;
+                // 火光映底（灰烬期熄灭）
+                Color glow = Grey(Color.Lerp(VermillionRed, SolarGold, lerp)) * (alpha * 0.2f * (1f - ashen));
                 glow.A = 0;
                 sb.Draw(tex, dp, src, glow, c.Rotation * 0.85f, origin, c.Scale * 1.25f, SpriteEffects.None, 0f);
             }
@@ -234,7 +277,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
                 FlamePillar p = pillars[i];
                 if (p.FlashAlpha <= 0.01f) continue;
 
-                float alpha = p.FlashAlpha * intensity;
+                float alpha = p.FlashAlpha * intensity * (1f - ashen * 0.9f); // 灰烬期天幕火柱熄灭
 
                 // 火柱 — 从底部喷射
                 Color pillarC = Color.Lerp(VermillionRed, SolarGold, p.FlashAlpha) * alpha;
@@ -259,7 +302,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
             Vector2 origin = new(tex.Width / 2f, tex.Height / 2f);
 
             for (int layer = 0; layer < HeatLayerCount; layer++) {
-                float alpha = (0.08f - layer * 0.02f) * intensity;
+                float alpha = (0.08f - layer * 0.02f) * intensity * (1f - ashen * 0.9f);
                 if (isPhase3) alpha *= 1.5f;
                 else if (isPhase2) alpha *= 1.2f;
 
@@ -298,7 +341,7 @@ namespace AncientChineseMythology.Celestias.Boss.FourSacredBeasts.Suzakus
 
                 Vector2 dp = e.Position - Main.screenPosition;
                 float progress = MathF.Sin(e.AnimProgress * MathHelper.Pi);
-                float alpha = progress * intensity * 0.5f;
+                float alpha = progress * intensity * 0.5f * (1f - ashen * 0.85f);
 
                 // 从金色到朱红渐变
                 Color ec = Color.Lerp(SolarGold, VermillionRed, e.AnimProgress) * alpha;

@@ -1,15 +1,21 @@
 ﻿using AncientChineseMythology.Buffs;
 using AncientChineseMythology.Projectiles;
 using Terraria;
+using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace AncientChineseMythology.Items.Weapons.SummoningStaffs
 {
+    /// <summary>
+    /// 冥鸦法杖: 召唤阴间鸦群为你作战 (每只占 1 召唤栏, 可多只)。
+    /// 鸦群错拍环伺 → 俯冲穿透, 每第 3 次为缠绕俯冲 (×1.4 + 鸦羽爆散)。
+    /// </summary>
     public class MingCrowStaff : ModItem
     {
         public override string Texture => "AncientChineseMythology/Textures/Items/Weapons/Summoning Staffs/MingCrowStaff";
+
         public override void SetStaticDefaults() {
             ItemID.Sets.GamepadWholeScreenUseRange[Type] = true;
             ItemID.Sets.StaffMinionSlotsRequired[Type] = 1f;
@@ -38,19 +44,18 @@ namespace AncientChineseMythology.Items.Weapons.SummoningStaffs
         public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source,
                                    Vector2 position, Vector2 velocity,
                                    int type, int damage, float knockback) {
-            //① 生成新冥鸦（引擎会自动处理“槽已满”→牺牲旧召唤物）
+            // 在鼠标点召唤 (槽满时引擎自动牺牲旧召唤物); Shoot 天然只在 owner 客户端执行
             position = Main.MouseWorld;
-            velocity = Vector2.Zero; //初速 0，AI 自行加速
 
-            int proj = Projectile.NewProjectile(source, position, velocity,
+            int proj = Projectile.NewProjectile(source, position, Vector2.Zero,
                                                 type, damage, knockback, player.whoAmI);
             if (proj >= 0)
                 Main.projectile[proj].originalDamage = Item.damage;
 
-            //② 维持 Buff（2 帧，Buff 自身脚本会持续刷新至常驻）
             player.AddBuff(Item.buffType, 2);
 
-            //返回 false 告诉 tML：我们已手动生成 Projectile
+            // 召唤起手音 (低频铺垫叠在 Item44 上)
+            SoundEngine.PlaySound(SoundID.Item8 with { Volume = 0.3f, Pitch = -0.4f }, position);
             return false;
         }
     }
